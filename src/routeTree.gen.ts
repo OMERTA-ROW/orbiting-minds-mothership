@@ -10,33 +10,180 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as GuardianRouteImport } from './routes/guardian'
+import { Route as JoinRouteImport } from './routes/join'
+import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
+import { Route as MothershipRouteImport } from './routes/mothership'
+import { Route as PartnershipsRouteImport } from './routes/partnerships'
+import { Route as PlatformRouteImport } from './routes/platform'
+import { Route as RoadmapRouteImport } from './routes/roadmap'
+import { Route as SandboxRouteImport } from './routes/sandbox'
+import { Route as UniverseRouteImport } from './routes/universe'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgentsRoute = AgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuardianRoute = GuardianRouteImport.update({
+  id: '/guardian',
+  path: '/guardian',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KnowledgeFusionRoute = KnowledgeFusionRouteImport.update({
+  id: '/knowledge-fusion',
+  path: '/knowledge-fusion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MothershipRoute = MothershipRouteImport.update({
+  id: '/mothership',
+  path: '/mothership',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnershipsRoute = PartnershipsRouteImport.update({
+  id: '/partnerships',
+  path: '/partnerships',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlatformRoute = PlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoadmapRoute = RoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SandboxRoute = SandboxRouteImport.update({
+  id: '/sandbox',
+  path: '/sandbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UniverseRoute = UniverseRouteImport.update({
+  id: '/universe',
+  path: '/universe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
+  '/dashboard': typeof DashboardRoute
+  '/guardian': typeof GuardianRoute
+  '/join': typeof JoinRoute
+  '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/mothership': typeof MothershipRoute
+  '/partnerships': typeof PartnershipsRoute
+  '/platform': typeof PlatformRoute
+  '/roadmap': typeof RoadmapRoute
+  '/sandbox': typeof SandboxRoute
+  '/universe': typeof UniverseRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
+  '/dashboard': typeof DashboardRoute
+  '/guardian': typeof GuardianRoute
+  '/join': typeof JoinRoute
+  '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/mothership': typeof MothershipRoute
+  '/partnerships': typeof PartnershipsRoute
+  '/platform': typeof PlatformRoute
+  '/roadmap': typeof RoadmapRoute
+  '/sandbox': typeof SandboxRoute
+  '/universe': typeof UniverseRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
+  '/dashboard': typeof DashboardRoute
+  '/guardian': typeof GuardianRoute
+  '/join': typeof JoinRoute
+  '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/mothership': typeof MothershipRoute
+  '/partnerships': typeof PartnershipsRoute
+  '/platform': typeof PlatformRoute
+  '/roadmap': typeof RoadmapRoute
+  '/sandbox': typeof SandboxRoute
+  '/universe': typeof UniverseRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/agents'
+    | '/dashboard'
+    | '/guardian'
+    | '/join'
+    | '/knowledge-fusion'
+    | '/mothership'
+    | '/partnerships'
+    | '/platform'
+    | '/roadmap'
+    | '/sandbox'
+    | '/universe'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/agents'
+    | '/dashboard'
+    | '/guardian'
+    | '/join'
+    | '/knowledge-fusion'
+    | '/mothership'
+    | '/partnerships'
+    | '/platform'
+    | '/roadmap'
+    | '/sandbox'
+    | '/universe'
+  id:
+    | '__root__'
+    | '/'
+    | '/agents'
+    | '/dashboard'
+    | '/guardian'
+    | '/join'
+    | '/knowledge-fusion'
+    | '/mothership'
+    | '/partnerships'
+    | '/platform'
+    | '/roadmap'
+    | '/sandbox'
+    | '/universe'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentsRoute: typeof AgentsRoute
+  DashboardRoute: typeof DashboardRoute
+  GuardianRoute: typeof GuardianRoute
+  JoinRoute: typeof JoinRoute
+  KnowledgeFusionRoute: typeof KnowledgeFusionRoute
+  MothershipRoute: typeof MothershipRoute
+  PartnershipsRoute: typeof PartnershipsRoute
+  PlatformRoute: typeof PlatformRoute
+  RoadmapRoute: typeof RoadmapRoute
+  SandboxRoute: typeof SandboxRoute
+  UniverseRoute: typeof UniverseRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +195,99 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guardian': {
+      id: '/guardian'
+      path: '/guardian'
+      fullPath: '/guardian'
+      preLoaderRoute: typeof GuardianRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/knowledge-fusion': {
+      id: '/knowledge-fusion'
+      path: '/knowledge-fusion'
+      fullPath: '/knowledge-fusion'
+      preLoaderRoute: typeof KnowledgeFusionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mothership': {
+      id: '/mothership'
+      path: '/mothership'
+      fullPath: '/mothership'
+      preLoaderRoute: typeof MothershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partnerships': {
+      id: '/partnerships'
+      path: '/partnerships'
+      fullPath: '/partnerships'
+      preLoaderRoute: typeof PartnershipsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/platform': {
+      id: '/platform'
+      path: '/platform'
+      fullPath: '/platform'
+      preLoaderRoute: typeof PlatformRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roadmap': {
+      id: '/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof RoadmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sandbox': {
+      id: '/sandbox'
+      path: '/sandbox'
+      fullPath: '/sandbox'
+      preLoaderRoute: typeof SandboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/universe': {
+      id: '/universe'
+      path: '/universe'
+      fullPath: '/universe'
+      preLoaderRoute: typeof UniverseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentsRoute: AgentsRoute,
+  DashboardRoute: DashboardRoute,
+  GuardianRoute: GuardianRoute,
+  JoinRoute: JoinRoute,
+  KnowledgeFusionRoute: KnowledgeFusionRoute,
+  MothershipRoute: MothershipRoute,
+  PartnershipsRoute: PartnershipsRoute,
+  PlatformRoute: PlatformRoute,
+  RoadmapRoute: RoadmapRoute,
+  SandboxRoute: SandboxRoute,
+  UniverseRoute: UniverseRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
