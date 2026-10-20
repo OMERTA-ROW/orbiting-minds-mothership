@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as CareRouteImport } from './routes/care'
+import { Route as CareAgentRouteImport } from './routes/care-agent'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CodeExchangeRouteImport } from './routes/code-exchange'
 import { Route as CommonsRouteImport } from './routes/commons'
@@ -26,6 +28,7 @@ import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
 import { Route as PathwayRouteImport } from './routes/pathway'
+import { Route as PilotRouteImport } from './routes/pilot'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as PulseRouteImport } from './routes/pulse'
 import { Route as ReleasesRouteImport } from './routes/releases'
@@ -34,6 +37,8 @@ import { Route as SandboxRouteImport } from './routes/sandbox'
 import { Route as SdkRouteImport } from './routes/sdk'
 import { Route as TrustRouteImport } from './routes/trust'
 import { Route as UniverseRouteImport } from './routes/universe'
+import { Route as UpdatesRouteImport } from './routes/updates'
+import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 import { Route as CapsulesIdRouteImport } from './routes/capsules_.$id'
 import { Route as ChallengesIdRouteImport } from './routes/challenges_.$id'
@@ -47,6 +52,16 @@ const IndexRoute = IndexRouteImport.update({
 const AgentsRoute = AgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareRoute = CareRouteImport.update({
+  id: '/care',
+  path: '/care',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareAgentRoute = CareAgentRouteImport.update({
+  id: '/care-agent',
+  path: '/care-agent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChallengesRoute = ChallengesRouteImport.update({
@@ -124,6 +139,11 @@ const PathwayRoute = PathwayRouteImport.update({
   path: '/pathway',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PilotRoute = PilotRouteImport.update({
+  id: '/pilot',
+  path: '/pilot',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlatformRoute = PlatformRouteImport.update({
   id: '/platform',
   path: '/platform',
@@ -164,6 +184,16 @@ const UniverseRoute = UniverseRouteImport.update({
   path: '/universe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UpdatesRoute = UpdatesRouteImport.update({
+  id: '/updates',
+  path: '/updates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VoiceRoute = VoiceRouteImport.update({
+  id: '/voice',
+  path: '/voice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiEvolutionPathwayRoute = ApiEvolutionPathwayRouteImport.update({
   id: '/api/evolution-pathway',
   path: '/api/evolution-pathway',
@@ -188,6 +218,8 @@ const CodeExchangeIdRoute = CodeExchangeIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agents': typeof AgentsRoute
+  '/care': typeof CareRoute
+  '/care-agent': typeof CareAgentRoute
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/commons': typeof CommonsRoute
@@ -203,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
+  '/pilot': typeof PilotRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
@@ -211,6 +244,8 @@ export interface FileRoutesByFullPath {
   '/sdk': typeof SdkRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
+  '/updates': typeof UpdatesRoute
+  '/voice': typeof VoiceRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
@@ -219,6 +254,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agents': typeof AgentsRoute
+  '/care': typeof CareRoute
+  '/care-agent': typeof CareAgentRoute
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/commons': typeof CommonsRoute
@@ -234,6 +271,7 @@ export interface FileRoutesByTo {
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
+  '/pilot': typeof PilotRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
@@ -242,6 +280,8 @@ export interface FileRoutesByTo {
   '/sdk': typeof SdkRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
+  '/updates': typeof UpdatesRoute
+  '/voice': typeof VoiceRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
@@ -251,6 +291,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agents': typeof AgentsRoute
+  '/care': typeof CareRoute
+  '/care-agent': typeof CareAgentRoute
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/commons': typeof CommonsRoute
@@ -266,6 +308,7 @@ export interface FileRoutesById {
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
+  '/pilot': typeof PilotRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
@@ -274,6 +317,8 @@ export interface FileRoutesById {
   '/sdk': typeof SdkRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
+  '/updates': typeof UpdatesRoute
+  '/voice': typeof VoiceRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/capsules_/$id': typeof CapsulesIdRoute
   '/challenges_/$id': typeof ChallengesIdRoute
@@ -284,6 +329,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/agents'
+    | '/care'
+    | '/care-agent'
     | '/challenges'
     | '/code-exchange'
     | '/commons'
@@ -299,6 +346,7 @@ export interface FileRouteTypes {
     | '/mothership'
     | '/partnerships'
     | '/pathway'
+    | '/pilot'
     | '/platform'
     | '/pulse'
     | '/releases'
@@ -307,6 +355,8 @@ export interface FileRouteTypes {
     | '/sdk'
     | '/trust'
     | '/universe'
+    | '/updates'
+    | '/voice'
     | '/api/evolution-pathway'
     | '/capsules/$id'
     | '/challenges/$id'
@@ -315,6 +365,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/agents'
+    | '/care'
+    | '/care-agent'
     | '/challenges'
     | '/code-exchange'
     | '/commons'
@@ -330,6 +382,7 @@ export interface FileRouteTypes {
     | '/mothership'
     | '/partnerships'
     | '/pathway'
+    | '/pilot'
     | '/platform'
     | '/pulse'
     | '/releases'
@@ -338,6 +391,8 @@ export interface FileRouteTypes {
     | '/sdk'
     | '/trust'
     | '/universe'
+    | '/updates'
+    | '/voice'
     | '/api/evolution-pathway'
     | '/capsules/$id'
     | '/challenges/$id'
@@ -346,6 +401,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/agents'
+    | '/care'
+    | '/care-agent'
     | '/challenges'
     | '/code-exchange'
     | '/commons'
@@ -361,6 +418,7 @@ export interface FileRouteTypes {
     | '/mothership'
     | '/partnerships'
     | '/pathway'
+    | '/pilot'
     | '/platform'
     | '/pulse'
     | '/releases'
@@ -369,6 +427,8 @@ export interface FileRouteTypes {
     | '/sdk'
     | '/trust'
     | '/universe'
+    | '/updates'
+    | '/voice'
     | '/api/evolution-pathway'
     | '/capsules_/$id'
     | '/challenges_/$id'
@@ -378,6 +438,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentsRoute: typeof AgentsRoute
+  CareRoute: typeof CareRoute
+  CareAgentRoute: typeof CareAgentRoute
   ChallengesRoute: typeof ChallengesRoute
   CodeExchangeRoute: typeof CodeExchangeRoute
   CommonsRoute: typeof CommonsRoute
@@ -393,6 +455,7 @@ export interface RootRouteChildren {
   MothershipRoute: typeof MothershipRoute
   PartnershipsRoute: typeof PartnershipsRoute
   PathwayRoute: typeof PathwayRoute
+  PilotRoute: typeof PilotRoute
   PlatformRoute: typeof PlatformRoute
   PulseRoute: typeof PulseRoute
   ReleasesRoute: typeof ReleasesRoute
@@ -401,6 +464,8 @@ export interface RootRouteChildren {
   SdkRoute: typeof SdkRoute
   TrustRoute: typeof TrustRoute
   UniverseRoute: typeof UniverseRoute
+  UpdatesRoute: typeof UpdatesRoute
+  VoiceRoute: typeof VoiceRoute
   ApiEvolutionPathwayRoute: typeof ApiEvolutionPathwayRoute
   CapsulesIdRoute: typeof CapsulesIdRoute
   ChallengesIdRoute: typeof ChallengesIdRoute
@@ -421,6 +486,20 @@ declare module '@tanstack/react-router' {
       path: '/agents'
       fullPath: '/agents'
       preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/care': {
+      id: '/care'
+      path: '/care'
+      fullPath: '/care'
+      preLoaderRoute: typeof CareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/care-agent': {
+      id: '/care-agent'
+      path: '/care-agent'
+      fullPath: '/care-agent'
+      preLoaderRoute: typeof CareAgentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/challenges': {
@@ -528,6 +607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PathwayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pilot': {
+      id: '/pilot'
+      path: '/pilot'
+      fullPath: '/pilot'
+      preLoaderRoute: typeof PilotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/platform': {
       id: '/platform'
       path: '/platform'
@@ -584,6 +670,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UniverseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/updates': {
+      id: '/updates'
+      path: '/updates'
+      fullPath: '/updates'
+      preLoaderRoute: typeof UpdatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/voice': {
+      id: '/voice'
+      path: '/voice'
+      fullPath: '/voice'
+      preLoaderRoute: typeof VoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/evolution-pathway': {
       id: '/api/evolution-pathway'
       path: '/api/evolution-pathway'
@@ -618,6 +718,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentsRoute: AgentsRoute,
+  CareRoute: CareRoute,
+  CareAgentRoute: CareAgentRoute,
   ChallengesRoute: ChallengesRoute,
   CodeExchangeRoute: CodeExchangeRoute,
   CommonsRoute: CommonsRoute,
@@ -633,6 +735,7 @@ const rootRouteChildren: RootRouteChildren = {
   MothershipRoute: MothershipRoute,
   PartnershipsRoute: PartnershipsRoute,
   PathwayRoute: PathwayRoute,
+  PilotRoute: PilotRoute,
   PlatformRoute: PlatformRoute,
   PulseRoute: PulseRoute,
   ReleasesRoute: ReleasesRoute,
@@ -641,6 +744,8 @@ const rootRouteChildren: RootRouteChildren = {
   SdkRoute: SdkRoute,
   TrustRoute: TrustRoute,
   UniverseRoute: UniverseRoute,
+  UpdatesRoute: UpdatesRoute,
+  VoiceRoute: VoiceRoute,
   ApiEvolutionPathwayRoute: ApiEvolutionPathwayRoute,
   CapsulesIdRoute: CapsulesIdRoute,
   ChallengesIdRoute: ChallengesIdRoute,
