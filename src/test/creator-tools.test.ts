@@ -47,6 +47,7 @@ describe("Global Mothership search", () => {
   });
   it("searches metadata case-insensitively and handles empty results", () => {
     expect(searchCommands("  MQTT  ").some((e) => e.id === "helios")).toBe(true);
+    expect(searchCommands("Forge")[0]?.key).toBe("agent:Forge");
     expect(searchCommands("not-an-existing-world-xx")).toHaveLength(0);
   });
   it("opens with Ctrl K or Command K without intercepting plain typing", () => {

@@ -21,9 +21,9 @@ function PathwayPage() {
   const [consent, setConsent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [exportError, setExportError] = useState("");
-  const { pathway, status, error, thinking, generate, stop } = usePathway();
+  const { pathway, status, error, thinking, submitted, generate, stop } = usePathway();
   const busy = status === "generating";
-  const output = pathway ? JSON.stringify({ status: "AI-generated proposal; sandbox validation not run", concept, goal, pathway }, null, 2) : "";
+  const output = pathway ? JSON.stringify({ status: "AI-generated proposal; sandbox validation not run", concept: submitted?.concept, goal: submitted?.goal, pathway }, null, 2) : "";
   const exportPathway = () => {
     const url = URL.createObjectURL(new Blob([output], { type: "application/json" }));
     const a = document.createElement("a"); a.href = url; a.download = "evolution-pathway.json"; a.click(); URL.revokeObjectURL(url);

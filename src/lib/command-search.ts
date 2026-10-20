@@ -20,7 +20,10 @@ export const searchEntries: SearchEntry[] = [
 
 export function searchCommands(query: string) {
   const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  return searchEntries.filter((entry) => terms.every((term) => `${entry.kind} ${entry.label} ${entry.detail} ${entry.keywords}`.toLowerCase().includes(term)));
+  const matches = searchEntries.filter((entry) => terms.every((term) => `${entry.kind} ${entry.label} ${entry.detail} ${entry.keywords}`.toLowerCase().includes(term)));
+  const text = query.toLowerCase().trim();
+  const score = (entry: SearchEntry) => !text ? 0 : entry.label.toLowerCase() === text || entry.id.toLowerCase() === text ? 3 : entry.label.toLowerCase().includes(text) ? 2 : 1;
+  return matches.sort((a, b) => score(b) - score(a));
 }
 
 export function shouldOpenPalette(event: { key: string; metaKey: boolean; ctrlKey: boolean; altKey: boolean; repeat: boolean }) {

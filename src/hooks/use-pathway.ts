@@ -6,6 +6,7 @@ export function usePathway() {
   const [status, setStatus] = useState<"idle" | "generating" | "complete" | "stopped" | "error">("idle");
   const [error, setError] = useState("");
   const [thinking, setThinking] = useState("");
+  const [submitted, setSubmitted] = useState<{ concept: string; goal: string } | null>(null);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
   async function generate(input: { concept: string; goal: string; consent: boolean }) {
@@ -14,6 +15,7 @@ export function usePathway() {
     if (!validated.success) { setError(validated.error.issues[0]?.message ?? "Check your concept."); return; }
     const abort = new AbortController();
     controller.current = abort;
+    setSubmitted({ concept: validated.data.concept, goal: validated.data.goal });
     setStatus("generating"); setError(""); setThinking(""); setPathway(null);
     let terminal = false;
     try {
@@ -50,5 +52,5 @@ export function usePathway() {
       else { setError(cause instanceof Error ? cause.message : "AI generation failed."); setStatus("error"); }
     } finally { controller.current = null; }
   }
-  return { pathway, status, error, thinking, generate, stop: () => controller.current?.abort() };
+  return { pathway, status, error, thinking, submitted, generate, stop: () => controller.current?.abort() };
 }

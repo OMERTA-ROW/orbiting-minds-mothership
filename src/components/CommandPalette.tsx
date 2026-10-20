@@ -18,6 +18,7 @@ export function PaletteTrigger() {
 export function CommandPaletteProvider({ children, pages: navigation }: { children: ReactNode; pages: readonly { to: "/" | "/mothership" | "/universe" | "/platform" | "/knowledge-fusion" | "/guardian" | "/agents" | "/sandbox" | "/roadmap" | "/partnerships" | "/dashboard" | "/pathway"; label: string }[] }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [value, setValue] = useState("");
   const navigate = useNavigate();
   const reveal = () => { setQuery(""); setOpen(true); };
   useEffect(() => {
@@ -46,8 +47,8 @@ export function CommandPaletteProvider({ children, pages: navigation }: { childr
       }}>
         <DialogTitle className="px-5 pb-2 pt-5 font-display text-gold-light">Mothership command</DialogTitle>
         <DialogDescription className="px-5 pb-4 text-xs">Modules · demo projects, agents and proposals</DialogDescription>
-        <Command shouldFilter={false} loop className="rounded-none">
-          <CommandInput value={query} onValueChange={setQuery} autoFocus placeholder="Search the constellation…" aria-label="Search commands" />
+        <Command shouldFilter={false} loop value={value} onValueChange={setValue} className="rounded-none">
+          <CommandInput value={query} onValueChange={(text) => { setQuery(text); setValue(searchCommands(text)[0]?.key ?? ""); }} autoFocus placeholder="Search the constellation…" aria-label="Search commands" />
           <CommandList className="max-h-[min(55svh,450px)] px-2 py-2">
             <CommandEmpty>No matching worlds or commands.</CommandEmpty>
             {kinds.map((kind) => {

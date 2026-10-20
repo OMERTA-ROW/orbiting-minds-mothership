@@ -44,7 +44,7 @@ ${modules.map((m) => `${m.id}: ${m.name} (${m.status}) — ${m.purpose}`).join("
           for await (const part of call.result.fullStream) {
             if (part.type === "reasoning-delta") send({ type: "thinking", text: part.text });
           }
-        })();
+        })().catch(() => undefined);
         for await (const pathway of call.result.partialOutputStream) send({ type: "partial", pathway });
         await reasoning;
         if (request.signal.aborted || cancelled) return;
