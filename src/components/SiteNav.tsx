@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export const navItems = [
   { to: "/", label: "Home" },
@@ -18,36 +20,40 @@ export const navItems = [
 
 export function SiteNav() {
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const dismiss = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", dismiss);
+    return () => document.removeEventListener("keydown", dismiss);
+  }, [open]);
+  const featured = navItems.filter((n) => ["/mothership", "/universe", "/platform", "/knowledge-fusion", "/guardian"].includes(n.to));
+  const more = navItems.filter((n) => !featured.some((f) => f.to === n.to) && n.to !== "/");
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/75 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
+    <header className="site-navigation sticky top-0 z-50 border-b border-border">
+      <div className="mx-auto flex h-[78px] max-w-[1600px] items-center justify-between gap-5 px-6 md:px-10">
         <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
-          <span className="grid h-8 w-8 place-items-center rounded-full border border-gold/60 shadow-glow">
-            <span className="h-2.5 w-2.5 rounded-full bg-gold-gradient" />
-          </span>
-          <span className="font-display text-lg tracking-[0.25em] text-gold-gradient">EVOLUTION</span>
+          <img src="/favicon.svg" width={38} height={38} className="brand-mark" alt="" />
+          <span><span className="block font-display text-base text-gold-light">EVOLUTION</span><span className="block pt-1 font-mono text-[7px] uppercase tracking-[0.24em] text-muted-foreground">The Mothership</span></span>
         </Link>
-        <nav className="hidden items-center gap-0.5 2xl:flex" aria-label="Main">
-          {navItems.slice(1).map((n) => (
-            <Link key={n.to} to={n.to} className="whitespace-nowrap rounded-full px-2.5 py-1.5 text-[13px] text-muted-foreground transition hover:text-gold-light"
-              activeProps={{ className: "text-gold-light bg-accent/50" }}>
-              {n.label}
-            </Link>
+        <nav className="hidden items-center gap-7 xl:flex" aria-label="Main">
+          {featured.map((n) => (
+            <Link key={n.to} to={n.to} className="nav-link whitespace-nowrap" activeProps={{ className: "is-current" }}>{n.label}</Link>
           ))}
+          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-auto px-0 text-xs text-muted-foreground">More<ChevronDown size={12} /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-56 border-gold/25 p-2">{more.map((n) => <DropdownMenuItem key={n.to} asChild><Link to={n.to} className="flex justify-between py-3">{n.label}<ArrowUpRight size={12} className="text-gold" /></Link></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>
         </nav>
         <div className="flex items-center gap-2">
-          <Link to="/join" className="hidden rounded-full bg-gold-gradient px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-glow sm:inline-flex">Join</Link>
-          <button className="rounded-full border border-border p-2 text-gold-light 2xl:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen(!open)}>
+          <Button asChild variant="signal" className="hidden h-10 rounded-sm px-5 text-xs sm:inline-flex"><Link to="/join">Join the Network<ArrowUpRight size={14} /></Link></Button>
+          <Button variant="ghost" size="icon" className="border border-border text-gold-light xl:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)}>
             {open ? <X size={18} /> : <Menu size={18} />}
-          </button>
+          </Button>
         </div>
       </div>
       {open && (
-        <nav className="border-t border-border bg-background/95 px-6 py-4 2xl:hidden" aria-label="Mobile">
-          <div className="grid grid-cols-2 gap-1">
+        <nav id="mobile-navigation" className="absolute left-0 top-full max-h-[calc(100svh-78px)] w-full overflow-y-auto border-b border-border bg-background px-6 py-6 xl:hidden" aria-label="Mobile">
+          <div className="mx-auto grid max-w-3xl grid-cols-2 gap-x-6 gap-y-1">
             {[...navItems, { to: "/join", label: "Join" } as const].map((n) => (
-              <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent/40"
-                activeProps={{ className: "text-gold-light bg-accent/50" }} activeOptions={{ exact: true }}>
+              <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="border-b border-border py-3 text-xs text-muted-foreground hover:text-gold-light"
+                activeProps={{ className: "text-gold-light" }} activeOptions={{ exact: true }}>
                 {n.label}
               </Link>
             ))}
@@ -61,9 +67,9 @@ export function SiteNav() {
 export function SiteFooter() {
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <p><span className="font-display tracking-[0.2em] text-gold">EVOLUTION</span> — Bridge technology into its next evolution.</p>
-        <p>Owner-reviewed prototype. All data is demo / simulated. Opt-in only · no unauthorized access, ever.</p>
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-6 py-10 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between md:px-12">
+        <div><p className="font-display text-xl text-gold-light">EVOLUTION</p><p className="mt-3 text-[11px]">Bridge technology into its next evolution.</p></div>
+        <p className="max-w-md text-[10px] leading-loose md:text-right">Owner-reviewed prototype. All data is demo / simulated.<br />Opt-in only · no unauthorized access, ever.</p>
       </div>
     </footer>
   );
