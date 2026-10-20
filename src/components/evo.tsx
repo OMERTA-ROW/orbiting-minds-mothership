@@ -102,7 +102,7 @@ export const moduleIcons: Record<string, LucideIcon> = {
 };
 
 /** Stationary, accessible orbital nodes surrounding a slowly moving intelligence core. */
-export function OrbitExplorer({ items, size = 520, initialId }: { items: MothershipModule[]; size?: number; initialId?: string }) {
+export function OrbitExplorer({ items, size = 520, initialId }: { items: MothershipModule[]; size?: number; initialId?: string | undefined }) {
   const [selectedId, setSelectedId] = useState(initialId ?? items[0]?.id);
   const active = items.find((m) => m.id === selectedId) ?? items[0];
   if (!active) return null;

@@ -11,7 +11,7 @@ import {
 
 export function createResponsesCall(
   request: Request,
-  config: { baseURL: string; apiKey: string; model: string },
+  config: { baseURL: string; apiKey: string; model: string; signal?: AbortSignal },
   messages: ModelMessage[],
   instructions?: string,
 ) {
@@ -37,7 +37,7 @@ export function createResponsesCall(
     model: provider.responses(config.model),
     ...(instructions ? { system: instructions } : {}),
     messages,
-    abortSignal: request.signal,
+    abortSignal: config.signal ?? request.signal,
     maxRetries: 0,
     maxOutputTokens: 7000,
     output: Output.object({ schema: pathwaySchema }),

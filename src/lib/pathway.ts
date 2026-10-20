@@ -21,11 +21,8 @@ export const pathwaySchema = z.object({
 }).strict();
 
 export type EvolutionPathway = z.infer<typeof pathwaySchema>;
-export type PartialPathway = Partial<Omit<EvolutionPathway, "modules" | "steps" | "sandboxChecks">> & {
-  modules?: Partial<EvolutionPathway["modules"][number]>[];
-  steps?: Partial<EvolutionPathway["steps"][number]>[];
-  sandboxChecks?: Partial<EvolutionPathway["sandboxChecks"][number]>[];
-};
+type DeepPartial<T> = T extends Array<infer U> ? Array<DeepPartial<U> | undefined> : T extends object ? { [K in keyof T]?: DeepPartial<T[K]> | undefined } : T;
+export type PartialPathway = DeepPartial<EvolutionPathway>;
 export type PathwayEvent =
   | { type: "thinking"; text: string }
   | { type: "partial"; pathway: PartialPathway }

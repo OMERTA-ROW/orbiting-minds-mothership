@@ -8,7 +8,10 @@ import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/universe")({
-  validateSearch: (search: Record<string, unknown>): { world?: string } => ({ world: typeof search.world === "string" && universe.some((n) => n.id === search.world) ? search.world : undefined }),
+  validateSearch: (search: Record<string, unknown>): { world?: string } => {
+    const value = search["world"];
+    return typeof value === "string" && universe.some((n) => n.id === value) ? { world: value } : {};
+  },
   head: () => seo("Evolution Universe", "Navigate a constellation of opt-in technology projects, consenting agents and research domains."),
   component: Page,
 });

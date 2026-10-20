@@ -29,7 +29,9 @@ export async function handlePathway(request: Request) {
 All Mothership modules are prototype/concept/future capabilities, not connected live systems. This call drafts a plan only. No experiments are executed, no validation results exist, no code or external systems are changed. Do not claim passing tests, achieved metrics, signatures verified, approvals granted, real partnerships or real integrations. Do not give harmful or unauthorized access instructions. Turn unsafe requests into safe, authorized alternatives. NASA/SpaceX/Starlink/CERN are research references only.
 Return a concise title and summary, 2-4 explicit assumptions, 4-7 relevant modules with concept-specific rationales and contributions, 5-7 sequential pathway steps with concrete deliverables, 3-5 proposed isolated sandbox checks with test procedures and measurable pass criteria, 2-4 risks, an explicit manual owner opt-in approval gate before any future rollout, and a concrete reversible rollback plan. Mention evidence needed and uncertainty. Sandbox checks are PLANNED, never completed. No invented sources/citations; future research verification is a step. Always include Guardian, Evolution DNA and Time Machine among relevant modules and steps. Use only these module IDs and meanings:
 ${modules.map((m) => `${m.id}: ${m.name} (${m.status}) — ${m.purpose}`).join("\n")}`;
-  const call = createResponsesCall(request, { baseURL: "https://ai.gateway.lovable.dev/v1", apiKey, model: "openai/gpt-6-astra" },
+  const upstreamAbort = new AbortController();
+  const signal = AbortSignal.any([request.signal, upstreamAbort.signal]);
+  const call = createResponsesCall(request, { baseURL: "https://ai.gateway.lovable.dev/v1", apiKey, model: "openai/gpt-6-astra", signal },
     [{ role: "user", content: `Technology concept:\n${parsed.data.concept}\nDesired outcome or constraints:\n${parsed.data.goal || "Not specified; identify assumptions."}` }], instructions);
   const encoder = new TextEncoder();
   let cancelled = false;
@@ -66,7 +68,7 @@ ${modules.map((m) => `${m.id}: ${m.name} (${m.status}) — ${m.purpose}`).join("
         if (!cancelled) controller.close();
       }
     },
-    cancel() { cancelled = true; },
+    cancel() { cancelled = true; upstreamAbort.abort(); },
   });
   // Start consumption before waiting for headers. Metadata/thinking frames cannot strand the reader.
   await call.gateway.waitForRunId();

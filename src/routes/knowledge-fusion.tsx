@@ -7,7 +7,10 @@ import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/knowledge-fusion")({
-  validateSearch: (search: Record<string, unknown>): { idea?: string } => ({ idea: typeof search.idea === "string" && feed.some((f) => String(f.id) === search.idea) ? search.idea : undefined }),
+  validateSearch: (search: Record<string, unknown>): { idea?: string } => {
+    const value = search["idea"];
+    return typeof value === "string" && feed.some((f) => String(f.id) === value) ? { idea: value } : {};
+  },
   head: () => seo("Knowledge Fusion", "A discovery feed of voluntarily shared, attributed idea proposals across public, invite-only and private modes."),
   component: Page,
 });

@@ -6,7 +6,10 @@ import { moduleIcons, DemoBadge } from "@/components/evo";
 import { Orbit } from "lucide-react";
 
 export const Route = createFileRoute("/mothership")({
-  validateSearch: (search: Record<string, unknown>): { module?: string } => ({ module: typeof search.module === "string" && modules.some((m) => m.id === search.module) ? search.module : undefined }),
+  validateSearch: (search: Record<string, unknown>): { module?: string } => {
+    const value = search["module"];
+    return typeof value === "string" && modules.some((m) => m.id === value) ? { module: value } : {};
+  },
   head: () => seo("Mothership Architecture", "Explore the 15 modules of the EVOLUTION Mothership, from Guardian to the Global Brain."),
   component: Page,
 });

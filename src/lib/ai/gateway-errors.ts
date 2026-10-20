@@ -2,8 +2,8 @@ export interface GatewayFailure { status: number; message: string }
 
 export function safeGatewayFailure(status: number, body: unknown): GatewayFailure {
   const data = body && typeof body === "object" ? body as Record<string, unknown> : {};
-  const nested = data.error && typeof data.error === "object" ? data.error as Record<string, unknown> : {};
-  const message = typeof data.message === "string" ? data.message : typeof nested.message === "string" ? nested.message : "";
+  const nested = data["error"] && typeof data["error"] === "object" ? data["error"] as Record<string, unknown> : {};
+  const message = typeof data["message"] === "string" ? data["message"] : typeof nested["message"] === "string" ? nested["message"] : "";
   const defaults: Record<number, string> = {
     400: "The AI request was rejected. Your concept is unchanged.",
     401: "Lovable AI is not configured correctly. The owner needs to check the AI connection.",

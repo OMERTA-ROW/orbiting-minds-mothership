@@ -6,7 +6,10 @@ import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/dashboard")({
-  validateSearch: (search: Record<string, unknown>): { proposal?: string } => ({ proposal: typeof search.proposal === "string" && proposals.some((p) => p.id === search.proposal) ? search.proposal : undefined }),
+  validateSearch: (search: Record<string, unknown>): { proposal?: string } => {
+    const value = search["proposal"];
+    return typeof value === "string" && proposals.some((p) => p.id === value) ? { proposal: value } : {};
+  },
   head: () => seo("Demo Dashboard", "Simulated overview of projects, agents, proposals, experiments, upgrade status and readiness."),
   component: Page,
 });
