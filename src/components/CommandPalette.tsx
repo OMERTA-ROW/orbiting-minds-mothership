@@ -4,7 +4,6 @@ import { ArrowUpRight, Bot, FileText, Layers, Orbit, Search, Sparkles } from "lu
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { navItems } from "@/components/SiteNav";
 import { searchCommands, shouldOpenPalette, type SearchEntry, type SearchKind } from "@/lib/command-search";
 
 const PaletteContext = createContext<(() => void) | null>(null);
@@ -16,7 +15,7 @@ export function PaletteTrigger() {
   return <Button variant="ghost" size="icon" className="text-gold-light" aria-label="Search the Mothership" title="Search the Mothership (Ctrl/⌘ K)" aria-keyshortcuts="Control+k Meta+k" onClick={() => open?.()}><Search size={18} /></Button>;
 }
 
-export function CommandPaletteProvider({ children }: { children: ReactNode }) {
+export function CommandPaletteProvider({ children, pages: navigation }: { children: ReactNode; pages: readonly { to: "/" | "/mothership" | "/universe" | "/platform" | "/knowledge-fusion" | "/guardian" | "/agents" | "/sandbox" | "/roadmap" | "/partnerships" | "/dashboard" | "/pathway"; label: string }[] }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
@@ -37,7 +36,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     else void navigate({ to: "/knowledge-fusion", search: { idea: entry.id }, hash: `idea-${entry.id}` });
   };
   const matches = searchCommands(query);
-  const pages = [...navItems, { to: "/join", label: "Join" } as const].filter((p) => !query.trim() || p.label.toLowerCase().includes(query.toLowerCase().trim()));
+  const pages = [...navigation, { to: "/join", label: "Join" } as const].filter((p) => !query.trim() || p.label.toLowerCase().includes(query.toLowerCase().trim()));
   return <PaletteContext.Provider value={reveal}>
     {children}
     <Dialog open={open} onOpenChange={setOpen}>
