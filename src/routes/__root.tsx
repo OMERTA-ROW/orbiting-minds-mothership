@@ -18,6 +18,7 @@ import { CommandPaletteProvider } from "@/components/CommandPalette";
 import { DemoExchangeProvider } from "@/hooks/use-demo-exchange";
 import { ExchangeLocaleProvider } from "@/hooks/use-exchange-locale";
 import { GenesisProvider } from "@/hooks/use-genesis";
+import { CareProvider } from "@/hooks/use-care";
 
 function NotFoundComponent() {
   return (
@@ -125,6 +126,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <CareProvider>
       <GenesisProvider>
       <DemoExchangeProvider>
       <ExchangeLocaleProvider>
@@ -142,6 +144,7 @@ function RootComponent() {
       </ExchangeLocaleProvider>
       </DemoExchangeProvider>
       </GenesisProvider>
+      </CareProvider>
     </QueryClientProvider>
   );
 }

@@ -23,3 +23,6 @@
 - Digital Twin results run only a deterministic synthetic numeric model; arbitrary submitted code, shell commands and hardware connectors never execute, why: distinguish useful simulations from real sandbox or hardware validation.
 
 - SDK JSON validation is loaded only from browser events; schema data remains SSR-safe, why: avoid evaluating the CommonJS validator in server rendering and never transmit user JSON.
+
+- CARE uses a separate validated versioned browser-local store and pure consent transitions; inventory is fictional and release references historical, why: demonstrate safe workflows without conflating preferences with account security or native capabilities.
+- CARE, Updates, Pilot, Voice and native-agent reference have public demo routes; no OS, capture, microphone, synthesis, updater or shell API is called, why: real capabilities require separately signed native software, per-action grants and security review.

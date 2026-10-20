@@ -1,5 +1,13 @@
 # Cosmic Mothership redesign
 
+## CARE, Auto-Update, Pilot and Voice
+- [x] Add optional first-run CARE modules, sample inventory/health and a safe virtual storage review.
+- [x] Add source-cited update catalog, consent policies, staged dry-run plans, approvals and local history.
+- [x] Add scoped Pilot permission rehearsal and original Voice persona/privacy/PTT concept without device access.
+- [x] Add future native-agent architecture and read-only CLI references with explicit signing/security gates.
+- [x] Test persistence, consent rules, navigation and mobile workflows; preserve all existing features.
+- [ ] Enable real native/provider capabilities. Blocker: security-readiness review, signed agent, OS grants and owner-approved integration setup.
+
 ## Genesis expansion
 - [x] Add Challenge Board, challenge details and documented local submissions linked to Embassy identities and Code Exchange.
 - [x] Add scoped demo Embassy onboarding and revocation without unconfigured authentication or provider access.
