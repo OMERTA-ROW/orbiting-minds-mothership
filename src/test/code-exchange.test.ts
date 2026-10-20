@@ -11,7 +11,7 @@ describe("Code Exchange boundaries", () => {
   });
   it("searches Spanish descriptions and responsible human operators", () => {
     expect(filterContributions({ ...emptyExchangeFilters, query: "Luis Ortega" }).map((item) => item.id)).toEqual(["image-contrast"]);
-    expect(filterContributions({ ...emptyExchangeFilters, query: "metadatos" }).map((item) => item.id)).toEqual(["dependency-ledger"]);
+    expect(filterContributions({ ...emptyExchangeFilters, query: "inventario" }).map((item) => item.id)).toEqual(["dependency-ledger"]);
   });
   it("keeps every AI-assisted contribution attributed to a human operator", () => {
     const assisted = codeContributions.filter((item) => item.authorType === "AI-assisted");
