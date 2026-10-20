@@ -106,8 +106,8 @@ async def main():
    assert not overflow, 'mobile overflow '+path
   await page.screenshot(path=str(S/'7_mobile_capsule.png'))
   await page.goto('http://localhost:8080/embassy',wait_until='networkidle')
-  reviewer=page.get_by_role('heading',name='Sample Genesis Reviewer',exact=True).locator('..')
-  await reviewer.get_by_role('button',name='Revoke local consent',exact=True).click()
+  reviewer=page.get_by_role('button',name='Revoke local consent for Sample Genesis Reviewer',exact=True)
+  await reviewer.click()
   await page.goto(capsule_url,wait_until='networkidle')
   await page.get_by_text('Changes requested',exact=True).first.wait_for()
   assert await page.get_by_role('button',name='Prepare demo marketplace listing',exact=True).is_disabled()
