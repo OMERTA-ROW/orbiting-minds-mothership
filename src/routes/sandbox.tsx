@@ -15,7 +15,7 @@ const steps = ["Project", "Evolution DNA", "Global Brain", "Invention Engine", "
 
 function Page() {
   const [step, setStep] = useState(0);
-  const [pid, setPid] = useState(sampleProjects[0].id);
+  const [pid, setPid] = useState(sampleProjects[0]!.id);
   const [decision, setDecision] = useState<null | "approved" | "rolledback" | "declined">(null);
   const p = sampleProjects.find((x) => x.id === pid)!;
   const score = 60 + (p.maturity % 30);

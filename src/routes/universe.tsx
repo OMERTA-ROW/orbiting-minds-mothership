@@ -14,7 +14,7 @@ export const Route = createFileRoute("/universe")({
 function Page() {
   const [active, setActive] = useState<Set<Category>>(new Set(categories));
   const [q, setQ] = useState("");
-  const [sel, setSel] = useState<UniverseNode | null>(universe[0]);
+  const [sel, setSel] = useState<UniverseNode | null>(universe[0]!);
 
   const visible = useMemo(
     () => new Set(universe.filter((n) => active.has(n.category) && (n.name + n.summary + n.owner).toLowerCase().includes(q.toLowerCase())).map((n) => n.id)),
@@ -54,7 +54,7 @@ function Page() {
           <div className="glass relative overflow-hidden p-2">
             <svg viewBox="0 0 900 480" className="h-auto w-full" role="group" aria-label="Universe network">
               {universe.flatMap((n) => n.links.filter((l) => l > n.id).map((l) => {
-                const t = byId[l]; const on = visible.has(n.id) && visible.has(l);
+                const t = byId[l]!; const on = visible.has(n.id) && visible.has(l);
                 const hl = sel && (sel.id === n.id || sel.id === l);
                 return <line key={n.id + l} x1={n.x} y1={n.y} x2={t.x} y2={t.y} stroke="var(--gold)" strokeOpacity={on ? (hl ? 0.85 : 0.25) : 0.04} className={hl ? "animate-dash" : ""} />;
               }))}
@@ -93,7 +93,7 @@ function Page() {
                 <div className="mt-2 flex flex-wrap gap-1.5">{sel.capabilities.map((c) => <span key={c} className="rounded-full border border-border px-2.5 py-1 text-xs">{c}</span>)}</div>
                 <p className="eyebrow mt-6">Connected worlds</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {sel.links.map((l) => <button key={l} onClick={() => setSel(byId[l])} className="rounded-full bg-accent/50 px-2.5 py-1 text-xs text-gold-light hover:bg-accent">{byId[l].name} →</button>)}
+                  {sel.links.map((l) => <button key={l} onClick={() => setSel(byId[l]!)} className="rounded-full bg-accent/50 px-2.5 py-1 text-xs text-gold-light hover:bg-accent">{byId[l]!.name} →</button>)}
                 </div>
                 <DemoBadge className="mt-6" />
               </>

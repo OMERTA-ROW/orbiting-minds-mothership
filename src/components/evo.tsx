@@ -67,7 +67,7 @@ export function Starfield({ count = 70 }: { count?: number }) {
 
 /** Interactive orbital graphic of Mothership modules. */
 export function OrbitExplorer({ items, size = 520 }: { items: MothershipModule[]; size?: number }) {
-  const [active, setActive] = useState<MothershipModule>(items[0]);
+  const [active, setActive] = useState<MothershipModule>(items[0]!);
   const c = size / 2;
   const inner = items.filter((m) => m.ring === 0);
   const outer = items.filter((m) => m.ring === 1);

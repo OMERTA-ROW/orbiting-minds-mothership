@@ -22,7 +22,7 @@ function Page() {
   const [idx, setIdx] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
   const [history, setHistory] = useState<number[]>([]);
-  const cur = cliCommands[idx];
+  const cur = cliCommands[idx]!;
 
   const copy = async (t: string) => {
     try { await navigator.clipboard.writeText(t); } catch { /* clipboard unavailable */ }
@@ -61,8 +61,8 @@ function Page() {
             <div className="min-h-[340px] p-5 font-mono text-sm" aria-live="polite">
               {history.map((h, k) => (
                 <div key={k} className="mb-3">
-                  <p><span className="text-gold">❯</span> {cliCommands[h].cmd}</p>
-                  {cliCommands[h].out.map((o) => <p key={o} className="text-muted-foreground">{o}</p>)}
+                  <p><span className="text-gold">❯</span> {cliCommands[h]!.cmd}</p>
+                  {cliCommands[h]!.out.map((o) => <p key={o} className="text-muted-foreground">{o}</p>)}
                 </div>
               ))}
               <p className="flex items-center gap-2"><span className="text-gold">❯</span> <span className="text-ivory">{cur.cmd}</span><span className="h-4 w-2 animate-twinkle bg-gold-light" aria-hidden /></p>
