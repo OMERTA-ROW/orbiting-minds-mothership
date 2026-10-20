@@ -27,9 +27,9 @@ export function SiteNav() {
           </span>
           <span className="font-display text-lg tracking-[0.25em] text-gold-gradient">EVOLUTION</span>
         </Link>
-        <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Main">
+        <nav className="hidden items-center gap-0.5 2xl:flex" aria-label="Main">
           {navItems.slice(1).map((n) => (
-            <Link key={n.to} to={n.to} className="rounded-full px-2.5 py-1.5 text-[13px] text-muted-foreground transition hover:text-gold-light"
+            <Link key={n.to} to={n.to} className="whitespace-nowrap rounded-full px-2.5 py-1.5 text-[13px] text-muted-foreground transition hover:text-gold-light"
               activeProps={{ className: "text-gold-light bg-accent/50" }}>
               {n.label}
             </Link>
@@ -37,13 +37,13 @@ export function SiteNav() {
         </nav>
         <div className="flex items-center gap-2">
           <Link to="/join" className="hidden rounded-full bg-gold-gradient px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-glow sm:inline-flex">Join</Link>
-          <button className="rounded-full border border-border p-2 text-gold-light xl:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen(!open)}>
+          <button className="rounded-full border border-border p-2 text-gold-light 2xl:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen(!open)}>
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
       {open && (
-        <nav className="border-t border-border bg-background/95 px-6 py-4 xl:hidden" aria-label="Mobile">
+        <nav className="border-t border-border bg-background/95 px-6 py-4 2xl:hidden" aria-label="Mobile">
           <div className="grid grid-cols-2 gap-1">
             {[...navItems, { to: "/join", label: "Join" } as const].map((n) => (
               <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-accent/40"

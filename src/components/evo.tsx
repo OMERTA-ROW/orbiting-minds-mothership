@@ -98,7 +98,7 @@ export function OrbitExplorer({ items, size = 520 }: { items: MothershipModule[]
             <line key={`l-${m.id}`} x1={c} y1={c} x2={x} y2={y} stroke="var(--gold)" strokeOpacity={active.id === m.id ? 0.9 : 0.12} strokeWidth={active.id === m.id ? 1.5 : 1} />
           ))}
           <circle cx={c} cy={c} r={size * 0.11} fill="url(#core)" />
-          <text x={c} y={c + 5} textAnchor="middle" fill="var(--obsidian)" fontFamily="var(--font-display)" fontSize="15" fontWeight="700">MOTHERSHIP</text>
+          <text x={c} y={c + 5} textAnchor="middle" fill="var(--obsidian)" fontFamily="var(--font-display)" fontSize="11" fontWeight="700" letterSpacing="1">MOTHERSHIP</text>
           {nodes.map(({ m, x, y }) => {
             const on = active.id === m.id;
             return (
@@ -108,7 +108,7 @@ export function OrbitExplorer({ items, size = 520 }: { items: MothershipModule[]
                 <circle cx={x} cy={y} r={on ? 16 : 10} fill={on ? "var(--gold-light)" : "var(--card)"} stroke="var(--gold)" strokeWidth="1.5" />
                 {on && <circle cx={x} cy={y} r={24} fill="none" stroke="var(--gold-light)" strokeOpacity="0.4" />}
                 <text x={x} y={y + (y > c ? 30 : -20)} textAnchor="middle" fill={on ? "var(--gold-light)" : "var(--muted-foreground)"} fontSize="10.5" fontFamily="var(--font-mono)">
-                  {m.name.length > 18 ? m.name.split(" ").slice(0, 2).join(" ") : m.name}
+                  {m.name.includes("/") ? m.name.split(" /")[0] : m.name.length > 18 ? m.name.split(" ").slice(0, 2).join(" ") : m.name}
                 </text>
               </g>
             );
