@@ -5,6 +5,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { searchCommands, shouldOpenPalette, type SearchEntry, type SearchKind } from "@/lib/command-search";
+import type { navItems } from "@/components/SiteNav";
 
 const PaletteContext = createContext<(() => void) | null>(null);
 const kinds: SearchKind[] = ["Module", "Project", "Agent", "Proposal", "Idea", "Code"];
@@ -15,7 +16,7 @@ export function PaletteTrigger() {
   return <Button variant="ghost" size="icon" className="text-gold-light" aria-label="Search the Mothership" title="Search the Mothership (Ctrl/⌘ K)" aria-keyshortcuts="Control+k Meta+k" onClick={() => open?.()}><Search size={18} /></Button>;
 }
 
-export function CommandPaletteProvider({ children, pages: navigation }: { children: ReactNode; pages: readonly { to: "/" | "/mothership" | "/universe" | "/platform" | "/knowledge-fusion" | "/guardian" | "/agents" | "/sandbox" | "/roadmap" | "/partnerships" | "/dashboard" | "/pathway" | "/code-exchange" | "/commons" | "/pulse"; label: string }[] }) {
+export function CommandPaletteProvider({ children, pages: navigation }: { children: ReactNode; pages: readonly { to: (typeof navItems)[number]["to"]; label: string }[] }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [value, setValue] = useState("");
