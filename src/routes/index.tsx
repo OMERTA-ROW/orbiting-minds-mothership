@@ -76,6 +76,7 @@ function Index() {
         </div>
       </Section>
       <div className="journey-band border-t border-border">
+        <Section className="pt-20 text-center"><p className="eyebrow">Creator transmission</p><h2 className="mx-auto mt-5 max-w-3xl text-3xl leading-tight text-foreground md:text-4xl">A pathway for your concept</h2><p className="mx-auto mt-5 max-w-lg text-sm leading-loose text-muted-foreground">Describe a technology idea. Receive an AI-generated draft connecting relevant Mothership modules, proposed sandbox checks and an owner approval gate. No validation is run.</p><Button asChild variant="cosmic" className="mt-7 h-12 rounded-sm px-6"><Link to="/pathway"><Sparkles size={16} />Create an Evolution pathway<ArrowUpRight /></Link></Button></Section>
         <Section className="flex flex-col items-center gap-8 py-20 text-center md:py-28"><p className="eyebrow">Your next evolution begins here</p><h2 className="max-w-3xl text-3xl leading-tight text-foreground md:text-5xl">Walk a full evolution journey</h2><p className="max-w-lg text-sm leading-loose text-muted-foreground">From DNA profile to Guardian-approved rollout — fully simulated.</p><div className="flex flex-wrap justify-center gap-3"><Button asChild variant="cosmic" className="h-12 rounded-sm px-6"><Link to="/sandbox">Start the demo<ArrowRight /></Link></Button><Button asChild variant="signal" className="h-12 rounded-sm px-6"><Link to="/universe">Enter the Universe<ArrowUpRight /></Link></Button></div><DemoBadge /></Section>
       </div>
     </>

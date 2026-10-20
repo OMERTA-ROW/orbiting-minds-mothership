@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { feed } from "@/data/evolution";
 import { DemoBadge, PageHeader, Section } from "@/components/evo";
@@ -7,6 +7,10 @@ import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/knowledge-fusion")({
+  validateSearch: (search: Record<string, unknown>): { idea?: string } => {
+    const value = search["idea"];
+    return typeof value === "string" && feed.some((f) => String(f.id) === value) ? { idea: value } : {};
+  },
   head: () => seo("Knowledge Fusion", "A discovery feed of voluntarily shared, attributed idea proposals across public, invite-only and private modes."),
   component: Page,
 });
@@ -19,8 +23,10 @@ const modeInfo = {
 };
 
 function Page() {
+  const { idea } = Route.useSearch();
   const [mode, setMode] = useState<(typeof modes)[number]>("All");
   const [sparked, setSparked] = useState<Set<number>>(new Set());
+  useEffect(() => { if (idea) setMode("All"); }, [idea]);
   const items = feed.filter((f) => mode === "All" || f.mode === mode);
 
   return (
@@ -44,7 +50,7 @@ function Page() {
           {items.map((f) => {
             const on = sparked.has(f.id);
             return (
-              <article key={f.id} className="glass p-6">
+              <article id={`idea-${f.id}`} key={f.id} className={cn("glass scroll-mt-28 p-6", idea === String(f.id) && "border-l-2 border-gold bg-accent/10")}>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span className="text-gold-light">{f.author}</span>·<span>{f.mode}</span>
                   {f.tags.map((t) => <span key={t} className="rounded-full border border-border px-2 py-0.5">{t}</span>)}

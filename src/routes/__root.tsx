@@ -12,8 +12,9 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { SiteNav, SiteFooter } from "../components/SiteNav";
+import { SiteNav, SiteFooter, navItems } from "../components/SiteNav";
 import { Starfield } from "../components/evo";
+import { CommandPaletteProvider } from "@/components/CommandPalette";
 
 function NotFoundComponent() {
   return (
@@ -121,6 +122,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <CommandPaletteProvider pages={navItems}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <div className="site-shell flex min-h-screen flex-col">
         <div className="site-cosmos" aria-hidden><Starfield count={150} /></div>
@@ -130,6 +132,7 @@ function RootComponent() {
         </main>
         <SiteFooter />
       </div>
+      </CommandPaletteProvider>
     </QueryClientProvider>
   );
 }

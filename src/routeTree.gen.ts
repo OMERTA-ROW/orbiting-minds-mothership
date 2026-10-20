@@ -17,10 +17,12 @@ import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
 import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
+import { Route as PathwayRouteImport } from './routes/pathway'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as SandboxRouteImport } from './routes/sandbox'
 import { Route as UniverseRouteImport } from './routes/universe'
+import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -62,6 +64,11 @@ const PartnershipsRoute = PartnershipsRouteImport.update({
   path: '/partnerships',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PathwayRoute = PathwayRouteImport.update({
+  id: '/pathway',
+  path: '/pathway',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlatformRoute = PlatformRouteImport.update({
   id: '/platform',
   path: '/platform',
@@ -82,6 +89,11 @@ const UniverseRoute = UniverseRouteImport.update({
   path: '/universe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEvolutionPathwayRoute = ApiEvolutionPathwayRouteImport.update({
+  id: '/api/evolution-pathway',
+  path: '/api/evolution-pathway',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -92,10 +104,12 @@ export interface FileRoutesByFullPath {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
+  '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/universe': typeof UniverseRoute
+  '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -106,10 +120,12 @@ export interface FileRoutesByTo {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
+  '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/universe': typeof UniverseRoute
+  '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -121,10 +137,12 @@ export interface FileRoutesById {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
+  '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/universe': typeof UniverseRoute
+  '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -137,10 +155,12 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/mothership'
     | '/partnerships'
+    | '/pathway'
     | '/platform'
     | '/roadmap'
     | '/sandbox'
     | '/universe'
+    | '/api/evolution-pathway'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -151,10 +171,12 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/mothership'
     | '/partnerships'
+    | '/pathway'
     | '/platform'
     | '/roadmap'
     | '/sandbox'
     | '/universe'
+    | '/api/evolution-pathway'
   id:
     | '__root__'
     | '/'
@@ -165,10 +187,12 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/mothership'
     | '/partnerships'
+    | '/pathway'
     | '/platform'
     | '/roadmap'
     | '/sandbox'
     | '/universe'
+    | '/api/evolution-pathway'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -180,10 +204,12 @@ export interface RootRouteChildren {
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
   MothershipRoute: typeof MothershipRoute
   PartnershipsRoute: typeof PartnershipsRoute
+  PathwayRoute: typeof PathwayRoute
   PlatformRoute: typeof PlatformRoute
   RoadmapRoute: typeof RoadmapRoute
   SandboxRoute: typeof SandboxRoute
   UniverseRoute: typeof UniverseRoute
+  ApiEvolutionPathwayRoute: typeof ApiEvolutionPathwayRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -244,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnershipsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pathway': {
+      id: '/pathway'
+      path: '/pathway'
+      fullPath: '/pathway'
+      preLoaderRoute: typeof PathwayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/platform': {
       id: '/platform'
       path: '/platform'
@@ -272,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UniverseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/evolution-pathway': {
+      id: '/api/evolution-pathway'
+      path: '/api/evolution-pathway'
+      fullPath: '/api/evolution-pathway'
+      preLoaderRoute: typeof ApiEvolutionPathwayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -284,10 +324,12 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgeFusionRoute: KnowledgeFusionRoute,
   MothershipRoute: MothershipRoute,
   PartnershipsRoute: PartnershipsRoute,
+  PathwayRoute: PathwayRoute,
   PlatformRoute: PlatformRoute,
   RoadmapRoute: RoadmapRoute,
   SandboxRoute: SandboxRoute,
   UniverseRoute: UniverseRoute,
+  ApiEvolutionPathwayRoute: ApiEvolutionPathwayRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -2,11 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PaletteTrigger } from "@/components/CommandPalette";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export const navItems = [
   { to: "/", label: "Home" },
   { to: "/mothership", label: "Mothership" },
+  { to: "/pathway", label: "AI Pathway" },
   { to: "/universe", label: "Universe" },
   { to: "/platform", label: "Platform" },
   { to: "/knowledge-fusion", label: "Knowledge Fusion" },
@@ -42,6 +44,8 @@ export function SiteNav() {
           <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-auto px-0 text-xs text-muted-foreground">More<ChevronDown size={12} /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-56 border-gold/25 p-2">{more.map((n) => <DropdownMenuItem key={n.to} asChild><Link to={n.to} className="flex justify-between py-3">{n.label}<ArrowUpRight size={12} className="text-gold" /></Link></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>
         </nav>
         <div className="flex items-center gap-2">
+          <Button asChild variant="signal" className="hidden h-10 rounded-sm px-3 text-xs sm:inline-flex"><Link to="/pathway">AI Pathway<ArrowUpRight size={14} /></Link></Button>
+          <PaletteTrigger />
           <Button asChild variant="signal" className="hidden h-10 rounded-sm px-5 text-xs sm:inline-flex"><Link to="/join">Join the Network<ArrowUpRight size={14} /></Link></Button>
           <Button variant="ghost" size="icon" className="border border-border text-gold-light xl:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)}>
             {open ? <X size={18} /> : <Menu size={18} />}
@@ -69,7 +73,7 @@ export function SiteFooter() {
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-6 py-10 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between md:px-12">
         <div><p className="font-display text-xl text-gold-light">EVOLUTION</p><p className="mt-3 text-[11px]">Bridge technology into its next evolution.</p></div>
-        <p className="max-w-md text-[10px] leading-loose md:text-right">Owner-reviewed prototype. All data is demo / simulated.<br />Opt-in only · no unauthorized access, ever.</p>
+        <p className="max-w-md text-[10px] leading-loose md:text-right">Owner-reviewed prototype. Network data is demo / simulated.<br />AI pathways are draft proposals, not validation results.<br />Opt-in only · no unauthorized access, ever.</p>
       </div>
     </footer>
   );

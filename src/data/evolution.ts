@@ -105,6 +105,19 @@ export const sampleProjects = [
   { id: "genome", name: "OpenGenome Pipelines", stack: ["Python", "Snakemake", "Docker"], maturity: 81, goal: "Reproducibility" },
 ];
 
+export const demoProposals = [
+  { id: "P-104", t: "Reduce bundle size 18%", p: "Nebula UI Kit", s: "Awaiting approval" },
+  { id: "P-105", t: "Focus-visible ring tokens", p: "Nebula UI Kit", s: "In sandbox" },
+  { id: "P-158", t: "Staged firmware rollout", p: "Helios Sensor Mesh", s: "Guardian review" },
+  { id: "P-181", t: "Pin container digests", p: "OpenGenome Pipelines", s: "Approved" },
+];
+
+export const conceptExamples = [
+  { label: "Sensor network", concept: "An opt-in solar sensor mesh that detects equipment faults locally, shares anonymized findings with consenting owners, and rolls out signed firmware updates without interrupting monitoring.", goal: "Validate reliability with intermittent connectivity and protect owner telemetry." },
+  { label: "Research agent", concept: "A consenting research agent that maps public materials-science papers to open simulation code, tracks attribution, and proposes reproducible experiments for creators to review.", goal: "Make every proposed experiment reproducible and every research claim verifiable." },
+  { label: "Accessible software", concept: "A creator-owned React component library that detects accessibility issues and proposes shared design-token improvements while keeping each project's changes manually approved and reversible.", goal: "Improve keyboard access without regressions or automatic production changes." },
+];
+
 export const cliCommands = [
   { cmd: "evolution init", desc: "Create an EVOLUTION config in the current project.", out: ["✔ Created evolution.config.ts (demo)", "  Participation mode: private"] },
   { cmd: "evolution login", desc: "Authenticate with your Mothership account.", out: ["→ Opening browser for consent… (simulated)", "✔ Signed in as demo@evolution.dev"] },
