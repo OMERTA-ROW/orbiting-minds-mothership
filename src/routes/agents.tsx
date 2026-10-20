@@ -29,7 +29,7 @@ function Page() {
         <div className="mb-4 flex items-center justify-between"><h2 className="text-xl text-ivory">Registered agents</h2><DemoBadge /></div>
         <div className="grid gap-4 sm:grid-cols-2">
           {list.map((a, i) => (
-            <div key={a.name} className="glass p-5">
+            <div id={`agent-${a.name.toLowerCase()}`} key={a.name} className="glass scroll-mt-28 p-5 target:border-gold target:bg-accent/20">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg text-gold-light">{a.name}</h3>
                 <span className={cn("rounded-full px-2.5 py-0.5 text-xs", a.consent === "Granted" ? "bg-success/20 text-success" : a.consent === "Pending" ? "bg-warning/20 text-warning" : "bg-muted text-muted-foreground")}>{a.consent}</span>

@@ -1,26 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { agents, sampleProjects } from "@/data/evolution";
+import { useEffect, useState } from "react";
+import { agents, sampleProjects, demoProposals as proposals } from "@/data/evolution";
 import { DemoBadge, PageHeader, Section } from "@/components/evo";
 import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/dashboard")({
+  validateSearch: (search: Record<string, unknown>): { proposal?: string } => ({ proposal: typeof search.proposal === "string" && proposals.some((p) => p.id === search.proposal) ? search.proposal : undefined }),
   head: () => seo("Demo Dashboard", "Simulated overview of projects, agents, proposals, experiments, upgrade status and readiness."),
   component: Page,
 });
 
 const stats = [["Projects", "3"], ["Consenting agents", "2"], ["Open proposals", "5"], ["Experiments", "12"]];
-const proposals = [
-  { id: "P-104", t: "Reduce bundle size 18%", p: "Nebula UI Kit", s: "Awaiting approval" },
-  { id: "P-105", t: "Focus-visible ring tokens", p: "Nebula UI Kit", s: "In sandbox" },
-  { id: "P-158", t: "Staged firmware rollout", p: "Helios Sensor Mesh", s: "Guardian review" },
-  { id: "P-181", t: "Pin container digests", p: "OpenGenome Pipelines", s: "Approved" },
-];
 const tabs = ["Projects", "Proposals", "Agents"] as const;
 
 function Page() {
-  const [tab, setTab] = useState<(typeof tabs)[number]>("Projects");
+  const { proposal } = Route.useSearch();
+  const [tab, setTab] = useState<(typeof tabs)[number]>(proposal ? "Proposals" : "Projects");
+  useEffect(() => { if (proposal) setTab("Proposals"); }, [proposal]);
   return (
     <>
       <PageHeader eyebrow="Command Center" title="Demo Dashboard">
@@ -47,7 +44,7 @@ function Page() {
             </>)}
             {tab === "Proposals" && (<>
               <thead className="text-xs uppercase text-muted-foreground"><tr><th className="p-3">ID</th><th>Proposal</th><th>Project</th><th>Status</th></tr></thead>
-              <tbody>{proposals.map((p) => <tr key={p.id} className="border-t border-border"><td className="p-3 font-mono text-gold">{p.id}</td><td>{p.t}</td><td className="text-muted-foreground">{p.p}</td><td className="text-gold-light">{p.s}</td></tr>)}</tbody>
+              <tbody>{proposals.map((p) => <tr id={`proposal-${p.id}`} key={p.id} className={cn("scroll-mt-28 border-t border-border", proposal === p.id && "bg-accent/30")}><td className="p-3 font-mono text-gold">{p.id}</td><td>{p.t}</td><td className="text-muted-foreground">{p.p}</td><td className="text-gold-light">{p.s}</td></tr>)}</tbody>
             </>)}
             {tab === "Agents" && (<>
               <thead className="text-xs uppercase text-muted-foreground"><tr><th className="p-3">Agent</th><th>Role</th><th>Consent</th><th>Trust</th></tr></thead>

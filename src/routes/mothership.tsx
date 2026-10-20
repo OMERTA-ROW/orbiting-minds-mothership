@@ -6,18 +6,20 @@ import { moduleIcons, DemoBadge } from "@/components/evo";
 import { Orbit } from "lucide-react";
 
 export const Route = createFileRoute("/mothership")({
+  validateSearch: (search: Record<string, unknown>): { module?: string } => ({ module: typeof search.module === "string" && modules.some((m) => m.id === search.module) ? search.module : undefined }),
   head: () => seo("Mothership Architecture", "Explore the 15 modules of the EVOLUTION Mothership, from Guardian to the Global Brain."),
   component: Page,
 });
 
 function Page() {
+  const { module } = Route.useSearch();
   return (
     <>
       <PageHeader eyebrow="Architecture Explorer" title="The Mothership">
         Fifteen modules orbit a single owner-scoped core. Hover, click or tab through nodes to inspect each module's purpose.
         <div className="mt-5"><DemoBadge /></div>
       </PageHeader>
-      <Section><OrbitExplorer items={modules} size={600} /></Section>
+      <Section><div id="module-explorer" className="scroll-mt-28"><OrbitExplorer key={module} initialId={module} items={modules} size={600} /></div></Section>
       <Section>
         <div className="mb-12 flex items-center gap-6"><p className="eyebrow">The complete constellation</p><span className="h-px flex-1 bg-border" /></div>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">

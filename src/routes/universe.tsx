@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, Bot, Cpu, FlaskConical, Layers, Orbit, Search, X, type LucideIcon } from "lucide-react";
 import { categories, universe, type Category, type UniverseNode } from "@/data/evolution";
 import { CoreGeometry, DemoBadge, PageHeader, Section, Starfield } from "@/components/evo";
@@ -8,14 +8,21 @@ import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/universe")({
+  validateSearch: (search: Record<string, unknown>): { world?: string } => ({ world: typeof search.world === "string" && universe.some((n) => n.id === search.world) ? search.world : undefined }),
   head: () => seo("Evolution Universe", "Navigate a constellation of opt-in technology projects, consenting agents and research domains."),
   component: Page,
 });
 
 function Page() {
+  const { world } = Route.useSearch();
   const [active, setActive] = useState<Set<Category>>(new Set(categories));
   const [q, setQ] = useState("");
-  const [sel, setSel] = useState<UniverseNode | null>(universe[0] ?? null);
+  const [sel, setSel] = useState<UniverseNode | null>(universe.find((n) => n.id === world) ?? universe[0] ?? null);
+  useEffect(() => {
+    if (!world) return;
+    const node = universe.find((n) => n.id === world);
+    if (node) { setSel(node); setQ(""); setActive(new Set(categories)); }
+  }, [world]);
 
   const visible = useMemo(
     () => new Set(universe.filter((n) => active.has(n.category) && (n.name + n.summary + n.owner).toLowerCase().includes(q.toLowerCase())).map((n) => n.id)),
@@ -88,7 +95,7 @@ function Page() {
             {visible.size === 0 && <p role="status" className="relative py-16 text-center text-sm text-muted-foreground md:absolute md:inset-0 md:grid md:place-items-center">No worlds match your filters.</p>}
           </div>
 
-          <aside className="world-detail min-w-0" aria-live="polite">
+          <aside id="world-profile" className="world-detail min-w-0 scroll-mt-28" aria-live="polite">
             {sel ? (
               <>
                 <div className="flex items-center justify-between">
