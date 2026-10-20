@@ -6,6 +6,6 @@
 - [x] Verify existing routes and interactive journeys, desktop/mobile layout, reduced motion and preview health.
 
 ## Creator tools
-- [ ] Add AI Gateway concept-to-Evolution pathway generation with relevant modules and sandbox validation steps.
-- [ ] Add a global keyboard-accessible command palette for modules and demo projects, agents and proposals.
-- [ ] Verify real AI generation, cancellation, command-palette navigation and mobile layouts.
+- [x] Add AI Gateway concept-to-Evolution pathway generation with relevant modules and sandbox validation steps.
+- [x] Add a global keyboard-accessible command palette for modules and demo projects, agents and proposals.
+- [x] Verify real AI generation, cancellation, command-palette navigation and mobile layouts.
