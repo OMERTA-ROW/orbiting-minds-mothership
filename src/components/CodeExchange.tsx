@@ -9,6 +9,7 @@ import { codeContributions, exchangeStates, type CodeContribution } from "@/data
 import { demoFeedbackInput, emptyExchangeFilters, filterContributions, packagePreview, referenceLinks, type ExchangeFilters, type DemoFeedbackInput } from "@/lib/code-exchange";
 import { useDemoExchange } from "@/hooks/use-demo-exchange";
 import { useExchangeLocale } from "@/hooks/use-exchange-locale";
+import { GenesisEntryPoints } from "@/components/genesis/GenesisShell";
 
 export function ExchangeShell({ page, children }: { page: "exchange" | "commons" | "pulse"; children: ReactNode }) {
   const { t, locale, setLocale } = useExchangeLocale();
@@ -26,6 +27,7 @@ export function ExchangeShell({ page, children }: { page: "exchange" | "commons"
       <div lang={locale}>
         <div className="mb-10 border-l-2 border-gold/60 pl-5"><DemoBadge label={t("demo")} /><p className="mt-3 max-w-4xl text-sm leading-relaxed text-muted-foreground">{t("boundary")}</p></div>
         {children}
+        <GenesisEntryPoints />
         <p className="mt-14 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground">{t("accuracy")}</p>
       </div>
     </Section>

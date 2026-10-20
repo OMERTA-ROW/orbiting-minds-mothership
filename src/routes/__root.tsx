@@ -17,6 +17,7 @@ import { Starfield } from "../components/evo";
 import { CommandPaletteProvider } from "@/components/CommandPalette";
 import { DemoExchangeProvider } from "@/hooks/use-demo-exchange";
 import { ExchangeLocaleProvider } from "@/hooks/use-exchange-locale";
+import { GenesisProvider } from "@/hooks/use-genesis";
 
 function NotFoundComponent() {
   return (
@@ -124,6 +125,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <GenesisProvider>
       <DemoExchangeProvider>
       <ExchangeLocaleProvider>
       <CommandPaletteProvider pages={navItems}>
@@ -139,6 +141,7 @@ function RootComponent() {
       </CommandPaletteProvider>
       </ExchangeLocaleProvider>
       </DemoExchangeProvider>
+      </GenesisProvider>
     </QueryClientProvider>
   );
 }

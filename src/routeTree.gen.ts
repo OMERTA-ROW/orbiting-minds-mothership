@@ -11,21 +11,32 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CodeExchangeRouteImport } from './routes/code-exchange'
 import { Route as CommonsRouteImport } from './routes/commons'
+import { Route as ComputeGridRouteImport } from './routes/compute-grid'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DigitalTwinRouteImport } from './routes/digital-twin'
+import { Route as DiscoveryRouteImport } from './routes/discovery'
+import { Route as EmbassyRouteImport } from './routes/embassy'
 import { Route as GuardianRouteImport } from './routes/guardian'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
+import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
 import { Route as PathwayRouteImport } from './routes/pathway'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as PulseRouteImport } from './routes/pulse'
+import { Route as ReleasesRouteImport } from './routes/releases'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as SandboxRouteImport } from './routes/sandbox'
+import { Route as SdkRouteImport } from './routes/sdk'
+import { Route as TrustRouteImport } from './routes/trust'
 import { Route as UniverseRouteImport } from './routes/universe'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
+import { Route as CapsulesIdRouteImport } from './routes/capsules_.$id'
+import { Route as ChallengesIdRouteImport } from './routes/challenges_.$id'
 import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -38,6 +49,11 @@ const AgentsRoute = AgentsRouteImport.update({
   path: '/agents',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChallengesRoute = ChallengesRouteImport.update({
+  id: '/challenges',
+  path: '/challenges',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CodeExchangeRoute = CodeExchangeRouteImport.update({
   id: '/code-exchange',
   path: '/code-exchange',
@@ -48,9 +64,29 @@ const CommonsRoute = CommonsRouteImport.update({
   path: '/commons',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComputeGridRoute = ComputeGridRouteImport.update({
+  id: '/compute-grid',
+  path: '/compute-grid',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DigitalTwinRoute = DigitalTwinRouteImport.update({
+  id: '/digital-twin',
+  path: '/digital-twin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiscoveryRoute = DiscoveryRouteImport.update({
+  id: '/discovery',
+  path: '/discovery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmbassyRoute = EmbassyRouteImport.update({
+  id: '/embassy',
+  path: '/embassy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuardianRoute = GuardianRouteImport.update({
@@ -66,6 +102,11 @@ const JoinRoute = JoinRouteImport.update({
 const KnowledgeFusionRoute = KnowledgeFusionRouteImport.update({
   id: '/knowledge-fusion',
   path: '/knowledge-fusion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketplaceRoute = MarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MothershipRoute = MothershipRouteImport.update({
@@ -93,6 +134,11 @@ const PulseRoute = PulseRouteImport.update({
   path: '/pulse',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReleasesRoute = ReleasesRouteImport.update({
+  id: '/releases',
+  path: '/releases',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoadmapRoute = RoadmapRouteImport.update({
   id: '/roadmap',
   path: '/roadmap',
@@ -101,6 +147,16 @@ const RoadmapRoute = RoadmapRouteImport.update({
 const SandboxRoute = SandboxRouteImport.update({
   id: '/sandbox',
   path: '/sandbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SdkRoute = SdkRouteImport.update({
+  id: '/sdk',
+  path: '/sdk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrustRoute = TrustRouteImport.update({
+  id: '/trust',
+  path: '/trust',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UniverseRoute = UniverseRouteImport.update({
@@ -113,6 +169,16 @@ const ApiEvolutionPathwayRoute = ApiEvolutionPathwayRouteImport.update({
   path: '/api/evolution-pathway',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CapsulesIdRoute = CapsulesIdRouteImport.update({
+  id: '/capsules_/$id',
+  path: '/capsules/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChallengesIdRoute = ChallengesIdRouteImport.update({
+  id: '/challenges_/$id',
+  path: '/challenges/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CodeExchangeIdRoute = CodeExchangeIdRouteImport.update({
   id: '/code-exchange_/$id',
   path: '/code-exchange/$id',
@@ -122,62 +188,95 @@ const CodeExchangeIdRoute = CodeExchangeIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agents': typeof AgentsRoute
+  '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/commons': typeof CommonsRoute
+  '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
+  '/digital-twin': typeof DigitalTwinRoute
+  '/discovery': typeof DiscoveryRoute
+  '/embassy': typeof EmbassyRoute
   '/guardian': typeof GuardianRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
+  '/releases': typeof ReleasesRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
+  '/sdk': typeof SdkRoute
+  '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/capsules/$id': typeof CapsulesIdRoute
+  '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agents': typeof AgentsRoute
+  '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/commons': typeof CommonsRoute
+  '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
+  '/digital-twin': typeof DigitalTwinRoute
+  '/discovery': typeof DiscoveryRoute
+  '/embassy': typeof EmbassyRoute
   '/guardian': typeof GuardianRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
+  '/releases': typeof ReleasesRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
+  '/sdk': typeof SdkRoute
+  '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/capsules/$id': typeof CapsulesIdRoute
+  '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agents': typeof AgentsRoute
+  '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/commons': typeof CommonsRoute
+  '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
+  '/digital-twin': typeof DigitalTwinRoute
+  '/discovery': typeof DiscoveryRoute
+  '/embassy': typeof EmbassyRoute
   '/guardian': typeof GuardianRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
+  '/releases': typeof ReleasesRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
+  '/sdk': typeof SdkRoute
+  '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/capsules_/$id': typeof CapsulesIdRoute
+  '/challenges_/$id': typeof ChallengesIdRoute
   '/code-exchange_/$id': typeof CodeExchangeIdRoute
 }
 export interface FileRouteTypes {
@@ -185,82 +284,126 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/agents'
+    | '/challenges'
     | '/code-exchange'
     | '/commons'
+    | '/compute-grid'
     | '/dashboard'
+    | '/digital-twin'
+    | '/discovery'
+    | '/embassy'
     | '/guardian'
     | '/join'
     | '/knowledge-fusion'
+    | '/marketplace'
     | '/mothership'
     | '/partnerships'
     | '/pathway'
     | '/platform'
     | '/pulse'
+    | '/releases'
     | '/roadmap'
     | '/sandbox'
+    | '/sdk'
+    | '/trust'
     | '/universe'
     | '/api/evolution-pathway'
+    | '/capsules/$id'
+    | '/challenges/$id'
     | '/code-exchange/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/agents'
+    | '/challenges'
     | '/code-exchange'
     | '/commons'
+    | '/compute-grid'
     | '/dashboard'
+    | '/digital-twin'
+    | '/discovery'
+    | '/embassy'
     | '/guardian'
     | '/join'
     | '/knowledge-fusion'
+    | '/marketplace'
     | '/mothership'
     | '/partnerships'
     | '/pathway'
     | '/platform'
     | '/pulse'
+    | '/releases'
     | '/roadmap'
     | '/sandbox'
+    | '/sdk'
+    | '/trust'
     | '/universe'
     | '/api/evolution-pathway'
+    | '/capsules/$id'
+    | '/challenges/$id'
     | '/code-exchange/$id'
   id:
     | '__root__'
     | '/'
     | '/agents'
+    | '/challenges'
     | '/code-exchange'
     | '/commons'
+    | '/compute-grid'
     | '/dashboard'
+    | '/digital-twin'
+    | '/discovery'
+    | '/embassy'
     | '/guardian'
     | '/join'
     | '/knowledge-fusion'
+    | '/marketplace'
     | '/mothership'
     | '/partnerships'
     | '/pathway'
     | '/platform'
     | '/pulse'
+    | '/releases'
     | '/roadmap'
     | '/sandbox'
+    | '/sdk'
+    | '/trust'
     | '/universe'
     | '/api/evolution-pathway'
+    | '/capsules_/$id'
+    | '/challenges_/$id'
     | '/code-exchange_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentsRoute: typeof AgentsRoute
+  ChallengesRoute: typeof ChallengesRoute
   CodeExchangeRoute: typeof CodeExchangeRoute
   CommonsRoute: typeof CommonsRoute
+  ComputeGridRoute: typeof ComputeGridRoute
   DashboardRoute: typeof DashboardRoute
+  DigitalTwinRoute: typeof DigitalTwinRoute
+  DiscoveryRoute: typeof DiscoveryRoute
+  EmbassyRoute: typeof EmbassyRoute
   GuardianRoute: typeof GuardianRoute
   JoinRoute: typeof JoinRoute
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
+  MarketplaceRoute: typeof MarketplaceRoute
   MothershipRoute: typeof MothershipRoute
   PartnershipsRoute: typeof PartnershipsRoute
   PathwayRoute: typeof PathwayRoute
   PlatformRoute: typeof PlatformRoute
   PulseRoute: typeof PulseRoute
+  ReleasesRoute: typeof ReleasesRoute
   RoadmapRoute: typeof RoadmapRoute
   SandboxRoute: typeof SandboxRoute
+  SdkRoute: typeof SdkRoute
+  TrustRoute: typeof TrustRoute
   UniverseRoute: typeof UniverseRoute
   ApiEvolutionPathwayRoute: typeof ApiEvolutionPathwayRoute
+  CapsulesIdRoute: typeof CapsulesIdRoute
+  ChallengesIdRoute: typeof ChallengesIdRoute
   CodeExchangeIdRoute: typeof CodeExchangeIdRoute
 }
 
@@ -280,6 +423,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/challenges': {
+      id: '/challenges'
+      path: '/challenges'
+      fullPath: '/challenges'
+      preLoaderRoute: typeof ChallengesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/code-exchange': {
       id: '/code-exchange'
       path: '/code-exchange'
@@ -294,11 +444,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommonsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compute-grid': {
+      id: '/compute-grid'
+      path: '/compute-grid'
+      fullPath: '/compute-grid'
+      preLoaderRoute: typeof ComputeGridRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/digital-twin': {
+      id: '/digital-twin'
+      path: '/digital-twin'
+      fullPath: '/digital-twin'
+      preLoaderRoute: typeof DigitalTwinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discovery': {
+      id: '/discovery'
+      path: '/discovery'
+      fullPath: '/discovery'
+      preLoaderRoute: typeof DiscoveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/embassy': {
+      id: '/embassy'
+      path: '/embassy'
+      fullPath: '/embassy'
+      preLoaderRoute: typeof EmbassyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guardian': {
@@ -320,6 +498,13 @@ declare module '@tanstack/react-router' {
       path: '/knowledge-fusion'
       fullPath: '/knowledge-fusion'
       preLoaderRoute: typeof KnowledgeFusionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marketplace': {
+      id: '/marketplace'
+      path: '/marketplace'
+      fullPath: '/marketplace'
+      preLoaderRoute: typeof MarketplaceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mothership': {
@@ -357,6 +542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PulseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/releases': {
+      id: '/releases'
+      path: '/releases'
+      fullPath: '/releases'
+      preLoaderRoute: typeof ReleasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/roadmap': {
       id: '/roadmap'
       path: '/roadmap'
@@ -369,6 +561,20 @@ declare module '@tanstack/react-router' {
       path: '/sandbox'
       fullPath: '/sandbox'
       preLoaderRoute: typeof SandboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sdk': {
+      id: '/sdk'
+      path: '/sdk'
+      fullPath: '/sdk'
+      preLoaderRoute: typeof SdkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trust': {
+      id: '/trust'
+      path: '/trust'
+      fullPath: '/trust'
+      preLoaderRoute: typeof TrustRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/universe': {
@@ -385,6 +591,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEvolutionPathwayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/capsules_/$id': {
+      id: '/capsules_/$id'
+      path: '/capsules/$id'
+      fullPath: '/capsules/$id'
+      preLoaderRoute: typeof CapsulesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/challenges_/$id': {
+      id: '/challenges_/$id'
+      path: '/challenges/$id'
+      fullPath: '/challenges/$id'
+      preLoaderRoute: typeof ChallengesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/code-exchange_/$id': {
       id: '/code-exchange_/$id'
       path: '/code-exchange/$id'
@@ -398,21 +618,32 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentsRoute: AgentsRoute,
+  ChallengesRoute: ChallengesRoute,
   CodeExchangeRoute: CodeExchangeRoute,
   CommonsRoute: CommonsRoute,
+  ComputeGridRoute: ComputeGridRoute,
   DashboardRoute: DashboardRoute,
+  DigitalTwinRoute: DigitalTwinRoute,
+  DiscoveryRoute: DiscoveryRoute,
+  EmbassyRoute: EmbassyRoute,
   GuardianRoute: GuardianRoute,
   JoinRoute: JoinRoute,
   KnowledgeFusionRoute: KnowledgeFusionRoute,
+  MarketplaceRoute: MarketplaceRoute,
   MothershipRoute: MothershipRoute,
   PartnershipsRoute: PartnershipsRoute,
   PathwayRoute: PathwayRoute,
   PlatformRoute: PlatformRoute,
   PulseRoute: PulseRoute,
+  ReleasesRoute: ReleasesRoute,
   RoadmapRoute: RoadmapRoute,
   SandboxRoute: SandboxRoute,
+  SdkRoute: SdkRoute,
+  TrustRoute: TrustRoute,
   UniverseRoute: UniverseRoute,
   ApiEvolutionPathwayRoute: ApiEvolutionPathwayRoute,
+  CapsulesIdRoute: CapsulesIdRoute,
+  ChallengesIdRoute: ChallengesIdRoute,
   CodeExchangeIdRoute: CodeExchangeIdRoute,
 }
 export const routeTree = rootRouteImport

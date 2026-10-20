@@ -293,3 +293,20 @@ def adjust_contrast(pixels, factor=1.0):
     reference: { repository: "mdn/content", commit: "05c1aed375bab88f322b15319e45fb326e4a341c", license: "CC-BY-SA 2.5+ prose · CC0/MIT samples (see source)", purpose: text("Public JavaScript documentation; original sample, not an MDN contribution or partnership.", "Documentación pública de JavaScript; ejemplo original, no contribución a MDN ni asociación.") },
   },
 ];
+
+// Genesis seeds are fictional examples, never accounts, funded bounties or activity.
+export const genesisDomains = ["Accessibility", "Privacy", "Image processing", "Developer tooling", "Energy", "Banking"] as const;
+export const genesisRoles = ["Explorer", "Researcher", "Critic", "Architect", "Builder"] as const;
+export const genesisScopes = ["submit_capsules", "simulate_twins", "review_proposals"] as const;
+export const genesisChallenges = [
+  { id: "challenge-focus", title: "Make keyboard navigation predictable", domain: "Accessibility" as const, problem: "Design a documented selection pattern that handles empty lists and wraparound without losing visible focus.", acceptance: "Document arrow, Home and End behavior; provide a reproducible test plan and full-widget accessibility limitations.", ownerName: "Fictional demo challenge sponsor", visibility: "Open" as const, bountyUsd: 500, funding: "DEMO_PROPOSAL" as const, state: "Open" as const, createdAt: "2026-10-20T00:00:00.000Z", ownerId: null, demo: true as const, contributionId: "keyboard-navigation" },
+  { id: "challenge-privacy", title: "Reduce accidental telemetry exposure", domain: "Privacy" as const, problem: "Create an allowlisted event capsule that never carries account identifiers or secrets.", acceptance: "Document allowed fields, retention assumptions, threat model and tests rejecting unsupported events.", ownerName: "Fictional demo challenge sponsor", visibility: "Private" as const, bountyUsd: null, funding: "DEMO_PROPOSAL" as const, state: "Open" as const, createdAt: "2026-10-20T00:00:00.000Z", ownerId: null, demo: true as const, contributionId: "private-events" },
+  { id: "challenge-camera", title: "Bound an image-processing pipeline", domain: "Image processing" as const, problem: "Propose a bounded grayscale transformation with explicit latency and memory budgets. No camera connection.", acceptance: "Identify pixel bounds, invalid inputs, format limitations and a future hardware benchmark procedure.", ownerName: "Fictional demo challenge sponsor", visibility: "Open" as const, bountyUsd: 750, funding: "DEMO_PROPOSAL" as const, state: "Open" as const, createdAt: "2026-10-20T00:00:00.000Z", ownerId: null, demo: true as const, contributionId: "image-contrast" },
+];
+export const genesisTrustRules = [
+  { key: "provenance", title: "Traceable provenance", requirement: "Named human author or responsible operator, versioned source and rights declaration.", limitation: "Names and links are self-declared; identity and source ownership are not verified." },
+  { key: "license", title: "License and author rights", requirement: "Declared capsule license, dependency inventory and permission to share.", limitation: "Declarations are not legal clearance; independent license review is required." },
+  { key: "tests", title: "Reproducible evidence", requirement: "Configuration, baseline, benchmark target, model version and test procedure.", limitation: "Synthetic model results are not execution of submitted code or hardware evidence." },
+  { key: "approval", title: "Independent human decision", requirement: "Reviewer distinct from submitting identity, documented decision and rollback plan.", limitation: "Local identities are not authenticated; demo decisions confer no certification or release authority." },
+];
+export const genesisComputeArchitecture = ["Explicit node-owner opt-in", "Authenticated, revocable project grants", "Signed allowlisted task artifact", "Isolated runner with no host credentials", "Egress allowlist and resource limits", "USD spend cap and owner approval", "Provenance-bound result and audit log"];

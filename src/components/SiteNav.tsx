@@ -12,6 +12,15 @@ export const navItems = [
   { to: "/code-exchange", label: "Code Exchange" },
   { to: "/commons", label: "Commons · Demo" },
   { to: "/pulse", label: "Pulse · Local" },
+  { to: "/challenges", label: "Grand Challenges" },
+  { to: "/embassy", label: "Agent Embassy" },
+  { to: "/sdk", label: "SDK / API Docs" },
+  { to: "/discovery", label: "Discovery Radar" },
+  { to: "/digital-twin", label: "Digital Twin Lab" },
+  { to: "/trust", label: "Trust & Certification" },
+  { to: "/marketplace", label: "Creator Marketplace" },
+  { to: "/compute-grid", label: "Compute Grid" },
+  { to: "/releases", label: "Release Galaxy" },
   { to: "/universe", label: "Universe" },
   { to: "/platform", label: "Platform" },
   { to: "/knowledge-fusion", label: "Knowledge Fusion" },
@@ -31,7 +40,7 @@ export function SiteNav() {
     document.addEventListener("keydown", dismiss);
     return () => document.removeEventListener("keydown", dismiss);
   }, [open]);
-  const featured = navItems.filter((n) => ["/mothership", "/universe", "/code-exchange", "/knowledge-fusion", "/guardian"].includes(n.to));
+  const featured = navItems.filter((n) => ["/mothership", "/code-exchange", "/challenges", "/embassy", "/universe"].includes(n.to));
   const more = navItems.filter((n) => !featured.some((f) => f.to === n.to) && n.to !== "/");
   return (
     <header className="site-navigation sticky top-0 z-50 border-b border-border">

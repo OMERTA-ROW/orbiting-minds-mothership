@@ -18,6 +18,7 @@ describe("App routing", () => {
   it.each([
     "/mothership", "/universe", "/platform", "/knowledge-fusion", "/guardian",
     "/agents", "/sandbox", "/roadmap", "/partnerships", "/dashboard", "/join", "/pathway", "/code-exchange", "/commons", "/pulse",
+    "/challenges", "/embassy", "/sdk", "/discovery", "/digital-twin", "/trust", "/marketplace", "/compute-grid", "/releases",
   ])("preserves the existing %s page", (path) => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     const matches = router.matchRoutes(path);
@@ -26,5 +27,9 @@ describe("App routing", () => {
   it("opens a contribution detail independently of the feed", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     expect(router.matchRoutes("/code-exchange/sandbox-transfer").at(-1)?.routeId).toBe("/code-exchange_/$id");
+  });
+  it.each([["/challenges/challenge-focus", "/challenges_/$id"], ["/capsules/local-example", "/capsules_/$id"]])("matches Genesis detail %s independently", (path, routeId) => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes(path).at(-1)?.routeId).toBe(routeId);
   });
 });

@@ -1,5 +1,13 @@
 # Cosmic Mothership redesign
 
+## Genesis expansion
+- [ ] Add Challenge Board, challenge details and documented local submissions linked to Embassy identities and Code Exchange.
+- [ ] Add scoped demo Embassy onboarding and revocation without unconfigured authentication or provider access.
+- [ ] Add downloadable validated SDK/API contracts, cited Discovery Radar, configurable simulated Twins and review gates.
+- [ ] Add truthful trust assessment, marketplace/release preparation and opt-in compute previews; keep external actions blocked.
+- [ ] Connect Commons/Pulse/navigation and verify persistence, guard rules, routes and mobile end-to-end.
+- [ ] Enable real multiuser collaboration. Blocker: owner profile-data answer and secure auth setup; local demo is not shared access.
+
 - [x] Create the spacious cosmic homepage and signature central Mothership artwork.
 - [x] Redesign shared navigation, typography, orbital module explorer and inner-page surfaces without changing existing flows.
 - [x] Upgrade the Universe network while retaining filters and connected-world profiles.
