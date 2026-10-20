@@ -37,6 +37,7 @@ export function CommandPaletteProvider({ children, pages: navigation }: { childr
     else void navigate({ to: "/knowledge-fusion", search: { idea: entry.id }, hash: `idea-${entry.id}` });
   };
   const matches = searchCommands(query);
+  const orderedKinds = query.trim() ? [...new Set(matches.map((entry) => entry.kind))] : kinds;
   const pages = [...navigation, { to: "/join", label: "Join" } as const].filter((p) => !query.trim() || p.label.toLowerCase().includes(query.toLowerCase().trim()));
   return <PaletteContext.Provider value={reveal}>
     {children}
@@ -51,7 +52,7 @@ export function CommandPaletteProvider({ children, pages: navigation }: { childr
           <CommandInput value={query} onValueChange={(text) => { setQuery(text); setValue(searchCommands(text)[0]?.key ?? ""); }} autoFocus placeholder="Search the constellation…" aria-label="Search commands" />
           <CommandList className="max-h-[min(55svh,450px)] px-2 py-2">
             <CommandEmpty>No matching worlds or commands.</CommandEmpty>
-            {kinds.map((kind) => {
+            {orderedKinds.map((kind) => {
               const entries = matches.filter((e) => e.kind === kind);
               const Icon = icons[kind];
               return entries.length > 0 && <CommandGroup key={kind} heading={kind === "Module" ? "Mothership modules" : `Demo ${kind.toLowerCase()}s`}>
