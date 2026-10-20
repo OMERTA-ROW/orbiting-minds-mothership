@@ -12,7 +12,7 @@ import { useExchangeLocale } from "@/hooks/use-exchange-locale";
 
 export function ExchangeShell({ page, children }: { page: "exchange" | "commons" | "pulse"; children: ReactNode }) {
   const { t, locale, setLocale } = useExchangeLocale();
-  return <>
+  return <div lang={locale}>
     <PageHeader eyebrow={t("network")} title={t(page)}>
       <p>{page === "exchange" ? t("subtitle") : page === "commons" ? t("commonsIntro") : t("pulseIntro")}</p>
     </PageHeader>
@@ -29,7 +29,7 @@ export function ExchangeShell({ page, children }: { page: "exchange" | "commons"
         <p className="mt-14 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground">{t("accuracy")}</p>
       </div>
     </Section>
-  </>;
+  </div>;
 }
 
 export function ContributionCard({ item }: { item: CodeContribution }) {
@@ -76,7 +76,7 @@ function DetailSection({ title, children }: { title: string; children: ReactNode
 }
 
 export function LocalDiscussion({ item }: { item: CodeContribution }) {
-  const { t } = useExchangeLocale();
+  const { t, locale } = useExchangeLocale();
   const { store, ready, storageAvailable, addFeedback } = useDemoExchange();
   const [name, setName] = useState(""); const [body, setBody] = useState("");
   const [kind, setKind] = useState<DemoFeedbackInput["kind"]>("Comment");
@@ -91,7 +91,7 @@ export function LocalDiscussion({ item }: { item: CodeContribution }) {
     <p className="text-sm leading-relaxed text-muted-foreground">{t("commentsNote")}</p>
     {!storageAvailable && <p role="status" className="mt-4 text-sm text-warning">{t("memoryOnly")}</p>}
     {!ready ? <p className="mt-6 text-sm">{t("loading")}</p> : <>
-      <ul className="mt-7 space-y-6">{store.feedback.filter((feedback) => feedback.contributionId === item.id).map((feedback) => <li key={feedback.id} className="border-l border-gold/30 pl-5"><div className="flex flex-wrap items-center gap-3 text-xs"><span>{feedback.name}</span><span className="text-gold-light">{t(feedback.kind)}</span><span className="text-muted-foreground">{t("localOnly")}</span></div><p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{feedback.body}</p><time className="mt-3 block font-mono text-[10px] text-muted-foreground" dateTime={feedback.createdAt}>{new Date(feedback.createdAt).toLocaleString()}</time></li>)}</ul>
+      <ul className="mt-7 space-y-6">{store.feedback.filter((feedback) => feedback.contributionId === item.id).map((feedback) => <li key={feedback.id} className="border-l border-gold/30 pl-5"><div className="flex flex-wrap items-center gap-3 text-xs"><span>{feedback.name}</span><span className="text-gold-light">{t(feedback.kind)}</span><span className="text-muted-foreground">{t("localOnly")}</span></div><p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{feedback.body}</p><time className="mt-3 block font-mono text-[10px] text-muted-foreground" dateTime={feedback.createdAt}>{new Date(feedback.createdAt).toLocaleString(locale)}</time></li>)}</ul>
       {store.feedback.every((feedback) => feedback.contributionId !== item.id) && <p className="mt-6 text-sm text-muted-foreground">{t("noComments")}</p>}
       <form className="mt-8 space-y-5" onSubmit={submit} noValidate>
         <div className="grid gap-5 sm:grid-cols-2"><label className="block text-xs text-muted-foreground">{t("name")}<Input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} autoComplete="off" className="mt-2" required /></label><label className="block text-xs text-muted-foreground">{t("kind")}<select aria-label={t("kind")} className="exchange-select mt-2 w-full" value={kind} onChange={(event) => { if (event.target.value === "Comment" || event.target.value === "Request changes" || event.target.value === "Recommend approval") setKind(event.target.value); }}>{(["Comment", "Request changes", "Recommend approval"] as const).map((action) => <option key={action} value={action}>{t(action)}</option>)}</select></label></div>

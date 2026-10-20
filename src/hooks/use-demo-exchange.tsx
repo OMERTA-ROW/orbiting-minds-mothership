@@ -2,6 +2,11 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { addDemoFeedback, demoStoreSchema, emptyDemoStore, readDemoStore, type DemoExchangeStore, type DemoFeedbackInput } from "@/lib/code-exchange";
 
 const storageKey = "evolution-code-exchange-demo-v1";
+function localRecordId() {
+  try { if (typeof crypto.randomUUID === "function") return crypto.randomUUID(); } catch { /* restricted browser context */ }
+  // These IDs identify local demo records only, never security tokens or accounts.
+  return `demo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 interface DemoContext {
   store: DemoExchangeStore; ready: boolean; storageAvailable: boolean;
   addFeedback: (input: DemoFeedbackInput) => void;
@@ -30,11 +35,11 @@ export function DemoExchangeProvider({ children }: { children: ReactNode }) {
   };
   const addFeedback = (input: DemoFeedbackInput) => {
     if (!ready) return;
-    persist((current) => addDemoFeedback(current, input, crypto.randomUUID(), new Date().toISOString()));
+    persist((current) => addDemoFeedback(current, input, localRecordId(), new Date().toISOString()));
   };
   const recordExport = (contributionId: string) => {
     if (!ready) return;
-    persist((current) => demoStoreSchema.parse({ ...current, activity: [...current.activity.slice(-299), { id: crypto.randomUUID(), contributionId, createdAt: new Date().toISOString(), actor: "Local demo reviewer", action: "Export package" }] }));
+    persist((current) => demoStoreSchema.parse({ ...current, activity: [...current.activity.slice(-299), { id: localRecordId(), contributionId, createdAt: new Date().toISOString(), actor: "Local demo reviewer", action: "Export package" }] }));
   };
   const clear = () => { persist(() => emptyDemoStore); };
   return <DemoExchangeContext.Provider value={{ store, ready, storageAvailable, addFeedback, recordExport, clear }}>{children}</DemoExchangeContext.Provider>;
