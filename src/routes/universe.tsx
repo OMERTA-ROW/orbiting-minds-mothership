@@ -71,6 +71,7 @@ function Page() {
                   <g key={n.id} role="button" tabIndex={on ? 0 : -1} aria-label={`${n.name}, ${n.category}`} aria-pressed={s}
                     opacity={on ? 1 : 0.15} className="universe-node cursor-pointer focus:outline-none"
                     onClick={() => on && setSel(n)} onKeyDown={(e) => { if (on && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setSel(n); } }}>
+                    <rect x={n.x - 75} y={n.y - n.r - 14} width="150" height={n.r * 2 + 55} fill="transparent" pointerEvents="all" />
                     <circle cx={n.x} cy={n.y} r={n.r + 9} fill="none" stroke="var(--gold)" strokeOpacity={s ? 0.6 : 0.13} strokeWidth="0.7" />
                     <ellipse cx={n.x} cy={n.y} rx={n.r + 13} ry={n.r * 0.45} fill="none" stroke="var(--gold)" strokeOpacity={s ? 0.55 : 0.2} transform={`rotate(-25 ${n.x} ${n.y})`} />
                     <circle cx={n.x} cy={n.y} r={n.r} fill="url(#world-planet)" stroke={s ? "var(--gold-light)" : "var(--gold)"} strokeWidth={s ? 1.5 : 0.8} />
