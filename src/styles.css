@@ -169,7 +169,8 @@
 .cosmic-section > .grid > .glass:first-child .font-display.text-4xl { font-size: 3rem; }
 .orbit-stage { margin-top: 35px; margin-bottom: 35px; }
 .orbital-drift { animation: orbitalDrift 36s ease-in-out infinite; }
-.orbital-node { width: 120px; }
+.orbital-node { width: 120px; transform: translate(-50%, -50%); }
+.orbit-core-label { transform: translate(-50%, -50%); }
 .planet-icon { color: var(--gold); box-shadow: var(--shadow-beacon); transition: border-color 200ms, background 200ms, box-shadow 200ms; }
 .orbital-node:hover .planet-icon, .orbital-node.is-active .planet-icon { border-color: var(--gold-light); background: var(--accent); }
 .orbital-node.is-active .node-label, .orbital-node:hover .node-label { color: var(--gold-light); }

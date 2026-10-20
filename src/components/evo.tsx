@@ -120,14 +120,15 @@ export function OrbitExplorer({ items, size = 520 }: { items: MothershipModule[]
         <svg viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
           {nodes.map(({ m, x, y }) => <line key={m.id} x1="50" y1="50" x2={x} y2={y} stroke="var(--gold)" strokeOpacity={active.id === m.id ? 0.65 : 0.12} strokeWidth="0.12" className={active.id === m.id ? "signal-path" : ""} />)}
         </svg>
-        <div className="orbit-core-label pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+        <div className="orbit-core-label pointer-events-none absolute left-1/2 top-1/2 text-center">
           <span className="font-mono text-[8px] uppercase tracking-widest text-gold">Intelligence core</span>
           <p className="mt-2 font-display text-sm text-foreground">MOTHERSHIP</p>
         </div>
         {nodes.map(({ m, x, y }) => {
           const Icon = moduleIcons[m.id] ?? Orbit;
           return <Button key={m.id} variant="ghost" onClick={() => setSelectedId(m.id)} aria-pressed={active.id === m.id} aria-label={m.name}
-            className={cn("orbital-node absolute h-auto -translate-x-1/2 -translate-y-1/2 flex-col gap-2 whitespace-normal p-0 hover:bg-transparent", active.id === m.id && "is-active")}
+            onMouseEnter={() => setSelectedId(m.id)} onFocus={() => setSelectedId(m.id)}
+            className={cn("orbital-node absolute h-auto flex-col gap-2 whitespace-normal p-0 hover:bg-transparent", active.id === m.id && "is-active")}
             style={{ left: `${x}%`, top: `${y}%` }}>
             <span className="planet-icon grid h-12 w-12 place-items-center rounded-full border border-gold/45 bg-background"><Icon size={18} /></span>
             <span className="node-label max-w-28 text-center font-mono text-[10px] leading-relaxed text-muted-foreground">{m.name}</span>
