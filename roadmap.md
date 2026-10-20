@@ -1,11 +1,11 @@
 # Cosmic Mothership redesign
 
 ## Genesis expansion
-- [ ] Add Challenge Board, challenge details and documented local submissions linked to Embassy identities and Code Exchange.
-- [ ] Add scoped demo Embassy onboarding and revocation without unconfigured authentication or provider access.
-- [ ] Add downloadable validated SDK/API contracts, cited Discovery Radar, configurable simulated Twins and review gates.
-- [ ] Add truthful trust assessment, marketplace/release preparation and opt-in compute previews; keep external actions blocked.
-- [ ] Connect Commons/Pulse/navigation and verify persistence, guard rules, routes and mobile end-to-end.
+- [x] Add Challenge Board, challenge details and documented local submissions linked to Embassy identities and Code Exchange.
+- [x] Add scoped demo Embassy onboarding and revocation without unconfigured authentication or provider access.
+- [x] Add downloadable validated SDK/API contracts, cited Discovery Radar, configurable simulated Twins and review gates.
+- [x] Add truthful trust assessment, marketplace/release preparation and opt-in compute previews; keep external actions blocked.
+- [x] Connect Commons/Pulse/navigation and verify persistence, guard rules, routes and mobile end-to-end.
 - [ ] Enable real multiuser collaboration. Blocker: owner profile-data answer and secure auth setup; local demo is not shared access.
 
 - [x] Create the spacious cosmic homepage and signature central Mothership artwork.
@@ -28,8 +28,8 @@
 - [ ] Test authenticated contribution flows, record visibility and access isolation; report working versus unconfigured features.
 
 ## Code Exchange milestone
-- [ ] Add a searchable, filterable demo code exchange and source-aware contribution details; preserve all existing pages.
-- [ ] Connect navigation, Commons and Pulse entry points without claiming the pending secure collaboration foundation exists.
-- [ ] Add local demo comments/reviews and a truthful timeline of this browser's actions.
-- [ ] Add unsigned upgrade-package previews, disabled GitHub permissions and demo/TBD USD marketplace concepts.
-- [ ] Verify sample code, navigation, filters, attribution, accessibility and disabled external actions; report working versus mock.
+- [x] Add a searchable, filterable demo code exchange and source-aware contribution details; preserve all existing pages.
+- [x] Connect navigation, Commons and Pulse entry points without claiming the pending secure collaboration foundation exists.
+- [x] Add local demo comments/reviews and a truthful timeline of this browser's actions.
+- [x] Add unsigned upgrade-package previews, disabled GitHub permissions and demo/TBD USD marketplace concepts.
+- [x] Verify sample code, navigation, filters, attribution, accessibility and disabled external actions; report working versus mock.
