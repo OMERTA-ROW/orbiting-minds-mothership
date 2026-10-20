@@ -158,3 +158,138 @@ export const permissions = [
   { scope: "Apply updates without approval", granted: false },
   { scope: "Access production secrets", granted: false },
 ];
+
+// Code Exchange examples contain executable original snippets, NOT integrated repos.
+// People, reviews, outcomes and project compatibility below are fictional demo records.
+export type ExchangeLocale = "en" | "es";
+export type LocalizedText = Record<ExchangeLocale, string>;
+export type ExchangeState = "Proposed" | "Researching" | "In Review" | "Tested" | "Approved" | "Released";
+export interface CodeContribution {
+  id: string; title: LocalizedText; description: LocalizedText; compatibility: LocalizedText;
+  industry: "Banking" | "Image processing" | "Privacy" | "Accessibility" | "Developer tooling";
+  language: "TypeScript" | "Python" | "JavaScript";
+  readiness: "Sandbox only" | "Review ready" | "Experimental";
+  license: "MIT" | "Apache-2.0"; authorType: "Human" | "AI-assisted";
+  author: string; operator?: string; agent?: string; reviewers: { name: string; note: LocalizedText }[];
+  state: ExchangeState; risk: "Low" | "Medium" | "High"; security: LocalizedText;
+  version: string; filename: string; code: string;
+  tests: { name: LocalizedText; procedure: LocalizedText }[];
+  dependencies: string[]; rollback: LocalizedText; changelog: LocalizedText[];
+  reference: { repository: string; commit: string; license: string; purpose: LocalizedText };
+}
+const text = (en: string, es: string): LocalizedText => ({ en, es });
+export const exchangeStates: ExchangeState[] = ["Proposed", "Researching", "In Review", "Tested", "Approved", "Released"];
+export const codeContributions: CodeContribution[] = [
+  {
+    id: "sandbox-transfer", title: text("Replay-safe transfer validation", "Validación de transferencias sin repetición"),
+    description: text("Checks a synthetic transfer request before it reaches a sandbox. Rejects invalid amounts and flags an already-used request key. It does not move money or replace a banking security system.", "Comprueba una transferencia ficticia antes de llegar al entorno de pruebas. Rechaza importes inválidos y claves usadas. No mueve dinero ni sustituye la seguridad bancaria."),
+    compatibility: text("TypeScript runtimes with a caller-supplied Set. A real banking API needs authenticated callers, durable atomic idempotency, authorization, rate limits and an independent security audit. No production-bank compatibility is certified.", "Requiere TypeScript y un Set proporcionado por el llamador. Una API real necesita autenticación, idempotencia atómica persistente, autorización, límites y auditoría. No hay compatibilidad bancaria certificada."),
+    industry: "Banking", language: "TypeScript", readiness: "Sandbox only", license: "Apache-2.0", authorType: "Human", author: "Maya Chen", state: "In Review", risk: "High", version: "0.1.0", filename: "validate-transfer.ts",
+    security: text("Sandbox pattern only. The in-memory Set cannot prevent cross-process races and is not an audit ledger. Never send real accounts, credentials or funds to this sample.", "Solo para pruebas. El Set en memoria no evita carreras entre procesos ni es un registro de auditoría. No use cuentas, credenciales o fondos reales."),
+    code: `export function validateTransfer(request: { amountCents: number; requestKey: string }, seen: Set<string>) {
+  if (!Number.isSafeInteger(request.amountCents) || request.amountCents <= 0) {
+    return { accepted: false, reason: "invalid_amount" };
+  }
+  if (!/^[a-zA-Z0-9_-]{8,64}$/.test(request.requestKey)) {
+    return { accepted: false, reason: "invalid_key" };
+  }
+  if (seen.has(request.requestKey)) return { accepted: false, reason: "duplicate" };
+  seen.add(request.requestKey);
+  return { accepted: true, reason: "sandbox_only" };
+}`,
+    reviewers: [{ name: "Jonah Patel", note: text("Use a transactional store before any real financial workflow. Demo review, not an audit.", "Use almacenamiento transaccional antes de operar con dinero. Revisión demo, no auditoría.") }],
+    tests: [{ name: text("Reject invalid amounts", "Rechazar importes inválidos"), procedure: text("Try zero, negative, fractional and unsafe integer amounts; expect invalid_amount.", "Pruebe cero, negativos, fracciones y enteros inseguros; espere invalid_amount.") }, { name: text("Reject replay in one sandbox", "Rechazar repetición en una prueba"), procedure: text("Submit the same valid key twice to one Set; accept once, reject once. Cross-process protection is out of scope.", "Envíe la misma clave dos veces al mismo Set; acepte una y rechace otra. La protección entre procesos queda fuera del alcance.") }],
+    dependencies: ["TypeScript standard library · no third-party dependencies"],
+    rollback: text("Remove the sandbox validator and restore the prior request handler. Preserve any real audit records outside this example.", "Quite el validador de prueba y restaure el manejador anterior. Conserve los registros reales fuera de este ejemplo."),
+    changelog: [text("0.1.0 · Added integer amount and replay-key checks; no money movement.", "0.1.0 · Validación de importes enteros y claves repetidas; sin movimiento de dinero.")],
+    reference: { repository: "OWASP/CheatSheetSeries", commit: "c366393214da5ae186a7a06a27dade7617987304", license: "CC-BY-SA-4.0", purpose: text("Public security documentation for independent evaluation; not the source of this original snippet.", "Documentación pública de seguridad para evaluación independiente; no es el origen del fragmento.") },
+  },
+  {
+    id: "image-contrast", title: text("Bounded grayscale contrast", "Contraste limitado de escala de grises"),
+    description: text("Adjusts a small list of grayscale pixel values and clamps output to 0–255. No camera is accessed, no images are uploaded, and no image-quality improvement is claimed.", "Ajusta una lista pequeña de píxeles y limita la salida a 0–255. No accede a cámaras, sube imágenes ni afirma mejoras de calidad."),
+    compatibility: text("Python 3.11+; accepts integer grayscale samples, not RGB frames or encoded files. A camera pipeline needs format conversion, memory limits and measured quality/latency tests.", "Python 3.11+; admite enteros en escala de grises, no RGB ni archivos codificados. Una cámara necesita conversión, límites de memoria y mediciones de calidad y latencia."),
+    industry: "Image processing", language: "Python", readiness: "Experimental", license: "MIT", authorType: "AI-assisted", author: "Luis Ortega", operator: "Luis Ortega", agent: "Lens Lab · demo agent", state: "Proposed", risk: "Medium", version: "0.2.0", filename: "contrast.py",
+    security: text("Only small in-memory samples. Bound frame sizes in a real pipeline and strip private image metadata before sharing. AI operator identity is fictional and unverified.", "Solo muestras pequeñas en memoria. Limite el tamaño de las imágenes reales y quite metadatos privados. El operador de IA es ficticio y no verificado."),
+    code: `import math
+
+def adjust_contrast(pixels, factor=1.0):
+    if not isinstance(factor, (int, float)) or isinstance(factor, bool) or not math.isfinite(factor) or not 0 <= factor <= 4:
+        raise ValueError("factor must be finite and between 0 and 4")
+    result = []
+    for value in pixels:
+        if type(value) is not int or not 0 <= value <= 255:
+            raise ValueError("pixels must be integers between 0 and 255")
+        adjusted = round((value - 128) * factor + 128)
+        result.append(max(0, min(255, adjusted)))
+    return result`,
+    reviewers: [{ name: "Amara Okafor", note: text("Check the target camera's histogram and noise. No quality benchmark has been run here.", "Revise histograma y ruido de la cámara. Aquí no se ha medido la calidad.") }],
+    tests: [{ name: text("Pixel bounds", "Límites de píxeles"), procedure: text("Pass [0, 128, 255] with factor 2; expect [0, 128, 255]. Reject out-of-range pixels and non-finite factors.", "Pruebe [0, 128, 255] con factor 2; espere [0, 128, 255]. Rechace píxeles fuera de rango y factores no finitos.") }],
+    dependencies: ["Python standard library · math · no third-party dependencies"], rollback: text("Restore the original pixel-processing stage and compare a local reference image before reuse.", "Restaure el procesamiento anterior y compare una imagen local de referencia antes de reutilizar."),
+    changelog: [text("0.2.0 · Finite-factor validation and output bounds added.", "0.2.0 · Validación de factor finito y límites de salida.")],
+    reference: { repository: "python-pillow/Pillow", commit: "1ee8db96376c1e63f90dae7b8bef071ede6c4b80", license: "MIT-CMU", purpose: text("Public image-processing reference. Pillow is not imported; this sample is original and does not reproduce Pillow code.", "Referencia pública de procesamiento de imágenes. No se importa Pillow; el ejemplo es original.") },
+  },
+  {
+    id: "private-events", title: text("Allowlisted event payloads", "Eventos con campos permitidos"),
+    description: text("Builds a new telemetry object containing only an event name and duration. Unknown fields are dropped rather than copied. Nothing is sent to a telemetry provider.", "Crea un objeto con solo el nombre del evento y su duración. Descarta otros campos. No envía nada a un proveedor."),
+    compatibility: text("TypeScript applications with a known event vocabulary. This reduces accidental field exposure; it is not anonymization, consent collection, encryption or regulatory certification.", "Aplicaciones TypeScript con vocabulario conocido. Reduce exposición accidental; no anonimiza ni obtiene consentimiento, cifra o certifica cumplimiento."),
+    industry: "Privacy", language: "TypeScript", readiness: "Review ready", license: "MIT", authorType: "Human", author: "Amara Okafor", state: "Tested", risk: "Medium", version: "0.1.1", filename: "safe-event.ts",
+    security: text("Allowlisting is only one layer. Event timing can still reveal behavior; retention, consent and threat modeling remain required.", "La lista permitida es solo una capa. Los tiempos pueden revelar comportamiento; aún se necesitan retención, consentimiento y análisis de amenazas."),
+    code: `export function safeEvent(input: Record<string, unknown>) {
+  const allowed = ["page_view", "action_completed"];
+  if (typeof input.event !== "string" || !allowed.includes(input.event)) {
+    throw new Error("unsupported_event");
+  }
+  const durationMs = typeof input.durationMs === "number" && Number.isFinite(input.durationMs)
+    ? Math.max(0, Math.round(input.durationMs)) : 0;
+  return { event: input.event, durationMs };
+}`,
+    reviewers: [{ name: "Maya Chen", note: text("Consider coarsening timings. Tested is a simulated board state, not a privacy certification.", "Considere agrupar tiempos. Tested es un estado simulado, no certificación de privacidad.") }],
+    tests: [{ name: text("Drop identifying fields", "Descartar datos identificadores"), procedure: text("Include email, token and unknown properties; output must contain only event and durationMs. Reject unsupported events.", "Incluya correo, token y campos desconocidos; la salida solo debe tener event y durationMs. Rechace eventos no admitidos.") }],
+    dependencies: ["TypeScript standard library · no third-party dependencies"], rollback: text("Disable this telemetry path entirely until the previous privacy-reviewed schema is restored; do not re-enable raw payload logging.", "Desactive estos eventos hasta restaurar el esquema anterior revisado; no reactive registros sin filtrar."),
+    changelog: [text("0.1.1 · Closed event vocabulary; no network transport.", "0.1.1 · Vocabulario cerrado; sin transporte de red.")],
+    reference: { repository: "OWASP/CheatSheetSeries", commit: "c366393214da5ae186a7a06a27dade7617987304", license: "CC-BY-SA-4.0", purpose: text("Public privacy/security reference, separate from the original sample's MIT license.", "Referencia pública de privacidad y seguridad, separada de la licencia MIT del ejemplo original.") },
+  },
+  {
+    id: "keyboard-navigation", title: text("Predictable keyboard selection", "Selección predecible por teclado"),
+    description: text("Calculates the next selected index for arrow, Home and End keys. It is a small building block for an accessible list, not a complete accessibility solution.", "Calcula la siguiente selección con flechas, Inicio y Fin. Es una parte de una lista accesible, no una solución completa."),
+    compatibility: text("TypeScript UI frameworks. The host must manage focus, semantic roles, aria-selected, announcements and disabled items, and test with keyboard and screen readers.", "Interfaces TypeScript. La aplicación debe gestionar foco, roles, aria-selected, anuncios y elementos desactivados, y probar teclado y lectores de pantalla."),
+    industry: "Accessibility", language: "TypeScript", readiness: "Review ready", license: "MIT", authorType: "AI-assisted", author: "Aria Morgan", operator: "Aria Morgan", agent: "Echo · demo agent", state: "In Review", risk: "Low", version: "0.3.0", filename: "next-index.ts",
+    security: text("This helper does not certify accessibility. Keep focus visible and verify the full interaction with assistive technology.", "No certifica accesibilidad. Mantenga foco visible y pruebe la interacción completa con tecnología de asistencia."),
+    code: `export function nextIndex(current: number, count: number, key: string) {
+  if (!Number.isInteger(count) || count < 0) throw new Error("invalid_count");
+  if (count === 0) return -1;
+  const start = Number.isInteger(current) ? Math.max(0, Math.min(count - 1, current)) : 0;
+  if (key === "Home") return 0;
+  if (key === "End") return count - 1;
+  if (key === "ArrowDown") return (start + 1) % count;
+  if (key === "ArrowUp") return (start - 1 + count) % count;
+  return start;
+}`,
+    reviewers: [{ name: "Kenji Sato", note: text("Define the parent widget's focus model before adoption. Agent approval is not a human approval gate.", "Defina el modelo de foco antes de adoptar. La aprobación de un agente no sustituye a la humana.") }],
+    tests: [{ name: text("Navigation boundaries", "Límites de navegación"), procedure: text("Check wraparound, Home/End, empty lists and invalid counts. A full screen-reader test is still planned.", "Pruebe extremos, Inicio/Fin, listas vacías y cantidades inválidas. La prueba completa con lector de pantalla sigue pendiente.") }],
+    dependencies: ["TypeScript standard library · no third-party dependencies"], rollback: text("Restore the former keyboard handler and recheck focus order; no project files are modified by this preview.", "Restaure el manejador anterior y revise el orden del foco; esta vista no modifica archivos del proyecto."),
+    changelog: [text("0.3.0 · Added empty-list handling and Home/End selection.", "0.3.0 · Listas vacías y selección con Inicio/Fin.")],
+    reference: { repository: "mdn/content", commit: "05c1aed375bab88f322b15319e45fb326e4a341c", license: "CC-BY-SA 2.5+ prose · CC0/MIT samples (see source)", purpose: text("Public keyboard and accessibility documentation. No MDN code was copied into this original sample.", "Documentación pública de teclado y accesibilidad. El ejemplo original no copia código de MDN.") },
+  },
+  {
+    id: "dependency-ledger", title: text("Dependency license inventory", "Inventario de licencias de dependencias"),
+    description: text("Summarizes declared dependency versions and license labels from a supplied object. Missing licenses are marked UNKNOWN for human investigation; there is no package registry scan.", "Resume versiones y licencias declaradas de un objeto. Marca UNKNOWN cuando faltan licencias para revisión humana; no consulta registros de paquetes."),
+    compatibility: text("Modern JavaScript, browsers or server runtimes. Callers must supply the inventory. Declared license strings are not a legal clearance or transitive-dependency audit.", "JavaScript moderno en navegador o servidor. El llamador aporta el inventario. Las licencias declaradas no son aprobación legal ni auditoría transitiva."),
+    industry: "Developer tooling", language: "JavaScript", readiness: "Review ready", license: "Apache-2.0", authorType: "Human", author: "Kenji Sato", state: "Approved", risk: "Low", version: "0.1.0", filename: "license-inventory.js",
+    security: text("Do not execute package scripts to collect metadata. Approved is a fictional demo state; licenses and dependencies still require a real human review.", "No ejecute scripts para recopilar metadatos. Approved es un estado demo ficticio; se requiere revisión real de licencias y dependencias."),
+    code: `export function licenseInventory(packages) {
+  return Object.entries(packages).sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, metadata]) => ({
+      name,
+      version: typeof metadata?.version === "string" ? metadata.version : "UNKNOWN",
+      license: typeof metadata?.license === "string" && metadata.license.trim()
+        ? metadata.license.trim() : "UNKNOWN",
+    }));
+}`,
+    reviewers: [{ name: "Luis Ortega", note: text("Demo approval of the concept only. Review full license texts and transitive dependencies before reuse.", "Aprobación demo del concepto. Revise textos completos y dependencias transitivas antes de reutilizar.") }],
+    tests: [{ name: text("Unknown license gate", "Control de licencias desconocidas"), procedure: text("Omit a license and version; expect UNKNOWN rather than invented values. Check deterministic name sorting.", "Omita licencia y versión; espere UNKNOWN, no valores inventados. Compruebe el orden por nombre.") }],
+    dependencies: ["JavaScript standard library · no third-party dependencies"], rollback: text("Remove the inventory helper and restore the prior approved dependency list. No dependency is installed by this sample.", "Quite el ayudante y restaure el inventario aprobado anterior. El ejemplo no instala dependencias."),
+    changelog: [text("0.1.0 · Sorted inventory and explicit UNKNOWN license labels.", "0.1.0 · Inventario ordenado y licencias UNKNOWN explícitas.")],
+    reference: { repository: "mdn/content", commit: "05c1aed375bab88f322b15319e45fb326e4a341c", license: "CC-BY-SA 2.5+ prose · CC0/MIT samples (see source)", purpose: text("Public JavaScript documentation; original sample, not an MDN contribution or partnership.", "Documentación pública de JavaScript; ejemplo original, no contribución a MDN ni asociación.") },
+  },
+];
