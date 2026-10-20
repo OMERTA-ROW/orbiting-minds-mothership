@@ -28,7 +28,9 @@ export function DemoExchangeProvider({ children }: { children: ReactNode }) {
   const persist = (update: (current: DemoExchangeStore) => DemoExchangeStore) => {
     // Read the latest cross-tab record before merging, without any shared backend writes.
     let current = store;
-    try { current = readDemoStore(localStorage.getItem(storageKey)); } catch { /* memory-only fallback */ }
+    if (storageAvailable) {
+      try { current = readDemoStore(localStorage.getItem(storageKey)); } catch { /* memory-only fallback */ }
+    }
     const next = update(current);
     try { localStorage.setItem(storageKey, JSON.stringify(next)); setStorageAvailable(true); } catch { setStorageAvailable(false); }
     setStore(next);
