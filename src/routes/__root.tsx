@@ -15,6 +15,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteNav, SiteFooter, navItems } from "../components/SiteNav";
 import { Starfield } from "../components/evo";
 import { CommandPaletteProvider } from "@/components/CommandPalette";
+import { DemoExchangeProvider } from "@/hooks/use-demo-exchange";
+import { ExchangeLocaleProvider } from "@/hooks/use-exchange-locale";
 
 function NotFoundComponent() {
   return (
@@ -122,6 +124,8 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <DemoExchangeProvider>
+      <ExchangeLocaleProvider>
       <CommandPaletteProvider pages={navItems}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <div className="site-shell flex min-h-screen flex-col">
@@ -133,6 +137,8 @@ function RootComponent() {
         <SiteFooter />
       </div>
       </CommandPaletteProvider>
+      </ExchangeLocaleProvider>
+      </DemoExchangeProvider>
     </QueryClientProvider>
   );
 }

@@ -1,21 +1,21 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowUpRight, Bot, FileText, Layers, Orbit, Search, Sparkles } from "lucide-react";
+import { ArrowUpRight, Bot, Code2, FileText, Layers, Orbit, Search, Sparkles } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { searchCommands, shouldOpenPalette, type SearchEntry, type SearchKind } from "@/lib/command-search";
 
 const PaletteContext = createContext<(() => void) | null>(null);
-const kinds: SearchKind[] = ["Module", "Project", "Agent", "Proposal", "Idea"];
-const icons = { Module: Orbit, Project: Layers, Agent: Bot, Proposal: FileText, Idea: Sparkles };
+const kinds: SearchKind[] = ["Module", "Project", "Agent", "Proposal", "Idea", "Code"];
+const icons = { Module: Orbit, Project: Layers, Agent: Bot, Proposal: FileText, Idea: Sparkles, Code: Code2 };
 
 export function PaletteTrigger() {
   const open = useContext(PaletteContext);
   return <Button variant="ghost" size="icon" className="text-gold-light" aria-label="Search the Mothership" title="Search the Mothership (Ctrl/⌘ K)" aria-keyshortcuts="Control+k Meta+k" onClick={() => open?.()}><Search size={18} /></Button>;
 }
 
-export function CommandPaletteProvider({ children, pages: navigation }: { children: ReactNode; pages: readonly { to: "/" | "/mothership" | "/universe" | "/platform" | "/knowledge-fusion" | "/guardian" | "/agents" | "/sandbox" | "/roadmap" | "/partnerships" | "/dashboard" | "/pathway"; label: string }[] }) {
+export function CommandPaletteProvider({ children, pages: navigation }: { children: ReactNode; pages: readonly { to: "/" | "/mothership" | "/universe" | "/platform" | "/knowledge-fusion" | "/guardian" | "/agents" | "/sandbox" | "/roadmap" | "/partnerships" | "/dashboard" | "/pathway" | "/code-exchange" | "/commons" | "/pulse"; label: string }[] }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [value, setValue] = useState("");
@@ -34,6 +34,7 @@ export function CommandPaletteProvider({ children, pages: navigation }: { childr
     else if (entry.kind === "Project") void navigate({ to: "/universe", search: { world: entry.id }, hash: "world-profile" });
     else if (entry.kind === "Agent") void navigate({ to: "/agents", hash: `agent-${entry.id.toLowerCase()}` });
     else if (entry.kind === "Proposal") void navigate({ to: "/dashboard", search: { proposal: entry.id }, hash: `proposal-${entry.id}` });
+    else if (entry.kind === "Code") void navigate({ to: "/code-exchange/$id", params: { id: entry.id } });
     else void navigate({ to: "/knowledge-fusion", search: { idea: entry.id }, hash: `idea-${entry.id}` });
   };
   const matches = searchCommands(query);
@@ -47,7 +48,7 @@ export function CommandPaletteProvider({ children, pages: navigation }: { childr
         document.querySelector<HTMLButtonElement>('button[aria-label="Search the Mothership"]')?.focus();
       }}>
         <DialogTitle className="px-5 pb-2 pt-5 font-display text-gold-light">Mothership command</DialogTitle>
-        <DialogDescription className="px-5 pb-4 text-xs">Modules · demo projects, agents and proposals</DialogDescription>
+        <DialogDescription className="px-5 pb-4 text-xs">Modules · demo projects, agents, proposals and code</DialogDescription>
         <Command shouldFilter={false} loop value={value} onValueChange={setValue} className="rounded-none">
           <CommandInput value={query} onValueChange={(text) => { setQuery(text); setValue(searchCommands(text)[0]?.key ?? ""); }} autoFocus placeholder="Search the constellation…" aria-label="Search commands" />
           <CommandList className="max-h-[min(55svh,450px)] px-2 py-2">
@@ -55,7 +56,7 @@ export function CommandPaletteProvider({ children, pages: navigation }: { childr
             {orderedKinds.map((kind) => {
               const entries = matches.filter((e) => e.kind === kind);
               const Icon = icons[kind];
-              return entries.length > 0 && <CommandGroup key={kind} heading={kind === "Module" ? "Mothership modules" : `Demo ${kind.toLowerCase()}s`}>
+              return entries.length > 0 && <CommandGroup key={kind} heading={kind === "Module" ? "Mothership modules" : kind === "Code" ? "Demo code contributions" : `Demo ${kind.toLowerCase()}s`}>
                 {entries.map((entry) => <CommandItem key={entry.key} value={entry.key} onSelect={() => select(entry)} className="gap-3 py-3">
                   <Icon className="text-gold" /><span className="min-w-0 flex-1"><span className="block break-words text-sm">{entry.label}</span><span className="mt-1 block break-words text-[11px] text-muted-foreground">{entry.detail}</span></span><ArrowUpRight className="text-gold" />
                 </CommandItem>)}

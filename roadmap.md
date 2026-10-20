@@ -18,3 +18,10 @@
 - [ ] Add project-scoped update manifests and responsible-operator agent registry; keep signing, external connectors and deployments disabled.
 - [ ] Add demo-only USD economy concepts without prices, conversion rates, charges or payouts.
 - [ ] Test authenticated contribution flows, record visibility and access isolation; report working versus unconfigured features.
+
+## Code Exchange milestone
+- [ ] Add a searchable, filterable demo code exchange and source-aware contribution details; preserve all existing pages.
+- [ ] Connect navigation, Commons and Pulse entry points without claiming the pending secure collaboration foundation exists.
+- [ ] Add local demo comments/reviews and a truthful timeline of this browser's actions.
+- [ ] Add unsigned upgrade-package previews, disabled GitHub permissions and demo/TBD USD marketplace concepts.
+- [ ] Verify sample code, navigation, filters, attribution, accessibility and disabled external actions; report working versus mock.

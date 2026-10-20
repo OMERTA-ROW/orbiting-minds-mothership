@@ -9,6 +9,9 @@ export const navItems = [
   { to: "/", label: "Home" },
   { to: "/mothership", label: "Mothership" },
   { to: "/pathway", label: "AI Pathway" },
+  { to: "/code-exchange", label: "Code Exchange" },
+  { to: "/commons", label: "Commons · Demo" },
+  { to: "/pulse", label: "Pulse · Local" },
   { to: "/universe", label: "Universe" },
   { to: "/platform", label: "Platform" },
   { to: "/knowledge-fusion", label: "Knowledge Fusion" },
@@ -28,7 +31,7 @@ export function SiteNav() {
     document.addEventListener("keydown", dismiss);
     return () => document.removeEventListener("keydown", dismiss);
   }, [open]);
-  const featured = navItems.filter((n) => ["/mothership", "/universe", "/platform", "/knowledge-fusion", "/guardian"].includes(n.to));
+  const featured = navItems.filter((n) => ["/mothership", "/universe", "/code-exchange", "/knowledge-fusion", "/guardian"].includes(n.to));
   const more = navItems.filter((n) => !featured.some((f) => f.to === n.to) && n.to !== "/");
   return (
     <header className="site-navigation sticky top-0 z-50 border-b border-border">

@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as CodeExchangeRouteImport } from './routes/code-exchange'
+import { Route as CommonsRouteImport } from './routes/commons'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as GuardianRouteImport } from './routes/guardian'
 import { Route as JoinRouteImport } from './routes/join'
@@ -19,10 +21,12 @@ import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
 import { Route as PathwayRouteImport } from './routes/pathway'
 import { Route as PlatformRouteImport } from './routes/platform'
+import { Route as PulseRouteImport } from './routes/pulse'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as SandboxRouteImport } from './routes/sandbox'
 import { Route as UniverseRouteImport } from './routes/universe'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
+import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -32,6 +36,16 @@ const IndexRoute = IndexRouteImport.update({
 const AgentsRoute = AgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CodeExchangeRoute = CodeExchangeRouteImport.update({
+  id: '/code-exchange',
+  path: '/code-exchange',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommonsRoute = CommonsRouteImport.update({
+  id: '/commons',
+  path: '/commons',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -74,6 +88,11 @@ const PlatformRoute = PlatformRouteImport.update({
   path: '/platform',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PulseRoute = PulseRouteImport.update({
+  id: '/pulse',
+  path: '/pulse',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoadmapRoute = RoadmapRouteImport.update({
   id: '/roadmap',
   path: '/roadmap',
@@ -94,10 +113,17 @@ const ApiEvolutionPathwayRoute = ApiEvolutionPathwayRouteImport.update({
   path: '/api/evolution-pathway',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CodeExchangeIdRoute = CodeExchangeIdRouteImport.update({
+  id: '/code-exchange_/$id',
+  path: '/code-exchange/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agents': typeof AgentsRoute
+  '/code-exchange': typeof CodeExchangeRoute
+  '/commons': typeof CommonsRoute
   '/dashboard': typeof DashboardRoute
   '/guardian': typeof GuardianRoute
   '/join': typeof JoinRoute
@@ -106,14 +132,18 @@ export interface FileRoutesByFullPath {
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
+  '/pulse': typeof PulseRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/universe': typeof UniverseRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/code-exchange/$id': typeof CodeExchangeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agents': typeof AgentsRoute
+  '/code-exchange': typeof CodeExchangeRoute
+  '/commons': typeof CommonsRoute
   '/dashboard': typeof DashboardRoute
   '/guardian': typeof GuardianRoute
   '/join': typeof JoinRoute
@@ -122,15 +152,19 @@ export interface FileRoutesByTo {
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
+  '/pulse': typeof PulseRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/universe': typeof UniverseRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/code-exchange/$id': typeof CodeExchangeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agents': typeof AgentsRoute
+  '/code-exchange': typeof CodeExchangeRoute
+  '/commons': typeof CommonsRoute
   '/dashboard': typeof DashboardRoute
   '/guardian': typeof GuardianRoute
   '/join': typeof JoinRoute
@@ -139,16 +173,20 @@ export interface FileRoutesById {
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
+  '/pulse': typeof PulseRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/universe': typeof UniverseRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/code-exchange_/$id': typeof CodeExchangeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/agents'
+    | '/code-exchange'
+    | '/commons'
     | '/dashboard'
     | '/guardian'
     | '/join'
@@ -157,14 +195,18 @@ export interface FileRouteTypes {
     | '/partnerships'
     | '/pathway'
     | '/platform'
+    | '/pulse'
     | '/roadmap'
     | '/sandbox'
     | '/universe'
     | '/api/evolution-pathway'
+    | '/code-exchange/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/agents'
+    | '/code-exchange'
+    | '/commons'
     | '/dashboard'
     | '/guardian'
     | '/join'
@@ -173,14 +215,18 @@ export interface FileRouteTypes {
     | '/partnerships'
     | '/pathway'
     | '/platform'
+    | '/pulse'
     | '/roadmap'
     | '/sandbox'
     | '/universe'
     | '/api/evolution-pathway'
+    | '/code-exchange/$id'
   id:
     | '__root__'
     | '/'
     | '/agents'
+    | '/code-exchange'
+    | '/commons'
     | '/dashboard'
     | '/guardian'
     | '/join'
@@ -189,15 +235,19 @@ export interface FileRouteTypes {
     | '/partnerships'
     | '/pathway'
     | '/platform'
+    | '/pulse'
     | '/roadmap'
     | '/sandbox'
     | '/universe'
     | '/api/evolution-pathway'
+    | '/code-exchange_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentsRoute: typeof AgentsRoute
+  CodeExchangeRoute: typeof CodeExchangeRoute
+  CommonsRoute: typeof CommonsRoute
   DashboardRoute: typeof DashboardRoute
   GuardianRoute: typeof GuardianRoute
   JoinRoute: typeof JoinRoute
@@ -206,10 +256,12 @@ export interface RootRouteChildren {
   PartnershipsRoute: typeof PartnershipsRoute
   PathwayRoute: typeof PathwayRoute
   PlatformRoute: typeof PlatformRoute
+  PulseRoute: typeof PulseRoute
   RoadmapRoute: typeof RoadmapRoute
   SandboxRoute: typeof SandboxRoute
   UniverseRoute: typeof UniverseRoute
   ApiEvolutionPathwayRoute: typeof ApiEvolutionPathwayRoute
+  CodeExchangeIdRoute: typeof CodeExchangeIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -226,6 +278,20 @@ declare module '@tanstack/react-router' {
       path: '/agents'
       fullPath: '/agents'
       preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/code-exchange': {
+      id: '/code-exchange'
+      path: '/code-exchange'
+      fullPath: '/code-exchange'
+      preLoaderRoute: typeof CodeExchangeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/commons': {
+      id: '/commons'
+      path: '/commons'
+      fullPath: '/commons'
+      preLoaderRoute: typeof CommonsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -284,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlatformRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pulse': {
+      id: '/pulse'
+      path: '/pulse'
+      fullPath: '/pulse'
+      preLoaderRoute: typeof PulseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/roadmap': {
       id: '/roadmap'
       path: '/roadmap'
@@ -312,12 +385,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEvolutionPathwayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/code-exchange_/$id': {
+      id: '/code-exchange_/$id'
+      path: '/code-exchange/$id'
+      fullPath: '/code-exchange/$id'
+      preLoaderRoute: typeof CodeExchangeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentsRoute: AgentsRoute,
+  CodeExchangeRoute: CodeExchangeRoute,
+  CommonsRoute: CommonsRoute,
   DashboardRoute: DashboardRoute,
   GuardianRoute: GuardianRoute,
   JoinRoute: JoinRoute,
@@ -326,10 +408,12 @@ const rootRouteChildren: RootRouteChildren = {
   PartnershipsRoute: PartnershipsRoute,
   PathwayRoute: PathwayRoute,
   PlatformRoute: PlatformRoute,
+  PulseRoute: PulseRoute,
   RoadmapRoute: RoadmapRoute,
   SandboxRoute: SandboxRoute,
   UniverseRoute: UniverseRoute,
   ApiEvolutionPathwayRoute: ApiEvolutionPathwayRoute,
+  CodeExchangeIdRoute: CodeExchangeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
