@@ -32,6 +32,31 @@ describe("Genesis consent-first local workflow", () => {
   it("invalidates demo listing preparation when reviewer consent is revoked", () => { let store = run(simulated(), { type: "decision", input: { capsuleId: "capsule", reviewerId: "reviewer", decision: "Demo approve", note: "Demo review only, not certification or production approval." } }, "decision"); store = run(store, { type: "revoke", identityId: "reviewer" }, "revoke"); expect(first(store.capsules).state).toBe("Changes requested"); expect(() => run(store, { type: "list", capsuleId: "capsule", actorId: "author" }, "listing")).toThrow(); });
   it("completes challenge → capsule → simulation → review → demo listing without a payable reward", () => { let store = run(simulated(), { type: "decision", input: { capsuleId: "capsule", reviewerId: "reviewer", decision: "Demo approve", note: "Demo review only, not certification or production approval." } }, "decision"); store = run(store, { type: "list", capsuleId: "capsule", actorId: "author" }, "listing"); expect(first(store.capsules).state).toBe("Demo listed"); expect(genesisPackage(store, first(store.capsules)).reward).toEqual({ currency: "USD", price: "TBD", funded: false, payout: null }); });
   it("withdraws a demo listing when its latest reviewer revokes consent", () => { let store = run(simulated(), { type: "decision", input: { capsuleId: "capsule", reviewerId: "reviewer", decision: "Demo approve", note: "Demo only; independent authenticated review remains required." } }, "decision"); store = run(store, { type: "list", capsuleId: "capsule", actorId: "author" }, "listing"); store = run(store, { type: "revoke", identityId: "reviewer" }, "revoke"); expect(first(store.capsules).state).toBe("Changes requested"); expect(store.decisions).toHaveLength(1); });
+  it("requires active simulation runner consent for demo approval", () => {
+    let store = run(submitted(), identityCmd("Sample simulator"), "runner");
+    store = run(store, { type: "twin", input: { capsuleId: "capsule", runnerId: "runner", baselineMs: 100, targetMs: 90, workload: 1, efficiencyPercent: 20 } }, "twin");
+    store = run(store, { type: "revoke", identityId: "runner" }, "revoke");
+    expect(() => run(store, { type: "decision", input: { capsuleId: "capsule", reviewerId: "reviewer", decision: "Demo approve", note: "Recorded results cannot replace revoked consent." } }, "decision")).toThrow("active");
+  });
+  it("withdraws a listing after its simulation runner revokes consent without erasing evidence", () => {
+    let store = run(submitted(), identityCmd("Sample simulator"), "runner");
+    store = run(store, { type: "twin", input: { capsuleId: "capsule", runnerId: "runner", baselineMs: 100, targetMs: 90, workload: 1, efficiencyPercent: 20 } }, "twin");
+    store = run(store, { type: "decision", input: { capsuleId: "capsule", reviewerId: "reviewer", decision: "Demo approve", note: "Demo approval of synthetic evidence, not real certification." } }, "decision");
+    store = run(store, { type: "list", capsuleId: "capsule", actorId: "author" }, "listing");
+    store = run(store, { type: "revoke", identityId: "runner" }, "revoke");
+    expect(first(store.capsules).state).toBe("Changes requested");
+    expect(first(store.twins).resultMs).toBe(80);
+    expect(trustAssessment(store, first(store.capsules)).simulationConsent).toBe("REVOKED_OR_MISSING");
+  });
+  it("requires a fresh matching review after another synthetic run", () => {
+    let store = run(simulated(), { type: "decision", input: { capsuleId: "capsule", reviewerId: "reviewer", decision: "Demo approve", note: "Demo review of the original synthetic result only." } }, "decision");
+    store = run(store, { type: "list", capsuleId: "capsule", actorId: "author" }, "listing");
+    store = run(store, { type: "twin", input: { capsuleId: "capsule", runnerId: "author", baselineMs: 100, targetMs: 90, workload: 1, efficiencyPercent: 20 } }, "twin2");
+    expect(first(store.capsules).state).toBe("Simulated");
+    expect(() => run(store, { type: "list", capsuleId: "capsule", actorId: "author" }, "listing2")).toThrow();
+    first(store.capsules).state = "Demo approved";
+    expect(() => run(store, { type: "list", capsuleId: "capsule", actorId: "author" }, "listing3")).toThrow("matching demo review");
+  });
   it("never turns local approval into certification", () => { const store = simulated(); expect(trustAssessment(store, first(store.capsules))).toMatchObject({ certification: "NOT_CERTIFIED", hardware: "NO_HARDWARE_EVIDENCE", releaseAllowed: false, paymentsAllowed: false }); });
   it("keeps release checksums as demo placeholders and signing/distribution off", () => { const store = submitted(); expect(genesisPackage(store, first(store.capsules))).toMatchObject({ checksum: "DEMO_NOT_COMPUTED", signature: null, distribution: "DISABLED", approval: "PENDING_AUTHENTICATED_OWNER_APPROVAL" }); });
   it("enforces owner consent and zero spending for compute nodes", () => { let store = run(base(), { type: "node", input: { ownerId: "author", label: "Sample node", cpu: 2, memoryMb: 512, consent: true, spendCapUsd: 0 } }, "node"); expect(first(store.nodes)).toMatchObject({ spendCapUsd: 0, state: "Opted in locally" }); expect(() => run(store, { type: "revokeNode", nodeId: "node", actorId: "reviewer" }, "revoke")).toThrow("creator"); store = run(store, { type: "revoke", identityId: "author" }, "revoke"); expect(first(store.nodes).state).toBe("Revoked"); });
