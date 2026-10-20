@@ -57,12 +57,13 @@ ${modules.map((m) => `${m.id}: ${m.name} (${m.status}) — ${m.purpose}`).join("
           complete = true;
         }
       } catch (error) {
-        if (request.signal.aborted || cancelled) return;
         const failure = call.getFailure();
         if (failure && requiresPersistentPause(failure.status)) {
           const saved = await supabaseAdmin.from("ai_gateway_state").upsert({ feature: "evolution-pathway", blocked_status: failure.status, message: failure.message });
           if (saved.error) console.error("Could not persist AI access pause");
         }
+        // A browser Stop must not bypass a known terminal access block.
+        if (request.signal.aborted || cancelled) return;
         send({ type: "error", status: failure?.status ?? 502, message: failure?.message ?? (error instanceof Error && error.message.startsWith("The pathway") ? error.message : "The AI did not return a complete pathway. No validation was performed.") });
       } finally {
         if (!cancelled) controller.close();
