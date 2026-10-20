@@ -21,6 +21,7 @@ import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as SandboxRouteImport } from './routes/sandbox'
 import { Route as UniverseRouteImport } from './routes/universe'
+import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -82,6 +83,11 @@ const UniverseRoute = UniverseRouteImport.update({
   path: '/universe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEvolutionPathwayRoute = ApiEvolutionPathwayRouteImport.update({
+  id: '/api/evolution-pathway',
+  path: '/api/evolution-pathway',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/universe': typeof UniverseRoute
+  '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/universe': typeof UniverseRoute
+  '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/universe': typeof UniverseRoute
+  '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/sandbox'
     | '/universe'
+    | '/api/evolution-pathway'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/sandbox'
     | '/universe'
+    | '/api/evolution-pathway'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/sandbox'
     | '/universe'
+    | '/api/evolution-pathway'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   RoadmapRoute: typeof RoadmapRoute
   SandboxRoute: typeof SandboxRoute
   UniverseRoute: typeof UniverseRoute
+  ApiEvolutionPathwayRoute: typeof ApiEvolutionPathwayRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UniverseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/evolution-pathway': {
+      id: '/api/evolution-pathway'
+      path: '/api/evolution-pathway'
+      fullPath: '/api/evolution-pathway'
+      preLoaderRoute: typeof ApiEvolutionPathwayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -288,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   RoadmapRoute: RoadmapRoute,
   SandboxRoute: SandboxRoute,
   UniverseRoute: UniverseRoute,
+  ApiEvolutionPathwayRoute: ApiEvolutionPathwayRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
