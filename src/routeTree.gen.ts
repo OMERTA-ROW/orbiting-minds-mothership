@@ -17,6 +17,7 @@ import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
 import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
+import { Route as PathwayRouteImport } from './routes/pathway'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as SandboxRouteImport } from './routes/sandbox'
@@ -63,6 +64,11 @@ const PartnershipsRoute = PartnershipsRouteImport.update({
   path: '/partnerships',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PathwayRoute = PathwayRouteImport.update({
+  id: '/pathway',
+  path: '/pathway',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlatformRoute = PlatformRouteImport.update({
   id: '/platform',
   path: '/platform',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
+  '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
+  '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/mothership': typeof MothershipRoute
   '/partnerships': typeof PartnershipsRoute
+  '/pathway': typeof PathwayRoute
   '/platform': typeof PlatformRoute
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/mothership'
     | '/partnerships'
+    | '/pathway'
     | '/platform'
     | '/roadmap'
     | '/sandbox'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/mothership'
     | '/partnerships'
+    | '/pathway'
     | '/platform'
     | '/roadmap'
     | '/sandbox'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/mothership'
     | '/partnerships'
+    | '/pathway'
     | '/platform'
     | '/roadmap'
     | '/sandbox'
@@ -192,6 +204,7 @@ export interface RootRouteChildren {
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
   MothershipRoute: typeof MothershipRoute
   PartnershipsRoute: typeof PartnershipsRoute
+  PathwayRoute: typeof PathwayRoute
   PlatformRoute: typeof PlatformRoute
   RoadmapRoute: typeof RoadmapRoute
   SandboxRoute: typeof SandboxRoute
@@ -257,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PartnershipsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pathway': {
+      id: '/pathway'
+      path: '/pathway'
+      fullPath: '/pathway'
+      preLoaderRoute: typeof PathwayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/platform': {
       id: '/platform'
       path: '/platform'
@@ -304,6 +324,7 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgeFusionRoute: KnowledgeFusionRoute,
   MothershipRoute: MothershipRoute,
   PartnershipsRoute: PartnershipsRoute,
+  PathwayRoute: PathwayRoute,
   PlatformRoute: PlatformRoute,
   RoadmapRoute: RoadmapRoute,
   SandboxRoute: SandboxRoute,
