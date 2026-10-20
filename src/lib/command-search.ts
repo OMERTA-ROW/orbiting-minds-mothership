@@ -1,6 +1,6 @@
-import { agents, demoProposals, feed, modules, sampleProjects, universe } from "@/data/evolution";
+import { agents, codeContributions, demoProposals, feed, modules, sampleProjects, universe } from "@/data/evolution";
 
-export type SearchKind = "Module" | "Project" | "Agent" | "Proposal" | "Idea";
+export type SearchKind = "Module" | "Project" | "Agent" | "Proposal" | "Idea" | "Code";
 export interface SearchEntry {
   key: string;
   id: string;
@@ -16,6 +16,7 @@ export const searchEntries: SearchEntry[] = [
   ...agents.map((a) => ({ key: `agent:${a.name}`, id: a.name, kind: "Agent" as const, label: a.name, detail: `${a.role} · ${a.consent}`, keywords: `${a.scope} ${a.name} Agent` })),
   ...demoProposals.map((p) => ({ key: `proposal:${p.id}`, id: p.id, kind: "Proposal" as const, label: p.t, detail: `${p.id} · ${p.p}`, keywords: p.s })),
   ...feed.map((f) => ({ key: `idea:${f.id}`, id: String(f.id), kind: "Idea" as const, label: f.title, detail: `${f.author} · ${f.mode}`, keywords: `${f.body} ${f.tags.join(" ")}` })),
+  ...codeContributions.map((item) => ({ key: `code:${item.id}`, id: item.id, kind: "Code" as const, label: item.title.en, detail: `${item.language} · ${item.author} · DEMO`, keywords: `${item.title.es} ${item.description.en} ${item.description.es} ${item.industry} ${item.license} ${item.authorType} ${item.operator ?? ""}` })),
 ];
 
 export function searchCommands(query: string) {
