@@ -21,3 +21,5 @@
 - Code Exchange interface copy uses keyed English/Spanish dictionaries independently of executable snippets; public documentation references never imply code provenance or a connected repository, why: support localization without silently rewriting code or inventing external permissions.
 - Genesis workflows use pure validated transitions and a separate versioned browser-local store; SDK contracts describe disabled future APIs and never act as endpoints, why: integrated rehearsal without pretending local identity or visibility labels enforce multiuser security.
 - Digital Twin results run only a deterministic synthetic numeric model; arbitrary submitted code, shell commands and hardware connectors never execute, why: distinguish useful simulations from real sandbox or hardware validation.
+
+- SDK JSON validation is loaded only from browser events; schema data remains SSR-safe, why: avoid evaluating the CommonJS validator in server rendering and never transmit user JSON.
