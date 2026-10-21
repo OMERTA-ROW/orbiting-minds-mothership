@@ -19,7 +19,7 @@ export const readForge = createServerFn({ method: "GET" })
   });
 export const createRadioVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((v: unknown) => radioInput.parse(v))
+  .validator((v: unknown) => radioInput.parse(v))
   .handler(async ({ context, data }) => {
     const access = await context.supabase
       .from("beta_access")
@@ -130,7 +130,7 @@ export const createRadioVersion = createServerFn({ method: "POST" })
   });
 export const saveForgeWeb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((v: unknown) => webInput.parse(v))
+  .validator((v: unknown) => webInput.parse(v))
   .handler(async ({ context, data }) => {
     const [access, project] = await Promise.all([
       context.supabase
@@ -184,7 +184,7 @@ export const saveForgeWeb = createServerFn({ method: "POST" })
   });
 export const reviewForgeVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((v: unknown) => forgeReviewInput.parse(v))
+  .validator((v: unknown) => forgeReviewInput.parse(v))
   .handler(async ({ context, data }) => {
     const version = await context.supabase
       .from("forge_versions")
@@ -213,7 +213,7 @@ export const reviewForgeVersion = createServerFn({ method: "POST" })
   });
 export const revokeForgeReview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((v: unknown) => forgeId.parse(v))
+  .validator((v: unknown) => forgeId.parse(v))
   .handler(async ({ context, data }) => {
     const result = await context.supabase
       .from("forge_reviews")
@@ -225,7 +225,7 @@ export const revokeForgeReview = createServerFn({ method: "POST" })
   });
 export const deleteForgeVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((v: unknown) => forgeId.parse(v))
+  .validator((v: unknown) => forgeId.parse(v))
   .handler(async ({ context, data }) => {
     const own = await context.supabase
       .from("forge_versions")

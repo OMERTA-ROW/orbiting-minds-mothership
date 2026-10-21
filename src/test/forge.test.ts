@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import * as wavefile from "wavefile";
+import { WaveFile } from "wavefile";
 import {
   defaultRadioSettings,
   initialWebContent,
@@ -12,7 +12,6 @@ import {
 import { editRadioWav } from "@/lib/forge-radio";
 import { renderForgeWeb, checkForgeWeb } from "@/lib/forge-web";
 import { inspectWav } from "@/lib/quantum";
-const { WaveFile } = wavefile;
 const id = "11111111-1111-4111-8111-111111111111",
   consent = { rights: true, privacy: true };
 const audio = (stereo = false) => {

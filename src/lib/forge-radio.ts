@@ -1,7 +1,6 @@
-import * as wavefile from "wavefile";
+import { WaveFile } from "wavefile";
 import { audioMetrics, inspectWav } from "./quantum";
 import { radioSettings, type RadioSettings } from "./forge";
-const { WaveFile } = wavefile;
 
 export function editRadioWav(bytes: Uint8Array, input: RadioSettings) {
   const settings = radioSettings.parse(input),

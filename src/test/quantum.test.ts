@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import * as wavefile from "wavefile";
+import { WaveFile } from "wavefile";
 import { enhanceWav } from "@/lib/quantum-audio";
 import {
   inspectWav,
@@ -12,7 +12,6 @@ import {
   MAX_MEDIA_BYTES,
 } from "@/lib/quantum";
 
-const { WaveFile } = wavefile;
 const projectId = "11111111-1111-4111-8111-111111111111";
 const consent = { rights: true, privacy: true };
 function wav(
