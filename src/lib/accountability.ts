@@ -19,20 +19,21 @@ export const accountabilityInput=z.object({
  logs:z.string().max(2000),tests:text,timeline:z.array(z.object({at:date,observation:text}).strict()).min(1).max(20),
  correctivePlan:text,safetyPlan:text,privacyTerms:text,sampleOnly:z.literal(true),operatorAuthorized:z.literal(true),consent:z.literal(true),
 }).strict().superRefine((v,c)=>{
- if(v.detectedAt<v.occurredAt)c.addIssue({code:"custom",path:["detectedAt"],message:"Detection cannot precede the incident."});
- if(v.timeline.some((s,i)=>s.at<v.occurredAt||(i>0&&s.at<(v.timeline[i-1]?.at??""))))c.addIssue({code:"custom",path:["timeline"],message:"Timeline must follow occurrence time in chronological order."});
+ if(Date.parse(v.detectedAt)<Date.parse(v.occurredAt))c.addIssue({code:"custom",path:["detectedAt"],message:"Detection cannot precede the incident."});
+ if(v.timeline.some((s,i)=>Date.parse(s.at)<Date.parse(v.occurredAt)||(i>0&&Date.parse(s.at)<Date.parse(v.timeline[i-1]?.at??""))))c.addIssue({code:"custom",path:["timeline"],message:"Timeline must follow occurrence time in chronological order."});
  if(v.releaseId&&!v.codeId)c.addIssue({code:"custom",path:["releaseId"],message:"A release reference requires a matching code sample."});
  if(v.physicalImpact&&v.safetyPlan.length<30)c.addIssue({code:"custom",path:["safetyPlan"],message:"Document physical emergency-stop, trained oversight and independent validation gaps."});
 });
 export type AccountabilityInput=z.infer<typeof accountabilityInput>;
 const review=z.object({actorId:id,at:date,revision:z.number().int().positive(),decision:z.enum(["Reviewed DEMO","Changes requested"]),note:text,privacy:z.literal(true),evidence:z.literal(true),uncertainty:z.literal(true)}).strict();
 const revision=z.object({revision:z.number().int().positive(),at:date,input:accountabilityInput}).strict();
-export const accountabilityRecord=z.object({id,at:date,input:accountabilityInput,revision:z.number().int().positive(),history:z.array(revision).max(20),state:z.enum(["Reported","Review requested","Reviewed DEMO","Changes requested","Withdrawn"]),privacyReviewed:z.boolean(),review:review.nullable(),
+export const accountabilityRecord=z.object({id,at:date,input:accountabilityInput,revision:z.number().int().positive(),history:z.array(revision).max(20),state:z.enum(["Reported","Review requested","Reviewed DEMO","Changes requested","Withdrawn"]),privacyReviewed:z.boolean(),review:review.nullable(),reviews:z.array(review).max(100).default([]),
  notices:z.array(z.object({id,actorId:id,at:date,kind:z.enum(["Dispute","Correction","Resolution"]),note:text,resolves:z.string().max(100)}).strict()).max(100),
  actions:z.array(z.object({id,actorId:id,at:date,plan:text,status:z.enum(["Proposed","Rehearsed locally"]),result:text}).strict()).max(30),
  events:z.array(z.object({id,actorId:id,at:date,action:z.string().max(140)}).strict()).max(200),
 }).strict().superRefine((r,c)=>{
  if(r.state==="Reviewed DEMO"&&(!r.review||r.review.decision!=="Reviewed DEMO"||r.review.revision!==r.revision||r.review.actorId===r.input.reporterId||!r.privacyReviewed))c.addIssue({code:"custom",message:"Current distinct review and privacy confirmation required."});
+ if(r.state==="Reviewed DEMO"&&openDisputes(r).length)c.addIssue({code:"custom",message:"Unresolved disputes prevent a current reviewed DEMO."});
  const latest=r.events.at(-1)?.at??r.at;
  if(Date.parse(r.input.detectedAt)>Date.parse(latest)||r.input.timeline.some(e=>Date.parse(e.at)>Date.parse(latest)))c.addIssue({code:"custom",message:"Incident observations cannot be later than the recording time."});
  if(r.history.some(h=>h.input.reporterId!==r.input.reporterId))c.addIssue({code:"custom",message:"Historical reporter declarations must be preserved."});
@@ -60,7 +61,7 @@ export function applyAccountability(rows:AccountabilityRecord[],g:GenesisStore,c
  const next=structuredClone(rows);date.parse(at);safe(command);
  if(command.type==="accountabilityReport"){
   const input=accountabilityInput.parse(command.input);requireDemoIdentity(g,input.reporterId,"submit_capsules");
-  next.push({id:recordId,at,input,revision:1,history:[],state:"Reported",privacyReviewed:false,review:null,notices:[],actions:[],events:[{id:recordId,actorId:input.reporterId,at,action:"Report recorded / local DEMO"}]});
+  next.push({id:recordId,at,input,revision:1,history:[],state:"Reported",privacyReviewed:false,review:null,reviews:[],notices:[],actions:[],events:[{id:recordId,actorId:input.reporterId,at,action:"Report recorded / local DEMO"}]});
  }else{
   const r=next.find(x=>x.id===command.caseId);if(!r)throw new Error("Local case not found.");
   if(r.state==="Withdrawn")throw new Error("Consent withdrawn; new case actions are blocked.");
@@ -81,7 +82,7 @@ export function applyAccountability(rows:AccountabilityRecord[],g:GenesisStore,c
     if([r.input.proposedBy,r.input.approvedBy,r.input.deployedBy].some(x=>x.actor.toLowerCase()===actor.name.toLowerCase()))throw new Error("Choose a reviewer not declared as proposer, approver or deployer of the incident change.");
     if(r.state!=="Review requested"||!r.privacyReviewed)throw new Error("Reporter privacy review must precede independent local review.");
     if(command.decision==="Reviewed DEMO"&&openDisputes(r).length)throw new Error("Resolve recorded disputes before recording a reviewed DEMO.");
-    r.review=review.parse({actorId:actor.id,at,revision:r.revision,decision:command.decision,note:command.note,privacy:command.privacy,evidence:command.evidence,uncertainty:command.uncertainty});r.state=command.decision;
+    r.review=review.parse({actorId:actor.id,at,revision:r.revision,decision:command.decision,note:command.note,privacy:command.privacy,evidence:command.evidence,uncertainty:command.uncertainty});r.reviews.push(r.review);r.state=command.decision;
    }
    if(command.type==="accountabilityNotice"){
     if(command.kind!=="Dispute")owner();

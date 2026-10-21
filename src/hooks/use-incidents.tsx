@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { genesisStorageKey, useGenesis } from "@/hooks/use-genesis";
 import { genesisStoreSchema } from "@/lib/genesis";
 import { emptyTrustStore, trustStorageKey, trustStoreSchema } from "@/lib/trusted-release";
+import { accountabilityInput } from "@/lib/accountability";
 import { emptyIncidentStore, incidentStorageKey, incidentStoreSchema, applyIncidentCommand, type IncidentCommand, type IncidentStore } from "@/lib/incidents";
 const Context = createContext<{ store: IncidentStore; ready: boolean; issue: string; dispatch: (command: IncidentCommand) => string } | null>(null);
 export function IncidentProvider({ children }: { children: ReactNode }) {
@@ -24,8 +25,11 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
   }
   let trust = emptyTrustStore;
   if(command.type === "accountabilityReport" || command.type === "accountabilityRevise"){
-   try{const raw=localStorage.getItem(trustStorageKey);if(raw!==null)trust=trustStoreSchema.parse(JSON.parse(raw));}
-   catch{throw new Error("Current local release evidence cannot be validated. No incident references saved.");}
+   const input=accountabilityInput.parse(command.input);
+   if(input.releaseId||input.replayId){
+    try{const raw=localStorage.getItem(trustStorageKey);if(raw!==null)trust=trustStoreSchema.parse(JSON.parse(raw));}
+    catch{throw new Error("Current local release evidence cannot be validated. No incident references saved.");}
+   }
   }
   const id = crypto.randomUUID(); const next = applyIncidentCommand(current.current, identityStore, command, id, new Date().toISOString(),trust);
   current.current = next; setStore(next);
