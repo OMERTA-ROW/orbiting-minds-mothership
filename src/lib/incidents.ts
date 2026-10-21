@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { screenDebrief } from "./incident-screening";
+import { accountabilityRecord, applyAccountability, type AccountabilityCommand } from "./accountability";
 import { incidentCategories, incidentExamples } from "@/data/evolution";
 import { publicEvidenceUrl } from "@/lib/embassy";
 import { requireDemoIdentity, type GenesisStore } from "@/lib/genesis";
@@ -25,21 +27,13 @@ export const debriefInput = z.object({
 });
 export type DebriefInput = z.infer<typeof debriefInput>;
 
-// Limited browser-local pattern checks only; no malware analysis, identity verification or complete PII detection.
-export function screenDebrief(input: object) {
- const patterns = [
-  ["Possible email / PII", /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i],
-  ["Possible credential", /\b(?:api[_ -]?key|access[_ -]?token|password|secret)\s*[=:]\s*\S{3,}|\bBearer\s+\S{8,}|\b(?:sk-|ghp_)[\w-]{8,}|-----BEGIN[^\n]*PRIVATE KEY-----/i],
-  ["Possible phone / PII", /(?:\+\d{1,3}[ .-])?\b\d{3}[ .-]\d{3}[ .-]\d{4}\b/],
-  ["Possible private location", /\b(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})\b|\b\d{1,5}\s+[\w ]+\s+(?:Street|Road|Avenue)\b/i],
-  ["Unsafe instruction pattern", /<script\b|javascript:|ignore (?:all |previous )?instructions|disable (?:the )?(?:emergency stop|safety interlock)|bypass (?:permissions|safety)/i],
- ] as const;
- return Object.entries(input).flatMap(([field, value]) => typeof value === "string" ? patterns.filter(([, pattern]) => pattern.test(value)).map(([kind]) => ({ field, kind })) : []);
-}
+export { screenDebrief } from "./incident-screening";
 const review = z.object({ reviewerId: z.string().min(1), note: text, at: z.string().datetime(), decision: z.enum(["Preview approved", "Changes requested"]), privacyConfirmed: z.literal(true), rightsConfirmed: z.literal(true), attributionConfirmed: z.literal(true) });
 const record = z.object({ id: z.string().min(1).max(100), createdAt: z.string().datetime(), input: debriefInput, state: z.enum(["Draft", "Privacy reviewed", "Preview approved", "Changes requested", "Withdrawn"]), privacyReviewerId: z.string().nullable(), review: review.nullable(), revision: z.number().int().min(1) });
 const notice = z.object({ id: z.string(), caseId: z.string(), actorId: z.string(), kind: z.enum(["Correction", "Takedown"]), note: text, at: z.string().datetime() });
-export const incidentStoreSchema = z.object({ version: z.literal(1), debriefs: z.array(record).max(100), notices: z.array(notice).max(300), events: z.array(z.object({ id: z.string(), target: z.string(), action: z.string(), at: z.string().datetime() })).max(500) }).superRefine((s, ctx) => {
+export const incidentStoreSchema = z.object({ version: z.literal(1), accountability: z.array(accountabilityRecord).max(50).optional().default([]), debriefs: z.array(record).max(100), notices: z.array(notice).max(300), events: z.array(z.object({ id: z.string(), target: z.string(), action: z.string(), at: z.string().datetime() })).max(500) }).superRefine((s, ctx) => {
+ if (new Set(s.accountability.map(r=>r.id)).size !== s.accountability.length) ctx.addIssue({code:"custom",message:"Duplicate accountability identifiers"});
+ for(const r of s.accountability) if(screenDebrief({sample:JSON.stringify(r)}).length) ctx.addIssue({code:"custom",message:"Potential sensitive accountability content"});
  if (new Set(s.debriefs.map(r => r.id)).size !== s.debriefs.length) ctx.addIssue({ code: "custom", message: "Duplicate debrief identifiers" });
  for (const r of s.debriefs) {
   if (screenDebrief(r.input).length) ctx.addIssue({ code: "custom", message: "Potential sensitive or unsafe sample content" });
@@ -48,9 +42,9 @@ export const incidentStoreSchema = z.object({ version: z.literal(1), debriefs: z
 });
 export type IncidentStore = z.infer<typeof incidentStoreSchema>;
 export type Debrief = IncidentStore["debriefs"][number];
-export const emptyIncidentStore: IncidentStore = { version: 1, debriefs: [], notices: [], events: [] };
-export type IncidentCommand =
- | { type: "draft"; input: DebriefInput }
+export const emptyIncidentStore: IncidentStore = { version: 1, accountability: [], debriefs: [], notices: [], events: [] };
+export type IncidentCommand = AccountabilityCommand
+ | | { type: "draft"; input: DebriefInput }
  | { type: "revise"; recordId: string; input: DebriefInput }
  | { type: "privacy"; recordId: string; actorId: string; confirmed: boolean }
  | { type: "review"; recordId: string; actorId: string; decision: "Preview approved" | "Changes requested"; note: string; privacyConfirmed: boolean; rightsConfirmed: boolean; attributionConfirmed: boolean }
@@ -58,6 +52,10 @@ export type IncidentCommand =
  | { type: "notice"; caseId: string; actorId: string; kind: "Correction" | "Takedown"; note: string };
 export function applyIncidentCommand(current: IncidentStore, genesis: GenesisStore, command: IncidentCommand, id: string, at: string): IncidentStore {
  const store = structuredClone(incidentStoreSchema.parse(current));
+ if ("caseId" in command && command.type.startsWith("accountability") || command.type === "accountabilityReport") {
+  store.accountability=applyAccountability(store.accountability,genesis,command as AccountabilityCommand,id,at);return incidentStoreSchema.parse(store);
+ }
+ if(command.type === "accountabilityRevise" || command.type === "accountabilityPrivacy" || command.type === "accountabilityWithdraw" || command.type === "accountabilityReview" || command.type === "accountabilityNotice" || command.type === "accountabilityAction")throw new Error("Unsupported accountability command.");
  let target = id;
  const get = (recordId: string) => { const r = store.debriefs.find(r => r.id === recordId); if (!r) throw new Error("Debrief not found."); if (r.state === "Withdrawn") throw new Error("Consent was withdrawn; this record cannot be reviewed or revised."); return r; };
  if (command.type === "draft" || command.type === "revise") {
