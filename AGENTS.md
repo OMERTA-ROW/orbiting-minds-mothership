@@ -24,5 +24,7 @@
 
 - SDK JSON validation is loaded only from browser events; schema data remains SSR-safe, why: avoid evaluating the CommonJS validator in server rendering and never transmit user JSON.
 
-- CARE uses a separate validated versioned browser-local store and pure consent transitions; inventory is fictional and release references historical, why: demonstrate safe workflows without conflating preferences with account security or native capabilities.
+- CARE uses a separate validated versioned browser-local store and pure consent transitions; inventory is fictional and release references historical; additive fields have validated defaults to preserve prior local records, why: demonstrate safe workflows without conflating preferences with account security or native capabilities.
 - CARE, Updates, Pilot, Voice and native-agent reference have public demo routes; no OS, capture, microphone, synthesis, updater or shell API is called, why: real capabilities require separately signed native software, per-action grants and security review.
+
+- CARE scan plans and update-check rehearsals produce structured browser-local audit records, not executable jobs or tamper-evident receipts; channel context is captured on new plans, why: preserve truthful provenance without claiming a native agent or secure audit service.

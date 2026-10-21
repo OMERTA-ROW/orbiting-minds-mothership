@@ -358,3 +358,24 @@ export const careAgentStages = [
   { title: "Stage, observe and recover", detail: "Backup/preflight, bounded official-manager transaction, post-update tests, visible receipts and stop control. Rollback only if the adapter can prove a supported prior package and data recovery path. Never overwrite a system or reboot automatically." },
   { title: "Pilot and Voice are separate", detail: "Optional signed agent / browser adapter, same-origin approved sites, redacted screen inspection, visible timed sessions and emergency stop. Web content is untrusted data, never instructions. Microphone off; on-device speech where feasible, separate cloud/privacy/cost consent, no secret/OTP capture." },
 ] as const;
+
+// Future adapters and CLI contracts: these values are not executable integration configuration.
+export const careUpdateChannels = [
+  { id: "homebrew", name: "Homebrew", os: "macOS", notice: "Formula/cask versions must be matched to Homebrew metadata. Publisher verification and supported rollback remain unproven." },
+  { id: "winget", name: "winget", os: "Windows", notice: "Exact manifest identity, installer hash and Authenticode publisher require separate verification. Unknown versions fail closed." },
+  { id: "apt", name: "APT", os: "Linux", notice: "Distribution versions may carry backported fixes. Signed repository metadata and dependency hashes must be verified; upstream versions are not distro candidates." },
+  { id: "dnf", name: "DNF", os: "Linux", notice: "Detect manager generation and preserve GPG checks. Cached metadata may be stale. History undo is not data recovery." },
+] as const;
+export const careScanScopes = ["Package inventory", "Health snapshot", "Storage review candidates"] as const;
+export const careScheduleDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+export const careCliReference = [
+  { command: "evolution updates check", detail: "Propose trusted metadata checks for opted-in inventory; disclose network/index side effects. No install." },
+  { command: "evolution updates list", detail: "List matched installed/candidate versions, changelog, source, signature, compatibility and rollback evidence." },
+  { command: "evolution updates plan --dry-run", detail: "Prepare exact device-bound changes, dependencies, risk, backups and tests. Nothing applied." },
+  { command: "evolution updates auto enable --scope allowlist", detail: "Separate explicit opt-in to exact trusted low-risk patches only; schedule and revocation required. Not a wildcard grant." },
+  { command: "evolution updates apply --approve", detail: "Future local per-action approval; verify signed plan, owner/device grants, backups, sandbox tests and official-manager transaction. Disabled." },
+  { command: "evolution updates pause", detail: "Revoke pending consent and stop future work. An in-progress native transaction needs adapter-specific safe stopping." },
+  { command: "evolution self-update --check", detail: "Check a pinned Evolution release channel and trusted signing key. No binary/channel exists in this prototype; fail closed." },
+  { command: "evolution care scan", detail: "Future explicitly consented read-only minimal inventory. No personal file contents, monitoring or cache cleanup." },
+  { command: "evolution care review", detail: "Show per-file review queue; review is not move/delete approval. Restore only with proven supported recovery." },
+] as const;
