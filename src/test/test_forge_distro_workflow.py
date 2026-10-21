@@ -207,10 +207,10 @@ async def main():
             m=json.loads((root/'mail-plan.json').read_text())
             check('mail plan contains no account or sending authority',m['connected'] is False and m['account'] is None and m['send'] is False and m['rules']==[])
             await ops.get_by_role('button',name='Adaptive Engine',exact=True).click()
-            await ops.get_by_label('Owned project',exact=True).select_option(label='Original Creator Distro QA')
+            await ops.get_by_label('Upgrade owned project',exact=True).select_option(label='Original Creator Distro QA')
             for label,value in [('Upgrade title','Compatibility proposal'),('Official changelog URL','https://developer.example.org/changelog'),('Current version','1.0.0'),('Proposed version','1.1.0'),('Reason and dependencies','Review official source and dependencies before changing anything.'),('Requested isolated tests','Run isolated compatibility checks only after owner review.'),('Canary and rollback plan','Owner-approved canary and rollback; no actual deploy.')]:
                 await ops.get_by_label(label,exact=True).fill(value)
-            await ops.get_by_text('I authorize only a non-sensitive proposal export for review; no monitoring or execution.',exact=True).check()
+            await ops.get_by_label('Approve upgrade proposal export',exact=True).check()
             async with page.expect_download() as d:
                 await ops.get_by_role('button',name='Export proposed upgrade').click()
             await (await d.value).save_as(str(root/'adaptive-plan.json'))
