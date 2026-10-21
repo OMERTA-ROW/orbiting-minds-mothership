@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import zipfile
 
 TARGETS = [(system, arch) for system in ("darwin", "linux", "windows") for arch in ("amd64", "arm64")]
@@ -13,6 +14,8 @@ def build(out, go):
     if not out.is_absolute() or out.exists() or not out.parent.is_dir():
         raise ValueError("Choose a new absolute staging directory with an existing parent")
     out.mkdir(mode=0o700)
+    incomplete = out / "INCOMPLETE.txt"
+    incomplete.write_text("INCOMPLETE UNSIGNED SOURCE BUILD. Do not distribute; inspect partial staging manually.\n")
     root = Path(__file__).resolve().parents[1]
     manifest = {"kind": "UNSIGNED_SOURCE_ONLY", "version": "0.0.0-source", "signed": False, "published": False, "artifacts": []}
     for system, arch in TARGETS:
@@ -33,6 +36,7 @@ def build(out, go):
         manifest["artifacts"].append({"target": f"{system}/{arch}", "file": archive.name, "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(), "signed": False})
     (out / "source-manifest.json").write_text(json.dumps(manifest, indent=2)+"\n")
     (out / "SHA256SUMS").write_text("".join(f"{a['sha256']}  {a['file']}\n" for a in manifest["artifacts"]))
+    incomplete.unlink()
     print("Built six unsigned source archives; no installation, signing or publication.")
 
 if __name__ == "__main__":
@@ -40,4 +44,8 @@ if __name__ == "__main__":
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--go", default="go")
     args = parser.parse_args()
-    build(args.out, args.go)
+    try:
+        build(args.out, args.go)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        print("Source build failed. No signing, install or upload occurred. Inspect staging at the requested --out path; any INCOMPLETE.txt means partial output, not a release.", file=sys.stderr)
+        sys.exit(1)

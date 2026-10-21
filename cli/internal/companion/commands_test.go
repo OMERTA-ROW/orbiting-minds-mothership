@@ -94,3 +94,13 @@ func TestEmptyPATHDoesNotInspectWorkingDirectory(t *testing.T) {
 		t.Fatal("empty PATH searched cwd")
 	}
 }
+
+func TestWindowsPowerShellAndEffectivePathExtensions(t *testing.T) {
+	dir := t.TempDir()
+	for _, filename := range []string{"OMNI.PS1", "evolution.PY", "omni.not-an-extension"} {
+		if err := os.WriteFile(filepath.Join(dir, filename), []byte("never executed"), 0600); err != nil { t.Fatal(err) }
+	}
+	quoted := "\""+dir+"\""
+	if got := findCommandsWithExtensions("omni", quoted, "windows", ".PY;../../outside"); len(got) != 1 || filepath.Base(got[0]) != "OMNI.PS1" { t.Fatal(got) }
+	if got := findCommandsWithExtensions("evolution", quoted, "windows", ".PY"); len(got) != 1 || filepath.Base(got[0]) != "evolution.PY" { t.Fatal(got) }
+}

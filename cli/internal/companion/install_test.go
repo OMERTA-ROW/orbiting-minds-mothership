@@ -10,6 +10,10 @@ import (
 func fixture(t *testing.T) (string, string) {
 	t.Helper()
 	root := t.TempDir()
+	// macOS may provide temp paths through /var symlink; production accepts
+	// only the resolved explicit directory and still refuses symlink parents.
+	root, err := filepath.EvalSymlinks(root)
+	if err != nil { t.Fatal(err) }
 	exe := filepath.Join(root, "source")
 	if err := os.WriteFile(exe, []byte("fictional-executable"), 0700); err != nil {
 		t.Fatal(err)

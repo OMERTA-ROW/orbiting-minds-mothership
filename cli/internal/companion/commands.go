@@ -28,6 +28,10 @@ type DoctorReport struct {
 // Look only for these two command names in explicitly configured PATH entries.
 // Never execute discovered files, inspect other toolchains or read credentials.
 func FindCommands(name, path, platform string) []string {
+	return findCommandsWithExtensions(name, path, platform, os.Getenv("PATHEXT"))
+}
+
+func findCommandsWithExtensions(name, path, platform, pathExt string) []string {
 	found := []string{}
 	separator := string(os.PathListSeparator)
 	if platform == "windows" {
@@ -35,14 +39,43 @@ func FindCommands(name, path, platform string) []string {
 	}
 	names := []string{name}
 	if platform == "windows" {
-		names = []string{name + ".exe", name + ".cmd", name + ".bat", name + ".com", name}
+		// Include PowerShell scripts plus effective PATHEXT, even if defaults
+		// have been replaced. Never interpret extensions as paths or execute them.
+		for _, ext := range strings.Split(".exe;.cmd;.bat;.com;.ps1;"+pathExt, ";") {
+			ext = strings.ToLower(strings.TrimSpace(ext))
+			if len(ext) < 2 || ext[0] != '.' || strings.IndexFunc(ext[1:], func(r rune) bool {
+				return !(r >= 'a' && r <= 'z' || r >= '0' && r <= '9')
+			}) >= 0 {
+				continue
+			}
+			names = append(names, name+ext)
+		}
 	}
 	seen := map[string]bool{}
 	for _, dir := range strings.Split(path, separator) {
+		if platform == "windows" {
+			dir = strings.Trim(dir, "\"")
+		}
 		if dir == "" {
 			continue
 		} // Do not implicitly search the current directory.
-		for _, filename := range names {
+		candidates := names
+		if platform == "windows" {
+			// Directory enumeration preserves Windows case-insensitive command
+			// names when these rules are unit-tested on a Unix host too.
+			candidates = nil
+			entries, err := os.ReadDir(dir)
+			if err != nil { continue }
+			for _, entry := range entries {
+				for _, wanted := range names {
+					if strings.EqualFold(entry.Name(), wanted) {
+						candidates = append(candidates, entry.Name())
+						break
+					}
+				}
+			}
+		}
+		for _, filename := range candidates {
 			p := filepath.Join(dir, filename)
 			info, err := os.Stat(p)
 			if err != nil || !info.Mode().IsRegular() {

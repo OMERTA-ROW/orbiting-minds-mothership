@@ -43,7 +43,7 @@ export function Companion() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild variant="cosmic">
-              <Link to="/omni">
+              <Link to="/omni" search={{ world: "nexus-nebula" }}>
                 Try OMNI in your browser
                 <ArrowUpRight size={15} />
               </Link>
@@ -147,7 +147,7 @@ export function Companion() {
                   },
                   {
                     title: "05 / Remove only owned copies",
-                    body: "Tested source uninstall requires explicit approval and an unchanged dedicated directory/receipt. Extra files, modified binaries and symlinks block removal. No recursive cleanup of user files.",
+                    body: "Linux source tests cover consent and unchanged-directory checks. Native macOS/Windows uninstall and permissions remain unverified. Extra files, modified binaries and symlinks block removal; no recursive cleanup.",
                   },
                 ].map((s) => (
                   <li key={s.title} className="py-5">
