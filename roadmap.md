@@ -1,10 +1,10 @@
 # Cosmic Mothership redesign
 
 ## Entertainment Galaxy
-- [ ] Add six creative studios, demo media templates and evidence-labeled integration discovery within OmniBridge/Nexus.
-- [ ] Add editable Scene-to-Screen local pipelines, explicit roles/scopes, rights/credits, version checkpoints and publication review rehearsal.
-- [ ] Add safe synthetic A/B previews and Media Code Crucible numeric regression checks, never external execution or fabricated media evidence.
-- [ ] Test consent, editing/review invalidation, project isolation, pause/withdrawal, persistence and desktop/mobile navigation.
+- [x] Add six creative studios, demo media templates and evidence-labeled integration discovery within OmniBridge/Nexus.
+- [x] Add editable Scene-to-Screen local pipelines, explicit roles/scopes, rights/credits, version checkpoints and publication review rehearsal.
+- [x] Add safe synthetic A/B previews and Media Code Crucible numeric regression checks, never external execution or fabricated media evidence.
+- [x] Test consent, editing/review invalidation, project isolation, pause/withdrawal, persistence and desktop/mobile navigation.
 - [ ] Enable live creative adapters/private media/publication. Blocker: pending owner profile-data decision, secure accounts and owner isolation, supported authorized adapters, rights/privacy review, signed companion and independent tests. No publication.
 
 ## OmniBridge first phase
