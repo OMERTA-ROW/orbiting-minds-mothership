@@ -43,8 +43,13 @@ export function OmniAssistant({
   const paused = g.paused || n.paused;
   const world = nexusProjects.find((p) => p.id === worldId);
   useEffect(() => {
-    const staged = takeOmniHandoff(worldId);
-    if (staged) setText(staged);
+    try {
+      const staged = takeOmniHandoff(worldId, readCreativePause());
+      if (staged) setText(staged);
+    } catch {
+      takeOmniHandoff(worldId, true);
+      setNotice("Local safety preferences unavailable; draft transfer blocked.");
+    }
     textarea.current?.focus();
   }, [worldId]);
   const send = (raw: string) => {

@@ -91,17 +91,27 @@ describe("OMNI coordinator boundaries", () => {
   });
   it("consumes an event-only handoff once", () => {
     stageOmniHandoff("nexus-studio", "@omni Plan a Blender scene", false);
-    expect(takeOmniHandoff("nexus-studio")).toBe("@omni Plan a Blender scene");
-    expect(takeOmniHandoff("nexus-studio")).toBe("");
+    expect(takeOmniHandoff("nexus-studio", false)).toBe("@omni Plan a Blender scene");
+    expect(takeOmniHandoff("nexus-studio", false)).toBe("");
   });
   it("does not expose a handoff to another world", () => {
     stageOmniHandoff("nexus-studio", "@omni Plan a Blender scene", false);
-    expect(takeOmniHandoff("nexus-nebula")).toBe("");
+    expect(takeOmniHandoff("nexus-nebula", false)).toBe("");
   });
   it("blocks handoff staging while paused", () => {
     expect(() => stageOmniHandoff("nexus-studio", "@omni Plan a Blender scene", true)).toThrow(
       /paused/,
     );
-    expect(takeOmniHandoff("nexus-studio")).toBe("");
+    expect(takeOmniHandoff("nexus-studio", false)).toBe("");
+  });
+  it("discards staged text when paused before consumption", () => {
+    stageOmniHandoff("nexus-studio", "@omni Plan a Blender scene", false);
+    expect(takeOmniHandoff("nexus-studio", true)).toBe("");
+    expect(takeOmniHandoff("nexus-studio", false)).toBe("");
+  });
+  it("clears prior staged text when a new transfer is blocked", () => {
+    stageOmniHandoff("nexus-studio", "@omni Plan a Blender scene", false);
+    expect(() => stageOmniHandoff("nexus-studio", "@omni Plan a new scene", true)).toThrow();
+    expect(takeOmniHandoff("nexus-studio", false)).toBe("");
   });
 });

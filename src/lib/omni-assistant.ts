@@ -60,13 +60,14 @@ export function omniTemplateReply(
 // Event-only, ephemeral handoff: never stored in a URL, browser storage or server records.
 let pending: { worldId: string; message: string } | null = null;
 export function stageOmniHandoff(worldId: string, message: string, paused: boolean) {
+  pending = null;
   if (paused) throw new Error("Guardian or Nexus local planning is paused.");
   omniWorld.parse(worldId);
   parseOmniMessage(message);
   pending = { worldId, message };
 }
-export function takeOmniHandoff(worldId: string) {
+export function takeOmniHandoff(worldId: string, paused: boolean) {
   const value = pending;
   pending = null;
-  return value?.worldId === worldId ? value.message : "";
+  return !paused && value?.worldId === worldId ? value.message : "";
 }
