@@ -42,8 +42,9 @@ export function PostEditPrompt({
         </Button>
       </div>
       <p className="mt-3 text-xs leading-6 text-warning">
-        Manual release preparation only. Schedule saves a date intention, not a delivery job. Every
-        release needs fresh rights, metadata, privacy and human review.
+        Manual release preparation only. Schedule opens a draft for a date intention; saving needs
+        confirmation and creates no delivery job. Every release needs fresh rights, metadata, privacy
+        and human review.
       </p>
     </section>
   );
