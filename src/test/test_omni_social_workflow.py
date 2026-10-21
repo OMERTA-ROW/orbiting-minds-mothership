@@ -102,7 +102,6 @@ async def main():
         check('stale revision denied',call('POST',rpc,{'_action':'stop','_id':row['id'],'_revision':1},a['token']).status_code>=400)
         check('missing consent denied',call('POST',rpc,{'_action':'save','_project':pid,'_content':row['content']},a['token']).status_code>=400)
         check('null consent denied',call('POST',rpc,{'_action':'save','_project':pid,'_content':row['content'],'_approve':None},a['token']).status_code>=400)
-        check('null review consent denied',call('POST',rpc,{'_action':'review','_id':row['id'],'_revision':4,'_approve':None},a['token']).status_code>=400)
         check('null action denied',call('POST',rpc,{'_action':None,'_project':pid,'_content':row['content'],'_approve':True},a['token']).status_code>=400)
         check('numeric declared title denied',call('POST',rpc,{'_action':'save','_project':pid,'_content':{**row['content'],'title':1234},'_approve':True},a['token']).status_code>=400)
         check('string rights consent denied',call('POST',rpc,{'_action':'save','_project':pid,'_content':{**row['content'],'rights':'true'},'_approve':True},a['token']).status_code>=400)
@@ -113,6 +112,15 @@ async def main():
         check('paused stop all remains available',call('POST',rpc,{'_action':'stop_all'},a['token']).ok)
         check('trigger-generated private audit',len(call('GET','/rest/v1/beta_audit?capability=eq.omni_social_drafts',token=a['token']).json())==4)
         check('other owner audit hidden',call('GET','/rest/v1/beta_audit?capability=eq.omni_social_drafts',token=b['token']).json()==[])
+        call('PATCH','/rest/v1/beta_access?user_id=eq.'+a['id'],{'paused':False},token=a['token'])
+        fresh=call('POST',rpc,{'_action':'save','_project':pid,'_content':row['content'],'_approve':True},a['token'])
+        check('valid fresh draft for isolated null review test',fresh.ok and fresh.json()['state']=='DRAFT')
+        fresh_row=fresh.json()
+        check('null review consent denied on otherwise valid draft',call('POST',rpc,{'_action':'review','_id':fresh_row['id'],'_revision':1,'_approve':None},a['token']).status_code>=400)
+        readback=call('GET','/rest/v1/omni_social_drafts?id=eq.'+fresh_row['id'],token=a['token']).json()[0]
+        check('null review cannot change draft or review timestamp',readback['state']=='DRAFT' and readback['revision']==1 and readback['reviewed_at'] is None)
+        stopped=call('POST',rpc,{'_action':'stop','_id':fresh_row['id'],'_revision':1},a['token'])
+        check('single exact draft stop revokes review',stopped.ok and stopped.json()['state']=='STOPPED' and stopped.json()['reviewed_at'] is None and stopped.json()['revision']==2)
         print('RESULT',checks,'authenticated private social/developer planning checks passed')
     finally:
         for u in users:
