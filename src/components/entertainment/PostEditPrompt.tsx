@@ -43,8 +43,8 @@ export function PostEditPrompt({
       </div>
       <p className="mt-3 text-xs leading-6 text-warning">
         Manual release preparation only. Schedule opens a draft for a date intention; saving needs
-        confirmation and creates no delivery job. Every release needs fresh rights, metadata, privacy
-        and human review.
+        confirmation and creates no delivery job. Every release needs fresh rights, metadata,
+        privacy and human review.
       </p>
     </section>
   );
