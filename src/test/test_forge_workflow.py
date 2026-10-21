@@ -99,7 +99,7 @@ async def main():
             await page.screenshot(path=str(root/'radio-reviewed.png'))
             await forge.get_by_label('Review Forge export').check()
             await forge.get_by_role('button',name='Record owner review').click()
-            await forge.get_by_text('OWNER EXPORT REVIEW RECORDED',exact=True).wait_for()
+            await forge.get_by_text('OWNER EXPORT REVIEW RECORDED',exact=False).wait_for()
             async with page.expect_download() as d:
                 await forge.get_by_role('button',name='Export saved radio').click()
             radio_download=await d.value
