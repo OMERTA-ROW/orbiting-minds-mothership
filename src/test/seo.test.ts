@@ -6,7 +6,7 @@ import { Route as BetaRoute } from "@/routes/_authenticated/beta";
 type Head = { meta: Array<Record<string, string>>; links?: Array<Record<string, string>> };
 const headOf = (route: { options: { head?: unknown } }) => (route.options.head as (ctx: unknown) => Head)({});
 const metaValue = (head: Head, key: string) =>
-  head.meta.find((m) => m.name === key || m.property === key)?.content;
+  head.meta.find((m) => m["name"] === key || m["property"] === key)?.["content"];
 
 describe("Owner-approved search indexing", () => {
   it("permits indexing only when explicitly approved", () => {
