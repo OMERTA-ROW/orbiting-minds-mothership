@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { roboticsCategories, roboticsScenarios, codeContributions, guardianReviewSurfaces } from "@/data/evolution";
-import { applyRoboticsCommand as apply, calculateRobotics, defaultRoboticsConfig, initialRoboticsStore, roboticsConfig, roboticsStoreSchema, roboticsReadiness, roboticsPassport, filterRobotics, roboticsPresetSearch, type RoboticsStore, type RoboticsCommand } from "@/lib/robotics";
+import { applyRoboticsCommand as apply, calculateRobotics, defaultRoboticsConfig, initialRoboticsStore, roboticsConfig, roboticsStoreSchema, roboticsReadiness, roboticsPassport, filterRobotics, roboticsPresetSearch, roboticsChallengeDraft, type RoboticsStore, type RoboticsCommand } from "@/lib/robotics";
 import { searchCommands } from "@/lib/command-search";
 const at = "2026-10-21T00:25:00.000Z";
 const runCommand: RoboticsCommand = { type: "run", scenarioId: "rover-safe-stop", operator: "Demo Operator", consent: true, config: defaultRoboticsConfig("reaction") };
@@ -8,6 +8,7 @@ const run = (s: RoboticsStore, c: RoboticsCommand, id = "run") => apply(s,c,id,a
 const recorded = () => run(initialRoboticsStore,runCommand);
 const review: RoboticsCommand = { type: "review", runId: "run", reviewer: "Demo Reviewer", note: "Independent physical E-stop testing and expert safety review are still required.", decision: "Ready for expert review", consent: true };
 describe("Robotics research boundaries", () => {
+ it("prepares documented challenge drafts without saving or granting release", () => { for (const scenario of roboticsScenarios) { const draft=roboticsChallengeDraft(scenario.id); expect(draft?.acceptance).toBe(scenario.acceptance); expect(draft?.problem).toContain("hardware release blocked"); expect(draft?.title).toBe(scenario.title); expect(initialRoboticsStore.runs).toEqual([]); } expect(roboticsChallengeDraft("unknown")).toBeUndefined(); });
  it("covers the six founder categories with no seeded evidence", () => { expect(roboticsCategories.map(c => c.id)).toEqual(["robotics","mobility","service","rescue","aerospace","public"]); expect(new Set(roboticsScenarios.map(s => s.category)).size).toBe(6); expect(initialRoboticsStore).toEqual({ version:1,runs:[],reviews:[] }); });
  it("references actual original code contributions and accountable fictional operators", () => { for (const s of roboticsScenarios) { const code=codeContributions.find(c=>c.id===s.contributionId); expect(code?.author).toBe(s.author); expect(code?.license).toMatch(/MIT|Apache-2.0/); if(s.agent) expect(s.operator).toBe(code?.operator); expect(s.dataset.version).toBe("demo-1"); expect(s.tests.length).toBeGreaterThan(0); } });
  it("requires explicit operator consent before a calculation", () => { expect(()=>run(initialRoboticsStore,{...runCommand,consent:false})).toThrow("consent"); });

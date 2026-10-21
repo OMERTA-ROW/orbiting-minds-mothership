@@ -29,6 +29,7 @@ const runSchema = z.object({ id: z.string().min(1).max(100), scenarioId, at: z.s
 const reviewSchema = z.object({ id: z.string().min(1).max(100), runId: z.string(), scenarioId, reviewer: z.string().trim().min(2).max(80), note: z.string().trim().min(10).max(1200), decision: z.enum(["Request changes", "Ready for expert review"]), at: z.string().datetime(), authenticated: z.literal(false), hardwareApproval: z.literal(false) });
 export const roboticsStoreSchema = z.object({ version: z.literal(1), runs: z.array(runSchema).max(150), reviews: z.array(reviewSchema).max(150) }).superRefine((s, ctx) => {
  if (new Set(s.runs.map(r => r.id)).size !== s.runs.length || new Set(s.reviews.map(r => r.id)).size !== s.reviews.length) ctx.addIssue({ code: "custom", message: "Duplicate records" });
+ // Historical reviews remain attached to their original run; readiness only selects the newest run.
  for (const review of s.reviews) { const run = s.runs.find(r => r.id === review.runId && r.scenarioId === review.scenarioId); if (!run || run.operator.toLowerCase() === review.reviewer.toLowerCase() || (review.decision === "Ready for expert review" && run.result.outcome !== "Within virtual budget")) ctx.addIssue({ code: "custom", message: "Review must match a recorded run and distinct declared reviewer" }); }
 });
 export type RoboticsStore = z.infer<typeof roboticsStoreSchema>;
@@ -66,3 +67,8 @@ export function filterRobotics(query: string, category: string, model = "") {
  return roboticsScenarios.filter(s => (!category || s.category === category) && (!model || s.model === model) && terms.every(t => `${s.title} ${s.problem} ${s.author} ${s.operator ?? ""} ${s.compatibility} ${s.dataset.name} ${s.category}`.toLowerCase().includes(t)));
 }
 export function roboticsPresetSearch(search: Record<string, unknown>): { scenario?: string | undefined } { return { scenario: getRoboticsScenario(search["scenario"])?.id }; }
+
+export function roboticsChallengeDraft(id: unknown) {
+ const scenario = getRoboticsScenario(id);
+ return scenario ? { title: scenario.title, domain: scenario.domain, problem: `${scenario.problem}\nResearch only; hardware release blocked. ${scenario.risks.join("; ")}`, acceptance: scenario.acceptance } : undefined;
+}
