@@ -1,14 +1,17 @@
 import { z } from "zod";
 import { genesisChallenges, genesisDomains, genesisRoles, genesisScopes, codeContributions } from "@/data/evolution";
+import { passportInput, openContributionInput, openContributionSchema, sameOpenContribution } from "@/lib/embassy";
 
 const name = z.string().trim().min(2).max(80);
 const detail = z.string().trim().min(10).max(4000);
 const id = z.string().min(1).max(100);
 const date = z.string().datetime();
-export const identityInput = z.object({ name, kind: z.enum(["Human", "Developer", "Agent operator"]), agentName: z.string().trim().max(80), role: z.enum(genesisRoles), scopes: z.array(z.enum(genesisScopes)).min(1).max(3), consent: z.literal(true), spendCapUsd: z.literal(0) }).superRefine((value, ctx) => {
+export const identityInput = z.object({ name, kind: z.enum(["Human", "Developer", "Agent operator", "Sponsor"]), agentName: z.string().trim().max(80), role: z.enum(genesisRoles), scopes: z.array(z.enum(genesisScopes)).min(1).max(3), consent: z.literal(true), spendCapUsd: z.literal(0), passport: passportInput.optional() }).superRefine((value, ctx) => {
   if (value.kind === "Agent operator" && value.agentName.length < 2) ctx.addIssue({ code: "custom", path: ["agentName"], message: "Name the agent and its responsible human operator." });
+  if (value.kind === "Agent operator" && !value.passport) ctx.addIssue({ code: "custom", path: ["passport"], message: "Declare model, capabilities and responsible operator authorization. Use Undisclosed when appropriate." });
+  if (value.kind !== "Agent operator" && value.agentName) ctx.addIssue({ code: "custom", path: ["agentName"], message: "Agents must use the operator-authorized registration path." });
 });
-const identitySchema = z.object({ id, name, kind: z.enum(["Human", "Developer", "Agent operator"]), agentName: z.string().max(80), role: z.enum(genesisRoles), scopes: z.array(z.enum(genesisScopes)).min(1).max(3), consent: z.literal(true), spendCapUsd: z.literal(0), state: z.enum(["Active", "Revoked"]), createdAt: date });
+const identitySchema = z.object({ id, name, kind: z.enum(["Human", "Developer", "Agent operator", "Sponsor"]), agentName: z.string().max(80), role: z.enum(genesisRoles), scopes: z.array(z.enum(genesisScopes)).min(1).max(3), consent: z.literal(true), spendCapUsd: z.literal(0), state: z.enum(["Active", "Revoked"]), createdAt: date, passport: passportInput.optional() });
 export const challengeInput = z.object({ title: z.string().trim().min(5).max(140), domain: z.enum(genesisDomains), problem: detail, acceptance: detail, visibility: z.enum(["Open", "Private"]), bountyUsd: z.number().finite().min(0).max(1000000).nullable(), ownerId: id });
 const challengeSchema = challengeInput.extend({ id, ownerId: id.nullable(), ownerName: name, funding: z.literal("DEMO_PROPOSAL"), state: z.enum(["Open", "Closed"]), createdAt: date, demo: z.literal(true), contributionId: z.string().optional() });
 const source = z.string().url().max(1000).refine((url) => { try { const parsed = new URL(url); return parsed.protocol === "https:" && !parsed.username && !parsed.password; } catch { return false; } }, "Use a public HTTPS evidence link; no credentials.");
@@ -21,17 +24,18 @@ const decisionSchema = decisionInput.extend({ id, createdAt: date, twinId: id.nu
 const eventSchema = z.object({ id, createdAt: date, actor: name, action: z.string().max(160), targetId: id });
 const nodeSchema = z.object({ id, ownerId: id, label: name, cpu: z.number().int().min(1).max(16), memoryMb: z.number().int().min(128).max(4096), consent: z.literal(true), spendCapUsd: z.literal(0), state: z.enum(["Opted in locally", "Revoked"]), createdAt: date });
 export const computeInput = nodeSchema.omit({ id: true, state: true, createdAt: true });
-export const genesisStoreSchema = z.object({ version: z.literal(1), identities: z.array(identitySchema).max(100), challenges: z.array(challengeSchema).max(100), capsules: z.array(capsuleSchema).max(300), twins: z.array(twinSchema).max(500), decisions: z.array(decisionSchema).max(500), events: z.array(eventSchema).max(1000), nodes: z.array(nodeSchema).max(100) });
+export const genesisStoreSchema = z.object({ version: z.literal(1), identities: z.array(identitySchema).max(100), challenges: z.array(challengeSchema).max(100), capsules: z.array(capsuleSchema).max(300), twins: z.array(twinSchema).max(500), decisions: z.array(decisionSchema).max(500), events: z.array(eventSchema).max(1000), nodes: z.array(nodeSchema).max(100), openContributions: z.array(openContributionSchema).max(300).default([]) });
 export type GenesisStore = z.infer<typeof genesisStoreSchema>;
 export type Identity = GenesisStore["identities"][number];
 export type Challenge = GenesisStore["challenges"][number];
 export type Capsule = GenesisStore["capsules"][number];
-export const emptyGenesisStore: GenesisStore = { version: 1, identities: [], challenges: genesisChallenges.map((item) => ({ ...item })), capsules: [], twins: [], decisions: [], events: [], nodes: [] };
+export const emptyGenesisStore: GenesisStore = { version: 1, identities: [], challenges: genesisChallenges.map((item) => ({ ...item })), capsules: [], twins: [], decisions: [], events: [], nodes: [], openContributions: [] };
 export function readGenesisStore(raw: string | null): GenesisStore {
   try { const parsed = genesisStoreSchema.safeParse(JSON.parse(raw ?? "null")); return parsed.success ? parsed.data : structuredClone(emptyGenesisStore); } catch { return structuredClone(emptyGenesisStore); }
 }
 export type GenesisCommand =
   | { type: "identity"; input: z.input<typeof identityInput> }
+  | { type: "openContribution"; input: z.input<typeof openContributionInput> }
   | { type: "revoke"; identityId: string }
   | { type: "challenge"; input: z.input<typeof challengeInput> }
   | { type: "close"; challengeId: string; actorId: string }
@@ -54,6 +58,14 @@ export function applyGenesisCommand(current: GenesisStore, command: GenesisComma
   const capsuleFor = (capsuleId: string) => { const capsule = store.capsules.find((item) => item.id === capsuleId); if (!capsule) throw new Error("Capsule not found."); return capsule; };
   switch (command.type) {
     case "identity": { const data = identityInput.parse(command.input); store.identities.push({ ...data, id: recordId, createdAt, state: "Active" }); actor = data.name; action = "Declared local demo identity"; break; }
+    case "openContribution": {
+      const data = openContributionInput.parse(command.input);
+      const person = requireDemoIdentity(store, data.identityId, "submit_capsules");
+      if (data.challengeId && !store.challenges.some((item) => item.id === data.challengeId && item.state === "Open")) throw new Error("Select an open local challenge or leave it unlinked.");
+      if (store.openContributions.some((item) => sameOpenContribution(item.input, data))) throw new Error("This contribution is already recorded for this local identity.");
+      store.openContributions.push({ id: recordId, createdAt, input: data, state: "Pending human review", evidence: "SELF_DECLARED_NOT_EXECUTED" });
+      actor = person.name; action = `Recorded Open Call ${data.kind.toLowerCase()} · pending human review`; break;
+    }
     case "revoke": { const person = requireDemoIdentity(store, command.identityId); person.state = "Revoked"; store.nodes.filter((node) => node.ownerId === person.id).forEach((node) => { node.state = "Revoked"; }); store.capsules.forEach((capsule) => { const latestDecision = store.decisions.filter((decision) => decision.capsuleId === capsule.id).at(-1); const latestTwin = store.twins.filter((twin) => twin.capsuleId === capsule.id).at(-1); if ((capsule.identityId === person.id || latestDecision?.reviewerId === person.id || latestTwin?.runnerId === person.id) && (capsule.state === "Demo approved" || capsule.state === "Demo listed")) capsule.state = "Changes requested"; }); actor = person.name; action = "Revoked local consent and dependent approvals / nodes"; targetId = person.id; break; }
     case "challenge": { const data = challengeInput.parse(command.input); const person = requireDemoIdentity(store, data.ownerId); store.challenges.push({ ...data, id: recordId, ownerName: person.name, funding: "DEMO_PROPOSAL", state: "Open", createdAt, demo: true }); actor = person.name; action = "Proposed technical challenge · no funded bounty"; break; }
     case "close": { const person = requireDemoIdentity(store, command.actorId); const challenge = store.challenges.find((item) => item.id === command.challengeId); if (!challenge || challenge.ownerId !== person.id) throw new Error("Only the local challenge creator can close it. Real moderation is unconfigured."); challenge.state = "Closed"; actor = person.name; action = "Closed local challenge"; targetId = challenge.id; break; }

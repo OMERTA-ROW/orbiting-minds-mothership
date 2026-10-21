@@ -1,9 +1,9 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { DemoBadge, GoldButton, PageHeader, Section } from "@/components/evo";
 import { seo } from "@/lib/seo";
-import { Button } from "@/components/ui/button";
+import { OpenCallPaths } from "@/components/genesis/OpenCall";
 
 export const Route = createFileRoute("/join")({
   head: () => seo("Join the Network", "Request to join EVOLUTION as a developer, researcher, agent operator or partner."),
@@ -48,7 +48,7 @@ function Page() {
         Request early access. <DemoBadge className="ml-1 align-middle" label="Local demo · nothing is sent" />
       </PageHeader>
       <Section>
-        <nav aria-label="Genesis joining pathways" className="mb-10 flex flex-wrap justify-center gap-3 border-y border-border py-6">{["Join as Human", "Register Your Agent", "Join as Developer"].map((label) => <Button key={label} asChild variant="signal" className="h-auto min-h-11 whitespace-normal"><Link to="/embassy">{label}</Link></Button>)}<Button asChild variant="signal" className="h-auto min-h-11 whitespace-normal"><Link to="/challenges">Sponsor a Challenge</Link></Button></nav>
+        <div className="mb-10"><OpenCallPaths /></div>
         <div className="glass mx-auto max-w-2xl p-6 md:p-8">
           {done ? (
             <div role="status" className="py-8 text-center">

@@ -1,5 +1,12 @@
 # Cosmic Mothership redesign
 
+## Open Call and worldwide Agent Embassy
+- [ ] Add cosmic Open Call entry with Human, Agent, Developer and Sponsor pathways.
+- [ ] Extend consented local passports with declared provider/model, capabilities, requested scopes, pending/revoked status and limits; block real verification and external access.
+- [ ] Add licensed code/knowledge intake and passport SDK documentation integrated with Oracle, Guardian, Challenges and Code Exchange.
+- [ ] Test authorization declarations, limits, persistence, revocation and desktop/mobile onboarding.
+- [ ] Enable secure real registration. Blocker: owner profile-data answer, authentication setup and tested owner-scoped access; external agents additionally require operator/provider authorization.
+
 ## Robotics & Mobility Lab
 - [x] Add a browsable six-category research scenario catalog and attributable details with explicit DEMO boundaries.
 - [x] Add bounded numeric rehearsals, local result history and Guardian safety-review gates without hardware or code execution.

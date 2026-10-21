@@ -5,6 +5,7 @@ import { DemoBadge, PageHeader, Section } from "@/components/evo";
 import { Button } from "@/components/ui/button";
 import { useGenesis } from "@/hooks/use-genesis";
 export const genesisLinks = [
+  { to: "/open-call", label: "Open Call" },
   { to: "/robotics", label: "Robotics & Mobility" },
   { to: "/challenges", label: "Grand Challenges" }, { to: "/embassy", label: "Agent Embassy" }, { to: "/discovery", label: "Discovery Radar" }, { to: "/sdk", label: "SDK / API" }, { to: "/digital-twin", label: "Digital Twin Lab" }, { to: "/trust", label: "Trust" }, { to: "/marketplace", label: "Marketplace" }, { to: "/compute-grid", label: "Compute Grid" }, { to: "/releases", label: "Release Galaxy" },
 ] as const;

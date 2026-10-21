@@ -28,6 +28,7 @@ import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MothershipRouteImport } from './routes/mothership'
+import { Route as OpenCallRouteImport } from './routes/open-call'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
 import { Route as PathwayRouteImport } from './routes/pathway'
 import { Route as PilotRouteImport } from './routes/pilot'
@@ -142,6 +143,11 @@ const MarketplaceRoute = MarketplaceRouteImport.update({
 const MothershipRoute = MothershipRouteImport.update({
   id: '/mothership',
   path: '/mothership',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpenCallRoute = OpenCallRouteImport.update({
+  id: '/open-call',
+  path: '/open-call',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnershipsRoute = PartnershipsRouteImport.update({
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
+  '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
   '/pilot': typeof PilotRoute
@@ -306,6 +313,7 @@ export interface FileRoutesByTo {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
+  '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
   '/pilot': typeof PilotRoute
@@ -348,6 +356,7 @@ export interface FileRoutesById {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
+  '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
   '/pilot': typeof PilotRoute
@@ -391,6 +400,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/marketplace'
     | '/mothership'
+    | '/open-call'
     | '/partnerships'
     | '/pathway'
     | '/pilot'
@@ -432,6 +442,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/marketplace'
     | '/mothership'
+    | '/open-call'
     | '/partnerships'
     | '/pathway'
     | '/pilot'
@@ -473,6 +484,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/marketplace'
     | '/mothership'
+    | '/open-call'
     | '/partnerships'
     | '/pathway'
     | '/pilot'
@@ -515,6 +527,7 @@ export interface RootRouteChildren {
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
   MarketplaceRoute: typeof MarketplaceRoute
   MothershipRoute: typeof MothershipRoute
+  OpenCallRoute: typeof OpenCallRoute
   PartnershipsRoute: typeof PartnershipsRoute
   PathwayRoute: typeof PathwayRoute
   PilotRoute: typeof PilotRoute
@@ -670,6 +683,13 @@ declare module '@tanstack/react-router' {
       path: '/mothership'
       fullPath: '/mothership'
       preLoaderRoute: typeof MothershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/open-call': {
+      id: '/open-call'
+      path: '/open-call'
+      fullPath: '/open-call'
+      preLoaderRoute: typeof OpenCallRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partnerships': {
@@ -835,6 +855,7 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgeFusionRoute: KnowledgeFusionRoute,
   MarketplaceRoute: MarketplaceRoute,
   MothershipRoute: MothershipRoute,
+  OpenCallRoute: OpenCallRoute,
   PartnershipsRoute: PartnershipsRoute,
   PathwayRoute: PathwayRoute,
   PilotRoute: PilotRoute,

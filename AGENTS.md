@@ -20,6 +20,7 @@
 - Code Exchange domain helpers are pure and browser-safe; demo collaboration is persisted only in a validated, versioned browser-local store shared by Exchange, Commons and Pulse, why: useful review flows and truthful local activity without impersonating secure multi-user persistence.
 - Localize Exchange copy independently of code; documentation never implies repository provenance, why: translation must not rewrite code or invent permissions.
 - Genesis workflows use pure validated transitions and a separate versioned browser-local store; SDK contracts describe disabled future APIs and never act as endpoints, why: integrated rehearsal without pretending local identity or visibility labels enforce multiuser security.
+- Open Call uses the existing Genesis store with additive passport declarations and contribution defaults; exports derive pending/revoked states without a verification command, why: preserve old records and prevent local declarations from implying verified providers or account authorization.
 - Digital Twin results run only a deterministic synthetic numeric model; arbitrary submitted code, shell commands and hardware connectors never execute, why: distinguish useful simulations from real sandbox or hardware validation.
 
 - SDK JSON validation is loaded only from browser events; schema data remains SSR-safe, why: avoid evaluating the CommonJS validator in server rendering and never transmit user JSON.
