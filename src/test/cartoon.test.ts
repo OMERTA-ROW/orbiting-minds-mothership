@@ -280,13 +280,28 @@ describe("Cartoon Galaxy rights, child privacy and revision gates", () => {
     const s = reviewed();
     const p = s.plans[0];
     if (!p) throw new Error("Missing pitch");
-    expect(cartoonStoreSchema.safeParse({ ...s, plans: [{ ...p, checkpoints: p.checkpoints.slice(1) }] }).success).toBe(false);
+    expect(
+      cartoonStoreSchema.safeParse({ ...s, plans: [{ ...p, checkpoints: p.checkpoints.slice(1) }] })
+        .success,
+    ).toBe(false);
   });
   it("validates scene identities in historical drafts", () => {
     const s = reviewed();
     const p = s.plans[0];
     if (!p) throw new Error("Missing pitch");
-    const checkpoints = p.checkpoints.map((cp, i) => i === 0 ? { ...cp, draft: { ...cp.draft, scenes: cp.draft.scenes.map(scene => ({ ...scene, id: "scene-1" })) } } : cp);
-    expect(cartoonStoreSchema.safeParse({ ...s, plans: [{ ...p, checkpoints }] }).success).toBe(false);
+    const checkpoints = p.checkpoints.map((cp, i) =>
+      i === 0
+        ? {
+            ...cp,
+            draft: {
+              ...cp.draft,
+              scenes: cp.draft.scenes.map((scene) => ({ ...scene, id: "scene-1" })),
+            },
+          }
+        : cp,
+    );
+    expect(cartoonStoreSchema.safeParse({ ...s, plans: [{ ...p, checkpoints }] }).success).toBe(
+      false,
+    );
   });
 });
