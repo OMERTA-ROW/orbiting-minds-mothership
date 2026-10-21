@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
@@ -76,10 +76,12 @@ export function CreatorDistro({
   const valid =
     tab === "canon" ? canonSchema.safeParse(canon).success : releaseSchema.safeParse(draft).success;
   const ready = allowed && consent && !!projectId;
+  const consumedHandoff = useRef<PostEditHandoff | null>(null);
   useEffect(() => {
-    if (!handoff || handoff.output.projectId !== projectId) return;
+    if (!handoff || consumedHandoff.current === handoff || handoff.output.projectId !== projectId) return;
     const a = assets.find(v => v.id === handoff.output.assetId && v.project_id === projectId && v.sha256 === handoff.output.sha256);
     if (!a) return;
+    consumedHandoff.current = handoff;
     setTab("distro");setActive("");setApproval(false);setOwnsSite(false);
     setDraft(v => ({ ...v, assetId: a.id }));
     setNotice(handoff.choice === "schedule" ? "Choose a target date and save the draft. Date intention only; no scheduler or delivery account connected." : handoff.choice === "now" ? "Verified WAV selected for manual release preparation. No connected upload; complete metadata, rights and fresh human review." : "Verified WAV selected. Complete the release fields and save a private DRAFT; nothing saved or posted automatically.");
