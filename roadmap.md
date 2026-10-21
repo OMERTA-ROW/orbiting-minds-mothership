@@ -10,6 +10,8 @@
 - [ ] Public release. Blocker: complete security/evidence gates and explicit founder launch approval. Signed desktop distribution remains unavailable.
 
 ## Compatibility-first enhancement
+- [ ] Add explicit opt-in read-only local developer-tool discovery in offline CLI source, with compatible reference suggestions and no machine-data transmission; browser cannot scan host tools.
+- [ ] Add browser-local usage/rate cost comparisons before account connection; test concrete arithmetic and mobile interactions without provider calls.
 - [x] Make basic-access/no-download policy, optional hosted offerings and external API costs explicit in CLI and OmniBridge without activating billing or connections.
 - [x] Connect existing local command references, capability discovery, open exports and value comparisons; distinguish measured source checks from unverified savings.
 - [x] Verify policy rules and desktop/mobile interaction; preserve existing records, toolchains and blocked foundations.
