@@ -50,7 +50,6 @@ export function SocialAutopilot({ projects }: { projects: { id: string; name: st
     [notice, setNotice] = useState("");
   const active = data.rows.find((v) => v.id === id),
     valid = socialContent.safeParse(form);
-  const exact = !!active && JSON.stringify(active.content) === JSON.stringify(form);
   // JSON field ordering can differ after database roundtrip; compare parsed fields canonically.
   const same =
     active &&
@@ -90,7 +89,6 @@ export function SocialAutopilot({ projects }: { projects: { id: string; name: st
     setReview(false);
     setNotice("");
   };
-  void exact;
   return (
     <section aria-label="Social Autopilot" className="space-y-6">
       <div className="flex flex-wrap justify-between gap-4">
@@ -126,13 +124,14 @@ export function SocialAutopilot({ projects }: { projects: { id: string; name: st
           onSubmit={(e) => {
             e.preventDefault();
             void act(async () => {
+              if (!consent) throw new Error("Explicit save consent required.");
               const row = await save({
                 data: {
                   projectId: project,
                   id: id || undefined,
                   revision: active?.revision,
                   content: socialContent.parse(form),
-                  consent: consent as true,
+                  consent,
                 },
               });
               if (row) setId(row.id);

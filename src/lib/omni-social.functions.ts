@@ -29,8 +29,8 @@ export const saveSocialDraft = createServerFn({ method: "POST" })
     const result = await context.supabase.rpc("omni_social_transition", {
       _action: "save",
       _project: data.projectId,
-      _id: data.id,
-      _revision: data.revision,
+      ...(data.id ? { _id: data.id } : {}),
+      ...(data.revision ? { _revision: data.revision } : {}),
       _content: data.content,
       _approve: data.consent,
     });
@@ -46,8 +46,8 @@ export const transitionSocialDraft = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const result = await context.supabase.rpc("omni_social_transition", {
       _action: data.action,
-      _id: data.id,
-      _revision: data.revision,
+      ...(data.id ? { _id: data.id } : {}),
+      ...(data.revision ? { _revision: data.revision } : {}),
       _approve: data.approve ?? false,
     });
     if (result.error)
