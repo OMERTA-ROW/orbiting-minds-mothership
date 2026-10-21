@@ -39,3 +39,4 @@
 - Nexus keeps separate consented local records and isolated base-version drafts; corrected example labels overlay stored data, why: preserve work without secure chat or execution claims.
 - OmniBridge/OMNI use inert registries and pure plans; OMNI uses AI Elements, one temporary UIMessage conversation and pause-checked event-only handoffs, why: absent history choices and verified inference, do not persist chat or fabricate streaming/model answers.
 - Entertainment/Cartoon use separate validated local stores, revision-bound reviews and fresh Guardian/Nexus pause checks, why: samples, timing and preparation exports confer no processing, rights clearance or publication.
+- CLI native source lives separately in `cli/` with stdlib-only offline commands and dormant CI templates; never import it into web/server code, why: native operations require explicit local consent and independent release review.
