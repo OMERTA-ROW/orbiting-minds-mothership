@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgentDebriefRouteImport } from './routes/agent-debrief'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as CareRouteImport } from './routes/care'
 import { Route as CareAgentRouteImport } from './routes/care-agent'
@@ -55,6 +56,11 @@ import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentDebriefRoute = AgentDebriefRouteImport.update({
+  id: '/agent-debrief',
+  path: '/agent-debrief',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentsRoute = AgentsRouteImport.update({
@@ -265,6 +271,7 @@ const RoboticsIdRoute = RoboticsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agent-debrief': typeof AgentDebriefRoute
   '/agents': typeof AgentsRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
@@ -309,6 +316,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agent-debrief': typeof AgentDebriefRoute
   '/agents': typeof AgentsRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
@@ -354,6 +362,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agent-debrief': typeof AgentDebriefRoute
   '/agents': typeof AgentsRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
@@ -400,6 +409,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agent-debrief'
     | '/agents'
     | '/care'
     | '/care-agent'
@@ -444,6 +454,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agent-debrief'
     | '/agents'
     | '/care'
     | '/care-agent'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/agent-debrief'
     | '/agents'
     | '/care'
     | '/care-agent'
@@ -533,6 +545,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentDebriefRoute: typeof AgentDebriefRoute
   AgentsRoute: typeof AgentsRoute
   CareRoute: typeof CareRoute
   CareAgentRoute: typeof CareAgentRoute
@@ -583,6 +596,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-debrief': {
+      id: '/agent-debrief'
+      path: '/agent-debrief'
+      fullPath: '/agent-debrief'
+      preLoaderRoute: typeof AgentDebriefRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agents': {
@@ -877,6 +897,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentDebriefRoute: AgentDebriefRoute,
   AgentsRoute: AgentsRoute,
   CareRoute: CareRoute,
   CareAgentRoute: CareAgentRoute,
