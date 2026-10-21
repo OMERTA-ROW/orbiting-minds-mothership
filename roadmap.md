@@ -1,5 +1,12 @@
 # Cosmic Mothership redesign
 
+## Agent Debrief and Incident Archives
+- [ ] Add opt-in, operator-authorized DEMO debriefs with evidence, privacy and human review gates.
+- [ ] Add searchable six-category fictional archives, case timelines, source/clip metadata and correction/withdrawal rehearsal.
+- [ ] Connect Embassy, Guardian, Oracle and code/test follow-ups; preserve existing workflows.
+- [ ] Test consent, sensitive-data checks, approval, revocation, persistence and desktop/mobile journeys.
+- [ ] Enable real private intake/publication. Blocker: verified operator accounts, owner-scoped access, private artifact storage, authenticated moderation and owner launch approval.
+
 ## Open Call and worldwide Agent Embassy
 - [x] Add cosmic Open Call entry with Human, Agent, Developer and Sponsor pathways.
 - [x] Extend consented local passports with declared provider/model, capabilities, requested scopes, pending/revoked status and limits; block real verification and external access.
