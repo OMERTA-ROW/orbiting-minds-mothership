@@ -44,7 +44,7 @@ export type IncidentStore = z.infer<typeof incidentStoreSchema>;
 export type Debrief = IncidentStore["debriefs"][number];
 export const emptyIncidentStore: IncidentStore = { version: 1, accountability: [], debriefs: [], notices: [], events: [] };
 export type IncidentCommand = AccountabilityCommand
- | | { type: "draft"; input: DebriefInput }
+ | { type: "draft"; input: DebriefInput }
  | { type: "revise"; recordId: string; input: DebriefInput }
  | { type: "privacy"; recordId: string; actorId: string; confirmed: boolean }
  | { type: "review"; recordId: string; actorId: string; decision: "Preview approved" | "Changes requested"; note: string; privacyConfirmed: boolean; rightsConfirmed: boolean; attributionConfirmed: boolean }
@@ -52,10 +52,9 @@ export type IncidentCommand = AccountabilityCommand
  | { type: "notice"; caseId: string; actorId: string; kind: "Correction" | "Takedown"; note: string };
 export function applyIncidentCommand(current: IncidentStore, genesis: GenesisStore, command: IncidentCommand, id: string, at: string): IncidentStore {
  const store = structuredClone(incidentStoreSchema.parse(current));
- if ("caseId" in command && command.type.startsWith("accountability") || command.type === "accountabilityReport") {
-  store.accountability=applyAccountability(store.accountability,genesis,command as AccountabilityCommand,id,at);return incidentStoreSchema.parse(store);
+ if (command.type === "accountabilityReport" || command.type === "accountabilityRevise" || command.type === "accountabilityPrivacy" || command.type === "accountabilityWithdraw" || command.type === "accountabilityReview" || command.type === "accountabilityNotice" || command.type === "accountabilityAction") {
+  store.accountability=applyAccountability(store.accountability,genesis,command,id,at);return incidentStoreSchema.parse(store);
  }
- if(command.type === "accountabilityRevise" || command.type === "accountabilityPrivacy" || command.type === "accountabilityWithdraw" || command.type === "accountabilityReview" || command.type === "accountabilityNotice" || command.type === "accountabilityAction")throw new Error("Unsupported accountability command.");
  let target = id;
  const get = (recordId: string) => { const r = store.debriefs.find(r => r.id === recordId); if (!r) throw new Error("Debrief not found."); if (r.state === "Withdrawn") throw new Error("Consent was withdrawn; this record cannot be reviewed or revised."); return r; };
  if (command.type === "draft" || command.type === "revise") {
