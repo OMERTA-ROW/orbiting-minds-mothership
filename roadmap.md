@@ -1,9 +1,18 @@
 # Cosmic Mothership redesign
 
+## Launch Control — current priority; expansion frozen
+- [ ] Audit hosted application tables, grants, policies, auth configuration and existing AI connectivity.
+- [ ] Implement and verify signup/login/logout and owner-isolated projects/agent profiles; no migration of browser DEMO records.
+- [ ] Implement authenticated, consented temporary live OMNI with real streamed responses, usage/error states and no tool execution.
+- [ ] Add evidence-based Launch Control and verify mobile beta workflows; preserve all existing DEMO modules.
+- [ ] Enable one GitHub repository workflow. Blocker: connection access, repository selection and explicit owner approval for branch/PR writes; no unrelated edits.
+- [ ] Enforce beta request limits. Blocker: no standard backend rate limiter; custom implementation requires owner tradeoff approval.
+- [ ] Public release. Blocker: complete security/evidence gates and explicit founder launch approval. Signed desktop distribution remains unavailable.
+
 ## Compatibility-first enhancement
-- [ ] Make basic-access/no-download policy, optional hosted offerings and external API costs explicit in CLI and OmniBridge without activating billing or connections.
-- [ ] Connect existing local command references, capability discovery, open exports and value comparisons; distinguish measured source checks from unverified savings.
-- [ ] Verify policy rules and desktop/mobile interaction; preserve existing records, toolchains and blocked foundations.
+- [x] Make basic-access/no-download policy, optional hosted offerings and external API costs explicit in CLI and OmniBridge without activating billing or connections.
+- [x] Connect existing local command references, capability discovery, open exports and value comparisons; distinguish measured source checks from unverified savings.
+- [x] Verify policy rules and desktop/mobile interaction; preserve existing records, toolchains and blocked foundations.
 - [ ] Enable secure integrations/distribution. Blocker: owner profile-data decision, authenticated owner isolation, secure key custody, authorized APIs, selected repository/license, native signing/test evidence and explicit owner approval. No publication.
 
 ## Lightweight CLI companion
