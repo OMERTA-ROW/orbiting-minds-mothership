@@ -57,6 +57,7 @@ export function accountabilityState(r:AccountabilityRecord,g:GenesisStore){
  try{requireDemoIdentity(g,r.input.reporterId,"submit_capsules");if(r.review){const reviewer=requireDemoIdentity(g,r.review.actorId,"review_proposals");if(reviewer.kind==="Agent operator")return "Consent invalidated";}}catch{return "Consent invalidated";}
  return r.state;
 }
+export function accountabilityListing(r:AccountabilityRecord,g:GenesisStore){const state=accountabilityState(r,g),withheld=state==="Withdrawn"||state==="Consent invalidated";return {id:r.id,state,severity:r.input.severity,revision:r.revision,title:withheld?"Incident details withheld":r.input.title,project:withheld?"":r.input.project,device:withheld?"":r.input.device,observed:withheld?"":r.input.observed,causeDomain:withheld?"Unknown":r.input.causeDomain,occurredAt:withheld?"":r.input.occurredAt};}
 export function applyAccountability(rows:AccountabilityRecord[],g:GenesisStore,command:AccountabilityCommand,recordId:string,at:string){
  const next=structuredClone(rows);date.parse(at);safe(command);
  if(command.type==="accountabilityReport"){
