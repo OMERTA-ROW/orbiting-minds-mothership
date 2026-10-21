@@ -120,6 +120,7 @@ export function OmniAssistant({
           </select>
         </label>
         <div className="flex gap-2">
+          <Button asChild variant="cosmic" size="sm"><Link to="/beta-omni">Authorized beta OMNI<ArrowUpRight size={13} /></Link></Button>
           <Button asChild variant="signal" size="sm">
             <Link to="/omnibridge">
               Capability graph

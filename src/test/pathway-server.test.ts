@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/beta-auth.server", () => ({ authenticateBetaAi: vi.fn().mockResolvedValue({}), readBoundedJson: async (request: Request) => request.json(), BetaHttpError: class extends Error {} }));
 
 const mocks = vi.hoisted(() => ({ save: vi.fn(), state: vi.fn(), failure: { status: 403, message: "Vendor access is disabled" } }));
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { from: () => ({

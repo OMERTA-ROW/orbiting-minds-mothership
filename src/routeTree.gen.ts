@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AgentDebriefRouteImport } from './routes/agent-debrief'
 import { Route as AgentLoungeRouteImport } from './routes/agent-lounge'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as ApprovalLedgerRouteImport } from './routes/approval-ledger'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CareRouteImport } from './routes/care'
 import { Route as CareAgentRouteImport } from './routes/care-agent'
 import { Route as CartoonGalaxyRouteImport } from './routes/cartoon-galaxy'
@@ -37,6 +39,7 @@ import { Route as ImpactScorecardRouteImport } from './routes/impact-scorecard'
 import { Route as IncidentArchivesRouteImport } from './routes/incident-archives'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
+import { Route as LaunchControlRouteImport } from './routes/launch-control'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as OmniRouteImport } from './routes/omni'
@@ -50,6 +53,7 @@ import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as PulseRouteImport } from './routes/pulse'
 import { Route as ReleasesRouteImport } from './routes/releases'
 import { Route as ReportIncidentRouteImport } from './routes/report-incident'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as RoboticsRouteImport } from './routes/robotics'
 import { Route as SandboxRouteImport } from './routes/sandbox'
@@ -59,7 +63,10 @@ import { Route as TrustRouteImport } from './routes/trust'
 import { Route as UniverseRouteImport } from './routes/universe'
 import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as VoiceRouteImport } from './routes/voice'
+import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
+import { Route as AuthenticatedBetaOmniRouteImport } from './routes/_authenticated/beta-omni'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
+import { Route as ApiOmniRouteImport } from './routes/api/omni'
 import { Route as CapsulesIdRouteImport } from './routes/capsules_.$id'
 import { Route as ChallengesIdRouteImport } from './routes/challenges_.$id'
 import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
@@ -70,6 +77,10 @@ import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentDebriefRoute = AgentDebriefRouteImport.update({
@@ -90,6 +101,11 @@ const AgentsRoute = AgentsRouteImport.update({
 const ApprovalLedgerRoute = ApprovalLedgerRouteImport.update({
   id: '/approval-ledger',
   path: '/approval-ledger',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CareRoute = CareRouteImport.update({
@@ -207,6 +223,11 @@ const KnowledgeFusionRoute = KnowledgeFusionRouteImport.update({
   path: '/knowledge-fusion',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LaunchControlRoute = LaunchControlRouteImport.update({
+  id: '/launch-control',
+  path: '/launch-control',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MarketplaceRoute = MarketplaceRouteImport.update({
   id: '/marketplace',
   path: '/marketplace',
@@ -272,6 +293,11 @@ const ReportIncidentRoute = ReportIncidentRouteImport.update({
   path: '/report-incident',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoadmapRoute = RoadmapRouteImport.update({
   id: '/roadmap',
   path: '/roadmap',
@@ -317,9 +343,24 @@ const VoiceRoute = VoiceRouteImport.update({
   path: '/voice',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedBetaRoute = AuthenticatedBetaRouteImport.update({
+  id: '/beta',
+  path: '/beta',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBetaOmniRoute = AuthenticatedBetaOmniRouteImport.update({
+  id: '/beta-omni',
+  path: '/beta-omni',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiEvolutionPathwayRoute = ApiEvolutionPathwayRouteImport.update({
   id: '/api/evolution-pathway',
   path: '/api/evolution-pathway',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOmniRoute = ApiOmniRouteImport.update({
+  id: '/api/omni',
+  path: '/api/omni',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CapsulesIdRoute = CapsulesIdRouteImport.update({
@@ -359,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/cartoon-galaxy': typeof CartoonGalaxyRoute
@@ -382,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/launch-control': typeof LaunchControlRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
@@ -395,6 +438,7 @@ export interface FileRoutesByFullPath {
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
   '/report-incident': typeof ReportIncidentRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/roadmap': typeof RoadmapRoute
   '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
@@ -404,7 +448,10 @@ export interface FileRoutesByFullPath {
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
+  '/beta': typeof AuthenticatedBetaRoute
+  '/beta-omni': typeof AuthenticatedBetaOmniRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/api/omni': typeof ApiOmniRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
@@ -418,6 +465,7 @@ export interface FileRoutesByTo {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/cartoon-galaxy': typeof CartoonGalaxyRoute
@@ -441,6 +489,7 @@ export interface FileRoutesByTo {
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/launch-control': typeof LaunchControlRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
@@ -454,6 +503,7 @@ export interface FileRoutesByTo {
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
   '/report-incident': typeof ReportIncidentRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/roadmap': typeof RoadmapRoute
   '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
@@ -463,7 +513,10 @@ export interface FileRoutesByTo {
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
+  '/beta': typeof AuthenticatedBetaRoute
+  '/beta-omni': typeof AuthenticatedBetaOmniRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/api/omni': typeof ApiOmniRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
@@ -474,10 +527,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/agent-debrief': typeof AgentDebriefRoute
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/cartoon-galaxy': typeof CartoonGalaxyRoute
@@ -501,6 +556,7 @@ export interface FileRoutesById {
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/launch-control': typeof LaunchControlRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
@@ -514,6 +570,7 @@ export interface FileRoutesById {
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
   '/report-incident': typeof ReportIncidentRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/roadmap': typeof RoadmapRoute
   '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
@@ -523,7 +580,10 @@ export interface FileRoutesById {
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
+  '/_authenticated/beta': typeof AuthenticatedBetaRoute
+  '/_authenticated/beta-omni': typeof AuthenticatedBetaOmniRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/api/omni': typeof ApiOmniRoute
   '/capsules_/$id': typeof CapsulesIdRoute
   '/challenges_/$id': typeof ChallengesIdRoute
   '/code-exchange_/$id': typeof CodeExchangeIdRoute
@@ -539,6 +599,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/auth'
     | '/care'
     | '/care-agent'
     | '/cartoon-galaxy'
@@ -562,6 +623,7 @@ export interface FileRouteTypes {
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
+    | '/launch-control'
     | '/marketplace'
     | '/mothership'
     | '/omni'
@@ -575,6 +637,7 @@ export interface FileRouteTypes {
     | '/pulse'
     | '/releases'
     | '/report-incident'
+    | '/reset-password'
     | '/roadmap'
     | '/robotics'
     | '/sandbox'
@@ -584,7 +647,10 @@ export interface FileRouteTypes {
     | '/universe'
     | '/updates'
     | '/voice'
+    | '/beta'
+    | '/beta-omni'
     | '/api/evolution-pathway'
+    | '/api/omni'
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
@@ -598,6 +664,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/auth'
     | '/care'
     | '/care-agent'
     | '/cartoon-galaxy'
@@ -621,6 +688,7 @@ export interface FileRouteTypes {
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
+    | '/launch-control'
     | '/marketplace'
     | '/mothership'
     | '/omni'
@@ -634,6 +702,7 @@ export interface FileRouteTypes {
     | '/pulse'
     | '/releases'
     | '/report-incident'
+    | '/reset-password'
     | '/roadmap'
     | '/robotics'
     | '/sandbox'
@@ -643,7 +712,10 @@ export interface FileRouteTypes {
     | '/universe'
     | '/updates'
     | '/voice'
+    | '/beta'
+    | '/beta-omni'
     | '/api/evolution-pathway'
+    | '/api/omni'
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
@@ -653,10 +725,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/agent-debrief'
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/auth'
     | '/care'
     | '/care-agent'
     | '/cartoon-galaxy'
@@ -680,6 +754,7 @@ export interface FileRouteTypes {
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
+    | '/launch-control'
     | '/marketplace'
     | '/mothership'
     | '/omni'
@@ -693,6 +768,7 @@ export interface FileRouteTypes {
     | '/pulse'
     | '/releases'
     | '/report-incident'
+    | '/reset-password'
     | '/roadmap'
     | '/robotics'
     | '/sandbox'
@@ -702,7 +778,10 @@ export interface FileRouteTypes {
     | '/universe'
     | '/updates'
     | '/voice'
+    | '/_authenticated/beta'
+    | '/_authenticated/beta-omni'
     | '/api/evolution-pathway'
+    | '/api/omni'
     | '/capsules_/$id'
     | '/challenges_/$id'
     | '/code-exchange_/$id'
@@ -713,10 +792,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AgentDebriefRoute: typeof AgentDebriefRoute
   AgentLoungeRoute: typeof AgentLoungeRoute
   AgentsRoute: typeof AgentsRoute
   ApprovalLedgerRoute: typeof ApprovalLedgerRoute
+  AuthRoute: typeof AuthRoute
   CareRoute: typeof CareRoute
   CareAgentRoute: typeof CareAgentRoute
   CartoonGalaxyRoute: typeof CartoonGalaxyRoute
@@ -740,6 +821,7 @@ export interface RootRouteChildren {
   IncidentArchivesRoute: typeof IncidentArchivesRoute
   JoinRoute: typeof JoinRoute
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
+  LaunchControlRoute: typeof LaunchControlRoute
   MarketplaceRoute: typeof MarketplaceRoute
   MothershipRoute: typeof MothershipRoute
   OmniRoute: typeof OmniRoute
@@ -753,6 +835,7 @@ export interface RootRouteChildren {
   PulseRoute: typeof PulseRoute
   ReleasesRoute: typeof ReleasesRoute
   ReportIncidentRoute: typeof ReportIncidentRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RoadmapRoute: typeof RoadmapRoute
   RoboticsRoute: typeof RoboticsRoute
   SandboxRoute: typeof SandboxRoute
@@ -763,6 +846,7 @@ export interface RootRouteChildren {
   UpdatesRoute: typeof UpdatesRoute
   VoiceRoute: typeof VoiceRoute
   ApiEvolutionPathwayRoute: typeof ApiEvolutionPathwayRoute
+  ApiOmniRoute: typeof ApiOmniRoute
   CapsulesIdRoute: typeof CapsulesIdRoute
   ChallengesIdRoute: typeof ChallengesIdRoute
   CodeExchangeIdRoute: typeof CodeExchangeIdRoute
@@ -778,6 +862,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agent-debrief': {
@@ -806,6 +897,13 @@ declare module '@tanstack/react-router' {
       path: '/approval-ledger'
       fullPath: '/approval-ledger'
       preLoaderRoute: typeof ApprovalLedgerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/care': {
@@ -969,6 +1067,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KnowledgeFusionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/launch-control': {
+      id: '/launch-control'
+      path: '/launch-control'
+      fullPath: '/launch-control'
+      preLoaderRoute: typeof LaunchControlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/marketplace': {
       id: '/marketplace'
       path: '/marketplace'
@@ -1060,6 +1165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportIncidentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/roadmap': {
       id: '/roadmap'
       path: '/roadmap'
@@ -1123,11 +1235,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VoiceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/beta': {
+      id: '/_authenticated/beta'
+      path: '/beta'
+      fullPath: '/beta'
+      preLoaderRoute: typeof AuthenticatedBetaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/beta-omni': {
+      id: '/_authenticated/beta-omni'
+      path: '/beta-omni'
+      fullPath: '/beta-omni'
+      preLoaderRoute: typeof AuthenticatedBetaOmniRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/evolution-pathway': {
       id: '/api/evolution-pathway'
       path: '/api/evolution-pathway'
       fullPath: '/api/evolution-pathway'
       preLoaderRoute: typeof ApiEvolutionPathwayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/omni': {
+      id: '/api/omni'
+      path: '/api/omni'
+      fullPath: '/api/omni'
+      preLoaderRoute: typeof ApiOmniRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/capsules_/$id': {
@@ -1175,12 +1308,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
+  AuthenticatedBetaOmniRoute: typeof AuthenticatedBetaOmniRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBetaRoute: AuthenticatedBetaRoute,
+  AuthenticatedBetaOmniRoute: AuthenticatedBetaOmniRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AgentDebriefRoute: AgentDebriefRoute,
   AgentLoungeRoute: AgentLoungeRoute,
   AgentsRoute: AgentsRoute,
   ApprovalLedgerRoute: ApprovalLedgerRoute,
+  AuthRoute: AuthRoute,
   CareRoute: CareRoute,
   CareAgentRoute: CareAgentRoute,
   CartoonGalaxyRoute: CartoonGalaxyRoute,
@@ -1204,6 +1352,7 @@ const rootRouteChildren: RootRouteChildren = {
   IncidentArchivesRoute: IncidentArchivesRoute,
   JoinRoute: JoinRoute,
   KnowledgeFusionRoute: KnowledgeFusionRoute,
+  LaunchControlRoute: LaunchControlRoute,
   MarketplaceRoute: MarketplaceRoute,
   MothershipRoute: MothershipRoute,
   OmniRoute: OmniRoute,
@@ -1217,6 +1366,7 @@ const rootRouteChildren: RootRouteChildren = {
   PulseRoute: PulseRoute,
   ReleasesRoute: ReleasesRoute,
   ReportIncidentRoute: ReportIncidentRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   RoadmapRoute: RoadmapRoute,
   RoboticsRoute: RoboticsRoute,
   SandboxRoute: SandboxRoute,
@@ -1227,6 +1377,7 @@ const rootRouteChildren: RootRouteChildren = {
   UpdatesRoute: UpdatesRoute,
   VoiceRoute: VoiceRoute,
   ApiEvolutionPathwayRoute: ApiEvolutionPathwayRoute,
+  ApiOmniRoute: ApiOmniRoute,
   CapsulesIdRoute: CapsulesIdRoute,
   ChallengesIdRoute: ChallengesIdRoute,
   CodeExchangeIdRoute: CodeExchangeIdRoute,

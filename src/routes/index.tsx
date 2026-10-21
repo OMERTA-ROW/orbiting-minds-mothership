@@ -13,8 +13,8 @@ export const Route = createFileRoute("/")({
 
 const pillars = [
   { t: "Opt-in by design", d: "Nothing joins the network without its owner's explicit consent. Revoke anytime.", icon: Fingerprint },
-  { t: "Sandbox first", d: "Every proposed evolution is simulated in isolation before an owner ever sees it.", icon: Layers },
-  { t: "Signed & reversible", d: "Updates are signed, manually approved and always paired with a rollback.", icon: ShieldCheck },
+  { t: "Sandbox first · planned", d: "Current sandbox checks are simulations or proposed tests, not executed code validation.", icon: Layers },
+  { t: "Signed & reversible · planned", d: "Signed releases and verified rollback are not available. Current previews remain unsigned demonstrations.", icon: ShieldCheck },
 ];
 
 function Index() {
@@ -40,7 +40,7 @@ function Index() {
           <p className="mt-3 text-sm text-muted-foreground">All technology is converging here.</p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Button asChild variant="cosmic" className="h-12 rounded-sm px-6 text-xs"><Link to="/mothership">Explore the Mothership<ArrowUpRight /></Link></Button>
-            <Button asChild variant="signal" className="h-12 rounded-sm px-6 text-xs"><Link to="/open-call">Evolution Open Call<ArrowRight /></Link></Button>
+            <Button asChild variant="signal" className="h-12 rounded-sm px-6 text-xs"><Link to="/launch-control">Limited Beta · Launch Control<ArrowRight /></Link></Button>
           </div>
         </div>
         <nav className="hero-worlds absolute inset-0" aria-label="Connected Mothership worlds">

@@ -4,9 +4,13 @@ import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PaletteTrigger } from "@/components/CommandPalette";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AccountButton } from "@/components/beta/AccountButton";
 
 export const navItems = [
   { to: "/", label: "Home" },
+  { to: "/launch-control", label: "Launch Control" },
+  { to: "/beta", label: "Private Beta Projects" },
+  { to: "/beta-omni", label: "OMNI · Authorized Beta" },
   { to: "/mothership", label: "Mothership" },
   { to: "/command-nexus", label: "Command Nexus · Demo" },
   { to: "/omnibridge", label: "OmniBridge · Demo" },
@@ -65,7 +69,7 @@ export function SiteNav() {
     document.addEventListener("keydown", dismiss);
     return () => document.removeEventListener("keydown", dismiss);
   }, [open]);
-  const featured = navItems.filter((n) => ["/mothership", "/code-exchange", "/challenges", "/embassy", "/universe"].includes(n.to));
+  const featured = navItems.filter((n) => ["/launch-control", "/beta", "/beta-omni"].includes(n.to));
   const more = navItems.filter((n) => !featured.some((f) => f.to === n.to) && n.to !== "/");
   return (
     <header className="site-navigation sticky top-0 z-50 border-b border-border">
@@ -83,7 +87,7 @@ export function SiteNav() {
         <div className="flex items-center gap-2">
           <Button asChild variant="signal" className="hidden h-10 rounded-sm px-3 text-xs sm:inline-flex"><Link to="/pathway">AI Pathway<ArrowUpRight size={14} /></Link></Button>
           <PaletteTrigger />
-          <Button asChild variant="signal" className="hidden h-10 rounded-sm px-5 text-xs sm:inline-flex"><Link to="/join">Join the Network<ArrowUpRight size={14} /></Link></Button>
+          <AccountButton />
           <Button variant="ghost" size="icon" className="border border-border text-gold-light xl:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-navigation" onClick={() => setOpen(!open)}>
             {open ? <X size={18} /> : <Menu size={18} />}
           </Button>
@@ -110,7 +114,7 @@ export function SiteFooter() {
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-6 py-10 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between md:px-12">
         <div><p className="font-display text-xl text-gold-light">EVOLUTION</p><p className="mt-3 text-[11px]">Bridge technology into its next evolution.</p></div>
-        <p className="max-w-md text-[10px] leading-loose md:text-right">Owner-reviewed prototype. Network data is demo / simulated.<br />AI pathways are draft proposals, not validation results.<br />Opt-in only · no unauthorized access, ever.</p>
+        <p className="max-w-md text-[10px] leading-loose md:text-right">Beta launch blocked pending verified gates and founder approval.<br />Only private beta projects/declarations use account storage; other network records remain DEMO.<br />AI drafts are not validation or execution evidence.</p>
       </div>
     </footer>
   );

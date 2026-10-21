@@ -35,6 +35,125 @@ export type Database = {
         }
         Relationships: []
       }
+      beta_access: {
+        Row: {
+          ai_approved: boolean
+          approved_at: string | null
+          paused: boolean
+          user_id: string
+        }
+        Insert: {
+          ai_approved?: boolean
+          approved_at?: string | null
+          paused?: boolean
+          user_id: string
+        }
+        Update: {
+          ai_approved?: boolean
+          approved_at?: string | null
+          paused?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      beta_agent_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          model: string
+          name: string
+          operator_consent: boolean
+          owner_id: string
+          project_id: string
+          provider: string
+          scope: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model: string
+          name: string
+          operator_consent: boolean
+          owner_id?: string
+          project_id: string
+          provider: string
+          scope?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model?: string
+          name?: string
+          operator_consent?: boolean
+          owner_id?: string
+          project_id?: string
+          provider?: string
+          scope?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_agent_profiles_project_id_owner_id_fkey"
+            columns: ["project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "beta_projects"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      beta_audit: {
+        Row: {
+          action: string
+          capability: string
+          id: string
+          occurred_at: string
+          owner_id: string
+          record_id: string
+        }
+        Insert: {
+          action: string
+          capability: string
+          id?: string
+          occurred_at?: string
+          owner_id: string
+          record_id: string
+        }
+        Update: {
+          action?: string
+          capability?: string
+          id?: string
+          occurred_at?: string
+          owner_id?: string
+          record_id?: string
+        }
+        Relationships: []
+      }
+      beta_projects: {
+        Row: {
+          brief: string
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          brief?: string
+          created_at?: string
+          id?: string
+          name: string
+          owner_id?: string
+        }
+        Update: {
+          brief?: string
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

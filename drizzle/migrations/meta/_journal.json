@@ -8,6 +8,27 @@
       "when": 1792537140027,
       "tag": "0000_ai_generation_circuit_breaker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792552385235,
+      "tag": "0001_limited_beta_owner_isolation",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792552788561,
+      "tag": "0002_beta_least_privilege_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792552933298,
+      "tag": "0003_beta_access_existing_users",
+      "breakpoints": true
     }
   ]
 }
