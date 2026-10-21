@@ -219,7 +219,12 @@ export function OmniOperations({ projects }: { projects: { id: string; name: str
           >
             <label className="block text-xs">
               Owned project
-              <select aria-label="Upgrade owned project" name="project" required className="exchange-select mt-2 w-full">
+              <select
+                aria-label="Upgrade owned project"
+                name="project"
+                required
+                className="exchange-select mt-2 w-full"
+              >
                 <option value="">Select your project</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -283,8 +288,14 @@ export function OmniOperations({ projects }: { projects: { id: string; name: str
               OMNI cannot sign off its own changes.
             </p>
             <label className="flex items-start gap-3 text-xs leading-6">
-              <input aria-label="Approve upgrade proposal export" name="consent" type="checkbox" required />I authorize only a non-sensitive
-              proposal export for review; no monitoring or execution.
+              <input
+                aria-label="Approve upgrade proposal export"
+                name="consent"
+                type="checkbox"
+                required
+              />
+              I authorize only a non-sensitive proposal export for review; no monitoring or
+              execution.
             </label>
             <Button type="submit" disabled={!projects.length}>
               <Download size={16} />
