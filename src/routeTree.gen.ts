@@ -39,6 +39,7 @@ import { Route as ImpactScorecardRouteImport } from './routes/impact-scorecard'
 import { Route as IncidentArchivesRouteImport } from './routes/incident-archives'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
+import { Route as LaunchControlRouteImport } from './routes/launch-control'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as OmniRouteImport } from './routes/omni'
@@ -220,6 +221,11 @@ const JoinRoute = JoinRouteImport.update({
 const KnowledgeFusionRoute = KnowledgeFusionRouteImport.update({
   id: '/knowledge-fusion',
   path: '/knowledge-fusion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LaunchControlRoute = LaunchControlRouteImport.update({
+  id: '/launch-control',
+  path: '/launch-control',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketplaceRoute = MarketplaceRouteImport.update({
@@ -418,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/launch-control': typeof LaunchControlRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
@@ -482,6 +489,7 @@ export interface FileRoutesByTo {
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/launch-control': typeof LaunchControlRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
@@ -548,6 +556,7 @@ export interface FileRoutesById {
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
+  '/launch-control': typeof LaunchControlRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
@@ -614,6 +623,7 @@ export interface FileRouteTypes {
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
+    | '/launch-control'
     | '/marketplace'
     | '/mothership'
     | '/omni'
@@ -678,6 +688,7 @@ export interface FileRouteTypes {
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
+    | '/launch-control'
     | '/marketplace'
     | '/mothership'
     | '/omni'
@@ -743,6 +754,7 @@ export interface FileRouteTypes {
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
+    | '/launch-control'
     | '/marketplace'
     | '/mothership'
     | '/omni'
@@ -809,6 +821,7 @@ export interface RootRouteChildren {
   IncidentArchivesRoute: typeof IncidentArchivesRoute
   JoinRoute: typeof JoinRoute
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
+  LaunchControlRoute: typeof LaunchControlRoute
   MarketplaceRoute: typeof MarketplaceRoute
   MothershipRoute: typeof MothershipRoute
   OmniRoute: typeof OmniRoute
@@ -1052,6 +1065,13 @@ declare module '@tanstack/react-router' {
       path: '/knowledge-fusion'
       fullPath: '/knowledge-fusion'
       preLoaderRoute: typeof KnowledgeFusionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/launch-control': {
+      id: '/launch-control'
+      path: '/launch-control'
+      fullPath: '/launch-control'
+      preLoaderRoute: typeof LaunchControlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/marketplace': {
@@ -1332,6 +1352,7 @@ const rootRouteChildren: RootRouteChildren = {
   IncidentArchivesRoute: IncidentArchivesRoute,
   JoinRoute: JoinRoute,
   KnowledgeFusionRoute: KnowledgeFusionRoute,
+  LaunchControlRoute: LaunchControlRoute,
   MarketplaceRoute: MarketplaceRoute,
   MothershipRoute: MothershipRoute,
   OmniRoute: OmniRoute,
