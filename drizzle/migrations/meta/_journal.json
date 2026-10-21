@@ -15,6 +15,13 @@
       "when": 1792552385235,
       "tag": "0001_limited_beta_owner_isolation",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792552788561,
+      "tag": "0002_beta_least_privilege_grants",
+      "breakpoints": true
     }
   ]
 }
