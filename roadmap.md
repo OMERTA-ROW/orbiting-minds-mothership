@@ -1,5 +1,10 @@
 # Cosmic Mothership redesign
 
+## Current requests — SEO and least-privilege connections
+- [ ] Review current SEO findings; keep intentional beta noindex and require approval before SEO changes.
+- [ ] Add one supported per-account social OAuth flow with explained scopes, truthful status and revocation. Requires configured offline-enabled per-user client.
+- [ ] Add least-privilege GitHub authorization for one exact repository and review-only proposed changes; no deployment. Requires per-user client and provider-enforced repository restriction.
+
 ## Founder additions — social Autopilot + developer connectors
 - [x] Check per-user social/developer clients and exact authorized targets; read latest owner blueprint without altering outside accounts/projects. GitHub, LinkedIn, GitLab and Notion clients are absent; no external target authorized.
 - [x] Extend existing private operations with owner-scoped social draft/review/stop records, UTC calendar intentions and truthful connector readiness; developer proposal export grants no access or execution.
