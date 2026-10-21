@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { PageHeader, Section, StatusPill } from "@/components/evo";
+import { PageHeader, Section, StatusPill, DemoBadge } from "@/components/evo";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/partnerships")({
@@ -29,8 +29,8 @@ function Page() {
       <Section>
         <div className="glass grid gap-6 p-8 md:grid-cols-[1fr_auto] md:items-center">
           <div>
-            <div className="flex items-center gap-3"><h2 className="text-2xl text-gold-light">Cyberace / Ace</h2><StatusPill status="Future" /></div>
-            <p className="mt-2 text-sm text-muted-foreground">An optional future integration slot for shared security signals and joint tooling — opt-in for both sides.</p>
+            <div className="flex flex-wrap items-center gap-3"><h2 className="text-2xl text-gold-light">Cyberace</h2><DemoBadge label="DEMO · NOT CONNECTED" /></div>
+            <p className="mt-2 text-sm text-muted-foreground">Proposed project example only. Integration details are unconfirmed; no repository, terminal or deployment is connected. Owner authorization is required before integration.</p>
           </div>
           <Link to="/join" className="rounded-full border border-gold/50 px-5 py-2.5 text-sm text-gold-light hover:bg-accent/50">Express partner interest</Link>
         </div>
