@@ -1,10 +1,10 @@
 # Cosmic Mothership redesign
 
 ## Code Vault and Welcome Lounge
-- [ ] Add a version-pinned local DEMO Vault with SHA-256 artifact/manifest, origin comparison, syntax/conflict warnings and new-version forks.
-- [ ] Reuse approval history, revocation and rollback, preserving unsigned and local-only boundaries; connect Exchange, Guardian, Oracle, Founder, Releases and Embassy.
-- [ ] Add voluntary symbolic/free lounge drinks and local icebreakers without external enrollment.
-- [ ] Test integrity, change detection, forks, consent, integrations and desktop/mobile workflows.
+- [x] Add a version-pinned local DEMO Vault with SHA-256 artifact/manifest, origin comparison, syntax/conflict warnings and new-version forks.
+- [x] Reuse approval history, revocation and rollback, preserving unsigned and local-only boundaries; connect Exchange, Guardian, Oracle, Founder, Releases and Embassy.
+- [x] Add voluntary symbolic/free lounge drinks and local icebreakers without external enrollment.
+- [x] Test integrity, change detection, forks, consent, integrations and desktop/mobile workflows.
 - [ ] Enable real signed releases and installer verification. Blocker: owner profile-data answer, authenticated owner-scoped persistence, independent reviews, secure signing/key custody, trusted verification keys and security QA.
 
 ## Trusted Release and Robot Safety Lock
