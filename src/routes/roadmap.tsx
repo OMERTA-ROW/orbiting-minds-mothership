@@ -11,7 +11,7 @@ const phases = [
   { n: "Phase 1", t: "Visual Prototype", s: "Prototype", items: ["Mothership command center", "Universe map & demo journey", "Guardian & dashboard mockups"] },
   { n: "Phase 2", t: "Developer GitHub Integration", s: "Planned", items: ["Consent-based, read-only repo grants", "CLI: init, login, scan, suggest", "Owner-scoped auth, orgs & roles"] },
   { n: "Phase 3", t: "Signed Verified Updates", s: "Future", items: ["Signed update packages", "Sandbox evaluation & manual approval", "Rollback snapshots & audit events"] },
-  { n: "Phase 4", t: "Partner Ecosystems", s: "Future", items: ["Optional Cyberace / Ace integration", "Agent Embassy at scale", "Contribution economy & subscriptions"] },
+  { n: "Phase 4", t: "Partner Ecosystems", s: "Future", items: ["Cyberace · DEMO only; integration unconfirmed, owner authorization required", "Agent Embassy at scale", "Contribution economy & subscriptions"] },
 ];
 
 function Page() {

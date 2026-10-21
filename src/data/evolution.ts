@@ -31,9 +31,9 @@ export const modules: MothershipModule[] = [
   { id: "guardian", name: "Guardian", short: "Protection & permissions", ring: 0, status: "Prototype",
     purpose: "Enforces owner permissions, reversible changes and safety checks before anything is applied.",
     capabilities: ["Permission grants", "Risk scoring", "Sandbox-first policy", "Rollback snapshots"] },
-  { id: "ace", name: "Cyberace / Ace Partner", short: "Optional future integration", ring: 0, status: "Future",
-    purpose: "An optional future partner integration slot for the Cyberace / Ace ecosystem.",
-    capabilities: ["Opt-in connector", "Shared security signals", "Joint tooling (proposed)"] },
+  { id: "ace", name: "Cyberace", short: "DEMO · integration unconfirmed", ring: 0, status: "Concept",
+    purpose: "Cyberace is a proposed DEMO project example. Integration details are unconfirmed; no repository, terminal or deployment is connected. Owner authorization is required before integration.",
+    capabilities: ["Integration details unconfirmed", "Owner authorization required", "No connected project or terminal"] },
   { id: "embassy", name: "Agent Embassy", short: "Consenting AI agents", ring: 1, status: "Concept",
     purpose: "Where consenting AI agents register, declare capabilities and accept collaboration terms.",
     capabilities: ["Agent identity cards", "Declared capabilities", "Consent contracts", "No remote control of external AI"] },
@@ -109,7 +109,7 @@ export const sampleProjects = [
 export const nexusProjects = [
  {id:"nexus-nebula",name:"Nebula UI",stack:"TypeScript · web",context:"Fictional keyboard selection study. Goal: preserve explicit boundaries and human review.",file:"selection.ts",source:"export const selectionMode = \"manual\";\n",sample:"export const selectionMode = \"reviewed-manual\";\n"},
  {id:"nexus-studio",name:"Orbital Game Studio",stack:"Unity · Blender concept",context:"Fictional scene pipeline. No installed editor, assets or game repository attached.",file:"scene-plan.ts",source:"export const sceneBudget = 10;\n",sample:"export const sceneBudget = 8;\n"},
- {id:"nexus-cyberace",name:"Cyberace · concept",stack:"Adapter details unconfirmed",context:"Potential Cyberace workspace only. Repository and runtime adapter unknown; CyberLink Social is not a target.",file:"adapter-plan.ts",source:"export const adapterEnabled = false;\n",sample:"export const adapterEnabled = false;\n// Owner-approved adapter specification still required.\n"},
+ {id:"nexus-cyberace",name:"Cyberace",stack:"DEMO · integration unconfirmed",context:"Proposed Cyberace DEMO workspace only. Integration details are unconfirmed; no repository, terminal or deployment is connected. Owner authorization is required before integration.",file:"adapter-plan.ts",source:"export const adapterEnabled = false;\n",sample:"export const adapterEnabled = false;\n// Cyberace integration details unconfirmed; owner authorization required.\n"},
 ] as const;
 export const nexusAgents = [
  {id:"openai",name:"GPT API",provider:"OpenAI",role:"Architecture & draft proposals",mark:"G",endpoint:"Official OpenAI API",docs:"https://platform.openai.com/docs",limitation:"API credentials and model access required. Consumer ChatGPT history does not sync."},
