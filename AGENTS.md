@@ -41,4 +41,4 @@
 - Entertainment/Cartoon use separate validated local stores, revision-bound reviews and fresh Guardian/Nexus pause checks, why: samples, timing and preparation exports confer no processing, rights clearance or publication.
 - CLI remains offline source in `cli/`, never web-imported; access policy is inert/exportable, why: no billing/auth entitlement or signed distribution claims.
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
-- Launch Control uses dated evidence, not editable PASS toggles, why: QA records cannot grant launch approval.
+- Launch Control is dated QA, not approvals; local discovery is opt-in PATH metadata and estimates pure browser math, why: no uploads or assumed charges.
