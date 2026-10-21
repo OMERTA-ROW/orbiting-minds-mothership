@@ -554,7 +554,8 @@ export function CreatorDistro({
                     : releaseSchema.parse(v.content).title}
                 </h3>
                 <p className="mt-2 font-mono text-[10px] text-warning">
-                  Version {v.revision} · {v.state}{v.kind === "release" ? " · NOT DELIVERED" : " · PLAN ONLY"}
+                  Version {v.revision} · {v.state}
+                  {v.kind === "release" ? " · NOT DELIVERED" : " · PLAN ONLY"}
                 </p>
                 <Button
                   variant="ghost"
