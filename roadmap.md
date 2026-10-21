@@ -1,10 +1,13 @@
 # Cosmic Mothership redesign
 
 ## Quantum Studio — focused owner-approved milestone
-- [ ] Add approved-account private media intake, bounded file/storage limits and cross-account tests; no public or domain changes.
-- [ ] Implement one real non-destructive WAV enhancement with before/after playback, measured checks, private audit and recovery.
-- [ ] Add editable OMNI creative plans across film/music/cartoon/book/adaptation; unsupported execution and studio CLI commands remain planned.
-- [ ] Verify authenticated upload/process/reload/export/deletion, anonymous/isolation failures and desktop/mobile; record evidence and remaining dependencies.
+- [x] Add separately approved-account private WAV storage, 4 MiB/file and eight-asset bounds, immutable owner/project reservations, no public URLs and live cross-account tests; no publication/domain changes.
+- [x] Implement real non-destructive PCM gain through wavefile, A/B playback, clipping rejection, exact sample/count/rate QA, output SHA-256, private change audit, export approval and preserved-original recovery.
+- [x] Add editable local OMNI plans across film/music/cartoon/book/adaptation and consented text-only draft handoff to existing beta OMNI. No model audio access or tool execution; studio CLI stays planned.
+- [ ] Complete retained authenticated processing/deletion/isolation verification and final evidence.
+- [ ] Activate broader media/FFmpeg/provider/CLI workflows. Blocker: authorized supported processor or reviewed native companion, named media beta approvals, durable request/spend limits, independent privacy/security/rights review and founder release approval. No production deployment or domain/public-status changes.
+
+Validation so far: 743 app tests (25 new audio/consent cases), 36 retained hosted media checks and desktop/mobile real upload/gain/export/reload verified. Temporary QA approvals/accounts/objects removed. No paid provider calls. Hashes and metadata are not signatures or independent quality/rights evidence.
 
 ## Launch Control — current priority; expansion frozen
 - [x] Audit hosted schema/grants/auth/AI; add four owner-scoped beta tables, revoke inherited broad grants and pass 23 retained live isolation checks.
