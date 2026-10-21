@@ -29,6 +29,7 @@ import { Route as EmbassyRouteImport } from './routes/embassy'
 import { Route as ExperimentReplayRouteImport } from './routes/experiment-replay'
 import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GuardianRouteImport } from './routes/guardian'
+import { Route as GuardianIncidentsRouteImport } from './routes/guardian-incidents'
 import { Route as ImpactScorecardRouteImport } from './routes/impact-scorecard'
 import { Route as IncidentArchivesRouteImport } from './routes/incident-archives'
 import { Route as JoinRouteImport } from './routes/join'
@@ -43,6 +44,7 @@ import { Route as PilotRouteImport } from './routes/pilot'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as PulseRouteImport } from './routes/pulse'
 import { Route as ReleasesRouteImport } from './routes/releases'
+import { Route as ReportIncidentRouteImport } from './routes/report-incident'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as RoboticsRouteImport } from './routes/robotics'
 import { Route as SandboxRouteImport } from './routes/sandbox'
@@ -56,6 +58,7 @@ import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-
 import { Route as CapsulesIdRouteImport } from './routes/capsules_.$id'
 import { Route as ChallengesIdRouteImport } from './routes/challenges_.$id'
 import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
+import { Route as GuardianIncidentsIdRouteImport } from './routes/guardian-incidents_.$id'
 import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archives_.$id'
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 
@@ -159,6 +162,11 @@ const GuardianRoute = GuardianRouteImport.update({
   path: '/guardian',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuardianIncidentsRoute = GuardianIncidentsRouteImport.update({
+  id: '/guardian-incidents',
+  path: '/guardian-incidents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ImpactScorecardRoute = ImpactScorecardRouteImport.update({
   id: '/impact-scorecard',
   path: '/impact-scorecard',
@@ -229,6 +237,11 @@ const ReleasesRoute = ReleasesRouteImport.update({
   path: '/releases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportIncidentRoute = ReportIncidentRouteImport.update({
+  id: '/report-incident',
+  path: '/report-incident',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoadmapRoute = RoadmapRouteImport.update({
   id: '/roadmap',
   path: '/roadmap',
@@ -294,6 +307,11 @@ const CodeExchangeIdRoute = CodeExchangeIdRouteImport.update({
   path: '/code-exchange/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuardianIncidentsIdRoute = GuardianIncidentsIdRouteImport.update({
+  id: '/guardian-incidents_/$id',
+  path: '/guardian-incidents/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IncidentArchivesIdRoute = IncidentArchivesIdRouteImport.update({
   id: '/incident-archives_/$id',
   path: '/incident-archives/$id',
@@ -326,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/guardian-incidents': typeof GuardianIncidentsRoute
   '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
@@ -340,6 +359,7 @@ export interface FileRoutesByFullPath {
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
+  '/report-incident': typeof ReportIncidentRoute
   '/roadmap': typeof RoadmapRoute
   '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
@@ -353,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
+  '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
 }
@@ -377,6 +398,7 @@ export interface FileRoutesByTo {
   '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/guardian-incidents': typeof GuardianIncidentsRoute
   '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
@@ -391,6 +413,7 @@ export interface FileRoutesByTo {
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
+  '/report-incident': typeof ReportIncidentRoute
   '/roadmap': typeof RoadmapRoute
   '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
@@ -404,6 +427,7 @@ export interface FileRoutesByTo {
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
+  '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
 }
@@ -429,6 +453,7 @@ export interface FileRoutesById {
   '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/guardian-incidents': typeof GuardianIncidentsRoute
   '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
@@ -443,6 +468,7 @@ export interface FileRoutesById {
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
+  '/report-incident': typeof ReportIncidentRoute
   '/roadmap': typeof RoadmapRoute
   '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
@@ -456,6 +482,7 @@ export interface FileRoutesById {
   '/capsules_/$id': typeof CapsulesIdRoute
   '/challenges_/$id': typeof ChallengesIdRoute
   '/code-exchange_/$id': typeof CodeExchangeIdRoute
+  '/guardian-incidents_/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives_/$id': typeof IncidentArchivesIdRoute
   '/robotics_/$id': typeof RoboticsIdRoute
 }
@@ -482,6 +509,7 @@ export interface FileRouteTypes {
     | '/experiment-replay'
     | '/fleet'
     | '/guardian'
+    | '/guardian-incidents'
     | '/impact-scorecard'
     | '/incident-archives'
     | '/join'
@@ -496,6 +524,7 @@ export interface FileRouteTypes {
     | '/platform'
     | '/pulse'
     | '/releases'
+    | '/report-incident'
     | '/roadmap'
     | '/robotics'
     | '/sandbox'
@@ -509,6 +538,7 @@ export interface FileRouteTypes {
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
+    | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -533,6 +563,7 @@ export interface FileRouteTypes {
     | '/experiment-replay'
     | '/fleet'
     | '/guardian'
+    | '/guardian-incidents'
     | '/impact-scorecard'
     | '/incident-archives'
     | '/join'
@@ -547,6 +578,7 @@ export interface FileRouteTypes {
     | '/platform'
     | '/pulse'
     | '/releases'
+    | '/report-incident'
     | '/roadmap'
     | '/robotics'
     | '/sandbox'
@@ -560,6 +592,7 @@ export interface FileRouteTypes {
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
+    | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
   id:
@@ -584,6 +617,7 @@ export interface FileRouteTypes {
     | '/experiment-replay'
     | '/fleet'
     | '/guardian'
+    | '/guardian-incidents'
     | '/impact-scorecard'
     | '/incident-archives'
     | '/join'
@@ -598,6 +632,7 @@ export interface FileRouteTypes {
     | '/platform'
     | '/pulse'
     | '/releases'
+    | '/report-incident'
     | '/roadmap'
     | '/robotics'
     | '/sandbox'
@@ -611,6 +646,7 @@ export interface FileRouteTypes {
     | '/capsules_/$id'
     | '/challenges_/$id'
     | '/code-exchange_/$id'
+    | '/guardian-incidents_/$id'
     | '/incident-archives_/$id'
     | '/robotics_/$id'
   fileRoutesById: FileRoutesById
@@ -636,6 +672,7 @@ export interface RootRouteChildren {
   ExperimentReplayRoute: typeof ExperimentReplayRoute
   FleetRoute: typeof FleetRoute
   GuardianRoute: typeof GuardianRoute
+  GuardianIncidentsRoute: typeof GuardianIncidentsRoute
   ImpactScorecardRoute: typeof ImpactScorecardRoute
   IncidentArchivesRoute: typeof IncidentArchivesRoute
   JoinRoute: typeof JoinRoute
@@ -650,6 +687,7 @@ export interface RootRouteChildren {
   PlatformRoute: typeof PlatformRoute
   PulseRoute: typeof PulseRoute
   ReleasesRoute: typeof ReleasesRoute
+  ReportIncidentRoute: typeof ReportIncidentRoute
   RoadmapRoute: typeof RoadmapRoute
   RoboticsRoute: typeof RoboticsRoute
   SandboxRoute: typeof SandboxRoute
@@ -663,6 +701,7 @@ export interface RootRouteChildren {
   CapsulesIdRoute: typeof CapsulesIdRoute
   ChallengesIdRoute: typeof ChallengesIdRoute
   CodeExchangeIdRoute: typeof CodeExchangeIdRoute
+  GuardianIncidentsIdRoute: typeof GuardianIncidentsIdRoute
   IncidentArchivesIdRoute: typeof IncidentArchivesIdRoute
   RoboticsIdRoute: typeof RoboticsIdRoute
 }
@@ -809,6 +848,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuardianRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guardian-incidents': {
+      id: '/guardian-incidents'
+      path: '/guardian-incidents'
+      fullPath: '/guardian-incidents'
+      preLoaderRoute: typeof GuardianIncidentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/impact-scorecard': {
       id: '/impact-scorecard'
       path: '/impact-scorecard'
@@ -907,6 +953,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReleasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/report-incident': {
+      id: '/report-incident'
+      path: '/report-incident'
+      fullPath: '/report-incident'
+      preLoaderRoute: typeof ReportIncidentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/roadmap': {
       id: '/roadmap'
       path: '/roadmap'
@@ -998,6 +1051,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CodeExchangeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guardian-incidents_/$id': {
+      id: '/guardian-incidents_/$id'
+      path: '/guardian-incidents/$id'
+      fullPath: '/guardian-incidents/$id'
+      preLoaderRoute: typeof GuardianIncidentsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/incident-archives_/$id': {
       id: '/incident-archives_/$id'
       path: '/incident-archives/$id'
@@ -1036,6 +1096,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExperimentReplayRoute: ExperimentReplayRoute,
   FleetRoute: FleetRoute,
   GuardianRoute: GuardianRoute,
+  GuardianIncidentsRoute: GuardianIncidentsRoute,
   ImpactScorecardRoute: ImpactScorecardRoute,
   IncidentArchivesRoute: IncidentArchivesRoute,
   JoinRoute: JoinRoute,
@@ -1050,6 +1111,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlatformRoute: PlatformRoute,
   PulseRoute: PulseRoute,
   ReleasesRoute: ReleasesRoute,
+  ReportIncidentRoute: ReportIncidentRoute,
   RoadmapRoute: RoadmapRoute,
   RoboticsRoute: RoboticsRoute,
   SandboxRoute: SandboxRoute,
@@ -1063,6 +1125,7 @@ const rootRouteChildren: RootRouteChildren = {
   CapsulesIdRoute: CapsulesIdRoute,
   ChallengesIdRoute: ChallengesIdRoute,
   CodeExchangeIdRoute: CodeExchangeIdRoute,
+  GuardianIncidentsIdRoute: GuardianIncidentsIdRoute,
   IncidentArchivesIdRoute: IncidentArchivesIdRoute,
   RoboticsIdRoute: RoboticsIdRoute,
 }

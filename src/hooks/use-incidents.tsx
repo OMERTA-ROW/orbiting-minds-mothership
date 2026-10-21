@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { genesisStorageKey, useGenesis } from "@/hooks/use-genesis";
 import { genesisStoreSchema } from "@/lib/genesis";
+import { emptyTrustStore, trustStorageKey, trustStoreSchema } from "@/lib/trusted-release";
+import { accountabilityInput } from "@/lib/accountability";
 import { emptyIncidentStore, incidentStorageKey, incidentStoreSchema, applyIncidentCommand, type IncidentCommand, type IncidentStore } from "@/lib/incidents";
 const Context = createContext<{ store: IncidentStore; ready: boolean; issue: string; dispatch: (command: IncidentCommand) => string } | null>(null);
 export function IncidentProvider({ children }: { children: ReactNode }) {
@@ -21,7 +23,15 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
    try { const raw = localStorage.getItem(genesisStorageKey); if (raw !== null) identityStore = genesisStoreSchema.parse(JSON.parse(raw)); }
    catch { throw new Error("Current identity records cannot be validated. No debrief action was recorded."); }
   }
-  const id = crypto.randomUUID(); const next = applyIncidentCommand(current.current, identityStore, command, id, new Date().toISOString());
+  let trust = emptyTrustStore;
+  if(command.type === "accountabilityReport" || command.type === "accountabilityRevise"){
+   const input=accountabilityInput.parse(command.input);
+   if(input.releaseId||input.replayId){
+    try{const raw=localStorage.getItem(trustStorageKey);if(raw!==null)trust=trustStoreSchema.parse(JSON.parse(raw));}
+    catch{throw new Error("Current local release evidence cannot be validated. No incident references saved.");}
+   }
+  }
+  const id = crypto.randomUUID(); const next = applyIncidentCommand(current.current, identityStore, command, id, new Date().toISOString(),trust);
   current.current = next; setStore(next);
   if (!preserve.current) { try { localStorage.setItem(incidentStorageKey, JSON.stringify(next)); works.current = true; setIssue(""); } catch { works.current = false; setIssue("This action could not be saved; new records are temporary until reload."); } }
   return id;
