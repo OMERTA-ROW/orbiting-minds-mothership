@@ -65,7 +65,9 @@ func findCommandsWithExtensions(name, path, platform, pathExt string) []string {
 			// names when these rules are unit-tested on a Unix host too.
 			candidates = nil
 			entries, err := os.ReadDir(dir)
-			if err != nil { continue }
+			if err != nil {
+				continue
+			}
 			for _, entry := range entries {
 				for _, wanted := range names {
 					if strings.EqualFold(entry.Name(), wanted) {
