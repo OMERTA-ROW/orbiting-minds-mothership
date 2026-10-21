@@ -1,5 +1,11 @@
 # Cosmic Mothership redesign
 
+## Creator Universe + OMNI FORGE DISTRO — current focused milestone
+- [ ] Add owner-isolated editable fictional canon and Podcast/Game branch plans inside existing Forge, with honest capability and rights states.
+- [ ] Add a draft/review release console and one validated RSS/manual owned-site export path, exact-version consent, revocation, repeat-safe exports and audit; no posting or public feed exposure.
+- [ ] Verify saved readback, account/media gates, exports and responsive controls; record actual evidence and remaining integration blockers.
+- [ ] Activate real hosted distribution, channel scheduling/autopublish and broader recording/transcription/game adapters only after owner-selected site/channel, supported connections and release approval. No production/domain changes.
+
 ## OMNI FORGE — focused Quantum Studio follow-up
 - [x] Preserve approved private media/isolation gates and repair WaveFile packaging across SSR and bundled runtime.
 - [x] Add real bounded timestamp-reviewed radio silence/tone/cut/crossfade and mono edits with preserved originals, measured duration/sample-peak evidence and unsupported broadcast/stem labels.

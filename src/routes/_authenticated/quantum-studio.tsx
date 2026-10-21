@@ -19,6 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { QuantumPlanner } from "@/components/entertainment/QuantumPlanner";
 import { ForgeWorkspace } from "@/components/entertainment/ForgeWorkspace";
 import { forgeQuery } from "@/lib/forge-query";
+import { creatorForgeQuery } from "@/lib/forge-distro-query";
+import { CreatorDistro } from "@/components/entertainment/CreatorDistro";
 import { Button } from "@/components/ui/button";
 import { useGuardian } from "@/hooks/use-guardian";
 import { readCreativePause } from "@/hooks/use-cartoon";
@@ -28,14 +30,15 @@ import studioArt from "@/assets/entertainment-studio.jpg";
 export const Route = createFileRoute("/_authenticated/quantum-studio")({
   head: () =>
     seo(
-      "Quantum Studio & OMNI FORGE · Private creation beta",
-      "Private WAV gain and manually reviewed radio edits, measured output checks and editable safe Web Forge drafts. Separate version-bound owner export reviews; no FFmpeg, public deployment or domain changes.",
+      "Quantum Studio & OMNI FORGE · Creator Universe and Distro",
+      "Private WAV gain and radio edits, safe website drafts, fictional canon branches and reviewed manual RSS export bundles. No connected publishing, public feed, FFmpeg or domain changes.",
     ),
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(betaQuery),
       context.queryClient.ensureQueryData(studioQuery),
       context.queryClient.ensureQueryData(forgeQuery),
+      context.queryClient.ensureQueryData(creatorForgeQuery),
     ]);
   },
   component: QuantumStudio,
@@ -587,6 +590,13 @@ function QuantumStudio() {
           projectId={projectId}
           consent={consent}
           paused={!!paused}
+        />
+        <CreatorDistro
+          key={`creator-${projectId}`}
+          projectId={projectId}
+          assets={assets}
+          allowed={allowed}
+          consent={consent}
         />
         <section className="mt-10 border-t border-border pt-6">
           <p className="eyebrow">Existing shell / optional companion</p>

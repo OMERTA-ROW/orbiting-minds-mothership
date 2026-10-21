@@ -64,6 +64,20 @@
       "when": 1792562562611,
       "tag": "0008_forge_retained_audio_delete_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792563768580,
+      "tag": "0009_forge_creator_distro_private",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792563897658,
+      "tag": "0010_forge_creator_retained_media",
+      "breakpoints": true
     }
   ]
 }
