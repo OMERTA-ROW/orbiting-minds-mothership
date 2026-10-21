@@ -1,11 +1,18 @@
 # Cosmic Mothership redesign
 
+## Code Vault and Welcome Lounge
+- [x] Add a version-pinned local DEMO Vault with SHA-256 artifact/manifest, origin comparison, syntax/conflict warnings and new-version forks.
+- [x] Reuse approval history, revocation and rollback, preserving unsigned and local-only boundaries; connect Exchange, Guardian, Oracle, Founder, Releases and Embassy.
+- [x] Add voluntary symbolic/free lounge drinks and local icebreakers without external enrollment.
+- [x] Test integrity, change detection, forks, consent, integrations and desktop/mobile workflows.
+- [ ] Enable real signed releases and installer verification. Blocker: owner profile-data answer, authenticated owner-scoped persistence, independent reviews, secure signing/key custody, trusted verification keys and security QA.
+
 ## Trusted Release and Robot Safety Lock
-- [ ] Add simulation-only Physical Safety Lock with required evidence and explicit operator approval; hardware always blocked.
-- [ ] Add Oracle Experiment Replay with expected/observed timeline, scrubbed sample logs, evidence labels and archive links.
-- [ ] Add DEMO Approval Ledger and Release Passport with digest-bound signoff, revocation and rollback rehearsal.
-- [ ] Add reproducible Idea-to-Impact comparisons with method, baseline and evidence gaps, not submission counts.
-- [ ] Test rules, persistence, integrations and desktop/mobile flows; preserve all existing milestones.
+- [x] Add simulation-only Physical Safety Lock with required evidence and explicit operator approval; hardware always blocked.
+- [x] Add Oracle Experiment Replay with expected/observed timeline, scrubbed sample logs, evidence labels and archive links.
+- [x] Add DEMO Approval Ledger and Release Passport with digest-bound signoff, revocation and rollback rehearsal.
+- [x] Add reproducible Idea-to-Impact comparisons with method, baseline and evidence gaps, not submission counts.
+- [x] Test rules, persistence, integrations and desktop/mobile flows; preserve all existing milestones.
 - [ ] Enable trusted production records/release. Blocker: owner profile-data decision, authenticated owner-scoped access, private evidence storage, independent safety/testing and security QA.
 
 ## Agent Debrief and Incident Archives

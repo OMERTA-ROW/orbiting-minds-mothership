@@ -11,12 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentDebriefRouteImport } from './routes/agent-debrief'
+import { Route as AgentLoungeRouteImport } from './routes/agent-lounge'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as ApprovalLedgerRouteImport } from './routes/approval-ledger'
 import { Route as CareRouteImport } from './routes/care'
 import { Route as CareAgentRouteImport } from './routes/care-agent'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CodeExchangeRouteImport } from './routes/code-exchange'
+import { Route as CodeVaultRouteImport } from './routes/code-vault'
 import { Route as CommonsRouteImport } from './routes/commons'
 import { Route as ComputeGridRouteImport } from './routes/compute-grid'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -67,6 +69,11 @@ const AgentDebriefRoute = AgentDebriefRouteImport.update({
   path: '/agent-debrief',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgentLoungeRoute = AgentLoungeRouteImport.update({
+  id: '/agent-lounge',
+  path: '/agent-lounge',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AgentsRoute = AgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
@@ -95,6 +102,11 @@ const ChallengesRoute = ChallengesRouteImport.update({
 const CodeExchangeRoute = CodeExchangeRouteImport.update({
   id: '/code-exchange',
   path: '/code-exchange',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CodeVaultRoute = CodeVaultRouteImport.update({
+  id: '/code-vault',
+  path: '/code-vault',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommonsRoute = CommonsRouteImport.update({
@@ -296,12 +308,14 @@ const RoboticsIdRoute = RoboticsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent-debrief': typeof AgentDebriefRoute
+  '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
+  '/code-vault': typeof CodeVaultRoute
   '/commons': typeof CommonsRoute
   '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
@@ -345,12 +359,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent-debrief': typeof AgentDebriefRoute
+  '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
+  '/code-vault': typeof CodeVaultRoute
   '/commons': typeof CommonsRoute
   '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
@@ -395,12 +411,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agent-debrief': typeof AgentDebriefRoute
+  '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
+  '/code-vault': typeof CodeVaultRoute
   '/commons': typeof CommonsRoute
   '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
@@ -446,12 +464,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/agent-debrief'
+    | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
     | '/care'
     | '/care-agent'
     | '/challenges'
     | '/code-exchange'
+    | '/code-vault'
     | '/commons'
     | '/compute-grid'
     | '/dashboard'
@@ -495,12 +515,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/agent-debrief'
+    | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
     | '/care'
     | '/care-agent'
     | '/challenges'
     | '/code-exchange'
+    | '/code-vault'
     | '/commons'
     | '/compute-grid'
     | '/dashboard'
@@ -544,12 +566,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/agent-debrief'
+    | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
     | '/care'
     | '/care-agent'
     | '/challenges'
     | '/code-exchange'
+    | '/code-vault'
     | '/commons'
     | '/compute-grid'
     | '/dashboard'
@@ -594,12 +618,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentDebriefRoute: typeof AgentDebriefRoute
+  AgentLoungeRoute: typeof AgentLoungeRoute
   AgentsRoute: typeof AgentsRoute
   ApprovalLedgerRoute: typeof ApprovalLedgerRoute
   CareRoute: typeof CareRoute
   CareAgentRoute: typeof CareAgentRoute
   ChallengesRoute: typeof ChallengesRoute
   CodeExchangeRoute: typeof CodeExchangeRoute
+  CodeVaultRoute: typeof CodeVaultRoute
   CommonsRoute: typeof CommonsRoute
   ComputeGridRoute: typeof ComputeGridRoute
   DashboardRoute: typeof DashboardRoute
@@ -657,6 +683,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentDebriefRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agent-lounge': {
+      id: '/agent-lounge'
+      path: '/agent-lounge'
+      fullPath: '/agent-lounge'
+      preLoaderRoute: typeof AgentLoungeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/agents': {
       id: '/agents'
       path: '/agents'
@@ -697,6 +730,13 @@ declare module '@tanstack/react-router' {
       path: '/code-exchange'
       fullPath: '/code-exchange'
       preLoaderRoute: typeof CodeExchangeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/code-vault': {
+      id: '/code-vault'
+      path: '/code-vault'
+      fullPath: '/code-vault'
+      preLoaderRoute: typeof CodeVaultRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/commons': {
@@ -978,12 +1018,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentDebriefRoute: AgentDebriefRoute,
+  AgentLoungeRoute: AgentLoungeRoute,
   AgentsRoute: AgentsRoute,
   ApprovalLedgerRoute: ApprovalLedgerRoute,
   CareRoute: CareRoute,
   CareAgentRoute: CareAgentRoute,
   ChallengesRoute: ChallengesRoute,
   CodeExchangeRoute: CodeExchangeRoute,
+  CodeVaultRoute: CodeVaultRoute,
   CommonsRoute: CommonsRoute,
   ComputeGridRoute: ComputeGridRoute,
   DashboardRoute: DashboardRoute,

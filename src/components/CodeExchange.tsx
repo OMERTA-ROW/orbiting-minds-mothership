@@ -21,6 +21,7 @@ export function ExchangeShell({ page, children }: { page: "exchange" | "commons"
       <div className="mb-9 flex flex-wrap items-center justify-between gap-6 border-y border-border py-4">
         <nav aria-label={t("network")} className="flex flex-wrap gap-2">
           {([{ to: "/code-exchange", key: "exchange" }, { to: "/commons", key: "commons" }, { to: "/pulse", key: "pulse" }] as const).map((item) => <Button asChild key={item.key} variant={page === item.key ? "signal" : "ghost"}><Link to={item.to} aria-current={page === item.key ? "page" : undefined}>{t(item.key)}</Link></Button>)}
+          <Button asChild variant="ghost"><Link to="/code-vault">{locale==="es"?"Bóveda · demo":"Code Vault · Demo"}</Link></Button>
         </nav>
         <label className="flex items-center gap-2 text-xs text-muted-foreground"><Globe2 size={16} className="text-gold" /><span className="sr-only">{t("language")}</span><select aria-label={t("language")} className="exchange-select w-32" value={locale} onChange={(event) => setLocale(event.target.value === "es" ? "es" : "en")}><option value="en">English</option><option value="es">Español</option></select></label>
       </div>
@@ -134,6 +135,7 @@ export function ContributionDetail({ item }: { item: CodeContribution }) {
   const copy = async () => { try { await navigator.clipboard.writeText(item.code); setCopyState("copied"); } catch { setCopyState("copyFailed"); } };
   return <ExchangeShell page="exchange">
     <Button asChild variant="ghost" className="mb-7 pl-0"><Link to="/code-exchange"><ArrowLeft size={16} />{t("back")}</Link></Button>
+    <Button asChild variant="signal" className="mb-7 h-auto min-h-11 whitespace-normal"><Link to="/code-vault" search={{code:item.id}}>{locale==="es"?"Comparar original y cambios · demo":"Compare origin & changes · Demo"}<GitBranch size={16}/></Link></Button>
     <div className="mb-10 flex flex-wrap gap-x-5 gap-y-3 font-mono text-xs text-gold-light"><span>{item.language}</span><span>{t(item.industry)}</span><span>{t(item.readiness)}</span><span>{t("reviewState")}: {t(item.state)}</span></div>
     <h2 className="max-w-4xl text-3xl leading-relaxed md:text-4xl">{item.title[locale]}</h2>
     <section lang="en" className="mt-7 border-l border-gold/30 pl-5"><p className="text-xs text-gold-light">Linked Robotics & Mobility research · DEMO only</p><p className="mt-3 text-xs leading-loose text-muted-foreground">Reference only; this sample is not a robot or vehicle controller, and code reviews are not hardware safety approvals.</p><div className="mt-3 flex flex-wrap gap-2">{roboticsScenarios.filter(s => s.contributionId === item.id).map(s => <Button asChild key={s.id} variant="ghost" className="h-auto min-h-10 whitespace-normal text-left text-xs"><Link to="/robotics/$id" params={{ id: s.id }}>{s.title}</Link></Button>)}</div></section>
