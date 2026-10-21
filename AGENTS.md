@@ -37,4 +37,4 @@
 - Debrief/Archives/Accountability share additive local records, consent gates, revisions and validated release/replay references; checks are patterns only, why: preserve work without claiming confidential audit, verified fault or execution provenance.
 - Trusted Release uses a separate validated browser-local store, Web Crypto sample-text digests and consent-bound rehearsals; hardware/deployment stay blocked, why: hashes and local signoffs are not signatures, authenticated audit or independent safety evidence.
 - Vault reuses Trust records, owner confirmation, exact comparisons and event-loaded parsers; Lounge uses Genesis consent, why: no signing/enrollment claims.
-- Nexus uses pure project-bound transitions and separate local storage with Genesis consent; threads and base-version drafts never auto-share/overwrite, why: no secure chat or provider/native execution claims.
+- Nexus keeps separate consented local records and isolated base-version drafts; corrected example labels overlay stored data, why: preserve work without secure chat or execution claims.
