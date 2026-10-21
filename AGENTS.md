@@ -13,9 +13,9 @@
 - Prototype data lives in `src/data/evolution.ts`, separate from owned records: no live-integration claims.
 - Shared visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: consistent design.
 - Cosmic art uses deterministic light motion/static fallbacks; orbital controls use fixed buttons/mobile lists/tokens for accessibility.
-- Creator pathways stream structured output through an internal server route and request-local AI helpers; keep secrets server-only, why: cancellable drafting is not execution.
+- Pathways use internal streaming routes and request-local AI; secrets server-only, why: drafting is not execution.
 - Persist AI denial/credit blocks service-only; clear after owner confirmation, why: prevent billed retries across reloads/restarts.
-- Command search uses a pure typed evolution-data index and validated search parameters or stable anchors, why: exact results without changing local interactions.
+- Command search uses typed data and validated parameters/anchors, why: exact results preserve interactions.
 - Exchange uses pure validated local records and separate copy localization, why: no multiuser, repository-provenance or code-translation claims.
 - Genesis uses pure transitions and a versioned local store; SDK APIs remain disabled references, why: local identities/visibility labels cannot enforce multiuser security.
 - Open Call adds optional passport declarations and contribution defaults to Genesis; exports only pending/revoked states, why: preserve old records without implying verification.
@@ -29,8 +29,8 @@
 - CARE rehearsals record channel context in editable local audit, not jobs/receipts, why: no native or trusted audit claims.
 - Guardian/Fleet use separate validated local DEMO consent/expiry/revocation; devices start unpaired and scope-less, why: no trusted ownership or CARE/Genesis effects.
 - Guardian reviews use proposed-only samples, why: no model, scan, source execution or text-based privilege.
-- Guardian pause invalidates local fleet grants/plans and pauses CARE separately, reporting failures without remote receipts, why: local state cannot establish secure readiness or endpoint containment.
-- Robotics uses central demo scenarios, bounded arithmetic and a separate validated local store, never referenced-code/ROS/hardware execution, why: reproduce research without implying physics, diagnosis or safety certification.
+- Guardian pause invalidates local Fleet grants/plans and pauses CARE separately; report failures without remote receipts, why: no secure readiness/containment claim.
+- Robotics uses central scenarios, bounded arithmetic and separate local records, never code/ROS/hardware execution, why: no physics, diagnosis or safety proof.
 - Scenario handoffs prefill Founder/Oracle/Challenges/Releases without automatic requests; Guardian is proposed-only, why: handoffs confer no authority.
 - Debrief/Archives/Accountability share additive local records, consent/revisions and release/replay references; pattern checks imply no confidential audit, fault verification or execution provenance.
 - Trusted Release uses separate validated local records, Web Crypto sample digests and consent rehearsals; hardware/deployment blocked, why: hashes/signoffs are not signatures, trusted audit or safety proof.
@@ -42,3 +42,4 @@
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
 - Launch Control is dated QA; opt-in PATH discovery and browser cost math never imply approvals/uploads/charges.
 - Quantum/Forge use approved private owner-project media, bounded PCM with bundled WaveFile, inert web drafts and immutable digest-reviewed versions; OMNI gets text only, why: consistent SSR exports; plans confer no file/publish authority.
+- Creator/Distro use immutable owner-project canon/release drafts, canonical digests and row-locked current-access review/revoke/prepare; private XML/WAV ZIPs only, why: repeat-safe manual exports never imply hosting, receipts, jobs or recall.

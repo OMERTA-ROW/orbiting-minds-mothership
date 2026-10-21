@@ -157,6 +157,76 @@ export type Database = {
         }
         Relationships: []
       }
+      forge_creator_versions: {
+        Row: {
+          asset_id: string | null
+          canon_id: string | null
+          content: Json
+          created_at: string
+          id: string
+          kind: string
+          owner_id: string
+          prepared_at: string | null
+          project_id: string
+          reviewed_at: string | null
+          revision: number
+          sha256: string
+          state: string
+        }
+        Insert: {
+          asset_id?: string | null
+          canon_id?: string | null
+          content: Json
+          created_at?: string
+          id?: string
+          kind: string
+          owner_id: string
+          prepared_at?: string | null
+          project_id: string
+          reviewed_at?: string | null
+          revision?: number
+          sha256: string
+          state?: string
+        }
+        Update: {
+          asset_id?: string | null
+          canon_id?: string | null
+          content?: Json
+          created_at?: string
+          id?: string
+          kind?: string
+          owner_id?: string
+          prepared_at?: string | null
+          project_id?: string
+          reviewed_at?: string | null
+          revision?: number
+          sha256?: string
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forge_creator_versions_asset_id_owner_id_fkey"
+            columns: ["asset_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "studio_assets"
+            referencedColumns: ["id", "owner_id"]
+          },
+          {
+            foreignKeyName: "forge_creator_versions_canon_id_owner_id_fkey"
+            columns: ["canon_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "forge_creator_versions"
+            referencedColumns: ["id", "owner_id"]
+          },
+          {
+            foreignKeyName: "forge_creator_versions_project_id_owner_id_fkey"
+            columns: ["project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "beta_projects"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
       forge_reviews: {
         Row: {
           created_at: string
@@ -336,7 +406,38 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      forge_release_transition: {
+        Args: {
+          _action: string
+          _approve?: boolean
+          _id: string
+          _owned_site?: boolean
+          _privacy?: boolean
+          _rights?: boolean
+          _sha256: string
+        }
+        Returns: {
+          asset_id: string | null
+          canon_id: string | null
+          content: Json
+          created_at: string
+          id: string
+          kind: string
+          owner_id: string
+          prepared_at: string | null
+          project_id: string
+          reviewed_at: string | null
+          revision: number
+          sha256: string
+          state: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "forge_creator_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
