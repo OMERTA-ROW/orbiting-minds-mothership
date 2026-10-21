@@ -3,8 +3,13 @@ import { modules } from "@/data/evolution";
 import { createResponsesCall } from "./responses.server.ts";
 import { getLovableAiGatewayResponseHeaders } from "./run-id.server.ts";
 import { requiresPersistentPause } from "./gateway-errors";
+import { authenticateBetaAi, BetaHttpError, readBoundedJson } from "@/lib/beta-auth.server";
+import { assertNonSensitive } from "@/lib/beta";
 
 export async function handlePathway(request: Request) {
+  let payload: unknown;
+  try { await authenticateBetaAi(request); payload = await readBoundedJson(request, 30000); }
+  catch (e) { return Response.json({ message: e instanceof Error ? e.message : "Account validation failed." }, { status: e instanceof BetaHttpError ? e.status : 400 }); }
   const origin = request.headers.get("origin");
   if (!origin || origin !== new URL(request.url).origin) {
     return Response.json({ message: "Only requests from this app are accepted." }, { status: 403 });
@@ -12,10 +17,9 @@ export async function handlePathway(request: Request) {
   if (!request.headers.get("content-type")?.includes("application/json")) {
     return Response.json({ message: "Send a technology concept as JSON." }, { status: 400 });
   }
-  const raw = await request.text();
-  if (raw.length > 30000) return Response.json({ message: "The concept is too long." }, { status: 413 });
-  const parsed = conceptSchema.safeParse(await Promise.resolve().then(() => JSON.parse(raw)).catch(() => null));
+  const parsed = conceptSchema.safeParse(payload);
   if (!parsed.success) return Response.json({ message: parsed.error.issues[0]?.message ?? "Check your concept." }, { status: 400 });
+  try { assertNonSensitive(`${parsed.data.concept}\n${parsed.data.goal}`); } catch (e) { return Response.json({ message: e instanceof Error ? e.message : "Sensitive input blocked" }, { status: 400 }); }
 
   // Privileged client is used only for service-only access state, never creator data or authorization decisions.
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

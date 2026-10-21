@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { conceptSchema, parsePathwayLine, type PartialPathway } from "@/lib/pathway";
+import { supabase } from "@/integrations/supabase/client";
 
 export function usePathway() {
   const [pathway, setPathway] = useState<PartialPathway | null>(null);
@@ -19,7 +20,9 @@ export function usePathway() {
     setStatus("generating"); setError(""); setThinking(""); setPathway(null);
     let terminal = false;
     try {
-      const response = await fetch("/api/evolution-pathway", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(validated.data), signal: abort.signal });
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) throw new Error("Sign in and request founder-approved beta AI access before generating. No model request sent.");
+      const response = await fetch("/api/evolution-pathway", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session.access_token}` }, body: JSON.stringify(validated.data), signal: abort.signal });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(typeof body.message === "string" ? body.message : "AI generation could not start. Your concept is unchanged.");

@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AgentDebriefRouteImport } from './routes/agent-debrief'
 import { Route as AgentLoungeRouteImport } from './routes/agent-lounge'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as ApprovalLedgerRouteImport } from './routes/approval-ledger'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CareRouteImport } from './routes/care'
 import { Route as CareAgentRouteImport } from './routes/care-agent'
 import { Route as CartoonGalaxyRouteImport } from './routes/cartoon-galaxy'
@@ -50,6 +52,7 @@ import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as PulseRouteImport } from './routes/pulse'
 import { Route as ReleasesRouteImport } from './routes/releases'
 import { Route as ReportIncidentRouteImport } from './routes/report-incident'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as RoboticsRouteImport } from './routes/robotics'
 import { Route as SandboxRouteImport } from './routes/sandbox'
@@ -59,6 +62,7 @@ import { Route as TrustRouteImport } from './routes/trust'
 import { Route as UniverseRouteImport } from './routes/universe'
 import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as VoiceRouteImport } from './routes/voice'
+import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 import { Route as CapsulesIdRouteImport } from './routes/capsules_.$id'
 import { Route as ChallengesIdRouteImport } from './routes/challenges_.$id'
@@ -70,6 +74,10 @@ import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentDebriefRoute = AgentDebriefRouteImport.update({
@@ -90,6 +98,11 @@ const AgentsRoute = AgentsRouteImport.update({
 const ApprovalLedgerRoute = ApprovalLedgerRouteImport.update({
   id: '/approval-ledger',
   path: '/approval-ledger',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CareRoute = CareRouteImport.update({
@@ -272,6 +285,11 @@ const ReportIncidentRoute = ReportIncidentRouteImport.update({
   path: '/report-incident',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoadmapRoute = RoadmapRouteImport.update({
   id: '/roadmap',
   path: '/roadmap',
@@ -317,6 +335,11 @@ const VoiceRoute = VoiceRouteImport.update({
   path: '/voice',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedBetaRoute = AuthenticatedBetaRouteImport.update({
+  id: '/beta',
+  path: '/beta',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiEvolutionPathwayRoute = ApiEvolutionPathwayRouteImport.update({
   id: '/api/evolution-pathway',
   path: '/api/evolution-pathway',
@@ -359,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/cartoon-galaxy': typeof CartoonGalaxyRoute
@@ -395,6 +419,7 @@ export interface FileRoutesByFullPath {
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
   '/report-incident': typeof ReportIncidentRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/roadmap': typeof RoadmapRoute
   '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
@@ -404,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
+  '/beta': typeof AuthenticatedBetaRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
@@ -418,6 +444,7 @@ export interface FileRoutesByTo {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/cartoon-galaxy': typeof CartoonGalaxyRoute
@@ -454,6 +481,7 @@ export interface FileRoutesByTo {
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
   '/report-incident': typeof ReportIncidentRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/roadmap': typeof RoadmapRoute
   '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
@@ -463,6 +491,7 @@ export interface FileRoutesByTo {
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
+  '/beta': typeof AuthenticatedBetaRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
@@ -474,10 +503,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/agent-debrief': typeof AgentDebriefRoute
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/cartoon-galaxy': typeof CartoonGalaxyRoute
@@ -514,6 +545,7 @@ export interface FileRoutesById {
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
   '/report-incident': typeof ReportIncidentRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/roadmap': typeof RoadmapRoute
   '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
@@ -523,6 +555,7 @@ export interface FileRoutesById {
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
+  '/_authenticated/beta': typeof AuthenticatedBetaRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/capsules_/$id': typeof CapsulesIdRoute
   '/challenges_/$id': typeof ChallengesIdRoute
@@ -539,6 +572,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/auth'
     | '/care'
     | '/care-agent'
     | '/cartoon-galaxy'
@@ -575,6 +609,7 @@ export interface FileRouteTypes {
     | '/pulse'
     | '/releases'
     | '/report-incident'
+    | '/reset-password'
     | '/roadmap'
     | '/robotics'
     | '/sandbox'
@@ -584,6 +619,7 @@ export interface FileRouteTypes {
     | '/universe'
     | '/updates'
     | '/voice'
+    | '/beta'
     | '/api/evolution-pathway'
     | '/capsules/$id'
     | '/challenges/$id'
@@ -598,6 +634,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/auth'
     | '/care'
     | '/care-agent'
     | '/cartoon-galaxy'
@@ -634,6 +671,7 @@ export interface FileRouteTypes {
     | '/pulse'
     | '/releases'
     | '/report-incident'
+    | '/reset-password'
     | '/roadmap'
     | '/robotics'
     | '/sandbox'
@@ -643,6 +681,7 @@ export interface FileRouteTypes {
     | '/universe'
     | '/updates'
     | '/voice'
+    | '/beta'
     | '/api/evolution-pathway'
     | '/capsules/$id'
     | '/challenges/$id'
@@ -653,10 +692,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/agent-debrief'
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/auth'
     | '/care'
     | '/care-agent'
     | '/cartoon-galaxy'
@@ -693,6 +734,7 @@ export interface FileRouteTypes {
     | '/pulse'
     | '/releases'
     | '/report-incident'
+    | '/reset-password'
     | '/roadmap'
     | '/robotics'
     | '/sandbox'
@@ -702,6 +744,7 @@ export interface FileRouteTypes {
     | '/universe'
     | '/updates'
     | '/voice'
+    | '/_authenticated/beta'
     | '/api/evolution-pathway'
     | '/capsules_/$id'
     | '/challenges_/$id'
@@ -713,10 +756,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AgentDebriefRoute: typeof AgentDebriefRoute
   AgentLoungeRoute: typeof AgentLoungeRoute
   AgentsRoute: typeof AgentsRoute
   ApprovalLedgerRoute: typeof ApprovalLedgerRoute
+  AuthRoute: typeof AuthRoute
   CareRoute: typeof CareRoute
   CareAgentRoute: typeof CareAgentRoute
   CartoonGalaxyRoute: typeof CartoonGalaxyRoute
@@ -753,6 +798,7 @@ export interface RootRouteChildren {
   PulseRoute: typeof PulseRoute
   ReleasesRoute: typeof ReleasesRoute
   ReportIncidentRoute: typeof ReportIncidentRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RoadmapRoute: typeof RoadmapRoute
   RoboticsRoute: typeof RoboticsRoute
   SandboxRoute: typeof SandboxRoute
@@ -778,6 +824,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agent-debrief': {
@@ -806,6 +859,13 @@ declare module '@tanstack/react-router' {
       path: '/approval-ledger'
       fullPath: '/approval-ledger'
       preLoaderRoute: typeof ApprovalLedgerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/care': {
@@ -1060,6 +1120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportIncidentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/roadmap': {
       id: '/roadmap'
       path: '/roadmap'
@@ -1123,6 +1190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VoiceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/beta': {
+      id: '/_authenticated/beta'
+      path: '/beta'
+      fullPath: '/beta'
+      preLoaderRoute: typeof AuthenticatedBetaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/evolution-pathway': {
       id: '/api/evolution-pathway'
       path: '/api/evolution-pathway'
@@ -1175,12 +1249,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBetaRoute: AuthenticatedBetaRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AgentDebriefRoute: AgentDebriefRoute,
   AgentLoungeRoute: AgentLoungeRoute,
   AgentsRoute: AgentsRoute,
   ApprovalLedgerRoute: ApprovalLedgerRoute,
+  AuthRoute: AuthRoute,
   CareRoute: CareRoute,
   CareAgentRoute: CareAgentRoute,
   CartoonGalaxyRoute: CartoonGalaxyRoute,
@@ -1217,6 +1304,7 @@ const rootRouteChildren: RootRouteChildren = {
   PulseRoute: PulseRoute,
   ReleasesRoute: ReleasesRoute,
   ReportIncidentRoute: ReportIncidentRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   RoadmapRoute: RoadmapRoute,
   RoboticsRoute: RoboticsRoute,
   SandboxRoute: SandboxRoute,
