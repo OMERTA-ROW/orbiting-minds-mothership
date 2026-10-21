@@ -19,11 +19,11 @@
 - Command search uses a pure typed evolution-data index and validated search parameters or stable anchors, why: exact results without changing local interactions.
 - Code Exchange uses pure helpers and validated local storage shared with Commons/Pulse, why: useful reviews without impersonating secure multiuser persistence.
 - Localize Exchange copy independently of code; documentation never implies repository provenance, why: translation must not rewrite code or invent permissions.
-- Genesis workflows use pure validated transitions and a separate versioned browser-local store; SDK contracts describe disabled future APIs and never act as endpoints, why: integrated rehearsal without pretending local identity or visibility labels enforce multiuser security.
+- Genesis uses pure transitions and a versioned local store; SDK APIs remain disabled references, why: local identities/visibility labels cannot enforce multiuser security.
 - Open Call adds optional passport declarations and contribution defaults to Genesis; exports only pending/revoked states, why: preserve old records without implying verification.
 - Digital Twin results run only a deterministic synthetic numeric model; arbitrary submitted code, shell commands and hardware connectors never execute, why: distinguish useful simulations from real sandbox or hardware validation.
 
-- SDK JSON validation is loaded only from browser events; schema data remains SSR-safe, why: avoid evaluating the CommonJS validator in server rendering and never transmit user JSON.
+- SDK validators load in browser events; schema stays SSR-safe, why: no server CommonJS evaluation or JSON transmission.
 
 - CARE uses a separate validated local store, pure consent transitions, fictional inventory, historical releases and additive defaults, why: preserve records without claiming native capabilities or account security.
 - CARE/Updates/Pilot/Voice/native references never call OS/capture/audio/updater/shell APIs; real capabilities need signed software, grants and review.
@@ -38,3 +38,4 @@
 - Trusted Release uses a separate validated browser-local store, Web Crypto sample-text digests and consent-bound rehearsals; hardware/deployment stay blocked, why: hashes and local signoffs are not signatures, authenticated audit or independent safety evidence.
 - Vault reuses Trust records, owner confirmation, exact comparisons and event-loaded parsers; Lounge uses Genesis consent, why: no signing/enrollment claims.
 - Nexus keeps separate consented local records and isolated base-version drafts; corrected example labels overlay stored data, why: preserve work without secure chat or execution claims.
+- OmniBridge uses central inert registry data, pure keyword plans and a separate validated local store; recheck Guardian/Nexus pause at mutation, why: review is not connectivity, signing or execution.
