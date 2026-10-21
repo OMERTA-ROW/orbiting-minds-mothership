@@ -3,26 +3,271 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { betaQuery } from "@/lib/beta-query";
-import { saveBetaAgent, saveBetaProject, revokeBetaAgent, changeBetaPause } from "@/lib/beta.functions";
+import {
+  saveBetaAgent,
+  saveBetaProject,
+  revokeBetaAgent,
+  changeBetaPause,
+} from "@/lib/beta.functions";
 import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
 import { Shield, ArrowUpRight } from "lucide-react";
 import { OmniOperations } from "@/components/beta/OmniOperations";
 import { socialDraftQuery } from "@/lib/omni-social-query";
-export const Route = createFileRoute("/_authenticated/beta")({ head: () => seo("Private beta projects and OMNI operations", "Owner-isolated Evolution projects, social draft calendar and reviewed connector proposals. No social posting, external agents or developer execution activated."), loader: async ({ context }) => { await Promise.all([context.queryClient.ensureQueryData(betaQuery), context.queryClient.ensureQueryData(socialDraftQuery)]); }, component: BetaPage });
+export const Route = createFileRoute("/_authenticated/beta")({
+  head: () =>
+    seo(
+      "Private beta projects and OMNI operations",
+      "Owner-isolated Evolution projects, social draft calendar and reviewed connector proposals. No social posting, external agents or developer execution activated.",
+    ),
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(betaQuery),
+      context.queryClient.ensureQueryData(socialDraftQuery),
+    ]);
+  },
+  component: BetaPage,
+});
 function BetaPage() {
-  const { data } = useSuspenseQuery(betaQuery), query = useQueryClient();
-  const saveProject = useServerFn(saveBetaProject), saveAgent = useServerFn(saveBetaAgent), revoke = useServerFn(revokeBetaAgent), pause = useServerFn(changeBetaPause);
-  const [notice, setNotice] = useState(""), [busy, setBusy] = useState(false);
-  const act = async (fn: () => Promise<unknown>) => { setBusy(true); setNotice(""); try { await fn(); await query.invalidateQueries({ queryKey: betaQuery.queryKey }); setNotice("Saved to your private account."); } catch (e) { setNotice(e instanceof Error ? e.message : "Save failed."); } finally { setBusy(false); } };
-  return <section className="mx-auto max-w-6xl px-6 py-10">
-    <header className="flex flex-wrap items-start justify-between gap-5 border-b border-border pb-7"><div><p className="eyebrow">Limited beta / private records</p><h1 className="mt-4 text-3xl">Your projects</h1><p className="mt-4 max-w-xl text-sm leading-7 text-muted-foreground">Real account-owned records. Agent profiles are operator declarations, not verified external enrollment. Browser demonstrations are not imported.</p></div><div className="flex flex-wrap gap-2"><Button asChild variant="signal"><Link to="/beta-omni">Talk to OMNI<ArrowUpRight size={14} /></Link></Button><Button asChild variant="signal"><Link to="/quantum-studio">Quantum Studio<ArrowUpRight size={14} /></Link></Button><Button asChild variant="ghost"><Link to="/launch-control">Launch Control</Link></Button></div></header>
-    <div className="my-6 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4"><p className="text-xs text-warning">AI access: {data.access?.ai_approved ? "FOUNDER APPROVED" : "AWAITING FOUNDER APPROVAL"} · {data.access?.paused ? "PAUSED" : "NOT PAUSED"}</p><Button variant="signal" disabled={busy} onClick={() => void act(() => pause({ data: { paused: !data.access?.paused } }))}><Shield size={14} />{data.access?.paused ? "Resume account AI" : "Pause account AI"}</Button></div>
-    {notice && <p role="status" className="my-5 break-words text-sm text-warning">{notice}</p>}
-    <div className="grid gap-10 md:grid-cols-2">
-      <div><h2 className="text-xl">Create project</h2><form className="mt-5 space-y-4" onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); const form = e.currentTarget; void act(async () => { await saveProject({ data: { name: String(f.get("name")), brief: String(f.get("brief")) } }); form.reset(); }); }}><label className="block text-xs">Project name<input name="name" required minLength={2} maxLength={100} className="exchange-select mt-2 w-full" /></label><label className="block text-xs">Non-sensitive brief<textarea name="brief" maxLength={2000} className="exchange-select mt-2 min-h-28 w-full" /></label><Button type="submit" variant="cosmic" disabled={busy}>Save private project</Button></form><div className="mt-7 space-y-5">{!data.projects.length && <p className="text-sm text-muted-foreground">No projects yet.</p>}{data.projects.map(p => <article key={p.id} className="border-t border-border pt-4"><h3 className="break-words text-lg">{p.name}</h3><p className="mt-2 break-words text-xs leading-6 text-muted-foreground">{p.brief || "No brief supplied."}</p><span className="text-[10px] text-success">PRIVATE · SAVED</span></article>)}</div></div>
-      <div><h2 className="text-xl">Agent / operator declaration</h2><form className="mt-5 space-y-4" onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); const form = e.currentTarget; void act(async () => { await saveAgent({ data: { projectId: String(f.get("project")), name: String(f.get("agent")), provider: String(f.get("provider")), model: String(f.get("model")), scope: String(f.get("scope")), consent: f.has("consent") } }); form.reset(); }); }}><label className="block text-xs">Owned project<select name="project" required className="exchange-select mt-2 w-full"><option value="">Select your project</option>{data.projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>{[["agent", "Agent name"], ["provider", "Declared provider"], ["model", "Declared model"]].map(([name, label]) => <label key={name} className="block text-xs">{label}<input name={name} required minLength={2} maxLength={100} className="exchange-select mt-2 w-full" /></label>)}<label className="block text-xs">Proposed scope<input name="scope" defaultValue="Draft planning only" maxLength={500} className="exchange-select mt-2 w-full" /></label><label className="flex items-start gap-2 text-xs leading-6"><input name="consent" type="checkbox" required />I am the authorized operator. This declaration grants no API access or execution rights.</label><Button type="submit" variant="signal" disabled={busy || !data.projects.length}>Save agent declaration</Button></form><div className="mt-7 space-y-5">{data.agents.map(a => <article key={a.id} className="border-t border-border pt-4"><h3 className="break-words text-lg">{a.name}</h3><p className="mt-2 break-words text-xs text-muted-foreground">{a.provider} / {a.model} · {a.status.toUpperCase()} · NOT CONNECTED</p>{a.status !== "Revoked" && <Button variant="ghost" size="sm" className="mt-3" disabled={busy} onClick={() => void act(() => revoke({ data: { id: a.id } }))}>Revoke declaration</Button>}</article>)}</div></div>
-    </div><section className="mt-10 border-t border-border pt-6"><h2 className="text-xl">Recorded account changes</h2><p className="mt-3 text-xs text-muted-foreground">Database-generated metadata; no prompt, credential, or code content. Not signed independent audit evidence.</p><ul className="mt-5 space-y-3">{data.audit.map(a => <li key={a.id} className="flex flex-wrap justify-between gap-3 border-b border-border py-2 text-xs"><span>{a.capability === "studio_assets" ? "Private media" : a.capability === "beta_projects" ? "Project" : "Agent declaration"} · {a.action}</span><time>{new Date(a.occurred_at).toLocaleString()}</time></li>)}</ul></section>
-    <OmniOperations projects={data.projects}/>
-  </section>;
+  const { data } = useSuspenseQuery(betaQuery),
+    query = useQueryClient();
+  const saveProject = useServerFn(saveBetaProject),
+    saveAgent = useServerFn(saveBetaAgent),
+    revoke = useServerFn(revokeBetaAgent),
+    pause = useServerFn(changeBetaPause);
+  const [notice, setNotice] = useState(""),
+    [busy, setBusy] = useState(false);
+  const act = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setNotice("");
+    try {
+      await fn();
+      await query.invalidateQueries({ queryKey: betaQuery.queryKey });
+      setNotice("Saved to your private account.");
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Save failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="mx-auto max-w-6xl px-6 py-10">
+      <header className="flex flex-wrap items-start justify-between gap-5 border-b border-border pb-7">
+        <div>
+          <p className="eyebrow">Limited beta / private records</p>
+          <h1 className="mt-4 text-3xl">Your projects</h1>
+          <p className="mt-4 max-w-xl text-sm leading-7 text-muted-foreground">
+            Real account-owned records. Agent profiles are operator declarations, not verified
+            external enrollment. Browser demonstrations are not imported.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="signal">
+            <Link to="/beta-omni">
+              Talk to OMNI
+              <ArrowUpRight size={14} />
+            </Link>
+          </Button>
+          <Button asChild variant="signal">
+            <Link to="/quantum-studio">
+              Quantum Studio
+              <ArrowUpRight size={14} />
+            </Link>
+          </Button>
+          <Button asChild variant="ghost">
+            <Link to="/launch-control">Launch Control</Link>
+          </Button>
+        </div>
+      </header>
+      <div className="my-6 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4">
+        <p className="text-xs text-warning">
+          AI access: {data.access?.ai_approved ? "FOUNDER APPROVED" : "AWAITING FOUNDER APPROVAL"} ·{" "}
+          {data.access?.paused ? "PAUSED" : "NOT PAUSED"}
+        </p>
+        <Button
+          variant="signal"
+          disabled={busy}
+          onClick={() => void act(() => pause({ data: { paused: !data.access?.paused } }))}
+        >
+          <Shield size={14} />
+          {data.access?.paused ? "Resume account AI" : "Pause account AI"}
+        </Button>
+      </div>
+      {notice && (
+        <p role="status" className="my-5 break-words text-sm text-warning">
+          {notice}
+        </p>
+      )}
+      <div className="grid gap-10 md:grid-cols-2">
+        <div>
+          <h2 className="text-xl">Create project</h2>
+          <form
+            className="mt-5 space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              void act(async () => {
+                await saveProject({
+                  data: { name: String(f.get("name")), brief: String(f.get("brief")) },
+                });
+                form.reset();
+              });
+            }}
+          >
+            <label className="block text-xs">
+              Project name
+              <input
+                name="name"
+                required
+                minLength={2}
+                maxLength={100}
+                className="exchange-select mt-2 w-full"
+              />
+            </label>
+            <label className="block text-xs">
+              Non-sensitive brief
+              <textarea
+                name="brief"
+                maxLength={2000}
+                className="exchange-select mt-2 min-h-28 w-full"
+              />
+            </label>
+            <Button type="submit" variant="cosmic" disabled={busy}>
+              Save private project
+            </Button>
+          </form>
+          <div className="mt-7 space-y-5">
+            {!data.projects.length && (
+              <p className="text-sm text-muted-foreground">No projects yet.</p>
+            )}
+            {data.projects.map((p) => (
+              <article key={p.id} className="border-t border-border pt-4">
+                <h3 className="break-words text-lg">{p.name}</h3>
+                <p className="mt-2 break-words text-xs leading-6 text-muted-foreground">
+                  {p.brief || "No brief supplied."}
+                </p>
+                <span className="text-[10px] text-success">PRIVATE · SAVED</span>
+              </article>
+            ))}
+          </div>
+        </div>
+        <div>
+          <h2 className="text-xl">Agent / operator declaration</h2>
+          <form
+            className="mt-5 space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              const form = e.currentTarget;
+              void act(async () => {
+                await saveAgent({
+                  data: {
+                    projectId: String(f.get("project")),
+                    name: String(f.get("agent")),
+                    provider: String(f.get("provider")),
+                    model: String(f.get("model")),
+                    scope: String(f.get("scope")),
+                    consent: f.has("consent"),
+                  },
+                });
+                form.reset();
+              });
+            }}
+          >
+            <label className="block text-xs">
+              Owned project
+              <select name="project" required className="exchange-select mt-2 w-full">
+                <option value="">Select your project</option>
+                {data.projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {[
+              ["agent", "Agent name"],
+              ["provider", "Declared provider"],
+              ["model", "Declared model"],
+            ].map(([name, label]) => (
+              <label key={name} className="block text-xs">
+                {label}
+                <input
+                  name={name}
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  className="exchange-select mt-2 w-full"
+                />
+              </label>
+            ))}
+            <label className="block text-xs">
+              Proposed scope
+              <input
+                name="scope"
+                defaultValue="Draft planning only"
+                maxLength={500}
+                className="exchange-select mt-2 w-full"
+              />
+            </label>
+            <label className="flex items-start gap-2 text-xs leading-6">
+              <input name="consent" type="checkbox" required />I am the authorized operator. This
+              declaration grants no API access or execution rights.
+            </label>
+            <Button type="submit" variant="signal" disabled={busy || !data.projects.length}>
+              Save agent declaration
+            </Button>
+          </form>
+          <div className="mt-7 space-y-5">
+            {data.agents.map((a) => (
+              <article key={a.id} className="border-t border-border pt-4">
+                <h3 className="break-words text-lg">{a.name}</h3>
+                <p className="mt-2 break-words text-xs text-muted-foreground">
+                  {a.provider} / {a.model} · {a.status.toUpperCase()} · NOT CONNECTED
+                </p>
+                {a.status !== "Revoked" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-3"
+                    disabled={busy}
+                    onClick={() => void act(() => revoke({ data: { id: a.id } }))}
+                  >
+                    Revoke declaration
+                  </Button>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+      <section className="mt-10 border-t border-border pt-6">
+        <h2 className="text-xl">Recorded account changes</h2>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Database-generated metadata; no prompt, credential, or code content. Not signed
+          independent audit evidence.
+        </p>
+        <ul className="mt-5 space-y-3">
+          {data.audit.map((a) => (
+            <li
+              key={a.id}
+              className="flex flex-wrap justify-between gap-3 border-b border-border py-2 text-xs"
+            >
+              <span>
+                {a.capability === "studio_assets"
+                  ? "Private media"
+                  : a.capability === "beta_projects"
+                    ? "Project"
+                    : "Agent declaration"}{" "}
+                · {a.action}
+              </span>
+              <time>{new Date(a.occurred_at).toLocaleString()}</time>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <OmniOperations projects={data.projects} />
+    </section>
+  );
 }
