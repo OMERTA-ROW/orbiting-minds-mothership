@@ -103,6 +103,8 @@ Local source commands:
   evolution help             Read this reference
   evolution version          Show source version
   evolution doctor [--json]   Check platform and evolution/omni names in PATH
+  evolution discover --approve [--json]
+                             Opt-in local PATH-name tool discovery; nothing sent
   evolution install --dir <new-absolute-directory> --approve [--with-omni]
   evolution uninstall --dir <same-directory> --approve
 
@@ -157,6 +159,8 @@ func Run(args []string, invoked string, out, errOut io.Writer) int {
 			fmt.Fprintf(out, "LOCAL READ-ONLY CHECK · %s\nSource: %s · unsigned\nevolution name matches: %d\nomni name matches: %d\nUse evolution omni if omni is already owned by another tool.\nNo existing tools executed or modified. Auth, secure keys and releases: UNVERIFIED.\n", report.Platform, report.Version, len(report.EvolutionConflicts), len(report.OmniConflicts))
 		}
 		return 0
+	case "discover":
+		return runDiscover(args[1:], out, errOut)
 	case "install", "uninstall":
 		dir, approve, alias, ok := installArgs(args[1:], command == "install")
 		if !ok {
