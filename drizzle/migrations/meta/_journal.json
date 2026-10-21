@@ -85,6 +85,13 @@
       "when": 1792565607119,
       "tag": "0011_omni_social_private_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792565876748,
+      "tag": "0012_omni_social_least_privilege",
+      "breakpoints": true
     }
   ]
 }
