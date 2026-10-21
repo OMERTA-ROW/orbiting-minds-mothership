@@ -38,9 +38,14 @@ export async function compareVaultCopy(original:string,recordedDigest:string,cop
  if(/^(<<<<<<<|=======|>>>>>>>)/m.test(copy))warnings.push("Unresolved merge conflict markers.");
  return {originalDigest,copyDigest,originMatchesRecord,matchesOrigin,status:!originMatchesRecord||!matchesOrigin ? "MODIFIED / UNVERIFIED" : "HASH MATCH / UNSIGNED DEMO",signatureVerified:false as const,installationAllowed:false as const,diff,warnings};
 }
-export function forkVaultRelease(r:ReleaseRecord,copy:string,version:string,ownerId:string,consent:boolean) {
- const parsed=releaseInput.parse({...r, id:undefined,at:undefined,digest:undefined,signoff:undefined,ownerSignoff:undefined,state:undefined});
- return parsed;
+export async function forkVaultRelease(r:ReleaseRecord,copy:string,version:string,ownerId:string,consent:boolean) {
+ z.string().max(60).regex(/^\d+\.\d+\.\d+$/).parse(version);
+ const parts=version.split(".").map(BigInt),prior=r.version.split(".").map(BigInt);
+ const first=parts.findIndex((v,i)=>v!==prior[i]);
+ if(first<0 || (parts[first] ?? 0n)<(prior[first] ?? 0n))throw new Error("A fork needs a higher new version; the original remains preserved.");
+ if(await artifactDigest(r.artifact)!==r.digest)throw new Error("Stored origin has changed; fork reference is unverified. Review the original first.");
+ const {id:_id,at:_at,digest:_digest,signoff:_signoff,ownerSignoff:_ownerSignoff,state:_state,...input}=r;
+ return releaseInput.parse({...input,version,ownerId,agentOperatorId:"",artifact:copySchema.parse(copy),previousVersion:r.version,safetyId:"",replayId:"",impactId:"",testEvidence:`FORK / NOT TESTED. Origin ${r.version}; new independent tests required. ${r.testEvidence}`.slice(0,2000),dependencies:`Origin ${r.codeId}@${r.version} SHA-256 ${r.digest}; declared reference, not verified authorship. ${r.dependencies}`.slice(0,2000),consent});
 }
 
 export async function syntaxReview(source:string,language:CodeContribution["language"]) {
