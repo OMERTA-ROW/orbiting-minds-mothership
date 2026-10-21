@@ -24,6 +24,7 @@ import {
   reviewForgeVersion,
   revokeForgeReview,
   deleteForgeVersion,
+  getForgeExport,
 } from "@/lib/forge.functions";
 import {
   defaultRadioSettings,
@@ -63,7 +64,8 @@ export function ForgeWorkspace({
     saveWeb = useServerFn(saveForgeWeb),
     review = useServerFn(reviewForgeVersion),
     revoke = useServerFn(revokeForgeReview),
-    remove = useServerFn(deleteForgeVersion);
+    remove = useServerFn(deleteForgeVersion),
+    exportVersion = useServerFn(getForgeExport);
   const [tab, setTab] = useState<"radio" | "web">("radio"),
     [settings, setSettings] = useState<RadioSettings>(defaultRadioSettings),
     [web, setWeb] = useState<WebContent>(initialWebContent);
@@ -121,6 +123,7 @@ export function ForgeWorkspace({
   useEffect(() => {
     setProcessApproval(false);
     setExportConsent(false);
+    setCueReview(false);
   }, [selected, consent, allowed]);
   const act = async (fn: () => Promise<void>) => {
     if (busy) return;
@@ -196,7 +199,7 @@ export function ForgeWorkspace({
     anchor.href = url;
     anchor.download = name;
     anchor.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return (
     <section aria-label="OMNI FORGE" className="mt-12 border-t border-gold/40 pt-8">
@@ -751,7 +754,8 @@ export function ForgeWorkspace({
           <h3 className="text-lg">Version checkpoints</h3>
           <p className="mt-3 text-[11px] leading-6 text-muted-foreground">
             Saved outputs, not an automatic task queue. Each new version needs its own owner review.
-            Storage/hosting costs unknown; no model calls or paid processor fees recorded.
+            Storage/hosting costs unknown; no model calls or paid processor fees recorded. Owner
+            review is not a security restriction on your existing private-library access.
           </p>
           <ul className="mt-4 space-y-4">
             {versions.map((v) => (
@@ -891,6 +895,8 @@ export function ForgeWorkspace({
                   onClick={() =>
                     void act(async () => {
                       gate();
+                      const currentExport = await exportVersion({ data: { id: active.id } });
+                      if (currentExport.version.sha256 !== active.sha256) throw new Error("Saved version changed. Reload and review again.");
                       if (active.kind === "radio") {
                         if (!active.output_id) throw new Error("Output missing.");
                         download(
@@ -918,7 +924,7 @@ export function ForgeWorkspace({
                               {
                                 mode: "PRIVATE EXPORT / NOT PUBLISHED",
                                 version: active,
-                                review: data.reviews.find((r) => r.version_id === active.id),
+                                review: currentExport.review,
                                 signature: null,
                                 costs: "UNKNOWN",
                                 externalDelivery: "NOT RUN",
