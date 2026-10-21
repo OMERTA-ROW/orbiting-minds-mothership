@@ -5,6 +5,7 @@ import { DemoBadge, PageHeader, Section } from "@/components/evo";
 import { Button } from "@/components/ui/button";
 import { useGenesis } from "@/hooks/use-genesis";
 export const genesisLinks = [
+  { to: "/robotics", label: "Robotics & Mobility" },
   { to: "/challenges", label: "Grand Challenges" }, { to: "/embassy", label: "Agent Embassy" }, { to: "/discovery", label: "Discovery Radar" }, { to: "/sdk", label: "SDK / API" }, { to: "/digital-twin", label: "Digital Twin Lab" }, { to: "/trust", label: "Trust" }, { to: "/marketplace", label: "Marketplace" }, { to: "/compute-grid", label: "Compute Grid" }, { to: "/releases", label: "Release Galaxy" },
 ] as const;
 export function GenesisShell({ title, eyebrow = "Genesis expansion", children }: { title: string; eyebrow?: string; children: ReactNode }) {
@@ -17,7 +18,7 @@ export function GenesisShell({ title, eyebrow = "Genesis expansion", children }:
   </Section></>;
 }
 export function GenesisEntryPoints() {
-  return <div className="mb-10 flex flex-wrap gap-3 border-y border-border py-5"><Button asChild variant="signal"><Link to="/challenges">Grand Challenges<ArrowUpRight size={14} /></Link></Button><Button asChild variant="signal"><Link to="/embassy">Agent Embassy<ArrowUpRight size={14} /></Link></Button><Button asChild variant="signal"><Link to="/releases">Release Galaxy<ArrowUpRight size={14} /></Link></Button></div>;
+  return <div className="mb-10 flex flex-wrap gap-3 border-y border-border py-5"><Button asChild variant="signal"><Link to="/challenges">Grand Challenges<ArrowUpRight size={14} /></Link></Button><Button asChild variant="signal"><Link to="/embassy">Agent Embassy<ArrowUpRight size={14} /></Link></Button><Button asChild variant="signal"><Link to="/releases">Release Galaxy<ArrowUpRight size={14} /></Link></Button><Button asChild variant="signal"><Link to="/robotics">Robotics & Mobility Lab<ArrowUpRight size={14} /></Link></Button></div>;
 }
 export function FormNotice({ message }: { message: string }) { return message ? <p className="break-words text-sm text-warning" role="status">{message}</p> : null; }
 export function IdentitySelect({ name = "identityId", scope, label = "Local submitting identity" }: { name?: string; scope?: "submit_capsules" | "simulate_twins" | "review_proposals"; label?: string }) {

@@ -17,6 +17,7 @@ describe("App routing", () => {
 
   it.each([
     "/mothership", "/universe", "/platform", "/knowledge-fusion", "/guardian",
+    "/robotics",
     "/agents", "/sandbox", "/roadmap", "/partnerships", "/dashboard", "/join", "/pathway", "/code-exchange", "/commons", "/pulse",
     "/challenges", "/embassy", "/sdk", "/discovery", "/digital-twin", "/trust", "/marketplace", "/compute-grid", "/releases", "/care", "/updates", "/pilot", "/voice", "/care-agent", "/devices", "/fleet", "/security-report",
   ])("preserves the existing %s page", (path) => {
@@ -31,5 +32,9 @@ describe("App routing", () => {
   it.each([["/challenges/challenge-focus", "/challenges_/$id"], ["/capsules/local-example", "/capsules_/$id"]])("matches Genesis detail %s independently", (path, routeId) => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     expect(router.matchRoutes(path).at(-1)?.routeId).toBe(routeId);
+  });
+  it("matches robotics detail without nesting it in the catalog", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes("/robotics/rover-safe-stop").at(-1)?.routeId).toBe("/robotics_/$id");
   });
 });

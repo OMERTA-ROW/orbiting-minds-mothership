@@ -1,5 +1,12 @@
 # Cosmic Mothership redesign
 
+## Robotics & Mobility Lab
+- [x] Add a browsable six-category research scenario catalog and attributable details with explicit DEMO boundaries.
+- [x] Add bounded numeric rehearsals, local result history and Guardian safety-review gates without hardware or code execution.
+- [x] Connect Oracle research, Founder pathway preparation, Challenge Board, Code Exchange and Release Galaxy; preserve existing workflows.
+- [x] Test rules, persistence, navigation and desktop/mobile journeys.
+- [ ] Enable real robotics or safety-critical integrations. Blocker: authenticated owner/operator access, qualified domain review, independent functional-safety tests and consented signed hardware integrations.
+
 ## Guardian Security and Multi-Device foundation
 - [x] Extend Guardian with Ghost Security, Iron Defense, Global Eye, incident triage and proposed-only critique.
 - [x] Add My Devices and Fleet Control with short-lived pairing rehearsals, scoped consent, revocation and visible history.

@@ -9,15 +9,22 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { usePathway } from "@/hooks/use-pathway";
 import { seo } from "@/lib/seo";
+import { getRoboticsScenario, roboticsPresetSearch } from "@/lib/robotics";
 
 export const Route = createFileRoute("/pathway")({
+  validateSearch: roboticsPresetSearch,
   head: () => seo("Evolution Pathway Creator", "Describe your technology concept and draft an AI-powered Evolution pathway with relevant Mothership modules, planned sandbox checks, owner approval and rollback."),
   component: PathwayPage,
 });
 
 function PathwayPage() {
-  const [concept, setConcept] = useState("");
-  const [goal, setGoal] = useState("");
+  const { scenario } = Route.useSearch();
+  return <PathwayForm key={scenario ?? "original"} scenarioId={scenario} />;
+}
+function PathwayForm({ scenarioId }: { scenarioId?: string | undefined }) {
+  const preset = getRoboticsScenario(scenarioId);
+  const [concept, setConcept] = useState(preset ? `${preset.title}. ${preset.problem} Research/simulation only, no hardware connection or actuation. ${preset.limitation}` : "");
+  const [goal, setGoal] = useState(preset?.acceptance ?? "");
   const [consent, setConsent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [exportError, setExportError] = useState("");
@@ -30,11 +37,12 @@ function PathwayPage() {
   };
   return <>
     <PageHeader eyebrow="Creator transmission" title="Your Evolution pathway">
-      <span className="inline-flex items-center gap-2 text-gold-light"><Sparkles size={16} />AI-powered concept planning</span>
+      <span className="inline-flex items-center gap-2 text-gold-light"><Sparkles size={16} />Founder Lab · AI-powered concept planning</span>
     </PageHeader>
     <Section>
       <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
         <form className="min-w-0 space-y-6 border-t border-gold/30 pt-7" onSubmit={(e) => { e.preventDefault(); setCopied(false); setExportError(""); void generate({ concept, goal, consent }); }}>
+          {preset && <div className="border-l border-gold/40 pl-4"><p className="text-xs leading-loose text-warning">Robotics DEMO preset · no AI request sent. Hardware execution and release remain disabled; human consent is still required.</p><Link to="/robotics/$id" params={{ id: preset.id }} className="mt-3 inline-block text-xs text-gold-light underline">Return to scenario evidence</Link></div>}
           <div className="flex items-center gap-3"><span className="font-mono text-xs text-gold">01</span><h2 className="text-xl">Describe the concept</h2></div>
           <div><label htmlFor="technology-concept" className="mb-3 block text-sm text-foreground">Technology concept</label><Textarea id="technology-concept" value={concept} onChange={(e) => setConcept(e.target.value)} minLength={30} maxLength={6000} required disabled={busy} className="min-h-48 resize-y border-gold/25 bg-background/70 text-sm leading-relaxed" placeholder="What are you creating, who is it for, and what makes it different?" /><p className="mt-2 text-right font-mono text-[9px] text-muted-foreground">{concept.length.toLocaleString()} / 6,000</p></div>
           <div><label htmlFor="pathway-goal" className="mb-3 block text-sm">Desired outcome <span className="text-muted-foreground">(optional)</span></label><Input id="pathway-goal" value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={1000} disabled={busy} placeholder="Goals, technical constraints or evidence needed" className="bg-background/70" /></div>

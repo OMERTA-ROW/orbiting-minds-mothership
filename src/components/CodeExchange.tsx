@@ -5,7 +5,7 @@ import { DemoBadge, PageHeader, Section } from "@/components/evo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { codeContributions, exchangeStates, type CodeContribution } from "@/data/evolution";
+import { codeContributions, exchangeStates, roboticsScenarios, type CodeContribution } from "@/data/evolution";
 import { demoFeedbackInput, emptyExchangeFilters, filterContributions, packagePreview, referenceLinks, type ExchangeFilters, type DemoFeedbackInput } from "@/lib/code-exchange";
 import { useDemoExchange } from "@/hooks/use-demo-exchange";
 import { useExchangeLocale } from "@/hooks/use-exchange-locale";
@@ -136,6 +136,7 @@ export function ContributionDetail({ item }: { item: CodeContribution }) {
     <Button asChild variant="ghost" className="mb-7 pl-0"><Link to="/code-exchange"><ArrowLeft size={16} />{t("back")}</Link></Button>
     <div className="mb-10 flex flex-wrap gap-x-5 gap-y-3 font-mono text-xs text-gold-light"><span>{item.language}</span><span>{t(item.industry)}</span><span>{t(item.readiness)}</span><span>{t("reviewState")}: {t(item.state)}</span></div>
     <h2 className="max-w-4xl text-3xl leading-relaxed md:text-4xl">{item.title[locale]}</h2>
+    <section lang="en" className="mt-7 border-l border-gold/30 pl-5"><p className="text-xs text-gold-light">Linked Robotics & Mobility research · DEMO only</p><p className="mt-3 text-xs leading-loose text-muted-foreground">Reference only; this sample is not a robot or vehicle controller, and code reviews are not hardware safety approvals.</p><div className="mt-3 flex flex-wrap gap-2">{roboticsScenarios.filter(s => s.contributionId === item.id).map(s => <Button asChild key={s.id} variant="ghost" className="h-auto min-h-10 whitespace-normal text-left text-xs"><Link to="/robotics/$id" params={{ id: s.id }}>{s.title}</Link></Button>)}</div></section>
     <div className="mt-12 grid gap-14 lg:grid-cols-[minmax(0,1fr)_310px]">
       <div className="min-w-0">
         <DetailSection title={t("what")}><p className="text-sm leading-loose text-muted-foreground">{item.description[locale]}</p></DetailSection>
