@@ -92,6 +92,13 @@
       "when": 1792565876748,
       "tag": "0012_omni_social_least_privilege",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792566123978,
+      "tag": "0013_omni_social_strict_consent",
+      "breakpoints": true
     }
   ]
 }
