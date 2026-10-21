@@ -11,7 +11,7 @@
 
 ## Project rules
 - Keep prototype data in `src/data/evolution.ts`, label it demo and scope future backend records to owners, why: preserve consent without claiming live integrations.
-- Shared visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: one place for the design language.
+- Shared visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: consistent design.
 - Cosmic atmosphere uses a bundled hero artwork and deterministic SVG starfields; animate only lightweight decorative layers and keep reduced-motion/mobile static fallbacks, why: cinematic depth without a GPU-heavy scene or SSR-dependent randomness.
 - Orbital module controls are stationary design-system buttons with a compact mobile list; shared inner-page surfaces and typography use global semantic tokens, why: preserve keyboard accessibility and consistent cosmic styling across existing flows.
 - Creator pathways stream structured output through an internal server route and request-local AI helpers; keep secrets server-only, why: cancellable drafting is not execution.
