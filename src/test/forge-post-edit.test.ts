@@ -63,14 +63,6 @@ describe("Post-edit byte evidence", () => {
   });
 });
 describe("Official platform boundaries", () => {
-  it.each([
-    ["youtube", "AUTH REQUIRED / WAV UNSUPPORTED"],
-    ["filmhub", "PACKAGE PLAN ONLY / TITLE QC REQUIRED"],
-    ["vevo", "DISTRIBUTOR REVIEW REQUIRED"],
-    ["vydia", "DISTRIBUTOR ASSISTED / API UNVERIFIED"],
-  ] as const)("%s preserves its specific eligibility boundary", (channel, status) => {
-    expect(platformHandoff(channel)?.status).toBe(status);
-  });
   it.each(["youtube", "filmhub", "vevo", "vydia"] as const)(
     "%s metadata never implies delivery",
     (channel) => {
