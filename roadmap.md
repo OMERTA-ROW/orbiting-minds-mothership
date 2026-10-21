@@ -1,5 +1,11 @@
 # Cosmic Mothership redesign
 
+## Founder additions — post-edit Distro, Communications, Adaptive Engine
+- [ ] Add QA-bound post-edit release decision and safe Distro prefills; disclose YouTube/Filmhub/VEVO/Vydia eligibility, manual handoffs and unsupported video formats.
+- [ ] Show authenticated Communications setup requirements and draft-only scope design; Gmail and Outlook per-user clients are absent in this workspace, so no mailbox access, sending or automatic rules.
+- [ ] Add exportable review-only Adaptive Engine proposal contract within existing workspace; no monitoring, code execution, signing or deployment claims.
+- [ ] Verify real edit → draft/review/manual bundle, reload/isolation and mobile; run retained tests and record blockers. No production/domain changes.
+
 ## Creator Universe + OMNI FORGE DISTRO — current focused milestone
 - [x] Add owner-isolated editable fictional canon and Podcast/Game branch plans inside existing Forge, with honest capability and rights states.
 - [x] Add a draft/review release console and validated RSS/manual owned-site export path, exact-version consent, revocation, repeat-safe exports and audit; no posting or public feed exposure.
