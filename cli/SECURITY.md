@@ -6,8 +6,15 @@ Core CLI contains no network, shell subprocesses, API credentials, telemetry,
 auto-updates, background agent or elevated permissions. Commands use explicit
 arguments; unknown flags and future operations fail closed. Build tooling may
 invoke **Go only** to compile source; it is not part of the shipped executable.
-PATH doctor checks names without executing them. Local filesystem receipt is
-not a signature and cannot defeat an attacker with write access to the folder.
+PATH doctor checks names without executing them.
+Opt-in `discover --approve` broadens the fixed name catalog only: PATH metadata,
+no content/version/configuration access, no subprocesses or network client, no paths
+in output. Discovery skips relative paths, UNC paths and symlink directories/files;
+tools reached only through these or outside PATH are intentionally missed. The
+operator must provide a local PATH; OS-mounted remote filesystems cannot be certified
+local by this source prototype. Name matches are not verified compatibility.
+A local filesystem receipt is not a signature and cannot defeat an attacker
+with write access to the folder.
 Use a private dedicated directory, never a shared/writable system binary path.
 Race-resistant descriptor-relative file operations, native ACLs and interrupted
 uninstall recovery require additional review before distribution.
