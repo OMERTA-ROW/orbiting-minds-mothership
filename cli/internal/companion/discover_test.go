@@ -63,16 +63,24 @@ func TestDiscoverIgnoresNonExecutableUnixFiles(t *testing.T) {
 
 func TestDiscoverEmptyPathCannotScanWorkingDirectory(t *testing.T) {
 	for _, result := range Discover("", runtime.GOOS).Results {
-		if result.Detected || result.Matches != 0 { t.Fatal("empty PATH inspected a directory") }
+		if result.Detected || result.Matches != 0 {
+			t.Fatal("empty PATH inspected a directory")
+		}
 	}
 }
 
 func TestDiscoverWindowsNameRules(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "NODE.EXE"), []byte("inert"), 0600); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(filepath.Join(dir, "NODE.EXE"), []byte("inert"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	found := false
 	for _, result := range Discover(dir, "windows").Results {
-		if result.Tool.ID == "node" { found = result.Detected && result.Matches == 1 }
+		if result.Tool.ID == "node" {
+			found = result.Detected && result.Matches == 1
+		}
 	}
-	if !found { t.Fatal("Windows case/extension rule not applied") }
+	if !found {
+		t.Fatal("Windows case/extension rule not applied")
+	}
 }
