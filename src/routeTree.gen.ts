@@ -18,9 +18,11 @@ import { Route as CodeExchangeRouteImport } from './routes/code-exchange'
 import { Route as CommonsRouteImport } from './routes/commons'
 import { Route as ComputeGridRouteImport } from './routes/compute-grid'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as DigitalTwinRouteImport } from './routes/digital-twin'
 import { Route as DiscoveryRouteImport } from './routes/discovery'
 import { Route as EmbassyRouteImport } from './routes/embassy'
+import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GuardianRouteImport } from './routes/guardian'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
@@ -35,6 +37,7 @@ import { Route as ReleasesRouteImport } from './routes/releases'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as SandboxRouteImport } from './routes/sandbox'
 import { Route as SdkRouteImport } from './routes/sdk'
+import { Route as SecurityReportRouteImport } from './routes/security-report'
 import { Route as TrustRouteImport } from './routes/trust'
 import { Route as UniverseRouteImport } from './routes/universe'
 import { Route as UpdatesRouteImport } from './routes/updates'
@@ -89,6 +92,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevicesRoute = DevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DigitalTwinRoute = DigitalTwinRouteImport.update({
   id: '/digital-twin',
   path: '/digital-twin',
@@ -102,6 +110,11 @@ const DiscoveryRoute = DiscoveryRouteImport.update({
 const EmbassyRoute = EmbassyRouteImport.update({
   id: '/embassy',
   path: '/embassy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FleetRoute = FleetRouteImport.update({
+  id: '/fleet',
+  path: '/fleet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuardianRoute = GuardianRouteImport.update({
@@ -174,6 +187,11 @@ const SdkRoute = SdkRouteImport.update({
   path: '/sdk',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SecurityReportRoute = SecurityReportRouteImport.update({
+  id: '/security-report',
+  path: '/security-report',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrustRoute = TrustRouteImport.update({
   id: '/trust',
   path: '/trust',
@@ -225,9 +243,11 @@ export interface FileRoutesByFullPath {
   '/commons': typeof CommonsRoute
   '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
+  '/devices': typeof DevicesRoute
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
@@ -242,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/sdk': typeof SdkRoute
+  '/security-report': typeof SecurityReportRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
@@ -261,9 +282,11 @@ export interface FileRoutesByTo {
   '/commons': typeof CommonsRoute
   '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
+  '/devices': typeof DevicesRoute
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
@@ -278,6 +301,7 @@ export interface FileRoutesByTo {
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/sdk': typeof SdkRoute
+  '/security-report': typeof SecurityReportRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
@@ -298,9 +322,11 @@ export interface FileRoutesById {
   '/commons': typeof CommonsRoute
   '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
+  '/devices': typeof DevicesRoute
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
@@ -315,6 +341,7 @@ export interface FileRoutesById {
   '/roadmap': typeof RoadmapRoute
   '/sandbox': typeof SandboxRoute
   '/sdk': typeof SdkRoute
+  '/security-report': typeof SecurityReportRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
@@ -336,9 +363,11 @@ export interface FileRouteTypes {
     | '/commons'
     | '/compute-grid'
     | '/dashboard'
+    | '/devices'
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/fleet'
     | '/guardian'
     | '/join'
     | '/knowledge-fusion'
@@ -353,6 +382,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/sandbox'
     | '/sdk'
+    | '/security-report'
     | '/trust'
     | '/universe'
     | '/updates'
@@ -372,9 +402,11 @@ export interface FileRouteTypes {
     | '/commons'
     | '/compute-grid'
     | '/dashboard'
+    | '/devices'
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/fleet'
     | '/guardian'
     | '/join'
     | '/knowledge-fusion'
@@ -389,6 +421,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/sandbox'
     | '/sdk'
+    | '/security-report'
     | '/trust'
     | '/universe'
     | '/updates'
@@ -408,9 +441,11 @@ export interface FileRouteTypes {
     | '/commons'
     | '/compute-grid'
     | '/dashboard'
+    | '/devices'
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/fleet'
     | '/guardian'
     | '/join'
     | '/knowledge-fusion'
@@ -425,6 +460,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/sandbox'
     | '/sdk'
+    | '/security-report'
     | '/trust'
     | '/universe'
     | '/updates'
@@ -445,9 +481,11 @@ export interface RootRouteChildren {
   CommonsRoute: typeof CommonsRoute
   ComputeGridRoute: typeof ComputeGridRoute
   DashboardRoute: typeof DashboardRoute
+  DevicesRoute: typeof DevicesRoute
   DigitalTwinRoute: typeof DigitalTwinRoute
   DiscoveryRoute: typeof DiscoveryRoute
   EmbassyRoute: typeof EmbassyRoute
+  FleetRoute: typeof FleetRoute
   GuardianRoute: typeof GuardianRoute
   JoinRoute: typeof JoinRoute
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
@@ -462,6 +500,7 @@ export interface RootRouteChildren {
   RoadmapRoute: typeof RoadmapRoute
   SandboxRoute: typeof SandboxRoute
   SdkRoute: typeof SdkRoute
+  SecurityReportRoute: typeof SecurityReportRoute
   TrustRoute: typeof TrustRoute
   UniverseRoute: typeof UniverseRoute
   UpdatesRoute: typeof UpdatesRoute
@@ -537,6 +576,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/devices': {
+      id: '/devices'
+      path: '/devices'
+      fullPath: '/devices'
+      preLoaderRoute: typeof DevicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/digital-twin': {
       id: '/digital-twin'
       path: '/digital-twin'
@@ -556,6 +602,13 @@ declare module '@tanstack/react-router' {
       path: '/embassy'
       fullPath: '/embassy'
       preLoaderRoute: typeof EmbassyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fleet': {
+      id: '/fleet'
+      path: '/fleet'
+      fullPath: '/fleet'
+      preLoaderRoute: typeof FleetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guardian': {
@@ -656,6 +709,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SdkRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/security-report': {
+      id: '/security-report'
+      path: '/security-report'
+      fullPath: '/security-report'
+      preLoaderRoute: typeof SecurityReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/trust': {
       id: '/trust'
       path: '/trust'
@@ -725,9 +785,11 @@ const rootRouteChildren: RootRouteChildren = {
   CommonsRoute: CommonsRoute,
   ComputeGridRoute: ComputeGridRoute,
   DashboardRoute: DashboardRoute,
+  DevicesRoute: DevicesRoute,
   DigitalTwinRoute: DigitalTwinRoute,
   DiscoveryRoute: DiscoveryRoute,
   EmbassyRoute: EmbassyRoute,
+  FleetRoute: FleetRoute,
   GuardianRoute: GuardianRoute,
   JoinRoute: JoinRoute,
   KnowledgeFusionRoute: KnowledgeFusionRoute,
@@ -742,6 +804,7 @@ const rootRouteChildren: RootRouteChildren = {
   RoadmapRoute: RoadmapRoute,
   SandboxRoute: SandboxRoute,
   SdkRoute: SdkRoute,
+  SecurityReportRoute: SecurityReportRoute,
   TrustRoute: TrustRoute,
   UniverseRoute: UniverseRoute,
   UpdatesRoute: UpdatesRoute,
