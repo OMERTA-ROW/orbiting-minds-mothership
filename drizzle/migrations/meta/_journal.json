@@ -29,6 +29,13 @@
       "when": 1792552933298,
       "tag": "0003_beta_access_existing_users",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792557490459,
+      "tag": "0004_quantum_private_media_foundation",
+      "breakpoints": true
     }
   ]
 }
