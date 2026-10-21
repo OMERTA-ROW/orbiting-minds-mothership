@@ -11,7 +11,7 @@ export function PlatformReadiness({ projects }: { projects: { id: string; name: 
     [notice, setNotice] = useState("");
   const entry = platformCatalog.find((v) => v.id === selected);
   return (
-    <section aria-label="Platform readiness" className="space-y-5">
+    <section aria-label="Platform readiness" className="scroll-mt-24 space-y-5">
       <p className="font-mono text-xs text-warning">
         CONNECTION CHECK · 21 OCT 2026 · NO RUNTIME ACCOUNT VERIFIED
       </p>

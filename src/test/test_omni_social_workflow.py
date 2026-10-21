@@ -32,7 +32,7 @@ async def main():
         a,b=users
         async with async_playwright() as p:
             browser=await p.chromium.launch(headless=True)
-            context=await browser.new_context(viewport={'width':1280,'height':1800},accept_downloads=True)
+            context=await browser.new_context(viewport={'width':1280,'height':1800},accept_downloads=True,timezone_id='America/New_York')
             page=await context.new_page(); errors=[]; external=[]
             page.on('pageerror',lambda e:errors.append(str(e)))
             page.on('request',lambda r:external.append(r.url) if any(h in r.url for h in ['api.linkedin.com','api.github.com','graph.facebook.com','open.tiktokapis.com','connector-gateway.lovable.dev']) else None)
@@ -46,7 +46,7 @@ async def main():
             await ops.get_by_role('button',name='Social Autopilot',exact=True).click()
             social=ops.get_by_role('region',name='Social Autopilot',exact=True)
             await social.get_by_label('Social owned project').select_option(label='Owner social QA')
-            for label,value in [('Declared account label','My test member declaration'),('Post title','Original launch draft'),('Rights and credits','Original text by creator; all rights declared'),('Post caption','One private original draft. No public posting authorized.'),('Post alt text','Text only; no image supplied'),('Hashtags','#original')]:
+            for label,value in [('Declared account label','My test member declaration'),('Post title','  Original launch draft  '),('Rights and credits','Original text by creator; all rights declared'),('Post caption','One private original draft. No public posting authorized.'),('Post alt text','Text only; no image supplied'),('Hashtags','#original')]:
                 await social.get_by_label(label,exact=True).fill(value)
             await social.get_by_label('Social target time UTC').fill('2026-11-01T12:00')
             await social.get_by_label('Social rights consent').check();await social.get_by_label('Social privacy consent').check()
@@ -54,6 +54,7 @@ async def main():
             await social.get_by_label('Save social consent').check();await social.get_by_role('button',name='Save social draft',exact=True).click()
             await social.get_by_text('DRAFT · revision 1 · NOT DELIVERED',exact=True).wait_for()
             check('real owned draft readback and UTC calendar',await social.get_by_text('2026-11-01 12:00:00 UTC',exact=True).count()==1)
+            check('non-UTC browser preserves explicitly entered UTC intention',await social.get_by_label('Social target time UTC').input_value()=='2026-11-01T12:00')
             await social.get_by_label('Review social consent').check();await social.get_by_role('button',name='Review social draft',exact=True).click()
             await social.get_by_text('REVIEWED · revision 2 · NOT DELIVERED',exact=True).wait_for()
             check('human review never delivers',await social.get_by_text('Exact private plan reviewed. Publishing stays blocked.',exact=True).count()==1)
@@ -62,7 +63,7 @@ async def main():
             check('editing clears save consent',not await social.get_by_label('Save social consent').is_checked())
             await social.get_by_label('Save social consent').check();await social.get_by_role('button',name='Save social draft').click()
             await social.get_by_text('DRAFT · revision 3 · NOT DELIVERED',exact=True).wait_for()
-            check('saved edit invalidates old review',True)
+            check('saved edit invalidates old review',await social.get_by_text('DRAFT · revision 3 · NOT DELIVERED',exact=True).count()==1)
             await page.reload(wait_until='networkidle');await ops.get_by_role('button',name='Social Autopilot',exact=True).click()
             await social.get_by_role('button',name='Load social plan',exact=True).click()
             check('draft readback survives reload',await social.get_by_label('Post caption').input_value()=='A changed caption requires a new exact review.')

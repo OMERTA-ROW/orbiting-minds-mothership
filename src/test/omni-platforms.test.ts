@@ -8,6 +8,7 @@ import {
   socialContent,
   socialExport,
   socialSave,
+  sameSocialContent,
 } from "@/lib/omni-platforms";
 const projectId = "11111111-1111-4111-8111-111111111111";
 const content = {
@@ -24,6 +25,8 @@ const content = {
   privacy: true,
 };
 describe("Social draft boundaries", () => {
+  it("normalized whitespace permits exact review without stale comparison", () => expect(sameSocialContent({ ...content, title: `  ${content.title}  ` }, content)).toBe(true));
+  it("changed captions never match reviewed content", () => expect(sameSocialContent({ ...content, body: "Different caption" }, content)).toBe(false));
   it("a saved reviewed draft confers no posting or schedule", () =>
     expect(socialExport(content, "REVIEWED")).toMatchObject({
       account: null,

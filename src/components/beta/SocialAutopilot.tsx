@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { socialDraftQuery } from "@/lib/omni-social-query";
 import { saveSocialDraft, transitionSocialDraft } from "@/lib/omni-social.functions";
-import { calendarPlans, socialContent, socialExport, socialPlatforms } from "@/lib/omni-platforms";
+import { calendarPlans, socialContent, socialExport, socialPlatforms, sameSocialContent } from "@/lib/omni-platforms";
 
 type FormContent = {
   platform: (typeof socialPlatforms)[number];
@@ -50,11 +50,7 @@ export function SocialAutopilot({ projects }: { projects: { id: string; name: st
     [notice, setNotice] = useState("");
   const active = data.rows.find((v) => v.id === id),
     valid = socialContent.safeParse(form);
-  // JSON field ordering can differ after database roundtrip; compare parsed fields canonically.
-  const same =
-    active &&
-    socialContent.safeParse(active.content).success &&
-    Object.entries(form).every(([k, v]) => (active.content as Record<string, unknown>)[k] === v);
+  const same = active && sameSocialContent(form, active.content);
   const patch = (v: Partial<FormContent>) => {
     setForm((s) => ({ ...s, ...v }));
     setConsent(false);
@@ -90,7 +86,7 @@ export function SocialAutopilot({ projects }: { projects: { id: string; name: st
     setNotice("");
   };
   return (
-    <section aria-label="Social Autopilot" className="space-y-6">
+    <section aria-label="Social Autopilot" className="scroll-mt-24 space-y-6">
       <div className="flex flex-wrap justify-between gap-4">
         <div>
           <h3 className="text-xl">Creator Social Autopilot</h3>
@@ -134,7 +130,11 @@ export function SocialAutopilot({ projects }: { projects: { id: string; name: st
                   consent,
                 },
               });
-              if (row) setId(row.id);
+              if (row) {
+                setId(row.id);
+                const normalized = socialContent.safeParse(row.content);
+                if (normalized.success) setForm(normalized.data);
+              }
             }, "Private DRAFT saved. Changed content clears review; nothing scheduled or posted.");
           }}
         >
