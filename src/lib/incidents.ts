@@ -95,9 +95,9 @@ export function applyIncidentCommand(current: IncidentStore, genesis: GenesisSto
 }
 export function effectiveDebriefState(r: Debrief, genesis: GenesisStore) {
  if (r.state === "Withdrawn") return "Withdrawn";
- const active = (id: string) => genesis.identities.some(p => p.id === id && p.state === "Active" && p.consent);
- if (!active(r.input.identityId)) return "Consent revoked";
- if (r.review && !active(r.review.reviewerId)) return "Reviewer consent revoked";
+ const submitter = genesis.identities.find(p => p.id === r.input.identityId && p.state === "Active" && p.consent && p.scopes.includes("submit_capsules"));
+ if (!submitter) return "Consent revoked";
+ if (r.review && !genesis.identities.some(p => p.id === r.review?.reviewerId && p.state === "Active" && p.consent && p.kind !== "Agent operator" && p.scopes.includes("review_proposals"))) return "Reviewer consent revoked";
  return r.state;
 }
 export function canPreviewDebrief(r: Debrief, genesis: GenesisStore) { return effectiveDebriefState(r, genesis) === "Preview approved"; }
