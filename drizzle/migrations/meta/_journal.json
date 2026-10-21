@@ -29,6 +29,27 @@
       "when": 1792552933298,
       "tag": "0003_beta_access_existing_users",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792557490459,
+      "tag": "0004_quantum_private_media_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792557933887,
+      "tag": "0005_quantum_storage_upload_preflight",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792558376065,
+      "tag": "0006_quantum_media_reservation_cleanup_guard",
+      "breakpoints": true
     }
   ]
 }

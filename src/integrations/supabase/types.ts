@@ -40,18 +40,21 @@ export type Database = {
           ai_approved: boolean
           approved_at: string | null
           paused: boolean
+          studio_approved: boolean
           user_id: string
         }
         Insert: {
           ai_approved?: boolean
           approved_at?: string | null
           paused?: boolean
+          studio_approved?: boolean
           user_id: string
         }
         Update: {
           ai_approved?: boolean
           approved_at?: string | null
           paused?: boolean
+          studio_approved?: boolean
           user_id?: string
         }
         Relationships: []
@@ -153,6 +156,66 @@ export type Database = {
           owner_id?: string
         }
         Relationships: []
+      }
+      studio_assets: {
+        Row: {
+          byte_size: number
+          created_at: string
+          gain_db: number | null
+          id: string
+          metrics: Json | null
+          owner_id: string
+          privacy_consent: boolean
+          project_id: string
+          rights_consent: boolean
+          role: string
+          sha256: string | null
+          source_id: string | null
+        }
+        Insert: {
+          byte_size: number
+          created_at?: string
+          gain_db?: number | null
+          id?: string
+          metrics?: Json | null
+          owner_id?: string
+          privacy_consent: boolean
+          project_id: string
+          rights_consent: boolean
+          role: string
+          sha256?: string | null
+          source_id?: string | null
+        }
+        Update: {
+          byte_size?: number
+          created_at?: string
+          gain_db?: number | null
+          id?: string
+          metrics?: Json | null
+          owner_id?: string
+          privacy_consent?: boolean
+          project_id?: string
+          rights_consent?: boolean
+          role?: string
+          sha256?: string | null
+          source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_assets_project_id_owner_id_fkey"
+            columns: ["project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "beta_projects"
+            referencedColumns: ["id", "owner_id"]
+          },
+          {
+            foreignKeyName: "studio_assets_source_id_owner_id_fkey"
+            columns: ["source_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "studio_assets"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
       }
     }
     Views: {

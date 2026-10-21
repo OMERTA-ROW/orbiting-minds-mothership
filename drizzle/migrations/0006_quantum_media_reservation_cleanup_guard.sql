@@ -1,0 +1,4 @@
+CREATE FUNCTION public.prevent_studio_file_orphans() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN IF EXISTS (SELECT 1 FROM storage.objects o WHERE o.bucket_id='quantum-studio' AND o.name=OLD.owner_id::text||'/'||OLD.id::text||'/audio.wav') THEN RAISE EXCEPTION 'Delete stored audio before its metadata reservation'; END IF; RETURN OLD; END; $$;
+REVOKE ALL ON FUNCTION public.prevent_studio_file_orphans() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER studio_asset_delete_guard BEFORE DELETE ON public.studio_assets FOR EACH ROW EXECUTE FUNCTION public.prevent_studio_file_orphans();
+COMMENT ON FUNCTION public.prevent_studio_file_orphans() IS 'Prevent direct metadata deletion from orphaning objects and bypassing the eight-object storage reservation bound.';
