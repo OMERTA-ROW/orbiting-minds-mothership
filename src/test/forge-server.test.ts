@@ -30,7 +30,10 @@ const context = {
   },
 };
 // Only the handler is exposed here; hosted QA independently verifies auth/RLS.
-const invoke = getForgeExport as unknown as (args: { context: typeof context; data: { id: string } }) => Promise<unknown>;
+const invoke = getForgeExport as unknown as (args: {
+  context: typeof context;
+  data: { id: string };
+}) => Promise<unknown>;
 describe("Forge export revalidates current approval", () => {
   beforeEach(() => {
     results.set("beta_access", { data: { studio_approved: true, paused: false }, error: null });

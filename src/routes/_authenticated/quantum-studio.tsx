@@ -582,7 +582,12 @@ function QuantumStudio() {
           consent={consent}
           paused={!!paused}
         />
-        <QuantumPlanner key={`planner-${projectId}`} projectId={projectId} consent={consent} paused={!!paused} />
+        <QuantumPlanner
+          key={`planner-${projectId}`}
+          projectId={projectId}
+          consent={consent}
+          paused={!!paused}
+        />
         <section className="mt-10 border-t border-border pt-6">
           <p className="eyebrow">Existing shell / optional companion</p>
           <p className="mt-4 font-mono text-xs leading-7 text-warning">

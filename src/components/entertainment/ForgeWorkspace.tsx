@@ -896,7 +896,8 @@ export function ForgeWorkspace({
                     void act(async () => {
                       gate();
                       const currentExport = await exportVersion({ data: { id: active.id } });
-                      if (currentExport.version.sha256 !== active.sha256) throw new Error("Saved version changed. Reload and review again.");
+                      if (currentExport.version.sha256 !== active.sha256)
+                        throw new Error("Saved version changed. Reload and review again.");
                       if (active.kind === "radio") {
                         if (!active.output_id) throw new Error("Output missing.");
                         download(

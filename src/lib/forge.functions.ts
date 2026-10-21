@@ -229,13 +229,31 @@ export const getForgeExport = createServerFn({ method: "POST" })
   .validator((v: unknown) => forgeId.parse(v))
   .handler(async ({ context, data }) => {
     const [access, version, review] = await Promise.all([
-      context.supabase.from("beta_access").select("studio_approved,paused").eq("user_id", context.userId).maybeSingle(),
-      context.supabase.from("forge_versions").select("*").eq("id", data.id).eq("owner_id", context.userId).single(),
-      context.supabase.from("forge_reviews").select("*").eq("version_id", data.id).eq("owner_id", context.userId).single(),
+      context.supabase
+        .from("beta_access")
+        .select("studio_approved,paused")
+        .eq("user_id", context.userId)
+        .maybeSingle(),
+      context.supabase
+        .from("forge_versions")
+        .select("*")
+        .eq("id", data.id)
+        .eq("owner_id", context.userId)
+        .single(),
+      context.supabase
+        .from("forge_reviews")
+        .select("*")
+        .eq("version_id", data.id)
+        .eq("owner_id", context.userId)
+        .single(),
     ]);
-    if (access.error || version.error || review.error) throw new Error("Current saved version and owner export review required. Reload before retrying.");
+    if (access.error || version.error || review.error)
+      throw new Error(
+        "Current saved version and owner export review required. Reload before retrying.",
+      );
     assertStudioAccess(access.data);
-    if (review.data.sha256 !== version.data.sha256) throw new Error("Review does not cover this digest.");
+    if (review.data.sha256 !== version.data.sha256)
+      throw new Error("Review does not cover this digest.");
     return { version: version.data, review: review.data };
   });
 export const deleteForgeVersion = createServerFn({ method: "POST" })
