@@ -9,7 +9,7 @@ const stepSchema = z.object({ id:z.string(), connector:connectorId, title:z.stri
 const planSchema = z.object({ id:z.string(), projectId, goal:z.string().min(10).max(2000), targets:z.array(target).min(1).max(3), createdAt:z.string().datetime(), steps:z.array(stepSchema).min(1).max(10), notices:z.array(z.string()), state:z.enum(["Proposed", "Reviewed DEMO", "Withdrawn"]), reviewer:z.string().nullable(), reviewedAt:z.string().datetime().nullable(), executionAllowed:z.literal(false), providerCalls:z.literal(0), signature:z.null() });
 export const omniStoreSchema = z.object({ version:z.literal(1), plans:z.array(planSchema).max(40), events:z.array(z.object({id:z.string(),planId:z.string(),projectId,at:z.string().datetime(),action:z.enum(["Proposed", "Reviewed DEMO", "Withdrawn"])})).max(200) }).superRefine((v,ctx)=>{
  if(new Set(v.plans.map(p=>p.id)).size!==v.plans.length)ctx.addIssue({code:"custom",message:"Duplicate plan"});
- for(const p of v.plans){const expected=deriveSteps(p.projectId,p.goal,p.targets);if(JSON.stringify(p.steps)!==JSON.stringify(expected.steps))ctx.addIssue({code:"custom",message:"Changed plan steps"});}
+ for(const p of v.plans){const expected=deriveSteps(p.projectId,p.goal,p.targets);if(JSON.stringify(p.steps)!==JSON.stringify(z.array(stepSchema).parse(expected.steps)))ctx.addIssue({code:"custom",message:"Changed plan steps"});}
 });
 export type OmniStore=z.infer<typeof omniStoreSchema>;
 export type OmniPlan=z.infer<typeof planSchema>;
