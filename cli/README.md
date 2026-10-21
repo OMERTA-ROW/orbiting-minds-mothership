@@ -1,0 +1,101 @@
+# EVOLUTION CLI — unreleased offline source
+
+Lightweight, optional companion for **existing** macOS/Linux/Windows terminals.
+Not a terminal emulator, daemon, installer service or replacement for Codex,
+Claude, GPT, Unity, Blender or other tools. Browser preview requires no download.
+
+## Implemented here
+
+Go standard library only; no third-party runtime packages. `help`, `version`
+(`--version`), and `doctor [--json]` run offline. Doctor reads platform and PATH
+entries for only `evolution` and `omni`; it never executes candidates, scans
+project files, reads keys or verifies device safety. Shell aliases/functions
+are not visible to it: inspect them with your shell's `type -a` or PowerShell
+`Get-Command -All` before any future installation.
+
+Explicit source `install` and `uninstall` are restricted to a **new, absolute,
+dedicated directory** whose parent exists. No PATH or startup-file changes.
+Existing destinations, PATH command collisions and symlink parents are refused.
+Uninstall validates the complete local receipt and every binary before removal;
+extra files, symlinks, changed binaries or bad receipts prevent removal. It only
+removes exact owned file names; it never recursively deletes user directories.
+Local receipt hashes are editable integrity checks, **not publisher signatures
+or authenticated ownership**. An interrupted operation can require manual
+inspection; never promise atomic rollback or protection against a hostile local
+process racing filesystem changes. Windows executing-file removal behavior and
+native ACLs need Windows-host tests; source modes are not Windows ACL guarantees.
+
+## Developer-only local execution
+
+Prerequisite: reviewed Go 1.25+ toolchain and this source checkout. These are
+source-development commands, **not package-manager or released installation
+instructions**. Run from `cli/`:
+
+```text
+go test ./...
+go vet ./...
+go build -trimpath -o <absolute-staging-path>/evolution ./cmd/evolution
+<absolute-staging-path>/evolution help
+<absolute-staging-path>/evolution version
+<absolute-staging-path>/evolution doctor --json
+```
+
+Windows output is `evolution.exe`. Use a pre-existing staging parent. The optional
+`omni`/`omni.exe` copy dispatches to the same currently **blocked** OMNI entry;
+`evolution omni` remains the fallback. It does not start a fake AI session.
+
+```text
+<source-binary> install --dir <new-absolute-owned-directory> --approve
+<source-binary> install --dir <different-new-owned-directory> --approve --with-omni
+<source-binary> uninstall --dir <same-owned-directory> --approve
+```
+
+Prefer uninstall from the separate source binary, not a running installed copy
+(Windows locks running executables). No command has been installed on the user's
+machine by Lovable. Test changes are confined to sandbox temporary directories.
+
+## Planned, intentionally blocked
+
+`login`, `connect`, `nexus`, `agents`, `update`, `omni`, `evolution omni`, and
+`omni <natural-language request>` return exit **2** without network access,
+credential intake, token echo, file writes or success claims. Unknown arguments
+also return 2. Errors never repeat supplied credentials. Help/version/doctor
+return 0; failed local install/uninstall returns 1.
+
+No OAuth, API model, shell execution, download, updater, repository connection,
+agent enumeration, media processing, provider billing or automatic integration
+is implemented. Do not pass keys via command arguments. The implementation has
+no network client or credential store, and does not consume API-key env vars.
+
+## Builds and unsigned archive staging
+
+Python 3 stdlib build helper invokes a separately installed Go compiler, uses
+`CGO_ENABLED=0` and produces source binaries for Darwin/Linux/Windows,
+amd64/arm64. It fails if output exists, does not install anything and does not
+call GitHub, package managers or signing services:
+
+```text
+python3 scripts/build_source.py --out <new-absolute-staging-directory>
+```
+
+The helper produces **UNSIGNED_SOURCE_ONLY** ZIPs, exact SHA-256 manifest and
+checksums, not trusted release packages. Each ZIP contains only `evolution`,
+README and a no-release warning. Optional alias installation requires separate
+approval; `omni` is not silently bundled onto PATH.
+
+## Repository and distribution gates
+
+No Evolution repository, URL, package identity, signed download or release feed
+is confirmed. The owner must select/create the Git repository through Lovable
+**Project settings → Git** first. Do not reuse or overwrite unrelated repos.
+Lovable Git sync creates a new private repository; API repository access is a
+separate connection. This scaffold uses `evolution.local/companion` as a local Go
+module identity, not a GitHub URL or npm package.
+
+`ci/native-source-tests.yml.example` is dormant: it is not in `.github/workflows`.
+After repository confirmation and review, pin actions to audited full commit
+digests, test source on all native hosts and verify shell install/uninstall.
+Only then design protected-environment release jobs. No upload/publish job or
+package-manager manifest is activated here.
+
+See `SECURITY.md` for signing, identity, model consent and native-release gates.

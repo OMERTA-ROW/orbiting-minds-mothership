@@ -44,7 +44,7 @@ export const navItems = [
   { to: "/voice", label: "Mothership Voice · Demo" },
   { to: "/care-agent", label: "Native Agent Reference" },
   { to: "/universe", label: "Universe" },
-  { to: "/platform", label: "Platform" },
+  { to: "/platform", label: "Evolution CLI · Planned" },
   { to: "/knowledge-fusion", label: "Knowledge Fusion" },
   { to: "/guardian", label: "Guardian" },
   { to: "/devices", label: "My Devices · Demo" },
