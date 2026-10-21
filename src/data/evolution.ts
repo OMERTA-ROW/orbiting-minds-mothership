@@ -16,9 +16,9 @@ export const modules: MothershipModule[] = [
   { id: "cloud", name: "Cloud", short: "Owner-scoped hosting core", ring: 0, status: "Planned",
     purpose: "The secure, owner-scoped backbone where organizations, projects and permissions live.",
     capabilities: ["Org & project workspaces", "Role-based access", "Encrypted secret vault (never exposed)", "Audit trails"] },
-  { id: "cli", name: "CLI", short: "Developer command line", ring: 0, status: "Planned",
-    purpose: "A terminal interface to connect consented repositories, scan, and run dry-run evolutions.",
-    capabilities: ["evolution init / login", "Consent-based GitHub connect", "Dry-run updates", "Status reports"] },
+  { id: "cli", name: "CLI", short: "Optional existing-terminal companion", ring: 0, status: "Planned",
+    purpose: "A lightweight opt-in companion for existing macOS, Linux and Windows terminals, not a replacement terminal. Public installation and connected commands remain planned.",
+    capabilities: ["evolution help / doctor / version", "omni or evolution omni", "Planned consent-based connect / login", "No mandatory download or tool changes"] },
   { id: "app", name: "App", short: "Command center UI", ring: 0, status: "Prototype",
     purpose: "The visual Mothership command center you are viewing right now.",
     capabilities: ["Universe map", "Demo dashboard", "Approval inbox", "Guardian alerts"] },
@@ -217,15 +217,18 @@ export const conceptExamples = [
 ];
 
 export const cliCommands = [
-  { cmd: "evolution init", desc: "Create an EVOLUTION config in the current project.", out: ["✔ Created evolution.config.ts (demo)", "  Participation mode: private"] },
-  { cmd: "evolution login", desc: "Authenticate with your Mothership account.", out: ["→ Opening browser for consent… (simulated)", "✔ Signed in as demo@evolution.dev"] },
-  { cmd: "evolution connect github", desc: "Grant read-only, revocable access to selected repos.", out: ["? Select repositories: nebula-ui (simulated)", "✔ Read-only grant recorded. Revoke anytime."] },
-  { cmd: "evolution scan", desc: "Build the project's Evolution DNA profile.", out: ["Scanning 1,204 files… (simulated)", "✔ DNA: TypeScript 82% · React 19 · Vite 7", "  3 findings, 0 critical"] },
-  { cmd: "evolution suggest", desc: "Request proposals from the Knowledge Fusion Engine.", out: ["✔ 2 proposals drafted (simulated)", "  #P-104 Reduce bundle size by 18%", "  #P-105 Add focus-visible ring tokens"] },
-  { cmd: "evolution sandbox", desc: "Run a proposal in an isolated sandbox.", out: ["Spinning up sandbox… (simulated)", "✔ 248/248 tests passed · perf +12%"] },
-  { cmd: "evolution status", desc: "Show grants, proposals and update readiness.", out: ["Grants: 1 active · Proposals: 2 · Pending approval: 1", "Guardian: all checks green (simulated)"] },
-  { cmd: "evolution update --dry-run", desc: "Preview a signed update without applying it.", out: ["Package evo-pkg-0.4.1 signature ✔ (simulated)", "Would modify 6 files. Nothing applied.", "Rollback snapshot: snap_7f3a"] },
-];
+  { cmd: "evolution help", desc: "Read the command reference.", local: true, permissions: "No network, credentials or file changes.", out: ["PLANNED public command · offline help exists in unreleased source.", "No distributed CLI or installation claimed."] },
+  { cmd: "evolution doctor --json", desc: "Check platform and command-name collisions.", local: true, permissions: "Read platform and evolution/omni names in PATH only; no project scans or tool execution.", out: ["PLANNED public command · local source check only.", "Browser cannot inspect your PATH, aliases or installed tools."] },
+  { cmd: "evolution connect github", desc: "Select a repository and least-privilege consent.", local: false, permissions: "Future authenticated owner, official API consent and selected repository. No connection made.", out: ["PLANNED / BLOCKED · no repository or connector connected.", "No keys accepted; no API request."] },
+  { cmd: "evolution login", desc: "Future browser-based account authorization.", local: false, permissions: "Future PKCE, verified callback, scoped session and OS-secure keys. Not implemented.", out: ["PLANNED / BLOCKED · secure CLI login not available.", "No browser opened or account authenticated."] },
+  { cmd: "evolution nexus", desc: "Future authorized project workspace selection.", local: false, permissions: "Owner-selected project and explicit context grant; no implicit private-thread access.", out: ["PLANNED / BLOCKED · terminal workspace not connected.", "Existing tools and chats stay independent."] },
+  { cmd: "evolution agents", desc: "Future approved operator-owned agent list.", local: false, permissions: "Verified operator identities and per-agent scopes; no discovery, enrollment or broadcasts.", out: ["PLANNED / BLOCKED · no real agents enrolled.", "Consumer ChatGPT/Claude histories cannot sync."] },
+  { cmd: "evolution update --dry-run", desc: "Future signed self-update preview.", local: false, permissions: "Pinned trusted signer, provenance, approval and tested recovery; no other tool updates.", out: ["PLANNED / BLOCKED · no release feed or signatures.", "Nothing downloaded, installed or rolled back."] },
+  { cmd: "evolution version", desc: "Report the executable’s source version.", local: true, permissions: "Read embedded version only; no connection or changes.", out: ["PLANNED public command · unreleased local source reports 0.0.0-source.", "Unsigned source is not a published release."] },
+  { cmd: "omni", desc: "Direct interactive OMNI once a model is authorized.", local: false, permissions: "Approved model/API, project context consent, costs and human action gates. No trained proprietary model.", out: ["PLANNED / BLOCKED · no terminal AI session.", "If omni belongs to another tool, use evolution omni; never overwrite it."] },
+  { cmd: "evolution omni", desc: "Collision-safe direct OMNI fallback.", local: false, permissions: "Same future model/consent gates; no alias or shell-profile modification.", out: ["PLANNED / BLOCKED · fallback name reserved in source.", "No model response, tool execution or provider request."] },
+  { cmd: "evolution uninstall --dir <owned-directory> --approve", desc: "Remove unchanged source copies with explicit consent.", local: true, permissions: "Dedicated source directory and receipt only. Extra/modified files or symlinks block removal; no recursive cleanup.", out: ["PLANNED public command · isolated source uninstall only.", "Not an installed package; browser removes nothing."] },
+] as const;
 
 export const feed = [
   { id: 1, author: "@aria.dev", mode: "Public" as const, title: "Shared token system for accessible focus states", body: "Proposing a cross-project focus-ring token spec. Attribution requested on reuse.", tags: ["Software", "A11y"], sparks: 42 },
