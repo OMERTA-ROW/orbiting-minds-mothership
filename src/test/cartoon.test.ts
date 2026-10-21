@@ -23,6 +23,8 @@ describe("Cartoon Galaxy rights, child privacy and revision gates",()=>{
  it("cannot edit another world’s pitch",()=>expect(()=>applyCartoonCommand(create(),{type:"edit",worldId:"nexus-nebula",id:"p",draft},"e",at,false)).toThrow(/not found/));
  it("new pitches respect emergency pause",()=>expect(()=>applyCartoonCommand(initialCartoonStore,{type:"create",worldId,draft,consent:true},"p",at,true)).toThrow(/paused/));
  it("editorial review respects emergency pause",()=>expect(()=>applyCartoonCommand(prepared(),command,"r",at,true)).toThrow(/paused/));
+ it("editing respects emergency pause",()=>expect(()=>applyCartoonCommand(create(),{type:"edit",id:"p",worldId,draft},"e",at,true)).toThrow(/paused/));
+ it("restoring respects emergency pause",()=>expect(()=>applyCartoonCommand(prepared(),{type:"restore",id:"p",worldId,revision:1},"e",at,true)).toThrow(/paused/));
  it("withdrawal stays available during pause and revokes delivery prep",()=>{const s=applyCartoonCommand(reviewed(),{type:"withdraw",id:"p",worldId},"w",at,true);expect(s.plans[0]?.state).toBe("Withdrawn");expect(s.plans[0]?.review).toBeNull();expect(()=>cartoonExport(s,"p",worldId,true)).toThrow();expect(cartoonExport(s,"p",worldId).kind).toBe("DEMO_WORKING_PITCH");});
  it("withdrawn pitches cannot regain review",()=>{const s=applyCartoonCommand(reviewed(),{type:"withdraw",id:"p",worldId},"w",at,false);expect(()=>applyCartoonCommand(s,command,"r",at,false)).toThrow(/Withdrawn/);});
  it("computes exact static timeline without processing frames",()=>expect(cartoonTiming(draft)).toEqual([{id:"scene-1",startSeconds:0,endSeconds:12,frames:288},{id:"scene-2",startSeconds:12,endSeconds:24,frames:288},{id:"scene-3",startSeconds:24,endSeconds:36,frames:288}]));
@@ -30,5 +32,7 @@ describe("Cartoon Galaxy rights, child privacy and revision gates",()=>{
  it("rejects tampered execution flags",()=>{const s=reviewed();const p=s.plans[0];if(!p)throw new Error("Missing pitch");expect(cartoonStoreSchema.safeParse({...s,plans:[{...p,executionAllowed:true}]}).success).toBe(false);});
  it("rejects stale review revision",()=>{const s=reviewed();const p=s.plans[0];if(!p?.review)throw new Error("Missing review");expect(cartoonStoreSchema.safeParse({...s,plans:[{...p,review:{...p.review,revision:1}}]}).success).toBe(false);});
  it("rejects altered checkpoint content",()=>{const s=create();const p=s.plans[0];if(!p)throw new Error("Missing pitch");expect(cartoonStoreSchema.safeParse({...s,plans:[{...p,title:"Tampered"}]}).success).toBe(false);});
+ it("rejects duplicated historical revisions",()=>{const s=reviewed();const p=s.plans[0];if(!p)throw new Error("Missing pitch");expect(cartoonStoreSchema.safeParse({...s,plans:[{...p,checkpoints:p.checkpoints.map(c=>({...c,revision:2}))}]}).success).toBe(false);});
+ it("rejects reordered historical revisions",()=>{const s=reviewed();const p=s.plans[0];if(!p)throw new Error("Missing pitch");expect(cartoonStoreSchema.safeParse({...s,plans:[{...p,checkpoints:[...p.checkpoints].reverse()}]}).success).toBe(false);});
  it("keeps template seeds isolated",()=>{const a=seedCartoon();const c=a.characters[0];if(!c)throw new Error("Missing character");c.name="Changed";expect(seedCartoon().characters[0]?.name).toBe("Pip");});
 });

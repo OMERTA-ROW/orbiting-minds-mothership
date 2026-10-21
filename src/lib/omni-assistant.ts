@@ -24,5 +24,5 @@ export function omniTemplateReply(raw:string,worldId:string,targets:OmniTarget[]
 }
 // Event-only, ephemeral handoff: never stored in a URL, browser storage or server records.
 let pending: {worldId:string;message:string}|null=null;
-export function stageOmniHandoff(worldId:string,message:string){omniWorld.parse(worldId);parseOmniMessage(message);pending={worldId,message};}
+export function stageOmniHandoff(worldId:string,message:string,paused:boolean){if(paused)throw new Error("Guardian or Nexus local planning is paused.");omniWorld.parse(worldId);parseOmniMessage(message);pending={worldId,message};}
 export function takeOmniHandoff(worldId:string){const value=pending;pending=null;return value?.worldId===worldId?value.message:"";}

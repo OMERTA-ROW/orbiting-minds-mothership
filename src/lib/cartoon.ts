@@ -14,6 +14,7 @@ const plan=cartoonDraftSchema.innerType().extend({id:z.string(),worldId:omniWorl
  if(p.state==="Editorial reviewed DEMO"&&(!p.review||p.review.revision!==p.revision||p.scenes.some(s=>s.status==="Proposed")))c.addIssue({code:"custom",message:"Editorial review must bind the current complete scene review"});
  if(p.state!=="Editorial reviewed DEMO"&&p.review)c.addIssue({code:"custom",message:"Review not valid for state"});
  const last=p.checkpoints.at(-1);if(last?.revision!==p.revision||JSON.stringify(last.draft)!==JSON.stringify(cartoonDraftSchema.parse(p)))c.addIssue({code:"custom",message:"Checkpoint mismatch"});
+ if(p.checkpoints.some((cp,i)=>cp.revision!==i+1)||p.checkpoints.length!==p.revision)c.addIssue({code:"custom",message:"Checkpoint sequence mismatch"});
 });
 export const cartoonStoreSchema=z.object({version:z.literal(1),plans:z.array(plan).max(30)}).superRefine((s,c)=>{if(new Set(s.plans.map(p=>p.id)).size!==s.plans.length)c.addIssue({code:"custom",message:"Duplicate pitch"});});
 export type CartoonStore=z.infer<typeof cartoonStoreSchema>;
