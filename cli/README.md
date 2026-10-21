@@ -4,6 +4,31 @@ Lightweight, optional companion for **existing** macOS/Linux/Windows terminals.
 Not a terminal emulator, daemon, installer service or replacement for Codex,
 Claude, GPT, Unity, Blender or other tools. Browser preview requires no download.
 
+## Compatibility-first product policy
+
+Basic access is not contingent on a recurring Evolution subscription, hosted
+compute or a replacement IDE. Keep existing investments and authorized tools.
+This offline source performs no paid API calls and requires no account; that is
+not a promise of free AI. Open-source local utilities are intended where
+financially feasible, but the owner's source/distribution license is still
+unapproved. Do not infer an open-source license from source visibility. Project
+diagnostics and native extension discovery are not implemented; browser
+capability discovery is an inert reference catalog, not installed-tool probing.
+
+Future adapters require opt-in official APIs, supported provider capabilities,
+secure settings/OS key custody, explicit context and actual usage-cost reporting.
+Consumer subscriptions do not confer API entitlement; third-party fees and terms
+remain applicable. Hosted compute/team offerings may be optional paid services;
+no rate, checkout, billing or guaranteed free inference is available now.
+
+Preserve open JSON exports, original artifacts and reversible owned-copy removal.
+No mandatory tool bundles, provider/toolchain reconfiguration or duplicated app
+installation. Prefer existing authorized installations and reusable artifacts;
+no carbon-neutral assertion or invented energy/time/cost savings. Show measured
+source checks separately from user-project builds and self-declared comparisons.
+Cyberace remains optional/unconfirmed DEMO; CyberLink Social is entirely outside
+this project's enrollment, access, modification and deployment scope.
+
 ## Implemented here
 
 Go standard library only; no third-party runtime packages. `help`, `version`

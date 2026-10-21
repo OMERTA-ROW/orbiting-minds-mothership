@@ -6,6 +6,7 @@ import { DemoBadge, CoreGeometry } from "@/components/evo";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cliCommands } from "@/data/evolution";
 import { commandConflictPlan, cliPlatformChecks, type CliPlatform } from "@/lib/cli-reference";
+import { CompatibilityValue } from "./CompatibilityValue";
 
 export function Companion() {
   const [platform, setPlatform] = useState<CliPlatform>("macOS"),
@@ -39,7 +40,8 @@ export function Companion() {
           <p className="mt-5 text-lg">Your terminal. Your tools. One optional companion.</p>
           <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground">
             Use the terminals and agent toolchains you already have. No replacement terminal,
-            mandatory download or automatic changes to other tools.
+            replacement IDE, mandatory download or automatic changes to other tools. Basic access
+            has no required recurring subscription; external API fees may apply.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild variant="cosmic">
@@ -91,6 +93,7 @@ export function Companion() {
           {[
             { id: "onboarding", label: "Install & onboarding" },
             { id: "commands", label: "Command reference" },
+            { id: "value", label: "Access & measured value" },
             { id: "architecture", label: "Architecture & release gates" },
           ].map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="min-h-11 whitespace-normal">
@@ -282,6 +285,9 @@ export function Companion() {
               </Button>
             </section>
           </div>
+        </TabsContent>
+        <TabsContent value="value" className="pt-8">
+          <CompatibilityValue />
         </TabsContent>
         <TabsContent value="architecture" className="pt-8">
           <section>
