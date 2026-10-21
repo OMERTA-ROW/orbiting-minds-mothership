@@ -18,7 +18,7 @@ describe("App routing", () => {
   it.each([
     "/mothership", "/universe", "/platform", "/knowledge-fusion", "/guardian",
     "/agents", "/sandbox", "/roadmap", "/partnerships", "/dashboard", "/join", "/pathway", "/code-exchange", "/commons", "/pulse",
-    "/challenges", "/embassy", "/sdk", "/discovery", "/digital-twin", "/trust", "/marketplace", "/compute-grid", "/releases", "/care", "/updates", "/pilot", "/voice", "/care-agent",
+    "/challenges", "/embassy", "/sdk", "/discovery", "/digital-twin", "/trust", "/marketplace", "/compute-grid", "/releases", "/care", "/updates", "/pilot", "/voice", "/care-agent", "/devices", "/fleet", "/security-report",
   ])("preserves the existing %s page", (path) => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     const matches = router.matchRoutes(path);

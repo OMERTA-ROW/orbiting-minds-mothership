@@ -1,5 +1,13 @@
 # Cosmic Mothership redesign
 
+## Guardian Security and Multi-Device foundation
+- [x] Extend Guardian with Ghost Security, Iron Defense, Global Eye, incident triage and proposed-only critique.
+- [x] Add My Devices and Fleet Control with short-lived pairing rehearsals, scoped consent, revocation and visible history.
+- [x] Add truthful daily Health & Security Report previews, integrated CARE pause and launch-gate reference.
+- [x] Test consent, expiry, revocation, persistence, existing journeys and accessible mobile navigation.
+- [ ] Enable authenticated shared security/device records. Blocker: owner profile-data decision and secure authentication setup.
+- [ ] Enable real endpoint protection and public launch. Blocker: signed native/mobile software, verified infrastructure and tested security-readiness gates.
+
 ## CARE, Auto-Update, Pilot and Voice
 - [x] Add terminal-style native/self-update notices, package-manager selection and recorded check rehearsals.
 - [x] Add consented read-only scan plans, review-only queue context and downloadable structured local audit events.

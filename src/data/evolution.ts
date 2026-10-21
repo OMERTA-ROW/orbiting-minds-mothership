@@ -379,3 +379,37 @@ export const careCliReference = [
   { command: "evolution care scan", detail: "Future explicitly consented read-only minimal inventory. No personal file contents, monitoring or cache cleanup." },
   { command: "evolution care review", detail: "Show per-file review queue; review is not move/delete approval. Restore only with proven supported recovery." },
 ] as const;
+
+// Guardian/Fleet: fictional owner devices and threat exercises, not detected telemetry.
+export const guardianDeviceScopes = ["inventory:read", "updates:check", "reports:preview"] as const;
+export const guardianDeviceFixtures = [
+ { id: "mac-demo", name: "Demo creative workstation", os: "macOS", kind: "Laptop", group: "Work", samplePresence: "Sample online", battery: "Sample 74%", network: "Fictional private LAN", limitation: "Future signed user-level agent; Homebrew metadata only. Pilot needs separate Accessibility / Screen Recording grants." },
+ { id: "win-demo", name: "Demo developer PC", os: "Windows", kind: "Laptop", group: "Work", samplePresence: "Sample offline", battery: "Unknown", network: "Unknown", limitation: "Future signed agent and winget adapter; UAC approval separate. No remote service installed." },
+ { id: "linux-demo", name: "Demo research node", os: "Linux", kind: "Server", group: "Lab", samplePresence: "Sample online", battery: "Not applicable", network: "Fictional lab LAN", limitation: "Future signed distro package, user service and APT/DNF adapters. No inbound shell or provider connection." },
+ { id: "ipad-demo", name: "Demo field tablet", os: "iPadOS", kind: "Tablet", group: "Home", samplePresence: "Sample offline", battery: "Unknown", network: "Unknown", limitation: "Future companion app: app-specific data / approved notifications only. No systemwide shell, mouse control or desktop parity; enterprise MDM requires separate authority." },
+ { id: "android-demo", name: "Demo companion phone", os: "Android", kind: "Phone", group: "Home", samplePresence: "Sample online", battery: "Sample 61%", network: "Fictional Wi-Fi", limitation: "Future signed companion app and platform-approved APIs. No root, protection bypass or background monitoring." },
+] as const;
+export const guardianLayers = [
+ { name: "Ghost Security", short: "Isolate every identity", icon: "ghost", detail: "Device-bound consent, short-lived identities, sandboxed tasks and no public inbound shell.", state: "Architecture only · no device certificates issued" },
+ { name: "Iron Defense", short: "Verify every boundary", icon: "shield", detail: "Strong account authentication, cross-tenant access checks, trusted software provenance and independent review.", state: "Not verified · authentication / signed release gates open" },
+ { name: "Global Eye", short: "Observe only with consent", icon: "eye", detail: "Minimized owner-visible signals, incident triage and evidence-led reports for voluntarily enrolled systems only.", state: "DEMO scenarios · no telemetry or threat-feed ingestion" },
+] as const;
+export const guardianLaunchGates = [
+ { id: "identity", title: "Account authentication & MFA", requirement: "Configured sign-in, verified sessions, recovery and tested step-up MFA/passkey support.", status: "BLOCKED · account setup pending" },
+ { id: "tenants", title: "Tenant / device isolation", requirement: "Explicit table grants, owner-scoped RLS, org/project/device authorization and negative cross-account tests.", status: "BLOCKED · no shared device tables" },
+ { id: "native", title: "Signed native / mobile distribution", requirement: "Verified binaries, pinned signing roots, official platform grants and independently tested adapters.", status: "BLOCKED · no installer or companion app" },
+ { id: "jobs", title: "Bounded device transport & jobs", requirement: "Outbound authenticated transport, device-bound short-lived signed manifests, nonce replay defense, typed allowlists, queues and expiry.", status: "BLOCKED · no broker or job executor" },
+ { id: "abuse", title: "Application / supply-chain defense", requirement: "Secret and dependency checks, rate/abuse controls, validated requests, session/CSRF defenses, secure headers and authorized penetration testing.", status: "NOT VERIFIED · security review required" },
+ { id: "recovery", title: "Monitoring & incident recovery", requirement: "Real minimized telemetry, protected audit retention, notifications, incident response, backups and restoration drills.", status: "BLOCKED · no endpoint receipts or recovery proof" },
+] as const;
+export const guardianReviewSurfaces = [
+ { id: "code-exchange", name: "Code Exchange capsule intake", finding: "Untrusted code, evidence links and descriptions must never confer execution authority.", proposal: "Keep intake as data; add isolated typed-runner boundaries, source/license review and independent human approval before any future execution.", tests: "Adversarial capsule text cannot change policy, access secrets, fetch arbitrary URLs or authorize a job." },
+ { id: "care", name: "CARE / Update approval", finding: "Local preferences and historical release references do not establish authenticated consent or signing.", proposal: "Bind future plans to owner, exact device, artifact hash, adapter, scopes and expiry; verify provenance and require fresh per-action approval.", tests: "Reject wrong-device, stale, unsigned, replayed and revoked plans; prove adapter-specific backup and recovery." },
+ { id: "fleet", name: "Fleet identity and permissions", finding: "Per-device scope must not be inherited from another host or from a group label.", proposal: "Use short-lived single-use pairing and device keys in an OS vault, authenticated owner confirmation, scoped grants and revocation-aware outbound queues.", tests: "Reject cross-tenant / cross-device tokens, exhausted codes, expired grants and replayed jobs; pause requires host acknowledgments." },
+] as const;
+export const guardianFleetTasks = [
+ { id: "inventory", name: "Read-only inventory plan", scope: "inventory:read", description: "Propose minimal package inventory; no personal file contents or background scan." },
+ { id: "updates-check", name: "Trusted update metadata plan", scope: "updates:check", description: "Propose an official-manager metadata check; no download, installation or reboot." },
+ { id: "report", name: "Health / security report plan", scope: "reports:preview", description: "Propose a report from authorized evidence; unsupported checks stay unknown." },
+] as const;
+export const guardianFleetCli = ["evolution devices list", "evolution devices enroll --code", "evolution devices status", "evolution devices group create lab", "evolution fleet plan --group lab --task updates-check", "evolution fleet run --group lab --task inventory --approve", "evolution fleet logs <job-id>", "evolution fleet pause", "evolution devices revoke <id>"] as const;

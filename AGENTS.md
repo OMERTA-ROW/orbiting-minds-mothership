@@ -28,3 +28,6 @@
 - CARE, Updates, Pilot, Voice and native-agent reference have public demo routes; no OS, capture, microphone, synthesis, updater or shell API is called, why: real capabilities require separately signed native software, per-action grants and security review.
 
 - CARE scan plans and update-check rehearsals produce structured browser-local audit records, not executable jobs or tamper-evident receipts; channel context is captured on new plans, why: preserve truthful provenance without claiming a native agent or secure audit service.
+- Guardian and Fleet use a separate validated browser-local demo store with pure expiry/consent/revocation transitions; every device starts unpaired and scope-less, why: rehearse device-bound gates without impersonating authenticated ownership or affecting CARE/Genesis records.
+- Guardian review roles use fixed proposed-only reference findings, not model calls or executable source analysis; reports read current local sample records and unknown real evidence, why: no billed retries, instruction-based privilege or fabricated detection/scan history.
+- Guardian emergency pause invalidates local fleet pairing/scopes/plans and separately pauses CARE preferences, reporting failures without remote receipts; release gates remain unverified, why: local state cannot establish secure platform readiness or confirmed endpoint containment.

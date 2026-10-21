@@ -19,6 +19,7 @@ import { DemoExchangeProvider } from "@/hooks/use-demo-exchange";
 import { ExchangeLocaleProvider } from "@/hooks/use-exchange-locale";
 import { GenesisProvider } from "@/hooks/use-genesis";
 import { CareProvider } from "@/hooks/use-care";
+import { GuardianProvider } from "@/hooks/use-guardian";
 
 function NotFoundComponent() {
   return (
@@ -126,6 +127,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <GuardianProvider>
       <CareProvider>
       <GenesisProvider>
       <DemoExchangeProvider>
@@ -145,6 +147,7 @@ function RootComponent() {
       </DemoExchangeProvider>
       </GenesisProvider>
       </CareProvider>
+      </GuardianProvider>
     </QueryClientProvider>
   );
 }

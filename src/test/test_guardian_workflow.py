@@ -1,0 +1,115 @@
+import asyncio,json
+from pathlib import Path
+from playwright.async_api import async_playwright
+S=Path('/tmp/browser/guardian')
+async def main():
+ async with async_playwright() as p:
+  browser=await p.chromium.launch(headless=True);c=await browser.new_context(viewport={'width':1280,'height':1800});page=await c.new_page();errors=[];external=[]
+  page.on('pageerror',lambda e:errors.append(str(e)))
+  page.on('request',lambda r:external.append(r.url) if any(x in r.url for x in ['/rest/v1/','/auth/v1/','api.github.com','api.stripe.com','connector-gateway','ai.gateway']) else None)
+  await page.goto('http://localhost:8080/devices',wait_until='networkidle')
+  await page.get_by_role('heading',name='My Devices',exact=True).wait_for()
+  card=page.get_by_role('article',name='Demo creative workstation',exact=True)
+  assert await card.get_by_label('inventory:read for Demo creative workstation',exact=True).is_disabled()
+  await page.get_by_role('button',name='Generate demo join code',exact=True).click()
+  raw=await page.evaluate('JSON.parse(localStorage.getItem("evolution-guardian-demo-v1"))')
+  code=raw['pairings'][-1]['code']
+  await page.get_by_label('Demo join code',exact=True).fill(code)
+  assert await page.get_by_role('button',name='Confirm demo pairing',exact=True).is_disabled()
+  await page.get_by_label('I confirm this fictional pairing;',exact=False).check()
+  await page.get_by_role('button',name='Confirm demo pairing',exact=True).click()
+  await card.get_by_text('Demo paired',exact=True).wait_for()
+  await card.get_by_label('Scope consent for Demo creative workstation',exact=True).check()
+  await card.get_by_label('inventory:read for Demo creative workstation',exact=True).check()
+  await card.screenshot(path=str(S/'1_device.png'))
+  await page.reload(wait_until='networkidle')
+  assert await page.get_by_label('inventory:read for Demo creative workstation',exact=True).is_checked()
+  await page.goto('http://localhost:8080/fleet',wait_until='networkidle')
+  await page.get_by_label('Select Demo creative workstation',exact=True).check()
+  await page.get_by_role('button',name='Prepare fleet dry run',exact=True).click()
+  assert await page.get_by_role('button',name='Approve demo fleet plan',exact=True).is_disabled()
+  await page.get_by_label('I approve only this device-bound demo plan;',exact=False).check()
+  await page.get_by_role('button',name='Approve demo fleet plan',exact=True).click()
+  await page.get_by_text('Demo approved · DEMO · NOT EXECUTED',exact=True).wait_for()
+  assert await page.get_by_role('button',name='Run on devices · unavailable',exact=True).is_disabled()
+  async with page.expect_download() as download:
+   await page.get_by_role('button',name='Download plan preview',exact=True).click()
+  data=json.loads(Path(await (await download.value).path()).read_text());assert data['actualExecuted'] is False and data['actualQueued'] is False and data['signature'] is None
+  await page.screenshot(path=str(S/'2_fleet.png'))
+  await page.goto('http://localhost:8080/guardian',wait_until='networkidle')
+  await page.get_by_role('button',name='Open demo incident exercise',exact=True).click()
+  await page.get_by_role('combobox',name='Triage stage',exact=False).select_option('Containment proposed')
+  await page.get_by_role('textbox',name='Review notes',exact=False).fill('Untrusted terminal text is data. Preserve evidence; propose owner-visible isolation. No action applied.')
+  await page.get_by_role('button',name='Record demo triage',exact=True).click()
+  await page.get_by_role('tab',name='Security Review',exact=True).click()
+  await page.get_by_label('Declared demo operator',exact=True).fill('Demo operator')
+  await page.get_by_label('I consent to a fixed, proposed-only review',exact=False).check()
+  await page.get_by_role('button',name='Prepare demo agent critique',exact=True).click()
+  await page.get_by_role('textbox',name='Human reviewer',exact=False).fill('Demo operator')
+  await page.get_by_role('button',name='Record human review · proposal only',exact=True).click()
+  await page.get_by_text('Use a distinct declared human reviewer;',exact=False).wait_for()
+  await page.get_by_role('textbox',name='Human reviewer',exact=False).fill('Independent demo human')
+  await page.get_by_role('button',name='Record human review · proposal only',exact=True).click()
+  await page.get_by_text('DEMO · Critic · Human-reviewed proposal',exact=True).wait_for()
+  await page.screenshot(path=str(S/'3_review.png'))
+  await page.get_by_role('tab',name='Access Grants',exact=True).click()
+  switch=page.get_by_role('switch',name='Access production secrets',exact=True)
+  assert await switch.get_attribute('aria-checked')=='false'
+  await switch.click();assert await switch.get_attribute('aria-checked')=='true'
+  await page.get_by_role('tab',name='Alerts & Incidents',exact=True).click()
+  await page.get_by_role('button',name='Acknowledge · demo',exact=True).click()
+  await page.get_by_role('button',name='Undo G-313',exact=True).click()
+  await page.get_by_role('button',name='Acknowledge · demo',exact=True).wait_for()
+  await page.get_by_role('tab',name='Emergency / Launch Gates',exact=True).click()
+  assert await page.get_by_role('button',name='Privileged public launch · blocked',exact=True).is_disabled()
+  await page.get_by_role('tab',name='Emergency / Launch Gates',exact=True).focus();await page.keyboard.press('ArrowLeft')
+  await page.get_by_role('tabpanel',name='Reports',exact=True).wait_for()
+  await page.goto('http://localhost:8080/security-report',wait_until='networkidle')
+  await page.get_by_role('button',name='Generate demo health & security report',exact=True).click()
+  report=page.get_by_role('article',name='Generated demo report',exact=True)
+  await report.get_by_text('Nothing / Never',exact=True).wait_for()
+  async with page.expect_download() as download:
+   await page.get_by_role('button',name='Download demo report',exact=True).click()
+  data=json.loads(Path(await (await download.value).path()).read_text());assert data['actualChecks']==[] and data['healthScore'] is None and data['lastSuccessfulScan'] is None
+  await page.screenshot(path=str(S/'4_report.png'))
+  await page.get_by_role('button',name='Emergency demo pause',exact=True).click()
+  await page.get_by_text('Local fleet plans/scopes and CARE Updates/Pilot/Voice paused.',exact=False).wait_for()
+  raw=await page.evaluate('JSON.parse(localStorage.getItem("evolution-guardian-demo-v1"))');care=await page.evaluate('JSON.parse(localStorage.getItem("evolution-care-demo-v1"))')
+  assert raw['paused'] is True and all(not d['scopes'] for d in raw['devices']) and raw['plans'][0]['state']=='Paused'
+  assert care['policy']['mode']=='OFF' and care['pilot']['state']=='Paused' and care['voice']['ptt'] is False
+  async with page.expect_download() as download:
+   await page.get_by_role('button',name='Export local audit',exact=True).click()
+  data=json.loads(Path(await (await download.value).path()).read_text());assert data['authenticated'] is False and data['realActions']==[] and data['endpointAcknowledgments']==[]
+  await page.goto('http://localhost:8080/fleet',wait_until='networkidle')
+  await page.get_by_label('Resume planning only;',exact=False).check()
+  await page.get_by_role('button',name='Resume demo planning',exact=True).click()
+  await page.get_by_label('Select Demo creative workstation',exact=True).check()
+  await page.get_by_role('button',name='Prepare fleet dry run',exact=True).click()
+  await page.get_by_text('mac-demo: Pair this fictional device first',exact=False).wait_for()
+  await page.goto('http://localhost:8080/devices',wait_until='networkidle')
+  await page.get_by_role('button',name='Generate demo join code',exact=True).click()
+  raw=await page.evaluate('JSON.parse(localStorage.getItem("evolution-guardian-demo-v1"))')
+  await page.get_by_label('Demo join code',exact=True).fill(raw['pairings'][-1]['code'])
+  await page.get_by_label('I confirm this fictional pairing;',exact=False).check()
+  await page.get_by_role('button',name='Confirm demo pairing',exact=True).click()
+  await page.get_by_role('article',name='Demo creative workstation',exact=True).get_by_role('button',name='Revoke demo identity',exact=True).click()
+  await page.get_by_role('article',name='Demo creative workstation',exact=True).get_by_text('Revoked',exact=True).wait_for()
+  await page.keyboard.press('Control+k')
+  dialog=page.get_by_role('dialog')
+  await dialog.get_by_role('combobox').fill('Fleet Control')
+  await dialog.get_by_role('option',name='Fleet Control',exact=False).click()
+  await page.get_by_role('heading',name='Fleet Control',exact=True).wait_for()
+  await page.set_viewport_size({'width':390,'height':844})
+  for path in ['guardian','devices','fleet','security-report','care','code-exchange','challenges']:
+   await page.goto('http://localhost:8080/'+path,wait_until='networkidle')
+   assert await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),path+' overflow'
+   if path in ['guardian','devices']:
+    await page.screenshot(path=str(S/('mobile_'+path+'.png')))
+  await page.get_by_role('button',name='Open menu',exact=True).click()
+  await page.get_by_role('navigation',name='Mobile',exact=True).get_by_role('link',name='My Devices · Demo',exact=True).click()
+  await page.get_by_role('heading',name='My Devices',exact=True).wait_for()
+  assert not errors,errors
+  assert not external,external
+  print('PASS: pairing + explicit scopes + persistence; fleet dry-run/approval/download; triage; proposed-only review + distinct human gate; original Guardian toggles/alerts; keyboard tabs/palette; truthful reports; integrated emergency pause; fresh consent/revocation; mobile routes; no runtime/external API calls.')
+  await browser.close()
+asyncio.run(main())
