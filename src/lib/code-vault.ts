@@ -41,8 +41,9 @@ export async function compareVaultCopy(original:string,recordedDigest:string,cop
  if(JSON.stringify(originalImports)!==JSON.stringify(copyImports))warnings.push("Import/dependency references changed; resolved dependency hashes and compatibility are not verified.");
  return {originalDigest,copyDigest,originMatchesRecord,matchesOrigin,status:!originMatchesRecord||!matchesOrigin ? "MODIFIED / UNVERIFIED" : "HASH MATCH / UNSIGNED DEMO",signatureVerified:false as const,installationAllowed:false as const,diff,warnings};
 }
+export const vaultBundleSchema=z.object({manifest:z.unknown(),manifestText:z.string().max(200000),manifestDigest:z.string().regex(/^[a-f0-9]{64}$/),artifact:copySchema,artifactMatchesRecord:z.boolean(),signatureStatus:z.string(),originTrust:z.string()}).strict();
 export async function verifyVaultBundle(value:unknown,r:ReleaseRecord,store:TrustStore,g:GenesisStore) {
- const packet=z.object({manifest:z.unknown(),manifestText:z.string().max(200000),manifestDigest:z.string().regex(/^[a-f0-9]{64}$/),artifact:copySchema,artifactMatchesRecord:z.boolean(),signatureStatus:z.string(),originTrust:z.string()}).strict().parse(value);
+ const packet=vaultBundleSchema.parse(value);
  const expected=JSON.stringify(vaultManifest(r,store,g));
  const manifestHashMatches=await artifactDigest(packet.manifestText)===packet.manifestDigest;
  const manifestMatchesReference=packet.manifestText===expected && JSON.stringify(packet.manifest)===expected;

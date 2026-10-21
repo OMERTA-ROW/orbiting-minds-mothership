@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileUp, ScanSearch, GitFork, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { IdentitySelect, FormNotice, fieldLabel } from "@/components/genesis/GenesisShell";
 import { useGenesis } from "@/hooks/use-genesis";
 import { useTrustedRelease } from "@/hooks/use-trusted-release";
-import { compareVaultCopy, forkVaultRelease, syntaxReview, verifyVaultBundle } from "@/lib/code-vault";
+import { compareVaultCopy, forkVaultRelease, syntaxReview, verifyVaultBundle, vaultBundleSchema } from "@/lib/code-vault";
 import type { ReleaseRecord } from "@/lib/trusted-release";
 import type { CodeContribution } from "@/data/evolution";
 import { useTrustAction } from "./TrustShell";
@@ -16,9 +16,10 @@ export function VaultCompare({origin,digest,code,record,onFork}:{origin:string;d
  const [copy,setCopy]=useState(origin),[review,setReview]=useState<Review>(),[message,setMessage]=useState(""),[busy,setBusy]=useState(false);
  const fileInput=useRef<HTMLInputElement>(null),bundleInput=useRef<HTMLInputElement>(null),epoch=useRef(0);
  const {store}=useTrustedRelease(),{store:g}=useGenesis(),action=useTrustAction();
+ useEffect(()=>{epoch.current++;setReview(undefined);setMessage("");},[store,g]);
  const change=(v:string)=>{epoch.current++;setCopy(v);setReview(undefined);setMessage("");};
  const check=async()=>{const token=epoch.current;setBusy(true);try{const [comparison,syntax]=await Promise.all([compareVaultCopy(origin,digest,copy),syntaxReview(copy,code.language)]);if(token===epoch.current)setReview({comparison,syntax});}catch(e){if(token===epoch.current)setMessage(e instanceof Error?e.message:"Comparison unavailable.");}finally{setBusy(false);}};
- const load=async(file:File|undefined,bundle:boolean)=>{if(!file)return;const token=++epoch.current;setBusy(true);setReview(undefined);try{if(file.size>(bundle?250000:80000))throw new Error("Use a small non-sensitive sample only.");const text=new TextDecoder("utf-8",{fatal:true}).decode(await file.arrayBuffer());if(bundle){if(!record)throw new Error("Choose a saved local release reference first.");const result=await verifyVaultBundle(JSON.parse(text),record,store,g);const syntax=await syntaxReview(JSON.parse(text).artifact,code.language);if(token===epoch.current){setCopy(JSON.parse(text).artifact);setReview({comparison:result,syntax,manifest:{hash:result.manifestHashMatches,reference:result.manifestMatchesReference}});setMessage("Compared to the current editable local reference; no trusted signature or offline revocation verification.");}}else if(token===epoch.current){change(text);setMessage("UTF-8 sample loaded locally; nothing executed or uploaded.");}}catch(e){if(token===epoch.current)setMessage(e instanceof Error?e.message:"Invalid sample.");}finally{setBusy(false);}};
+ const load=async(file:File|undefined,bundle:boolean)=>{if(!file)return;const token=++epoch.current;setBusy(true);setReview(undefined);try{if(file.size>(bundle?250000:80000))throw new Error("Use a small non-sensitive sample only.");const text=new TextDecoder("utf-8",{fatal:true,ignoreBOM:true}).decode(await file.arrayBuffer());if(bundle){if(!record)throw new Error("Choose a saved local release reference first.");const packet=vaultBundleSchema.parse(JSON.parse(text));const result=await verifyVaultBundle(packet,record,store,g);const syntax=await syntaxReview(packet.artifact,code.language);if(token===epoch.current){setCopy(packet.artifact);setReview({comparison:result,syntax,manifest:{hash:result.manifestHashMatches,reference:result.manifestMatchesReference}});setMessage("Compared to the current editable local reference; no trusted signature or offline revocation verification.");}}else if(token===epoch.current){change(text);setMessage("UTF-8 sample loaded locally; nothing executed or uploaded.");}}catch(e){if(token===epoch.current)setMessage(e instanceof Error?e.message:"Invalid sample.");}finally{setBusy(false);}};
  return <section id="code-conflict-detective" className="mt-10 scroll-mt-28 border-t border-border pt-8">
   <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="font-mono text-xs text-gold-light">ORACLE / LOCAL STATIC CHECKS</p><h2 className="mt-3 text-2xl">Code Conflict Detective</h2></div><ScanSearch className="text-gold" size={30}/></div>
   <p className="mt-4 max-w-4xl text-sm leading-loose text-muted-foreground">Exact UTF-8 text comparison. Syntax parsing is not type checking, dependency resolution, security review or execution. A matching hash is not a trusted release or proof of harmless code.</p>
