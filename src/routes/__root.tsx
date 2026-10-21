@@ -22,6 +22,7 @@ import { CareProvider } from "@/hooks/use-care";
 import { GuardianProvider } from "@/hooks/use-guardian";
 import { IncidentProvider } from "@/hooks/use-incidents";
 import { TrustedReleaseProvider } from "@/hooks/use-trusted-release";
+import { AccountProvider } from "@/hooks/use-account";
 
 function NotFoundComponent() {
   return (
@@ -129,6 +130,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AccountProvider>
       <GuardianProvider>
       <CareProvider>
       <GenesisProvider>
@@ -154,6 +156,7 @@ function RootComponent() {
       </GenesisProvider>
       </CareProvider>
       </GuardianProvider>
+      </AccountProvider>
     </QueryClientProvider>
   );
 }
