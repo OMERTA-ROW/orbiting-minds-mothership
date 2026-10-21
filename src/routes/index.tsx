@@ -7,7 +7,7 @@ import { seo } from "@/lib/seo";
 import cosmos from "@/assets/mothership-cosmos.jpg";
 
 export const Route = createFileRoute("/")({
-  head: () => seo("EVOLUTION — Cosmic Mothership", "All technology is converging here. Explore EVOLUTION's consent-first constellation of software, creators, AI agents and research. Bridge technology into its next evolution."),
+  head: () => seo("EVOLUTION — Cosmic Mothership", "All technology is converging here. Explore EVOLUTION's consent-first constellation of software, creators, AI agents and research. Bridge technology into its next evolution.", { indexable: true }),
   component: Index,
 });
 

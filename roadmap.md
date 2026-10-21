@@ -1,7 +1,7 @@
 # Cosmic Mothership redesign
 
 ## Current requests — SEO and least-privilege connections
-- [x] Review current SEO foundations: page basics, favicon, search metadata and social previews pass; homepage noindex is flagged and matches beta restrictions. No SEO settings changed; present findings for owner review.
+- [x] Review current SEO foundations: page basics, favicon, search metadata and social previews pass. Owner approved the homepage noindex correction; homepage now opts into indexing in preview, with beta/private routes still excluded. No publishing or domain changes; live metadata waits for a separately approved publish.
 - [ ] Add one supported per-account social OAuth flow with explained scopes, truthful status and revocation. Blocker: no LinkedIn per-user client; owner declined the client setup card. No shared account fallback or fake connection controls.
 - [ ] Add least-privilege GitHub authorization for one exact repository and review-only proposed changes; no deployment. Blocker: no GitHub per-user client; standard OAuth repo scopes are account-wide, not single-repository grants. Provider-enforced restriction requires an owner-approved GitHub App route rather than silently broadening access.
 
