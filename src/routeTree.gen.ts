@@ -33,6 +33,7 @@ import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as OpenCallRouteImport } from './routes/open-call'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
 import { Route as PathwayRouteImport } from './routes/pathway'
+import { Route as PhysicalSafetyRouteImport } from './routes/physical-safety'
 import { Route as PilotRouteImport } from './routes/pilot'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as PulseRouteImport } from './routes/pulse'
@@ -173,6 +174,11 @@ const PathwayRoute = PathwayRouteImport.update({
   path: '/pathway',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PhysicalSafetyRoute = PhysicalSafetyRouteImport.update({
+  id: '/physical-safety',
+  path: '/physical-safety',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PilotRoute = PilotRouteImport.update({
   id: '/pilot',
   path: '/pilot',
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
+  '/physical-safety': typeof PhysicalSafetyRoute
   '/pilot': typeof PilotRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
@@ -339,6 +346,7 @@ export interface FileRoutesByTo {
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
+  '/physical-safety': typeof PhysicalSafetyRoute
   '/pilot': typeof PilotRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
+  '/physical-safety': typeof PhysicalSafetyRoute
   '/pilot': typeof PilotRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
@@ -432,6 +441,7 @@ export interface FileRouteTypes {
     | '/open-call'
     | '/partnerships'
     | '/pathway'
+    | '/physical-safety'
     | '/pilot'
     | '/platform'
     | '/pulse'
@@ -477,6 +487,7 @@ export interface FileRouteTypes {
     | '/open-call'
     | '/partnerships'
     | '/pathway'
+    | '/physical-safety'
     | '/pilot'
     | '/platform'
     | '/pulse'
@@ -522,6 +533,7 @@ export interface FileRouteTypes {
     | '/open-call'
     | '/partnerships'
     | '/pathway'
+    | '/physical-safety'
     | '/pilot'
     | '/platform'
     | '/pulse'
@@ -568,6 +580,7 @@ export interface RootRouteChildren {
   OpenCallRoute: typeof OpenCallRoute
   PartnershipsRoute: typeof PartnershipsRoute
   PathwayRoute: typeof PathwayRoute
+  PhysicalSafetyRoute: typeof PhysicalSafetyRoute
   PilotRoute: typeof PilotRoute
   PlatformRoute: typeof PlatformRoute
   PulseRoute: typeof PulseRoute
@@ -759,6 +772,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PathwayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/physical-safety': {
+      id: '/physical-safety'
+      path: '/physical-safety'
+      fullPath: '/physical-safety'
+      preLoaderRoute: typeof PhysicalSafetyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pilot': {
       id: '/pilot'
       path: '/pilot'
@@ -920,6 +940,7 @@ const rootRouteChildren: RootRouteChildren = {
   OpenCallRoute: OpenCallRoute,
   PartnershipsRoute: PartnershipsRoute,
   PathwayRoute: PathwayRoute,
+  PhysicalSafetyRoute: PhysicalSafetyRoute,
   PilotRoute: PilotRoute,
   PlatformRoute: PlatformRoute,
   PulseRoute: PulseRoute,
