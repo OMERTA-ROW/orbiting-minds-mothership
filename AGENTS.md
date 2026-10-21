@@ -10,15 +10,15 @@
 <!-- LOVABLE:END -->
 
 ## Project rules
-- All prototype data lives in `src/data/evolution.ts` and must be labeled demo/simulated in the UI; future backend should be owner-scoped (orgs, projects, agents, permission_grants, proposals, audit_events…), why: owner wants a consent-first prototype with no claimed live integrations.
+- Keep prototype data in `src/data/evolution.ts`, label it demo and scope future backend records to owners, why: preserve consent without claiming live integrations.
 - Shared visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: one place for the design language.
 - Cosmic atmosphere uses a bundled hero artwork and deterministic SVG starfields; animate only lightweight decorative layers and keep reduced-motion/mobile static fallbacks, why: cinematic depth without a GPU-heavy scene or SSR-dependent randomness.
 - Orbital module controls are stationary design-system buttons with a compact mobile list; shared inner-page surfaces and typography use global semantic tokens, why: preserve keyboard accessibility and consistent cosmic styling across existing flows.
-- Creator pathways stream strict structured output through an internal TanStack server route and request-local server-only AI helpers; secrets and system instructions stay on the server, why: allow cancellable real AI drafting without claiming execution or live module integrations.
+- Creator pathways stream structured output through an internal server route and request-local AI helpers; keep secrets server-only, why: cancellable drafting is not execution.
 - AI access-denial and credit blocks are persisted in a service-only circuit-breaker table; clear a block only after an owner confirms restored access, why: prevent automatic billed retries across reloads and server restarts.
 - Global command search uses a pure typed index sourced from evolution data and navigates to validated module/world/proposal search parameters or stable entity anchors, why: jump to the exact result while retaining existing local interactions.
 - Code Exchange domain helpers are pure and browser-safe; demo collaboration is persisted only in a validated, versioned browser-local store shared by Exchange, Commons and Pulse, why: useful review flows and truthful local activity without impersonating secure multi-user persistence.
-- Code Exchange interface copy uses keyed English/Spanish dictionaries independently of executable snippets; public documentation references never imply code provenance or a connected repository, why: support localization without silently rewriting code or inventing external permissions.
+- Localize Exchange copy independently of code; documentation never implies repository provenance, why: translation must not rewrite code or invent permissions.
 - Genesis workflows use pure validated transitions and a separate versioned browser-local store; SDK contracts describe disabled future APIs and never act as endpoints, why: integrated rehearsal without pretending local identity or visibility labels enforce multiuser security.
 - Digital Twin results run only a deterministic synthetic numeric model; arbitrary submitted code, shell commands and hardware connectors never execute, why: distinguish useful simulations from real sandbox or hardware validation.
 
