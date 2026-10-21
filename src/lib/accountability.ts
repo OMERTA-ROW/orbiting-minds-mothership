@@ -40,7 +40,8 @@ export type AccountabilityRecord=z.infer<typeof accountabilityRecord>;
 export type AccountabilityCommand=
  |{type:"accountabilityReport";input:unknown}
  |{type:"accountabilityRevise";caseId:string;actorId:string;input:unknown}
- |{type:"accountabilityPrivacy"|"accountabilityWithdraw";caseId:string;actorId:string;consent:boolean}
+ |{type:"accountabilityPrivacy";caseId:string;actorId:string;consent:boolean}
+ |{type:"accountabilityWithdraw";caseId:string;actorId:string;consent:boolean}
  |{type:"accountabilityReview";caseId:string;actorId:string;decision:"Reviewed DEMO"|"Changes requested";note:string;privacy:boolean;evidence:boolean;uncertainty:boolean;consent:boolean}
  |{type:"accountabilityNotice";caseId:string;actorId:string;kind:"Dispute"|"Correction"|"Resolution";note:string;resolves:string;consent:boolean}
  |{type:"accountabilityAction";caseId:string;actorId:string;plan:string;status:"Proposed"|"Rehearsed locally";result:string;consent:boolean};
