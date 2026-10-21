@@ -1,5 +1,12 @@
 # Cosmic Mothership redesign
 
+## Guardian Incident Accountability
+- [ ] Add validated local DEMO incident intake, dashboard and case details with evidence-separated accountability and restricted publication.
+- [ ] Add baseline/copy hash comparison, review, corrective actions, dispute/correction history and consent withdrawal.
+- [ ] Connect Guardian, replay, Vault, ledger/passport and Archives without disrupting existing records.
+- [ ] Test validation, consent, review/evidence gates, persistence and desktop/mobile workflows.
+- [ ] Enable real restricted incident persistence/publication. Blocker: owner profile-data decision, authenticated owner-scoped access, private evidence storage, independent review and security QA.
+
 ## Code Vault and Welcome Lounge
 - [x] Add a version-pinned local DEMO Vault with SHA-256 artifact/manifest, origin comparison, syntax/conflict warnings and new-version forks.
 - [x] Reuse approval history, revocation and rollback, preserving unsigned and local-only boundaries; connect Exchange, Guardian, Oracle, Founder, Releases and Embassy.
