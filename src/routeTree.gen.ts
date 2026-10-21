@@ -37,6 +37,7 @@ import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MothershipRouteImport } from './routes/mothership'
+import { Route as OmnibridgeRouteImport } from './routes/omnibridge'
 import { Route as OpenCallRouteImport } from './routes/open-call'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
 import { Route as PathwayRouteImport } from './routes/pathway'
@@ -203,6 +204,11 @@ const MothershipRoute = MothershipRouteImport.update({
   path: '/mothership',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OmnibridgeRoute = OmnibridgeRouteImport.update({
+  id: '/omnibridge',
+  path: '/omnibridge',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OpenCallRoute = OpenCallRouteImport.update({
   id: '/open-call',
   path: '/open-call',
@@ -358,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
+  '/omnibridge': typeof OmnibridgeRoute
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
@@ -413,6 +420,7 @@ export interface FileRoutesByTo {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
+  '/omnibridge': typeof OmnibridgeRoute
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
@@ -469,6 +477,7 @@ export interface FileRoutesById {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
+  '/omnibridge': typeof OmnibridgeRoute
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
@@ -526,6 +535,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/marketplace'
     | '/mothership'
+    | '/omnibridge'
     | '/open-call'
     | '/partnerships'
     | '/pathway'
@@ -581,6 +591,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/marketplace'
     | '/mothership'
+    | '/omnibridge'
     | '/open-call'
     | '/partnerships'
     | '/pathway'
@@ -636,6 +647,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/marketplace'
     | '/mothership'
+    | '/omnibridge'
     | '/open-call'
     | '/partnerships'
     | '/pathway'
@@ -692,6 +704,7 @@ export interface RootRouteChildren {
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
   MarketplaceRoute: typeof MarketplaceRoute
   MothershipRoute: typeof MothershipRoute
+  OmnibridgeRoute: typeof OmnibridgeRoute
   OpenCallRoute: typeof OpenCallRoute
   PartnershipsRoute: typeof PartnershipsRoute
   PathwayRoute: typeof PathwayRoute
@@ -917,6 +930,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MothershipRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/omnibridge': {
+      id: '/omnibridge'
+      path: '/omnibridge'
+      fullPath: '/omnibridge'
+      preLoaderRoute: typeof OmnibridgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/open-call': {
       id: '/open-call'
       path: '/open-call'
@@ -1124,6 +1144,7 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgeFusionRoute: KnowledgeFusionRoute,
   MarketplaceRoute: MarketplaceRoute,
   MothershipRoute: MothershipRoute,
+  OmnibridgeRoute: OmnibridgeRoute,
   OpenCallRoute: OpenCallRoute,
   PartnershipsRoute: PartnershipsRoute,
   PathwayRoute: PathwayRoute,
