@@ -27,6 +27,7 @@ import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as DigitalTwinRouteImport } from './routes/digital-twin'
 import { Route as DiscoveryRouteImport } from './routes/discovery'
 import { Route as EmbassyRouteImport } from './routes/embassy'
+import { Route as EntertainmentRouteImport } from './routes/entertainment'
 import { Route as ExperimentReplayRouteImport } from './routes/experiment-replay'
 import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GuardianRouteImport } from './routes/guardian'
@@ -152,6 +153,11 @@ const DiscoveryRoute = DiscoveryRouteImport.update({
 const EmbassyRoute = EmbassyRouteImport.update({
   id: '/embassy',
   path: '/embassy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntertainmentRoute = EntertainmentRouteImport.update({
+  id: '/entertainment',
+  path: '/entertainment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExperimentReplayRoute = ExperimentReplayRouteImport.update({
@@ -354,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/entertainment': typeof EntertainmentRoute
   '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
@@ -410,6 +417,7 @@ export interface FileRoutesByTo {
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/entertainment': typeof EntertainmentRoute
   '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
@@ -467,6 +475,7 @@ export interface FileRoutesById {
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/entertainment': typeof EntertainmentRoute
   '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
@@ -525,6 +534,7 @@ export interface FileRouteTypes {
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/entertainment'
     | '/experiment-replay'
     | '/fleet'
     | '/guardian'
@@ -581,6 +591,7 @@ export interface FileRouteTypes {
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/entertainment'
     | '/experiment-replay'
     | '/fleet'
     | '/guardian'
@@ -637,6 +648,7 @@ export interface FileRouteTypes {
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/entertainment'
     | '/experiment-replay'
     | '/fleet'
     | '/guardian'
@@ -694,6 +706,7 @@ export interface RootRouteChildren {
   DigitalTwinRoute: typeof DigitalTwinRoute
   DiscoveryRoute: typeof DiscoveryRoute
   EmbassyRoute: typeof EmbassyRoute
+  EntertainmentRoute: typeof EntertainmentRoute
   ExperimentReplayRoute: typeof ExperimentReplayRoute
   FleetRoute: typeof FleetRoute
   GuardianRoute: typeof GuardianRoute
@@ -858,6 +871,13 @@ declare module '@tanstack/react-router' {
       path: '/embassy'
       fullPath: '/embassy'
       preLoaderRoute: typeof EmbassyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entertainment': {
+      id: '/entertainment'
+      path: '/entertainment'
+      fullPath: '/entertainment'
+      preLoaderRoute: typeof EntertainmentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/experiment-replay': {
@@ -1134,6 +1154,7 @@ const rootRouteChildren: RootRouteChildren = {
   DigitalTwinRoute: DigitalTwinRoute,
   DiscoveryRoute: DiscoveryRoute,
   EmbassyRoute: EmbassyRoute,
+  EntertainmentRoute: EntertainmentRoute,
   ExperimentReplayRoute: ExperimentReplayRoute,
   FleetRoute: FleetRoute,
   GuardianRoute: GuardianRoute,

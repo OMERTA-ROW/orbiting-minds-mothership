@@ -12,8 +12,8 @@
 ## Project rules
 - Keep prototype data in `src/data/evolution.ts`, label it demo and scope future backend records to owners, why: preserve consent without claiming live integrations.
 - Shared visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: consistent design.
-- Cosmic artwork and deterministic SVG stars use lightweight motion and static mobile/reduced-motion fallbacks, why: cinematic depth without GPU-heavy scenes or SSR randomness.
-- Orbital controls use stationary design-system buttons and a mobile list; inner pages use semantic tokens, why: keyboard access and consistent cosmic styling.
+- Cosmic art/stars use light deterministic motion and static mobile/reduced-motion fallbacks, why: no GPU-heavy scenes or SSR randomness.
+- Orbital controls use fixed buttons/mobile lists and semantic tokens, why: accessible cosmic styling.
 - Creator pathways stream structured output through an internal server route and request-local AI helpers; keep secrets server-only, why: cancellable drafting is not execution.
 - AI access-denial and credit blocks are persisted in a service-only circuit-breaker table; clear a block only after an owner confirms restored access, why: prevent automatic billed retries across reloads and server restarts.
 - Command search uses a pure typed evolution-data index and validated search parameters or stable anchors, why: exact results without changing local interactions.
@@ -30,7 +30,7 @@
 
 - CARE plans/check rehearsals capture channel context in editable local audit records, not jobs or trusted receipts, why: truthful provenance without claiming native or secure audit capabilities.
 - Guardian and Fleet use a separate validated browser-local demo store with pure expiry/consent/revocation transitions; every device starts unpaired and scope-less, why: rehearse device-bound gates without impersonating authenticated ownership or affecting CARE/Genesis records.
-- Guardian review roles use fixed proposed-only reference findings, not model calls or executable source analysis; reports read current local sample records and unknown real evidence, why: no billed retries, instruction-based privilege or fabricated detection/scan history.
+- Guardian reviews use fixed proposed-only references and current local samples, not models or source execution, why: no billed retries, fabricated scans or instruction-based privilege.
 - Guardian emergency pause invalidates local fleet pairing/scopes/plans and separately pauses CARE preferences, reporting failures without remote receipts; release gates remain unverified, why: local state cannot establish secure platform readiness or confirmed endpoint containment.
 - Robotics uses central demo scenarios, bounded arithmetic and a separate validated local store, never referenced-code/ROS/hardware execution, why: reproduce research without implying physics, diagnosis or safety certification.
 - Scenario handoffs prefill Founder/Oracle/Challenges/Releases without automatic requests; Guardian is proposed-only, why: handoffs confer no authority.
@@ -39,3 +39,4 @@
 - Vault reuses Trust records, owner confirmation, exact comparisons and event-loaded parsers; Lounge uses Genesis consent, why: no signing/enrollment claims.
 - Nexus keeps separate consented local records and isolated base-version drafts; corrected example labels overlay stored data, why: preserve work without secure chat or execution claims.
 - OmniBridge uses central inert registry data, pure keyword plans and a separate validated local store; recheck Guardian/Nexus pause at mutation, why: review is not connectivity, signing or execution.
+- Entertainment uses central samples, a separate local store and revision-bound reviews; recheck Guardian/Nexus pause, why: checkpoints and numeric media checks confer no execution, rights clearance or publication.

@@ -10,6 +10,7 @@ export const navItems = [
   { to: "/mothership", label: "Mothership" },
   { to: "/command-nexus", label: "Command Nexus · Demo" },
   { to: "/omnibridge", label: "OmniBridge · Demo" },
+  { to: "/entertainment", label: "Entertainment Galaxy · Demo" },
   { to: "/pathway", label: "AI Pathway" },
   { to: "/code-exchange", label: "Code Exchange" },
   { to: "/code-vault", label: "Code Vault · Demo" },
