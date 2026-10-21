@@ -30,5 +30,5 @@ describe("Cartoon Galaxy rights, child privacy and revision gates",()=>{
  it("rejects tampered execution flags",()=>{const s=reviewed();const p=s.plans[0];if(!p)throw new Error("Missing pitch");expect(cartoonStoreSchema.safeParse({...s,plans:[{...p,executionAllowed:true}]}).success).toBe(false);});
  it("rejects stale review revision",()=>{const s=reviewed();const p=s.plans[0];if(!p?.review)throw new Error("Missing review");expect(cartoonStoreSchema.safeParse({...s,plans:[{...p,review:{...p.review,revision:1}}]}).success).toBe(false);});
  it("rejects altered checkpoint content",()=>{const s=create();const p=s.plans[0];if(!p)throw new Error("Missing pitch");expect(cartoonStoreSchema.safeParse({...s,plans:[{...p,title:"Tampered"}]}).success).toBe(false);});
- it("keeps template seeds isolated",()=>{const a=seedCartoon();a.characters[0].name="Changed";expect(seedCartoon().characters[0]?.name).toBe("Pip");});
+ it("keeps template seeds isolated",()=>{const a=seedCartoon();const c=a.characters[0];if(!c)throw new Error("Missing character");c.name="Changed";expect(seedCartoon().characters[0]?.name).toBe("Pip");});
 });
