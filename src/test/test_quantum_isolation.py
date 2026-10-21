@@ -89,6 +89,7 @@ def main():
         check("other-owner storage delete has no effect", call("GET", storage, token=a["token"]).content == audio)
         check("other-owner upload path denied", denied(call("POST", storage, token=b["token"], binary=audio, overwrite=True)))
         check("owner overwrite original denied", denied(call("POST", storage, token=a["token"], binary=audio, overwrite=True)))
+        check("direct metadata delete cannot orphan stored audio", denied(call("DELETE", record, token=a["token"])))
         check("immutable media metadata", denied(call("PATCH", record, {"sha256": "a" * 64}, a["token"])))
         check("spoofed owner reservation denied", denied(call("POST", "/rest/v1/studio_assets", {**body, "owner_id": a["id"]}, b["token"])))
         check("cross-owner project attachment denied", denied(call("POST", "/rest/v1/studio_assets", body, b["token"])))
