@@ -10,6 +10,7 @@ import {
   branchPlan,
   channelEvidence,
   canonicalJson,
+  assertReleaseAction,
 } from "./forge-universe";
 import {
   assertStudioAccess,
@@ -163,8 +164,7 @@ export const actOnDistro = createServerFn({ method: "POST" })
         .maybeSingle();
       if (access.error) throw new Error("Media access check failed.");
       assertStudioAccess(access.data);
-      if (!["REVIEWED", "BUNDLE_PREPARED"].includes(saved.data.state))
-        throw new Error("Review the exact saved draft first.");
+      assertReleaseAction(saved.data.state, data.action, access.data?.studio_approved === true, access.data?.paused !== false);
       const { zipSync, strToU8 } = await import("fflate");
       const files: Record<string, Uint8Array> = {};
       const hashes: Record<string, string> = {};

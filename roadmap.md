@@ -8,6 +8,8 @@
 
 Validation: 36 retained authenticated Creator/Distro checks passed, including downloaded RSS parsing, exact enclosure byte count and WAV SHA-256, identical retry bundles, review/revoke/paused/cross-owner gates, reload, mobile and text-only OMNI handoff. Repeated 31 Forge, 37 private-media and 23 account-isolation regressions passed; temporary QA data removed. RSS references an OWNER-DECLARED site only: no upload or public host/receipt verified. Podcast/Game branches are editable planning outputs, not recorded/transcribed or executed builds. All distribution APIs, scheduling/autopublish and native commands remain unconnected/planned. Rights declarations are not independent clearance.
 
+App verification: all 800 tests passed (27 new Creator/RSS cases); focused lint and preview build pass. End-to-end XML/WAV/ZIP verification uses temporary authenticated accounts, never a public distribution endpoint.
+
 ## OMNI FORGE — focused Quantum Studio follow-up
 - [x] Preserve approved private media/isolation gates and repair WaveFile packaging across SSR and bundled runtime.
 - [x] Add real bounded timestamp-reviewed radio silence/tone/cut/crossfade and mono edits with preserved originals, measured duration/sample-peak evidence and unsupported broadcast/stem labels.
