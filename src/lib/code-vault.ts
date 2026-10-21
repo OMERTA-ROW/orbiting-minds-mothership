@@ -23,7 +23,7 @@ export function vaultReview(r:ReleaseRecord,store:TrustStore,g:GenesisStore) {
  const state=releaseState(r,store,g);
  return {state, reviewerDeclared:state==="Demo signed off" && Boolean(r.signoff), ownerDeclared:state==="Demo signed off" && Boolean(r.ownerSignoff), deploymentAllowed:false as const};
 }
-export const copySchema=z.string().max(20000);
+export const copySchema=z.string().max(20000).refine(v=>v.split("\n").length<=400,"Use a sample with at most 400 lines.");
 export async function compareVaultCopy(original:string,recordedDigest:string,copy:string) {
  copySchema.parse(original);copySchema.parse(copy);
  const [originalDigest,copyDigest]=await Promise.all([artifactDigest(original),artifactDigest(copy)]);
@@ -36,7 +36,18 @@ export async function compareVaultCopy(original:string,recordedDigest:string,cop
  if(added.split(/\r?\n/).some(l=>l.trim()&&!/^(#|\/\/)/.test(l.trim())))warnings.push("Added or replaced statements require origin-vs-change review; no commands were executed.");
  if(/\b(eval|exec|fetch|spawn|system|subprocess|child_process|os\.system)\b|\bcurl\b|\brm\s+-|\bsudo\b|\bpowershell\b|\bbash\b/.test(added))warnings.push("Potential extra command, dynamic execution or network call in added text. Pattern warning only.");
  if(/^(<<<<<<<|=======|>>>>>>>)/m.test(copy))warnings.push("Unresolved merge conflict markers.");
+ const imports=(v:string)=>v.split(/\r?\n/).filter(l=>/^\s*(import\b|from\b)|\brequire\s*\(/.test(l)).map(l=>l.trim());
+ const originalImports=imports(original),copyImports=imports(copy);
+ if(JSON.stringify(originalImports)!==JSON.stringify(copyImports))warnings.push("Import/dependency references changed; resolved dependency hashes and compatibility are not verified.");
  return {originalDigest,copyDigest,originMatchesRecord,matchesOrigin,status:!originMatchesRecord||!matchesOrigin ? "MODIFIED / UNVERIFIED" : "HASH MATCH / UNSIGNED DEMO",signatureVerified:false as const,installationAllowed:false as const,diff,warnings};
+}
+export async function verifyVaultBundle(value:unknown,r:ReleaseRecord,store:TrustStore,g:GenesisStore) {
+ const packet=z.object({manifest:z.unknown(),manifestText:z.string().max(200000),manifestDigest:z.string().regex(/^[a-f0-9]{64}$/),artifact:copySchema,artifactMatchesRecord:z.boolean(),signatureStatus:z.string(),originTrust:z.string()}).strict().parse(value);
+ const expected=JSON.stringify(vaultManifest(r,store,g));
+ const manifestHashMatches=await artifactDigest(packet.manifestText)===packet.manifestDigest;
+ const manifestMatchesReference=packet.manifestText===expected && JSON.stringify(packet.manifest)===expected;
+ const copy=await compareVaultCopy(r.artifact,r.digest,packet.artifact);
+ return {...copy,manifestHashMatches,manifestMatchesReference,status:copy.originMatchesRecord&&copy.matchesOrigin&&manifestHashMatches&&manifestMatchesReference ? "HASH MATCH / UNSIGNED DEMO" : "MODIFIED / UNVERIFIED",signatureVerified:false as const,installationAllowed:false as const};
 }
 export async function forkVaultRelease(r:ReleaseRecord,copy:string,version:string,ownerId:string,consent:boolean) {
  z.string().max(60).regex(/^\d+\.\d+\.\d+$/).parse(version);
