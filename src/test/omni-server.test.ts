@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ auth: vi.fn(), project: vi.fn(), state: vi.fn(), save: vi.fn(), call: vi.fn() }));
+const ownedContext = () => {
+  const query = { eq: () => query, maybeSingle: mocks.project };
+  return { userId: "owner", client: { from: () => ({ select: () => query }) } };
+};
 vi.mock("@/lib/beta-auth.server", () => ({ authenticateBetaAi: mocks.auth, readBoundedJson: (r: Request) => r.json(), BetaHttpError: class extends Error { constructor(public status: number, message: string) { super(message); } } }));
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: mocks.state }) }), upsert: mocks.save }) } }));
 vi.mock("@/lib/ai/omni-responses.server.ts", () => ({ createOmniCall: mocks.call }));
@@ -10,11 +14,11 @@ const call = (parts: AsyncIterable<unknown>, failure?: { status: number; message
 describe("OMNI server gates and terminal responses", () => {
   beforeEach(() => {
     vi.stubEnv("LOVABLE_API_KEY", "test-only"); mocks.auth.mockReset(); mocks.call.mockReset(); mocks.save.mockReset().mockResolvedValue({ error: null }); mocks.state.mockReset().mockResolvedValue({ data: null, error: null }); mocks.project.mockReset().mockResolvedValue({ data: { name: "Owned sample", brief: "Non-sensitive review" }, error: null });
-    mocks.auth.mockResolvedValue({ userId: "owner", client: { from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: mocks.project }) }) }) }) });
+    mocks.auth.mockResolvedValue(ownedContext());
   });
   it("does not call model for another owner's missing project", async () => { mocks.project.mockResolvedValue({ data: null, error: null }); expect((await handleOmni(request())).status).toBe(404); expect(mocks.call).not.toHaveBeenCalled(); });
   it("does not replay a saved provider block", async () => { mocks.state.mockResolvedValue({ data: { blocked_status: 403, message: "Provider denied" }, error: null }); const response = await handleOmni(request()); expect(response.status).toBe(403); expect(await response.json()).toEqual({ message: "Provider denied" }); expect(mocks.call).not.toHaveBeenCalled(); });
-  it("rechecks approval immediately before inference", async () => { mocks.auth.mockResolvedValueOnce({ userId: "owner", client: { from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: mocks.project }) }) }) }) } }).mockRejectedValueOnce(new BetaHttpError(403, "Approval revoked")); expect((await handleOmni(request())).status).toBe(403); expect(mocks.call).not.toHaveBeenCalled(); });
+  it("rechecks approval immediately before inference", async () => { mocks.auth.mockResolvedValueOnce(ownedContext()).mockRejectedValueOnce(new BetaHttpError(403, "Approval revoked")); expect((await handleOmni(request())).status).toBe(403); expect(mocks.call).not.toHaveBeenCalled(); });
   it("preserves and persists a terminal upstream denial", async () => { const failure = { status: 403, message: "Provider access denied" }; mocks.call.mockReturnValue(call((async function* () { yield { type: "error", error: new Error("Denied") }; })(), failure)); const response = await handleOmni(request()); expect(response.status).toBe(403); expect(await response.json()).toEqual({ message: failure.message }); expect(mocks.save).toHaveBeenCalledWith({ feature: "evolution-omni", blocked_status: 403, message: failure.message }); });
   it("streams text before completion and reports exact returned usage", async () => { let release: () => void = () => {}; const ready = new Promise<void>((resolve) => { release = resolve; }); mocks.call.mockReturnValue(call((async function* () { yield { type: "text-delta", text: "First text" }; await ready; yield { type: "text-delta", text: " later" }; })())); const response = await handleOmni(request()); const reader = response.body?.getReader(); expect(reader).toBeDefined(); if (!reader) return; const first = await reader.read(); expect(new TextDecoder().decode(first.value)).toContain("First text"); release(); let rest = ""; for (;;) { const p = await reader.read(); if (p.done) break; rest += new TextDecoder().decode(p.value); } expect(rest).toContain('"totalTokens":19'); expect(rest).toContain('"actualCharge":null'); });
 });
