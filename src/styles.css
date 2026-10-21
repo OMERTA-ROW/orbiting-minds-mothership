@@ -187,6 +187,15 @@
 .universe-node:focus-visible circle { stroke: var(--foreground); stroke-width: 2; }
 .exchange-select { min-height: 40px; min-width: 0; border: 1px solid var(--input); border-radius: var(--radius); padding: 8px 10px; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: 12px; }
 .exchange-select option { background: var(--background); color: var(--foreground); }
+.omni-graph { aspect-ratio: 1000 / 480; min-height: 410px; }
+.omni-node-0 { left: 15%; top: 18%; }
+.omni-node-1 { left: 50%; top: 12%; }
+.omni-node-2 { left: 85%; top: 18%; }
+.omni-node-3 { left: 12%; top: 51%; }
+.omni-node-4 { left: 88%; top: 51%; }
+.omni-node-5 { left: 17%; top: 85%; }
+.omni-node-6 { left: 50%; top: 88%; }
+.omni-node-7 { left: 83%; top: 85%; }
 .exchange-contribution:hover { border-color: var(--gold); }
 .exchange-code { max-width: 100%; overflow-x: auto; padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--gold-light); font-family: var(--font-mono); font-size: 12px; line-height: 1.9; tab-size: 2; }
 @keyframes orbitalDrift { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
