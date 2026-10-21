@@ -39,3 +39,19 @@ describe("Homepage social preview", () => {
     expect(metaValue(head, "twitter:card")).toBe("summary_large_image");
   });
 });
+
+import { searchPolicy } from "@/lib/search-policy";
+import { Route as BetaOmniRoute } from "@/routes/_authenticated/beta-omni";
+import { Route as QuantumRoute } from "@/routes/_authenticated/quantum-studio";
+
+describe("Search status panel policy matches page tags", () => {
+  const heads: Record<string, Head> = { "/": headOf(HomeRoute), "/beta": headOf(BetaRoute), "/beta-omni": headOf(BetaOmniRoute), "/quantum-studio": headOf(QuantumRoute) };
+  for (const entry of searchPolicy) {
+    it(`${entry.path} matches its listed search status`, () => {
+      expect(metaValue(heads[entry.path]!, "robots")).toBe(entry.indexable ? "index, follow" : "noindex");
+    });
+  }
+  it("only the homepage is indexable", () => {
+    expect(searchPolicy.filter((entry) => entry.indexable).map((entry) => entry.path)).toEqual(["/"]);
+  });
+});

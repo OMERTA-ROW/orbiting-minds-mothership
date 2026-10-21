@@ -4,10 +4,11 @@ import { modules } from "@/data/evolution";
 import { DemoBadge, OrbitExplorer, Section, Starfield } from "@/components/evo";
 import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
+import { isIndexable } from "@/lib/search-policy";
 import cosmos from "@/assets/mothership-cosmos.jpg";
 
 export const Route = createFileRoute("/")({
-  head: () => seo("EVOLUTION — Cosmic Mothership", "All technology is converging here. Explore EVOLUTION's consent-first constellation of software, creators, AI agents and research. Bridge technology into its next evolution.", { indexable: true, path: "/", image: "/og-home.jpg", imageAlt: "A celestial intelligence core surrounded by metallic-gold orbital rings" }),
+  head: () => seo("EVOLUTION — Cosmic Mothership", "All technology is converging here. Explore EVOLUTION's consent-first constellation of software, creators, AI agents and research. Bridge technology into its next evolution.", { indexable: isIndexable("/"), path: "/", image: "/og-home.jpg", imageAlt: "A celestial intelligence core surrounded by metallic-gold orbital rings" }),
   component: Index,
 });
 
