@@ -1,4 +1,4 @@
-export function seo(title: string, description: string) {
+export function seo(title: string, description: string, options: { indexable?: boolean } = {}) {
   const full = `${title} · EVOLUTION Mothership`;
   return {
     meta: [
@@ -8,7 +8,7 @@ export function seo(title: string, description: string) {
       { property: "og:description", content: description },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "robots", content: "noindex" },
+      { name: "robots", content: options.indexable === true ? "index, follow" : "noindex" },
     ],
   };
 }

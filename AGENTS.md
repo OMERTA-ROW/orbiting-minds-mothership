@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Project rules
-- Prototype data lives in `src/data/evolution.ts`, separate from owned records: no live-integration claims.
+- Prototype data stays separate from owned records; no live claims. SEO defaults to noindex; only approved leaves opt in.
 - Shared visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: consistent design.
 - Cosmic art uses deterministic light motion/static fallbacks; orbital controls use fixed buttons/mobile lists/tokens for accessibility.
 - Pathways use internal streaming routes and request-local AI; secrets server-only, why: drafting is not execution.
