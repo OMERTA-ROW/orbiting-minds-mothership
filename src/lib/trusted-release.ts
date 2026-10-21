@@ -34,11 +34,11 @@ export const replayInput = z.object({ title: name, operatorId: id, caseId: id.re
  if (r.clip.url && (!r.clip.authorized || !r.clip.creator || !r.clip.license || r.clip.captions.length < 10)) ctx.addIssue({ code: "custom", message: "Clip metadata needs creator permission, license and captions. Playback stays disabled." });
 });
 export type ReplayInput = z.infer<typeof replayInput>;
-const replayRecord = replayInput.extend({ id, at: date });
+const replayRecord = replayInput.innerType().extend({ id, at: date }).superRefine(({ id: _id, at: _at, ...input },ctx) => { const p=replayInput.safeParse(input); if (!p.success) p.error.issues.forEach(issue=>ctx.addIssue(issue)); });
 const metric = z.number().finite().min(0).max(1000000000);
 export const impactInput = z.object({ title: name, operatorId: id, problem: text, unit: name, direction: z.enum(["Lower is better", "Higher is better"]), baseline: z.array(metric).min(3).max(30), candidate: z.array(metric).min(3).max(30), method: text, fixtureVersion: name, limitations: text, consent: z.literal(true) }).strict().refine(v => v.baseline.length === v.candidate.length, "Use paired samples from the same fixture.").refine(v => v.baseline.some(n => n > 0), "A positive baseline is needed for percent comparison.");
 export type ImpactInput = z.infer<typeof impactInput>;
-const impactRecord = impactInput.extend({ id, at: date });
+const impactRecord = impactInput.innerType().innerType().extend({ id, at: date }).superRefine(({ id: _id, at: _at, ...input },ctx) => { const p=impactInput.safeParse(input); if (!p.success) p.error.issues.forEach(issue=>ctx.addIssue(issue)); });
 const median = (xs: number[]) => { const a = [...xs].sort((a,b) => a-b); const mid = Math.floor(a.length/2); return a.length % 2 ? a[mid] ?? 0 : ((a[mid-1] ?? 0)+(a[mid] ?? 0))/2; };
 export function impactComparison(input: ImpactInput) {
  const v = impactInput.parse(input), baseline = median(v.baseline), candidate = median(v.candidate);
@@ -62,7 +62,7 @@ export type TrustStore = z.infer<typeof trustStoreSchema>;
 export const emptyTrustStore: TrustStore = { version: 1, safety: [], replays: [], impacts: [], releases: [], events: [] };
 export async function artifactDigest(artifact: string) { const bytes = new TextEncoder().encode(artifact); const hash = await crypto.subtle.digest("SHA-256", bytes); return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2,"0")).join(""); }
 const safeSample = (value: unknown) => { const flags = screenDebrief({ sample: JSON.stringify(value) }); if (flags.length) throw new Error(`Remove flagged sample content: ${flags.map(f => f.kind).join(", ")}. Pattern checks are incomplete; never submit private data.`); };
-export type TrustCommand = { type: "safety"; input: SafetyInput } | { type: "replay"; input: ReplayInput } | { type: "impact"; input: ImpactInput } | { type: "release"; input: ReleaseInput } | { type: "signoff"; releaseId: string; reviewerId: string; note: string; consent: boolean } | { type: "revoke" | "rollback"; releaseId: string; actorId: string; consent: boolean };
+export type TrustCommand = { type: "safety" | "replay" | "impact" | "release"; input: unknown } | { type: "signoff"; releaseId: string; reviewerId: string; note: string; consent: boolean } | { type: "revoke" | "rollback"; releaseId: string; actorId: string; consent: boolean };
 export async function applyTrustCommand(current: TrustStore, g: GenesisStore, command: TrustCommand, recordId: string, at: string) {
  const store = structuredClone(trustStoreSchema.parse(current)); date.parse(at); safeSample(command); let actorId = "", target = recordId;
  if (command.type === "safety" || command.type === "replay" || command.type === "impact") {
