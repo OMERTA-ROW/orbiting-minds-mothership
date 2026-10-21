@@ -37,6 +37,8 @@
 - Trusted Release uses a separate validated browser-local store, Web Crypto sample-text digests and consent-bound rehearsals; hardware/deployment stay blocked, why: hashes and local signoffs are not signatures, authenticated audit or independent safety evidence.
 - Vault reuses Trust records, owner confirmation, exact comparisons and event-loaded parsers; Lounge uses Genesis consent, why: no signing/enrollment claims.
 - Nexus keeps separate consented local records and isolated base-version drafts; corrected example labels overlay stored data, why: preserve work without secure chat or execution claims.
-- OmniBridge/OMNI use inert registries and pure plans; OMNI uses AI Elements, one temporary UIMessage conversation and pause-checked event-only handoffs, why: absent history choices and verified inference, do not persist chat or fabricate streaming/model answers.
+- Public OMNI stays local DEMO; beta OMNI streams request-local Responses with verified identity/approval/owned context and no history or tools, why: inference grants no execution authority.
 - Entertainment/Cartoon use separate validated local stores, revision-bound reviews and fresh Guardian/Nexus pause checks, why: samples, timing and preparation exports confer no processing, rights clearance or publication.
-- CLI source stays in `cli/`, stdlib-only and offline, never web-imported; shared access policy stays inert/exportable data, why: product promises are not billing/auth entitlements and native work needs consent/review.
+- CLI remains offline source in `cli/`, never web-imported; access policy is inert/exportable, why: no billing/auth entitlement or signed distribution claims.
+- Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
+- Launch Control uses dated evidence, not editable PASS toggles, why: QA records cannot grant launch approval.

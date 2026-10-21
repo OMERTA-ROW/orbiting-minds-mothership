@@ -1,0 +1,16 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const mocks = vi.hoisted(() => ({ getUser: vi.fn(), access: vi.fn() }));
+vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ auth: { getUser: mocks.getUser }, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: mocks.access }) }) }) }) }));
+import { authenticateBetaAi, readBoundedJson } from "@/lib/beta-auth.server";
+const request = (headers: Record<string,string> = {}) => new Request("http://localhost:8080/api/omni", { method: "POST", headers: { origin: "http://localhost:8080", ...headers } });
+describe("server AI permission boundary", () => {
+  beforeEach(() => { vi.stubEnv("SUPABASE_URL", "https://example.test"); vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "test-publishable"); mocks.getUser.mockReset().mockResolvedValue({ data: { user: { id: "test-owner" } }, error: null }); mocks.access.mockReset().mockResolvedValue({ data: { ai_approved: true, paused: false }, error: null }); });
+  it("rejects anonymous requests before account/model access", async () => { await expect(authenticateBetaAi(request())).rejects.toMatchObject({ status: 401 }); expect(mocks.getUser).not.toHaveBeenCalled(); });
+  it("rejects foreign origin", async () => { await expect(authenticateBetaAi(request({ origin: "https://evil.test", authorization: "Bearer invalid" }))).rejects.toMatchObject({ status: 403 }); expect(mocks.getUser).not.toHaveBeenCalled(); });
+  it("revalidates and rejects expired tokens", async () => { mocks.getUser.mockResolvedValue({ data: { user: null }, error: new Error("expired") }); await expect(authenticateBetaAi(request({ authorization: "Bearer expired" }))).rejects.toMatchObject({ status: 401 }); expect(mocks.access).not.toHaveBeenCalled(); });
+  it("rejects unapproved sessions despite valid identity", async () => { mocks.access.mockResolvedValue({ data: { ai_approved: false, paused: false }, error: null }); await expect(authenticateBetaAi(request({ authorization: "Bearer test" }))).rejects.toMatchObject({ status: 403 }); });
+  it("rejects paused sessions", async () => { mocks.access.mockResolvedValue({ data: { ai_approved: true, paused: true }, error: null }); await expect(authenticateBetaAi(request({ authorization: "Bearer test" }))).rejects.toMatchObject({ status: 403 }); });
+  it("fails closed when permissions cannot be read", async () => { mocks.access.mockResolvedValue({ data: null, error: new Error("unavailable") }); await expect(authenticateBetaAi(request({ authorization: "Bearer test" }))).rejects.toMatchObject({ status: 503 }); });
+  it("rejects oversized body while reading", async () => { const req = new Request("http://localhost:8080/api/omni", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "x".repeat(12001) }) }); await expect(readBoundedJson(req)).rejects.toMatchObject({ status: 413 }); });
+  it("rejects malformed JSON", async () => { await expect(readBoundedJson(new Request("http://localhost:8080", { method: "POST", headers: { "content-type": "application/json" }, body: "{" }))).rejects.toMatchObject({ status: 400 }); });
+});
