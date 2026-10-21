@@ -4,7 +4,7 @@
 - [x] Audit hosted schema/grants/auth/AI; add four owner-scoped beta tables, revoke inherited broad grants and pass 23 retained live isolation checks.
 - [x] Implement login/signup/logout, private projects/agent declarations and test real login/save/readback/refresh/pause/logout/Back/second-account flow; no browser DEMO imports.
 - [x] Implement authenticated consented temporary OMNI; real browser model reply returned 173 input + 107 output = 280 tokens. QA approval revoked/accounts removed; no tools.
-- [x] Add dated Launch Control evidence and check desktop/mobile private beta plus estimator/export, preserving demos; 713 app tests and Go tests/vet pass.
+- [x] Add dated Launch Control evidence and check desktop/mobile private beta plus estimator/export, preserving demos; 718 app tests and Go tests/vet pass. Stream/denial tests use synthetic upstream; live Stop/timing remain unverified.
 - [ ] Complete auth delivery/OAuth/recovery, renewal and independent accessibility checks. Blocker: owner email/provider interaction and independent review; long-lived verification not yet recorded.
 - [ ] Enable one GitHub repository workflow. Blocker: connection access, repository selection and explicit owner approval for branch/PR writes; no unrelated edits.
 - [ ] Enforce beta request limits. Blocker: no standard backend rate limiter; custom implementation requires owner tradeoff approval.

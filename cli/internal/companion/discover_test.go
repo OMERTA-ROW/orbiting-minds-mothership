@@ -84,3 +84,17 @@ func TestDiscoverWindowsNameRules(t *testing.T) {
 		t.Fatal("Windows case/extension rule not applied")
 	}
 }
+
+func TestDiscoverRejectsIndirectOrRemotePathEntries(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "git"), []byte("inert"), 0700); err != nil { t.Fatal(err) }
+	for _, path := range []string{".", "relative", "//server/share", `\\server\share`} {
+		if discoveryMatches("git", path, runtime.GOOS) != 0 { t.Fatal("unsafe entry accepted") }
+	}
+	if runtime.GOOS == "windows" { return }
+	link := filepath.Join(t.TempDir(), "linked")
+	if err := os.Symlink(dir, link); err != nil { t.Fatal(err) }
+	if discoveryMatches("git", link, runtime.GOOS) != 0 { t.Fatal("symlink directory followed") }
+	if err := os.Symlink(filepath.Join(dir, "git"), filepath.Join(dir, "node")); err != nil { t.Fatal(err) }
+	if discoveryMatches("node", dir, runtime.GOOS) != 0 { t.Fatal("symlink executable followed") }
+}
