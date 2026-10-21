@@ -66,8 +66,9 @@ export function applyIncidentCommand(current: IncidentStore, genesis: GenesisSto
   if (command.type === "draft") store.debriefs.push({ id, createdAt: at, input, state: "Draft", privacyReviewerId: null, review: null, revision: 1 });
   else { const r = get(command.recordId); if (r.input.identityId !== input.identityId) throw new Error("Only the same local submitting identity can revise this draft."); r.input = input; r.state = "Draft"; r.privacyReviewerId = null; r.review = null; r.revision += 1; target = r.id; }
  } else if (command.type === "notice") {
-  requireDemoIdentity(genesis, command.actorId); const local = store.debriefs.find(r => r.id === command.caseId);
+  const actor = requireDemoIdentity(genesis, command.actorId); const local = store.debriefs.find(r => r.id === command.caseId);
   if (!local && !incidentExamples.some(r => r.id === command.caseId)) throw new Error("Case not found.");
+  if (!local && (!actor.scopes.includes("review_proposals") || actor.kind === "Agent operator")) throw new Error("A declared local human reviewer is needed to change authored examples. This is not real staff authorization.");
   if (local && local.input.identityId !== command.actorId) throw new Error("Only the local submitter can correct or withdraw this case.");
   const note = text.parse(command.note); if (screenDebrief({ note }).length) throw new Error("Remove potential sensitive values from the correction.");
   store.notices.push({ id, caseId: command.caseId, actorId: command.actorId, kind: command.kind, note, at });
@@ -100,6 +101,7 @@ export function effectiveDebriefState(r: Debrief, genesis: GenesisStore) {
  return r.state;
 }
 export function canPreviewDebrief(r: Debrief, genesis: GenesisStore) { return effectiveDebriefState(r, genesis) === "Preview approved"; }
+export function oracleEvidenceSplit(input: DebriefInput) { return { mode: "MANUAL_STRUCTURED_DEMO", facts: input.facts, observations: input.observed, hypotheses: input.hypotheses, unknowns: input.unknowns, proposedTests: input.tests, modelCalled: false, rootCauseConfirmed: false }; }
 export function externalPublicationGate() { return { allowed: false as const, identityVerified: false as const, authenticatedModerator: false as const, privateStorage: false as const, clipsPlayable: false as const, reason: "Real accounts, private artifacts, authenticated moderation and owner launch approval are not configured." }; }
 export function incidentMatches(item: { title: string; category: string; status: string; summary: string; system?: string; lessons?: string }, query: string, category: string, status: string) { return (!category || item.category === category) && (!status || item.status === status) && query.trim().toLowerCase().split(/\s+/).filter(Boolean).every(word => `${item.title} ${item.category} ${item.summary} ${item.system ?? ""} ${item.lessons ?? ""}`.toLowerCase().includes(word)); }
 export function isCaseTakenDown(store: IncidentStore, id: string) { return store.notices.some(n => n.caseId === id && n.kind === "Takedown"); }
