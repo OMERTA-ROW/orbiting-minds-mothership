@@ -3,8 +3,6 @@ Creates temporary QA accounts only; reads environment credentials without loggin
 All accounts, Forge checkpoints and private media are removed in finally.
 """
 import asyncio
-import io
-import json
 import math
 import os
 from pathlib import Path
@@ -90,7 +88,6 @@ async def main():
             check('radio process gate', not await forge.get_by_role('button',name='Create radio version').is_enabled())
             await forge.get_by_label('Approve radio processing').check()
             await forge.get_by_role('button',name='Create radio version').click()
-            await forge.get_by_role('button',name='Create radio version').wait_for(); await page.wait_for_timeout(2000); print('RADIO STATUS',await forge.get_by_role('status').all_text_contents()); await forge.screenshot(path=str(root/'radio-result.png'))
             await forge.get_by_text('Radio · revision 1',exact=True).wait_for(timeout=30000)
             await forge.get_by_role('button',name='Load version',exact=True).click()
             await forge.get_by_label('Forge edited audio',exact=True).wait_for()
@@ -98,6 +95,15 @@ async def main():
             await forge.scroll_into_view_if_needed()
             await page.screenshot(path=str(root/'radio-reviewed.png'))
             await forge.get_by_label('Review Forge export').check()
+            await forge.get_by_role('button',name='Record owner review').click()
+            await forge.get_by_role('button',name='Withdraw review',exact=True).wait_for()
+            radio_rows=call('GET','/rest/v1/forge_versions?kind=eq.radio&owner_id=eq.'+a['id'],token=a['token']).json()
+            if not call('DELETE','/rest/v1/forge_reviews?version_id=eq.'+radio_rows[0]['id'],token=a['token']).ok:
+                raise RuntimeError('Temporary review withdrawal failed')
+            async with page.expect_response(lambda r: r.request.method=='POST' and '/_serverFn/' in r.url):
+                await forge.get_by_role('button',name='Export saved radio').click()
+            await forge.get_by_role('status').get_by_text('Current saved version and owner export review required.',exact=False).wait_for()
+            check('fresh export rejects externally withdrawn cached review',not await forge.get_by_role('button',name='Export saved radio').is_enabled())
             await forge.get_by_role('button',name='Record owner review').click()
             await forge.get_by_role('button',name='Withdraw review',exact=True).wait_for()
             async with page.expect_download() as d:
@@ -152,6 +158,10 @@ async def main():
             await page.get_by_title('Web Forge preview',exact=True).scroll_into_view_if_needed(); await page.wait_for_timeout(500); await page.get_by_title('Web Forge preview',exact=True).screenshot(path=str(root/'web-mobile-preview.png'))
             check('mobile outer page has no horizontal overflow',await page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
             check('mobile drafted website has no horizontal overflow',await preview.locator('html').evaluate('(e)=>e.scrollWidth<=e.clientWidth'))
+            await forge.get_by_label('Web about').fill('LongUnbrokenCreatorStory'*60)
+            await preview.get_by_text('LongUnbrokenCreatorStory'*60,exact=True).wait_for()
+            check('mobile long story wraps without overflow',await preview.locator('html').evaluate('(e)=>e.scrollWidth<=e.clientWidth'))
+            await forge.get_by_role('button',name='Restore saved draft').click()
             await page.set_viewport_size({'width':1280,'height':1800})
             await forge.get_by_role('link',name='Ask OMNI',exact=True).click()
             await page.get_by_role('heading',name='OMNI',exact=True).wait_for()
