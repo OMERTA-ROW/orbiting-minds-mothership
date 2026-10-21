@@ -63,7 +63,9 @@ import { Route as UniverseRouteImport } from './routes/universe'
 import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
+import { Route as AuthenticatedBetaOmniRouteImport } from './routes/_authenticated/beta-omni'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
+import { Route as ApiOmniRouteImport } from './routes/api/omni'
 import { Route as CapsulesIdRouteImport } from './routes/capsules_.$id'
 import { Route as ChallengesIdRouteImport } from './routes/challenges_.$id'
 import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
@@ -340,9 +342,19 @@ const AuthenticatedBetaRoute = AuthenticatedBetaRouteImport.update({
   path: '/beta',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBetaOmniRoute = AuthenticatedBetaOmniRouteImport.update({
+  id: '/beta-omni',
+  path: '/beta-omni',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiEvolutionPathwayRoute = ApiEvolutionPathwayRouteImport.update({
   id: '/api/evolution-pathway',
   path: '/api/evolution-pathway',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOmniRoute = ApiOmniRouteImport.update({
+  id: '/api/omni',
+  path: '/api/omni',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CapsulesIdRoute = CapsulesIdRouteImport.update({
@@ -430,7 +442,9 @@ export interface FileRoutesByFullPath {
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
   '/beta': typeof AuthenticatedBetaRoute
+  '/beta-omni': typeof AuthenticatedBetaOmniRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/api/omni': typeof ApiOmniRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
@@ -492,7 +506,9 @@ export interface FileRoutesByTo {
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
   '/beta': typeof AuthenticatedBetaRoute
+  '/beta-omni': typeof AuthenticatedBetaOmniRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/api/omni': typeof ApiOmniRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
@@ -556,7 +572,9 @@ export interface FileRoutesById {
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
   '/_authenticated/beta': typeof AuthenticatedBetaRoute
+  '/_authenticated/beta-omni': typeof AuthenticatedBetaOmniRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
+  '/api/omni': typeof ApiOmniRoute
   '/capsules_/$id': typeof CapsulesIdRoute
   '/challenges_/$id': typeof ChallengesIdRoute
   '/code-exchange_/$id': typeof CodeExchangeIdRoute
@@ -620,7 +638,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/voice'
     | '/beta'
+    | '/beta-omni'
     | '/api/evolution-pathway'
+    | '/api/omni'
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
@@ -682,7 +702,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/voice'
     | '/beta'
+    | '/beta-omni'
     | '/api/evolution-pathway'
+    | '/api/omni'
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
@@ -745,7 +767,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/voice'
     | '/_authenticated/beta'
+    | '/_authenticated/beta-omni'
     | '/api/evolution-pathway'
+    | '/api/omni'
     | '/capsules_/$id'
     | '/challenges_/$id'
     | '/code-exchange_/$id'
@@ -809,6 +833,7 @@ export interface RootRouteChildren {
   UpdatesRoute: typeof UpdatesRoute
   VoiceRoute: typeof VoiceRoute
   ApiEvolutionPathwayRoute: typeof ApiEvolutionPathwayRoute
+  ApiOmniRoute: typeof ApiOmniRoute
   CapsulesIdRoute: typeof CapsulesIdRoute
   ChallengesIdRoute: typeof ChallengesIdRoute
   CodeExchangeIdRoute: typeof CodeExchangeIdRoute
@@ -1197,11 +1222,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBetaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/beta-omni': {
+      id: '/_authenticated/beta-omni'
+      path: '/beta-omni'
+      fullPath: '/beta-omni'
+      preLoaderRoute: typeof AuthenticatedBetaOmniRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/evolution-pathway': {
       id: '/api/evolution-pathway'
       path: '/api/evolution-pathway'
       fullPath: '/api/evolution-pathway'
       preLoaderRoute: typeof ApiEvolutionPathwayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/omni': {
+      id: '/api/omni'
+      path: '/api/omni'
+      fullPath: '/api/omni'
+      preLoaderRoute: typeof ApiOmniRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/capsules_/$id': {
@@ -1251,10 +1290,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
+  AuthenticatedBetaOmniRoute: typeof AuthenticatedBetaOmniRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBetaRoute: AuthenticatedBetaRoute,
+  AuthenticatedBetaOmniRoute: AuthenticatedBetaOmniRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -1315,6 +1356,7 @@ const rootRouteChildren: RootRouteChildren = {
   UpdatesRoute: UpdatesRoute,
   VoiceRoute: VoiceRoute,
   ApiEvolutionPathwayRoute: ApiEvolutionPathwayRoute,
+  ApiOmniRoute: ApiOmniRoute,
   CapsulesIdRoute: CapsulesIdRoute,
   ChallengesIdRoute: ChallengesIdRoute,
   CodeExchangeIdRoute: CodeExchangeIdRoute,
