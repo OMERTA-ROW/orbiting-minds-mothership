@@ -24,6 +24,7 @@ import { Route as DiscoveryRouteImport } from './routes/discovery'
 import { Route as EmbassyRouteImport } from './routes/embassy'
 import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GuardianRouteImport } from './routes/guardian'
+import { Route as IncidentArchivesRouteImport } from './routes/incident-archives'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
@@ -48,6 +49,7 @@ import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-
 import { Route as CapsulesIdRouteImport } from './routes/capsules_.$id'
 import { Route as ChallengesIdRouteImport } from './routes/challenges_.$id'
 import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
+import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archives_.$id'
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -123,6 +125,11 @@ const FleetRoute = FleetRouteImport.update({
 const GuardianRoute = GuardianRouteImport.update({
   id: '/guardian',
   path: '/guardian',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IncidentArchivesRoute = IncidentArchivesRouteImport.update({
+  id: '/incident-archives',
+  path: '/incident-archives',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinRoute = JoinRouteImport.update({
@@ -245,6 +252,11 @@ const CodeExchangeIdRoute = CodeExchangeIdRouteImport.update({
   path: '/code-exchange/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IncidentArchivesIdRoute = IncidentArchivesIdRouteImport.update({
+  id: '/incident-archives_/$id',
+  path: '/incident-archives/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoboticsIdRoute = RoboticsIdRouteImport.update({
   id: '/robotics_/$id',
   path: '/robotics/$id',
@@ -267,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/embassy': typeof EmbassyRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
@@ -291,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
+  '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
 }
 export interface FileRoutesByTo {
@@ -309,6 +323,7 @@ export interface FileRoutesByTo {
   '/embassy': typeof EmbassyRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
@@ -333,6 +348,7 @@ export interface FileRoutesByTo {
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
+  '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
 }
 export interface FileRoutesById {
@@ -352,6 +368,7 @@ export interface FileRoutesById {
   '/embassy': typeof EmbassyRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
@@ -376,6 +393,7 @@ export interface FileRoutesById {
   '/capsules_/$id': typeof CapsulesIdRoute
   '/challenges_/$id': typeof ChallengesIdRoute
   '/code-exchange_/$id': typeof CodeExchangeIdRoute
+  '/incident-archives_/$id': typeof IncidentArchivesIdRoute
   '/robotics_/$id': typeof RoboticsIdRoute
 }
 export interface FileRouteTypes {
@@ -396,6 +414,7 @@ export interface FileRouteTypes {
     | '/embassy'
     | '/fleet'
     | '/guardian'
+    | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
     | '/marketplace'
@@ -420,6 +439,7 @@ export interface FileRouteTypes {
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
+    | '/incident-archives/$id'
     | '/robotics/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -438,6 +458,7 @@ export interface FileRouteTypes {
     | '/embassy'
     | '/fleet'
     | '/guardian'
+    | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
     | '/marketplace'
@@ -462,6 +483,7 @@ export interface FileRouteTypes {
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
+    | '/incident-archives/$id'
     | '/robotics/$id'
   id:
     | '__root__'
@@ -480,6 +502,7 @@ export interface FileRouteTypes {
     | '/embassy'
     | '/fleet'
     | '/guardian'
+    | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
     | '/marketplace'
@@ -504,6 +527,7 @@ export interface FileRouteTypes {
     | '/capsules_/$id'
     | '/challenges_/$id'
     | '/code-exchange_/$id'
+    | '/incident-archives_/$id'
     | '/robotics_/$id'
   fileRoutesById: FileRoutesById
 }
@@ -523,6 +547,7 @@ export interface RootRouteChildren {
   EmbassyRoute: typeof EmbassyRoute
   FleetRoute: typeof FleetRoute
   GuardianRoute: typeof GuardianRoute
+  IncidentArchivesRoute: typeof IncidentArchivesRoute
   JoinRoute: typeof JoinRoute
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
   MarketplaceRoute: typeof MarketplaceRoute
@@ -547,6 +572,7 @@ export interface RootRouteChildren {
   CapsulesIdRoute: typeof CapsulesIdRoute
   ChallengesIdRoute: typeof ChallengesIdRoute
   CodeExchangeIdRoute: typeof CodeExchangeIdRoute
+  IncidentArchivesIdRoute: typeof IncidentArchivesIdRoute
   RoboticsIdRoute: typeof RoboticsIdRoute
 }
 
@@ -655,6 +681,13 @@ declare module '@tanstack/react-router' {
       path: '/guardian'
       fullPath: '/guardian'
       preLoaderRoute: typeof GuardianRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/incident-archives': {
+      id: '/incident-archives'
+      path: '/incident-archives'
+      fullPath: '/incident-archives'
+      preLoaderRoute: typeof IncidentArchivesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/join': {
@@ -825,6 +858,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CodeExchangeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/incident-archives_/$id': {
+      id: '/incident-archives_/$id'
+      path: '/incident-archives/$id'
+      fullPath: '/incident-archives/$id'
+      preLoaderRoute: typeof IncidentArchivesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/robotics_/$id': {
       id: '/robotics_/$id'
       path: '/robotics/$id'
@@ -851,6 +891,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmbassyRoute: EmbassyRoute,
   FleetRoute: FleetRoute,
   GuardianRoute: GuardianRoute,
+  IncidentArchivesRoute: IncidentArchivesRoute,
   JoinRoute: JoinRoute,
   KnowledgeFusionRoute: KnowledgeFusionRoute,
   MarketplaceRoute: MarketplaceRoute,
@@ -875,6 +916,7 @@ const rootRouteChildren: RootRouteChildren = {
   CapsulesIdRoute: CapsulesIdRoute,
   ChallengesIdRoute: ChallengesIdRoute,
   CodeExchangeIdRoute: CodeExchangeIdRoute,
+  IncidentArchivesIdRoute: IncidentArchivesIdRoute,
   RoboticsIdRoute: RoboticsIdRoute,
 }
 export const routeTree = rootRouteImport
