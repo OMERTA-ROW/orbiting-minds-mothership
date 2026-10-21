@@ -3,7 +3,11 @@ export function commandConflictPlan(evolutionOwned: boolean, omniOwned: boolean)
   return {
     installAllowed: !evolutionOwned,
     omniAliasAllowed: !evolutionOwned && !omniOwned,
-    command: evolutionOwned ? "Use a reviewed explicit executable path; resolve the evolution name first." : omniOwned ? "evolution omni" : "omni",
+    command: evolutionOwned
+      ? "Use a reviewed explicit executable path; resolve the evolution name first."
+      : omniOwned
+        ? "evolution omni"
+        : "omni",
     modifiesExistingTools: false,
   };
 }
