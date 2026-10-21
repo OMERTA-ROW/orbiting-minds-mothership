@@ -16,6 +16,7 @@ import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as ApprovalLedgerRouteImport } from './routes/approval-ledger'
 import { Route as CareRouteImport } from './routes/care'
 import { Route as CareAgentRouteImport } from './routes/care-agent'
+import { Route as CartoonGalaxyRouteImport } from './routes/cartoon-galaxy'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CodeExchangeRouteImport } from './routes/code-exchange'
 import { Route as CodeVaultRouteImport } from './routes/code-vault'
@@ -38,6 +39,7 @@ import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MothershipRouteImport } from './routes/mothership'
+import { Route as OmniRouteImport } from './routes/omni'
 import { Route as OmnibridgeRouteImport } from './routes/omnibridge'
 import { Route as OpenCallRouteImport } from './routes/open-call'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
@@ -98,6 +100,11 @@ const CareRoute = CareRouteImport.update({
 const CareAgentRoute = CareAgentRouteImport.update({
   id: '/care-agent',
   path: '/care-agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartoonGalaxyRoute = CartoonGalaxyRouteImport.update({
+  id: '/cartoon-galaxy',
+  path: '/cartoon-galaxy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChallengesRoute = ChallengesRouteImport.update({
@@ -208,6 +215,11 @@ const MarketplaceRoute = MarketplaceRouteImport.update({
 const MothershipRoute = MothershipRouteImport.update({
   id: '/mothership',
   path: '/mothership',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OmniRoute = OmniRouteImport.update({
+  id: '/omni',
+  path: '/omni',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OmnibridgeRoute = OmnibridgeRouteImport.update({
@@ -349,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/approval-ledger': typeof ApprovalLedgerRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
+  '/cartoon-galaxy': typeof CartoonGalaxyRoute
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/code-vault': typeof CodeVaultRoute
@@ -371,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
+  '/omni': typeof OmniRoute
   '/omnibridge': typeof OmnibridgeRoute
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
@@ -406,6 +420,7 @@ export interface FileRoutesByTo {
   '/approval-ledger': typeof ApprovalLedgerRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
+  '/cartoon-galaxy': typeof CartoonGalaxyRoute
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/code-vault': typeof CodeVaultRoute
@@ -428,6 +443,7 @@ export interface FileRoutesByTo {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
+  '/omni': typeof OmniRoute
   '/omnibridge': typeof OmnibridgeRoute
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
@@ -464,6 +480,7 @@ export interface FileRoutesById {
   '/approval-ledger': typeof ApprovalLedgerRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
+  '/cartoon-galaxy': typeof CartoonGalaxyRoute
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/code-vault': typeof CodeVaultRoute
@@ -486,6 +503,7 @@ export interface FileRoutesById {
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
+  '/omni': typeof OmniRoute
   '/omnibridge': typeof OmnibridgeRoute
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
@@ -523,6 +541,7 @@ export interface FileRouteTypes {
     | '/approval-ledger'
     | '/care'
     | '/care-agent'
+    | '/cartoon-galaxy'
     | '/challenges'
     | '/code-exchange'
     | '/code-vault'
@@ -545,6 +564,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/marketplace'
     | '/mothership'
+    | '/omni'
     | '/omnibridge'
     | '/open-call'
     | '/partnerships'
@@ -580,6 +600,7 @@ export interface FileRouteTypes {
     | '/approval-ledger'
     | '/care'
     | '/care-agent'
+    | '/cartoon-galaxy'
     | '/challenges'
     | '/code-exchange'
     | '/code-vault'
@@ -602,6 +623,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/marketplace'
     | '/mothership'
+    | '/omni'
     | '/omnibridge'
     | '/open-call'
     | '/partnerships'
@@ -637,6 +659,7 @@ export interface FileRouteTypes {
     | '/approval-ledger'
     | '/care'
     | '/care-agent'
+    | '/cartoon-galaxy'
     | '/challenges'
     | '/code-exchange'
     | '/code-vault'
@@ -659,6 +682,7 @@ export interface FileRouteTypes {
     | '/knowledge-fusion'
     | '/marketplace'
     | '/mothership'
+    | '/omni'
     | '/omnibridge'
     | '/open-call'
     | '/partnerships'
@@ -695,6 +719,7 @@ export interface RootRouteChildren {
   ApprovalLedgerRoute: typeof ApprovalLedgerRoute
   CareRoute: typeof CareRoute
   CareAgentRoute: typeof CareAgentRoute
+  CartoonGalaxyRoute: typeof CartoonGalaxyRoute
   ChallengesRoute: typeof ChallengesRoute
   CodeExchangeRoute: typeof CodeExchangeRoute
   CodeVaultRoute: typeof CodeVaultRoute
@@ -717,6 +742,7 @@ export interface RootRouteChildren {
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
   MarketplaceRoute: typeof MarketplaceRoute
   MothershipRoute: typeof MothershipRoute
+  OmniRoute: typeof OmniRoute
   OmnibridgeRoute: typeof OmnibridgeRoute
   OpenCallRoute: typeof OpenCallRoute
   PartnershipsRoute: typeof PartnershipsRoute
@@ -794,6 +820,13 @@ declare module '@tanstack/react-router' {
       path: '/care-agent'
       fullPath: '/care-agent'
       preLoaderRoute: typeof CareAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cartoon-galaxy': {
+      id: '/cartoon-galaxy'
+      path: '/cartoon-galaxy'
+      fullPath: '/cartoon-galaxy'
+      preLoaderRoute: typeof CartoonGalaxyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/challenges': {
@@ -948,6 +981,13 @@ declare module '@tanstack/react-router' {
       path: '/mothership'
       fullPath: '/mothership'
       preLoaderRoute: typeof MothershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/omni': {
+      id: '/omni'
+      path: '/omni'
+      fullPath: '/omni'
+      preLoaderRoute: typeof OmniRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/omnibridge': {
@@ -1143,6 +1183,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApprovalLedgerRoute: ApprovalLedgerRoute,
   CareRoute: CareRoute,
   CareAgentRoute: CareAgentRoute,
+  CartoonGalaxyRoute: CartoonGalaxyRoute,
   ChallengesRoute: ChallengesRoute,
   CodeExchangeRoute: CodeExchangeRoute,
   CodeVaultRoute: CodeVaultRoute,
@@ -1165,6 +1206,7 @@ const rootRouteChildren: RootRouteChildren = {
   KnowledgeFusionRoute: KnowledgeFusionRoute,
   MarketplaceRoute: MarketplaceRoute,
   MothershipRoute: MothershipRoute,
+  OmniRoute: OmniRoute,
   OmnibridgeRoute: OmnibridgeRoute,
   OpenCallRoute: OpenCallRoute,
   PartnershipsRoute: PartnershipsRoute,

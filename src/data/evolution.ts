@@ -176,6 +176,33 @@ export const entertainmentAdapters = [
  {id:"runner",name:"Independent media test runner",studio:"crucible",state:"NOT CONNECTED",capabilities:"Future codec / render / audio regressions",scope:"Selected artifacts in isolated test sandbox · future",compatibility:"No decoder, runner or test evidence connected",cost:"CI / compute unknown",blocker:"Signed runner, artifact provenance and independent evidence",docs:""},
 ] as const;
 
+// Cartoon Galaxy: original fictional development samples, not cleared production IP.
+export const cartoonSample = {
+ title:"Pip & Moss: The Seedlight Voyages",audience:"6–9 + family",format:"2D cutout",logline:"A curious seed courier and a patient garden robot restore floating greenhouses through kindness and careful observation.",
+ world:"The Seedlight Archipelago: small floating gardens, shared tools and warm lantern paths. No villains, weapons or unsafe imitable experiments.",
+ rules:"Pip asks before borrowing. Moss never moves a garden without its caretaker. Conflicts resolve through repair, listening and teamwork.",
+ learning:"Practice turn-taking and observation. Educational benefit is a creative goal, not an independently validated claim.",
+ credit:"Fictional Evolution creator / generated concept reference",license:"Original authored fictional pitch and AI-generated prototype artwork. No imported character IP. Legal originality and distribution clearance unverified.",
+ voices:"Uncast original voices; adult talent consent and license required. No cloned performer or child recording.",music:"Original score to be commissioned; no music imported or licensed yet.",
+ characters:[
+  {id:"pip",name:"Pip",personality:"Curious, generous and impatient; learns that waiting can be part of helping.",silhouette:"Round teal seed body, three gold leaves, coral satchel and amber boots.",continuity:"Three leaves in every angle; satchel strap from right shoulder to left hip; boots remain amber.",rig:"Proposed 2D cutout: body, leaves, face, satchel and boots. No rig file exists."},
+  {id:"moss",name:"Moss",personality:"Patient gardener robot; asks questions before offering solutions.",silhouette:"Tall square shoulders, gold body, coral limbs and transparent plant terrarium.",continuity:"Plant stays inside belly; coral forearms and shins; no human likeness.",rig:"Proposed 3D reference: separate limbs and terrarium mesh. Blender/Unity NOT CONNECTED."},
+ ],
+} as const;
+export const cartoonEpisodes=[
+ {id:"lantern",title:"The Lantern That Needed a Nap",premise:"Pip tries to brighten every lantern at once; Moss suggests sharing one light and resting the garden.",beats:["Pip finds a dim lantern beside a sleepy seedling.","Pip and Moss compare light gently, without plugging in any real device.","They share a warm lantern and let the garden rest."],duration:12},
+ {id:"bridge",title:"The Little Bridge of Leaves",premise:"A garden path has a gap. Pip asks the caretakers for help instead of borrowing their leaves without permission.",beats:["A missing stepping stone pauses the seed delivery.","The caretakers offer fallen leaves; Pip and Moss plan a pretend bridge together.","Everyone crosses only in the fictional story and celebrates asking first."],duration:10},
+] as const;
+export const cartoonReviewChecks=[
+ {id:"originality",label:"Original character and series design reviewed"},
+ {id:"provenance",label:"Source provenance, creator credits and license gaps reviewed"},
+ {id:"voice",label:"No performer impersonation; voice and music rights reviewed"},
+ {id:"age",label:"Age suitability and imitable-behavior risks reviewed"},
+ {id:"privacy",label:"No child personal data, recordings or behavioral profiling"},
+ {id:"inclusive",label:"Inclusive storytelling and educational claim limits reviewed"},
+ {id:"technical",label:"Continuity, captions, timing and unrun technical checks reviewed"},
+] as const;
+
 export const demoProposals = [
   { id: "P-104", t: "Reduce bundle size 18%", p: "Nebula UI Kit", s: "Awaiting approval" },
   { id: "P-105", t: "Focus-visible ring tokens", p: "Nebula UI Kit", s: "In sandbox" },

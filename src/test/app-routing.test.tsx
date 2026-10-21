@@ -20,7 +20,7 @@ describe("App routing", () => {
     "/robotics", "/open-call", "/incident-archives", "/agent-debrief",
     "/physical-safety", "/experiment-replay", "/approval-ledger", "/impact-scorecard",
     "/code-vault", "/agent-lounge",
-    "/command-nexus", "/omnibridge", "/entertainment",
+    "/command-nexus", "/omnibridge", "/omni", "/entertainment", "/cartoon-galaxy",
     "/agents", "/sandbox", "/roadmap", "/partnerships", "/dashboard", "/join", "/pathway", "/code-exchange", "/commons", "/pulse",
     "/challenges", "/embassy", "/sdk", "/discovery", "/digital-twin", "/trust", "/marketplace", "/compute-grid", "/releases", "/care", "/updates", "/pilot", "/voice", "/care-agent", "/devices", "/fleet", "/security-report",
   ])("preserves the existing %s page", (path) => {

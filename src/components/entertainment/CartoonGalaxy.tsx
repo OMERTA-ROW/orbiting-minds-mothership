@@ -1,0 +1,983 @@
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import {
+  ArrowUpRight,
+  BookOpen,
+  Check,
+  Clapperboard,
+  Download,
+  History,
+  Layers,
+  Save,
+  Shield,
+  Users,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { DemoBadge } from "@/components/evo";
+import { cartoonEpisodes, cartoonReviewChecks, nexusProjects } from "@/data/evolution";
+import { useCartoon, readCreativePause } from "@/hooks/use-cartoon";
+import {
+  seedCartoon,
+  cartoonDraftSchema,
+  cartoonTiming,
+  cartoonRoles,
+  cartoonExport,
+  type CartoonDraft,
+  type CartoonCommand,
+} from "@/lib/cartoon";
+import { compareMediaMetrics } from "@/lib/entertainment";
+import { downloadCreative } from "./CreativeRegistry";
+import art from "@/assets/cartoon-galaxy.jpg";
+import characters from "@/assets/cartoon-characters.jpg";
+
+function Field({
+  name,
+  label,
+  value,
+  long = false,
+}: {
+  name: string;
+  label: string;
+  value: string;
+  long?: boolean;
+}) {
+  return (
+    <label className="block min-w-0 text-xs text-muted-foreground">
+      {label}
+      {long ? (
+        <textarea
+          aria-label={label}
+          name={name}
+          defaultValue={value}
+          required
+          minLength={3}
+          maxLength={1000}
+          rows={3}
+          className="exchange-select mt-2 w-full"
+        />
+      ) : (
+        <input
+          aria-label={label}
+          name={name}
+          defaultValue={value}
+          required
+          minLength={2}
+          maxLength={150}
+          className="exchange-select mt-2 w-full"
+        />
+      )}
+    </label>
+  );
+}
+export function CartoonGalaxy() {
+  const { store, ready, issue, paused, dispatch } = useCartoon();
+  const [worldId, setWorld] = useState("nexus-studio"),
+    [chosen, setChosen] = useState("new"),
+    [seed, setSeed] = useState(seedCartoon()),
+    [view, setView] = useState("bible"),
+    [notice, setNotice] = useState("");
+  const plans = store.plans.filter((p) => p.worldId === worldId),
+    p = chosen === "new" ? undefined : (plans.find((p) => p.id === chosen) ?? plans.at(-1)),
+    draft = p ?? seed,
+    blocked = paused || p?.state === "Withdrawn";
+  const run = (cmd: CartoonCommand) => {
+    try {
+      dispatch(cmd);
+      setNotice(
+        cmd.type === "review"
+          ? "Editorial DEMO review recorded for this revision. Distribution remains blocked."
+          : cmd.type === "restore"
+            ? "Planning checkpoint restored as a new unreviewed revision; no media restored."
+            : "Fictional record saved locally; no model, renderer or media service called.",
+      );
+      return true;
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Action blocked.");
+      return false;
+    }
+  };
+  const save = (next: CartoonDraft) => {
+    if (p) run({ type: "edit", id: p.id, worldId, draft: next });
+    else setSeed(cartoonDraftSchema.parse(next));
+  };
+  const exportPitch = (delivery: boolean) => {
+    if (!p) return;
+    try {
+      if (delivery && (paused || readCreativePause()))
+        throw new Error(
+          "Local planning paused; delivery preparation blocked. Working export remains available.",
+        );
+      downloadCreative(
+        delivery ? "cartoon-delivery-preparation-demo.json" : "cartoon-working-pitch-demo.json",
+        cartoonExport(store, p.id, worldId, delivery),
+      );
+      setNotice(
+        delivery
+          ? "DEMO preparation exported; no media, certified rights or publication authorization."
+          : "Working pitch exported for the selected world only.",
+      );
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Export blocked.");
+    }
+  };
+  return (
+    <main className="pb-20">
+      <header className="relative h-[470px] overflow-hidden border-b border-gold/30 md:h-[450px]">
+        <img
+          src={art}
+          alt="Original generated fictional cartoon concept: Pip the seed courier and Moss the garden robot in a floating greenhouse village; not a rendered episode"
+          width={1600}
+          height={896}
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full object-cover object-right"
+        />
+        <div className="open-call-shade pointer-events-none absolute inset-0" />
+        <div className="relative mx-auto flex h-full max-w-[1600px] flex-col justify-center px-5 py-8 md:px-10">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="eyebrow text-[10px]">Entertainment / original family animation</span>
+            <DemoBadge label="LOCAL DEMO · NO MEDIA SERVICES" />
+          </div>
+          <h1 className="mt-6 text-4xl leading-tight md:text-5xl">
+            Cartoon
+            <br />
+            Galaxy
+          </h1>
+          <p className="mt-5 max-w-sm text-sm leading-7">
+            Little characters. Whole new worlds.
+            <br />
+            Original stories, thoughtfully made.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button
+              variant="cosmic"
+              onClick={() => {
+                setView("bible");
+                document.getElementById("cartoon-workbench")?.scrollIntoView({ block: "start" });
+              }}
+            >
+              <BookOpen size={15} />
+              Develop a series
+            </Button>
+            <Button asChild variant="signal">
+              <Link to="/entertainment">
+                Entertainment Galaxy
+                <ArrowUpRight size={14} />
+              </Link>
+            </Button>
+          </div>
+          <p className="mt-5 max-w-sm text-[10px] leading-5 text-muted-foreground">
+            Generated original concept reference · not partner IP, a finished film or legally
+            certified originality.
+          </p>
+        </div>
+      </header>
+      <div className="mx-auto max-w-[1600px] px-5 pt-7 md:px-10">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <label className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <Layers size={14} />
+            Project world
+            <select
+              aria-label="Cartoon world"
+              value={worldId}
+              className="exchange-select max-w-full"
+              onChange={(e) => {
+                setWorld(e.target.value);
+                setChosen("new");
+                setSeed(seedCartoon());
+                setNotice("");
+              }}
+            >
+              {nexusProjects.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} · DEMO
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button asChild variant="signal" size="sm">
+            <Link to="/omni" search={{ world: worldId }}>
+              OMNI / coordination
+              <ArrowUpRight size={13} />
+            </Link>
+          </Button>
+        </div>
+        <p className="mt-4 text-xs leading-6 text-warning">
+          Fictional non-sensitive samples only. Local records are editable, not account-secure. No
+          child data, recordings, copyrighted cloning, performer impersonation or studio
+          partnerships. Actual rigs, animation, sound, media QA and distribution: NOT CONNECTED.
+        </p>
+        {(notice || issue || paused) && (
+          <p
+            role="status"
+            className="mt-5 border-l border-warning px-4 py-3 text-xs leading-6 text-warning"
+          >
+            {paused
+              ? "Guardian or Nexus local planning paused. Withdrawal and working export remain available. "
+              : ""}
+            {issue || notice}
+          </p>
+        )}
+        <div id="cartoon-workbench" className="mt-7 scroll-mt-28">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-y border-border py-5">
+            <label className="min-w-0 text-xs text-muted-foreground">
+              Saved series pitch
+              <select
+                aria-label="Saved cartoon pitch"
+                value={p?.id ?? "new"}
+                className="exchange-select mt-2 w-full"
+                onChange={(e) => setChosen(e.target.value)}
+              >
+                <option value="new">New original sample pitch</option>
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title} · v{p.revision} · {p.state}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <span className="font-mono text-[10px] text-warning">
+              {p ? `${p.state.toUpperCase()} · v${p.revision}` : "UNSAVED ORIGINAL SAMPLE"} · TESTS
+              NOT RUN · UNSIGNED
+            </span>
+            {p && (
+              <Button variant="ghost" size="sm" onClick={() => exportPitch(false)}>
+                <Download size={14} />
+                Export working pitch
+              </Button>
+            )}
+          </div>
+          <Tabs value={view} onValueChange={setView} className="mt-6">
+            <TabsList
+              aria-label="Cartoon views"
+              className="mb-7 h-auto w-full flex-wrap justify-start gap-1 rounded-sm border border-border bg-background p-1 sm:w-auto"
+            >
+              {[
+                { id: "bible", label: "Pitch & show bible", icon: BookOpen },
+                { id: "characters", label: "Character Genesis", icon: Users },
+                { id: "scenes", label: "Storyboard & timeline", icon: Clapperboard },
+                { id: "review", label: "Editorial & export", icon: Shield },
+                { id: "adapters", label: "Animation adapters", icon: Layers },
+              ].map((t) => (
+                <TabsTrigger key={t.id} value={t.id} className="text-xs">
+                  <t.icon size={13} className="mr-2" />
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <TabsContent value="bible">
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+                <section className="min-w-0">
+                  <p className="eyebrow">Writers room / human-owned declarations</p>
+                  <h2 className="mt-4 text-3xl">A world worth returning to.</h2>
+                  <form
+                    key={`${p?.id ?? "new"}-${p?.revision ?? seed.episodeTitle}`}
+                    className="mt-6 space-y-5"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const f = new FormData(e.currentTarget);
+                      try {
+                        const next = cartoonDraftSchema.parse({
+                          ...draft,
+                          ...Object.fromEntries(
+                            [
+                              "title",
+                              "logline",
+                              "world",
+                              "rules",
+                              "learning",
+                              "credit",
+                              "license",
+                              "voices",
+                              "music",
+                            ].map((k) => [k, String(f.get(k))]),
+                          ),
+                          audience: f.get("audience"),
+                          format: f.get("format"),
+                        });
+                        if (p) save(next);
+                        else if (
+                          run({ type: "create", worldId, draft: next, consent: f.has("consent") })
+                        )
+                          setChosen("latest");
+                      } catch (err) {
+                        setNotice(err instanceof Error ? err.message : "Check the sample pitch.");
+                      }
+                    }}
+                  >
+                    <Field name="title" label="Series title" value={draft.title} />
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <label className="text-xs text-muted-foreground">
+                        Audience goal
+                        <select
+                          aria-label="Audience goal"
+                          name="audience"
+                          defaultValue={draft.audience}
+                          className="exchange-select mt-2 w-full"
+                        >
+                          {["3–5 + caregiver", "6–9 + family", "10–12 + family"].map((v) => (
+                            <option key={v}>{v}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-xs text-muted-foreground">
+                        Animation format
+                        <select
+                          aria-label="Animation format"
+                          name="format"
+                          defaultValue={draft.format}
+                          className="exchange-select mt-2 w-full"
+                        >
+                          <option>2D cutout</option>
+                          <option>3D concept</option>
+                        </select>
+                      </label>
+                    </div>
+                    <Field name="logline" label="Series logline" value={draft.logline} long />
+                    <Field name="world" label="World lore" value={draft.world} long />
+                    <Field name="rules" label="Series continuity rules" value={draft.rules} long />
+                    <Field
+                      name="learning"
+                      label="Learning objective / evidence limits"
+                      value={draft.learning}
+                      long
+                    />
+                    <details className="border-t border-border pt-4" open>
+                      <summary className="cursor-pointer text-sm text-gold-light">
+                        Provenance, licensing & sound
+                      </summary>
+                      <div className="mt-5 space-y-5">
+                        <Field name="credit" label="Creator credit" value={draft.credit} />
+                        <Field
+                          name="license"
+                          label="Originality / source license declaration"
+                          value={draft.license}
+                          long
+                        />
+                        <Field
+                          name="voices"
+                          label="Voice casting / consent plan"
+                          value={draft.voices}
+                          long
+                        />
+                        <Field name="music" label="Music rights plan" value={draft.music} long />
+                      </div>
+                    </details>
+                    {!p && (
+                      <label className="flex items-start gap-2 text-xs leading-5">
+                        <input name="consent" type="checkbox" required />I consent to browser-local
+                        storage of this fictional, non-sensitive sample. No private or child data.
+                      </label>
+                    )}
+                    <Button type="submit" variant="cosmic" disabled={!ready || blocked}>
+                      <Save size={14} />
+                      {p ? "Save bible revision" : "Create local series pitch"}
+                    </Button>
+                  </form>
+                </section>
+                <aside className="min-w-0 border-l border-gold/30 pl-5">
+                  <p className="eyebrow">Original episode pitches</p>
+                  <div className="mt-5 space-y-5">
+                    {cartoonEpisodes.map((e) => (
+                      <article key={e.id} className="rounded-sm border border-border p-5">
+                        <span className="text-[9px] font-mono text-warning">
+                          AUTHORED FICTION / DEMO
+                        </span>
+                        <h3 className="mt-3 text-lg leading-7">{e.title}</h3>
+                        <p className="mt-3 text-xs leading-6 text-muted-foreground">{e.premise}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-4"
+                          disabled={blocked}
+                          onClick={() => {
+                            const next = seedCartoon(e.id);
+                            save({
+                              ...cartoonDraftSchema.parse(draft),
+                              episodeTitle: next.episodeTitle,
+                              premise: next.premise,
+                              scenes: next.scenes,
+                            });
+                          }}
+                        >
+                          Use episode pitch
+                          <ArrowUpRight size={13} />
+                        </Button>
+                      </article>
+                    ))}
+                  </div>
+                  <p className="mt-5 text-xs leading-7 text-muted-foreground">
+                    Descriptions and artwork are original prototype examples, not an assurance of IP
+                    clearance. Human writers remain credited; no AI writer or external studio is
+                    enrolled.
+                  </p>
+                </aside>
+              </div>
+            </TabsContent>
+            <TabsContent value="characters">
+              <section>
+                <p className="eyebrow">Character Genesis / concept references</p>
+                <h2 className="mt-4 text-3xl">Keep the cast recognizable.</h2>
+                <img
+                  src={characters}
+                  alt="Generated reference model sheet: front, side and back views of original fictional Pip and Moss; concept-only, not a validated rig or turntable"
+                  width={1536}
+                  height={1024}
+                  loading="lazy"
+                  className="mt-6 max-h-[580px] w-full rounded-sm object-contain"
+                />
+                <p className="mt-3 text-[10px] leading-5 text-warning">
+                  Generated static sheet · not a turntable, rig, frame QA or proof of consistency.
+                  Written revisions do not alter this reference image.
+                </p>
+                <form
+                  key={`${p?.id ?? "new"}-${p?.revision ?? seed.episodeTitle}`}
+                  className="mt-7"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const f = new FormData(e.currentTarget);
+                    try {
+                      save(
+                        cartoonDraftSchema.parse({
+                          ...draft,
+                          characters: draft.characters.map((c) => ({
+                            ...c,
+                            ...Object.fromEntries(
+                              ["name", "personality", "silhouette", "continuity", "rig"].map(
+                                (k) => [k, String(f.get(`${c.id}-${k}`))],
+                              ),
+                            ),
+                          })),
+                        }),
+                      );
+                    } catch (err) {
+                      setNotice(err instanceof Error ? err.message : "Character review blocked.");
+                    }
+                  }}
+                >
+                  <div className="grid gap-8 md:grid-cols-2">
+                    {draft.characters.map((c) => (
+                      <div key={c.id} className="space-y-5 border-t border-gold/30 pt-5">
+                        <h3 className="text-2xl">
+                          {c.name} / {c.id}
+                        </h3>
+                        {[
+                          { id: "name", label: "Name" },
+                          { id: "personality", label: "Personality / story role" },
+                          { id: "silhouette", label: "Model sheet / shape language" },
+                          { id: "continuity", label: "Turnaround / episode continuity" },
+                          { id: "rig", label: "Rig / pose-library plan" },
+                        ].map((k) => (
+                          <Field
+                            key={k.id}
+                            name={`${c.id}-${k.id}`}
+                            label={`${c.id} ${k.label}`}
+                            value={c[k.id as keyof typeof c]}
+                            long={k.id !== "name"}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  <Button type="submit" className="mt-6" variant="signal" disabled={blocked}>
+                    <Save size={14} />
+                    {p ? "Save character revision" : "Update unsaved characters"}
+                  </Button>
+                </form>
+              </section>
+            </TabsContent>
+            <TabsContent value="scenes">
+              <section>
+                <p className="eyebrow">Storyboard / timing rehearsal</p>
+                <h2 className="mt-4 text-3xl">{draft.episodeTitle}</h2>
+                <p className="mt-4 text-sm leading-7 text-muted-foreground">{draft.premise}</p>
+                <Storyboard
+                  key={`${p?.id ?? "new"}-${p?.revision ?? seed.episodeTitle}`}
+                  draft={draft}
+                  blocked={Boolean(blocked)}
+                  save={save}
+                  onError={setNotice}
+                />
+              </section>
+            </TabsContent>
+            <TabsContent value="review">
+              <div className="grid gap-8 lg:grid-cols-2">
+                <section>
+                  <p className="eyebrow">Human originality & editorial scorecard</p>
+                  <h2 className="mt-4 text-3xl">A judgment, not an AI certainty.</h2>
+                  <p className="mt-4 text-xs leading-7 text-muted-foreground">
+                    Review the current written bible, declared rights, character continuity and
+                    scene status. These are human declarations, not legal certification or
+                    independent media tests.
+                  </p>
+                  {!p ? (
+                    <p className="mt-6 text-warning text-xs">
+                      Save a series pitch before recording editorial review.
+                    </p>
+                  ) : p.state === "Proposed" ? (
+                    <form
+                      key={`${p.id}-${p.revision}`}
+                      className="mt-6 space-y-4"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const f = new FormData(e.currentTarget);
+                        run({
+                          type: "review",
+                          worldId,
+                          id: p.id,
+                          reviewer: String(f.get("reviewer")),
+                          notes: String(f.get("notes")),
+                          checks: f.getAll("check").map(String),
+                          publicationIntent: f.has("publication"),
+                        });
+                      }}
+                    >
+                      <Field name="reviewer" label="Declared cartoon editor" value="" />
+                      <Field
+                        name="notes"
+                        label="Originality assessment / evidence gaps"
+                        value=""
+                        long
+                      />
+                      {cartoonReviewChecks.map((c) => (
+                        <label key={c.id} className="flex items-start gap-2 text-xs leading-6">
+                          <input
+                            className="mt-1"
+                            name="check"
+                            value={c.id}
+                            type="checkbox"
+                            required
+                          />
+                          {c.label}
+                        </label>
+                      ))}
+                      <label className="flex items-start gap-2 text-xs leading-6">
+                        <input className="mt-1" name="publication" type="checkbox" required />I
+                        approve DEMO delivery preparation for this revision only; actual publishing
+                        is separately blocked.
+                      </label>
+                      <Button type="submit" variant="signal" disabled={blocked}>
+                        <Check size={14} />
+                        Record editorial DEMO review
+                      </Button>
+                    </form>
+                  ) : (
+                    <div className="mt-6 border-l border-gold/30 pl-4">
+                      <p className="text-xs text-warning">
+                        {p.state} · v{p.revision}
+                      </p>
+                      {p.review && (
+                        <>
+                          <p className="mt-4 text-xs leading-7">
+                            Declared editor: {p.review.reviewer}
+                            <br />
+                            Review declarations: {p.review.checks.length} /{" "}
+                            {cartoonReviewChecks.length}
+                            <br />
+                            Originality assessment: {p.review.notes}
+                            <br />
+                            Review time: {p.review.at}
+                          </p>
+                          <p className="mt-3 text-xs leading-6 text-muted-foreground">
+                            No computed originality score. This identity and review are not
+                            independently verified.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </section>
+                <section className="border-l border-gold/30 pl-6">
+                  <h2 className="text-2xl">Delivery readiness</h2>
+                  <dl className="mt-5 space-y-4 text-xs">
+                    <div>
+                      <dt className="text-muted-foreground">Written pitch / timing</dt>
+                      <dd className="mt-2 text-gold-light">
+                        {p ? "Local sample saved" : "Unsaved sample"} · bounded arithmetic only
+                      </dd>
+                    </div>
+                    {[
+                      "Final animation / rig",
+                      "Rights-cleared recorded voices and music",
+                      "Independent frame / render / captions QA",
+                      "Authenticated owner / destination",
+                    ].map((v) => (
+                      <div key={v}>
+                        <dt className="text-muted-foreground">{v}</dt>
+                        <dd className="mt-2 text-warning">UNVERIFIED / NOT CONNECTED</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-6 text-xs leading-7 text-warning">
+                    No distribution-ready media exists. Export prepares a DEMO JSON
+                    pitch/bible/timeline, not rendered assets, verified rights or an authorized
+                    upload.
+                  </p>
+                  <Button
+                    className="mt-5 h-auto whitespace-normal py-3"
+                    variant="cosmic"
+                    disabled={!p || blocked || p.state !== "Editorial reviewed DEMO"}
+                    onClick={() => exportPitch(true)}
+                  >
+                    <Download size={14} />
+                    Export reviewed delivery preparation
+                  </Button>
+                  {p && (
+                    <>
+                      <details className="mt-7">
+                        <summary className="flex cursor-pointer items-center gap-2 text-xs text-gold-light">
+                          <History size={14} />
+                          Local revision checkpoints
+                        </summary>
+                        <div className="mt-4 space-y-3">
+                          {p.checkpoints.map((c) => (
+                            <div
+                              key={c.revision}
+                              className="flex flex-wrap justify-between gap-3 border-b border-border pb-3"
+                            >
+                              <span className="text-xs">
+                                v{c.revision} · {c.draft.episodeTitle}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={blocked || c.revision === p.revision}
+                                onClick={() =>
+                                  run({ type: "restore", worldId, id: p.id, revision: c.revision })
+                                }
+                              >
+                                Restore v{c.revision}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                      {p.state !== "Withdrawn" && (
+                        <Button
+                          variant="ghost"
+                          className="mt-5"
+                          size="sm"
+                          onClick={() => run({ type: "withdraw", worldId, id: p.id })}
+                        >
+                          Withdraw local consent
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </section>
+              </div>
+            </TabsContent>
+            <TabsContent value="adapters">
+              <section>
+                <p className="eyebrow">Animation Studio / supported interfaces need evidence</p>
+                <h2 className="mt-4 text-3xl">A pipeline, not a hidden connection.</h2>
+                <div className="mt-6 grid gap-6 md:grid-cols-2">
+                  {[
+                    {
+                      title: "2D cutout / animatic",
+                      cap: "Pose-library, shot timing and layered-asset handoff",
+                      gate: "Selected licensed tool and validated open interchange; no asset or rig attached.",
+                    },
+                    {
+                      title: "Blender / 3D rig & render",
+                      cap: "Proposed meshes, facial shapes, pinned scene and render QA",
+                      gate: "Signed companion, reviewed scripts, exact hashes and isolated outputs. No Blender call.",
+                    },
+                    {
+                      title: "Unity / scene pipeline",
+                      cap: "Proposed scene / animation import and compatibility review",
+                      gate: "Pinned editor, licensed project and independent build evidence. No Unity call.",
+                    },
+                    {
+                      title: "Voices / music / dubbing",
+                      cap: "Casting, pronunciation and localization notes",
+                      gate: "Adult talent consent, licenses, synthetic-voice disclosure and human audio QA. No voice cloning.",
+                    },
+                    {
+                      title: "Frame / scene Crucible",
+                      cap: "Expected frame counts, continuity and caption QA plans",
+                      gate: "Actual decoder/render, independent evidence and source assets missing.",
+                    },
+                    {
+                      title: "Distribution",
+                      cap: "Human-reviewed pitch / delivery preparation",
+                      gate: "Separate destination grant, final media rights/privacy approval and final publish confirmation.",
+                    },
+                  ].map((a) => (
+                    <article key={a.title} className="rounded-sm border border-border p-5">
+                      <span className="font-mono text-[9px] text-warning">
+                        NOT CONNECTED · AVAILABLE ONLY AFTER AUTH + ADAPTER REVIEW
+                      </span>
+                      <h3 className="mt-3 text-xl">{a.title}</h3>
+                      <p className="mt-4 text-xs leading-7 text-muted-foreground">
+                        {a.cap}
+                        <br />
+                        {a.gate}
+                        <br />
+                        Cost: unconfigured · latest connectivity: never verified · evidence: NOT RUN
+                      </p>
+                    </article>
+                  ))}
+                </div>
+                <Button asChild variant="signal" className="mt-6">
+                  <Link to="/entertainment">
+                    Full creative capability atlas
+                    <ArrowUpRight size={14} />
+                  </Link>
+                </Button>
+              </section>
+            </TabsContent>
+          </Tabs>
+        </div>
+        <nav className="mt-10 flex flex-wrap gap-3 border-t border-border pt-6">
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/guardian">
+              <Shield size={14} />
+              Guardian
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/experiment-replay">
+              Oracle Replay
+              <ArrowUpRight size={13} />
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/command-nexus">
+              Command Nexus
+              <ArrowUpRight size={13} />
+            </Link>
+          </Button>
+        </nav>
+      </div>
+    </main>
+  );
+}
+function Storyboard({
+  draft,
+  blocked,
+  save,
+  onError,
+}: {
+  draft: CartoonDraft;
+  blocked: boolean;
+  save: (d: CartoonDraft) => void;
+  onError: (s: string) => void;
+}) {
+  const [cursor, setCursor] = useState(0),
+    [metric, setMetric] = useState("");
+  const timeline = cartoonTiming(draft),
+    total = timeline.at(-1)?.endSeconds ?? 0,
+    active =
+      timeline.find((t) => cursor >= t.startSeconds && cursor < t.endSeconds) ?? timeline.at(-1);
+  return (
+    <>
+      <form
+        className="mt-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const f = new FormData(e.currentTarget);
+          try {
+            save(
+              cartoonDraftSchema.parse({
+                ...draft,
+                episodeTitle: String(f.get("episodeTitle")),
+                premise: String(f.get("premise")),
+                fps: Number(f.get("fps")),
+                scenes: draft.scenes.map((s, i) => ({
+                  ...s,
+                  title: String(f.get(`title-${i}`)),
+                  beat: String(f.get(`beat-${i}`)),
+                  duration: Number(f.get(`duration-${i}`)),
+                  role: f.get(`role-${i}`),
+                  status: f.get(`status-${i}`),
+                })),
+              }),
+            );
+          } catch (err) {
+            onError(err instanceof Error ? err.message : "Scene edit blocked.");
+          }
+        }}
+      >
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field name="episodeTitle" label="Episode title" value={draft.episodeTitle} />
+          <label className="text-xs text-muted-foreground">
+            Timeline frame rate
+            <select
+              aria-label="Timeline frame rate"
+              name="fps"
+              defaultValue={draft.fps}
+              className="exchange-select mt-2 w-full"
+            >
+              <option value={24}>24 fps</option>
+              <option value={30}>30 fps</option>
+            </select>
+          </label>
+          <div className="md:col-span-2">
+            <Field name="premise" label="Episode premise" value={draft.premise} long />
+          </div>
+        </div>
+        <div className="mt-6 grid gap-5 lg:grid-cols-3">
+          {draft.scenes.map((s, i) => (
+            <article key={s.id} className="min-w-0 rounded-sm border border-border">
+              <img
+                src={art}
+                alt={`Repeated static concept reference for scene ${i + 1}; no rendered frame or animatic`}
+                width={1600}
+                height={896}
+                loading="lazy"
+                className="aspect-video w-full object-cover object-right"
+              />
+              <div className="space-y-4 p-5">
+                <p className="font-mono text-[10px] text-warning">
+                  SCENE {i + 1} · CONCEPT STILL / NOT RENDERED
+                </p>
+                <Field name={`title-${i}`} label={`Scene ${i + 1} title`} value={s.title} />
+                <Field
+                  name={`beat-${i}`}
+                  label={`Scene ${i + 1} storyboard beat`}
+                  value={s.beat}
+                  long
+                />
+                <label className="block text-xs text-muted-foreground">
+                  Duration / seconds
+                  <input
+                    aria-label={`Scene ${i + 1} duration`}
+                    name={`duration-${i}`}
+                    type="number"
+                    min={1}
+                    max={120}
+                    required
+                    defaultValue={s.duration}
+                    className="exchange-select mt-2 w-full"
+                  />
+                </label>
+                <label className="block text-xs text-muted-foreground">
+                  Explicit role
+                  <select
+                    aria-label={`Scene ${i + 1} role`}
+                    name={`role-${i}`}
+                    defaultValue={s.role}
+                    className="exchange-select mt-2 w-full"
+                  >
+                    {cartoonRoles.map((r) => (
+                      <option key={r}>{r}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-xs text-muted-foreground">
+                  Scene review
+                  <select
+                    aria-label={`Scene ${i + 1} review`}
+                    name={`status-${i}`}
+                    defaultValue={s.status}
+                    className="exchange-select mt-2 w-full"
+                  >
+                    <option>Proposed</option>
+                    <option>Reviewed DEMO</option>
+                    <option>Skipped DEMO</option>
+                  </select>
+                </label>
+                <p className="text-[10px] leading-6 text-muted-foreground">
+                  {timeline[i]?.startSeconds}–{timeline[i]?.endSeconds}s · {timeline[i]?.frames}{" "}
+                  expected frames · evidence NOT RUN
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+        <Button type="submit" variant="signal" className="mt-5" disabled={blocked}>
+          <Save size={14} />
+          Save storyboard revision
+        </Button>
+      </form>
+      <section
+        className="mt-8 border-y border-border py-6"
+        aria-label="Static animatic timing preview"
+      >
+        <h3 className="text-xl">Animatic timing / static rehearsal</h3>
+        <p className="mt-4 text-xs leading-6 text-muted-foreground">
+          {total} seconds · {total * draft.fps} expected frames · no animation, audio or media
+          processed.
+        </p>
+        <label className="mt-5 block text-xs text-muted-foreground">
+          Scrub storyboard time: {cursor}s
+          <input
+            aria-label="Scrub cartoon timeline"
+            type="range"
+            min={0}
+            max={total}
+            value={cursor}
+            onChange={(e) => setCursor(Number(e.target.value))}
+            className="mt-3 w-full accent-primary"
+          />
+        </label>
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          {timeline.map((t, i) => (
+            <Button
+              key={t.id}
+              variant={active?.id === t.id ? "signal" : "ghost"}
+              className="h-auto whitespace-normal py-3 text-xs"
+              aria-pressed={active?.id === t.id}
+              onClick={() => setCursor(t.startSeconds)}
+            >
+              Scene {i + 1}
+              <br />
+              {t.startSeconds}–{t.endSeconds}s
+            </Button>
+          ))}
+        </div>
+        <p className="mt-4 text-sm leading-7">
+          {draft.scenes.find((s) => s.id === active?.id)?.beat}
+        </p>
+      </section>
+      <section className="mt-8">
+        <h3 className="text-xl">Frame-count QA / numeric DEMO only</h3>
+        <form
+          className="mt-4 flex flex-wrap items-end gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            try {
+              const candidate = Number(new FormData(e.currentTarget).get("frames"));
+              const result = compareMediaMetrics({
+                duration: total,
+                fps: draft.fps,
+                candidateFrames: candidate,
+                peakDbfs: -12,
+              });
+              setMetric(
+                `${result.framesMatch ? "MATCH" : "MISMATCH"} · expected ${result.expectedFrames}, declared ${candidate}, delta ${result.frameDelta}. Arithmetic only; no media decoded or independent evidence.`,
+              );
+            } catch {
+              setMetric(
+                "Numeric demo requires a total duration ≤120 seconds and valid declared frames. No media checked.",
+              );
+            }
+          }}
+        >
+          <label className="text-xs text-muted-foreground">
+            Declared sample frame count
+            <input
+              aria-label="Cartoon candidate frames"
+              name="frames"
+              type="number"
+              min={0}
+              max={14400}
+              required
+              defaultValue={total * draft.fps}
+              className="exchange-select mt-2 w-full"
+            />
+          </label>
+          <Button type="submit" variant="signal" size="sm">
+            Compare sample numbers
+          </Button>
+        </form>
+        {metric && (
+          <p role="status" className="mt-4 text-xs leading-7 text-warning">
+            {metric}
+          </p>
+        )}
+      </section>
+    </>
+  );
+}
