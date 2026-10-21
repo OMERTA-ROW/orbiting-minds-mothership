@@ -8,7 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { socialDraftQuery } from "@/lib/omni-social-query";
 import { saveSocialDraft, transitionSocialDraft } from "@/lib/omni-social.functions";
-import { calendarPlans, socialContent, socialExport, socialPlatforms, sameSocialContent } from "@/lib/omni-platforms";
+import {
+  calendarPlans,
+  socialContent,
+  socialExport,
+  socialPlatforms,
+  sameSocialContent,
+} from "@/lib/omni-platforms";
 
 type FormContent = {
   platform: (typeof socialPlatforms)[number];

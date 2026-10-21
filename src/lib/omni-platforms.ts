@@ -43,8 +43,15 @@ export const socialContent = z
   .strict();
 export type SocialContent = z.infer<typeof socialContent>;
 export function sameSocialContent(left: unknown, right: unknown) {
-  const a = socialContent.safeParse(left), b = socialContent.safeParse(right);
-  return a.success && b.success && Object.entries(a.data).every(([key, value]) => (b.data as Record<string, unknown>)[key] === value);
+  const a = socialContent.safeParse(left),
+    b = socialContent.safeParse(right);
+  return (
+    a.success &&
+    b.success &&
+    Object.entries(a.data).every(
+      ([key, value]) => (b.data as Record<string, unknown>)[key] === value,
+    )
+  );
 }
 export const socialSave = z
   .object({
