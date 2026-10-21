@@ -6,7 +6,7 @@ export const Route = createFileRoute("/platform")({
   head: () =>
     seo(
       "EVOLUTION CLI · Lightweight Companion",
-      "Optional Evolution companion for existing macOS, Linux and Windows terminals. Planned command references, collision-safe omni fallback and honest signed-release gates; browser preview needs no download.",
+      "Compatibility-first Evolution CLI for existing macOS, Linux and Windows terminals. Optional basic access, transparent provider-cost boundaries, exportable policy and planned signed-release gates; no download required for preview.",
     ),
   component: Companion,
 });

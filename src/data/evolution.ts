@@ -54,7 +54,7 @@ export const modules: MothershipModule[] = [
     capabilities: ["Signature verification", "Quarantine", "Anomaly alerts"] },
   { id: "economy", name: "Contribution Economy", short: "Credit for contributors", ring: 1, status: "Future",
     purpose: "Recognizes and (in future) rewards contributors whose shared work powers evolutions.",
-    capabilities: ["Attribution ledger", "Reputation", "Future subscriptions (not live)"] },
+    capabilities: ["Attribution ledger", "Reputation", "Optional hosted/team offerings · proposed, not live"] },
   { id: "brain", name: "Global Brain", short: "Collective memory", ring: 1, status: "Concept",
     purpose: "The shared, opt-in memory of findings, experiments and outcomes across the network.",
     capabilities: ["Research connections", "Experiment history", "Semantic search"] },
@@ -229,6 +229,17 @@ export const cliCommands = [
   { cmd: "evolution omni", desc: "Collision-safe direct OMNI fallback.", local: false, permissions: "Same future model/consent gates; no alias or shell-profile modification.", out: ["PLANNED / BLOCKED · fallback name reserved in source.", "No model response, tool execution or provider request."] },
   { cmd: "evolution uninstall --dir <owned-directory> --approve", desc: "Remove unchanged source copies with explicit consent.", local: true, permissions: "Dedicated source directory and receipt only. Extra/modified files or symlinks block removal; no recursive cleanup.", out: ["PLANNED public command · isolated source uninstall only.", "Not an installed package; browser removes nothing."] },
 ] as const;
+
+// Owner-directed product policy only, not billing entitlements or live pricing.
+export const compatibilityPolicy = {
+  schemaVersion: 1,
+  mode: "ROADMAP_POLICY",
+  basic: { recurringSubscriptionRequired: false, accountRequiredForOfflineSource: false, replacementTerminalRequired: false, replacementIdeRequired: false, downloadRequiredForWebPreview: false },
+  providers: { optInRequired: true, officialApiRequired: true, existingConsumerSubscriptionIncludesApi: false, externalFeesMayApply: true, guaranteedFreeAi: false, liveUsageMeterAvailable: false, actualUsageCostUsd: null, privateKeysInChatAllowed: false, secureKeyCustodyRequired: true },
+  hosted: { optional: true, available: false, priceUsd: null, billingEnabled: false },
+  portability: { exportFormat: "JSON", policyExportContainsCredentials: false, automaticToolchainEdits: false, nativeUninstallRequiresConsent: true, projectDiagnosticsAvailable: false, sourceLicenseApproved: false },
+  evidence: { verifiedUserSavings: false, carbonNeutralClaim: false, liveAgentCountAvailable: false },
+} as const;
 
 export const feed = [
   { id: 1, author: "@aria.dev", mode: "Public" as const, title: "Shared token system for accessible focus states", body: "Proposing a cross-project focus-ring token spec. Attribution requested on reuse.", tags: ["Software", "A11y"], sparks: 42 },
