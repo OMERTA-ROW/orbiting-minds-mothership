@@ -1,6 +1,8 @@
 # Cosmic Mothership redesign
 
 ## Command Nexus
+- [ ] Apply the Cyberace scope correction to proposed project cards and examples; verify existing workspaces are unchanged.
+- Scope: Cyberace is the intended DEMO example, integration unconfirmed until authorized. CyberLink Social has its own terminal and is entirely excluded from Evolution enrollment, access, changes and deployment. Keep music, book publishing, Unity/Blender and parallel-agent workspaces unchanged; do not publish.
 - [x] Add project workspace with explicit agent routing, separate threads, local task status and DEMO terminal panes.
 - [x] Add isolated code drafts, conflict/diff review, Guardian reference checks and human merge rehearsal.
 - [x] Add provider permissions/planning limits, compatibility matrix and inert Unity/Blender companion reference.
