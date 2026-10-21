@@ -21,6 +21,8 @@ import { ForgeWorkspace } from "@/components/entertainment/ForgeWorkspace";
 import { forgeQuery } from "@/lib/forge-query";
 import { creatorForgeQuery } from "@/lib/forge-distro-query";
 import { CreatorDistro } from "@/components/entertainment/CreatorDistro";
+import { PostEditPrompt } from "@/components/entertainment/PostEditPrompt";
+import { verifyPostEdit, type PostEditOutput, type PostEditHandoff, type PostEditChoice } from "@/lib/forge-post-edit";
 import { Button } from "@/components/ui/button";
 import { useGuardian } from "@/hooks/use-guardian";
 import { readCreativePause } from "@/hooks/use-cartoon";
@@ -64,6 +66,13 @@ function QuantumStudio() {
   const [beforeUrl, setBefore] = useState(""),
     [afterUrl, setAfter] = useState(""),
     [afterId, setAfterId] = useState("");
+  const [verifiedOutput, setVerifiedOutput] = useState<PostEditOutput | null>(null);
+  const [handoff, setHandoff] = useState<PostEditHandoff | null>(null);
+  const openDistro = (output: PostEditOutput, choice: PostEditChoice) => {
+    if (output.projectId !== projectId || !allowed || !consent || readCreativePause()) return;
+    setHandoff({ output, choice });
+    document.getElementById("creator-distro")?.scrollIntoView({ block: "start", behavior: "instant" });
+  };
   const objectUrls = useRef<string[]>([]),
     generation = useRef(0),
     fileInput = useRef<HTMLInputElement>(null);
@@ -79,6 +88,7 @@ function QuantumStudio() {
     setBefore("");
     setAfter("");
     setAfterId("");
+    setVerifiedOutput(null);
     setReport(null);
     setExportApproval(false);
     setApprove(false);
@@ -114,7 +124,7 @@ function QuantumStudio() {
     if (!allowed || readCreativePause())
       throw new Error("Account, Guardian or Nexus paused; processing blocked.");
   };
-  const loadAudio = async (id: string, owner: string) => {
+  const loadAudio = async (id: string, owner: string, output?: (typeof studio.assets)[number]) => {
     const result = await supabase.storage.from(STUDIO_BUCKET).download(studioPath(owner, id));
     if (result.error || !result.data)
       throw new Error(
@@ -122,9 +132,10 @@ function QuantumStudio() {
       );
     const bytes = new Uint8Array(await result.data.arrayBuffer());
     inspectWav(bytes);
+    const verified = output ? await verifyPostEdit(output, bytes, projectId) : null;
     const url = URL.createObjectURL(new Blob([bytes], { type: "audio/wav" }));
     objectUrls.current.push(url);
-    return url;
+    return { url, verified };
   };
   const compare = async (asset: (typeof studio.assets)[number]) => {
     clearPreview();
@@ -135,7 +146,7 @@ function QuantumStudio() {
       setRights(false);
       setPrivacy(false);
     }
-    const url = await loadAudio(source.id, source.owner_id);
+    const { url } = await loadAudio(source.id, source.owner_id);
     if (current !== generation.current) {
       URL.revokeObjectURL(url);
       return;
@@ -143,13 +154,14 @@ function QuantumStudio() {
     setBefore(url);
     setSelected(source.id);
     if (asset.role === "enhanced") {
-      const out = await loadAudio(asset.id, asset.owner_id);
+      const { url: out, verified } = await loadAudio(asset.id, asset.owner_id, asset);
       if (current !== generation.current) {
         URL.revokeObjectURL(out);
         return;
       }
       setAfter(out);
       setAfterId(asset.id);
+      setVerifiedOutput(verified);
       setReport({
         metrics: asset.metrics,
         sha256: asset.sha256,
@@ -503,6 +515,7 @@ function QuantumStudio() {
                 Return to original
               </Button>
             </div>
+            {verifiedOutput && afterId === verifiedOutput.assetId && <PostEditPrompt output={verifiedOutput} disabled={busy || !allowed || !consent} onChoose={choice => openDistro(verifiedOutput, choice)}/>}
             {report !== null && (
               <details open className="mt-6 border-t border-border pt-4">
                 <summary className="cursor-pointer text-sm">Measured QA / version digest</summary>
@@ -584,6 +597,7 @@ function QuantumStudio() {
           allowed={allowed}
           consent={consent}
           paused={!!paused}
+          onPostEdit={openDistro}
         />
         <QuantumPlanner
           key={`planner-${projectId}`}
@@ -597,6 +611,7 @@ function QuantumStudio() {
           assets={assets}
           allowed={allowed}
           consent={consent}
+          handoff={handoff}
         />
         <section className="mt-10 border-t border-border pt-6">
           <p className="eyebrow">Existing shell / optional companion</p>
