@@ -61,21 +61,36 @@ func Discover(path, platform string) DiscoveryReport {
 // UNC and symlink entries rather than following them to an unintended target.
 func discoveryMatches(name, path, platform string) int {
 	separator := string(os.PathListSeparator)
-	if platform == "windows" { separator = ";" }
+	if platform == "windows" {
+		separator = ";"
+	}
 	seen := map[string]bool{}
 	for _, dir := range strings.Split(path, separator) {
-		if platform == "windows" { dir = strings.Trim(dir, "\"") }
-		if !filepath.IsAbs(dir) || strings.HasPrefix(dir, "//") || strings.HasPrefix(dir, `\\`) { continue }
+		if platform == "windows" {
+			dir = strings.Trim(dir, "\"")
+		}
+		if !filepath.IsAbs(dir) || strings.HasPrefix(dir, "//") || strings.HasPrefix(dir, `\\`) {
+			continue
+		}
 		dir = filepath.Clean(dir)
 		safe := true
 		for parent := dir; ; parent = filepath.Dir(parent) {
 			info, err := os.Lstat(parent)
-			if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 { safe = false; break }
-			if filepath.Dir(parent) == parent { break }
+			if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+				safe = false
+				break
+			}
+			if filepath.Dir(parent) == parent {
+				break
+			}
 		}
-		if !safe { continue }
+		if !safe {
+			continue
+		}
 		entries, err := os.ReadDir(dir)
-		if err != nil { continue }
+		if err != nil {
+			continue
+		}
 		for _, entry := range entries {
 			match := entry.Name() == name
 			if platform == "windows" {
@@ -84,10 +99,14 @@ func discoveryMatches(name, path, platform string) int {
 					match = match || strings.EqualFold(entry.Name(), name+ext)
 				}
 			}
-			if !match { continue }
+			if !match {
+				continue
+			}
 			filename := filepath.Join(dir, entry.Name())
 			info, err := os.Lstat(filename)
-			if err != nil || !info.Mode().IsRegular() || (platform != "windows" && info.Mode().Perm()&0111 == 0) { continue }
+			if err != nil || !info.Mode().IsRegular() || (platform != "windows" && info.Mode().Perm()&0111 == 0) {
+				continue
+			}
 			seen[filename] = true
 		}
 	}
