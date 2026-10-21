@@ -16,8 +16,8 @@
 - Orbital controls use stationary design-system buttons and a mobile list; inner pages use semantic tokens, why: keyboard access and consistent cosmic styling.
 - Creator pathways stream structured output through an internal server route and request-local AI helpers; keep secrets server-only, why: cancellable drafting is not execution.
 - AI access-denial and credit blocks are persisted in a service-only circuit-breaker table; clear a block only after an owner confirms restored access, why: prevent automatic billed retries across reloads and server restarts.
-- Global command search uses a pure typed index sourced from evolution data and navigates to validated module/world/proposal search parameters or stable entity anchors, why: jump to the exact result while retaining existing local interactions.
-- Code Exchange domain helpers are pure and browser-safe; demo collaboration is persisted only in a validated, versioned browser-local store shared by Exchange, Commons and Pulse, why: useful review flows and truthful local activity without impersonating secure multi-user persistence.
+- Command search uses a pure typed evolution-data index and validated search parameters or stable anchors, why: exact results without changing local interactions.
+- Code Exchange uses pure helpers and validated local storage shared with Commons/Pulse, why: useful reviews without impersonating secure multiuser persistence.
 - Localize Exchange copy independently of code; documentation never implies repository provenance, why: translation must not rewrite code or invent permissions.
 - Genesis workflows use pure validated transitions and a separate versioned browser-local store; SDK contracts describe disabled future APIs and never act as endpoints, why: integrated rehearsal without pretending local identity or visibility labels enforce multiuser security.
 - Open Call adds optional passport declarations and contribution defaults to Genesis; exports only pending/revoked states, why: preserve old records without implying verification.
