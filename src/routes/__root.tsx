@@ -20,6 +20,7 @@ import { ExchangeLocaleProvider } from "@/hooks/use-exchange-locale";
 import { GenesisProvider } from "@/hooks/use-genesis";
 import { CareProvider } from "@/hooks/use-care";
 import { GuardianProvider } from "@/hooks/use-guardian";
+import { IncidentProvider } from "@/hooks/use-incidents";
 
 function NotFoundComponent() {
   return (
@@ -130,6 +131,7 @@ function RootComponent() {
       <GuardianProvider>
       <CareProvider>
       <GenesisProvider>
+      <IncidentProvider>
       <DemoExchangeProvider>
       <ExchangeLocaleProvider>
       <CommandPaletteProvider pages={navItems}>
@@ -145,6 +147,7 @@ function RootComponent() {
       </CommandPaletteProvider>
       </ExchangeLocaleProvider>
       </DemoExchangeProvider>
+      </IncidentProvider>
       </GenesisProvider>
       </CareProvider>
       </GuardianProvider>
