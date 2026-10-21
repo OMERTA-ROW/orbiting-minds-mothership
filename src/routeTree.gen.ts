@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentDebriefRouteImport } from './routes/agent-debrief'
 import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as ApprovalLedgerRouteImport } from './routes/approval-ledger'
 import { Route as CareRouteImport } from './routes/care'
 import { Route as CareAgentRouteImport } from './routes/care-agent'
 import { Route as ChallengesRouteImport } from './routes/challenges'
@@ -23,8 +24,10 @@ import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as DigitalTwinRouteImport } from './routes/digital-twin'
 import { Route as DiscoveryRouteImport } from './routes/discovery'
 import { Route as EmbassyRouteImport } from './routes/embassy'
+import { Route as ExperimentReplayRouteImport } from './routes/experiment-replay'
 import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GuardianRouteImport } from './routes/guardian'
+import { Route as ImpactScorecardRouteImport } from './routes/impact-scorecard'
 import { Route as IncidentArchivesRouteImport } from './routes/incident-archives'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
@@ -33,6 +36,7 @@ import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as OpenCallRouteImport } from './routes/open-call'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
 import { Route as PathwayRouteImport } from './routes/pathway'
+import { Route as PhysicalSafetyRouteImport } from './routes/physical-safety'
 import { Route as PilotRouteImport } from './routes/pilot'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as PulseRouteImport } from './routes/pulse'
@@ -66,6 +70,11 @@ const AgentDebriefRoute = AgentDebriefRouteImport.update({
 const AgentsRoute = AgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApprovalLedgerRoute = ApprovalLedgerRouteImport.update({
+  id: '/approval-ledger',
+  path: '/approval-ledger',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CareRoute = CareRouteImport.update({
@@ -123,6 +132,11 @@ const EmbassyRoute = EmbassyRouteImport.update({
   path: '/embassy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExperimentReplayRoute = ExperimentReplayRouteImport.update({
+  id: '/experiment-replay',
+  path: '/experiment-replay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FleetRoute = FleetRouteImport.update({
   id: '/fleet',
   path: '/fleet',
@@ -131,6 +145,11 @@ const FleetRoute = FleetRouteImport.update({
 const GuardianRoute = GuardianRouteImport.update({
   id: '/guardian',
   path: '/guardian',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImpactScorecardRoute = ImpactScorecardRouteImport.update({
+  id: '/impact-scorecard',
+  path: '/impact-scorecard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IncidentArchivesRoute = IncidentArchivesRouteImport.update({
@@ -171,6 +190,11 @@ const PartnershipsRoute = PartnershipsRouteImport.update({
 const PathwayRoute = PathwayRouteImport.update({
   id: '/pathway',
   path: '/pathway',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PhysicalSafetyRoute = PhysicalSafetyRouteImport.update({
+  id: '/physical-safety',
+  path: '/physical-safety',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PilotRoute = PilotRouteImport.update({
@@ -273,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent-debrief': typeof AgentDebriefRoute
   '/agents': typeof AgentsRoute
+  '/approval-ledger': typeof ApprovalLedgerRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/challenges': typeof ChallengesRoute
@@ -284,8 +309,10 @@ export interface FileRoutesByFullPath {
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
@@ -294,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
+  '/physical-safety': typeof PhysicalSafetyRoute
   '/pilot': typeof PilotRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
@@ -318,6 +346,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent-debrief': typeof AgentDebriefRoute
   '/agents': typeof AgentsRoute
+  '/approval-ledger': typeof ApprovalLedgerRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/challenges': typeof ChallengesRoute
@@ -329,8 +358,10 @@ export interface FileRoutesByTo {
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
@@ -339,6 +370,7 @@ export interface FileRoutesByTo {
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
+  '/physical-safety': typeof PhysicalSafetyRoute
   '/pilot': typeof PilotRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
@@ -364,6 +396,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/agent-debrief': typeof AgentDebriefRoute
   '/agents': typeof AgentsRoute
+  '/approval-ledger': typeof ApprovalLedgerRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
   '/challenges': typeof ChallengesRoute
@@ -375,8 +408,10 @@ export interface FileRoutesById {
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
@@ -385,6 +420,7 @@ export interface FileRoutesById {
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
   '/pathway': typeof PathwayRoute
+  '/physical-safety': typeof PhysicalSafetyRoute
   '/pilot': typeof PilotRoute
   '/platform': typeof PlatformRoute
   '/pulse': typeof PulseRoute
@@ -411,6 +447,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agent-debrief'
     | '/agents'
+    | '/approval-ledger'
     | '/care'
     | '/care-agent'
     | '/challenges'
@@ -422,8 +459,10 @@ export interface FileRouteTypes {
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/experiment-replay'
     | '/fleet'
     | '/guardian'
+    | '/impact-scorecard'
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
@@ -432,6 +471,7 @@ export interface FileRouteTypes {
     | '/open-call'
     | '/partnerships'
     | '/pathway'
+    | '/physical-safety'
     | '/pilot'
     | '/platform'
     | '/pulse'
@@ -456,6 +496,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agent-debrief'
     | '/agents'
+    | '/approval-ledger'
     | '/care'
     | '/care-agent'
     | '/challenges'
@@ -467,8 +508,10 @@ export interface FileRouteTypes {
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/experiment-replay'
     | '/fleet'
     | '/guardian'
+    | '/impact-scorecard'
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
@@ -477,6 +520,7 @@ export interface FileRouteTypes {
     | '/open-call'
     | '/partnerships'
     | '/pathway'
+    | '/physical-safety'
     | '/pilot'
     | '/platform'
     | '/pulse'
@@ -501,6 +545,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agent-debrief'
     | '/agents'
+    | '/approval-ledger'
     | '/care'
     | '/care-agent'
     | '/challenges'
@@ -512,8 +557,10 @@ export interface FileRouteTypes {
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/experiment-replay'
     | '/fleet'
     | '/guardian'
+    | '/impact-scorecard'
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
@@ -522,6 +569,7 @@ export interface FileRouteTypes {
     | '/open-call'
     | '/partnerships'
     | '/pathway'
+    | '/physical-safety'
     | '/pilot'
     | '/platform'
     | '/pulse'
@@ -547,6 +595,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentDebriefRoute: typeof AgentDebriefRoute
   AgentsRoute: typeof AgentsRoute
+  ApprovalLedgerRoute: typeof ApprovalLedgerRoute
   CareRoute: typeof CareRoute
   CareAgentRoute: typeof CareAgentRoute
   ChallengesRoute: typeof ChallengesRoute
@@ -558,8 +607,10 @@ export interface RootRouteChildren {
   DigitalTwinRoute: typeof DigitalTwinRoute
   DiscoveryRoute: typeof DiscoveryRoute
   EmbassyRoute: typeof EmbassyRoute
+  ExperimentReplayRoute: typeof ExperimentReplayRoute
   FleetRoute: typeof FleetRoute
   GuardianRoute: typeof GuardianRoute
+  ImpactScorecardRoute: typeof ImpactScorecardRoute
   IncidentArchivesRoute: typeof IncidentArchivesRoute
   JoinRoute: typeof JoinRoute
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
@@ -568,6 +619,7 @@ export interface RootRouteChildren {
   OpenCallRoute: typeof OpenCallRoute
   PartnershipsRoute: typeof PartnershipsRoute
   PathwayRoute: typeof PathwayRoute
+  PhysicalSafetyRoute: typeof PhysicalSafetyRoute
   PilotRoute: typeof PilotRoute
   PlatformRoute: typeof PlatformRoute
   PulseRoute: typeof PulseRoute
@@ -610,6 +662,13 @@ declare module '@tanstack/react-router' {
       path: '/agents'
       fullPath: '/agents'
       preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/approval-ledger': {
+      id: '/approval-ledger'
+      path: '/approval-ledger'
+      fullPath: '/approval-ledger'
+      preLoaderRoute: typeof ApprovalLedgerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/care': {
@@ -689,6 +748,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmbassyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/experiment-replay': {
+      id: '/experiment-replay'
+      path: '/experiment-replay'
+      fullPath: '/experiment-replay'
+      preLoaderRoute: typeof ExperimentReplayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/fleet': {
       id: '/fleet'
       path: '/fleet'
@@ -701,6 +767,13 @@ declare module '@tanstack/react-router' {
       path: '/guardian'
       fullPath: '/guardian'
       preLoaderRoute: typeof GuardianRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/impact-scorecard': {
+      id: '/impact-scorecard'
+      path: '/impact-scorecard'
+      fullPath: '/impact-scorecard'
+      preLoaderRoute: typeof ImpactScorecardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/incident-archives': {
@@ -757,6 +830,13 @@ declare module '@tanstack/react-router' {
       path: '/pathway'
       fullPath: '/pathway'
       preLoaderRoute: typeof PathwayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/physical-safety': {
+      id: '/physical-safety'
+      path: '/physical-safety'
+      fullPath: '/physical-safety'
+      preLoaderRoute: typeof PhysicalSafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pilot': {
@@ -899,6 +979,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentDebriefRoute: AgentDebriefRoute,
   AgentsRoute: AgentsRoute,
+  ApprovalLedgerRoute: ApprovalLedgerRoute,
   CareRoute: CareRoute,
   CareAgentRoute: CareAgentRoute,
   ChallengesRoute: ChallengesRoute,
@@ -910,8 +991,10 @@ const rootRouteChildren: RootRouteChildren = {
   DigitalTwinRoute: DigitalTwinRoute,
   DiscoveryRoute: DiscoveryRoute,
   EmbassyRoute: EmbassyRoute,
+  ExperimentReplayRoute: ExperimentReplayRoute,
   FleetRoute: FleetRoute,
   GuardianRoute: GuardianRoute,
+  ImpactScorecardRoute: ImpactScorecardRoute,
   IncidentArchivesRoute: IncidentArchivesRoute,
   JoinRoute: JoinRoute,
   KnowledgeFusionRoute: KnowledgeFusionRoute,
@@ -920,6 +1003,7 @@ const rootRouteChildren: RootRouteChildren = {
   OpenCallRoute: OpenCallRoute,
   PartnershipsRoute: PartnershipsRoute,
   PathwayRoute: PathwayRoute,
+  PhysicalSafetyRoute: PhysicalSafetyRoute,
   PilotRoute: PilotRoute,
   PlatformRoute: PlatformRoute,
   PulseRoute: PulseRoute,

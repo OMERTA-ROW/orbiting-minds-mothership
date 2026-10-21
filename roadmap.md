@@ -1,5 +1,13 @@
 # Cosmic Mothership redesign
 
+## Trusted Release and Robot Safety Lock
+- [ ] Add simulation-only Physical Safety Lock with required evidence and explicit operator approval; hardware always blocked.
+- [ ] Add Oracle Experiment Replay with expected/observed timeline, scrubbed sample logs, evidence labels and archive links.
+- [ ] Add DEMO Approval Ledger and Release Passport with digest-bound signoff, revocation and rollback rehearsal.
+- [ ] Add reproducible Idea-to-Impact comparisons with method, baseline and evidence gaps, not submission counts.
+- [ ] Test rules, persistence, integrations and desktop/mobile flows; preserve all existing milestones.
+- [ ] Enable trusted production records/release. Blocker: owner profile-data decision, authenticated owner-scoped access, private evidence storage, independent safety/testing and security QA.
+
 ## Agent Debrief and Incident Archives
 - [x] Add opt-in, operator-authorized DEMO debriefs with evidence, privacy and human review gates.
 - [x] Add searchable six-category fictional archives, case timelines, source/clip metadata and correction/withdrawal rehearsal.

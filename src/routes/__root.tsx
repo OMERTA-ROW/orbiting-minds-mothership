@@ -21,6 +21,7 @@ import { GenesisProvider } from "@/hooks/use-genesis";
 import { CareProvider } from "@/hooks/use-care";
 import { GuardianProvider } from "@/hooks/use-guardian";
 import { IncidentProvider } from "@/hooks/use-incidents";
+import { TrustedReleaseProvider } from "@/hooks/use-trusted-release";
 
 function NotFoundComponent() {
   return (
@@ -131,6 +132,7 @@ function RootComponent() {
       <GuardianProvider>
       <CareProvider>
       <GenesisProvider>
+      <TrustedReleaseProvider>
       <IncidentProvider>
       <DemoExchangeProvider>
       <ExchangeLocaleProvider>
@@ -148,6 +150,7 @@ function RootComponent() {
       </ExchangeLocaleProvider>
       </DemoExchangeProvider>
       </IncidentProvider>
+      </TrustedReleaseProvider>
       </GenesisProvider>
       </CareProvider>
       </GuardianProvider>
