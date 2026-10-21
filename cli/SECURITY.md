@@ -6,7 +6,7 @@ Core CLI contains no network, shell subprocesses, API credentials, telemetry,
 auto-updates, background agent or elevated permissions. Commands use explicit
 arguments; unknown flags and future operations fail closed. Build tooling may
 invoke **Go only** to compile source; it is not part of the shipped executable.
-PATH doctor checks names without executing them. Local filesystem receipt is
+PATH doctor checks names without executing them.
 Opt-in `discover --approve` broadens the fixed name catalog only: PATH metadata,
 no content/version/configuration access, no subprocesses or network, no paths
 in output. Name matches and suggested adapters are not verified compatibility.
