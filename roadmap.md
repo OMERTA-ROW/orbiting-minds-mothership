@@ -1,9 +1,9 @@
 # Cosmic Mothership redesign
 
 ## CARE, Auto-Update, Pilot and Voice
-- [ ] Add terminal-style native/self-update notices, package-manager selection and recorded check rehearsals.
-- [ ] Add consented read-only scan plans, review-only queue context and downloadable structured local audit events.
-- [ ] Complete the requested CLI help examples and test CARE plus existing Genesis/Exchange flows.
+- [x] Add terminal-style native/self-update notices, package-manager selection and recorded check rehearsals.
+- [x] Add consented read-only scan plans, review-only queue context and downloadable structured local audit events.
+- [x] Complete the requested CLI help examples and test CARE plus existing Genesis/Exchange flows.
 - [x] Add optional first-run CARE modules, sample inventory/health and a safe virtual storage review.
 - [x] Add source-cited update catalog, consent policies, staged dry-run plans, approvals and local history.
 - [x] Add scoped Pilot permission rehearsal and original Voice persona/privacy/PTT concept without device access.

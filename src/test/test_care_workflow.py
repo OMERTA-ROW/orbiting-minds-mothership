@@ -1,0 +1,86 @@
+import asyncio,json
+from pathlib import Path
+from playwright.async_api import async_playwright
+S=Path('/tmp/browser/care-integrated')
+async def main():
+ async with async_playwright() as p:
+  b=await p.chromium.launch(headless=True); c=await b.new_context(viewport={'width':1280,'height':1800}); page=await c.new_page();errors=[];external=[]
+  page.on('pageerror',lambda e:errors.append(str(e)))
+  page.on('request',lambda r:external.append(r.url) if any(x in r.url for x in ['api.github.com','api.stripe.com','/auth/v1/','/rest/v1/']) else None)
+  await page.goto('http://localhost:8080/care',wait_until='networkidle')
+  await page.get_by_role('switch',name='Evolution CARE',exact=True).click()
+  await page.get_by_role('switch',name='Update Engine',exact=True).click()
+  await page.get_by_role('button',name='Save optional module choices',exact=True).click()
+  assert await page.get_by_role('button',name='Prepare read-only scan plan',exact=True).is_disabled()
+  await page.get_by_label('Scan scope: Package inventory',exact=True).check()
+  assert await page.get_by_role('button',name='Prepare read-only scan plan',exact=True).is_disabled()
+  await page.get_by_label('Consent to prepare a read-only demo scan plan',exact=True).check()
+  await page.get_by_role('button',name='Prepare read-only scan plan',exact=True).click()
+  await page.get_by_text('Prepared · NOT SCANNED',exact=True).wait_for()
+  assert await page.get_by_role('button',name='Record demo scan approval',exact=True).is_disabled()
+  await page.get_by_label('Approve read-only scan plan as demo only',exact=True).check()
+  await page.get_by_role('button',name='Record demo scan approval',exact=True).click()
+  await page.get_by_text('Demo approved · NOT SCANNED',exact=True).wait_for()
+  await page.reload(wait_until='networkidle')
+  await page.get_by_text('Demo approved · NOT SCANNED',exact=True).wait_for()
+  async with page.expect_download() as d:await page.get_by_role('button',name='Download scan-plan preview',exact=True).click()
+  data=json.loads(Path(await (await d.value).path()).read_text());assert data['scanned']==False and data['filesystemChanges']==[] and data['signature'] is None
+  await page.get_by_role('heading',name='Read-only scan plans',exact=True).scroll_into_view_if_needed()
+  await page.screenshot(path=str(S/'1_scan_plans.png'))
+  await page.get_by_role('button',name='Review sample storage',exact=True).click()
+  assert await page.get_by_label('Review App cache',exact=True).is_disabled()
+  assert await page.get_by_role('button',name='Restore · unavailable / not tested',exact=True).is_disabled()
+  await page.goto('http://localhost:8080/updates',wait_until='networkidle')
+  await page.get_by_role('button',name='Rehearse package update check',exact=True).click()
+  await page.get_by_role('button',name='Rehearse Evolution self-update check',exact=True).click()
+  await page.get_by_role('button',name='Auto · approved patches only',exact=True).click()
+  await page.get_by_role('switch',name='Assume verified checks for curl · DEMO ONLY',exact=True).click()
+  await page.get_by_role('switch',name='Allow curl 8.10.1 in demo auto-policy',exact=True).click()
+  await page.get_by_label('Proposed maintenance window',exact=True).fill('03:30')
+  await page.get_by_role('button',name='Maintenance day Tue',exact=True).click()
+  await page.get_by_label('Include curl in dry run',exact=True).check()
+  await page.get_by_role('button',name='Stage dry-run update plan',exact=True).click()
+  await page.get_by_label('Approve this plan as a demonstration only',exact=True).check()
+  await page.get_by_role('button',name='Record demo plan approval',exact=True).click()
+  await page.get_by_text('Demo approved · NO REAL UPDATE',exact=True).wait_for()
+  assert await page.get_by_role('button',name='Rollback · unavailable',exact=True).is_disabled()
+  await page.get_by_label('Package-manager rehearsal',exact=True).select_option('apt')
+  await page.get_by_text('Dry run · NO REAL UPDATE',exact=True).wait_for()
+  assert await page.get_by_role('button',name='OFF',exact=True).get_attribute('aria-pressed')=='true'
+  await page.get_by_role('button',name='Rehearse package update check',exact=True).click()
+  await page.get_by_label('Package-manager rehearsal',exact=True).select_option('winget')
+  await page.get_by_role('button',name='Rehearse package update check',exact=True).click()
+  await page.reload(wait_until='networkidle')
+  assert await page.get_by_label('Package-manager rehearsal',exact=True).input_value()=='winget'
+  assert await page.get_by_label('Proposed maintenance window',exact=True).input_value()=='03:30'
+  assert await page.get_by_role('button',name='Maintenance day Tue',exact=True).get_attribute('aria-pressed')=='true'
+  await page.get_by_role('region',name='Demo terminal notices',exact=True).scroll_into_view_if_needed()
+  await page.screenshot(path=str(S/'2_notices.png'))
+  await page.get_by_label('Audit event type',exact=True).select_option('check')
+  async with page.expect_download() as d:await page.get_by_role('button',name='Download local audit events',exact=True).click()
+  data=json.loads(Path(await (await d.value).path()).read_text())
+  assert data['tamperEvident']==False and data['authenticated']==False and data['realActions']==[]
+  checks=[e for e in data['events'] if e['kind']=='check']; assert len(checks)==4
+  assert any(e['target']=='self' and e['actualExecution']==False for e in checks)
+  assert any(e['deviceId']=='win-demo' for e in checks) and any(e['deviceId']=='linux-demo' for e in checks)
+  await page.get_by_role('button',name='Pause demo capabilities',exact=True).click()
+  await page.goto('http://localhost:8080/care',wait_until='networkidle')
+  await page.get_by_text('Prepared · NOT SCANNED',exact=True).wait_for()
+  assert await page.get_by_role('button',name='Run scan · unavailable',exact=True).is_disabled()
+  await page.get_by_role('switch',name='Evolution CARE',exact=True).click()
+  await page.get_by_role('heading',name='CARE is off',exact=True).wait_for()
+  await page.set_viewport_size({'width':390,'height':844})
+  await page.goto('http://localhost:8080/updates',wait_until='networkidle')
+  await page.get_by_role('region',name='Demo terminal notices',exact=True).scroll_into_view_if_needed()
+  await page.screenshot(path=str(S/'3_mobile_notices.png'))
+  for path in ['care','updates','care-agent','pilot','voice','releases','code-exchange','challenges','sdk']:
+   await page.goto('http://localhost:8080/'+path,wait_until='networkidle')
+   assert not await page.evaluate('document.documentElement.scrollWidth>window.innerWidth'),path
+  await page.goto('http://localhost:8080/updates',wait_until='networkidle')
+  await page.get_by_role('button',name='Open menu',exact=True).click()
+  await page.get_by_role('navigation',name='Mobile',exact=True).get_by_role('link',name='Evolution CARE · Demo',exact=True).click()
+  await page.get_by_role('heading',name='EVOLUTION CARE',exact=True).wait_for()
+  assert not errors,errors;assert not external,external
+  print('PASS: explicit scan scope/approval, persistence, scan manifest, protected cache/restore, terminal/self-update notices, managers, schedule, update approvals, context revocation, structured audit, pause, mobile navigation; no runtime or external API calls.')
+  await b.close()
+asyncio.run(main())
