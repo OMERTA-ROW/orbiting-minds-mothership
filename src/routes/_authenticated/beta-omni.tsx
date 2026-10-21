@@ -11,7 +11,9 @@ import { Conversation, ConversationContent, ConversationScrollButton } from "@/c
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { seo } from "@/lib/seo";
 import { Square, Send, Trash2 } from "lucide-react";
-export const Route = createFileRoute("/_authenticated/beta-omni")({ validateSearch: (v: Record<string, unknown>) => ({ studioGoal: typeof v.studioGoal === "string" ? v.studioGoal.slice(0, 1000) : undefined, studioProject: typeof v.studioProject === "string" && /^[a-f0-9-]{36}$/i.test(v.studioProject) ? v.studioProject : undefined }), head: () => seo("OMNI · Authorized beta conversation", "Talk to OMNI through authorized Lovable AI with private project context, explicit consent, real streaming and token usage. Temporary single-turn requests; no tools execute."), loader: ({ context }) => context.queryClient.ensureQueryData(betaQuery), component: LiveOmni });
+import { z } from "zod";
+const studioSearch = z.object({ studioGoal: z.string().max(1000).optional().catch(undefined), studioProject: z.string().uuid().optional().catch(undefined) });
+export const Route = createFileRoute("/_authenticated/beta-omni")({ validateSearch: studioSearch, head: () => seo("OMNI · Authorized beta conversation", "Talk to OMNI through authorized Lovable AI with private project context, explicit consent, real streaming and token usage. Temporary single-turn requests; no tools execute."), loader: ({ context }) => context.queryClient.ensureQueryData(betaQuery), component: LiveOmni });
 function LiveOmni() {
   const { data } = useSuspenseQuery(betaQuery), { store: guardian } = useGuardian();
   const draft = Route.useSearch();

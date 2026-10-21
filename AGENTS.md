@@ -10,10 +10,9 @@
 <!-- LOVABLE:END -->
 
 ## Project rules
-- Keep prototype data in `src/data/evolution.ts`, label it demo and scope future backend records to owners, why: preserve consent without claiming live integrations.
+- Prototype data lives in `src/data/evolution.ts`, separate from owned records: no live-integration claims.
 - Shared visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: consistent design.
-- Cosmic art/stars use light deterministic motion and static mobile/reduced-motion fallbacks, why: no GPU-heavy scenes or SSR randomness.
-- Orbital controls use fixed buttons/mobile lists and semantic tokens, why: accessible cosmic styling.
+- Cosmic art uses deterministic light motion/static fallbacks; orbital controls use fixed buttons/mobile lists/tokens for accessibility.
 - Creator pathways stream structured output through an internal server route and request-local AI helpers; keep secrets server-only, why: cancellable drafting is not execution.
 - Persist AI denial/credit blocks service-only; clear after owner confirmation, why: prevent billed retries across reloads/restarts.
 - Command search uses a pure typed evolution-data index and validated search parameters or stable anchors, why: exact results without changing local interactions.
@@ -22,7 +21,7 @@
 - Open Call adds optional passport declarations and contribution defaults to Genesis; exports only pending/revoked states, why: preserve old records without implying verification.
 - Twins use synthetic numeric models only, never submitted code/shell/hardware, why: demos are not sandbox or hardware validation.
 
-- SDK validators load in browser events; schema stays SSR-safe, why: no server CommonJS evaluation or JSON transmission.
+- Event-load SDK validators; keep schemas SSR-safe: no CommonJS evaluation/JSON transmission.
 
 - CARE uses a separate validated local store, pure consent transitions, fictional inventory, historical releases and additive defaults, why: preserve records without claiming native capabilities or account security.
 - CARE/native references never invoke OS/capture/updater/shell APIs, why: signed software and grants must precede execution.
@@ -41,4 +40,5 @@
 - Entertainment/Cartoon use separate validated local stores, revision-bound reviews and fresh Guardian/Nexus pause checks, why: samples, timing and preparation exports confer no processing, rights clearance or publication.
 - CLI remains offline source in `cli/`, never web-imported; access policy is inert/exportable, why: no billing/auth entitlement or signed distribution claims.
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
-- Launch Control is dated QA, not approvals; local discovery is opt-in PATH metadata and estimates pure browser math, why: no uploads or assumed charges.
+- Launch Control is dated QA; opt-in PATH discovery and browser cost math never imply approvals/uploads/charges.
+- Quantum stays in authenticated beta with separate service-managed media approval, immutable owner/project storage reservations, bounded PCM via wavefile, limits and trigger audit; OMNI receives draft text only, never file authority or publication grants.
