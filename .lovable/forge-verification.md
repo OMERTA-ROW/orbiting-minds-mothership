@@ -10,7 +10,7 @@ Verified 21 October 2026 in the existing authenticated Quantum Studio. No publis
 - Shared owner-project private WAV references in web manifests without embedding private file or URL. Independent saved outputs, costs UNKNOWN, optional text-only OMNI handoff, Forge CLI references PLANNED.
 
 ## Evidence
-- 30 new Forge unit/handler tests, including exact sample silence/tone/cut/overlap, source preservation, mono, bounds, consent, fake-stem rejection and current export-review revocation.
+- All 773 app tests passed, including 30 new Forge unit/handler tests for exact sample silence/tone/cut/overlap, source preservation, mono, bounds, consent, fake-stem rejection and current export-review revocation. Focused lint passed.
 - 31 retained authenticated browser/hosted checks: actual upload/process/export samples; editable real web preview, saved HTML export, restore/reload, changed-version approval invalidation, stale withdrawn review refusal, desktop/mobile and long-text wrap, owner/cross-owner/anonymous/forged-bearer reads, evidence forgery refusal, wrong-digest review refusal, pause/recovery and linked storage deletion prevention.
 - Repeated existing 37 private-media and 23 account/project isolation checks passed. Zero browser page errors. All temporary QA accounts, approvals, objects and checkpoints removed.
 - Application build log verified separately; no manual project build/typecheck performed.
