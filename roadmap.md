@@ -1,5 +1,11 @@
 # Cosmic Mothership redesign
 
+## Compatibility-first enhancement
+- [ ] Make basic-access/no-download policy, optional hosted offerings and external API costs explicit in CLI and OmniBridge without activating billing or connections.
+- [ ] Connect existing local command references, capability discovery, open exports and value comparisons; distinguish measured source checks from unverified savings.
+- [ ] Verify policy rules and desktop/mobile interaction; preserve existing records, toolchains and blocked foundations.
+- [ ] Enable secure integrations/distribution. Blocker: owner profile-data decision, authenticated owner isolation, secure key custody, authorized APIs, selected repository/license, native signing/test evidence and explicit owner approval. No publication.
+
 ## Lightweight CLI companion
 - [x] Replace Platform command preview with opt-in onboarding, platform tabs and planned command references; no download or package claims.
 - [x] Add minimal cross-platform native source, safe local help/version/doctor and opt-in isolated install/uninstall checks; keep login/connect/OMNI/update blocked.
