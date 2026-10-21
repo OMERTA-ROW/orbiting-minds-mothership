@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
@@ -29,11 +29,13 @@ import {
   releaseChannels,
   channelEvidence,
   canonicalJson,
+  channelLabels,
   type Canon,
   type ReleaseDraft,
 } from "@/lib/forge-universe";
 import { readCreativePause } from "@/hooks/use-cartoon";
 import type { Database } from "@/integrations/supabase/types";
+import type { PostEditHandoff } from "@/lib/forge-post-edit";
 
 type Asset = Database["public"]["Tables"]["studio_assets"]["Row"];
 const control = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -42,11 +44,13 @@ export function CreatorDistro({
   assets,
   allowed,
   consent,
+  handoff,
 }: {
   projectId: string;
   assets: Asset[];
   allowed: boolean;
   consent: boolean;
+  handoff: PostEditHandoff | null;
 }) {
   const { data } = useSuspenseQuery(creatorForgeQuery),
     query = useQueryClient();
@@ -72,6 +76,31 @@ export function CreatorDistro({
   const valid =
     tab === "canon" ? canonSchema.safeParse(canon).success : releaseSchema.safeParse(draft).success;
   const ready = allowed && consent && !!projectId;
+  const consumedHandoff = useRef<PostEditHandoff | null>(null);
+  useEffect(() => {
+    if (!handoff || consumedHandoff.current === handoff || handoff.output.projectId !== projectId)
+      return;
+    const a = assets.find(
+      (v) =>
+        v.id === handoff.output.assetId &&
+        v.project_id === projectId &&
+        v.sha256 === handoff.output.sha256,
+    );
+    if (!a) return;
+    consumedHandoff.current = handoff;
+    setTab("distro");
+    setActive("");
+    setApproval(false);
+    setOwnsSite(false);
+    setDraft((v) => ({ ...v, assetId: a.id }));
+    setNotice(
+      handoff.choice === "schedule"
+        ? "Choose a target date and save the draft. Date intention only; no scheduler or delivery account connected."
+        : handoff.choice === "now"
+          ? "Verified WAV selected for manual release preparation. No connected upload; complete metadata, rights and fresh human review."
+          : "Verified WAV selected. Complete the release fields and save a private DRAFT; nothing saved or posted automatically.",
+    );
+  }, [handoff, projectId, assets]);
   useEffect(() => {
     setApproval(false);
     setOwnsSite(false);
@@ -119,6 +148,7 @@ export function CreatorDistro({
   const evidence = channelEvidence(draft.channel);
   return (
     <section
+      id="creator-distro"
       aria-label="Creator Universe and Distro"
       className="mt-12 min-w-0 scroll-mt-24 border-t border-border pt-8"
     >
@@ -277,7 +307,7 @@ export function CreatorDistro({
                 >
                   {releaseChannels.map((c) => (
                     <option key={c} value={c}>
-                      {c === "rss" ? "Podcast RSS / manual owned-site bundle" : c.replace("-", " ")}
+                      {channelLabels[c]}
                     </option>
                   ))}
                 </select>
@@ -287,6 +317,31 @@ export function CreatorDistro({
                 <br />
                 {evidence.providerCost} · AUTOPUBLISH OFF
               </p>
+              {evidence.platform && (
+                <div className="space-y-3 border-y border-border py-4 text-xs leading-6">
+                  <p className="font-mono text-warning">{evidence.platform.status}</p>
+                  <p className="text-muted-foreground">{evidence.platform.eligibility}</p>
+                  <p>
+                    Account: NONE · Fees/quota: UNKNOWN · Rights: OWNER DECLARATION · Privacy: NO
+                    DELIVERY
+                  </p>
+                  <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+                    {evidence.platform.missing.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <p className="text-warning">
+                    Incomplete metadata handoff only, not a QC-approved submission package. No
+                    video, artwork, captions or platform receipts included. Standalone WAV is not a
+                    supported video delivery.
+                  </p>
+                  <Button asChild variant="ghost" size="sm">
+                    <a href={evidence.platform.source} target="_blank" rel="noreferrer">
+                      Official eligibility guide
+                    </a>
+                  </Button>
+                </div>
+              )}
               {(
                 [
                   ["title", "Release title"],

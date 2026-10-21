@@ -1,5 +1,14 @@
 # Cosmic Mothership redesign
 
+## Founder additions — post-edit Distro, Communications, Adaptive Engine
+- [x] Add QA-bound post-edit release decision and safe Distro prefills; disclose YouTube/Filmhub/VEVO/Vydia eligibility, manual handoffs and unsupported video formats.
+- [x] Show authenticated Communications setup requirements and draft-only scope design; Gmail and Outlook per-user clients are absent in this workspace, so no mailbox access, sending or automatic rules.
+- [x] Add exportable review-only Adaptive Engine proposal contract within existing workspace; no monitoring, code execution, signing or deployment claims.
+- [x] Verify real edit → draft/review/manual bundle, reload/isolation and mobile; run retained tests and record blockers. No production/domain changes.
+- [ ] Activate mail and Adaptive execution. Blockers: workspace-admin per-user OAuth clients with offline access, encrypted user-key storage and verified consent/disconnect/expiry; selected authorized repository, isolated CI, signing, staged deployment/rollback and owner approval. No shared mailbox credential fallback or self-granted permissions.
+
+Validation: 828 app tests plus 48 authenticated Creator/Distro/operations and 31 repeated Forge/privacy checks passed. Real saved WAV bytes were re-downloaded, format/clipping/digest checked; three post-edit choices preselect the exact asset without saving/approving/posting. Target date intent persists, no scheduler. Filmhub metadata handoff declares missing media/QC, no receipt. Mail and upgrade JSON exports have no connected account, send, rules, fetched sources, branch, tests, signature or deploy. Mobile and zero runtime errors checked; temporary accounts/files removed. Focused lint and preview build pass. Per-user mail setup remains absent; no provider calls, production/domain changes or CyberLink Social access.
+
 ## Creator Universe + OMNI FORGE DISTRO — current focused milestone
 - [x] Add owner-isolated editable fictional canon and Podcast/Game branch plans inside existing Forge, with honest capability and rights states.
 - [x] Add a draft/review release console and validated RSS/manual owned-site export path, exact-version consent, revocation, repeat-safe exports and audit; no posting or public feed exposure.

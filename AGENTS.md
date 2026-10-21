@@ -31,8 +31,8 @@
 - Guardian reviews use proposed-only samples, why: no model, scan, source execution or text-based privilege.
 - Guardian pause invalidates local Fleet grants/plans and pauses CARE separately; report failures without remote receipts, why: no secure readiness/containment claim.
 - Robotics uses central scenarios, bounded arithmetic and separate local records, never code/ROS/hardware execution, why: no physics, diagnosis or safety proof.
-- Scenario handoffs prefill Founder/Oracle/Challenges/Releases without automatic requests; Guardian is proposed-only, why: handoffs confer no authority.
-- Debrief/Archives/Accountability share additive local records, consent/revisions and release/replay references; pattern checks imply no confidential audit, fault verification or execution provenance.
+- Scenario handoffs only prefill drafts; Guardian stays proposed-only, why: no authority transfer.
+- Debrief/Archives/Accountability share additive local consent/revisions and replay/release references, why: pattern checks prove no fault or provenance.
 - Trusted Release uses separate validated local records, Web Crypto sample digests and consent rehearsals; hardware/deployment blocked, why: hashes/signoffs are not signatures, trusted audit or safety proof.
 - Vault reuses Trust records, owner confirmation, exact comparisons and event-loaded parsers; Lounge uses Genesis consent, why: no signing/enrollment claims.
 - Nexus keeps separate consented local records and isolated base-version drafts; corrected example labels overlay stored data, why: preserve work without secure chat or execution claims.
@@ -42,4 +42,5 @@
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
 - Launch Control is dated QA; opt-in PATH discovery and browser cost math never imply approvals/uploads/charges.
 - Quantum/Forge use approved private owner-project media, bounded PCM with bundled WaveFile, inert web drafts and immutable digest-reviewed versions; OMNI gets text only, why: consistent SSR exports; plans confer no file/publish authority.
-- Creator/Distro use immutable owner-project canon/release drafts, canonical digests and row-locked current-access review/revoke/prepare; private XML/WAV ZIPs only, why: repeat-safe manual exports never imply hosting, receipts, jobs or recall.
+- Creator/Distro use immutable owner-project drafts, digests and row-locked access/review/revoke; post-edit prefills require downloaded WAV QA, why: manual ZIPs never imply hosting, receipts, schedules or recall.
+- OMNI operations export strict mail-access/upgrade proposals in private beta; no provider or execution endpoints, why: setup/evidence must precede mail, CI, scopes or release.

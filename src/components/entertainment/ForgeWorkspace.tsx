@@ -41,6 +41,8 @@ import { inspectWav, STUDIO_BUCKET, studioPath } from "@/lib/quantum";
 import { readCreativePause } from "@/hooks/use-cartoon";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
+import { verifyPostEdit, type PostEditOutput, type PostEditChoice } from "@/lib/forge-post-edit";
+import { PostEditPrompt } from "./PostEditPrompt";
 
 type Asset = Database["public"]["Tables"]["studio_assets"]["Row"];
 export function ForgeWorkspace({
@@ -50,6 +52,7 @@ export function ForgeWorkspace({
   allowed,
   consent,
   paused,
+  onPostEdit,
 }: {
   projectId: string;
   selected: string;
@@ -57,6 +60,7 @@ export function ForgeWorkspace({
   allowed: boolean;
   consent: boolean;
   paused: boolean;
+  onPostEdit: (output: PostEditOutput, choice: PostEditChoice) => void;
 }) {
   const { data } = useSuspenseQuery(forgeQuery),
     query = useQueryClient();
@@ -84,6 +88,7 @@ export function ForgeWorkspace({
     [after, setAfter] = useState("");
   const urls = useRef<string[]>([]),
     epoch = useRef(0);
+  const [verifiedOutput, setVerifiedOutput] = useState<PostEditOutput | null>(null);
   const versions = data.versions.filter((v) => v.project_id === projectId),
     active = versions.find((v) => v.id === activeId);
   const reviewed =
@@ -107,6 +112,7 @@ export function ForgeWorkspace({
       : versions.find((v) => v.kind === "web");
   const diff = webDiff(previous ? webContent.parse(previous.content) : null, web);
   const clearAudio = () => {
+    setVerifiedOutput(null);
     epoch.current++;
     urls.current.forEach((u) => URL.revokeObjectURL(u));
     urls.current = [];
@@ -177,7 +183,15 @@ export function ForgeWorkspace({
     if (!version.source_id || !version.output_id) throw new Error("Media lineage unavailable.");
     const sourceBlob = await blob(version.source_id),
       outputBlob = await blob(version.output_id, version.sha256);
+    const output = assets.find((a) => a.id === version.output_id);
+    if (!output) throw new Error("Saved output unavailable.");
+    const verified = await verifyPostEdit(
+      output,
+      new Uint8Array(await outputBlob.arrayBuffer()),
+      projectId,
+    );
     if (generation !== epoch.current) return;
+    setVerifiedOutput(verified);
     const a = URL.createObjectURL(sourceBlob),
       b = URL.createObjectURL(outputBlob);
     urls.current.push(a, b);
@@ -536,6 +550,30 @@ export function ForgeWorkspace({
                     setProcessApproval(false);
                     setExportConsent(false);
                     clearAudio();
+                    if (!result.output_id || !result.source_id)
+                      throw new Error("Output lineage missing.");
+                    const fetched = await supabase.storage
+                      .from(STUDIO_BUCKET)
+                      .download(studioPath(result.owner_id, result.output_id));
+                    if (fetched.error || !fetched.data)
+                      throw new Error(
+                        "Radio saved, but output readback failed; reload before release preparation.",
+                      );
+                    const verified = await verifyPostEdit(
+                      {
+                        id: result.output_id,
+                        owner_id: result.owner_id,
+                        project_id: result.project_id,
+                        role: "enhanced",
+                        source_id: result.source_id,
+                        byte_size: fetched.data.size,
+                        sha256: result.sha256,
+                      },
+                      new Uint8Array(await fetched.data.arrayBuffer()),
+                      projectId,
+                    );
+                    gate();
+                    setVerifiedOutput(verified);
                     setNotice(
                       "Radio output saved privately. Load its version below for measured before/after review. No public release.",
                     );
@@ -545,6 +583,13 @@ export function ForgeWorkspace({
                 <Radio size={14} />
                 {busy ? "Working…" : "Create radio version"}
               </Button>
+              {verifiedOutput && (
+                <PostEditPrompt
+                  output={verifiedOutput}
+                  disabled={busy || !allowed || !consent || paused}
+                  onChoose={(choice) => onPostEdit(verifiedOutput, choice)}
+                />
+              )}
               {(before || after) && (
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div>

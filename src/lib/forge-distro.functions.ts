@@ -11,6 +11,7 @@ import {
   channelEvidence,
   canonicalJson,
   assertReleaseAction,
+  platformHandoff,
 } from "./forge-universe";
 import {
   assertStudioAccess,
@@ -245,6 +246,21 @@ export const actOnDistro = createServerFn({ method: "POST" })
           2,
         ),
       );
+      const handoff = platformHandoff(draft.channel);
+      if (handoff)
+        files["platform-handoff.json"] = strToU8(
+          JSON.stringify(
+            {
+              draft,
+              ...handoff,
+              state: "INCOMPLETE METADATA HANDOFF / NOT SUBMITTED",
+              directUpload: false,
+              scheduled: false,
+            },
+            null,
+            2,
+          ),
+        );
       files["HANDOFF.txt"] = strToU8(
         "OMNI FORGE manual release bundle.\nNot published, uploaded or platform-approved.\nRSS only: Upload feed.xml and audio/ yourself to the exact declared owned HTTPS directory; confirm public bytes, MIME, accessibility and host receipts before submitting to a podcast directory. WAV acceptance varies; this is not universal platform compatibility.\nTarget date is an intention, not a scheduled job. Other channels include metadata/canon only, never fake finished media.\nRights declarations and hashes are not independent clearance or signatures.\n",
       );
