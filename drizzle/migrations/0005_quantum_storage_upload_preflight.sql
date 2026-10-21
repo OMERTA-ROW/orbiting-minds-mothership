@@ -1,0 +1,5 @@
+ALTER POLICY studio_storage_insert ON storage.objects WITH CHECK (bucket_id='quantum-studio' AND EXISTS (SELECT 1 FROM public.studio_assets s JOIN public.beta_access a ON a.user_id=s.owner_id WHERE s.owner_id=(SELECT auth.uid()) AND a.studio_approved AND NOT a.paused AND name=s.owner_id::text||'/'||s.id::text||'/audio.wav'));
+COMMENT ON POLICY studio_storage_insert ON storage.objects IS 'Storage preflight has no metadata. Owner reservation and approval constrain paths/count; bucket enforces 4MB. App and server inspect bounded WAV content; no object UPDATE/upsert or public reads.';
+CREATE FUNCTION public.prevent_studio_project_orphans() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN IF EXISTS (SELECT 1 FROM public.studio_assets s WHERE s.project_id=OLD.id) THEN RAISE EXCEPTION 'Delete private media files before deleting their project'; END IF; RETURN OLD; END; $$;
+REVOKE ALL ON FUNCTION public.prevent_studio_project_orphans() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER studio_project_delete_guard BEFORE DELETE ON public.beta_projects FOR EACH ROW EXECUTE FUNCTION public.prevent_studio_project_orphans();

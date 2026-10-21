@@ -36,6 +36,13 @@
       "when": 1792557490459,
       "tag": "0004_quantum_private_media_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792557933887,
+      "tag": "0005_quantum_storage_upload_preflight",
+      "breakpoints": true
     }
   ]
 }
