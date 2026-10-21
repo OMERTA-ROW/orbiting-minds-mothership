@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { DiscoveryPage } from "@/components/genesis/Showcases";
 import { seo } from "@/lib/seo";
-export const Route = createFileRoute("/discovery")({ head: () => seo("Discovery Radar", "Search cited demo contributions and local knowledge capsules across domains with editorial connections and honest attribution."), component: DiscoveryPage });
+import { roboticsPresetSearch } from "@/lib/robotics";
+export const Route = createFileRoute("/discovery")({ validateSearch: roboticsPresetSearch, head: () => seo("Oracle · Discovery Radar", "Search cited demo contributions, robotics research hypotheses and local knowledge capsules with editorial connections and honest attribution."), component: DiscoveryRoute });
+function DiscoveryRoute() { const { scenario } = Route.useSearch(); return <DiscoveryPage key={scenario ?? "discovery"} scenarioId={scenario} />; }

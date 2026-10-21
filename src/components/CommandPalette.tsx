@@ -8,8 +8,8 @@ import { searchCommands, shouldOpenPalette, type SearchEntry, type SearchKind } 
 import type { navItems } from "@/components/SiteNav";
 
 const PaletteContext = createContext<(() => void) | null>(null);
-const kinds: SearchKind[] = ["Module", "Project", "Agent", "Proposal", "Idea", "Code"];
-const icons = { Module: Orbit, Project: Layers, Agent: Bot, Proposal: FileText, Idea: Sparkles, Code: Code2 };
+const kinds: SearchKind[] = ["Module", "Project", "Agent", "Proposal", "Idea", "Code", "Scenario"];
+const icons = { Module: Orbit, Project: Layers, Agent: Bot, Proposal: FileText, Idea: Sparkles, Code: Code2, Scenario: Bot };
 
 export function PaletteTrigger() {
   const open = useContext(PaletteContext);
@@ -36,6 +36,7 @@ export function CommandPaletteProvider({ children, pages: navigation }: { childr
     else if (entry.kind === "Agent") void navigate({ to: "/agents", hash: `agent-${entry.id.toLowerCase()}` });
     else if (entry.kind === "Proposal") void navigate({ to: "/dashboard", search: { proposal: entry.id }, hash: `proposal-${entry.id}` });
     else if (entry.kind === "Code") void navigate({ to: "/code-exchange/$id", params: { id: entry.id } });
+    else if (entry.kind === "Scenario") void navigate({ to: "/robotics/$id", params: { id: entry.id } });
     else void navigate({ to: "/knowledge-fusion", search: { idea: entry.id }, hash: `idea-${entry.id}` });
   };
   const matches = searchCommands(query);

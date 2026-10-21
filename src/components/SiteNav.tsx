@@ -17,6 +17,7 @@ export const navItems = [
   { to: "/sdk", label: "SDK / API Docs" },
   { to: "/discovery", label: "Discovery Radar" },
   { to: "/digital-twin", label: "Digital Twin Lab" },
+  { to: "/robotics", label: "Robotics & Mobility Lab" },
   { to: "/trust", label: "Trust & Certification" },
   { to: "/marketplace", label: "Creator Marketplace" },
   { to: "/compute-grid", label: "Compute Grid" },

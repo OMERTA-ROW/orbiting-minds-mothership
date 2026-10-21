@@ -35,6 +35,7 @@ import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as PulseRouteImport } from './routes/pulse'
 import { Route as ReleasesRouteImport } from './routes/releases'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
+import { Route as RoboticsRouteImport } from './routes/robotics'
 import { Route as SandboxRouteImport } from './routes/sandbox'
 import { Route as SdkRouteImport } from './routes/sdk'
 import { Route as SecurityReportRouteImport } from './routes/security-report'
@@ -46,6 +47,7 @@ import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-
 import { Route as CapsulesIdRouteImport } from './routes/capsules_.$id'
 import { Route as ChallengesIdRouteImport } from './routes/challenges_.$id'
 import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
+import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -177,6 +179,11 @@ const RoadmapRoute = RoadmapRouteImport.update({
   path: '/roadmap',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoboticsRoute = RoboticsRouteImport.update({
+  id: '/robotics',
+  path: '/robotics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SandboxRoute = SandboxRouteImport.update({
   id: '/sandbox',
   path: '/sandbox',
@@ -232,6 +239,11 @@ const CodeExchangeIdRoute = CodeExchangeIdRouteImport.update({
   path: '/code-exchange/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoboticsIdRoute = RoboticsIdRouteImport.update({
+  id: '/robotics_/$id',
+  path: '/robotics/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -260,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
   '/roadmap': typeof RoadmapRoute
+  '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
   '/sdk': typeof SdkRoute
   '/security-report': typeof SecurityReportRoute
@@ -271,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
+  '/robotics/$id': typeof RoboticsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -299,6 +313,7 @@ export interface FileRoutesByTo {
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
   '/roadmap': typeof RoadmapRoute
+  '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
   '/sdk': typeof SdkRoute
   '/security-report': typeof SecurityReportRoute
@@ -310,6 +325,7 @@ export interface FileRoutesByTo {
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
+  '/robotics/$id': typeof RoboticsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -339,6 +355,7 @@ export interface FileRoutesById {
   '/pulse': typeof PulseRoute
   '/releases': typeof ReleasesRoute
   '/roadmap': typeof RoadmapRoute
+  '/robotics': typeof RoboticsRoute
   '/sandbox': typeof SandboxRoute
   '/sdk': typeof SdkRoute
   '/security-report': typeof SecurityReportRoute
@@ -350,6 +367,7 @@ export interface FileRoutesById {
   '/capsules_/$id': typeof CapsulesIdRoute
   '/challenges_/$id': typeof ChallengesIdRoute
   '/code-exchange_/$id': typeof CodeExchangeIdRoute
+  '/robotics_/$id': typeof RoboticsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -380,6 +398,7 @@ export interface FileRouteTypes {
     | '/pulse'
     | '/releases'
     | '/roadmap'
+    | '/robotics'
     | '/sandbox'
     | '/sdk'
     | '/security-report'
@@ -391,6 +410,7 @@ export interface FileRouteTypes {
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
+    | '/robotics/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -419,6 +439,7 @@ export interface FileRouteTypes {
     | '/pulse'
     | '/releases'
     | '/roadmap'
+    | '/robotics'
     | '/sandbox'
     | '/sdk'
     | '/security-report'
@@ -430,6 +451,7 @@ export interface FileRouteTypes {
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
+    | '/robotics/$id'
   id:
     | '__root__'
     | '/'
@@ -458,6 +480,7 @@ export interface FileRouteTypes {
     | '/pulse'
     | '/releases'
     | '/roadmap'
+    | '/robotics'
     | '/sandbox'
     | '/sdk'
     | '/security-report'
@@ -469,6 +492,7 @@ export interface FileRouteTypes {
     | '/capsules_/$id'
     | '/challenges_/$id'
     | '/code-exchange_/$id'
+    | '/robotics_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -498,6 +522,7 @@ export interface RootRouteChildren {
   PulseRoute: typeof PulseRoute
   ReleasesRoute: typeof ReleasesRoute
   RoadmapRoute: typeof RoadmapRoute
+  RoboticsRoute: typeof RoboticsRoute
   SandboxRoute: typeof SandboxRoute
   SdkRoute: typeof SdkRoute
   SecurityReportRoute: typeof SecurityReportRoute
@@ -509,6 +534,7 @@ export interface RootRouteChildren {
   CapsulesIdRoute: typeof CapsulesIdRoute
   ChallengesIdRoute: typeof ChallengesIdRoute
   CodeExchangeIdRoute: typeof CodeExchangeIdRoute
+  RoboticsIdRoute: typeof RoboticsIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -695,6 +721,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoadmapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/robotics': {
+      id: '/robotics'
+      path: '/robotics'
+      fullPath: '/robotics'
+      preLoaderRoute: typeof RoboticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sandbox': {
       id: '/sandbox'
       path: '/sandbox'
@@ -772,6 +805,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CodeExchangeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/robotics_/$id': {
+      id: '/robotics_/$id'
+      path: '/robotics/$id'
+      fullPath: '/robotics/$id'
+      preLoaderRoute: typeof RoboticsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -802,6 +842,7 @@ const rootRouteChildren: RootRouteChildren = {
   PulseRoute: PulseRoute,
   ReleasesRoute: ReleasesRoute,
   RoadmapRoute: RoadmapRoute,
+  RoboticsRoute: RoboticsRoute,
   SandboxRoute: SandboxRoute,
   SdkRoute: SdkRoute,
   SecurityReportRoute: SecurityReportRoute,
@@ -813,6 +854,7 @@ const rootRouteChildren: RootRouteChildren = {
   CapsulesIdRoute: CapsulesIdRoute,
   ChallengesIdRoute: ChallengesIdRoute,
   CodeExchangeIdRoute: CodeExchangeIdRoute,
+  RoboticsIdRoute: RoboticsIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

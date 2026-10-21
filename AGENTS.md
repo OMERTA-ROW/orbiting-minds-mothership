@@ -24,10 +24,12 @@
 
 - SDK JSON validation is loaded only from browser events; schema data remains SSR-safe, why: avoid evaluating the CommonJS validator in server rendering and never transmit user JSON.
 
-- CARE uses a separate validated versioned browser-local store and pure consent transitions; inventory is fictional and release references historical; additive fields have validated defaults to preserve prior local records, why: demonstrate safe workflows without conflating preferences with account security or native capabilities.
+- CARE uses a separate validated local store, pure consent transitions, fictional inventory, historical releases and additive defaults, why: preserve records without claiming native capabilities or account security.
 - CARE, Updates, Pilot, Voice and native-agent reference have public demo routes; no OS, capture, microphone, synthesis, updater or shell API is called, why: real capabilities require separately signed native software, per-action grants and security review.
 
 - CARE scan plans and update-check rehearsals produce structured browser-local audit records, not executable jobs or tamper-evident receipts; channel context is captured on new plans, why: preserve truthful provenance without claiming a native agent or secure audit service.
 - Guardian and Fleet use a separate validated browser-local demo store with pure expiry/consent/revocation transitions; every device starts unpaired and scope-less, why: rehearse device-bound gates without impersonating authenticated ownership or affecting CARE/Genesis records.
 - Guardian review roles use fixed proposed-only reference findings, not model calls or executable source analysis; reports read current local sample records and unknown real evidence, why: no billed retries, instruction-based privilege or fabricated detection/scan history.
 - Guardian emergency pause invalidates local fleet pairing/scopes/plans and separately pauses CARE preferences, reporting failures without remote receipts; release gates remain unverified, why: local state cannot establish secure platform readiness or confirmed endpoint containment.
+- Robotics uses central demo scenarios, bounded arithmetic and a separate validated local store, never referenced-code/ROS/hardware execution, why: reproduce research without implying physics, diagnosis or safety certification.
+- Known scenario IDs prefill Founder, Oracle, Challenges and Releases without consent or automatic requests; Guardian uses a whitelisted proposed-only surface, why: handoffs cannot confer hardware or release authority.
