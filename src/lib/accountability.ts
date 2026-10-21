@@ -33,8 +33,13 @@ export const accountabilityRecord=z.object({id,at:date,input:accountabilityInput
  events:z.array(z.object({id,actorId:id,at:date,action:z.string().max(140)}).strict()).max(200),
 }).strict().superRefine((r,c)=>{
  if(r.state==="Reviewed DEMO"&&(!r.review||r.review.decision!=="Reviewed DEMO"||r.review.revision!==r.revision||r.review.actorId===r.input.reporterId||!r.privacyReviewed))c.addIssue({code:"custom",message:"Current distinct review and privacy confirmation required."});
- if(r.input.detectedAt>r.at||r.input.timeline.some(e=>e.at>r.at))c.addIssue({code:"custom",message:"Incident observations cannot be later than the reporting time."});
+ const latest=r.events.at(-1)?.at??r.at;
+ if(Date.parse(r.input.detectedAt)>Date.parse(latest)||r.input.timeline.some(e=>Date.parse(e.at)>Date.parse(latest)))c.addIssue({code:"custom",message:"Incident observations cannot be later than the recording time."});
  if(r.history.some(h=>h.input.reporterId!==r.input.reporterId))c.addIssue({code:"custom",message:"Historical reporter declarations must be preserved."});
+ if(r.history.length!==r.revision-1||r.history.some((h,i)=>h.revision!==i+1))c.addIssue({code:"custom",message:"Revision history must preserve every version."});
+ if(r.state==="Review requested"&&!r.privacyReviewed)c.addIssue({code:"custom",message:"Review request requires privacy confirmation."});
+ for(const rows of [r.events,r.notices,r.actions])if(new Set(rows.map(x=>x.id)).size!==rows.length)c.addIssue({code:"custom",message:"Duplicate local event identifiers."});
+ if(r.events.some((e,i)=>Date.parse(e.at)<Date.parse(r.at)||i>0&&Date.parse(e.at)<Date.parse(r.events[i-1]?.at??r.at)))c.addIssue({code:"custom",message:"Events must be chronological."});
 });
 export type AccountabilityRecord=z.infer<typeof accountabilityRecord>;
 export type AccountabilityCommand=
@@ -48,7 +53,7 @@ export type AccountabilityCommand=
 const safe=(v:unknown)=>{const s=JSON.stringify(v);if(screenDebrief({sample:s}).length)throw new Error("Remove potentially sensitive or unsafe sample content; Guardian patterns are incomplete.");};
 export function accountabilityState(r:AccountabilityRecord,g:GenesisStore){
  if(r.state==="Withdrawn")return "Withdrawn";
- try{requireDemoIdentity(g,r.input.reporterId,"submit_capsules");if(r.review)requireDemoIdentity(g,r.review.actorId,"review_proposals");}catch{return "Consent invalidated";}
+ try{requireDemoIdentity(g,r.input.reporterId,"submit_capsules");if(r.review){const reviewer=requireDemoIdentity(g,r.review.actorId,"review_proposals");if(reviewer.kind==="Agent operator")return "Consent invalidated";}}catch{return "Consent invalidated";}
  return r.state;
 }
 export function applyAccountability(rows:AccountabilityRecord[],g:GenesisStore,command:AccountabilityCommand,recordId:string,at:string){
@@ -59,7 +64,8 @@ export function applyAccountability(rows:AccountabilityRecord[],g:GenesisStore,c
  }else{
   const r=next.find(x=>x.id===command.caseId);if(!r)throw new Error("Local case not found.");
   if(r.state==="Withdrawn")throw new Error("Consent withdrawn; new case actions are blocked.");
-  const actor=requireDemoIdentity(g,command.actorId,command.type==="accountabilityReview"?"review_proposals":undefined);
+  const actor=command.type==="accountabilityWithdraw"?g.identities.find(p=>p.id===command.actorId):requireDemoIdentity(g,command.actorId,command.type==="accountabilityReview"?"review_proposals":undefined);
+  if(!actor)throw new Error("Reporter declaration is missing.");
   if(command.type!=="accountabilityWithdraw")requireDemoIdentity(g,r.input.reporterId,"submit_capsules");
   const owner=()=>{if(actor.id!==r.input.reporterId)throw new Error("The declaring reporter must confirm this local action.");};
   if(command.type==="accountabilityRevise"){
@@ -72,6 +78,7 @@ export function applyAccountability(rows:AccountabilityRecord[],g:GenesisStore,c
    if(command.type==="accountabilityPrivacy"){owner();r.privacyReviewed=true;r.review=null;r.state="Review requested";}
    if(command.type==="accountabilityReview"){
     if(actor.id===r.input.reporterId||actor.kind==="Agent operator")throw new Error("A distinct declared human reviewer is required.");
+    if([r.input.proposedBy,r.input.approvedBy,r.input.deployedBy].some(x=>x.actor.toLowerCase()===actor.name.toLowerCase()))throw new Error("Choose a reviewer not declared as proposer, approver or deployer of the incident change.");
     if(r.state!=="Review requested"||!r.privacyReviewed)throw new Error("Reporter privacy review must precede independent local review.");
     if(command.decision==="Reviewed DEMO"&&openDisputes(r).length)throw new Error("Resolve recorded disputes before recording a reviewed DEMO.");
     r.review=review.parse({actorId:actor.id,at,revision:r.revision,decision:command.decision,note:command.note,privacy:command.privacy,evidence:command.evidence,uncertainty:command.uncertainty});r.state=command.decision;
@@ -90,4 +97,4 @@ export function applyAccountability(rows:AccountabilityRecord[],g:GenesisStore,c
  return z.array(accountabilityRecord).max(50).parse(next);
 }
 export function openDisputes(r:AccountabilityRecord){return r.notices.filter(n=>n.kind==="Dispute"&&!r.notices.some(x=>x.kind==="Resolution"&&x.resolves===n.id));}
-export function accountabilityExport(r:AccountabilityRecord,g:GenesisStore){const {logs:_l,baselineText:_b,observedText:_o,...summary}=r.input;return {mode:"DEMO",id:r.id,revision:r.revision,state:accountabilityState(r,g),summary,review:r.review,notices:r.notices,actions:r.actions,events:r.events,logsIncluded:false,codeIncluded:false,historyIncluded:false,rootCauseVerified:false,legalCulpabilityEstablished:false,signature:null,externalPublication:false,hardwareAllowed:false,storage:"EDITABLE_BROWSER_LOCAL / NOT CONFIDENTIAL"};}
+export function accountabilityExport(r:AccountabilityRecord,g:GenesisStore){const {logs:_l,baselineText:_b,observedText:_o,...summary}=r.input;const state=accountabilityState(r,g),withheld=state==="Withdrawn"||state==="Consent invalidated";return {mode:"DEMO",id:r.id,revision:r.revision,state,summary:withheld?null:summary,review:withheld?null:r.review,notices:withheld?[]:r.notices,actions:withheld?[]:r.actions,events:withheld?[]:r.events,logsIncluded:false,codeIncluded:false,historyIncluded:false,rootCauseVerified:false,legalCulpabilityEstablished:false,signature:null,externalPublication:false,hardwareAllowed:false,storage:"EDITABLE_BROWSER_LOCAL / NOT CONFIDENTIAL"};}
