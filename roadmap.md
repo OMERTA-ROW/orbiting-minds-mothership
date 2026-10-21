@@ -1,5 +1,11 @@
 # Cosmic Mothership redesign
 
+## Quantum Studio — focused owner-approved milestone
+- [ ] Add approved-account private media intake, bounded file/storage limits and cross-account tests; no public or domain changes.
+- [ ] Implement one real non-destructive WAV enhancement with before/after playback, measured checks, private audit and recovery.
+- [ ] Add editable OMNI creative plans across film/music/cartoon/book/adaptation; unsupported execution and studio CLI commands remain planned.
+- [ ] Verify authenticated upload/process/reload/export/deletion, anonymous/isolation failures and desktop/mobile; record evidence and remaining dependencies.
+
 ## Launch Control — current priority; expansion frozen
 - [x] Audit hosted schema/grants/auth/AI; add four owner-scoped beta tables, revoke inherited broad grants and pass 23 retained live isolation checks.
 - [x] Implement login/signup/logout, private projects/agent declarations and test real login/save/readback/refresh/pause/logout/Back/second-account flow; no browser DEMO imports.
