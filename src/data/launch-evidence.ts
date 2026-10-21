@@ -11,6 +11,16 @@ export type LaunchGate = {
 };
 export const launchEvidence: LaunchGate[] = [
   {
+    id: "social-developer",
+    capability: "Social Autopilot preparation + developer readiness",
+    owner: "Founder / integration engineering + security QA",
+    status: "UNVERIFIED",
+    evidence: "21 Oct: 854 app tests and 35 retained authenticated planning checks passed; 23 account-isolation regressions repeated. Private owner/project social save, readback, reload, exact human review, edit invalidation, stop, UTC intentions in non-UTC browser, safe JSON and developer proposal exports verified. Cross-owner, anonymous, stale versions, direct state forgery, null approval/action and mistyped consent blocked. Mobile/desktop and zero runtime errors verified; temporary accounts/records removed. No social/developer API calls, jobs, receipts, account permissions or production/domain changes.",
+    next: "Per-user GitHub, LinkedIn, GitLab and Notion client lookup found none. Workspace admin must configure and link an offline-enabled client before encrypted per-user connection storage, verified consent/disconnect/expiry and one owner-authorized account/content test. Select exact repository and read-only scope before real developer workflow. No active scheduler/autopilot, quotas, retries, provider media QA, signing, CI or deploy. CyberLink Social is excluded. Human approvals, rights/privacy/security review and core launch limits remain required.",
+    gating: true,
+    demoOnly: false,
+  },
+  {
     id: "post-edit-operations",
     capability: "Post-edit choices + review-only OMNI operations",
     owner: "Media / integration engineering + security QA",

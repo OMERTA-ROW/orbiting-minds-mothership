@@ -43,4 +43,4 @@
 - Launch Control is dated QA; opt-in PATH discovery and browser cost math never imply approvals/uploads/charges.
 - Quantum/Forge use approved private owner-project media, bounded PCM with bundled WaveFile, inert web drafts and immutable digest-reviewed versions; OMNI gets text only, why: consistent SSR exports; plans confer no file/publish authority.
 - Creator/Distro use immutable owner-project drafts, digests and row-locked access/review/revoke; post-edit prefills require downloaded WAV QA, why: manual ZIPs never imply hosting, receipts, schedules or recall.
-- OMNI private operations use strict proposals and owner-scoped row-locked social draft/review/stop records; no provider endpoints, why: calendar intentions and declarations confer no posting, CI, scopes or release authority.
+- OMNI private operations use strict proposals and owner-scoped row-locked social draft/review/stop records with explicit grant revokes and typed non-null consent; no provider endpoints, why: declarations confer no posting, CI, scopes or release authority.
