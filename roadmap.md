@@ -1,5 +1,12 @@
 # Cosmic Mothership redesign
 
+## OmniBridge first phase
+- [ ] Add cosmic capability graph, searchable registry, explicit connection states, evidence, costs, scopes and compatibility.
+- [ ] Add deterministic DEMO intent plans with explicit project/agent routing, affected samples, previews and human approval/cancellation history.
+- [ ] Connect Nexus/navigation/Guardian pause and SDK/onboarding reference; preserve all existing worlds and exclude CyberLink Social.
+- [ ] Test project isolation, permission/approval gates, Solana restrictions, local records and desktop/mobile flows.
+- [ ] Enable live adapters and secure execution. Blocker: owner profile-data decision, authenticated owner isolation, scoped official API consent, credential custody, signed extensions/companion, sandbox evidence and security review. No publication.
+
 ## Command Nexus
 - [x] Apply the Cyberace scope correction to proposed project cards and examples; verify existing workspaces are unchanged.
 - Scope: Cyberace is the intended DEMO example, integration unconfirmed until authorized. CyberLink Social has its own terminal and is entirely excluded from Evolution enrollment, access, changes and deployment. Keep music, book publishing, Unity/Blender and parallel-agent workspaces unchanged; do not publish.
