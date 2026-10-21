@@ -14,22 +14,22 @@ export const readBeta = createServerFn({ method: "GET" }).middleware([requireSup
   if (error) throw new Error("Private records could not be read. Please sign in again or retry.");
   return { projects: projects.data ?? [], agents: agents.data ?? [], access: access.data, audit: audit.data ?? [] };
 });
-export const saveBetaProject = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => betaProjectInput.parse(v)).handler(async ({ data, context }) => {
+export const saveBetaProject = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((v: unknown) => betaProjectInput.parse(v)).handler(async ({ data, context }) => {
   const result = await context.supabase.from("beta_projects").insert({ owner_id: context.userId, ...data }).select().single();
   if (result.error) throw new Error("Project could not be saved. No success has been recorded.");
   return result.data;
 });
-export const saveBetaAgent = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => betaAgentInput.parse(v)).handler(async ({ data, context }) => {
+export const saveBetaAgent = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((v: unknown) => betaAgentInput.parse(v)).handler(async ({ data, context }) => {
   const result = await context.supabase.from("beta_agent_profiles").insert({ owner_id: context.userId, project_id: data.projectId, name: data.name, provider: data.provider, model: data.model, scope: data.scope, operator_consent: data.consent, status: "Pending" }).select().single();
   if (result.error) throw new Error("Agent declaration could not be saved in this account’s project.");
   return result.data;
 });
-export const changeBetaPause = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => z.object({ paused: z.boolean() }).strict().parse(v)).handler(async ({ data, context }) => {
+export const changeBetaPause = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((v: unknown) => z.object({ paused: z.boolean() }).strict().parse(v)).handler(async ({ data, context }) => {
   const result = await context.supabase.from("beta_access").update({ paused: data.paused }).eq("user_id", context.userId).select("paused").single();
   if (result.error) throw new Error("AI pause could not be saved. Do not assume requests are blocked.");
   return result.data;
 });
-export const revokeBetaAgent = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => z.object({ id: z.string().uuid() }).strict().parse(v)).handler(async ({ data, context }) => {
+export const revokeBetaAgent = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((v: unknown) => z.object({ id: z.string().uuid() }).strict().parse(v)).handler(async ({ data, context }) => {
   const result = await context.supabase.from("beta_agent_profiles").update({ status: "Revoked" }).eq("id", data.id).eq("owner_id", context.userId).select("id").single();
   if (result.error) throw new Error("Declaration not found in your account.");
   return result.data;
