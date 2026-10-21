@@ -17,6 +17,8 @@ export async function handleOmni(request: Request) {
     if (state.data) return Response.json({ message: state.data.message }, { status: state.data.blocked_status });
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) return Response.json({ message: "Lovable AI is not configured. No request started." }, { status: 401 });
+    // Recheck immediately before inference; a slow body cannot retain a revoked permission.
+    await authenticateBetaAi(request);
     const abort = new AbortController(), signal = AbortSignal.any([request.signal, abort.signal]);
     const call = createOmniCall(request, apiKey, JSON.stringify(project.data), parsed.data.message, signal);
     const encoder = new TextEncoder(); let cancelled = false;
