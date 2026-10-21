@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { screenDebrief } from "./incident-screening";
 import { accountabilityRecord, applyAccountability, type AccountabilityCommand } from "./accountability";
+import { validateAccountabilityLinks } from "./accountability-links";
+import { accountabilityInput } from "./accountability";
+import type { TrustStore } from "./trusted-release";
 import { incidentCategories, incidentExamples } from "@/data/evolution";
 import { publicEvidenceUrl } from "@/lib/embassy";
 import { requireDemoIdentity, type GenesisStore } from "@/lib/genesis";
@@ -50,9 +53,13 @@ export type IncidentCommand = AccountabilityCommand
  | { type: "review"; recordId: string; actorId: string; decision: "Preview approved" | "Changes requested"; note: string; privacyConfirmed: boolean; rightsConfirmed: boolean; attributionConfirmed: boolean }
  | { type: "withdraw"; recordId: string; actorId: string }
  | { type: "notice"; caseId: string; actorId: string; kind: "Correction" | "Takedown"; note: string };
-export function applyIncidentCommand(current: IncidentStore, genesis: GenesisStore, command: IncidentCommand, id: string, at: string): IncidentStore {
+export function applyIncidentCommand(current: IncidentStore, genesis: GenesisStore, command: IncidentCommand, id: string, at: string, trust?: TrustStore): IncidentStore {
  const store = structuredClone(incidentStoreSchema.parse(current));
  if (command.type === "accountabilityReport" || command.type === "accountabilityRevise" || command.type === "accountabilityPrivacy" || command.type === "accountabilityWithdraw" || command.type === "accountabilityReview" || command.type === "accountabilityNotice" || command.type === "accountabilityAction") {
+  if(command.type === "accountabilityReport" || command.type === "accountabilityRevise"){
+   const input=accountabilityInput.parse(command.input);
+   if(input.releaseId||input.replayId){if(!trust)throw new Error("Current local release evidence unavailable; no references saved.");validateAccountabilityLinks(input,trust);}
+  }
   store.accountability=applyAccountability(store.accountability,genesis,command,id,at);return incidentStoreSchema.parse(store);
  }
  let target = id;

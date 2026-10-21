@@ -19,6 +19,8 @@ export const navItems = [
   { to: "/agent-lounge", label: "Welcome Lounge · Demo" },
   { to: "/incident-archives", label: "Incident Archives · Demo" },
   { to: "/agent-debrief", label: "Agent Debrief · Demo" },
+  { to: "/guardian-incidents", label: "Incident Accountability · Demo" },
+  { to: "/report-incident", label: "Report Incident · Demo" },
   { to: "/sdk", label: "SDK / API Docs" },
   { to: "/discovery", label: "Discovery Radar" },
   { to: "/digital-twin", label: "Digital Twin Lab" },
