@@ -4,10 +4,10 @@
 - [x] Add separately approved-account private WAV storage, 4 MiB/file and eight-asset bounds, immutable owner/project reservations, no public URLs and live cross-account tests; no publication/domain changes.
 - [x] Implement real non-destructive PCM gain through wavefile, A/B playback, clipping rejection, exact sample/count/rate QA, output SHA-256, private change audit, export approval and preserved-original recovery.
 - [x] Add editable local OMNI plans across film/music/cartoon/book/adaptation and consented text-only draft handoff to existing beta OMNI. No model audio access or tool execution; studio CLI stays planned.
-- [ ] Complete retained authenticated processing/deletion/isolation verification and final evidence.
+- [x] Complete retained authenticated processing/deletion/isolation verification and final evidence; Launch Control keeps production readiness UNVERIFIED, distinct from passing bounded pipeline checks.
 - [ ] Activate broader media/FFmpeg/provider/CLI workflows. Blocker: authorized supported processor or reviewed native companion, named media beta approvals, durable request/spend limits, independent privacy/security/rights review and founder release approval. No production deployment or domain/public-status changes.
 
-Validation so far: 743 app tests (25 new audio/consent cases), 36 retained hosted media checks and desktop/mobile real upload/gain/export/reload verified. Temporary QA approvals/accounts/objects removed. No paid provider calls. Hashes and metadata are not signatures or independent quality/rights evidence.
+Validation: 743 app tests (25 new audio/consent cases), 37 retained hosted media checks, 23 repeated project/agent isolation checks and desktop/mobile real upload/gain/export/reload/recovery/clipping/deletion/signout verified. Temporary QA approvals/accounts/objects removed. No paid provider calls. Hashes and metadata are not signatures or independent quality/rights evidence.
 
 ## Launch Control — current priority; expansion frozen
 - [x] Audit hosted schema/grants/auth/AI; add four owner-scoped beta tables, revoke inherited broad grants and pass 23 retained live isolation checks.
@@ -25,7 +25,7 @@ Validation so far: 743 app tests (25 new audio/consent cases), 36 retained hoste
 - [x] Make basic-access/no-download policy, optional hosted offerings and external API costs explicit in CLI and OmniBridge without activating billing or connections.
 - [x] Connect existing local command references, capability discovery, open exports and value comparisons; distinguish measured source checks from unverified savings.
 - [x] Verify policy rules and desktop/mobile interaction; preserve existing records, toolchains and blocked foundations.
-- [ ] Enable secure integrations/distribution. Blocker: owner profile-data decision, authenticated owner isolation, secure key custody, authorized APIs, selected repository/license, native signing/test evidence and explicit owner approval. No publication.
+- [ ] Enable secure integrations/distribution. Blocker: authorized APIs, selected repository/license, native signing/test evidence, outstanding auth-delivery/security review and explicit owner approval. Private owner-isolated beta records now exist; human profile data remains optional and is not required for these records. No new publication.
 
 ## Lightweight CLI companion
 - [x] Replace Platform command preview with opt-in onboarding, platform tabs and planned command references; no download or package claims.
