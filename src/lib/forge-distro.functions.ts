@@ -164,7 +164,12 @@ export const actOnDistro = createServerFn({ method: "POST" })
         .maybeSingle();
       if (access.error) throw new Error("Media access check failed.");
       assertStudioAccess(access.data);
-      assertReleaseAction(saved.data.state, data.action, access.data?.studio_approved === true, access.data?.paused !== false);
+      assertReleaseAction(
+        saved.data.state,
+        data.action,
+        access.data?.studio_approved === true,
+        access.data?.paused !== false,
+      );
       const { zipSync, strToU8 } = await import("fflate");
       const files: Record<string, Uint8Array> = {};
       const hashes: Record<string, string> = {};
