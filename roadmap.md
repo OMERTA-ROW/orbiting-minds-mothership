@@ -1,5 +1,11 @@
 # Cosmic Mothership redesign
 
+## Founder additions — social Autopilot + developer connectors
+- [ ] Check per-user social/developer clients and exact authorized targets; read latest owner blueprint without altering outside accounts/projects.
+- [ ] Extend existing private operations with draft/review social planning and truthful connector readiness, only activate evidence-supported flows.
+- [ ] Verify authenticated persistence/isolation, edit-invalidated review/stop, calendar and mobile; record real versus blocked workflows.
+- [ ] Activate one provider-backed social test and one developer workflow only with per-user client/consent and exact target authorization; no production/public/domain changes.
+
 ## Founder additions — post-edit Distro, Communications, Adaptive Engine
 - [x] Add QA-bound post-edit release decision and safe Distro prefills; disclose YouTube/Filmhub/VEVO/Vydia eligibility, manual handoffs and unsupported video formats.
 - [x] Show authenticated Communications setup requirements and draft-only scope design; Gmail and Outlook per-user clients are absent in this workspace, so no mailbox access, sending or automatic rules.
