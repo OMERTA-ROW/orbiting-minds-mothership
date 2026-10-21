@@ -7,6 +7,10 @@ auto-updates, background agent or elevated permissions. Commands use explicit
 arguments; unknown flags and future operations fail closed. Build tooling may
 invoke **Go only** to compile source; it is not part of the shipped executable.
 PATH doctor checks names without executing them. Local filesystem receipt is
+Opt-in `discover --approve` broadens the fixed name catalog only: PATH metadata,
+no content/version/configuration access, no subprocesses or network, no paths
+in output. Name matches and suggested adapters are not verified compatibility.
+Local filesystem receipt is
 not a signature and cannot defeat an attacker with write access to the folder.
 Use a private dedicated directory, never a shared/writable system binary path.
 Race-resistant descriptor-relative file operations, native ACLs and interrupted

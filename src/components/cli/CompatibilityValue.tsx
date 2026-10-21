@@ -47,7 +47,7 @@ export function CompatibilityValue() {
             Offline source help, version and command-name doctor need no account or AI call. Public
             CLI distribution remains planned. Free/open-source local diagnostics and extension
             discovery are intended where financially feasible; a source license is not yet approved,
-            and project diagnostics are not implemented.
+            and project-file diagnostics are not implemented. Opt-in PATH-name discovery exists in offline source only; no device details leave the machine.
           </p>
         </section>
         <section className="min-w-0 border-t border-gold/30 pt-5">
@@ -56,7 +56,7 @@ export function CompatibilityValue() {
           <p className="mt-4 text-xs leading-7 text-muted-foreground">
             Existing consumer subscriptions do not include API access automatically. Provider terms,
             model support, token charges and budgets require confirmation. No guaranteed free AI
-            calls. Actual usage/cost: unmeasured; no live usage meter or connected OMNI provider.
+            calls. Actual charge remains unmeasured here. Approved beta OMNI can return tokens, not a guaranteed tariff; the offline estimator uses your own assumptions.
           </p>
         </section>
         <section className="min-w-0 border-t border-gold/30 pt-5">

@@ -12,7 +12,7 @@ This offline source performs no paid API calls and requires no account; that is
 not a promise of free AI. Open-source local utilities are intended where
 financially feasible, but the owner's source/distribution license is still
 unapproved. Do not infer an open-source license from source visibility. Project
-diagnostics and native extension discovery are not implemented; browser
+file diagnostics are not implemented. Opt-in PATH-name developer-tool discovery is implemented in offline source; browser
 capability discovery is an inert reference catalog, not installed-tool probing.
 
 Future adapters require opt-in official APIs, supported provider capabilities,
@@ -92,6 +92,19 @@ No OAuth, API model, shell execution, download, updater, repository connection,
 agent enumeration, media processing, provider billing or automatic integration
 is implemented. Do not pass keys via command arguments. The implementation has
 no network client or credential store, and does not consume API-key env vars.
+
+## Opt-in private tool discovery
+
+Source-only command: `evolution discover --approve [--json]`. Without explicit
+approval it exits 2 and does not scan. It reads configured PATH directory/name
+metadata for Git, Node.js, Python 3, Go, Docker, VS Code, Unity, Blender and Solana
+CLI. No tool processes, file contents, versions, profile/config files, device
+identifiers, accounts or credentials are read. No network/telemetry/upload.
+Only name-match counts are output; absolute paths are not printed or saved.
+JSON output is optional local stdout, not an automatic file write. Tools outside
+PATH and aliases can be missed. File-name presence is not authenticity, version
+support or verified compatibility. Suggestions are disabled/planned references,
+not installed or connected extensions. No signed distribution is available.
 
 ## Builds and unsigned archive staging
 

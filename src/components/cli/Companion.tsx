@@ -7,6 +7,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cliCommands } from "@/data/evolution";
 import { commandConflictPlan, cliPlatformChecks, type CliPlatform } from "@/lib/cli-reference";
 import { CompatibilityValue } from "./CompatibilityValue";
+import { CostEstimator } from "./CostEstimator";
+import { LocalDiscovery } from "./LocalDiscovery";
 
 export function Companion() {
   const [platform, setPlatform] = useState<CliPlatform>("macOS"),
@@ -94,6 +96,8 @@ export function Companion() {
             { id: "onboarding", label: "Install & onboarding" },
             { id: "commands", label: "Command reference" },
             { id: "value", label: "Access & measured value" },
+            { id: "estimate", label: "AI cost estimator" },
+            { id: "discover", label: "Private local discovery" },
             { id: "architecture", label: "Architecture & release gates" },
           ].map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="min-h-11 whitespace-normal">
@@ -289,6 +293,8 @@ export function Companion() {
         <TabsContent value="value" className="pt-8">
           <CompatibilityValue />
         </TabsContent>
+        <TabsContent value="estimate" className="pt-8"><CostEstimator /></TabsContent>
+        <TabsContent value="discover" className="pt-8"><LocalDiscovery /></TabsContent>
         <TabsContent value="architecture" className="pt-8">
           <section>
             <p className="eyebrow">Source scaffold / not a release service</p>
