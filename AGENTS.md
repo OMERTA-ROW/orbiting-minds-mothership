@@ -41,4 +41,4 @@
 - CLI remains offline source in `cli/`, never web-imported; access policy is inert/exportable, why: no billing/auth entitlement or signed distribution claims.
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
 - Launch Control is dated QA; opt-in PATH discovery and browser cost math never imply approvals/uploads/charges.
-- Quantum stays in authenticated beta with separate service-managed media approval, immutable owner/project storage reservations, bounded PCM via wavefile, limits and trigger audit; OMNI receives draft text only, never file authority or publication grants.
+- Quantum/Forge use approved private owner-project media, bounded PCM, inert escaped web drafts, immutable versions and digest-bound owner export reviews; OMNI gets text only, why: plans confer no file or publishing authority.

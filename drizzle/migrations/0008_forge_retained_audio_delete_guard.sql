@@ -1,0 +1,3 @@
+DROP POLICY studio_storage_delete ON storage.objects;
+CREATE POLICY studio_storage_delete ON storage.objects FOR DELETE TO authenticated USING(bucket_id='quantum-studio' AND EXISTS(SELECT 1 FROM public.studio_assets s WHERE s.owner_id=(SELECT auth.uid()) AND name=s.owner_id::text||'/'||s.id::text||'/audio.wav' AND NOT EXISTS(SELECT 1 FROM public.forge_versions f WHERE f.owner_id=s.owner_id AND (f.source_id=s.id OR f.output_id=s.id))));
+COMMENT ON POLICY studio_storage_delete ON storage.objects IS 'Owner deletion only after linked immutable Forge checkpoints are removed; preserves reviewed audio.';

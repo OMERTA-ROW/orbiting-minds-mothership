@@ -1,5 +1,12 @@
 # Cosmic Mothership redesign
 
+## OMNI FORGE — focused Quantum Studio follow-up
+- [ ] Preserve approved private media/isolation gates and repair existing audio packaging failure before expanding processing.
+- [ ] Add real bounded timestamp-reviewed radio edits with preserved originals, actual output/quality evidence and explicit unsupported broadcast/stem labels.
+- [ ] Add a private editable safe web draft, preview/version diff and reproducible checks; no external assets, repository writes or deployment.
+- [ ] Share owner-project assets and independently tracked outputs, approvals and unknown costs; text-only OMNI handoff and planned Forge CLI references.
+- [ ] Verify authenticated workflows, adversarial isolation, desktop/mobile and Launch Control evidence. FFmpeg production execution requires an authorized supported processor; do not publish or alter domains.
+
 ## Quantum Studio — focused owner-approved milestone
 - [x] Add separately approved-account private WAV storage, 4 MiB/file and eight-asset bounds, immutable owner/project reservations, no public URLs and live cross-account tests; no publication/domain changes.
 - [x] Implement real non-destructive PCM gain through wavefile, A/B playback, clipping rejection, exact sample/count/rate QA, output SHA-256, private change audit, export approval and preserved-original recovery.
