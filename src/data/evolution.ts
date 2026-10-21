@@ -105,6 +105,31 @@ export const sampleProjects = [
   { id: "genome", name: "OpenGenome Pipelines", stack: ["Python", "Snakemake", "Docker"], maturity: 81, goal: "Reproducibility" },
 ];
 
+// Command Nexus planning fixtures. No providers, repositories or desktop apps connected.
+export const nexusProjects = [
+ {id:"nexus-nebula",name:"Nebula UI",stack:"TypeScript · web",context:"Fictional keyboard selection study. Goal: preserve explicit boundaries and human review.",file:"selection.ts",source:"export const selectionMode = \"manual\";\n",sample:"export const selectionMode = \"reviewed-manual\";\n"},
+ {id:"nexus-studio",name:"Orbital Game Studio",stack:"Unity · Blender concept",context:"Fictional scene pipeline. No installed editor, assets or game repository attached.",file:"scene-plan.ts",source:"export const sceneBudget = 10;\n",sample:"export const sceneBudget = 8;\n"},
+ {id:"nexus-cyberace",name:"Cyberace · concept",stack:"Adapter details unconfirmed",context:"Potential Cyberace workspace only. Repository and runtime adapter unknown; CyberLink Social is not a target.",file:"adapter-plan.ts",source:"export const adapterEnabled = false;\n",sample:"export const adapterEnabled = false;\n// Owner-approved adapter specification still required.\n"},
+] as const;
+export const nexusAgents = [
+ {id:"openai",name:"GPT API",provider:"OpenAI",role:"Architecture & draft proposals",mark:"G",endpoint:"Official OpenAI API",docs:"https://platform.openai.com/docs",limitation:"API credentials and model access required. Consumer ChatGPT history does not sync."},
+ {id:"anthropic",name:"Claude API",provider:"Anthropic",role:"Independent code critique",mark:"C",endpoint:"Official Anthropic API",docs:"https://docs.anthropic.com/",limitation:"Separate API account/model access required. Consumer Claude history does not sync."},
+ {id:"adapter",name:"Third-party adapter",provider:"Unspecified",role:"Extensible contract · disabled",mark:"+",endpoint:"Provider must be identified",docs:"",limitation:"No vendor, model, endpoint or approved adapter configured. Atlas is unidentified; not the fictional Atlas research agent."},
+] as const;
+export const nexusTools = [
+ {name:"OpenAI / GPT API",surface:"Official HTTP API",state:"Not connected",grant:"Selected project text only",blocker:"Owner-bound credentials, model access, usage evidence"},
+ {name:"Anthropic / Claude API",surface:"Official HTTP API",state:"Not connected",grant:"Explicit independent conversation",blocker:"Owner-bound credentials, model access, usage evidence"},
+ {name:"GitHub",surface:"Official GitHub App",state:"Not configured",grant:"Selected repository; reviewable PR only",blocker:"Repository identification, installation grant, test branch"},
+ {name:"Unity",surface:"Editor command-line concept",state:"Companion required",grant:"Pinned editor and selected project",blocker:"Signed companion, OS consent, licensed editor, adapter tests"},
+ {name:"Blender",surface:"Python / headless concept",state:"Companion required",grant:"Selected scene and reviewed script",blocker:"Signed companion, local paths, script/asset rights, adapter tests"},
+ {name:"Local terminal",surface:"Typed allowlist · future",state:"Companion required",grant:"No arbitrary shell or hidden execution",blocker:"Device enrollment, resource/egress limits, per-action approval"},
+ {name:"Atlas",surface:"Unidentified software",state:"Unsupported",grant:"None",blocker:"Founder must identify the intended product and official interfaces"},
+] as const;
+export const nexusCompanionPlans = [
+ {id:"unity",name:"Unity build / test plan",language:"CLI reference · inert",source:"https://docs.unity3d.com/Manual/EditorCommandLineArguments.html",text:"Unity -batchmode -quit -projectPath <approved-project>\n  -executeMethod <reviewed-build-method> -logFile <approved-log>\n\n# Separate Test Framework adapter/version required for test runs.",scope:"Pinned editor version, exact project path, reviewed static build method, license availability, artifact/log paths and independent test evidence. Build methods can modify files; never assume read-only."},
+ {id:"blender",name:"Blender script / render plan",language:"Python reference · inert",source:"https://docs.blender.org/manual/en/latest/advanced/command_line/arguments.html",text:"blender --background <approved-scene.blend>\n  --disable-autoexec --python <reviewed-script.py>\n\n# Explicit --python still executes the chosen script if run externally.\n# import bpy\n# print(bpy.app.version_string)",scope:"Exact scene/script hashes, licensed assets, pinned Blender version, isolated writable output directory, no host secrets, memory/time limits and per-action local consent."},
+] as const;
+
 export const demoProposals = [
   { id: "P-104", t: "Reduce bundle size 18%", p: "Nebula UI Kit", s: "Awaiting approval" },
   { id: "P-105", t: "Focus-visible ring tokens", p: "Nebula UI Kit", s: "In sandbox" },

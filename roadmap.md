@@ -1,5 +1,12 @@
 # Cosmic Mothership redesign
 
+## Command Nexus
+- [x] Add project workspace with explicit agent routing, separate threads, local task status and DEMO terminal panes.
+- [x] Add isolated code drafts, conflict/diff review, Guardian reference checks and human merge rehearsal.
+- [x] Add provider permissions/planning limits, compatibility matrix and inert Unity/Blender companion reference.
+- [x] Test routing, project isolation, consent, conflict/merge gates, persistence and desktop/mobile workflows.
+- [ ] Enable real shared chat/providers/desktop companion. Blocker: profile-data decision, authenticated owner-scoped persistence, reviewed credential custody, official API authorization and separately signed companion.
+
 ## Guardian Incident Accountability
 - [x] Add validated local DEMO incident intake, dashboard and case details with evidence-separated accountability and restricted publication.
 - [x] Add baseline/copy hash comparison, review, corrective actions, dispute/correction history and consent withdrawal.
