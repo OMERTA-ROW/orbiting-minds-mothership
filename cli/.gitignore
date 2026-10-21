@@ -1,4 +1,5 @@
 /dist/
 /evolution
 /evolution.exe
-*.test
+*.test__pycache__/
+*.pyc

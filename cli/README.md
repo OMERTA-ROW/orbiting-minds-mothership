@@ -9,7 +9,8 @@ Claude, GPT, Unity, Blender or other tools. Browser preview requires no download
 Go standard library only; no third-party runtime packages. `help`, `version`
 (`--version`), and `doctor [--json]` run offline. Doctor reads platform and PATH
 entries for only `evolution` and `omni`; it never executes candidates, scans
-project files, reads keys or verifies device safety. Shell aliases/functions
+project files, reads keys or verifies device safety. Windows name checks cover
+case-insensitive defaults, PowerShell `.ps1` and valid effective `PATHEXT`. Shell aliases/functions
 are not visible to it: inspect them with your shell's `type -a` or PowerShell
 `Get-Command -All` before any future installation.
 
@@ -81,7 +82,9 @@ python3 scripts/build_source.py --out <new-absolute-staging-directory>
 The helper produces **UNSIGNED_SOURCE_ONLY** ZIPs, exact SHA-256 manifest and
 checksums, not trusted release packages. Each ZIP contains only `evolution`,
 README and a no-release warning. Optional alias installation requires separate
-approval; `omni` is not silently bundled onto PATH.
+approval; `omni` is not silently bundled onto PATH. A failed build leaves an
+`INCOMPLETE.txt` marker and reports partial staging; it never recursively removes
+that directory or presents partial output as a complete archive set.
 
 ## Repository and distribution gates
 
@@ -97,5 +100,28 @@ After repository confirmation and review, pin actions to audited full commit
 digests, test source on all native hosts and verify shell install/uninstall.
 Only then design protected-environment release jobs. No upload/publish job or
 package-manager manifest is activated here.
+
+## Verification in the development sandbox
+
+- 666 existing/new web tests pass; final focused route/reference checks pass.
+- Go source tests and `go vet` pass on Linux/amd64; no third-party Go modules.
+- Three Python staging tests cover existing-directory preservation, failure
+  markers, exact six-target archives, unsigned status and digest validation.
+- Six source binaries compile for macOS/Linux/Windows × amd64/arm64. ZIP entries
+  and binary/archive SHA-256 values were independently inspected.
+- Real Linux/amd64 executable tested: help, version, JSON doctor, blocked future
+  integrations; install requires approval, optional alias works, extra/changed
+  files refuse uninstall, exact unchanged copies uninstall, evolution conflicts
+  block install and omni conflicts retain `evolution omni` without overwriting.
+  These run only in temporary sandbox directories, never the user's device.
+- Browser checks cover OS choices, declared conflicts, copied references, command
+  search/empty result, fallback details, architecture, browser OMNI and mobile
+  navigation/reduced motion. No browser errors or provider calls observed.
+- Production npm dependency scan reports no known advisories; native CLI uses
+  only the Go standard library. This is not a complete security certification.
+- Native macOS/Windows/arm64 execution, popular-shell/ACL/race/lock behavior,
+  credential stores, authentic OMNI/auth/RLS, signing, update recovery and CI
+  distribution are **not verified or enabled**. Repository and owner release
+  approval remain required. Nothing published or connected.
 
 See `SECURITY.md` for signing, identity, model consent and native-release gates.
