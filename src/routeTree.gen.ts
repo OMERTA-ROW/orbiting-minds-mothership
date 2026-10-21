@@ -19,6 +19,7 @@ import { Route as CareAgentRouteImport } from './routes/care-agent'
 import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as CodeExchangeRouteImport } from './routes/code-exchange'
 import { Route as CodeVaultRouteImport } from './routes/code-vault'
+import { Route as CommandNexusRouteImport } from './routes/command-nexus'
 import { Route as CommonsRouteImport } from './routes/commons'
 import { Route as ComputeGridRouteImport } from './routes/compute-grid'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -110,6 +111,11 @@ const CodeExchangeRoute = CodeExchangeRouteImport.update({
 const CodeVaultRoute = CodeVaultRouteImport.update({
   id: '/code-vault',
   path: '/code-vault',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommandNexusRoute = CommandNexusRouteImport.update({
+  id: '/command-nexus',
+  path: '/command-nexus',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommonsRoute = CommonsRouteImport.update({
@@ -334,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/code-vault': typeof CodeVaultRoute
+  '/command-nexus': typeof CommandNexusRoute
   '/commons': typeof CommonsRoute
   '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
@@ -388,6 +395,7 @@ export interface FileRoutesByTo {
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/code-vault': typeof CodeVaultRoute
+  '/command-nexus': typeof CommandNexusRoute
   '/commons': typeof CommonsRoute
   '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
@@ -443,6 +451,7 @@ export interface FileRoutesById {
   '/challenges': typeof ChallengesRoute
   '/code-exchange': typeof CodeExchangeRoute
   '/code-vault': typeof CodeVaultRoute
+  '/command-nexus': typeof CommandNexusRoute
   '/commons': typeof CommonsRoute
   '/compute-grid': typeof ComputeGridRoute
   '/dashboard': typeof DashboardRoute
@@ -499,6 +508,7 @@ export interface FileRouteTypes {
     | '/challenges'
     | '/code-exchange'
     | '/code-vault'
+    | '/command-nexus'
     | '/commons'
     | '/compute-grid'
     | '/dashboard'
@@ -553,6 +563,7 @@ export interface FileRouteTypes {
     | '/challenges'
     | '/code-exchange'
     | '/code-vault'
+    | '/command-nexus'
     | '/commons'
     | '/compute-grid'
     | '/dashboard'
@@ -607,6 +618,7 @@ export interface FileRouteTypes {
     | '/challenges'
     | '/code-exchange'
     | '/code-vault'
+    | '/command-nexus'
     | '/commons'
     | '/compute-grid'
     | '/dashboard'
@@ -662,6 +674,7 @@ export interface RootRouteChildren {
   ChallengesRoute: typeof ChallengesRoute
   CodeExchangeRoute: typeof CodeExchangeRoute
   CodeVaultRoute: typeof CodeVaultRoute
+  CommandNexusRoute: typeof CommandNexusRoute
   CommonsRoute: typeof CommonsRoute
   ComputeGridRoute: typeof ComputeGridRoute
   DashboardRoute: typeof DashboardRoute
@@ -776,6 +789,13 @@ declare module '@tanstack/react-router' {
       path: '/code-vault'
       fullPath: '/code-vault'
       preLoaderRoute: typeof CodeVaultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/command-nexus': {
+      id: '/command-nexus'
+      path: '/command-nexus'
+      fullPath: '/command-nexus'
+      preLoaderRoute: typeof CommandNexusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/commons': {
@@ -1086,6 +1106,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChallengesRoute: ChallengesRoute,
   CodeExchangeRoute: CodeExchangeRoute,
   CodeVaultRoute: CodeVaultRoute,
+  CommandNexusRoute: CommandNexusRoute,
   CommonsRoute: CommonsRoute,
   ComputeGridRoute: ComputeGridRoute,
   DashboardRoute: DashboardRoute,

@@ -26,14 +26,15 @@
 - SDK JSON validation is loaded only from browser events; schema data remains SSR-safe, why: avoid evaluating the CommonJS validator in server rendering and never transmit user JSON.
 
 - CARE uses a separate validated local store, pure consent transitions, fictional inventory, historical releases and additive defaults, why: preserve records without claiming native capabilities or account security.
-- CARE, Updates, Pilot, Voice and native references are public demos with no OS/capture/audio/updater/shell calls, why: real capabilities require signed software, grants and review.
+- CARE/Updates/Pilot/Voice/native references never call OS/capture/audio/updater/shell APIs; real capabilities need signed software, grants and review.
 
 - CARE plans/check rehearsals capture channel context in editable local audit records, not jobs or trusted receipts, why: truthful provenance without claiming native or secure audit capabilities.
 - Guardian and Fleet use a separate validated browser-local demo store with pure expiry/consent/revocation transitions; every device starts unpaired and scope-less, why: rehearse device-bound gates without impersonating authenticated ownership or affecting CARE/Genesis records.
 - Guardian review roles use fixed proposed-only reference findings, not model calls or executable source analysis; reports read current local sample records and unknown real evidence, why: no billed retries, instruction-based privilege or fabricated detection/scan history.
 - Guardian emergency pause invalidates local fleet pairing/scopes/plans and separately pauses CARE preferences, reporting failures without remote receipts; release gates remain unverified, why: local state cannot establish secure platform readiness or confirmed endpoint containment.
 - Robotics uses central demo scenarios, bounded arithmetic and a separate validated local store, never referenced-code/ROS/hardware execution, why: reproduce research without implying physics, diagnosis or safety certification.
-- Known scenario IDs prefill Founder, Oracle, Challenges and Releases without consent or automatic requests; Guardian uses a whitelisted proposed-only surface, why: handoffs cannot confer hardware or release authority.
+- Scenario handoffs prefill Founder/Oracle/Challenges/Releases without automatic requests; Guardian is proposed-only, why: handoffs confer no authority.
 - Debrief/Archives/Accountability share additive local records, consent gates, revisions and validated release/replay references; checks are patterns only, why: preserve work without claiming confidential audit, verified fault or execution provenance.
 - Trusted Release uses a separate validated browser-local store, Web Crypto sample-text digests and consent-bound rehearsals; hardware/deployment stay blocked, why: hashes and local signoffs are not signatures, authenticated audit or independent safety evidence.
-- Code Vault reuses Trusted Release records with additive owner confirmation, byte-exact text/manifest comparison and event-loaded syntax parsers; Lounge previews use consented Genesis declarations, why: preserve old work without claiming trusted signing or external enrollment.
+- Vault reuses Trust records, owner confirmation, exact comparisons and event-loaded parsers; Lounge uses Genesis consent, why: no signing/enrollment claims.
+- Nexus uses pure project-bound transitions and separate local storage with Genesis consent; threads and base-version drafts never auto-share/overwrite, why: no secure chat or provider/native execution claims.

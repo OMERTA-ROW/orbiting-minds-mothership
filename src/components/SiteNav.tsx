@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 export const navItems = [
   { to: "/", label: "Home" },
   { to: "/mothership", label: "Mothership" },
+  { to: "/command-nexus", label: "Command Nexus · Demo" },
   { to: "/pathway", label: "AI Pathway" },
   { to: "/code-exchange", label: "Code Exchange" },
   { to: "/code-vault", label: "Code Vault · Demo" },
