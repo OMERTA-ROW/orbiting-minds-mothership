@@ -7,14 +7,14 @@ export const readStudio = createServerFn({ method: "GET" }).middleware([requireS
   if (assets.error || access.error) throw new Error("Private media records could not be read.");
   return { assets: assets.data ?? [], access: access.data };
 });
-export const reserveStudioAsset = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => assetInput.parse(v)).handler(async ({ data, context }) => {
+export const reserveStudioAsset = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((v: unknown) => assetInput.parse(v)).handler(async ({ data, context }) => {
   const access = await context.supabase.from("beta_access").select("studio_approved,paused").eq("user_id", context.userId).maybeSingle();
   if (access.error) throw new Error("Media permission could not be checked."); assertStudioAccess(access.data);
   const saved = await context.supabase.from("studio_assets").insert({ owner_id: context.userId, project_id: data.projectId, role: "original", byte_size: data.bytes, rights_consent: true, privacy_consent: true }).select().single();
   if (saved.error) throw new Error("File reservation failed. Check your project and eight-asset limit.");
   return saved.data;
 });
-export const removeStudioAsset = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => assetIdInput.parse(v)).handler(async ({ data, context }) => {
+export const removeStudioAsset = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((v: unknown) => assetIdInput.parse(v)).handler(async ({ data, context }) => {
   const saved = await context.supabase.from("studio_assets").select("*").eq("owner_id", context.userId).eq("id", data.id).single();
   if (saved.error) throw new Error("File not found in this account.");
   const children = await context.supabase.from("studio_assets").select("id").eq("source_id", data.id).eq("owner_id", context.userId);
@@ -25,7 +25,7 @@ export const removeStudioAsset = createServerFn({ method: "POST" }).middleware([
   if (record.error) throw new Error("Audio deleted but metadata cleanup failed; retry deleting the remaining reservation.");
   return { removed: true };
 });
-export const processStudioAsset = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((v: unknown) => enhanceInput.parse(v)).handler(async ({ data, context }) => {
+export const processStudioAsset = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((v: unknown) => enhanceInput.parse(v)).handler(async ({ data, context }) => {
   const access = await context.supabase.from("beta_access").select("studio_approved,paused").eq("user_id", context.userId).maybeSingle();
   if (access.error) throw new Error("Media permission could not be checked."); assertStudioAccess(access.data);
   const asset = await context.supabase.from("studio_assets").select("*").eq("id", data.id).eq("owner_id", context.userId).eq("role", "original").single();

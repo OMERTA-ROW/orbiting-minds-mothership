@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { WaveFile } from "wavefile";
+import wavefile from "wavefile";
 import { enhanceWav } from "@/lib/quantum-audio";
 import { inspectWav, assertStudioAccess, studioPlan, studioPath, assetInput, enhanceInput, MAX_MEDIA_ASSETS, MAX_MEDIA_BYTES } from "@/lib/quantum";
 
+const { WaveFile } = wavefile;
 const projectId = "11111111-1111-4111-8111-111111111111";
 const consent = { rights: true, privacy: true };
 function wav(samples: number[] | Int16Array = [1000, -1000, 2000, -2000], rate = 8000, channels = 1) { const file = new WaveFile(); file.fromScratch(channels, rate, "16", samples); return file.toBuffer(); }

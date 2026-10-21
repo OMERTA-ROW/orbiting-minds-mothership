@@ -1,5 +1,6 @@
-import { WaveFile } from "wavefile";
+import wavefile from "wavefile";
 import { audioMetrics, inspectWav, enhanceInput } from "./quantum";
+const { WaveFile } = wavefile;
 
 export function enhanceWav(bytes: Uint8Array, gainDb: number) {
   enhanceInput.shape.gainDb.parse(gainDb);
