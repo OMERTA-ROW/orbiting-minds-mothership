@@ -35,3 +35,4 @@
 - Robotics uses central demo scenarios, bounded arithmetic and a separate validated local store, never referenced-code/ROS/hardware execution, why: reproduce research without implying physics, diagnosis or safety certification.
 - Known scenario IDs prefill Founder, Oracle, Challenges and Releases without consent or automatic requests; Guardian uses a whitelisted proposed-only surface, why: handoffs cannot confer hardware or release authority.
 - Debrief/Archives use a separate validated local store, consent-bound previews and inert media metadata; Guardian checks patterns only, why: preserve existing work without claiming verified incidents or confidential moderation.
+- Trusted Release uses a separate validated browser-local store, Web Crypto sample-text digests and consent-bound rehearsals; hardware/deployment stay blocked, why: hashes and local signoffs are not signatures, authenticated audit or independent safety evidence.

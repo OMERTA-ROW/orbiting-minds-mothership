@@ -10,6 +10,7 @@ import { downloadJson } from "@/lib/genesis-sdk";
 import { roboticsScenarios } from "@/data/evolution";
 import { RoboticsReleaseRecord } from "@/components/robotics/ReleaseRecord";
 import { GenesisShell, IdentitySelect, FormNotice, fieldLabel } from "./GenesisShell";
+import { TrustConnections } from "@/components/trusted/TrustShell";
 
 export function DiscoveryPage({ scenarioId }: { scenarioId?: string | undefined }) {
   const { store } = useGenesis(); const [query, setQuery] = useState(""); const [domain, setDomain] = useState("");
