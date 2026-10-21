@@ -26,14 +26,14 @@
 - CARE uses a separate validated local store, pure consent transitions, fictional inventory, historical releases and additive defaults, why: preserve records without claiming native capabilities or account security.
 - CARE/native references never invoke OS/capture/updater/shell APIs, why: signed software and grants must precede execution.
 
-- CARE plans/check rehearsals capture channel context in editable local audit records, not jobs or trusted receipts, why: truthful provenance without claiming native or secure audit capabilities.
-- Guardian and Fleet use a separate validated browser-local demo store with pure expiry/consent/revocation transitions; every device starts unpaired and scope-less, why: rehearse device-bound gates without impersonating authenticated ownership or affecting CARE/Genesis records.
+- CARE rehearsals record channel context in editable local audit, not jobs/receipts, why: no native or trusted audit claims.
+- Guardian/Fleet use separate validated local DEMO consent/expiry/revocation; devices start unpaired and scope-less, why: no trusted ownership or CARE/Genesis effects.
 - Guardian reviews use proposed-only samples, why: no model, scan, source execution or text-based privilege.
 - Guardian pause invalidates local fleet grants/plans and pauses CARE separately, reporting failures without remote receipts, why: local state cannot establish secure readiness or endpoint containment.
 - Robotics uses central demo scenarios, bounded arithmetic and a separate validated local store, never referenced-code/ROS/hardware execution, why: reproduce research without implying physics, diagnosis or safety certification.
 - Scenario handoffs prefill Founder/Oracle/Challenges/Releases without automatic requests; Guardian is proposed-only, why: handoffs confer no authority.
-- Debrief/Archives/Accountability share additive local records, consent gates, revisions and validated release/replay references; checks are patterns only, why: preserve work without claiming confidential audit, verified fault or execution provenance.
-- Trusted Release uses a separate validated browser-local store, Web Crypto sample-text digests and consent-bound rehearsals; hardware/deployment stay blocked, why: hashes and local signoffs are not signatures, authenticated audit or independent safety evidence.
+- Debrief/Archives/Accountability share additive local records, consent/revisions and release/replay references; pattern checks imply no confidential audit, fault verification or execution provenance.
+- Trusted Release uses separate validated local records, Web Crypto sample digests and consent rehearsals; hardware/deployment blocked, why: hashes/signoffs are not signatures, trusted audit or safety proof.
 - Vault reuses Trust records, owner confirmation, exact comparisons and event-loaded parsers; Lounge uses Genesis consent, why: no signing/enrollment claims.
 - Nexus keeps separate consented local records and isolated base-version drafts; corrected example labels overlay stored data, why: preserve work without secure chat or execution claims.
 - Public OMNI stays local DEMO; beta OMNI streams request-local Responses with verified identity/approval/owned context and no history or tools, why: inference grants no execution authority.
@@ -41,4 +41,4 @@
 - CLI remains offline source in `cli/`, never web-imported; access policy is inert/exportable, why: no billing/auth entitlement or signed distribution claims.
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
 - Launch Control is dated QA; opt-in PATH discovery and browser cost math never imply approvals/uploads/charges.
-- Quantum stays in authenticated beta with separate service-managed media approval, immutable owner/project storage reservations, bounded PCM via wavefile, limits and trigger audit; OMNI receives draft text only, never file authority or publication grants.
+- Quantum/Forge use approved private owner-project media, bounded PCM with bundled WaveFile, inert web drafts and immutable digest-reviewed versions; OMNI gets text only, why: consistent SSR exports; plans confer no file/publish authority.

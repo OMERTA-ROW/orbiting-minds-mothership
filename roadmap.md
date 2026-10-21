@@ -1,5 +1,15 @@
 # Cosmic Mothership redesign
 
+## OMNI FORGE — focused Quantum Studio follow-up
+- [x] Preserve approved private media/isolation gates and repair WaveFile packaging across SSR and bundled runtime.
+- [x] Add real bounded timestamp-reviewed radio silence/tone/cut/crossfade and mono edits with preserved originals, measured duration/sample-peak evidence and unsupported broadcast/stem labels.
+- [x] Add a private editable one-page static web draft, sandboxed preview/version diff and structural SEO/accessibility checks; no external assets, repository writes or deployment.
+- [x] Share owner-project WAV references and separately saved outputs, exact-digest owner reviews and unknown costs; text-only OMNI handoff and planned Forge CLI references. Export rechecks current review/access; existing private library access is not restricted by self-review.
+- [x] Verify authenticated upload/radio export exact samples, web save/export/restore/reload, stale-review refusal, owner isolation, desktop/mobile/long-text wrapping, zero runtime errors and Launch Control evidence. Temporary QA data removed; no publication/domain changes.
+- [ ] Activate FFmpeg, LUFS/true-peak/stem/video/multi-page or image-asset production, unified durable jobs, GitHub/builder staging, signed CLI and wider media access. Blockers: an approved supported processor, owner-selected authorized integrations, durable limits, independent privacy/rights/security review and founder release approval. Processing/upload/checkpoint operations are not an atomic job; failures retain originals and may require reservation cleanup.
+
+Validation: all 773 app tests passed (30 new Forge unit/handler cases); 31 retained authenticated Forge/privacy checks; existing 37 hosted media and 23 project/agent isolation checks repeat successfully. Focused lint and current build pass. Static web drafts export HTML plus an unsigned manifest, never private audio. Sample PCM quality is not broadcast compliance or independently verified rights. Launch remains blocked.
+
 ## Quantum Studio — focused owner-approved milestone
 - [x] Add separately approved-account private WAV storage, 4 MiB/file and eight-asset bounds, immutable owner/project reservations, no public URLs and live cross-account tests; no publication/domain changes.
 - [x] Implement real non-destructive PCM gain through wavefile, A/B playback, clipping rejection, exact sample/count/rate QA, output SHA-256, private change audit, export approval and preserved-original recovery.

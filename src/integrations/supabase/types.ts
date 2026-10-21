@@ -157,6 +157,120 @@ export type Database = {
         }
         Relationships: []
       }
+      forge_reviews: {
+        Row: {
+          created_at: string
+          export_approved: boolean
+          id: string
+          owner_id: string
+          privacy_consent: boolean
+          rights_consent: boolean
+          sha256: string
+          version_id: string
+        }
+        Insert: {
+          created_at?: string
+          export_approved: boolean
+          id?: string
+          owner_id?: string
+          privacy_consent: boolean
+          rights_consent: boolean
+          sha256: string
+          version_id: string
+        }
+        Update: {
+          created_at?: string
+          export_approved?: boolean
+          id?: string
+          owner_id?: string
+          privacy_consent?: boolean
+          rights_consent?: boolean
+          sha256?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forge_reviews_version_id_owner_id_sha256_fkey"
+            columns: ["version_id", "owner_id", "sha256"]
+            isOneToOne: false
+            referencedRelation: "forge_versions"
+            referencedColumns: ["id", "owner_id", "sha256"]
+          },
+        ]
+      }
+      forge_versions: {
+        Row: {
+          actual_cost: number | null
+          content: Json
+          cost_status: string
+          created_at: string
+          evidence: Json
+          id: string
+          kind: string
+          output_id: string | null
+          owner_id: string
+          processor: string
+          project_id: string
+          revision: number
+          sha256: string
+          source_id: string | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          content: Json
+          cost_status?: string
+          created_at?: string
+          evidence: Json
+          id?: string
+          kind: string
+          output_id?: string | null
+          owner_id: string
+          processor: string
+          project_id: string
+          revision: number
+          sha256: string
+          source_id?: string | null
+        }
+        Update: {
+          actual_cost?: number | null
+          content?: Json
+          cost_status?: string
+          created_at?: string
+          evidence?: Json
+          id?: string
+          kind?: string
+          output_id?: string | null
+          owner_id?: string
+          processor?: string
+          project_id?: string
+          revision?: number
+          sha256?: string
+          source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forge_versions_output_id_owner_id_fkey"
+            columns: ["output_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "studio_assets"
+            referencedColumns: ["id", "owner_id"]
+          },
+          {
+            foreignKeyName: "forge_versions_project_id_owner_id_fkey"
+            columns: ["project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "beta_projects"
+            referencedColumns: ["id", "owner_id"]
+          },
+          {
+            foreignKeyName: "forge_versions_source_id_owner_id_fkey"
+            columns: ["source_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "studio_assets"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
       studio_assets: {
         Row: {
           byte_size: number
