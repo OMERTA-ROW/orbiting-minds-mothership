@@ -40,6 +40,7 @@ function PathwayForm({ scenarioId }: { scenarioId?: string | undefined }) {
       <span className="inline-flex items-center gap-2 text-gold-light"><Sparkles size={16} />Founder Lab · AI-powered concept planning</span>
     </PageHeader>
     <Section>
+      <div className="mb-7 flex flex-wrap gap-3 border-y border-border py-4"><Button asChild variant="signal"><Link to="/code-vault">Code Vault / origin comparison</Link></Button><Button asChild variant="ghost"><Link to="/agent-lounge">Welcome Lounge · symbolic demo</Link></Button></div>
       <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
         <form className="min-w-0 space-y-6 border-t border-gold/30 pt-7" onSubmit={(e) => { e.preventDefault(); setCopied(false); setExportError(""); void generate({ concept, goal, consent }); }}>
           {preset && <div className="border-l border-gold/40 pl-4"><p className="text-xs leading-loose text-warning">Robotics DEMO preset · no AI request sent. Hardware execution and release remain disabled; human consent is still required.</p><Link to="/robotics/$id" params={{ id: preset.id }} className="mt-3 inline-block text-xs text-gold-light underline">Return to scenario evidence</Link></div>}

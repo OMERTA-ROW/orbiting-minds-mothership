@@ -5,7 +5,7 @@ import { DemoBadge, PageHeader, Section } from "@/components/evo";
 import { Button } from "@/components/ui/button";
 import { FormNotice } from "@/components/genesis/GenesisShell";
 import { useTrustedRelease } from "@/hooks/use-trusted-release";
-export const trustLinks = [{ to:"/physical-safety",label:"Physical Safety Lock" },{ to:"/experiment-replay",label:"Experiment Replay" },{ to:"/approval-ledger",label:"Approval Ledger" },{ to:"/impact-scorecard",label:"Idea-to-Impact" }] as const;
+export const trustLinks = [{ to:"/code-vault",label:"Code Vault" },{ to:"/physical-safety",label:"Physical Safety Lock" },{ to:"/experiment-replay",label:"Experiment Replay" },{ to:"/approval-ledger",label:"Approval Ledger" },{ to:"/impact-scorecard",label:"Idea-to-Impact" }] as const;
 export function TrustConnections() { return <nav aria-label="Trust tools" className="flex flex-wrap gap-2 border-y border-border py-4">{trustLinks.map(l=><Button key={l.to} asChild variant="ghost" className="h-auto min-h-10 whitespace-normal text-xs"><Link to={l.to} activeProps={{className:"text-gold-light bg-accent/30"}}>{l.label}</Link></Button>)}</nav>; }
 export function TrustShell({title,eyebrow,children}:{title:string;eyebrow:string;children:ReactNode}) {
  const {ready,issue}=useTrustedRelease();

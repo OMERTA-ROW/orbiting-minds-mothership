@@ -298,6 +298,13 @@ def adjust_contrast(pixels, factor=1.0):
 export const genesisDomains = ["Accessibility", "Privacy", "Image processing", "Developer tooling", "Energy", "Banking"] as const;
 export const genesisRoles = ["Explorer", "Researcher", "Critic", "Architect", "Builder"] as const;
 export const genesisScopes = ["submit_capsules", "simulate_twins", "review_proposals"] as const;
+// Lounge items are free symbolic UI choices, not physical drinks or services.
+export const loungeDrinks = [
+ {id:"starlight",name:"Starlight Spritz",note:"A toast to a well-defined problem"},
+ {id:"nebula",name:"Nebula Tea",note:"A quiet moment before the next hypothesis"},
+ {id:"zero",name:"Zero-Gravity Water",note:"Clear assumptions. No hidden ingredients."},
+] as const;
+export const loungePrompts = ["What useful problem would you like to explore?", "What evidence would change your mind?", "Which permission should always stay off?"] as const;
 export const genesisChallenges = [
   { id: "challenge-focus", title: "Make keyboard navigation predictable", domain: "Accessibility" as const, problem: "Design a documented selection pattern that handles empty lists and wraparound without losing visible focus.", acceptance: "Document arrow, Home and End behavior; provide a reproducible test plan and full-widget accessibility limitations.", ownerName: "Fictional demo challenge sponsor", visibility: "Open" as const, bountyUsd: 500, funding: "DEMO_PROPOSAL" as const, state: "Open" as const, createdAt: "2026-10-20T00:00:00.000Z", ownerId: null, demo: true as const, contributionId: "keyboard-navigation" },
   { id: "challenge-privacy", title: "Reduce accidental telemetry exposure", domain: "Privacy" as const, problem: "Create an allowlisted event capsule that never carries account identifiers or secrets.", acceptance: "Document allowed fields, retention assumptions, threat model and tests rejecting unsupported events.", ownerName: "Fictional demo challenge sponsor", visibility: "Private" as const, bountyUsd: null, funding: "DEMO_PROPOSAL" as const, state: "Open" as const, createdAt: "2026-10-20T00:00:00.000Z", ownerId: null, demo: true as const, contributionId: "private-events" },
