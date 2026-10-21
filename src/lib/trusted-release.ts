@@ -45,9 +45,9 @@ export function impactComparison(input: ImpactInput) {
  const delta = (v.direction === "Lower is better" ? baseline-candidate : candidate-baseline);
  return { baseline, candidate, delta, improvementPercent: baseline > 0 ? Math.round(delta/baseline*10000)/100 : null, pairs: v.baseline.length, verifiedBenefit: false as const, confidence: "SYNTHETIC / NOT INDEPENDENTLY REPRODUCED" as const };
 }
-export const releaseInput = z.object({ codeId: id.refine(v => codeContributions.some(c => c.id === v)), version: z.string().regex(/^\d+\.\d+\.\d+$/), ownerId: id, agentOperatorId: z.string().max(100), artifact: z.string().min(10).max(20000), license: z.enum(["MIT", "Apache-2.0", "Unknown / permission required"]), dependencies: text, testEvidence: text, rollback: text, previousVersion: z.string().regex(/^\d+\.\d+\.\d+$/).or(z.literal("")), safetyId: z.string().max(100), replayId: z.string().max(100), impactId: z.string().max(100), consent: z.literal(true) }).strict();
+export const releaseInput = z.object({ codeId: id.refine(v => codeContributions.some(c => c.id === v)), version: z.string().regex(/^\d+\.\d+\.\d+$/), ownerId: id, agentOperatorId: z.string().max(100), artifact: z.string().min(10).max(20000), license: z.enum(["MIT", "Apache-2.0", "Unknown / permission required"]), dependencies: text, testEvidence: text, rollback: text, previousVersion: z.string().regex(/^\d+\.\d+\.\d+$/).or(z.literal("")), scenarioId: scenario.or(z.literal("")).default(""), safetyId: z.string().max(100), replayId: z.string().max(100), impactId: z.string().max(100), consent: z.literal(true) }).strict();
 export type ReleaseInput = z.infer<typeof releaseInput>;
-const signoff = z.object({ reviewerId: id, at: date, digest: z.string().regex(/^[a-f0-9]{64}$/), note: text }).strict();
+const signoff = z.object({ reviewerId: id, at: date, digest: z.string().regex(/^[a-f0-9]{64}$/), reviewSnapshot: z.string().min(10).max(100000), note: text }).strict();
 const releaseRecord = releaseInput.extend({ id, at: date, digest: z.string().regex(/^[a-f0-9]{64}$/), signoff: signoff.nullable(), state: z.enum(["Draft", "Demo signed off", "Revoked", "Rollback rehearsed"]) }).strict().superRefine((r,ctx) => {
  if (r.signoff && (r.signoff.digest !== r.digest || r.signoff.reviewerId === r.ownerId || r.signoff.reviewerId === r.agentOperatorId)) ctx.addIssue({ code: "custom", message: "Distinct signoff must match the exact artifact digest." });
  if (r.state === "Demo signed off" && !r.signoff) ctx.addIssue({ code: "custom", message: "Signoff is missing." });
@@ -62,7 +62,8 @@ export type TrustStore = z.infer<typeof trustStoreSchema>;
 export const emptyTrustStore: TrustStore = { version: 1, safety: [], replays: [], impacts: [], releases: [], events: [] };
 export async function artifactDigest(artifact: string) { const bytes = new TextEncoder().encode(artifact); const hash = await crypto.subtle.digest("SHA-256", bytes); return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2,"0")).join(""); }
 const safeSample = (value: unknown) => { const flags = screenDebrief({ sample: JSON.stringify(value) }); if (flags.length) throw new Error(`Remove flagged sample content: ${flags.map(f => f.kind).join(", ")}. Pattern checks are incomplete; never submit private data.`); };
-export type TrustCommand = { type: "safety" | "replay" | "impact" | "release"; input: unknown } | { type: "signoff"; releaseId: string; reviewerId: string; note: string; consent: boolean } | { type: "revoke" | "rollback"; releaseId: string; actorId: string; consent: boolean };
+export type TrustCommand = { type: "safety"; input: unknown } | { type: "replay"; input: unknown } | { type: "impact"; input: unknown } | { type: "release"; input: unknown } | { type: "signoff"; releaseId: string; reviewerId: string; note: string; consent: boolean } | { type: "revoke" | "rollback"; releaseId: string; actorId: string; consent: boolean };
+function releaseSnapshot(r: ReleaseRecord, s: TrustStore) { const { signoff: _signoff, state: _state, ...draft }=r; return JSON.stringify({ draft, safety:s.safety.find(x=>x.id===r.safetyId) ?? null, replay:s.replays.find(x=>x.id===r.replayId) ?? null, impact:s.impacts.find(x=>x.id===r.impactId) ?? null }); }
 export async function applyTrustCommand(current: TrustStore, g: GenesisStore, command: TrustCommand, recordId: string, at: string) {
  const store = structuredClone(trustStoreSchema.parse(current)); date.parse(at); safeSample(command); let actorId = "", target = recordId;
  if (command.type === "safety" || command.type === "replay" || command.type === "impact") {
@@ -84,14 +85,16 @@ export async function applyTrustCommand(current: TrustStore, g: GenesisStore, co
    requireDemoIdentity(g,r.ownerId,"submit_capsules"); if (r.agentOperatorId) requireDemoIdentity(g,r.agentOperatorId,"submit_capsules");
    const reviewer = requireDemoIdentity(g,command.reviewerId,"review_proposals"); if (reviewer.kind === "Agent operator" || reviewer.id === r.ownerId || reviewer.id === r.agentOperatorId) throw new Error("A distinct declared human reviewer is required.");
    if (r.license === "Unknown / permission required") throw new Error("Unknown license needs rights review before local signoff.");
-   if (r.safetyId) { const s = store.safety.find(s => s.id === r.safetyId); if (!s || !safetyAssessment(s).checklistComplete) throw new Error("Physical-safety plan is incomplete or escalated. No local signoff."); requireDemoIdentity(g,s.operatorId,"simulate_twins"); }
+   if (r.scenarioId && !r.safetyId) throw new Error("A robotics scenario requires its corresponding safety plan; hardware remains blocked.");
+   if (r.safetyId) { const s = store.safety.find(s => s.id === r.safetyId); if (!s || !safetyAssessment(s).checklistComplete) throw new Error("Physical-safety plan is incomplete or escalated. No local signoff."); if (r.scenarioId !== s.scenarioId || roboticsScenarios.find(x=>x.id===s.scenarioId)?.contributionId !== r.codeId) throw new Error("Safety plan must match the declared scenario and its referenced code."); requireDemoIdentity(g,s.operatorId,"simulate_twins"); }
    if (r.replayId) { const replay = store.replays.find(x => x.id === r.replayId); if (!replay || replay.codeId !== r.codeId || replay.version !== r.version) throw new Error("Replay must reference the same code and version."); requireDemoIdentity(g,replay.operatorId,"simulate_twins"); }
    if (r.impactId) { const impact = store.impacts.find(x => x.id === r.impactId); if (!impact) throw new Error("Impact evidence missing."); requireDemoIdentity(g,impact.operatorId,"simulate_twins"); }
    if (await artifactDigest(r.artifact) !== r.digest) throw new Error("Artifact mismatch; local signoff blocked.");
-   actorId = reviewer.id; r.signoff = { reviewerId: reviewer.id, digest:r.digest, at, note:text.parse(command.note) }; r.state = "Demo signed off";
+   actorId = reviewer.id; r.signoff = { reviewerId: reviewer.id, digest:r.digest, reviewSnapshot:releaseSnapshot(r,store), at, note:text.parse(command.note) }; r.state = "Demo signed off";
   } else {
    const owner = requireDemoIdentity(g,command.actorId,"submit_capsules"); if (owner.id !== r.ownerId) throw new Error("Only the declared local owner can revoke or rehearse rollback.");
-   if (command.type === "rollback" && (!r.previousVersion || r.state === "Draft")) throw new Error("Record a prior version and local signoff or revocation before rollback rehearsal.");
+   if (r.state === "Rollback rehearsed" || (command.type === "revoke" && r.state === "Revoked")) throw new Error("This local action is already recorded.");
+   if (command.type === "rollback" && (!r.previousVersion || !r.signoff || r.previousVersion === r.version)) throw new Error("Record a distinct prior version and preserved local signoff before rollback rehearsal.");
    actorId = owner.id; r.state = command.type === "revoke" ? "Revoked" : "Rollback rehearsed";
   }
  }
@@ -104,6 +107,7 @@ export function releaseState(r: ReleaseRecord, store: TrustStore, g: GenesisStor
  if (!active(r.ownerId,"submit_capsules") || (r.agentOperatorId && !active(r.agentOperatorId,"submit_capsules")) || (r.signoff && !active(r.signoff.reviewerId,"review_proposals"))) return "Consent invalidated";
  const evidence=[r.safetyId ? store.safety.find(x=>x.id===r.safetyId) : null,r.replayId ? store.replays.find(x=>x.id===r.replayId) : null,r.impactId ? store.impacts.find(x=>x.id===r.impactId) : null];
  if (evidence.some(x=>x && !active(x.operatorId,"simulate_twins"))) return "Evidence consent invalidated";
+ if (r.signoff && r.signoff.reviewSnapshot !== releaseSnapshot(r,store)) return "Artifact or evidence changed · signoff invalidated";
  return r.state;
 }
 export async function releasePassport(r: ReleaseRecord, store: TrustStore, g: GenesisStore) {
