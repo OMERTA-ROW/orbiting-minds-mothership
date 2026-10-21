@@ -1,5 +1,11 @@
 # Cosmic Mothership redesign
 
+## Lightweight CLI companion
+- [ ] Replace Platform command preview with opt-in onboarding, platform tabs and planned command references; no download or package claims.
+- [ ] Add minimal cross-platform native source, safe local help/version/doctor and opt-in isolated install/uninstall checks; keep login/connect/OMNI/update blocked.
+- [ ] Add dormant release/signing architecture and test source, conflicts, uninstall and browser workflows without modifying existing tools.
+- [ ] Activate distribution/live OMNI. Blocker: owner-selected repository, secure accounts/keys, reviewed APIs, platform signing credentials, native security QA and owner release approval.
+
 ## OMNI and Cartoon Galaxy
 - [x] Add named OMNI conversation entry, @omni routing, project-specific template plans, capability/cost/scope previews and human review without fabricated model answers.
 - [x] Add original Cartoon Galaxy series/character/bible/storyboard/timeline workflow, revision-bound editorial and child-privacy/rights reviews and gated preparation exports.
