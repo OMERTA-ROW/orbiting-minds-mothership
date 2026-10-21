@@ -78,6 +78,27 @@
       "when": 1792563897658,
       "tag": "0010_forge_creator_retained_media",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792565607119,
+      "tag": "0011_omni_social_private_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792565876748,
+      "tag": "0012_omni_social_least_privilege",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792566123978,
+      "tag": "0013_omni_social_strict_consent",
+      "breakpoints": true
     }
   ]
 }

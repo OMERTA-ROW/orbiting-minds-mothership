@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Download, Mail, GitPullRequest } from "lucide-react";
+import { Download, Mail, GitPullRequest, CalendarClock, Code2 } from "lucide-react";
+import { SocialAutopilot } from "./SocialAutopilot";
+import { PlatformReadiness } from "./PlatformReadiness";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +25,7 @@ const download = (value: unknown, name: string) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 export function OmniOperations({ projects }: { projects: { id: string; name: string }[] }) {
-  const [tab, setTab] = useState<"mail" | "adaptive">("mail"),
+  const [tab, setTab] = useState<"mail" | "adaptive" | "social" | "platforms">("mail"),
     [provider, setProvider] = useState<"gmail" | "outlook">("gmail"),
     [consent, setConsent] = useState(false),
     [notice, setNotice] = useState("");
@@ -45,6 +47,28 @@ export function OmniOperations({ projects }: { projects: { id: string; name: str
       <p className="eyebrow">OMNI / review-only extensions</p>
       <h2 className="mt-3 text-2xl">Existing tools. Explicit permission.</h2>
       <div className="my-5 flex flex-wrap gap-2">
+        <Button
+          variant={tab === "social" ? "signal" : "ghost"}
+          aria-pressed={tab === "social"}
+          onClick={() => {
+            setTab("social");
+            setNotice("");
+          }}
+        >
+          <CalendarClock size={16} />
+          Social Autopilot
+        </Button>
+        <Button
+          variant={tab === "platforms" ? "signal" : "ghost"}
+          aria-pressed={tab === "platforms"}
+          onClick={() => {
+            setTab("platforms");
+            setNotice("");
+          }}
+        >
+          <Code2 size={16} />
+          Platform connectors
+        </Button>
         <Button
           variant={tab === "mail" ? "signal" : "ghost"}
           aria-pressed={tab === "mail"}
@@ -73,7 +97,11 @@ export function OmniOperations({ projects }: { projects: { id: string; name: str
           {notice}
         </p>
       )}
-      {tab === "mail" ? (
+      {tab === "social" ? (
+        <SocialAutopilot projects={projects} />
+      ) : tab === "platforms" ? (
+        <PlatformReadiness projects={projects} />
+      ) : tab === "mail" ? (
         <div className="max-w-2xl space-y-5">
           <p className="font-mono text-xs text-warning">
             GMAIL + OUTLOOK · SETUP REQUIRED · NO MAILBOX CONNECTED

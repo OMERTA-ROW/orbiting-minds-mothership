@@ -1,0 +1,190 @@
+import { useState } from "react";
+import { Download, ExternalLink, Code2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { developerPlan, platformCatalog } from "@/lib/omni-platforms";
+
+export function PlatformReadiness({ projects }: { projects: { id: string; name: string }[] }) {
+  const [group, setGroup] = useState<"social" | "developer">("developer"),
+    [selected, setSelected] = useState("github"),
+    [notice, setNotice] = useState("");
+  const entry = platformCatalog.find((v) => v.id === selected);
+  return (
+    <section aria-label="Platform readiness" className="scroll-mt-24 space-y-5">
+      <p className="font-mono text-xs text-warning">
+        CONNECTION CHECK · 21 OCT 2026 · NO RUNTIME ACCOUNT VERIFIED
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {(["developer", "social"] as const).map((v) => (
+          <Button
+            key={v}
+            variant={v === group ? "signal" : "ghost"}
+            aria-pressed={group === v}
+            onClick={() => {
+              setGroup(v);
+              setSelected(v === "social" ? "linkedin" : "github");
+              setNotice("");
+            }}
+          >
+            {v === "social" ? "Social channels" : "Developer platforms"}
+          </Button>
+        ))}
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        {platformCatalog
+          .filter((v) => v.group === group)
+          .map((v) => (
+            <Button
+              key={v.id}
+              className="h-auto min-h-14 justify-start whitespace-normal text-left"
+              variant={v.id === selected ? "signal" : "ghost"}
+              onClick={() => setSelected(v.id)}
+            >
+              <Code2 size={14} className="shrink-0" />
+              {v.name}
+            </Button>
+          ))}
+      </div>
+      {entry && (
+        <div className="space-y-3 border-y border-border py-5">
+          <h3 className="text-xl">{entry.name}</h3>
+          <p className="text-xs font-mono text-warning">
+            {entry.status} · {entry.available}
+          </p>
+          <p className="text-xs leading-6 text-muted-foreground">{entry.scopes}</p>
+          <p className="text-xs leading-6">{entry.limits}</p>
+          <p className="text-xs text-muted-foreground">
+            Cost unknown. No scopes granted, connection checked, test run or receipt returned by
+            this application.
+          </p>
+          <Button asChild size="sm" variant="ghost">
+            <a href={entry.source} target="_blank" rel="noreferrer">
+              Official requirements
+              <ExternalLink size={14} />
+            </a>
+          </Button>
+        </div>
+      )}
+      <p className="text-xs leading-6 text-warning">
+        Autopilot and developer writes are NOT SUPPORTED by the current app. Production deploy,
+        billing, secrets, permissions and deletion always require privileged human approval; a draft
+        grants none.
+      </p>
+      <details>
+        <summary className="cursor-pointer text-sm">Per-user setup and revocation</summary>
+        <div className="mt-4 space-y-3 text-xs leading-6 text-muted-foreground">
+          <p>
+            Workspace owner/admin: configure and link an offline-enabled LinkedIn and GitHub App
+            User Connector client in workspace App User Connectors settings. Each user then
+            explicitly consents to their own account. No existing shared member account is reused.
+          </p>
+          <code className="block break-all">
+            https://connector-gateway.lovable.dev/api/v1/app-users/oauth2/callback
+          </code>
+          <p>
+            Encrypted owner-scoped credential storage, provider expiry/reconnect/disconnect, quotas,
+            durable jobs and receipt validation must pass before publishing or automation. Stop here
+            withdraws private plans only, not outside services.
+          </p>
+          <p>
+            Git sync is different: Project settings → Git connects a new private repository; it does
+            not authorize runtime repository actions. Select the exact test repository separately
+            before any API reads/writes.
+          </p>
+        </div>
+      </details>
+      {group === "developer" && (
+        <form
+          className="max-w-2xl space-y-4 border-t border-border pt-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setNotice("");
+            const f = new FormData(e.currentTarget);
+            try {
+              const projectId = String(f.get("project"));
+              if (!projects.some((v) => v.id === projectId))
+                throw new Error("Select your project.");
+              const plan = developerPlan({
+                projectId,
+                provider: selected,
+                target: f.get("target"),
+                intent: f.get("intent"),
+                consent: f.has("consent"),
+              });
+              const url = URL.createObjectURL(
+                new Blob([JSON.stringify(plan, null, 2)], { type: "application/json" }),
+              );
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "omni-developer-proposal.json";
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+              setNotice("Proposal exported. Target not read; no branch, PR, test or deployment.");
+            } catch (error) {
+              setNotice(error instanceof Error ? error.message : "Invalid proposal");
+            }
+          }}
+        >
+          <h3 className="text-lg">Selected-project handoff</h3>
+          <label className="block text-xs">
+            Your Evolution project
+            <select
+              aria-label="Developer owned project"
+              name="project"
+              required
+              className="exchange-select mt-2 w-full"
+            >
+              <option value="">Select project</option>
+              {projects.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs">
+            Exact repository / project declaration
+            <Input
+              aria-label="Developer target"
+              name="target"
+              required
+              minLength={2}
+              maxLength={200}
+              className="mt-2"
+            />
+          </label>
+          <label className="block text-xs">
+            Proposed read / review workflow
+            <Textarea
+              aria-label="Developer workflow"
+              name="intent"
+              required
+              minLength={10}
+              maxLength={1500}
+              className="mt-2"
+            />
+          </label>
+          <label className="flex gap-2 text-xs">
+            <input
+              aria-label="Approve developer proposal"
+              name="consent"
+              required
+              type="checkbox"
+            />
+            Export a non-sensitive proposal only; no account access or execution.
+          </label>
+          <Button type="submit" disabled={!projects.length}>
+            <Download size={14} />
+            Export developer proposal
+          </Button>
+        </form>
+      )}
+      {notice && (
+        <p role="status" className="break-words text-xs text-warning">
+          {notice}
+        </p>
+      )}
+    </section>
+  );
+}

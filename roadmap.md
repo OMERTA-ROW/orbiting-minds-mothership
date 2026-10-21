@@ -1,5 +1,13 @@
 # Cosmic Mothership redesign
 
+## Founder additions — social Autopilot + developer connectors
+- [x] Check per-user social/developer clients and exact authorized targets; read latest owner blueprint without altering outside accounts/projects. GitHub, LinkedIn, GitLab and Notion clients are absent; no external target authorized.
+- [x] Extend existing private operations with owner-scoped social draft/review/stop records, UTC calendar intentions and truthful connector readiness; developer proposal export grants no access or execution.
+- [x] Verify authenticated save/readback/reload, whitespace-normalized review, edit invalidation/stop, cross-owner/direct-write/anonymous/stale/null consent denial, non-UTC browser UTC entry and mobile.
+- [ ] Activate one provider-backed social test and one real developer workflow. Blockers: workspace-admin configured and linked offline-enabled per-user OAuth clients, encrypted per-user keys and verified consent/disconnect/expiry; founder-selected account/content and exact authorized repository/operation. No shared workspace social credentials, production/public/domain changes or CyberLink Social access.
+
+Validation: 854 app tests and 38 retained authenticated social/developer planning checks passed; 23 existing account-isolation checks repeated. Focused lint and preview build pass. Direct-write inherited grants revoked; RPC null consent/action and mistyped JSON fail closed, including null review against an otherwise valid draft and single-plan stop. Desktop/mobile show no overflow or runtime errors; zero social/developer API calls. QA records/accounts removed. Text declarations are not independent rights clearance, connected accounts, platform-rendered media or active autopilot. No actual social flow, developer read/write, scheduler, quotas, receipt, signing, CI or deployment verified; evidence remains UNVERIFIED for launch.
+
 ## Founder additions — post-edit Distro, Communications, Adaptive Engine
 - [x] Add QA-bound post-edit release decision and safe Distro prefills; disclose YouTube/Filmhub/VEVO/Vydia eligibility, manual handoffs and unsupported video formats.
 - [x] Show authenticated Communications setup requirements and draft-only scope design; Gmail and Outlook per-user clients are absent in this workspace, so no mailbox access, sending or automatic rules.

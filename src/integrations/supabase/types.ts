@@ -341,6 +341,50 @@ export type Database = {
           },
         ]
       }
+      omni_social_drafts: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          owner_id: string
+          project_id: string
+          reviewed_at: string | null
+          revision: number
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          id?: string
+          owner_id?: string
+          project_id: string
+          reviewed_at?: string | null
+          revision?: number
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          owner_id?: string
+          project_id?: string
+          reviewed_at?: string | null
+          revision?: number
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_social_drafts_project_id_owner_id_fkey"
+            columns: ["project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "beta_projects"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
       studio_assets: {
         Row: {
           byte_size: number
@@ -434,6 +478,33 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "forge_creator_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      omni_social_transition: {
+        Args: {
+          _action: string
+          _approve?: boolean
+          _content?: Json
+          _id?: string
+          _project?: string
+          _revision?: number
+        }
+        Returns: {
+          content: Json
+          created_at: string
+          id: string
+          owner_id: string
+          project_id: string
+          reviewed_at: string | null
+          revision: number
+          state: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "omni_social_drafts"
           isOneToOne: true
           isSetofReturn: false
         }
