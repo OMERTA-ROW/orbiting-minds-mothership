@@ -22,7 +22,12 @@ import { forgeQuery } from "@/lib/forge-query";
 import { creatorForgeQuery } from "@/lib/forge-distro-query";
 import { CreatorDistro } from "@/components/entertainment/CreatorDistro";
 import { PostEditPrompt } from "@/components/entertainment/PostEditPrompt";
-import { verifyPostEdit, type PostEditOutput, type PostEditHandoff, type PostEditChoice } from "@/lib/forge-post-edit";
+import {
+  verifyPostEdit,
+  type PostEditOutput,
+  type PostEditHandoff,
+  type PostEditChoice,
+} from "@/lib/forge-post-edit";
 import { Button } from "@/components/ui/button";
 import { useGuardian } from "@/hooks/use-guardian";
 import { readCreativePause } from "@/hooks/use-cartoon";
@@ -71,7 +76,9 @@ function QuantumStudio() {
   const openDistro = (output: PostEditOutput, choice: PostEditChoice) => {
     if (output.projectId !== projectId || !allowed || !consent || readCreativePause()) return;
     setHandoff({ output, choice });
-    document.getElementById("creator-distro")?.scrollIntoView({ block: "start", behavior: "instant" });
+    document
+      .getElementById("creator-distro")
+      ?.scrollIntoView({ block: "start", behavior: "instant" });
   };
   const objectUrls = useRef<string[]>([]),
     generation = useRef(0),
@@ -515,7 +522,13 @@ function QuantumStudio() {
                 Return to original
               </Button>
             </div>
-            {verifiedOutput && afterId === verifiedOutput.assetId && <PostEditPrompt output={verifiedOutput} disabled={busy || !allowed || !consent} onChoose={choice => openDistro(verifiedOutput, choice)}/>}
+            {verifiedOutput && afterId === verifiedOutput.assetId && (
+              <PostEditPrompt
+                output={verifiedOutput}
+                disabled={busy || !allowed || !consent}
+                onChoose={(choice) => openDistro(verifiedOutput, choice)}
+              />
+            )}
             {report !== null && (
               <details open className="mt-6 border-t border-border pt-4">
                 <summary className="cursor-pointer text-sm">Measured QA / version digest</summary>

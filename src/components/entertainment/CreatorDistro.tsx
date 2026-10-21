@@ -78,13 +78,28 @@ export function CreatorDistro({
   const ready = allowed && consent && !!projectId;
   const consumedHandoff = useRef<PostEditHandoff | null>(null);
   useEffect(() => {
-    if (!handoff || consumedHandoff.current === handoff || handoff.output.projectId !== projectId) return;
-    const a = assets.find(v => v.id === handoff.output.assetId && v.project_id === projectId && v.sha256 === handoff.output.sha256);
+    if (!handoff || consumedHandoff.current === handoff || handoff.output.projectId !== projectId)
+      return;
+    const a = assets.find(
+      (v) =>
+        v.id === handoff.output.assetId &&
+        v.project_id === projectId &&
+        v.sha256 === handoff.output.sha256,
+    );
     if (!a) return;
     consumedHandoff.current = handoff;
-    setTab("distro");setActive("");setApproval(false);setOwnsSite(false);
-    setDraft(v => ({ ...v, assetId: a.id }));
-    setNotice(handoff.choice === "schedule" ? "Choose a target date and save the draft. Date intention only; no scheduler or delivery account connected." : handoff.choice === "now" ? "Verified WAV selected for manual release preparation. No connected upload; complete metadata, rights and fresh human review." : "Verified WAV selected. Complete the release fields and save a private DRAFT; nothing saved or posted automatically.");
+    setTab("distro");
+    setActive("");
+    setApproval(false);
+    setOwnsSite(false);
+    setDraft((v) => ({ ...v, assetId: a.id }));
+    setNotice(
+      handoff.choice === "schedule"
+        ? "Choose a target date and save the draft. Date intention only; no scheduler or delivery account connected."
+        : handoff.choice === "now"
+          ? "Verified WAV selected for manual release preparation. No connected upload; complete metadata, rights and fresh human review."
+          : "Verified WAV selected. Complete the release fields and save a private DRAFT; nothing saved or posted automatically.",
+    );
   }, [handoff, projectId, assets]);
   useEffect(() => {
     setApproval(false);
@@ -302,13 +317,31 @@ export function CreatorDistro({
                 <br />
                 {evidence.providerCost} · AUTOPUBLISH OFF
               </p>
-              {evidence.platform && <div className="space-y-3 border-y border-border py-4 text-xs leading-6">
-                <p className="font-mono text-warning">{evidence.platform.status}</p><p className="text-muted-foreground">{evidence.platform.eligibility}</p>
-                <p>Account: NONE · Fees/quota: UNKNOWN · Rights: OWNER DECLARATION · Privacy: NO DELIVERY</p>
-                <ul className="list-disc space-y-1 pl-5 text-muted-foreground">{evidence.platform.missing.map(item => <li key={item}>{item}</li>)}</ul>
-                <p className="text-warning">Incomplete metadata handoff only, not a QC-approved submission package. No video, artwork, captions or platform receipts included. Standalone WAV is not a supported video delivery.</p>
-                <Button asChild variant="ghost" size="sm"><a href={evidence.platform.source} target="_blank" rel="noreferrer">Official eligibility guide</a></Button>
-              </div>}
+              {evidence.platform && (
+                <div className="space-y-3 border-y border-border py-4 text-xs leading-6">
+                  <p className="font-mono text-warning">{evidence.platform.status}</p>
+                  <p className="text-muted-foreground">{evidence.platform.eligibility}</p>
+                  <p>
+                    Account: NONE · Fees/quota: UNKNOWN · Rights: OWNER DECLARATION · Privacy: NO
+                    DELIVERY
+                  </p>
+                  <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+                    {evidence.platform.missing.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                  <p className="text-warning">
+                    Incomplete metadata handoff only, not a QC-approved submission package. No
+                    video, artwork, captions or platform receipts included. Standalone WAV is not a
+                    supported video delivery.
+                  </p>
+                  <Button asChild variant="ghost" size="sm">
+                    <a href={evidence.platform.source} target="_blank" rel="noreferrer">
+                      Official eligibility guide
+                    </a>
+                  </Button>
+                </div>
+              )}
               {(
                 [
                   ["title", "Release title"],

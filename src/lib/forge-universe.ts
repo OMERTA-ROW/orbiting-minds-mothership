@@ -212,17 +212,90 @@ export function channelEvidence(channel: (typeof releaseChannels)[number]) {
   };
 }
 export const channelLabels: Record<(typeof releaseChannels)[number], string> = {
-  rss: "Podcast RSS / manual owned-site bundle", "owned-site": "Owned website / metadata", video: "Other video / metadata", social: "Social / metadata", music: "Music / metadata", book: "Book / metadata", game: "Game / metadata",
-  youtube: "YouTube / authorization required", filmhub: "Filmhub / title-QC handoff", vevo: "VEVO / distributor review", vydia: "Vydia / distributor handoff",
+  rss: "Podcast RSS / manual owned-site bundle",
+  "owned-site": "Owned website / metadata",
+  video: "Other video / metadata",
+  social: "Social / metadata",
+  music: "Music / metadata",
+  book: "Book / metadata",
+  game: "Game / metadata",
+  youtube: "YouTube / authorization required",
+  filmhub: "Filmhub / title-QC handoff",
+  vevo: "VEVO / distributor review",
+  vydia: "Vydia / distributor handoff",
 };
 export function platformHandoff(channel: (typeof releaseChannels)[number]) {
-  const shared = { mediaIncluded: false, completeDeliveryPackage: false, connectedAccount: null, cost: "UNKNOWN / confirm account fees and quotas", humanSignoffRequired: true, rightsVerified: false, privacy: "NO DELIVERY; choose supported privacy on authorized platform", receipt: null, autopublish: false };
+  const shared = {
+    mediaIncluded: false,
+    completeDeliveryPackage: false,
+    connectedAccount: null,
+    cost: "UNKNOWN / confirm account fees and quotas",
+    humanSignoffRequired: true,
+    rightsVerified: false,
+    privacy: "NO DELIVERY; choose supported privacy on authorized platform",
+    receipt: null,
+    autopublish: false,
+  };
   switch (channel) {
-    case "youtube": return { ...shared, status: "AUTH REQUIRED / WAV UNSUPPORTED", eligibility: "Official Data API videos.insert needs per-user OAuth, upload scope, eligible channel, quota and app review; resumable upload and processed-video receipt verification are not implemented.", missing: ["Encoded video (standalone WAV not accepted)", "Authorized channel and upload scope", "Title, description, audience and privacy review", "Quota and provider processing checks", "Confirmed video ID and receipt before URL"], source: "https://developers.google.com/youtube/v3/docs/videos/insert" };
-    case "filmhub": return { ...shared, status: "PACKAGE PLAN ONLY / TITLE QC REQUIRED", eligibility: "Owner-guided Filmhub title/dashboard submission and QC. No open third-party upload API verified.", missing: ["Movie/show video", "Artwork and captions", "Title metadata and rights documents", "Filmhub dashboard QC and account eligibility"], source: "https://help.filmhub.com/how-to-submit-your-title-to-qc" };
-    case "vevo": return { ...shared, status: "DISTRIBUTOR REVIEW REQUIRED", eligibility: "Eligible music videos go through approved content providers; no ordinary direct artist upload API.", missing: ["Rights-cleared music video", "Approved Vevo content provider", "Distributor metadata, lead time and fee confirmation"], source: "https://support.vevo.com/hc/en-us/articles/360039785233-I-m-an-artist-how-do-I-get-a-Vevo-channel" };
-    case "vydia": return { ...shared, status: "PACKAGE PLAN ONLY / API UNVERIFIED", eligibility: "Distributor-assisted video delivery subject to eligible account/channel review. Third-party automation/API access must be confirmed with Vydia.", missing: ["Rights-cleared video and required artwork", "Eligible Vydia account and distributor approval", "Dashboard format, fee and lead-time confirmation", "Official third-party API documentation if automation requested"], source: "https://vydia.com/digital-distribution/" };
-    default: return null;
+    case "youtube":
+      return {
+        ...shared,
+        status: "AUTH REQUIRED / WAV UNSUPPORTED",
+        eligibility:
+          "Official Data API videos.insert needs per-user OAuth, upload scope, eligible channel, quota and app review; resumable upload and processed-video receipt verification are not implemented.",
+        missing: [
+          "Encoded video (standalone WAV not accepted)",
+          "Authorized channel and upload scope",
+          "Title, description, audience and privacy review",
+          "Quota and provider processing checks",
+          "Confirmed video ID and receipt before URL",
+        ],
+        source: "https://developers.google.com/youtube/v3/docs/videos/insert",
+      };
+    case "filmhub":
+      return {
+        ...shared,
+        status: "PACKAGE PLAN ONLY / TITLE QC REQUIRED",
+        eligibility:
+          "Owner-guided Filmhub title/dashboard submission and QC. No open third-party upload API verified.",
+        missing: [
+          "Movie/show video",
+          "Artwork and captions",
+          "Title metadata and rights documents",
+          "Filmhub dashboard QC and account eligibility",
+        ],
+        source: "https://help.filmhub.com/how-to-submit-your-title-to-qc",
+      };
+    case "vevo":
+      return {
+        ...shared,
+        status: "DISTRIBUTOR REVIEW REQUIRED",
+        eligibility:
+          "Eligible music videos go through approved content providers; no ordinary direct artist upload API.",
+        missing: [
+          "Rights-cleared music video",
+          "Approved Vevo content provider",
+          "Distributor metadata, lead time and fee confirmation",
+        ],
+        source:
+          "https://support.vevo.com/hc/en-us/articles/360039785233-I-m-an-artist-how-do-I-get-a-Vevo-channel",
+      };
+    case "vydia":
+      return {
+        ...shared,
+        status: "PACKAGE PLAN ONLY / API UNVERIFIED",
+        eligibility:
+          "Distributor-assisted video delivery subject to eligible account/channel review. Third-party automation/API access must be confirmed with Vydia.",
+        missing: [
+          "Rights-cleared video and required artwork",
+          "Eligible Vydia account and distributor approval",
+          "Dashboard format, fee and lead-time confirmation",
+          "Official third-party API documentation if automation requested",
+        ],
+        source: "https://vydia.com/digital-distribution/",
+      };
+    default:
+      return null;
   }
 }
 const xml = (v: string) =>

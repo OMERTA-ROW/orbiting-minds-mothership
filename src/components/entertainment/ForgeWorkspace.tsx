@@ -183,9 +183,13 @@ export function ForgeWorkspace({
     if (!version.source_id || !version.output_id) throw new Error("Media lineage unavailable.");
     const sourceBlob = await blob(version.source_id),
       outputBlob = await blob(version.output_id, version.sha256);
-    const output = assets.find(a => a.id === version.output_id);
+    const output = assets.find((a) => a.id === version.output_id);
     if (!output) throw new Error("Saved output unavailable.");
-    const verified = await verifyPostEdit(output, new Uint8Array(await outputBlob.arrayBuffer()), projectId);
+    const verified = await verifyPostEdit(
+      output,
+      new Uint8Array(await outputBlob.arrayBuffer()),
+      projectId,
+    );
     if (generation !== epoch.current) return;
     setVerifiedOutput(verified);
     const a = URL.createObjectURL(sourceBlob),
@@ -546,10 +550,28 @@ export function ForgeWorkspace({
                     setProcessApproval(false);
                     setExportConsent(false);
                     clearAudio();
-                    if (!result.output_id || !result.source_id) throw new Error("Output lineage missing.");
-                    const fetched = await supabase.storage.from(STUDIO_BUCKET).download(studioPath(result.owner_id, result.output_id));
-                    if (fetched.error || !fetched.data) throw new Error("Radio saved, but output readback failed; reload before release preparation.");
-                    const verified = await verifyPostEdit({ id: result.output_id, owner_id: result.owner_id, project_id: result.project_id, role: "enhanced", source_id: result.source_id, byte_size: fetched.data.size, sha256: result.sha256 }, new Uint8Array(await fetched.data.arrayBuffer()), projectId);
+                    if (!result.output_id || !result.source_id)
+                      throw new Error("Output lineage missing.");
+                    const fetched = await supabase.storage
+                      .from(STUDIO_BUCKET)
+                      .download(studioPath(result.owner_id, result.output_id));
+                    if (fetched.error || !fetched.data)
+                      throw new Error(
+                        "Radio saved, but output readback failed; reload before release preparation.",
+                      );
+                    const verified = await verifyPostEdit(
+                      {
+                        id: result.output_id,
+                        owner_id: result.owner_id,
+                        project_id: result.project_id,
+                        role: "enhanced",
+                        source_id: result.source_id,
+                        byte_size: fetched.data.size,
+                        sha256: result.sha256,
+                      },
+                      new Uint8Array(await fetched.data.arrayBuffer()),
+                      projectId,
+                    );
                     gate();
                     setVerifiedOutput(verified);
                     setNotice(
@@ -561,7 +583,13 @@ export function ForgeWorkspace({
                 <Radio size={14} />
                 {busy ? "Working…" : "Create radio version"}
               </Button>
-              {verifiedOutput && <PostEditPrompt output={verifiedOutput} disabled={busy || !allowed || !consent || paused} onChoose={choice => onPostEdit(verifiedOutput, choice)}/>}
+              {verifiedOutput && (
+                <PostEditPrompt
+                  output={verifiedOutput}
+                  disabled={busy || !allowed || !consent || paused}
+                  onChoose={(choice) => onPostEdit(verifiedOutput, choice)}
+                />
+              )}
               {(before || after) && (
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div>
