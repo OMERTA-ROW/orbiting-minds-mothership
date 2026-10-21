@@ -10,7 +10,7 @@
 
 ## Verified
 - 854 tests across 47 app test files pass, including 26 social/developer rule tests.
-- 35 retained authenticated checks pass (`src/test/test_omni_social_workflow.py --run`): real temporary sign-in, project creation, draft save/readback/reload, whitespace trimming, review, changed revision, export, stop-all, developer proposal, logout; browser UTC behavior, desktop/mobile layout, zero runtime errors/API calls; real hosted cross-account, anonymous, stale/null/forged-action and direct-write restrictions.
+- 38 retained authenticated checks pass (`src/test/test_omni_social_workflow.py --run`): real temporary sign-in, project creation, draft save/readback/reload, whitespace trimming, review, changed revision, export, stop-all/single stop, developer proposal, logout; browser UTC behavior, desktop/mobile layout, zero runtime errors/API calls; real hosted cross-account, anonymous, stale/null/forged-action and direct-write restrictions, including null review on an otherwise valid draft.
 - Existing 23 hosted project/agent isolation checks repeated successfully.
 - Focused lint and current preview build pass. Every content route has head metadata, including index; managed auth layout is not a content page.
 - Two adversarial issues were reproduced and corrected: inherited direct-write grants and SQL NULL approval/action behavior. The same retained requests pass after additive permission/function migrations.
