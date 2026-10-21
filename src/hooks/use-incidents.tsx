@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { useGenesis } from "@/hooks/use-genesis";
+import { genesisStorageKey, useGenesis } from "@/hooks/use-genesis";
+import { genesisStoreSchema } from "@/lib/genesis";
 import { emptyIncidentStore, incidentStorageKey, incidentStoreSchema, applyIncidentCommand, type IncidentCommand, type IncidentStore } from "@/lib/incidents";
 const Context = createContext<{ store: IncidentStore; ready: boolean; issue: string; dispatch: (command: IncidentCommand) => string } | null>(null);
 export function IncidentProvider({ children }: { children: ReactNode }) {
@@ -15,8 +16,12 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
  const dispatch = (command: IncidentCommand) => {
   if (!ready || !genesis.ready) throw new Error("Local records are loading.");
   if (works.current) { try { current.current = read(localStorage.getItem(incidentStorageKey)); } catch { preserve.current = true; works.current = false; setIssue("Unreadable records are preserved; further actions are temporary."); } }
-  // Re-read Genesis before each action so revocations in another tab cannot be ignored.
-  const id = crypto.randomUUID(); const next = applyIncidentCommand(current.current, genesis.store, command, id, new Date().toISOString());
+  let identityStore = genesis.store;
+  if (genesis.storageAvailable) {
+   try { const raw = localStorage.getItem(genesisStorageKey); if (raw !== null) identityStore = genesisStoreSchema.parse(JSON.parse(raw)); }
+   catch { throw new Error("Current identity records cannot be validated. No debrief action was recorded."); }
+  }
+  const id = crypto.randomUUID(); const next = applyIncidentCommand(current.current, identityStore, command, id, new Date().toISOString());
   current.current = next; setStore(next);
   if (!preserve.current) { try { localStorage.setItem(incidentStorageKey, JSON.stringify(next)); works.current = true; setIssue(""); } catch { works.current = false; setIssue("This action could not be saved; new records are temporary until reload."); } }
   return id;

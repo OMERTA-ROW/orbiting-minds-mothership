@@ -16,6 +16,7 @@ export const navItems = [
   { to: "/open-call", label: "Evolution Open Call" },
   { to: "/embassy", label: "Agent Embassy" },
   { to: "/incident-archives", label: "Incident Archives · Demo" },
+  { to: "/agent-debrief", label: "Agent Debrief · Demo" },
   { to: "/sdk", label: "SDK / API Docs" },
   { to: "/discovery", label: "Discovery Radar" },
   { to: "/digital-twin", label: "Digital Twin Lab" },

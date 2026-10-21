@@ -93,6 +93,7 @@ export function applyIncidentCommand(current: IncidentStore, genesis: GenesisSto
  return incidentStoreSchema.parse(store);
 }
 export function effectiveDebriefState(r: Debrief, genesis: GenesisStore) {
+ if (r.state === "Withdrawn") return "Withdrawn";
  const active = (id: string) => genesis.identities.some(p => p.id === id && p.state === "Active" && p.consent);
  if (!active(r.input.identityId)) return "Consent revoked";
  if (r.review && !active(r.review.reviewerId)) return "Reviewer consent revoked";
@@ -100,7 +101,7 @@ export function effectiveDebriefState(r: Debrief, genesis: GenesisStore) {
 }
 export function canPreviewDebrief(r: Debrief, genesis: GenesisStore) { return effectiveDebriefState(r, genesis) === "Preview approved"; }
 export function externalPublicationGate() { return { allowed: false as const, identityVerified: false as const, authenticatedModerator: false as const, privateStorage: false as const, clipsPlayable: false as const, reason: "Real accounts, private artifacts, authenticated moderation and owner launch approval are not configured." }; }
-export function incidentMatches(item: { title: string; category: string; status: string; summary: string }, query: string, category: string, status: string) { return (!category || item.category === category) && (!status || item.status === status) && query.trim().toLowerCase().split(/\s+/).filter(Boolean).every(word => `${item.title} ${item.category} ${item.summary}`.toLowerCase().includes(word)); }
+export function incidentMatches(item: { title: string; category: string; status: string; summary: string; system?: string; lessons?: string }, query: string, category: string, status: string) { return (!category || item.category === category) && (!status || item.status === status) && query.trim().toLowerCase().split(/\s+/).filter(Boolean).every(word => `${item.title} ${item.category} ${item.summary} ${item.system ?? ""} ${item.lessons ?? ""}`.toLowerCase().includes(word)); }
 export function isCaseTakenDown(store: IncidentStore, id: string) { return store.notices.some(n => n.caseId === id && n.kind === "Takedown"); }
 export function debriefExport(r: Debrief, genesis: GenesisStore) {
  const { logs: _logs, ...summary } = r.input;
