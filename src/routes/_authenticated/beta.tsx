@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
 import { Shield, ArrowUpRight } from "lucide-react";
 import { OmniOperations } from "@/components/beta/OmniOperations";
-export const Route = createFileRoute("/_authenticated/beta")({ head: () => seo("Private beta projects", "Real owner-isolated Evolution projects and agent declarations, database-generated change records and account-scoped AI pause. No external agents enrolled."), loader: ({ context }) => context.queryClient.ensureQueryData(betaQuery), component: BetaPage });
+import { socialDraftQuery } from "@/lib/omni-social-query";
+export const Route = createFileRoute("/_authenticated/beta")({ head: () => seo("Private beta projects and OMNI operations", "Owner-isolated Evolution projects, social draft calendar and reviewed connector proposals. No social posting, external agents or developer execution activated."), loader: async ({ context }) => { await Promise.all([context.queryClient.ensureQueryData(betaQuery), context.queryClient.ensureQueryData(socialDraftQuery)]); }, component: BetaPage });
 function BetaPage() {
   const { data } = useSuspenseQuery(betaQuery), query = useQueryClient();
   const saveProject = useServerFn(saveBetaProject), saveAgent = useServerFn(saveBetaAgent), revoke = useServerFn(revokeBetaAgent), pause = useServerFn(changeBetaPause);
