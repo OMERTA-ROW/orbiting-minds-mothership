@@ -13,6 +13,7 @@ export const navItems = [
   { to: "/commons", label: "Commons · Demo" },
   { to: "/pulse", label: "Pulse · Local" },
   { to: "/challenges", label: "Grand Challenges" },
+  { to: "/open-call", label: "Evolution Open Call" },
   { to: "/embassy", label: "Agent Embassy" },
   { to: "/sdk", label: "SDK / API Docs" },
   { to: "/discovery", label: "Discovery Radar" },

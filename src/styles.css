@@ -78,6 +78,7 @@
   --shadow-beacon: 0 0 20px oklch(0.76 0.135 86 / 14%), inset 0 0 16px oklch(0.76 0.135 86 / 8%);
   --hero-shade: linear-gradient(180deg, var(--background) 0%, transparent 16%, transparent 74%, var(--background) 100%);
   --star-veil: linear-gradient(180deg, transparent 5%, var(--background) 90%);
+  --open-call-overlay: linear-gradient(90deg, color-mix(in oklab, var(--background) 95%, transparent) 0%, color-mix(in oklab, var(--background) 80%, transparent) 32%, transparent 75%), linear-gradient(180deg, transparent 70%, var(--background));
 }
 
 @layer base {
@@ -154,6 +155,9 @@
 .hero-world-fusion { left: 7%; top: 77%; }
 .hero-world-dna { right: 8%; top: 77%; }
 .network-horizon { background: color-mix(in oklab, var(--card) 30%, transparent); }
+.open-call-hero { min-height: 670px; height: min(calc(100svh - 150px), 830px); }
+.open-call-hero > img { object-position: center 60%; }
+.open-call-shade { background: var(--open-call-overlay); }
 .journey-band { background: radial-gradient(ellipse at 50% 100%, var(--gold-fog), transparent 70%); }
 .page-orbit { position: absolute; top: -190px; right: -120px; width: 650px; height: 650px; opacity: 0.3; pointer-events: none; }
 .cosmic-section { min-width: 0; }
@@ -191,6 +195,8 @@
 @media (min-width: 1600px) { .hero-copy { padding-top: 80px; } .hero-title { font-size: 112px; } }
 @media (max-width: 1199px) { .hero-world { gap: 8px; } .hero-world small { display: none; } .hero-world-guardian { left: 6%; } .hero-world-agents { right: 6%; } .module-detail { margin-bottom: 3rem; } }
 @media (max-width: 767px) {
+  .open-call-hero { height: auto; min-height: 650px; }
+  .open-call-hero > img { object-position: 61% center; opacity: .5; }
   .cosmic-hero { height: calc(100svh - 116px); min-height: 620px; max-height: 880px; }
   .hero-copy { padding-top: 55px; }
   .hero-title { font-size: 60px; }

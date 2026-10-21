@@ -8,4 +8,15 @@ describe("Genesis local-only persistence", () => {
   it("preserves consecutive memory-only actions when writes are blocked", async () => { vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); }); const hook = renderHook(useGenesis, { wrapper: GenesisProvider }); await waitFor(() => expect(hook.result.current.ready).toBe(true)); act(() => { hook.result.current.dispatch({ type: "identity", input }); hook.result.current.dispatch({ type: "identity", input: { ...input, name: "Second contributor" } }); }); expect(hook.result.current.store.identities).toHaveLength(2); expect(hook.result.current.storageAvailable).toBe(false); });
   it("does not overwrite unreadable stored records after a new action", async () => { const invalid = '{"version":99,"records":"preserve me"}'; localStorage.setItem(genesisStorageKey, invalid); const hook = renderHook(useGenesis, { wrapper: GenesisProvider }); await waitFor(() => expect(hook.result.current.ready).toBe(true)); act(() => hook.result.current.dispatch({ type: "identity", input })); expect(localStorage.getItem(genesisStorageKey)).toBe(invalid); expect(hook.result.current.store.identities).toHaveLength(1); expect(hook.result.current.storageAvailable).toBe(false); });
   it("keeps Genesis separate from existing Code Exchange persistence", async () => { localStorage.setItem("evolution-code-exchange-demo-v1", "retained-existing-exchange"); const hook = renderHook(useGenesis, { wrapper: GenesisProvider }); await waitFor(() => expect(hook.result.current.ready).toBe(true)); act(() => hook.result.current.dispatch({ type: "identity", input })); expect(localStorage.getItem("evolution-code-exchange-demo-v1")).toBe("retained-existing-exchange"); expect(localStorage.getItem(genesisStorageKey)).toContain(input.name); });
+  it("reads Open Call attribution and evidence back after reload", async () => {
+    const first = renderHook(useGenesis, { wrapper: GenesisProvider });
+    await waitFor(() => expect(first.result.current.ready).toBe(true));
+    let identityId = "";
+    act(() => { identityId = first.result.current.dispatch({ type: "identity", input }); });
+    act(() => first.result.current.dispatch({ type: "openContribution", input: { identityId, kind: "Knowledge", title: "Licensed sample research", explanation: "Sample research hypothesis without a verified outcome.", code: "", sourceUrl: "https://www.w3.org/TR/WCAG22/", license: "CC-BY-4.0", contributors: "Original sample researcher", language: "English", testPlan: "Independent accessibility testing remains required.", riskNotes: "Rights self-declared, not independently verified.", rightsConfirmed: true, challengeId: "" } }));
+    first.unmount();
+    const second = renderHook(useGenesis, { wrapper: GenesisProvider });
+    await waitFor(() => expect(second.result.current.store.openContributions).toHaveLength(1));
+    expect(second.result.current.store.openContributions[0]).toMatchObject({ state: "Pending human review", evidence: "SELF_DECLARED_NOT_EXECUTED", input: { contributors: "Original sample researcher", license: "CC-BY-4.0" } });
+  });
 });

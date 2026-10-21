@@ -40,12 +40,12 @@ function Index() {
           <p className="mt-3 text-sm text-muted-foreground">All technology is converging here.</p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Button asChild variant="cosmic" className="h-12 rounded-sm px-6 text-xs"><Link to="/mothership">Explore the Mothership<ArrowUpRight /></Link></Button>
-            <Button asChild variant="signal" className="h-12 rounded-sm px-6 text-xs"><Link to="/join">Join the Network<ArrowRight /></Link></Button>
+            <Button asChild variant="signal" className="h-12 rounded-sm px-6 text-xs"><Link to="/open-call">Evolution Open Call<ArrowRight /></Link></Button>
           </div>
         </div>
         <nav className="hero-worlds absolute inset-0" aria-label="Connected Mothership worlds">
           <Link to="/guardian" className="hero-world hero-world-guardian"><span className="world-beacon"><ShieldCheck size={15} /></span><span>Guardian<small>Protection layer</small></span><ArrowUpRight size={12} /></Link>
-          <Link to="/agents" className="hero-world hero-world-agents"><span className="world-beacon"><Bot size={15} /></span><span>Agent Embassy<small>Consenting intelligence</small></span><ArrowUpRight size={12} /></Link>
+          <Link to="/embassy" className="hero-world hero-world-agents"><span className="world-beacon"><Bot size={15} /></span><span>Agent Embassy<small>Consenting intelligence</small></span><ArrowUpRight size={12} /></Link>
           <Link to="/knowledge-fusion" className="hero-world hero-world-fusion"><span className="world-beacon"><Sparkles size={15} /></span><span>Knowledge Fusion<small>Cross-domain insight</small></span><ArrowUpRight size={12} /></Link>
           <Link to="/sandbox" className="hero-world hero-world-dna"><span className="world-beacon"><Dna size={15} /></span><span>Evolution DNA<small>Compatibility profiles</small></span><ArrowUpRight size={12} /></Link>
         </nav>
