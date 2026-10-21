@@ -1,9 +1,9 @@
 # Cosmic Mothership redesign
 
 ## OMNI and Cartoon Galaxy
-- [ ] Add named OMNI conversation entry, @omni routing, project-specific template plans, capability/cost/scope previews and human review without fabricated model answers.
-- [ ] Add original Cartoon Galaxy series/character/bible/storyboard/timeline workflow, revision-bound editorial and child-privacy/rights reviews and gated preparation exports.
-- [ ] Verify existing records, local persistence, project isolation, fresh Guardian/Nexus pause gates and desktop/mobile journeys.
+- [x] Add named OMNI conversation entry, @omni routing, project-specific template plans, capability/cost/scope previews and human review without fabricated model answers.
+- [x] Add original Cartoon Galaxy series/character/bible/storyboard/timeline workflow, revision-bound editorial and child-privacy/rights reviews and gated preparation exports.
+- [x] Verify existing records, local persistence, project isolation, fresh Guardian/Nexus pause gates and desktop/mobile journeys; all 662 tests pass, focused lint has no errors, and browser journeys make no provider calls.
 - [ ] Enable live OMNI and media/distribution. Blocker: secure owner accounts and reviewed model consent/availability, owner-scoped private records, supported authorized adapters, rights/evidence and owner release approval.
 
 ## Entertainment Galaxy
