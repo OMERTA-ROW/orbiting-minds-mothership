@@ -23,8 +23,10 @@ import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as DigitalTwinRouteImport } from './routes/digital-twin'
 import { Route as DiscoveryRouteImport } from './routes/discovery'
 import { Route as EmbassyRouteImport } from './routes/embassy'
+import { Route as ExperimentReplayRouteImport } from './routes/experiment-replay'
 import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GuardianRouteImport } from './routes/guardian'
+import { Route as ImpactScorecardRouteImport } from './routes/impact-scorecard'
 import { Route as IncidentArchivesRouteImport } from './routes/incident-archives'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
@@ -124,6 +126,11 @@ const EmbassyRoute = EmbassyRouteImport.update({
   path: '/embassy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExperimentReplayRoute = ExperimentReplayRouteImport.update({
+  id: '/experiment-replay',
+  path: '/experiment-replay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FleetRoute = FleetRouteImport.update({
   id: '/fleet',
   path: '/fleet',
@@ -132,6 +139,11 @@ const FleetRoute = FleetRouteImport.update({
 const GuardianRoute = GuardianRouteImport.update({
   id: '/guardian',
   path: '/guardian',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImpactScorecardRoute = ImpactScorecardRouteImport.update({
+  id: '/impact-scorecard',
+  path: '/impact-scorecard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IncidentArchivesRoute = IncidentArchivesRouteImport.update({
@@ -290,8 +302,10 @@ export interface FileRoutesByFullPath {
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
@@ -336,8 +350,10 @@ export interface FileRoutesByTo {
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
@@ -383,8 +399,10 @@ export interface FileRoutesById {
   '/digital-twin': typeof DigitalTwinRoute
   '/discovery': typeof DiscoveryRoute
   '/embassy': typeof EmbassyRoute
+  '/experiment-replay': typeof ExperimentReplayRoute
   '/fleet': typeof FleetRoute
   '/guardian': typeof GuardianRoute
+  '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
@@ -431,8 +449,10 @@ export interface FileRouteTypes {
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/experiment-replay'
     | '/fleet'
     | '/guardian'
+    | '/impact-scorecard'
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
@@ -477,8 +497,10 @@ export interface FileRouteTypes {
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/experiment-replay'
     | '/fleet'
     | '/guardian'
+    | '/impact-scorecard'
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
@@ -523,8 +545,10 @@ export interface FileRouteTypes {
     | '/digital-twin'
     | '/discovery'
     | '/embassy'
+    | '/experiment-replay'
     | '/fleet'
     | '/guardian'
+    | '/impact-scorecard'
     | '/incident-archives'
     | '/join'
     | '/knowledge-fusion'
@@ -570,8 +594,10 @@ export interface RootRouteChildren {
   DigitalTwinRoute: typeof DigitalTwinRoute
   DiscoveryRoute: typeof DiscoveryRoute
   EmbassyRoute: typeof EmbassyRoute
+  ExperimentReplayRoute: typeof ExperimentReplayRoute
   FleetRoute: typeof FleetRoute
   GuardianRoute: typeof GuardianRoute
+  ImpactScorecardRoute: typeof ImpactScorecardRoute
   IncidentArchivesRoute: typeof IncidentArchivesRoute
   JoinRoute: typeof JoinRoute
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
@@ -702,6 +728,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmbassyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/experiment-replay': {
+      id: '/experiment-replay'
+      path: '/experiment-replay'
+      fullPath: '/experiment-replay'
+      preLoaderRoute: typeof ExperimentReplayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/fleet': {
       id: '/fleet'
       path: '/fleet'
@@ -714,6 +747,13 @@ declare module '@tanstack/react-router' {
       path: '/guardian'
       fullPath: '/guardian'
       preLoaderRoute: typeof GuardianRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/impact-scorecard': {
+      id: '/impact-scorecard'
+      path: '/impact-scorecard'
+      fullPath: '/impact-scorecard'
+      preLoaderRoute: typeof ImpactScorecardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/incident-archives': {
@@ -930,8 +970,10 @@ const rootRouteChildren: RootRouteChildren = {
   DigitalTwinRoute: DigitalTwinRoute,
   DiscoveryRoute: DiscoveryRoute,
   EmbassyRoute: EmbassyRoute,
+  ExperimentReplayRoute: ExperimentReplayRoute,
   FleetRoute: FleetRoute,
   GuardianRoute: GuardianRoute,
+  ImpactScorecardRoute: ImpactScorecardRoute,
   IncidentArchivesRoute: IncidentArchivesRoute,
   JoinRoute: JoinRoute,
   KnowledgeFusionRoute: KnowledgeFusionRoute,

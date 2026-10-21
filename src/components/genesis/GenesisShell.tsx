@@ -9,6 +9,7 @@ export const genesisLinks = [
   { to: "/incident-archives", label: "Incident Archives" },
   { to: "/agent-debrief", label: "Agent Debrief" },
   { to: "/robotics", label: "Robotics & Mobility" },
+  { to: "/approval-ledger", label: "Approval Ledger" },
   { to: "/challenges", label: "Grand Challenges" }, { to: "/embassy", label: "Agent Embassy" }, { to: "/discovery", label: "Discovery Radar" }, { to: "/sdk", label: "SDK / API" }, { to: "/digital-twin", label: "Digital Twin Lab" }, { to: "/trust", label: "Trust" }, { to: "/marketplace", label: "Marketplace" }, { to: "/compute-grid", label: "Compute Grid" }, { to: "/releases", label: "Release Galaxy" },
 ] as const;
 export function GenesisShell({ title, eyebrow = "Genesis expansion", children }: { title: string; eyebrow?: string; children: ReactNode }) {
