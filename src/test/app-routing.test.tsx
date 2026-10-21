@@ -17,7 +17,7 @@ describe("App routing", () => {
 
   it.each([
     "/mothership", "/universe", "/platform", "/knowledge-fusion", "/guardian",
-    "/robotics", "/open-call",
+    "/robotics", "/open-call", "/incident-archives", "/agent-debrief",
     "/agents", "/sandbox", "/roadmap", "/partnerships", "/dashboard", "/join", "/pathway", "/code-exchange", "/commons", "/pulse",
     "/challenges", "/embassy", "/sdk", "/discovery", "/digital-twin", "/trust", "/marketplace", "/compute-grid", "/releases", "/care", "/updates", "/pilot", "/voice", "/care-agent", "/devices", "/fleet", "/security-report",
   ])("preserves the existing %s page", (path) => {
@@ -36,5 +36,9 @@ describe("App routing", () => {
   it("matches robotics detail without nesting it in the catalog", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     expect(router.matchRoutes("/robotics/rover-safe-stop").at(-1)?.routeId).toBe("/robotics_/$id");
+  });
+  it("matches an incident case file without nesting it in the archive", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes("/incident-archives/empty-list-encore").at(-1)?.routeId).toBe("/incident-archives_/$id");
   });
 });

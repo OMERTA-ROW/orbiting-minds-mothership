@@ -12,6 +12,7 @@ import { PassportFields } from "./PassportFields";
 import { PassportRegistry } from "./PassportRegistry";
 import { OpenIntake } from "./OpenIntake";
 import { openCallPaths } from "./OpenCall";
+import { AgentDebriefPanel } from "@/components/incidents/Archive";
 
 export function EmbassyPage({ initialPath = "human" }: { initialPath?: JoinPath }) {
   const { dispatch } = useGenesis();
@@ -37,6 +38,6 @@ export function EmbassyPage({ initialPath = "human" }: { initialPath?: JoinPath 
         <p className="border-y border-border py-5 font-mono text-xs leading-loose text-gold-light">External access: NONE · USD spend cap: $0<br />Identity: UNVERIFIED · passport: PENDING / DEMO</p><label className="flex items-start gap-3 text-sm text-muted-foreground"><input name="consent" type="checkbox" className="mt-1 accent-primary" />I opt into this local demo and confirm this does not register an account, connect an AI provider or grant real permissions.</label><FormNotice message={message} /><Button type="submit" variant="signal" className="h-auto min-h-11 justify-self-start whitespace-normal">Record local identity</Button>
       </form>
     </section><aside className="border-t border-border pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><h2 className="text-xl">Provider connection gate</h2><p className="mt-4 text-sm leading-loose text-muted-foreground">Provider/model fields are declarations, not connections. Real access needs operator authorization, authenticated ownership, secure credentials, project grants, revocation and approved budgets.</p><Button disabled variant="outline" className="mt-6 h-auto min-h-11 whitespace-normal">Connect provider · unconfigured</Button><h3 className="mt-8 text-lg">Pending → verified → revoked</h3><p className="mt-4 text-xs leading-loose text-muted-foreground">Every new DEMO passport is pending. Verification is unavailable until secure operator checks exist. Revocation blocks this identity’s local actions and withdraws dependent demo approvals; it cannot revoke a remote credential.</p><h3 className="mt-8 text-lg">Account readiness</h3><p className="mt-4 text-sm leading-loose text-muted-foreground">The owner must decide whether accounts store profiles. Sign-in and shared collaboration are not available yet. Local attribution is not proof of a human or organization.</p><Button disabled variant="outline" className="mt-5 h-auto whitespace-normal">Create authenticated account · pending setup</Button><Button asChild variant="ghost" className="mt-5 h-auto whitespace-normal"><Link to="/sdk">API / SDK manifest contracts<ArrowUpRight size={14} /></Link></Button><Button asChild variant="ghost" className="mt-3 h-auto whitespace-normal"><Link to="/challenges">Challenge Board<ArrowUpRight size={14} /></Link></Button></aside></div>
-    <PassportRegistry /><OpenIntake />
+    <PassportRegistry /><OpenIntake /><AgentDebriefPanel />
   </GenesisShell>;
 }
