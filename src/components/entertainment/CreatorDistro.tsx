@@ -120,7 +120,7 @@ export function CreatorDistro({
   return (
     <section
       aria-label="Creator Universe and Distro"
-      className="mt-12 min-w-0 border-t border-border pt-8"
+      className="mt-12 min-w-0 scroll-mt-24 border-t border-border pt-8"
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -554,7 +554,7 @@ export function CreatorDistro({
                     : releaseSchema.parse(v.content).title}
                 </h3>
                 <p className="mt-2 font-mono text-[10px] text-warning">
-                  Version {v.revision} · {v.state} · NOT DELIVERED
+                  Version {v.revision} · {v.state}{v.kind === "release" ? " · NOT DELIVERED" : " · PLAN ONLY"}
                 </p>
                 <Button
                   variant="ghost"

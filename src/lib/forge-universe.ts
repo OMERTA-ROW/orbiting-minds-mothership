@@ -68,8 +68,9 @@ export const ownedHttps = z
   .url()
   .max(500)
   .superRefine((v, ctx) => {
-    const u = new URL(v),
-      host = u.hostname.toLowerCase();
+    let u: URL;
+    try { u = new URL(v); } catch { ctx.addIssue({ code: "custom", message: "Enter a complete public HTTPS URL." }); return; }
+    const host = u.hostname.toLowerCase();
     if (
       u.protocol !== "https:" ||
       u.username ||

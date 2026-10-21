@@ -1,10 +1,12 @@
 # Cosmic Mothership redesign
 
 ## Creator Universe + OMNI FORGE DISTRO — current focused milestone
-- [ ] Add owner-isolated editable fictional canon and Podcast/Game branch plans inside existing Forge, with honest capability and rights states.
-- [ ] Add a draft/review release console and one validated RSS/manual owned-site export path, exact-version consent, revocation, repeat-safe exports and audit; no posting or public feed exposure.
-- [ ] Verify saved readback, account/media gates, exports and responsive controls; record actual evidence and remaining integration blockers.
-- [ ] Activate real hosted distribution, channel scheduling/autopublish and broader recording/transcription/game adapters only after owner-selected site/channel, supported connections and release approval. No production/domain changes.
+- [x] Add owner-isolated editable fictional canon and Podcast/Game branch plans inside existing Forge, with honest capability and rights states.
+- [x] Add a draft/review release console and validated RSS/manual owned-site export path, exact-version consent, revocation, repeat-safe exports and audit; no posting or public feed exposure.
+- [x] Verify saved readback, account/media gates, XML/WAV/canon ZIP exports and responsive controls; record evidence and remaining integration blockers.
+- [ ] Activate real hosted distribution, channel scheduling/autopublish and broader recording/transcription/game adapters. Blockers: founder-selected controlled site/channel, supported per-user credentials and formats, independent rights/privacy/security review, durable request limits and explicit first release/deployment approval. No production/domain changes.
+
+Validation: 36 retained authenticated Creator/Distro checks passed, including downloaded RSS parsing, exact enclosure byte count and WAV SHA-256, identical retry bundles, review/revoke/paused/cross-owner gates, reload, mobile and text-only OMNI handoff. Repeated 31 Forge, 37 private-media and 23 account-isolation regressions passed; temporary QA data removed. RSS references an OWNER-DECLARED site only: no upload or public host/receipt verified. Podcast/Game branches are editable planning outputs, not recorded/transcribed or executed builds. All distribution APIs, scheduling/autopublish and native commands remain unconnected/planned. Rights declarations are not independent clearance.
 
 ## OMNI FORGE — focused Quantum Studio follow-up
 - [x] Preserve approved private media/isolation gates and repair WaveFile packaging across SSR and bundled runtime.

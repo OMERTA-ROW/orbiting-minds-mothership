@@ -95,6 +95,8 @@ describe("RSS bundle reference integrity", () => {
       rssXml(rss, id, 16044, at),
     ));
   it.each([
+    "h",
+    "not a URL",
     "http://creator.net",
     "https://localhost",
     "https://127.0.0.1",
