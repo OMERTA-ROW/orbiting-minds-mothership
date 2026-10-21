@@ -1,17 +1,18 @@
 # Cosmic Mothership redesign
 
 ## Launch Control — current priority; expansion frozen
-- [ ] Audit hosted application tables, grants, policies, auth configuration and existing AI connectivity.
-- [ ] Implement and verify signup/login/logout and owner-isolated projects/agent profiles; no migration of browser DEMO records.
-- [ ] Implement authenticated, consented temporary live OMNI with real streamed responses, usage/error states and no tool execution.
-- [ ] Add evidence-based Launch Control and verify mobile beta workflows; preserve all existing DEMO modules.
+- [x] Audit hosted schema/grants/auth/AI; add four owner-scoped beta tables, revoke inherited broad grants and pass 23 retained live isolation checks.
+- [x] Implement login/signup/logout, private projects/agent declarations and test real login/save/readback/refresh/pause/logout/Back/second-account flow; no browser DEMO imports.
+- [x] Implement authenticated consented temporary OMNI; real browser model reply returned 173 input + 107 output = 280 tokens. QA approval revoked/accounts removed; no tools.
+- [x] Add dated Launch Control evidence and check desktop/mobile private beta plus estimator/export, preserving demos; 713 app tests and Go tests/vet pass.
+- [ ] Complete auth delivery/OAuth/recovery, renewal and independent accessibility checks. Blocker: owner email/provider interaction and independent review; long-lived verification not yet recorded.
 - [ ] Enable one GitHub repository workflow. Blocker: connection access, repository selection and explicit owner approval for branch/PR writes; no unrelated edits.
 - [ ] Enforce beta request limits. Blocker: no standard backend rate limiter; custom implementation requires owner tradeoff approval.
-- [ ] Public release. Blocker: complete security/evidence gates and explicit founder launch approval. Signed desktop distribution remains unavailable.
+- [ ] Public release. Blocker: complete security/evidence gates and founder approval; hosting is already PUBLIC, contrary to prior summaries. Private-setting request failed; owner must choose individually named audience/private access or unpublish. No new deployment.
 
 ## Compatibility-first enhancement
-- [ ] Add explicit opt-in read-only local developer-tool discovery in offline CLI source, with compatible reference suggestions and no machine-data transmission; browser cannot scan host tools.
-- [ ] Add browser-local usage/rate cost comparisons before account connection; test concrete arithmetic and mobile interactions without provider calls.
+- [x] Add opt-in read-only offline PATH-name tool discovery; never executes tools, reads contents, prints paths or sends details. CLI Go tests/vet and actual temporary executable pass; browser cannot scan host tools.
+- [x] Add browser-local pre-connection usage/rate comparisons, optional fixed costs, currency labels/reset/JSON export. Concrete USD 12 vs 4 arithmetic and desktop/mobile exports verified; no measured-savings claim.
 - [x] Make basic-access/no-download policy, optional hosted offerings and external API costs explicit in CLI and OmniBridge without activating billing or connections.
 - [x] Connect existing local command references, capability discovery, open exports and value comparisons; distinguish measured source checks from unverified savings.
 - [x] Verify policy rules and desktop/mobile interaction; preserve existing records, toolchains and blocked foundations.
