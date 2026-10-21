@@ -2,53 +2,66 @@
 package companion
 
 import (
- "encoding/json"
- "fmt"
- "io"
- "os"
- "path/filepath"
- "runtime"
- "strings"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 )
 
 var Version = "0.0.0-source"
 var Revision = "unreleased"
 
 type DoctorReport struct {
- Platform string `json:"platform"`
- Version string `json:"version"`
- EvolutionConflicts []string `json:"evolution_conflicts"`
- OmniConflicts []string `json:"omni_conflicts"`
- Network string `json:"network"`
- Credentials string `json:"credentials"`
- Changes string `json:"changes"`
- SignedRelease bool `json:"signed_release"`
+	Platform           string   `json:"platform"`
+	Version            string   `json:"version"`
+	EvolutionConflicts []string `json:"evolution_conflicts"`
+	OmniConflicts      []string `json:"omni_conflicts"`
+	Network            string   `json:"network"`
+	Credentials        string   `json:"credentials"`
+	Changes            string   `json:"changes"`
+	SignedRelease      bool     `json:"signed_release"`
 }
 
 // Look only for these two command names in explicitly configured PATH entries.
 // Never execute discovered files, inspect other toolchains or read credentials.
 func FindCommands(name, path, platform string) []string {
- found := []string{}
- separator := string(os.PathListSeparator)
- if platform == "windows" { separator = ";" }
- names := []string{name}
- if platform == "windows" { names = []string{name+".exe", name+".cmd", name+".bat", name+".com", name} }
- seen := map[string]bool{}
- for _, dir := range strings.Split(path, separator) {
-  if dir == "" { continue } // Do not implicitly search the current directory.
-  for _, filename := range names {
-   p := filepath.Join(dir, filename)
-   info, err := os.Stat(p)
-   if err != nil || !info.Mode().IsRegular() { continue }
-   if platform != "windows" && info.Mode().Perm() & 0111 == 0 { continue }
-   if !seen[p] { found = append(found, p); seen[p] = true }
-  }
- }
- return found
+	found := []string{}
+	separator := string(os.PathListSeparator)
+	if platform == "windows" {
+		separator = ";"
+	}
+	names := []string{name}
+	if platform == "windows" {
+		names = []string{name + ".exe", name + ".cmd", name + ".bat", name + ".com", name}
+	}
+	seen := map[string]bool{}
+	for _, dir := range strings.Split(path, separator) {
+		if dir == "" {
+			continue
+		} // Do not implicitly search the current directory.
+		for _, filename := range names {
+			p := filepath.Join(dir, filename)
+			info, err := os.Stat(p)
+			if err != nil || !info.Mode().IsRegular() {
+				continue
+			}
+			if platform != "windows" && info.Mode().Perm()&0111 == 0 {
+				continue
+			}
+			if !seen[p] {
+				found = append(found, p)
+				seen[p] = true
+			}
+		}
+	}
+	return found
 }
 
 func Help(w io.Writer) {
- fmt.Fprintln(w, `EVOLUTION CLI — offline, unsigned source prototype; no distributed release.
+	fmt.Fprintln(w, `EVOLUTION CLI — offline, unsigned source prototype; no distributed release.
 Optional companion for your existing terminal, not a replacement terminal.
 
 Local source commands:
@@ -73,48 +86,93 @@ approval. Source builds are NOT signed release packages. No AI model connected.`
 }
 
 func Run(args []string, invoked string, out, errOut io.Writer) int {
- if strings.EqualFold(strings.TrimSuffix(filepath.Base(invoked), ".exe"), "omni") {
-  args = append([]string{"omni"}, args...)
- }
- if len(args) == 0 { Help(out); return 0 }
- command := args[0]
- switch command {
- case "help", "--help", "-h":
-  if len(args) != 1 { return invalid(errOut) }; Help(out); return 0
- case "version", "--version":
-  if len(args) != 1 { return invalid(errOut) }
-  fmt.Fprintf(out, "evolution %s (%s) · unsigned source · no released package\n", Version, Revision); return 0
- case "doctor":
-  if len(args) > 2 || (len(args)==2 && args[1]!="--json") { return invalid(errOut) }
-  report := DoctorReport{runtime.GOOS+"/"+runtime.GOARCH,Version,
-   FindCommands("evolution",os.Getenv("PATH"),runtime.GOOS), FindCommands("omni",os.Getenv("PATH"),runtime.GOOS),
-   "NOT CONNECTED; no requests", "DISABLED; no secure-key adapter", "NONE; no configuration edited", false}
-  if len(args)==2 { if json.NewEncoder(out).Encode(report)!=nil { return 1 } } else {
-   fmt.Fprintf(out,"LOCAL READ-ONLY CHECK · %s\nSource: %s · unsigned\nevolution name matches: %d\nomni name matches: %d\nUse evolution omni if omni is already owned by another tool.\nNo existing tools executed or modified. Auth, secure keys and releases: UNVERIFIED.\n",report.Platform,report.Version,len(report.EvolutionConflicts),len(report.OmniConflicts))
-  }; return 0
- case "install", "uninstall":
-  dir, approve, alias, ok := installArgs(args[1:], command == "install")
-  if !ok { return invalid(errOut) }
-  var err error
-  if command=="install" { err=Install(dir,approve,alias) } else { err=Uninstall(dir,approve) }
-  if err!=nil { fmt.Fprintln(errOut,"Local operation blocked:",err); return 1 }
-  fmt.Fprintln(out, "Local source operation completed. No PATH, shell configuration, keys or other tools changed."); return 0
- case "login", "connect", "nexus", "agents", "update", "omni":
-  fmt.Fprintln(errOut,"PLANNED / BLOCKED: this offline source prototype has no authenticated account, model, connector, update service or runner. No request made; no keys accepted. Browser preview remains available without download."); return 2
- default:
-  return invalid(errOut)
- }
+	if strings.EqualFold(strings.TrimSuffix(filepath.Base(invoked), ".exe"), "omni") {
+		args = append([]string{"omni"}, args...)
+	}
+	if len(args) == 0 {
+		Help(out)
+		return 0
+	}
+	command := args[0]
+	switch command {
+	case "help", "--help", "-h":
+		if len(args) != 1 {
+			return invalid(errOut)
+		}
+		Help(out)
+		return 0
+	case "version", "--version":
+		if len(args) != 1 {
+			return invalid(errOut)
+		}
+		fmt.Fprintf(out, "evolution %s (%s) · unsigned source · no released package\n", Version, Revision)
+		return 0
+	case "doctor":
+		if len(args) > 2 || (len(args) == 2 && args[1] != "--json") {
+			return invalid(errOut)
+		}
+		report := DoctorReport{runtime.GOOS + "/" + runtime.GOARCH, Version,
+			FindCommands("evolution", os.Getenv("PATH"), runtime.GOOS), FindCommands("omni", os.Getenv("PATH"), runtime.GOOS),
+			"NOT CONNECTED; no requests", "DISABLED; no secure-key adapter", "NONE; no configuration edited", false}
+		if len(args) == 2 {
+			if json.NewEncoder(out).Encode(report) != nil {
+				return 1
+			}
+		} else {
+			fmt.Fprintf(out, "LOCAL READ-ONLY CHECK · %s\nSource: %s · unsigned\nevolution name matches: %d\nomni name matches: %d\nUse evolution omni if omni is already owned by another tool.\nNo existing tools executed or modified. Auth, secure keys and releases: UNVERIFIED.\n", report.Platform, report.Version, len(report.EvolutionConflicts), len(report.OmniConflicts))
+		}
+		return 0
+	case "install", "uninstall":
+		dir, approve, alias, ok := installArgs(args[1:], command == "install")
+		if !ok {
+			return invalid(errOut)
+		}
+		var err error
+		if command == "install" {
+			err = Install(dir, approve, alias)
+		} else {
+			err = Uninstall(dir, approve)
+		}
+		if err != nil {
+			fmt.Fprintln(errOut, "Local operation blocked:", err)
+			return 1
+		}
+		fmt.Fprintln(out, "Local source operation completed. No PATH, shell configuration, keys or other tools changed.")
+		return 0
+	case "login", "connect", "nexus", "agents", "update", "omni":
+		fmt.Fprintln(errOut, "PLANNED / BLOCKED: this offline source prototype has no authenticated account, model, connector, update service or runner. No request made; no keys accepted. Browser preview remains available without download.")
+		return 2
+	default:
+		return invalid(errOut)
+	}
 }
 
-func invalid(w io.Writer) int { fmt.Fprintln(w,"Unsupported arguments. Use evolution help. Never pass keys, tokens or passwords."); return 2 }
+func invalid(w io.Writer) int {
+	fmt.Fprintln(w, "Unsupported arguments. Use evolution help. Never pass keys, tokens or passwords.")
+	return 2
+}
 func installArgs(args []string, allowAlias bool) (dir string, approve, alias, ok bool) {
- for i:=0;i<len(args);i++ {
-  switch args[i] {
-  case "--dir": if dir!="" || i+1>=len(args) { return "",false,false,false }; i++; dir=args[i]
-  case "--approve": if approve { return "",false,false,false }; approve=true
-  case "--with-omni": if !allowAlias || alias { return "",false,false,false }; alias=true
-  default: return "",false,false,false
-  }
- }
- return dir,approve,alias,dir!=""
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--dir":
+			if dir != "" || i+1 >= len(args) {
+				return "", false, false, false
+			}
+			i++
+			dir = args[i]
+		case "--approve":
+			if approve {
+				return "", false, false, false
+			}
+			approve = true
+		case "--with-omni":
+			if !allowAlias || alias {
+				return "", false, false, false
+			}
+			alias = true
+		default:
+			return "", false, false, false
+		}
+	}
+	return dir, approve, alias, dir != ""
 }
