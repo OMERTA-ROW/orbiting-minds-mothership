@@ -1,0 +1,98 @@
+import { describe, expect, it } from "vitest";
+import { dedupeEntries, groundBrief, normalizeUrl, parseFeed } from "@/lib/knowledge";
+import { runKnowledgeJob } from "@/lib/knowledge-job.server";
+
+const rss = `<?xml version="1.0"?><rss><channel>
+<item><title>Model &amp; Tools GA</title><link>https://ex.com/a?utm_source=x#top</link><pubDate>Wed, 21 Oct 2026 19:09:35 GMT</pubDate><description><![CDATA[<p>Now available</p>]]></description><category>agents</category></item>
+<item><title>Second</title><link>https://ex.com/b/</link></item>
+</channel></rss>`;
+const atom = `<feed><entry><title>Atom item</title><link href="https://ex.com/c" rel="alternate"/><published>2026-10-20T00:00:00Z</published><summary>Hi</summary></entry></feed>`;
+
+describe("feed parsing", () => {
+  it("reads RSS titles, cleaned links, dates and categories", () => {
+    const [a, b] = parseFeed(rss);
+    expect(a).toEqual({ title: "Model & Tools GA", url: "https://ex.com/a", summary: "Now available", categories: ["agents"], publishedAt: "2026-10-21T19:09:35.000Z" });
+    expect(b?.url).toBe("https://ex.com/b");
+  });
+  it("reads Atom entries", () => { expect(parseFeed(atom)[0]?.url).toBe("https://ex.com/c"); });
+  it("rejects non-web links", () => { expect(normalizeUrl("javascript:alert(1)")).toBeNull(); });
+});
+
+describe("duplicate detection", () => {
+  it("skips URLs already stored and repeated within a batch", () => {
+    const r = dedupeEntries([{ url: "u1" }, { url: "u2" }, { url: "u2" }], new Set(["u1"]));
+    expect(r.fresh).toEqual([{ url: "u2" }]);
+    expect(r.duplicates).toBe(2);
+  });
+});
+
+describe("brief grounding", () => {
+  it("drops entries citing URLs that were not collected", () => {
+    const e = { capability: "c", availability: "GA", evolution_value: "v", decision: "test" as const, evidence: "announcement" as const };
+    const out = groundBrief({ overview: "o", entries: [{ ...e, url: "https://ex.com/a" }, { ...e, url: "https://made.up/x" }] }, new Set(["https://ex.com/a"]));
+    expect(out.entries.map((x) => x.url)).toEqual(["https://ex.com/a"]);
+  });
+});
+
+// Minimal in-memory stand-in for the database client, enough for the job's calls.
+function fakeAdmin(opts: { leaseFree?: boolean; paused?: { reason: string; status: number } } = {}) {
+  const db = { items: [] as Record<string, unknown>[], runs: [] as Record<string, unknown>[], briefs: [] as Record<string, unknown>[], state: { paused_reason: opts.paused?.reason ?? null, paused_status: opts.paused?.status ?? null, lease_until: null as string | null } };
+  const builder = (table: string) => {
+    let filterUrls: string[] | null = null; let payload: unknown = null; let op = "select";
+    const exec = () => {
+      if (table === "knowledge_items") {
+        if (op === "upsert") { const rows = (payload as Record<string, unknown>[]).filter((r) => !db.items.some((i) => i["url"] === r["url"])); db.items.push(...rows.map((r) => ({ ...r, collected_at: new Date().toISOString() }))); return { data: rows.map((_, i) => ({ id: String(i) })), error: null }; }
+        return { data: filterUrls ? db.items.filter((i) => filterUrls!.includes(i["url"] as string)) : db.items, error: null };
+      }
+      if (table === "knowledge_runs") { if (op === "insert") { db.runs.push({ id: "run1", ...(payload as object) }); return { data: { id: "run1" }, error: null }; } if (op === "update") Object.assign(db.runs[0]!, payload); return { data: null, error: null }; }
+      if (table === "knowledge_briefs") { if (op === "insert") { db.briefs.push(payload as Record<string, unknown>); return { data: null, error: null }; } return { data: db.briefs[0] ?? null, error: null }; }
+      if (table === "knowledge_job_state") { if (op === "update") Object.assign(db.state, payload); return { data: db.state, error: null }; }
+      return { data: null, error: null };
+    };
+    const q: Record<string, unknown> = {
+      select: () => q, eq: () => q, gte: () => q, order: () => q, limit: () => q,
+      in: (_c: string, v: string[]) => { filterUrls = v; return q; },
+      insert: (p: unknown) => { op = "insert"; payload = p; return q; },
+      upsert: (p: unknown) => { op = "upsert"; payload = p; return q; },
+      update: (p: unknown) => { op = "update"; payload = p; return q; },
+      single: () => Promise.resolve(exec()), maybeSingle: () => Promise.resolve(exec()),
+      then: (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => Promise.resolve(exec()).then(res, rej),
+    };
+    return q;
+  };
+  const admin = { from: builder, rpc: async () => ({ data: opts.leaseFree ?? true, error: null }) };
+  return { db, admin: admin as never };
+}
+const source = [{ id: "s", name: "Sample", feed: "https://ex.com/feed", kind: "vendor" as const }];
+const brief = { overview: "Daily view", entries: [{ url: "https://ex.com/a", capability: "c", availability: "GA", evolution_value: "v", decision: "adopt", evidence: "verified_release" }] };
+const fetchStub = (aiStatus = 200): typeof fetch => (async (input: RequestInfo | URL) => {
+  if (String(input).includes("ai.gateway")) return new Response(JSON.stringify(aiStatus === 200 ? { output: [{ content: [{ type: "output_text", text: JSON.stringify(brief) }] }] } : { message: "Credits needed" }), { status: aiStatus });
+  return new Response(rss, { status: 200 });
+}) as typeof fetch;
+
+describe("daily knowledge job (no browser or owner session)", () => {
+  it("collects, stores and writes a cited brief, then dedupes on the next run", async () => {
+    const { db, admin } = fakeAdmin();
+    const first = await runKnowledgeJob({ admin, fetch: fetchStub(), now: () => new Date("2026-10-22T06:00:00Z"), apiKey: "test-key", sources: source });
+    expect(first).toMatchObject({ status: "completed", inserted: 2, brief: "written" });
+    expect(db.briefs[0]).toMatchObject({ brief_date: "2026-10-22", overview: "Daily view" });
+    const second = await runKnowledgeJob({ admin, fetch: fetchStub(), now: () => new Date("2026-10-22T07:00:00Z"), apiKey: "test-key", sources: source });
+    expect(second).toMatchObject({ inserted: 0, duplicates: 2, brief: "already_written" });
+  });
+  it("exits without work when another run holds the lease", async () => {
+    const { admin } = fakeAdmin({ leaseFree: false });
+    expect((await runKnowledgeJob({ admin, fetch: fetchStub(), now: () => new Date(), apiKey: "k", sources: source })).status).toBe("skipped_locked");
+  });
+  it("pauses the brief on 402 but still stores items", async () => {
+    const { db, admin } = fakeAdmin();
+    const r = await runKnowledgeJob({ admin, fetch: fetchStub(402), now: () => new Date("2026-10-22T06:00:00Z"), apiKey: "k", sources: source });
+    expect(r).toMatchObject({ status: "partial", inserted: 2, brief: "paused" });
+    expect(db.state.paused_status).toBe(402);
+  });
+  it("does not call AI while an access denial pause is active", async () => {
+    const { admin } = fakeAdmin({ paused: { reason: "Denied", status: 403 } });
+    let aiCalls = 0; const f = (async (i: RequestInfo | URL) => { if (String(i).includes("ai.gateway")) aiCalls++; return new Response(rss); }) as typeof fetch;
+    await runKnowledgeJob({ admin, fetch: f, now: () => new Date(), apiKey: "k", sources: source });
+    expect(aiCalls).toBe(0);
+  });
+});
