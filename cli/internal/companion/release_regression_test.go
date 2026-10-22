@@ -144,20 +144,34 @@ func TestQuotedCredentialsAtOutputCapStayRedacted(t *testing.T) {
 }
 
 func TestCappedQuotedCredentialsNeverReachSavedOrDisplayedLog(t *testing.T) {
-	for _,quote := range []string{`"`, `'`} {
-		t.Run(quote,func(t *testing.T){
-			dir:=t.TempDir()
-			os.WriteFile(filepath.Join(dir,"go.mod"),[]byte("module example.test/capped\n\ngo 1.25\n"),0600)
-			os.WriteFile(filepath.Join(dir,"x_test.go"),[]byte(`package capped
+	for _, quote := range []string{`"`, `'`} {
+		t.Run(quote, func(t *testing.T) {
+			dir := t.TempDir()
+			os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.test/capped\n\ngo 1.25\n"), 0600)
+			os.WriteFile(filepath.Join(dir, "x_test.go"), []byte(`package capped
 import("fmt";"strings";"testing")
-func TestOutput(t *testing.T){fmt.Print(strings.Repeat("x",1048576-150)); fmt.Print("\npassword="+`+fmt.Sprintf("%q",quote)+`+strings.Repeat("synthetic-secret-fragment ",30))}`),0600)
-			p,err:=UseProject("capped",dir,true);if err!=nil{t.Fatal(err)}
-			var display bytes.Buffer;rec,err:=RunSandbox(p,"go-test",true,time.Minute,&display);if err!=nil{t.Fatal(err)}
-			log,err:=os.ReadFile(rec.LogFile);if err!=nil{t.Fatal(err)}
-			for _,out:=range [][]byte{log,display.Bytes()} {
-				if bytes.Contains(out,[]byte("synthetic-secret-fragment"))||!bytes.Contains(out,[]byte("[REDACTED]")){t.Fatal("capped secret escaped into saved/displayed output")}
+func TestOutput(t *testing.T){fmt.Print(strings.Repeat("x",1048576-150)); fmt.Print("\npassword="+`+fmt.Sprintf("%q", quote)+`+strings.Repeat("synthetic-secret-fragment ",30))}`), 0600)
+			p, err := UseProject("capped", dir, true)
+			if err != nil {
+				t.Fatal(err)
 			}
-			if !rec.Truncated{t.Fatal("fixture did not reach output cap")}
+			var display bytes.Buffer
+			rec, err := RunSandbox(p, "go-test", true, time.Minute, &display)
+			if err != nil {
+				t.Fatal(err)
+			}
+			log, err := os.ReadFile(rec.LogFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, out := range [][]byte{log, display.Bytes()} {
+				if bytes.Contains(out, []byte("synthetic-secret-fragment")) || !bytes.Contains(out, []byte("[REDACTED]")) {
+					t.Fatal("capped secret escaped into saved/displayed output")
+				}
+			}
+			if !rec.Truncated {
+				t.Fatal("fixture did not reach output cap")
+			}
 		})
 	}
 }

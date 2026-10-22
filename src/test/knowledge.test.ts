@@ -443,16 +443,28 @@ describe("daily knowledge job (no browser or owner session)", () => {
     });
     expect(calls).toBe(0);
   });
-  it.each([402, 200])("does not claim a saved pause when a singleton update returns zero rows (%i)", async (status) => {
-    const { admin, db } = fakeAdmin({ zeroPauseWrite: true }); let calls = 0;
-    const f: typeof fetch = async (input) => {
-      if (!String(input).includes("ai.gateway")) return new Response(rss);
-      calls++; return new Response(JSON.stringify(status === 200 ? { output: [{ content: [{ type: "refusal", refusal: "Declined" }] }] } : { message: "Blocked" }), { status });
-    };
-    const deps = { admin, fetch: f, now: () => new Date(), apiKey: "fixture", sources: source };
-    expect((await runKnowledgeJob(deps)).brief).toBe("failed");
-    expect(db.state.brief_attempt_pending).toBe(true);
-    expect((await runKnowledgeJob(deps)).brief).toBe("paused");
-    expect(calls).toBe(1);
-  });
+  it.each([402, 200])(
+    "does not claim a saved pause when a singleton update returns zero rows (%i)",
+    async (status) => {
+      const { admin, db } = fakeAdmin({ zeroPauseWrite: true });
+      let calls = 0;
+      const f: typeof fetch = async (input) => {
+        if (!String(input).includes("ai.gateway")) return new Response(rss);
+        calls++;
+        return new Response(
+          JSON.stringify(
+            status === 200
+              ? { output: [{ content: [{ type: "refusal", refusal: "Declined" }] }] }
+              : { message: "Blocked" },
+          ),
+          { status },
+        );
+      };
+      const deps = { admin, fetch: f, now: () => new Date(), apiKey: "fixture", sources: source };
+      expect((await runKnowledgeJob(deps)).brief).toBe("failed");
+      expect(db.state.brief_attempt_pending).toBe(true);
+      expect((await runKnowledgeJob(deps)).brief).toBe("paused");
+      expect(calls).toBe(1);
+    },
+  );
 });
