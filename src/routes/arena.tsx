@@ -66,7 +66,7 @@ function ArenaPage() {
           {notice && <p role="status" className="mt-4 text-xs text-muted-foreground">{notice}</p>}
         </div>
         <aside className="border-l border-gold/30 pl-5">
-          <p className="eyebrow">Your points (this browser)</p><p className="mt-3 text-3xl text-gold-light">{saved.points}</p>
+          <p className="eyebrow">Your points (this browser)</p><p className="mt-3 text-3xl text-gold-light">{race && !done ? saved.points - (last?.earned ?? 0) : saved.points}</p>
           <p className="mt-2 text-[11px] text-muted-foreground">Winner {10} · podium {3}. Stored locally, not an account balance.</p>
           <form className="mt-6" onSubmit={(e) => { e.preventDefault(); const s = Number(replaySeed); if (Number.isInteger(s) && s >= 0) start(s, false); else setNotice("Enter a whole-number seed."); }}>
             <label className="block text-xs text-muted-foreground">Replay a seed<input value={replaySeed} onChange={(e) => setReplaySeed(e.target.value)} inputMode="numeric" className="exchange-select mt-2 w-full" aria-label="Replay seed" /></label>

@@ -44,3 +44,5 @@
 - Quantum/Forge use approved private owner-project media, bounded PCM with bundled WaveFile, inert web drafts and immutable digest-reviewed versions; OMNI gets text only, why: consistent SSR exports; plans confer no file/publish authority.
 - Creator/Distro use immutable owner-project drafts, digests and row-locked access/review/revoke; post-edit prefills require downloaded WAV QA, why: manual ZIPs never imply hosting, receipts, schedules or recall.
 - OMNI private operations use strict proposals and owner-scoped row-locked social draft/review/stop records with explicit grant revokes and typed non-null consent; no provider endpoints, why: declarations confer no posting, CI, scopes or release authority.
+- Daily knowledge uses one cron-authenticated public route, service-role writes, DB lease, URL dedupe, source-grounded briefs and persisted 402/403 pauses; approved beta readers only, why: retrieval, not retraining or execution.
+- Racing Arena is deterministic seeded simulation with browser-local points; real-money betting stays a disabled constant, why: no value, wagering or licensing claims.
