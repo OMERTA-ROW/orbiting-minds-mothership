@@ -150,7 +150,7 @@ func TestCappedQuotedCredentialsNeverReachSavedOrDisplayedLog(t *testing.T) {
 			os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.test/capped\n\ngo 1.25\n"), 0600)
 			os.WriteFile(filepath.Join(dir, "x_test.go"), []byte(`package capped
 import("fmt";"strings";"testing")
-func TestOutput(t *testing.T){fmt.Print(strings.Repeat("x",1048576-150)); fmt.Print("\npassword="+`+fmt.Sprintf("%q", quote)+`+strings.Repeat("synthetic-secret-fragment ",30))}`), 0600)
+func TestOutput(t *testing.T){fmt.Print(strings.Repeat("x",1048576-150)); fmt.Print("\npassword="+`+fmt.Sprintf("%q", quote)+`+strings.Repeat("synthetic-secret-fragment ",30)); t.Fatal("ensure go-test exposes captured fixture output")}`), 0600)
 			p, err := UseProject("capped", dir, true)
 			if err != nil {
 				t.Fatal(err)
