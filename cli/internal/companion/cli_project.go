@@ -133,15 +133,20 @@ func runRelease(args []string, out, errOut io.Writer) int {
 			fmt.Fprintln(errOut, "Manifest blocked:", err)
 			return 1
 		}
-		if f["--json"] == "1" {
-			return emit(out, true, entries, "")
-		}
 		bad := false
 		for _, e := range entries {
-			fmt.Fprintf(out, "%s/%s\n  artifact: %s\n  sha256:   %s (%s)\n  signing:  %s\n", e.Platform, e.Arch, e.Artifact, e.SHA256, e.Fingerprint, e.SigningStatus)
 			bad = bad || e.Fingerprint != "MATCHES"
+			if f["--json"] != "1" {
+				fmt.Fprintf(out, "%s/%s\n  artifact: %s\n  sha256:   %s (%s)\n  signing:  %s\n", e.Platform, e.Arch, e.Artifact, e.SHA256, e.Fingerprint, e.SigningStatus)
+			}
 		}
-		fmt.Fprintln(out, "No signature is verified by this command; run platform verifiers in CI.")
+		if f["--json"] == "1" {
+			if code := emit(out, true, entries, ""); code != 0 {
+				return code
+			}
+		} else {
+			fmt.Fprintln(out, "No signature is verified by this command; run platform verifiers in CI.")
+		}
 		if bad {
 			return 3
 		}
@@ -153,7 +158,7 @@ func runRelease(args []string, out, errOut io.Writer) int {
 		return 1
 	}
 	code := emit(out, f["--json"] == "1", r, fmt.Sprintf("Files: %d · hash errors: %v\nSignatures: %s\nVerdict: %s", r.Files, r.HashErrors, r.Signed, r.Verdict))
-	if r.Verdict[:6] == "REJECT" {
+	if len(r.HashErrors) > 0 || r.Verdict == "REJECT: do not distribute" {
 		return 3
 	}
 	return code
