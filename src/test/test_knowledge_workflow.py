@@ -1,8 +1,10 @@
 """Retained browser regression, explicit --run; no public release/provider actions."""
 import asyncio,os,secrets,uuid,requests
+from pathlib import Path
 from playwright.async_api import async_playwright
 async def main():
- base=os.environ['SUPABASE_URL'];key=os.environ['SUPABASE_PUBLISHABLE_KEY'];admin=os.environ['SUPABASE_SERVICE_ROLE_KEY'];uid=None
+ Path('/tmp/browser/knowledge-reader').mkdir(parents=True,exist_ok=True)
+ base=os.environ['SUPABASE_URL'];admin=os.environ['SUPABASE_SERVICE_ROLE_KEY'];uid=None
  def call(method,path,data=None):
   h={'apikey':admin,'Content-Type':'application/json','Prefer':'return=representation'}
   if not admin.startswith('sb_'):h['Authorization']='Bearer '+admin
@@ -19,7 +21,8 @@ async def main():
    await page.get_by_text('Your account is not approved or is paused.',exact=False).wait_for();print('PASS authenticated unapproved reader blocked')
    assert call('PATCH','/rest/v1/beta_access?user_id=eq.'+uid,{'ai_approved':True}).ok
    await page.reload(wait_until='networkidle')
-   await page.get_by_role('region',name='Latest brief').get_by_role('heading',name='2026-10-22').wait_for()
+   await page.get_by_role('region',name='Latest brief').get_by_role('heading').first.wait_for()
+   assert await page.get_by_role('region',name='Latest brief').get_by_role('link',name='Source',exact=False).count()>0
    assert await page.get_by_role('region',name='Run history').get_by_text('completed',exact=True).count()>=1
    assert await page.get_by_role('region',name='Stored items').locator('li').count()>0
    await page.screenshot(path='/tmp/browser/knowledge-reader/approved-desktop.png')

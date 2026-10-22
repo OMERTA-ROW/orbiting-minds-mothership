@@ -1,8 +1,9 @@
 """Retained browser regression, explicit --run; no public release/provider actions."""
-import asyncio,json
+import asyncio
 from pathlib import Path
 from playwright.async_api import async_playwright
 async def main():
+ Path('/tmp/browser/arena-check').mkdir(parents=True,exist_ok=True)
  async with async_playwright() as p:
   browser=await p.chromium.launch(headless=True)
   page=await browser.new_page(viewport={'width':1280,'height':1800})
@@ -27,6 +28,9 @@ async def main():
   stored=await page.evaluate("JSON.parse(localStorage.getItem('evolution-arena-v1'))")
   assert len(stored['history'])==1
   assert stored['points']==10+stored['history'][0]['earned']
+  standings=page.get_by_role('region',name='Local racer standings')
+  assert await standings.get_by_role('row').count()==5
+  assert sum(int(await cell.inner_text()) for cell in await standings.locator('tbody tr td:nth-child(2)').all())==1
   print('PASS finish awards once and persists one result')
   await page.reload(wait_until='networkidle');assert await points.inner_text()==str(stored['points'])
   await page.set_viewport_size({'width':390,'height':1800})
