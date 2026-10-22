@@ -19,7 +19,7 @@ All three user-provided parts were reconciled; final part recovered from chat me
 ## Commands and results actually run
 - `bunx vitest run`: **902 passed / 51 files** final full suite.
 - Focused ESLint on changed app source/tests: passed after formatting and safe-cleanup correction. Harness preview: `build OK`; no manual app build/typecheck.
-- `go test -race -count=1 ./...`, `go vet ./...`: passed, Go 1.25.7 via Nix, Linux/amd64. Child command tests execute real Go passes/failures; JSON parity, symlink/coverage, structured/truncated redaction verified.
+- `go test -race -count=1 ./...`, `go vet ./...`: passed, Go 1.25.7 via Nix, Linux/amd64. Child command tests execute real Go passes/failures; JSON parity, symlink/coverage, structured/truncated redaction verified. The cap test uses a compiled fixed-output fixture because go-test itself filters/truncates child output; it is not a claim that a failing test succeeded.
 - `python3 cli/scripts/test_build_source.py`: **3 passed**. Its archives are mocked; not counted as compilation.
 - `build_source.py --out /tmp/evolution-release-qa/reviewed-unsigned`: **six actual cross-compiled targets** (Darwin/Linux/Windows × amd64/arm64). Final archive/binary digests and entries checked; Linux binary manifest/verify tested. Not native macOS/Windows/arm64 execution, signing or release.
 - Hosted Python checks: **25 beta**, **37 media**, **38 social/review/stop**, **31 Forge**, **48 Creator/Distro**, **27 knowledge/audit/lease** passed. Temporary accounts/objects/records removed. No social/developer/provider API posting calls.

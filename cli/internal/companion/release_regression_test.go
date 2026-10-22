@@ -157,9 +157,14 @@ func TestCappedQuotedCredentialsNeverReachSavedOrDisplayedLog(t *testing.T) {
 			os.WriteFile(source, []byte(`package main
 import("fmt";"strings")
 func main(){fmt.Print(strings.Repeat("x",1048576-150)); fmt.Print("\npassword="+`+fmt.Sprintf("%q", quote)+`+strings.Repeat("synthetic-secret-fragment ",30))}`), 0600)
-			name := "go"; if runtime.GOOS == "windows" { name += ".exe" }
-			build := exec.Command("go", "build", "-o", filepath.Join(tools,name), source)
-			if output,err:=build.CombinedOutput();err!=nil{t.Fatalf("output fixture compile failed: %s",output)}
+			name := "go"
+			if runtime.GOOS == "windows" {
+				name += ".exe"
+			}
+			build := exec.Command("go", "build", "-o", filepath.Join(tools, name), source)
+			if output, err := build.CombinedOutput(); err != nil {
+				t.Fatalf("output fixture compile failed: %s", output)
+			}
 			t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 			p, err := UseProject("capped", dir, true)
 			if err != nil {
