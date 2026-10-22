@@ -101,6 +101,9 @@ async def main():
                 raise RuntimeError("Temporary recovery session verification failed")
             await page.get_by_label("New password", exact=True).wait_for()
             await page.reload(wait_until="networkidle")
+            await page.screenshot(path=str(screenshots / "recovery-reload-check.png"))
+            print("Recovery reload path:", page.url.split("?")[0].split("#")[0].replace("http://localhost:8080", ""))
+            print("Recovery hint matches session:", await page.evaluate("""async () => { const { supabase } = await import('/src/integrations/supabase/client.ts'); const { data } = await supabase.auth.getUser(); return !!data.user && sessionStorage.getItem('evolution-password-recovery') === data.user.id; }"""))
             await page.get_by_label("New password", exact=True).wait_for()
             await page.set_viewport_size({"width": 390, "height": 1800})
             if not await page.evaluate("document.documentElement.scrollWidth <= innerWidth"):
