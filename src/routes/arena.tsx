@@ -7,6 +7,7 @@ import { seo } from "@/lib/seo";
 import {
   ARENA_KEY,
   TRACK,
+  arenaStandings,
   arenaRacers,
   readArenaSaved,
   realMoneyBetting,
@@ -237,6 +238,16 @@ function ArenaPage() {
             ))}
           </ul>
         </aside>
+      </section>
+      <section aria-label="Local racer standings" className="mt-10 border-t border-border pt-6">
+        <h2 className="text-xl">Local racer standings</h2>
+        <p className="mt-3 text-xs text-muted-foreground">Last {saved.history.length} completed sample races in this browser · no shared competition or prizes.</p>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="text-muted-foreground"><tr><th className="py-3">Racer</th><th>Wins</th><th>Races</th><th>Average time</th></tr></thead>
+            <tbody>{arenaStandings(saved.history).map((r) => <tr key={r.id} className="border-t border-border"><td className="py-3">{name(r.id)}</td><td>{r.wins}</td><td>{r.races}</td><td className="font-mono">{r.averageSeconds === null ? "—" : `${r.averageSeconds.toFixed(3)}s`}</td></tr>)}</tbody>
+          </table>
+        </div>
       </section>
     </main>
   );

@@ -30,6 +30,7 @@ export function normalizeUrl(raw: string): string | null {
   try {
     const u = new URL(raw.trim());
     if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+    if (u.username || u.password) return null;
     u.hash = "";
     for (const key of [...u.searchParams.keys()]) if (/^utm_|^ref$|^source$/i.test(key)) u.searchParams.delete(key);
     u.hostname = u.hostname.toLowerCase();

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  arenaStandings,
   readArenaSaved,
   realMoneyBetting,
   scorePrediction,
@@ -62,5 +63,12 @@ describe("Racing Arena rules", () => {
       winner = race.order[0] ?? "";
     const state = { points: 10, history: [{ seed: 42, pick: winner, winner, earned: 10 }] };
     expect(readArenaSaved(JSON.stringify(state))).toEqual(state);
+  });
+  it("computes local wins and mean race times only from completed history", () => {
+    const r = simulateRace(42); const winner = r.order[0] ?? "";
+    const standings = arenaStandings([{ seed: 42, pick: winner, winner, earned: 10 }]);
+    expect(standings.find((s) => s.id === winner)).toMatchObject({ wins: 1, races: 1, averageSeconds: r.totals[0]?.time });
+    expect(standings.reduce((total, s) => total + s.wins, 0)).toBe(1);
+    expect(arenaStandings([]).every((s) => s.races === 0 && s.averageSeconds === null)).toBe(true);
   });
 });

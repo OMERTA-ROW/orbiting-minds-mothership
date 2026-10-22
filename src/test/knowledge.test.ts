@@ -25,6 +25,7 @@ describe("feed parsing", () => {
   });
   it("rejects non-web links", () => {
     expect(normalizeUrl("javascript:alert(1)")).toBeNull();
+    expect(normalizeUrl("https://name:synthetic-password@example.test/article")).toBeNull();
   });
 });
 
