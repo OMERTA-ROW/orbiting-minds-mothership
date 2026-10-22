@@ -16,7 +16,7 @@ export const launchEvidence: LaunchGate[] = [
     owner: "Engineering + QA",
     status: "PASS",
     evidence:
-      "22 Oct: recovered the final blueprint from chat and retained all three parts. Full app suite: 893 tests passed before the last local-standings test. Repeated hosted checks: 25 project/agent/access-audit, 37 private-media, 38 social/review/stop, 31 Forge and 48 Creator/Distro; 26 new knowledge-reader/lease checks. Real browser brief access, citations, persisted history, mobile and sign-out verified with temporary approved QA; accounts/files removed. No provider posting, purchase, installation or publication.",
+      "22 Oct: recovered the final blueprint from chat and retained all three parts. Full app suite: 894 tests passed. Repeated hosted checks: 25 project/agent/access-audit, 37 private-media, 38 social/review/stop, 31 Forge and 48 Creator/Distro; 26 new knowledge-reader/lease checks. Real browser brief access, citations, persisted history, mobile and sign-out verified with temporary approved QA; accounts/files removed. No provider posting, purchase, installation or publication.",
     next: "This records bounded preview evidence, not approval for launch, trusted signing, live telemetry or external integrations. Other gates remain open.",
     gating: false,
     demoOnly: false,
