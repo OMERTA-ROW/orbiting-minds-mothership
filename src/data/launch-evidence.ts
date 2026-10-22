@@ -11,6 +11,17 @@ export type LaunchGate = {
 };
 export const launchEvidence: LaunchGate[] = [
   {
+    id: "account-foundation-ordered-2026-10-22",
+    capability: "Ordered completion · account recovery and session foundation",
+    owner: "Lovable implementation / founder acceptance",
+    status: "UNVERIFIED",
+    evidence:
+      "22 Oct 23:53 UTC: canonical fifteen-step item register adopted without another general approval or new release. Full suite: 917 tests / 55 files passed; 28 focused account/OAuth-handoff/permission tests passed. Real temporary-account journey passed twice: login/logout/new-login saved-project readback, explicit session refresh and hard reload, account-switch separation, generated recovery challenge/session, reload, mobile password update and fresh new-password login. Recovery identity is validated before enabling submission; URL/storage flags alone are not authority. QA accounts and records removed. Earlier failed recovery-readback attempt is not counted as a pass.",
+    next: "Step 2 is not complete: real signup/reset inbox delivery, Google/Lovable broker OAuth, automatic long-lived renewal and embedded blocked-storage flows remain unverified; generic account settings/persisted signup-consent scope needs definition. Generated test recovery is not email delivery. No profile table, auth-setting change, provider connection, public deploy or Notion update performed.",
+    gating: true,
+    demoOnly: false,
+  },
+  {
     id: "reconciliation-2026-10-22",
     capability: "Blueprint reconciliation and private-preview regressions",
     owner: "Engineering + QA",
