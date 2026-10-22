@@ -6,22 +6,22 @@ Updated 2026-10-22. All three Notion parts and Dashboard/Racing notes reconciled
 
 ## Current owner work — completed
 - [x] Reconcile all three parts, migrations, source, prior claims and hosted records; remove stale global auth/profile blockers and retain every distinct family below.
-- [x] Repair collector byte limits, bounded five-feed concurrency, token-owned lease, checked pause/idempotency/history persistence, interrupted-run reconciliation and refusal/credit/access stops.
+- [x] Repair collector byte limits, bounded five-feed concurrency, token-owned lease, durable pre-provider pending guard, checked singleton pause/result/finalization writes, failure-history fallback and refusal/credit/access stops. Failed stop/result writes or interrupted requests cannot trigger another automatic paid request, including on a later date.
 - [x] Prepare request-bound background acceptance with unsupported-runtime refusal; preview verification stays synchronous and accurately labeled. Scheduled production success remains blocked below.
 - [x] Remove inherited broad knowledge grants; approved readers SELECT only, no anon/client writes. Verify actual grants and adversarial requests.
 - [x] Record private account approval/pause audit metadata; verify owner isolation and prevent forged audit or self-approval.
 - [x] Repair CLI JSON/text exit parity, checksum scanner failure, duplicate/manifest coverage/digest/target checks and symlink paths. Signatures remain unverified.
-- [x] Redact structured/common/opaque credentials and truncated private keys before disk **and terminal display**; synchronize stdout/stderr, cap logs, bound pipe wait. Profile/run paths reject symlinks/nonlocal sandbox labels.
+- [x] Redact structured/common/opaque credentials and truncated private keys before disk **and terminal display**; synchronize stdout/stderr, cap logs, bound pipe wait. Profile/run paths reject symlinks/nonlocal sandbox labels; pre-opened run-directory handles prevent child-directed output writes. Unterminated quoted credentials at the cap are covered.
 - [x] Repair Arena complete replay checks, finish-only points/history, replay balance, invalid seeds/history and storage failures; add local completed-race standings/mean times. No real-money activation.
 - [x] Repeat authenticated beta/media/review/export/readback and desktop/mobile flows with temporary QA accounts; remove test accounts/files/records.
 - [x] Inspect repository hosts, provider clients, signing-secret presence and media execution boundary read-only. No connect, broad grants, branch push, installation or public release.
 
 ## Actual current verification
-- Full app: **894 tests / 51 files passed** with `bunx vitest run`; focused ESLint passes; harness `build OK`. No manual app build/typecheck.
+- Full app: **902 tests / 51 files passed** with `bunx vitest run`; focused ESLint passes; harness `build OK`. No manual app build/typecheck.
 - CLI: Go 1.25.7, `go test -race -count=1 ./...` and `go vet ./...` pass. Three Python archive tests pass (mock compilation there); separately **six actual unsigned cross-compiles** and final ZIP entries/binary/archive SHA-256 checked. Linux CLI manifest/verify JSON succeeds unsigned. macOS/Windows/arm64 native execution unverified.
-- Hosted retained checks: **25 beta, 37 media, 38 social/review/stop, 31 Forge, 48 Creator/Distro, 26 knowledge/audit/lease** pass. No provider posting/API integrations; temporary QA data removed.
+- Hosted retained checks: **25 beta, 37 media, 38 social/review/stop, 31 Forge, 48 Creator/Distro, 27 knowledge/audit/lease** pass. No provider posting/API integrations; temporary QA data removed.
 - Real browser: login/save/reload/review/edit invalidation/stop/manual exports/logout; WAV edit/downloaded sample/rights/review gates; approved knowledge citations/run readback and unapproved/signout denial; Arena replay/finish award/local persistence/corrupt storage/warnings. Desktop 1280 and mobile 390 checked; no observed page errors.
-- Fresh preview collector persisted **70 fetched / 16 new / 54 duplicates**; next two runs **70 / 0 / 70**, existing brief reused. Database readback: **5 completed runs, 86 unique items, 1 brief with 19 citations**, lease released. Earlier `schedule` trigger labels are not proof cron delivered them.
+- Fresh preview collector persisted **70 fetched / 16 new / 54 duplicates**; next two runs **70 / 0 / 70**, existing brief reused. Database readback: **7 completed runs, 88 unique items, 1 brief with 19 citations**, lease released. Final reviewed runs: **70 / 2 / 68** then **70 / 0 / 70**; durable AI guard clear. Earlier `schedule` trigger labels are not proof cron delivered them.
 - Auth settings read: email/Google enabled, confirmation required, anonymous off, signup allowed. Delivery/reset/OAuth/renewal remain unverified; QA accounts were admin-confirmed, not delivery tests.
 
 ## Family disposition — no completed functionality rebuilt
