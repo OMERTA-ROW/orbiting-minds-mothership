@@ -45,6 +45,6 @@ func TestRedactsStructuredAndOpaqueCredentials(t *testing.T) {
 			if strings.Contains(string(out), value) { t.Fatalf("structured credential not redacted") }
 		}
 		second, again := RedactSecrets(out)
-		if again != 0 || string(second) != string(out) { t.Fatal("redaction must be idempotent") }
+		if again != 0 || string(second) != string(out) { t.Fatalf("redaction must be idempotent: fixture=%q once=%q twice=%q count=%d", input, out, second, again) }
 	}
 }
