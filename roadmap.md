@@ -203,4 +203,4 @@ Validation: 743 app tests (25 new audio/consent cases), 37 retained hosted media
 - [x] Verify sample code, navigation, filters, attribution, accessibility and disabled external actions; report working versus mock.
 
 ## Notion blueprint intake (Oct 22)
-- [ ] Part 1 received (backlog only; see .lovable/plan archive). Waiting for parts 2-3 before gap review and scoped plan.
+- [ ] Parts 1-2 received (backlog only; see .lovable/plan archives). Waiting for part 3 before gap review and scoped plan.
