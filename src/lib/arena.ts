@@ -20,7 +20,7 @@ export interface RaceResult { seed: number; events: SectorEvent[]; totals: { rac
 
 /** Same seed and racers always produce the same race, enabling exact replays. */
 export function simulateRace(seed: number, racers: readonly Racer[] = arenaRacers): RaceResult {
-  if (!Number.isInteger(seed) || seed < 0) throw new Error("Seed must be a non-negative integer");
+  if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("Seed must be an integer from 0 to 4294967295");
   const rand = mulberry32(seed); const events: SectorEvent[] = []; const totals = new Map(racers.map((r) => [r.id, 0]));
   const sectors = TRACK.laps * TRACK.sectorsPerLap;
   for (let s = 0; s < sectors; s++) {
@@ -44,10 +44,30 @@ export function scorePrediction(pickId: string, order: readonly string[]): numbe
   return 0;
 }
 
-/** Integrity check: replaying a stored seed must reproduce the stored finishing order. */
+/** Exact numeric replay, not authentication of browser-local records. */
 export function verifyReplay(result: RaceResult, racers: readonly Racer[] = arenaRacers): boolean {
-  const again = simulateRace(result.seed, racers);
-  return again.order.join() === result.order.join() && again.totals.every((t, i) => t.time === result.totals[i]?.time);
+  try { return JSON.stringify(simulateRace(result.seed, racers)) === JSON.stringify(result); } catch { return false; }
+}
+
+export const ARENA_KEY = "evolution-arena-v1";
+export interface ArenaHistory { seed: number; pick: string; earned: number; winner: string }
+export interface ArenaSaved { points: number; history: ArenaHistory[] }
+export function readArenaSaved(raw: string | null): ArenaSaved {
+  const empty = { points: 0, history: [] };
+  try {
+    const v: unknown = JSON.parse(raw ?? "null");
+    if (!v || typeof v !== "object") return empty;
+    const state = v as Record<string, unknown>;
+    if (!Number.isSafeInteger(state["points"]) || (state["points"] as number) < 0 || !Array.isArray(state["history"]) || state["history"].length > 20) return empty;
+    for (const h of state["history"]) {
+      if (!h || typeof h !== "object") return empty;
+      const r = h as Record<string, unknown>;
+      if (typeof r["seed"] !== "number" || !Number.isSafeInteger(r["seed"]) || r["seed"] < 0 || r["seed"] > 0xffffffff || typeof r["pick"] !== "string" || !arenaRacers.some((x) => x.id === r["pick"])) return empty;
+      const result = simulateRace(r["seed"]);
+      if (r["winner"] !== result.order[0] || r["earned"] !== scorePrediction(r["pick"], result.order)) return empty;
+    }
+    return { points: state["points"] as number, history: state["history"] as ArenaHistory[] };
+  } catch { return empty; }
 }
 
 export const realMoneyBetting = { enabled: false, status: "Research only: requires counsel, licensing, age/geo checks and explicit owner approval." } as const;
