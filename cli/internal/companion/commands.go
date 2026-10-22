@@ -116,6 +116,8 @@ Local source commands:
                              Shows OMNI routing for a project; no model is called
   evolution release verify --dir <staged-release> [--json]
                              Checks SHA256SUMS; reports UNSIGNED unless signature files exist
+  evolution release manifest --dir <staged-release> [--json]
+                             Lists platform/arch, artifact path, SHA-256 check and signing status
 
 PLANNED / BLOCKED — no authentication, API calls or tool execution:
   evolution login
