@@ -41,7 +41,8 @@ def main():
             path='/rest/v1/'+table+'?limit=1'
             r=call('GET',path,token=a['token'])
             check('approved existing '+table+' read',r.ok and len(r.json())==1)
-            check('approved cannot mutate '+table,call('PATCH','/rest/v1/'+table+'?id=eq.'+r.json()[0]['id'],{},a['token']).status_code==403)
+            row=r.json()[0]; field={'knowledge_items':'title','knowledge_briefs':'overview','knowledge_runs':'brief_message'}[table]
+            check('approved cannot mutate '+table,call('PATCH','/rest/v1/'+table+'?id=eq.'+row['id'],{field:row[field]},a['token']).status_code==403)
         audit=call('GET','/rest/v1/beta_audit?capability=eq.beta_access',token=a['token']).json()
         check('approval audit records change',len(audit)==2 and {r['action'] for r in audit}=={'INSERT','UPDATE'})
         check('other owner cannot read approval audit',call('GET','/rest/v1/beta_audit?owner_id=eq.'+a['id'],token=b['token']).json()==[])
