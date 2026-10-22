@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "@supabase/supabase-js";
@@ -10,9 +10,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const router = useRouter(), queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null), [ready, setReady] = useState(false);
   const [recoveryUserId, setRecoveryUserId] = useState<string | null>(null);
-  const finishRecovery = () => { rememberRecoveryHint(sessionStorage, null); setRecoveryUserId(null); };
+  const recoveryEventUser = useRef<string | null>(null);
+  const finishRecovery = () => { recoveryEventUser.current = null; rememberRecoveryHint(sessionStorage, null); setRecoveryUserId(null); };
   useEffect(() => {
-    let active = true, revision = 0, identity: string | null = null, recoveryEventUser: string | null = null;
+    let active = true, revision = 0, identity: string | null = null;
     const check = async () => {
       const current = ++revision;
       let candidate: User | null = null;
@@ -27,14 +28,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       if (!active || revision !== current) return false;
       identity = candidate?.id ?? null;
       setUser(candidate);
-      setRecoveryUserId(identity && recoveryEventUser === identity ? identity : readRecoveryHint(sessionStorage, identity));
+      setRecoveryUserId(identity && recoveryEventUser.current === identity ? identity : readRecoveryHint(sessionStorage, identity));
       setReady(true);
       return true;
     };
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
-        recoveryEventUser = session?.user.id ?? null;
-        rememberRecoveryHint(sessionStorage, recoveryEventUser);
+        recoveryEventUser.current = session?.user.id ?? null;
+        rememberRecoveryHint(sessionStorage, recoveryEventUser.current);
       }
       // Same-user renewal needs no router/cache invalidation; recover a previously
       // unavailable identity only when renewal changes the known identity.
@@ -51,7 +52,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           queryClient.clear(); identity = null;
         }
         if (event === "SIGNED_OUT") {
-          recoveryEventUser = null; rememberRecoveryHint(sessionStorage, null);
+          recoveryEventUser.current = null; rememberRecoveryHint(sessionStorage, null);
           setReady(true); await router.navigate({ to: "/auth", replace: true });
         } else if (await check()) {
           const checked = revision;
