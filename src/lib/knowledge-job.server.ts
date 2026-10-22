@@ -71,11 +71,16 @@ function extractOutput(body: unknown): { text?: string; refusal?: string } {
 }
 
 async function updateBriefGuard(admin: Admin, runId: string, pending: boolean) {
-  const result = await admin.from("knowledge_job_state")
+  const result = await admin
+    .from("knowledge_job_state")
     .update({ brief_attempt_pending: pending })
-    .eq("id", 1).eq("brief_attempt_run", runId)
-    .abortSignal(AbortSignal.timeout(2_000)).select("id").single();
-  if (result.error || !result.data) throw new Error("Brief attempt state could not be persisted; automatic AI remains blocked.");
+    .eq("id", 1)
+    .eq("brief_attempt_run", runId)
+    .abortSignal(AbortSignal.timeout(2_000))
+    .select("id")
+    .single();
+  if (result.error || !result.data)
+    throw new Error("Brief attempt state could not be persisted; automatic AI remains blocked.");
 }
 
 async function writeBrief(
@@ -143,11 +148,16 @@ async function writeBrief(
   );
   // Persist before any paid request. An interrupted request or failed stop/result
   // write leaves this guard set, even after the lease is released or the date changes.
-  const attempt = await admin.from("knowledge_job_state")
+  const attempt = await admin
+    .from("knowledge_job_state")
     .update({ brief_attempt_pending: true, brief_attempt_run: runId, brief_attempt_date: today })
-    .eq("id", 1).eq("brief_attempt_pending", false)
-    .abortSignal(signal).select("id").single();
-  if (attempt.error || !attempt.data) throw new Error("AI attempt guard could not be recorded; no AI request made.");
+    .eq("id", 1)
+    .eq("brief_attempt_pending", false)
+    .abortSignal(signal)
+    .select("id")
+    .single();
+  if (attempt.error || !attempt.data)
+    throw new Error("AI attempt guard could not be recorded; no AI request made.");
   const res = await deps.fetch(GATEWAY, {
     method: "POST",
     signal: AbortSignal.any([signal, AbortSignal.timeout(90_000)]),
@@ -181,7 +191,9 @@ async function writeBrief(
           paused_at: now().toISOString(),
         })
         .eq("id", 1)
-        .abortSignal(AbortSignal.timeout(2_000)).select("id").single();
+        .abortSignal(AbortSignal.timeout(2_000))
+        .select("id")
+        .single();
       if (savedPause.error || !savedPause.data)
         throw new Error(
           "AI pause could not be persisted. Owner action required before another attempt.",
@@ -202,7 +214,9 @@ async function writeBrief(
       .from("knowledge_job_state")
       .update({ paused_reason: message, paused_status: 200, paused_at: now().toISOString() })
       .eq("id", 1)
-      .abortSignal(AbortSignal.timeout(2_000)).select("id").single();
+      .abortSignal(AbortSignal.timeout(2_000))
+      .select("id")
+      .single();
     if (pause.error || !pause.data)
       throw new Error(
         "Refusal stop could not be persisted. Owner action required before another attempt.",
@@ -226,8 +240,14 @@ async function writeBrief(
       item_count: items.data.length,
       run_id: runId,
     })
-    .abortSignal(signal).select("id").single();
-  if (saved.error || !saved.data) return { status: "failed", message: "The brief could not be saved; automatic AI remains blocked pending owner review." };
+    .abortSignal(signal)
+    .select("id")
+    .single();
+  if (saved.error || !saved.data)
+    return {
+      status: "failed",
+      message: "The brief could not be saved; automatic AI remains blocked pending owner review.",
+    };
   await updateBriefGuard(admin, runId, false);
   return { status: "written", message: `${grounded.entries.length} cited entries.` };
 }
@@ -265,7 +285,8 @@ export async function runKnowledgeJob(deps: JobDeps, trigger = "schedule"): Prom
         status: "failed",
         finished_at: now().toISOString(),
         brief_status: "interrupted",
-        brief_message: "Previous attempt has no confirmed final outcome; no valid collector lease remains.",
+        brief_message:
+          "Previous attempt has no confirmed final outcome; no valid collector lease remains.",
       })
       .eq("status", "running")
       .abortSignal(signal);
@@ -367,7 +388,9 @@ export async function runKnowledgeJob(deps: JobDeps, trigger = "schedule"): Prom
         brief_message: brief.message,
       })
       .eq("id", currentRunId)
-      .abortSignal(AbortSignal.timeout(2_000)).select("id").single();
+      .abortSignal(AbortSignal.timeout(2_000))
+      .select("id")
+      .single();
     if (finalized.error || !finalized.data)
       throw new Error("Run outcome could not be persisted; completion is unconfirmed.");
     result = { status, runId, fetched, inserted, duplicates, brief: brief.status };
@@ -375,13 +398,28 @@ export async function runKnowledgeJob(deps: JobDeps, trigger = "schedule"): Prom
     failure = error;
     if (runId) {
       try {
-        const recorded = await admin.from("knowledge_runs").update({
-          status: "failed", finished_at: now().toISOString(), fetched, inserted, duplicates,
-          source_errors: errors, brief_status: "unconfirmed",
-          brief_message: "Attempt failed; no completion claimed. Inspect pending AI guard before owner recovery.",
-        }).eq("id", runId).abortSignal(AbortSignal.timeout(2_000)).select("id").single();
-        if (recorded.error || !recorded.data) console.error("Knowledge failure outcome could not be persisted.");
-      } catch { console.error("Knowledge failure outcome could not be persisted."); }
+        const recorded = await admin
+          .from("knowledge_runs")
+          .update({
+            status: "failed",
+            finished_at: now().toISOString(),
+            fetched,
+            inserted,
+            duplicates,
+            source_errors: errors,
+            brief_status: "unconfirmed",
+            brief_message:
+              "Attempt failed; no completion claimed. Inspect pending AI guard before owner recovery.",
+          })
+          .eq("id", runId)
+          .abortSignal(AbortSignal.timeout(2_000))
+          .select("id")
+          .single();
+        if (recorded.error || !recorded.data)
+          console.error("Knowledge failure outcome could not be persisted.");
+      } catch {
+        console.error("Knowledge failure outcome could not be persisted.");
+      }
     }
   }
   try {

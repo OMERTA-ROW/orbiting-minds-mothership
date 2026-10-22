@@ -140,8 +140,10 @@ function fakeAdmin(
       if (table === "knowledge_job_state") {
         if (op === "update") {
           const change = payload as Record<string, unknown>;
-          if (opts.pauseWriteError && "paused_status" in change) return { data: null, error: new Error("pause unavailable") };
-          if (opts.guardWriteError && "brief_attempt_pending" in change) return { data: null, error: new Error("guard unavailable") };
+          if (opts.pauseWriteError && "paused_status" in change)
+            return { data: null, error: new Error("pause unavailable") };
+          if (opts.guardWriteError && "brief_attempt_pending" in change)
+            return { data: null, error: new Error("guard unavailable") };
           Object.assign(db.state, payload);
         }
         return {
@@ -360,7 +362,11 @@ describe("daily knowledge job (no browser or owner session)", () => {
     ).rejects.toThrow("lease could not be checked");
   });
   it("cannot report completed when final history or lease release fails", async () => {
-    for (const opts of [{ finalizeError: true }, { releaseError: true }, { zeroFinalization: true }]) {
+    for (const opts of [
+      { finalizeError: true },
+      { releaseError: true },
+      { zeroFinalization: true },
+    ]) {
       const { admin } = fakeAdmin(opts);
       await expect(
         runKnowledgeJob({
@@ -373,32 +379,65 @@ describe("daily knowledge job (no browser or owner session)", () => {
       ).rejects.toThrow();
     }
   });
-  it.each([402, 403, 404, 200])("does not replay a terminal response when its pause write fails (%i)", async (status) => {
-    const { admin, db } = fakeAdmin({ pauseWriteError: true }); let calls = 0;
-    const f: typeof fetch = async (input) => {
-      if (!String(input).includes("ai.gateway")) return new Response(rss);
-      calls++;
-      return new Response(JSON.stringify(status === 200 ? { output: [{ content: [{ type: "refusal", refusal: "Declined" }] }] } : { message: "Blocked" }), { status });
-    };
-    const deps = { admin, fetch: f, now: () => new Date(), apiKey: "fixture", sources: source };
-    expect((await runKnowledgeJob(deps)).brief).toBe("failed");
-    expect(db.state.brief_attempt_pending).toBe(true);
-    expect((await runKnowledgeJob(deps)).brief).toBe("paused");
-    expect(calls).toBe(1);
-  });
+  it.each([402, 403, 404, 200])(
+    "does not replay a terminal response when its pause write fails (%i)",
+    async (status) => {
+      const { admin, db } = fakeAdmin({ pauseWriteError: true });
+      let calls = 0;
+      const f: typeof fetch = async (input) => {
+        if (!String(input).includes("ai.gateway")) return new Response(rss);
+        calls++;
+        return new Response(
+          JSON.stringify(
+            status === 200
+              ? { output: [{ content: [{ type: "refusal", refusal: "Declined" }] }] }
+              : { message: "Blocked" },
+          ),
+          { status },
+        );
+      };
+      const deps = { admin, fetch: f, now: () => new Date(), apiKey: "fixture", sources: source };
+      expect((await runKnowledgeJob(deps)).brief).toBe("failed");
+      expect(db.state.brief_attempt_pending).toBe(true);
+      expect((await runKnowledgeJob(deps)).brief).toBe("paused");
+      expect(calls).toBe(1);
+    },
+  );
   it("leaves unsuccessful result persistence blocked even across a new date", async () => {
-    const { admin, db } = fakeAdmin({ briefSaveError: true }); let calls = 0;
-    const f: typeof fetch = async (input, init) => { if (String(input).includes("ai.gateway")) calls++; return fetchStub()(input, init); };
-    const deps = { admin, fetch: f, now: () => new Date("2026-10-22"), apiKey: "fixture", sources: source };
+    const { admin, db } = fakeAdmin({ briefSaveError: true });
+    let calls = 0;
+    const f: typeof fetch = async (input, init) => {
+      if (String(input).includes("ai.gateway")) calls++;
+      return fetchStub()(input, init);
+    };
+    const deps = {
+      admin,
+      fetch: f,
+      now: () => new Date("2026-10-22"),
+      apiKey: "fixture",
+      sources: source,
+    };
     expect((await runKnowledgeJob(deps)).brief).toBe("failed");
     expect(db.state.brief_attempt_pending).toBe(true);
-    expect((await runKnowledgeJob({ ...deps, now: () => new Date("2026-10-23") })).brief).toBe("paused");
+    expect((await runKnowledgeJob({ ...deps, now: () => new Date("2026-10-23") })).brief).toBe(
+      "paused",
+    );
     expect(calls).toBe(1);
   });
   it("calls no AI if the pre-request durable guard cannot be persisted", async () => {
-    const { admin } = fakeAdmin({ guardWriteError: true }); let calls = 0;
-    const f: typeof fetch = async (input, init) => { if (String(input).includes("ai.gateway")) calls++; return fetchStub()(input, init); };
-    await runKnowledgeJob({ admin, fetch: f, now: () => new Date(), apiKey: "fixture", sources: source });
+    const { admin } = fakeAdmin({ guardWriteError: true });
+    let calls = 0;
+    const f: typeof fetch = async (input, init) => {
+      if (String(input).includes("ai.gateway")) calls++;
+      return fetchStub()(input, init);
+    };
+    await runKnowledgeJob({
+      admin,
+      fetch: f,
+      now: () => new Date(),
+      apiKey: "fixture",
+      sources: source,
+    });
     expect(calls).toBe(0);
   });
 });
