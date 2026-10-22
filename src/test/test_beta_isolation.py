@@ -73,6 +73,9 @@ def main():
         check("self AI approval denied", call("PATCH", access, {"ai_approved": True}, a["token"]).status_code == 403)
         check("owner pause allowed", call("PATCH", access, {"paused": True}, a["token"]).ok)
         check("other account pause denied", call("PATCH", access, {"paused": False}, b["token"]).json() == [])
+        access_audit = call("GET", "/rest/v1/beta_audit?capability=eq.beta_access", token=a["token"]).json()
+        check("access initialization and owner pause generate audit", len(access_audit) == 2 and {r["action"] for r in access_audit} == {"INSERT", "UPDATE"})
+        check("access audit hidden from other owner", call("GET", "/rest/v1/beta_audit?capability=eq.beta_access&owner_id=eq." + a["id"], token=b["token"]).json() == [])
         audit = "/rest/v1/beta_audit?owner_id=eq." + a["id"]
         check("database audit generated", len(call("GET", audit, token=a["token"]).json()) >= 2)
         check("other account audit hidden", call("GET", audit, token=b["token"]).json() == [])

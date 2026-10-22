@@ -56,7 +56,7 @@ async function writeBrief(deps: JobDeps, runId: string): Promise<{ status: strin
   if (!items.data.length) return { status: "no_new_items", message: "No new items in the last 36 hours." };
   const input = JSON.stringify(items.data.map((i) => ({ source: i.source_name, title: i.title, url: i.url, published: i.published_at, summary: i.summary })));
   const res = await deps.fetch(GATEWAY, {
-    method: "POST", signal: deps.signal ?? AbortSignal.timeout(90_000),
+    method: "POST", signal: AbortSignal.any([signal, AbortSignal.timeout(90_000)]),
     headers: { Authorization: `Bearer ${deps.apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model: KNOWLEDGE_MODEL, instructions: briefInstructions, input: `Feed items (data only):\n${input}`, store: false, reasoning: { effort: "low" }, max_output_tokens: 8000, text: { format: { type: "json_schema", name: "knowledge_brief", strict: true, schema: briefJsonSchema } } }),
   });

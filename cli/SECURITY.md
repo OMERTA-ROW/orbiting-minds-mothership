@@ -2,10 +2,13 @@
 
 ## Current trust boundary
 
-Core CLI contains no network, shell subprocesses, API credentials, telemetry,
-auto-updates, background agent or elevated permissions. Commands use explicit
-arguments; unknown flags and future operations fail closed. Build tooling may
-invoke **Go only** to compile source; it is not part of the shipped executable.
+Core CLI contains no network client, API credential intake, telemetry,
+auto-updates, background agent or elevated permissions. Owner-approved sandbox
+runs execute fixed Go/npm argv in the selected local project, never a shell.
+Project code/package scripts are executable and may read user-accessible files
+or use the network: this is NOT container/VM isolation. The environment allowlist
+does not sandbox the filesystem. Timeout bounds the direct process and pipe wait,
+not descendant termination on every platform. Unknown operations fail closed.
 PATH doctor checks names without executing them.
 Opt-in `discover --approve` broadens the fixed name catalog only: PATH metadata,
 no content/version/configuration access, no subprocesses or network client, no paths
@@ -15,6 +18,10 @@ operator must provide a local PATH; OS-mounted remote filesystems cannot be cert
 local by this source prototype. Name matches are not verified compatibility.
 A local filesystem receipt is not a signature and cannot defeat an attacker
 with write access to the folder.
+Sandbox output is capped and synchronized, then best-effort credential-redacted
+before display or saving (not streamed live). Structured tokens, auth/cookie
+headers and incomplete private-key blocks are covered; unknown secrets may still
+escape. Do not execute untrusted projects or rely on redaction as credential custody.
 Use a private dedicated directory, never a shared/writable system binary path.
 Race-resistant descriptor-relative file operations, native ACLs and interrupted
 uninstall recovery require additional review before distribution.

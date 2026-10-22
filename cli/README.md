@@ -88,10 +88,28 @@ credential intake, token echo, file writes or success claims. Unknown arguments
 also return 2. Errors never repeat supplied credentials. Help/version/doctor
 return 0; failed local install/uninstall returns 1.
 
-No OAuth, API model, shell execution, download, updater, repository connection,
+No OAuth, API model, arbitrary shell execution, download, updater, repository connection,
 agent enumeration, media processing, provider billing or automatic integration
 is implemented. Do not pass keys via command arguments. The implementation has
 no network client or credential store, and does not consume API-key env vars.
+
+### Project targeting and local test records
+
+`project use <name> --dir <absolute-project-dir> --approve` writes only the
+selected project's `.evolution/project.json`. `project show --project <dir>`
+reads it; `omni route "<goal>" --project <dir>` returns a plan with no model call.
+`sandbox run <go-test|go-vet|go-build|npm-test> --project <dir> --approve`
+runs one fixed local argv. It is not isolated from local files or network.
+Stdout/stderr are synchronized, capped at 1 MiB, redacted before display and
+saved with actual exit status in `.evolution/runs`; output appears after execution,
+not live. Secrets outside common patterns can still escape. Timeout does not
+guarantee termination of every descendant process on every OS.
+
+`release manifest --dir <stage> [--json]` lists all six supported target shapes,
+artifact paths, digests and unverified signature-file presence. Missing/mismatched
+files exit 3 in both text and JSON. `release verify` rejects incomplete checksum
+reads, duplicates, symlink artifacts and manifest/checksum coverage conflicts.
+Checksum-only directories remain supported but establish no publisher trust.
 
 ## Opt-in private tool discovery
 

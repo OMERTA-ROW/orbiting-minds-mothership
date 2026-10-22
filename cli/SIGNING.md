@@ -21,3 +21,9 @@ darwin/amd64, darwin/arm64, linux/amd64, linux/arm64, windows/amd64, windows/arm
 4. Owner reviews `source-manifest.json` and approves upload manually.
 
 See `ci/release-signing.yml.example` (dormant; outside .github/workflows).
+
+Verification identity must match the exact owner-approved repository, release
+workflow and tag, not any workflow within a repository. Placeholder action pins
+and identity must be resolved/reviewed before activation. Hash-only CLI results
+never replace native platform verification. Current tests establish source
+integrity/error handling, not notarization, Authenticode or Sigstore trust.

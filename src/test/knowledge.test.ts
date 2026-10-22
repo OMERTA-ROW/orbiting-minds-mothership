@@ -59,7 +59,7 @@ function fakeAdmin(opts: { leaseFree?: boolean; paused?: { reason: string; statu
       insert: (p: unknown) => { op = "insert"; payload = p; return q; },
       upsert: (p: unknown) => { op = "upsert"; payload = p; return q; },
       update: (p: unknown) => { op = "update"; payload = p; return q; },
-      single: () => Promise.resolve(exec()), maybeSingle: () => Promise.resolve(exec()),
+      single: () => q, maybeSingle: () => q,
       then: (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => Promise.resolve(exec()).then(res, rej),
     };
     return q;
