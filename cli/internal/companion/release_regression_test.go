@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -148,9 +150,17 @@ func TestCappedQuotedCredentialsNeverReachSavedOrDisplayedLog(t *testing.T) {
 		t.Run(quote, func(t *testing.T) {
 			dir := t.TempDir()
 			os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.test/capped\n\ngo 1.25\n"), 0600)
-			os.WriteFile(filepath.Join(dir, "x_test.go"), []byte(`package capped
-import("fmt";"strings";"testing")
-func TestOutput(t *testing.T){fmt.Print(strings.Repeat("x",1048576-150)); fmt.Print("\npassword="+`+fmt.Sprintf("%q", quote)+`+strings.Repeat("synthetic-secret-fragment ",30)); t.Fatal("ensure go-test exposes captured fixture output")}`), 0600)
+			// A compiled fixed-task output fixture avoids go-test's own output filtering.
+			// Real go-test failure behavior is covered independently above.
+			tools := t.TempDir()
+			source := filepath.Join(tools, "fixture.go")
+			os.WriteFile(source, []byte(`package main
+import("fmt";"strings")
+func main(){fmt.Print(strings.Repeat("x",1048576-150)); fmt.Print("\npassword="+`+fmt.Sprintf("%q", quote)+`+strings.Repeat("synthetic-secret-fragment ",30))}`), 0600)
+			name := "go"; if runtime.GOOS == "windows" { name += ".exe" }
+			build := exec.Command("go", "build", "-o", filepath.Join(tools,name), source)
+			if output,err:=build.CombinedOutput();err!=nil{t.Fatalf("output fixture compile failed: %s",output)}
+			t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 			p, err := UseProject("capped", dir, true)
 			if err != nil {
 				t.Fatal(err)
