@@ -46,8 +46,8 @@
       "passed": true
     },
     "isolation": {
-      "command": "python3 src/test/test_beta_isolation.py --run",
-      "result": "Prior completed reconciliation: 25 hosted checks passed; not repeated in this refinement",
+      "command": "EVOLUTION_QA_APPROVED_BACKEND_URL=\"$SUPABASE_URL\" (explicit matching-target check), then python3 src/test/test_beta_isolation.py --run",
+      "result": "Repeated during this refinement: 25 direct hosted API checks passed; temporary users/records cleaned",
       "runtime": "Direct API owner-project-agent-audit/pause isolation and forged bearer/approval denials. Temporary accounts cleaned.",
       "passed": true
     },
@@ -237,8 +237,8 @@
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Real projects/operator declarations/pause and audit persist; UI storage consent and per-feature consent exist. Generic persisted account settings/signup consent version not completed.",
-          "test_command": "python3 src/test/test_beta_isolation.py --run",
-          "test_result": "Prior completed reconciliation: 25 hosted checks passed; not repeated in this refinement",
+          "test_command": "EVOLUTION_QA_APPROVED_BACKEND_URL=\"$SUPABASE_URL\" (explicit matching-target check), then python3 src/test/test_beta_isolation.py --run",
+          "test_result": "Repeated during this refinement: 25 direct hosted API checks passed; temporary users/records cleaned",
           "evidence_ref": "isolation",
           "runtime_evidence": "Direct API owner-project-agent-audit/pause isolation and forged bearer/approval denials. Temporary accounts cleaned.",
           "next_action": "Choose needed account settings and consent records before adding user profile fields; do not create profiles solely for auth.",
@@ -262,8 +262,8 @@
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Bounded beta project/agent/access/audit owner isolation, direct API spoof/forge/privileged denials tested; account-switch UI test repeated.",
-          "test_command": "python3 src/test/test_beta_isolation.py --run",
-          "test_result": "Prior completed reconciliation: 25 hosted checks passed; not repeated in this refinement",
+          "test_command": "EVOLUTION_QA_APPROVED_BACKEND_URL=\"$SUPABASE_URL\" (explicit matching-target check), then python3 src/test/test_beta_isolation.py --run",
+          "test_result": "Repeated during this refinement: 25 direct hosted API checks passed; temporary users/records cleaned",
           "evidence_ref": "isolation",
           "runtime_evidence": "Direct API owner-project-agent-audit/pause isolation and forged bearer/approval denials. Temporary accounts cleaned.",
           "next_action": "Retest every new data family independently; no blanket claim for demo modules.",
