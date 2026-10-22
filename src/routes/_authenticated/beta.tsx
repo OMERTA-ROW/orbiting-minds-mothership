@@ -259,7 +259,13 @@ function BetaPage() {
                   ? "Private media"
                   : a.capability === "beta_projects"
                     ? "Project"
-                    : "Agent declaration"}{" "}
+                    : a.capability === "beta_access"
+                      ? "Account approval / pause"
+                      : a.capability === "omni_social_drafts"
+                        ? "Social draft"
+                        : a.capability === "beta_agent_profiles"
+                          ? "Agent declaration"
+                          : "Private review record"}{" "}
                 · {a.action}
               </span>
               <time>{new Date(a.occurred_at).toLocaleString()}</time>

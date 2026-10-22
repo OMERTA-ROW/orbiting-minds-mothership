@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -46,6 +47,36 @@ var sandboxTasks = map[string]sandboxTask{
 
 func profilePath(root string) string { return filepath.Join(root, profileDir, "project.json") }
 
+func validateProjectRoot(root string) error {
+	if !filepath.IsAbs(root) || filepath.Clean(root) != root {
+		return errors.New("choose a clean absolute project path")
+	}
+	for path := root; ; path = filepath.Dir(path) {
+		info, err := os.Lstat(path)
+		if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			return errors.New("project path must contain only existing non-symlink directories")
+		}
+		if filepath.Dir(path) == path {
+			break
+		}
+	}
+	for _, path := range []string{filepath.Join(root, profileDir), filepath.Join(root, profileDir, "runs")} {
+		info, err := os.Lstat(path)
+		if err == nil && (!info.IsDir() || info.Mode()&os.ModeSymlink != 0) {
+			return errors.New("project metadata directory cannot be a symlink or file")
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return errors.New("project metadata directory could not be checked")
+		}
+	}
+	if info, err := os.Lstat(profilePath(root)); err == nil && !info.Mode().IsRegular() {
+		return errors.New("project profile cannot be a symlink or directory")
+	} else if err != nil && !os.IsNotExist(err) {
+		return errors.New("project profile could not be checked")
+	}
+	return nil
+}
+
 func UseProject(name, dir string, approve bool) (ProjectProfile, error) {
 	var p ProjectProfile
 	if !approve {
@@ -58,6 +89,9 @@ func UseProject(name, dir string, approve bool) (ProjectProfile, error) {
 		return p, errors.New("--dir must be an absolute path")
 	}
 	root := filepath.Clean(dir)
+	if err := validateProjectRoot(root); err != nil {
+		return p, err
+	}
 	info, err := os.Stat(root)
 	if err != nil || !info.IsDir() {
 		return p, errors.New("--dir must be an existing directory")
@@ -75,11 +109,14 @@ func LoadProject(dir string) (ProjectProfile, error) {
 	if !filepath.IsAbs(dir) {
 		return p, errors.New("--project must be an absolute path")
 	}
+	if err := validateProjectRoot(filepath.Clean(dir)); err != nil {
+		return p, err
+	}
 	data, err := os.ReadFile(profilePath(filepath.Clean(dir)))
 	if err != nil {
 		return p, errors.New("no project profile; run evolution project use first")
 	}
-	if json.Unmarshal(data, &p) != nil || p.Root != filepath.Clean(dir) || !projectName.MatchString(p.Name) {
+	if json.Unmarshal(data, &p) != nil || p.Root != filepath.Clean(dir) || !projectName.MatchString(p.Name) || p.Sandbox != "local" {
 		return p, errors.New("project profile is invalid or was moved; re-run evolution project use")
 	}
 	return p, nil
@@ -127,11 +164,17 @@ type RunRecord struct {
 const maxLog = 1 << 20
 
 type cappedBuffer struct {
-	bytes.Buffer
+	mu sync.Mutex
+	buffer bytes.Buffer
 	truncated bool
 }
 
+func (c *cappedBuffer) Bytes() []byte { c.mu.Lock(); defer c.mu.Unlock(); return append([]byte(nil), c.buffer.Bytes()...) }
+func (c *cappedBuffer) Len() int { return c.buffer.Len() }
+
 func (c *cappedBuffer) Write(b []byte) (int, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	room := maxLog - c.Len()
 	if room <= 0 {
 		c.truncated = true
@@ -139,10 +182,10 @@ func (c *cappedBuffer) Write(b []byte) (int, error) {
 	}
 	if len(b) > room {
 		c.truncated = true
-		c.Buffer.Write(b[:room])
+		c.buffer.Write(b[:room])
 		return len(b), nil
 	}
-	return c.Buffer.Write(b)
+	return c.buffer.Write(b)
 }
 
 // minimalEnv passes only what toolchains need, so tokens in the parent shell are not inherited.
@@ -166,6 +209,12 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	if !approve {
 		return rec, errors.New("add --approve to run this task in the project directory")
 	}
+	if err := validateProjectRoot(p.Root); err != nil {
+		return rec, err
+	}
+	if p.Sandbox != "local" || !projectName.MatchString(p.Name) {
+		return rec, errors.New("invalid local project profile")
+	}
 	if _, err := os.Stat(filepath.Join(p.Root, t.marker)); err != nil {
 		return rec, fmt.Errorf("task %s needs %s in the project root", task, t.marker)
 	}
@@ -174,14 +223,38 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 		return rec, fmt.Errorf("%s is not installed on this machine", t.argv[0])
 	}
 	idBytes := make([]byte, 6)
-	_, _ = rand.Read(idBytes)
+	if _, err := rand.Read(idBytes); err != nil {
+		return rec, errors.New("run identifier could not be generated")
+	}
+	// Keep a descriptor to the approved run directory before executing project code.
+	// Child renames/symlink substitutions cannot redirect these writes elsewhere.
+	runs := filepath.Join(p.Root, profileDir, "runs")
+	if err := os.MkdirAll(runs, 0o700); err != nil {
+		return rec, err
+	}
+	if err := validateProjectRoot(p.Root); err != nil {
+		return rec, err
+	}
+	runRoot, err := os.OpenRoot(runs)
+	if err != nil {
+		return rec, err
+	}
+	defer runRoot.Close()
+	original, err := runRoot.Stat(".")
+	if err != nil {
+		return rec, err
+	}
 	rec = RunRecord{ID: time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(idBytes), Project: p.Name, Task: task, Argv: t.argv, Started: time.Now().UTC().Format(time.RFC3339)}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, t.argv[1:]...)
+	// Bound waiting on inherited stdout/stderr pipes; not process-tree isolation.
+	cmd.WaitDelay = 500 * time.Millisecond
 	cmd.Dir, cmd.Env = p.Root, minimalEnv()
 	buf := &cappedBuffer{}
-	cmd.Stdout, cmd.Stderr = io.MultiWriter(buf, live), io.MultiWriter(buf, live)
+	// One synchronized capped sink avoids stdout/stderr races. Display only
+	// after redaction, so terminal capture cannot expose raw child credentials.
+	cmd.Stdout, cmd.Stderr = buf, buf
 	start := time.Now()
 	runErr := cmd.Run()
 	rec.Seconds = float64(time.Since(start).Milliseconds()) / 1000
@@ -199,19 +272,41 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	default:
 		rec.Result = "PASSED"
 	}
-	runs := filepath.Join(p.Root, profileDir, "runs")
-	if err := os.MkdirAll(runs, 0o700); err != nil {
+	if err := validateProjectRoot(p.Root); err != nil {
 		return rec, err
+	}
+	current, err := os.Stat(runs)
+	if err != nil || !os.SameFile(original, current) {
+		return rec, errors.New("run directory changed during task; output was not saved")
 	}
 	rec.LogFile = filepath.Join(runs, rec.ID+".log")
 	header := fmt.Sprintf("# evolution sandbox run %s\n# project=%s task=%s platform=%s/%s argv=%q\n# isolation: LOCAL PROCESS ONLY (not a container or VM)\n", rec.ID, p.Name, task, runtime.GOOS, runtime.GOARCH, t.argv)
 	clean, n := RedactSecrets(buf.Bytes())
+	if live != nil {
+		if _, err := live.Write(clean); err != nil {
+			return rec, err
+		}
+	}
 	if n > 0 {
 		header += fmt.Sprintf("# redacted %d secret-like value(s) before saving\n", n)
 	}
-	if err := os.WriteFile(rec.LogFile, append([]byte(header), clean...), 0o600); err != nil {
+	if err := writeRunFile(runRoot, rec.ID+".log", append([]byte(header), clean...)); err != nil {
 		return rec, err
 	}
 	meta, _ := json.MarshalIndent(rec, "", "  ")
-	return rec, os.WriteFile(filepath.Join(runs, rec.ID+".json"), append(meta, '\n'), 0o600)
+	return rec, writeRunFile(runRoot, rec.ID+".json", append(meta, '\n'))
+}
+
+func writeRunFile(root *os.Root, name string, data []byte) error {
+	f, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return err
+	}
+	_, writeErr := f.Write(data)
+	closeErr := f.Close()
+	if writeErr != nil || closeErr != nil {
+		_ = root.Remove(name)
+		return errors.New("run output could not be saved")
+	}
+	return nil
 }

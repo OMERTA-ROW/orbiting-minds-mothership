@@ -38,14 +38,21 @@ func ReleaseManifest(dir string) ([]ManifestEntry, error) {
 		return nil, errors.New("source-manifest.json is malformed or lists no artifacts")
 	}
 	out := []ManifestEntry{}
+	seenFiles, seenTargets := map[string]bool{}, map[string]bool{}
 	for _, a := range m.Artifacts {
 		parts := strings.SplitN(a.Target, "/", 2)
-		if len(parts) != 2 || a.File == "" || strings.ContainsAny(a.File, `/\`) || a.File == ".." {
+		if len(parts) != 2 || (parts[0] != "linux" && parts[0] != "darwin" && parts[0] != "windows") || (parts[1] != "amd64" && parts[1] != "arm64") || !validDigest(a.SHA256) || a.File == "" || a.File == "." || strings.ContainsAny(a.File, `/\`) || a.File == ".." || seenFiles[a.File] || seenTargets[a.Target] {
 			return nil, errors.New("manifest contains an invalid artifact entry")
 		}
+		seenFiles[a.File], seenTargets[a.Target] = true, true
 		p := filepath.Join(dir, a.File)
 		e := ManifestEntry{Platform: parts[0], Arch: parts[1], Artifact: p, SHA256: a.SHA256}
-		switch got, err := sha256File(p); {
+		checked, pathErr := releaseArtifact(dir, a.File)
+		got, err := "", pathErr
+		if pathErr == nil {
+			got, err = sha256File(checked)
+		}
+		switch {
 		case err != nil:
 			e.Fingerprint = "MISSING FILE"
 		case got != a.SHA256:

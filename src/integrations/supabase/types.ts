@@ -415,21 +415,33 @@ export type Database = {
       }
       knowledge_job_state: {
         Row: {
+          brief_attempt_date: string | null
+          brief_attempt_pending: boolean
+          brief_attempt_run: string | null
           id: number
+          lease_owner: string | null
           lease_until: string | null
           paused_at: string | null
           paused_reason: string | null
           paused_status: number | null
         }
         Insert: {
+          brief_attempt_date?: string | null
+          brief_attempt_pending?: boolean
+          brief_attempt_run?: string | null
           id?: number
+          lease_owner?: string | null
           lease_until?: string | null
           paused_at?: string | null
           paused_reason?: string | null
           paused_status?: number | null
         }
         Update: {
+          brief_attempt_date?: string | null
+          brief_attempt_pending?: boolean
+          brief_attempt_run?: string | null
           id?: number
+          lease_owner?: string | null
           lease_until?: string | null
           paused_at?: string | null
           paused_reason?: string | null
@@ -589,6 +601,10 @@ export type Database = {
     }
     Functions: {
       claim_knowledge_lease: { Args: { _minutes: number }; Returns: boolean }
+      claim_owned_knowledge_lease: {
+        Args: { _minutes?: number; _owner: string }
+        Returns: boolean
+      }
       forge_release_transition: {
         Args: {
           _action: string
@@ -648,6 +664,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      release_owned_knowledge_lease: {
+        Args: { _owner: string }
+        Returns: boolean
       }
     }
     Enums: {

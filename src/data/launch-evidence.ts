@@ -11,6 +11,28 @@ export type LaunchGate = {
 };
 export const launchEvidence: LaunchGate[] = [
   {
+    id: "reconciliation-2026-10-22",
+    capability: "Blueprint reconciliation and private-preview regressions",
+    owner: "Engineering + QA",
+    status: "PASS",
+    evidence:
+      "22 Oct: recovered the final blueprint from chat and retained all three parts. Full app suite: 902 tests passed. Repeated hosted checks: 25 project/agent/access-audit, 37 private-media, 38 social/review/stop, 31 Forge and 48 Creator/Distro; 27 new knowledge-reader/lease/guard checks. Real browser brief access, citations, persisted history, mobile and sign-out verified with temporary approved QA; accounts/files removed. No provider posting, purchase, installation or publication.",
+    next: "This records bounded preview evidence, not approval for launch, trusted signing, live telemetry or external integrations. Other gates remain open.",
+    gating: false,
+    demoOnly: false,
+  },
+  {
+    id: "knowledge-2026-10-22",
+    capability: "Daily knowledge collection and persisted attempts",
+    owner: "Knowledge engineering + founder",
+    status: "UNVERIFIED",
+    evidence:
+      "22 Oct: seven actual persisted runs; 88 unique stored items and one existing 19-citation brief. Fresh authenticated preview attempt: 70 fetched, 16 new, 54 duplicates, then two repeat attempts with zero new and 70 duplicates each. Token-owned lease, reader-only grants, durable pre-provider guard, confirmed singleton writes and failure-path refusal/credit/access stops tested; failed stop/result writes cannot automatically replay across dates. Final preview runs: 70 fetched/2 new/68 duplicates, then 70/0/70. No new AI brief was generated today because the existing brief was correctly reused.",
+    next: "The active 06:00 UTC schedule targets the published app, not this preview. Nothing redeployed. After separately authorized release, verify request-bound background execution and scheduled persisted run; 202 is only acceptance. Long AI work may exceed the bounded attempt and needs a supported durable execution path. Owner confirmation is required to clear stored AI pauses.",
+    gating: true,
+    demoOnly: false,
+  },
+  {
     id: "social-developer",
     capability: "Social Autopilot preparation + developer readiness",
     owner: "Founder / integration engineering + security QA",

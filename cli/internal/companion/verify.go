@@ -13,6 +13,24 @@ import (
 	"strings"
 )
 
+func validDigest(s string) bool {
+	b, err := hex.DecodeString(s)
+	return err == nil && len(b) == sha256.Size
+}
+
+// Do not follow artifact symlinks outside the explicitly selected staging root.
+func releaseArtifact(dir, file string) (string, error) {
+	if file == "" || file == "." || file == ".." || strings.ContainsAny(file, `/\`) {
+		return "", errors.New("invalid artifact filename")
+	}
+	p := filepath.Join(dir, file)
+	info, err := os.Lstat(p)
+	if err != nil || !info.Mode().IsRegular() {
+		return "", errors.New("artifact must be a regular file, not a symlink or directory")
+	}
+	return p, nil
+}
+
 // ReleaseReport is the result of checking a staged release directory.
 // Hash checks are real. Signature status is only "VERIFIED" when a platform
 // verifier has been run and recorded by CI; this code never asserts it.
@@ -47,15 +65,25 @@ func VerifyRelease(dir string) (ReleaseReport, error) {
 		return r, errors.New("SHA256SUMS not found")
 	}
 	defer sums.Close()
+	checksums := map[string]string{}
 	scan := bufio.NewScanner(sums)
 	for scan.Scan() {
 		parts := strings.Fields(scan.Text())
-		if len(parts) != 2 || len(parts[0]) != 64 || strings.ContainsAny(parts[1], `/\`) || parts[1] == ".." {
+		if len(parts) != 2 || !validDigest(parts[0]) || strings.ContainsAny(parts[1], `/\`) || parts[1] == ".." || parts[1] == "." {
 			r.HashErrors = append(r.HashErrors, "malformed line")
 			continue
 		}
+		if _, exists := checksums[parts[1]]; exists {
+			r.HashErrors = append(r.HashErrors, parts[1]+": duplicate checksum entry")
+			continue
+		}
+		checksums[parts[1]] = parts[0]
 		r.Files++
-		got, err := sha256File(filepath.Join(dir, parts[1]))
+		p, pathErr := releaseArtifact(dir, parts[1])
+		got, err := "", pathErr
+		if pathErr == nil {
+			got, err = sha256File(p)
+		}
 		if err != nil {
 			r.HashErrors = append(r.HashErrors, parts[1]+": missing")
 		} else if got != parts[0] {
@@ -66,6 +94,9 @@ func VerifyRelease(dir string) (ReleaseReport, error) {
 			r.Missing = append(r.Missing, parts[1]+".sig")
 		}
 	}
+	if scan.Err() != nil {
+		r.HashErrors = append(r.HashErrors, "could not read complete SHA256SUMS")
+	}
 	if r.Files == 0 {
 		r.HashErrors = append(r.HashErrors, "no artifacts listed")
 	}
@@ -73,7 +104,25 @@ func VerifyRelease(dir string) (ReleaseReport, error) {
 		Signed bool `json:"signed"`
 	}
 	if data, err := os.ReadFile(filepath.Join(dir, "source-manifest.json")); err == nil {
-		_ = json.Unmarshal(data, &manifest)
+		if json.Unmarshal(data, &manifest) != nil {
+			r.HashErrors = append(r.HashErrors, "malformed source manifest")
+		} else {
+			entries, err := ReleaseManifest(dir)
+			if err != nil {
+				r.HashErrors = append(r.HashErrors, "invalid source manifest")
+			} else {
+				if len(entries) != len(checksums) {
+					r.HashErrors = append(r.HashErrors, "manifest/checksum coverage mismatch")
+				}
+				for _, entry := range entries {
+					if checksums[filepath.Base(entry.Artifact)] != entry.SHA256 {
+						r.HashErrors = append(r.HashErrors, "manifest/checksum digest mismatch")
+					}
+				}
+			}
+		}
+	} else if !os.IsNotExist(err) {
+		r.HashErrors = append(r.HashErrors, "source manifest unreadable")
 	}
 	switch {
 	case len(r.Missing) == 0 && r.Files > 0:
