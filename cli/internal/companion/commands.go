@@ -107,6 +107,15 @@ Local source commands:
                              Opt-in local PATH-name tool discovery; nothing sent
   evolution install --dir <new-absolute-directory> --approve [--with-omni]
   evolution uninstall --dir <same-directory> --approve
+  evolution project use <name> --dir <absolute-project-dir> --approve
+  evolution project show --project <dir> [--json]
+  evolution sandbox run <go-test|go-vet|go-build|npm-test> --project <dir> --approve [--timeout 300]
+                             Runs ONE fixed command locally (no shell); real log saved
+                             to <dir>/.evolution/runs. Local process, not a container.
+  evolution omni route "<goal>" --project <dir> [--json]
+                             Shows OMNI routing for a project; no model is called
+  evolution release verify --dir <staged-release> [--json]
+                             Checks SHA256SUMS; reports UNSIGNED unless signature files exist
 
 PLANNED / BLOCKED — no authentication, API calls or tool execution:
   evolution login
@@ -178,7 +187,19 @@ func Run(args []string, invoked string, out, errOut io.Writer) int {
 		}
 		fmt.Fprintln(out, "Local source operation completed. No PATH, shell configuration, keys or other tools changed.")
 		return 0
-	case "login", "connect", "nexus", "agents", "update", "omni":
+	case "project":
+		return runProject(args[1:], out, errOut)
+	case "sandbox":
+		return runSandboxCmd(args[1:], out, errOut)
+	case "release":
+		return runRelease(args[1:], out, errOut)
+	case "omni":
+		if len(args) > 1 && args[1] == "route" {
+			return runRoute(args[2:], out, errOut)
+		}
+		fmt.Fprintln(errOut, "PLANNED / BLOCKED: interactive OMNI needs an authenticated model connection. Try evolution omni route \"<goal>\" --project <dir>.")
+		return 2
+	case "login", "connect", "nexus", "agents", "update":
 		fmt.Fprintln(errOut, "PLANNED / BLOCKED: this offline source prototype has no authenticated account, model, connector, update service or runner. No request made; no keys accepted. Browser preview remains available without download.")
 		return 2
 	default:
