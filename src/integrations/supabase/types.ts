@@ -415,6 +415,9 @@ export type Database = {
       }
       knowledge_job_state: {
         Row: {
+          brief_attempt_date: string | null
+          brief_attempt_pending: boolean
+          brief_attempt_run: string | null
           id: number
           lease_owner: string | null
           lease_until: string | null
@@ -423,6 +426,9 @@ export type Database = {
           paused_status: number | null
         }
         Insert: {
+          brief_attempt_date?: string | null
+          brief_attempt_pending?: boolean
+          brief_attempt_run?: string | null
           id?: number
           lease_owner?: string | null
           lease_until?: string | null
@@ -431,6 +437,9 @@ export type Database = {
           paused_status?: number | null
         }
         Update: {
+          brief_attempt_date?: string | null
+          brief_attempt_pending?: boolean
+          brief_attempt_run?: string | null
           id?: number
           lease_owner?: string | null
           lease_until?: string | null

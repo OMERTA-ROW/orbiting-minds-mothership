@@ -120,6 +120,13 @@
       "when": 1792710751063,
       "tag": "0016_knowledge_least_privilege_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792711730921,
+      "tag": "0017_knowledge_durable_ai_attempt_guard",
+      "breakpoints": true
     }
   ]
 }

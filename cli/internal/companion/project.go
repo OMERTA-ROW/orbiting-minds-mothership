@@ -223,6 +223,16 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	if _, err := rand.Read(idBytes); err != nil {
 		return rec, errors.New("run identifier could not be generated")
 	}
+	// Keep a descriptor to the approved run directory before executing project code.
+	// Child renames/symlink substitutions cannot redirect these writes elsewhere.
+	runs := filepath.Join(p.Root, profileDir, "runs")
+	if err := os.MkdirAll(runs, 0o700); err != nil { return rec, err }
+	if err := validateProjectRoot(p.Root); err != nil { return rec, err }
+	runRoot, err := os.OpenRoot(runs)
+	if err != nil { return rec, err }
+	defer runRoot.Close()
+	original, err := runRoot.Stat(".")
+	if err != nil { return rec, err }
 	rec = RunRecord{ID: time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(idBytes), Project: p.Name, Task: task, Argv: t.argv, Started: time.Now().UTC().Format(time.RFC3339)}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -251,10 +261,9 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	default:
 		rec.Result = "PASSED"
 	}
-	runs := filepath.Join(p.Root, profileDir, "runs")
-	if err := os.MkdirAll(runs, 0o700); err != nil {
-		return rec, err
-	}
+	if err := validateProjectRoot(p.Root); err != nil { return rec, err }
+	current, err := os.Stat(runs)
+	if err != nil || !os.SameFile(original, current) { return rec, errors.New("run directory changed during task; output was not saved") }
 	rec.LogFile = filepath.Join(runs, rec.ID+".log")
 	header := fmt.Sprintf("# evolution sandbox run %s\n# project=%s task=%s platform=%s/%s argv=%q\n# isolation: LOCAL PROCESS ONLY (not a container or VM)\n", rec.ID, p.Name, task, runtime.GOOS, runtime.GOARCH, t.argv)
 	clean, n := RedactSecrets(buf.Bytes())
@@ -266,9 +275,18 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	if n > 0 {
 		header += fmt.Sprintf("# redacted %d secret-like value(s) before saving\n", n)
 	}
-	if err := writeExclusive(rec.LogFile, append([]byte(header), clean...), 0o600); err != nil {
+	if err := writeRunFile(runRoot, rec.ID+".log", append([]byte(header), clean...)); err != nil {
 		return rec, err
 	}
 	meta, _ := json.MarshalIndent(rec, "", "  ")
-	return rec, writeExclusive(filepath.Join(runs, rec.ID+".json"), append(meta, '\n'), 0o600)
+	return rec, writeRunFile(runRoot, rec.ID+".json", append(meta, '\n'))
+}
+
+func writeRunFile(root *os.Root, name string, data []byte) error {
+	f, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil { return err }
+	_, writeErr := f.Write(data)
+	closeErr := f.Close()
+	if writeErr != nil || closeErr != nil { _ = root.Remove(name); return errors.New("run output could not be saved") }
+	return nil
 }
