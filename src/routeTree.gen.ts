@@ -65,6 +65,7 @@ import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
 import { Route as AuthenticatedBetaOmniRouteImport } from './routes/_authenticated/beta-omni'
+import { Route as AuthenticatedKnowledgeBriefRouteImport } from './routes/_authenticated/knowledge-brief'
 import { Route as AuthenticatedQuantumStudioRouteImport } from './routes/_authenticated/quantum-studio'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 import { Route as ApiOmniRouteImport } from './routes/api/omni'
@@ -355,6 +356,12 @@ const AuthenticatedBetaOmniRoute = AuthenticatedBetaOmniRouteImport.update({
   path: '/beta-omni',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedKnowledgeBriefRoute =
+  AuthenticatedKnowledgeBriefRouteImport.update({
+    id: '/knowledge-brief',
+    path: '/knowledge-brief',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedQuantumStudioRoute =
   AuthenticatedQuantumStudioRouteImport.update({
     id: '/quantum-studio',
@@ -464,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/voice': typeof VoiceRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
@@ -531,6 +539,7 @@ export interface FileRoutesByTo {
   '/voice': typeof VoiceRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
@@ -600,6 +609,7 @@ export interface FileRoutesById {
   '/voice': typeof VoiceRoute
   '/_authenticated/beta': typeof AuthenticatedBetaRoute
   '/_authenticated/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/_authenticated/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
@@ -669,6 +679,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/beta'
     | '/beta-omni'
+    | '/knowledge-brief'
     | '/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -736,6 +747,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/beta'
     | '/beta-omni'
+    | '/knowledge-brief'
     | '/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -804,6 +816,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/_authenticated/beta'
     | '/_authenticated/beta-omni'
+    | '/_authenticated/knowledge-brief'
     | '/_authenticated/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -1276,6 +1289,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBetaOmniRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/knowledge-brief': {
+      id: '/_authenticated/knowledge-brief'
+      path: '/knowledge-brief'
+      fullPath: '/knowledge-brief'
+      preLoaderRoute: typeof AuthenticatedKnowledgeBriefRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/quantum-studio': {
       id: '/_authenticated/quantum-studio'
       path: '/quantum-studio'
@@ -1352,12 +1372,14 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
   AuthenticatedBetaOmniRoute: typeof AuthenticatedBetaOmniRoute
+  AuthenticatedKnowledgeBriefRoute: typeof AuthenticatedKnowledgeBriefRoute
   AuthenticatedQuantumStudioRoute: typeof AuthenticatedQuantumStudioRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBetaRoute: AuthenticatedBetaRoute,
   AuthenticatedBetaOmniRoute: AuthenticatedBetaOmniRoute,
+  AuthenticatedKnowledgeBriefRoute: AuthenticatedKnowledgeBriefRoute,
   AuthenticatedQuantumStudioRoute: AuthenticatedQuantumStudioRoute,
 }
 
