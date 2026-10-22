@@ -74,6 +74,7 @@ import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
 import { Route as GuardianIncidentsIdRouteImport } from './routes/guardian-incidents_.$id'
 import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archives_.$id'
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
+import { Route as ApiPublicJobsKnowledgeCollectRouteImport } from './routes/api/public/jobs/knowledge-collect'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -400,6 +401,12 @@ const RoboticsIdRoute = RoboticsIdRouteImport.update({
   path: '/robotics/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicJobsKnowledgeCollectRoute =
+  ApiPublicJobsKnowledgeCollectRouteImport.update({
+    id: '/api/public/jobs/knowledge-collect',
+    path: '/api/public/jobs/knowledge-collect',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -466,6 +473,7 @@ export interface FileRoutesByFullPath {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -532,6 +540,7 @@ export interface FileRoutesByTo {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -600,6 +609,7 @@ export interface FileRoutesById {
   '/guardian-incidents_/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives_/$id': typeof IncidentArchivesIdRoute
   '/robotics_/$id': typeof RoboticsIdRoute
+  '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -668,6 +678,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/public/jobs/knowledge-collect'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -734,6 +745,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/public/jobs/knowledge-collect'
   id:
     | '__root__'
     | '/'
@@ -801,6 +813,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents_/$id'
     | '/incident-archives_/$id'
     | '/robotics_/$id'
+    | '/api/public/jobs/knowledge-collect'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -866,6 +879,7 @@ export interface RootRouteChildren {
   GuardianIncidentsIdRoute: typeof GuardianIncidentsIdRoute
   IncidentArchivesIdRoute: typeof IncidentArchivesIdRoute
   RoboticsIdRoute: typeof RoboticsIdRoute
+  ApiPublicJobsKnowledgeCollectRoute: typeof ApiPublicJobsKnowledgeCollectRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1325,6 +1339,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoboticsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jobs/knowledge-collect': {
+      id: '/api/public/jobs/knowledge-collect'
+      path: '/api/public/jobs/knowledge-collect'
+      fullPath: '/api/public/jobs/knowledge-collect'
+      preLoaderRoute: typeof ApiPublicJobsKnowledgeCollectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1406,6 +1427,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuardianIncidentsIdRoute: GuardianIncidentsIdRoute,
   IncidentArchivesIdRoute: IncidentArchivesIdRoute,
   RoboticsIdRoute: RoboticsIdRoute,
+  ApiPublicJobsKnowledgeCollectRoute: ApiPublicJobsKnowledgeCollectRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
