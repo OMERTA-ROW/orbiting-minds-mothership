@@ -43,9 +43,10 @@ describe("Homepage social preview", () => {
 import { searchPolicy } from "@/lib/search-policy";
 import { Route as BetaOmniRoute } from "@/routes/_authenticated/beta-omni";
 import { Route as QuantumRoute } from "@/routes/_authenticated/quantum-studio";
+import { Route as KnowledgeRoute } from "@/routes/_authenticated/knowledge-brief";
 
 describe("Search status panel policy matches page tags", () => {
-  const heads: Record<string, Head> = { "/": headOf(HomeRoute), "/beta": headOf(BetaRoute), "/beta-omni": headOf(BetaOmniRoute), "/quantum-studio": headOf(QuantumRoute) };
+  const heads: Record<string, Head> = { "/": headOf(HomeRoute), "/beta": headOf(BetaRoute), "/beta-omni": headOf(BetaOmniRoute), "/quantum-studio": headOf(QuantumRoute), "/knowledge-brief": headOf(KnowledgeRoute) };
   for (const entry of searchPolicy) {
     it(`${entry.path} matches its listed search status`, () => {
       expect(metaValue(heads[entry.path]!, "robots")).toBe(entry.indexable ? "index, follow" : "noindex");
