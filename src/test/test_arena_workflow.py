@@ -1,3 +1,4 @@
+"""Retained browser regression, explicit --run; no public release/provider actions."""
 import asyncio,json
 from pathlib import Path
 from playwright.async_api import async_playwright
@@ -41,4 +42,7 @@ async def main():
   print('PASS storage failure reported without crashing')
   assert not errors,errors
   await browser.close()
-asyncio.run(main())
+if __name__ == "__main__":
+ import sys
+ if sys.argv[1:] != ["--run"]: raise SystemExit("Use --run for explicit preview QA.")
+ asyncio.run(main())

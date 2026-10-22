@@ -1,3 +1,4 @@
+"""Retained browser regression, explicit --run; no public release/provider actions."""
 import asyncio,os,secrets,uuid,requests
 from playwright.async_api import async_playwright
 async def main():
@@ -33,4 +34,7 @@ async def main():
    for table,field in [('beta_audit','owner_id'),('beta_access','user_id')]:assert call('DELETE','/rest/v1/'+table+'?'+field+'=eq.'+uid).ok
    assert call('DELETE','/auth/v1/admin/users/'+uid).ok
   print('Temporary reader account and audit removed')
-asyncio.run(main())
+if __name__ == "__main__":
+ import sys
+ if sys.argv[1:] != ["--run"]: raise SystemExit("Use --run for explicit preview QA.")
+ asyncio.run(main())
