@@ -20,7 +20,7 @@ var secretPatterns = []*regexp.Regexp{
 }
 
 // key=value / key: value where the key name suggests a secret.
-var assignPattern = regexp.MustCompile(`(?i)(["']?\b[A-Z0-9_.-]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|credential)[A-Z0-9_.-]*["']?)(\s*[=:]\s*)(\[REDACTED\]|"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;\}\]]+)`)
+var assignPattern = regexp.MustCompile(`(?i)(["']?\b[A-Z0-9_.-]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key|credential)[A-Z0-9_.-]*["']?)(\s*[=:]\s*)(\[REDACTED\]|"[^"\r\n]*(?:"|\r?\n|\z)|'[^'\r\n]*(?:'|\r?\n|\z)|[^\s,;\}\]]+)`)
 var headerPattern = regexp.MustCompile(`(?im)(\b(?:authorization|proxy-authorization|cookie|set-cookie)["']?\s*:\s*)[^\r\n]+`)
 
 const redacted = "[REDACTED]"
