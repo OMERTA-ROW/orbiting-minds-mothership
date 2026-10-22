@@ -124,8 +124,28 @@ func runRoute(args []string, out, errOut io.Writer) int {
 
 func runRelease(args []string, out, errOut io.Writer) int {
 	f, pos, ok := flags(args, map[string]bool{"--dir": true})
-	if !ok || len(pos) != 1 || pos[0] != "verify" {
+	if !ok || len(pos) != 1 || (pos[0] != "verify" && pos[0] != "manifest") {
 		return invalid(errOut)
+	}
+	if pos[0] == "manifest" {
+		entries, err := ReleaseManifest(f["--dir"])
+		if err != nil {
+			fmt.Fprintln(errOut, "Manifest blocked:", err)
+			return 1
+		}
+		if f["--json"] == "1" {
+			return emit(out, true, entries, "")
+		}
+		bad := false
+		for _, e := range entries {
+			fmt.Fprintf(out, "%s/%s\n  artifact: %s\n  sha256:   %s (%s)\n  signing:  %s\n", e.Platform, e.Arch, e.Artifact, e.SHA256, e.Fingerprint, e.SigningStatus)
+			bad = bad || e.Fingerprint != "MATCHES"
+		}
+		fmt.Fprintln(out, "No signature is verified by this command; run platform verifiers in CI.")
+		if bad {
+			return 3
+		}
+		return 0
 	}
 	r, err := VerifyRelease(f["--dir"])
 	if err != nil {

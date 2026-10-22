@@ -205,7 +205,11 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	}
 	rec.LogFile = filepath.Join(runs, rec.ID+".log")
 	header := fmt.Sprintf("# evolution sandbox run %s\n# project=%s task=%s platform=%s/%s argv=%q\n# isolation: LOCAL PROCESS ONLY (not a container or VM)\n", rec.ID, p.Name, task, runtime.GOOS, runtime.GOARCH, t.argv)
-	if err := os.WriteFile(rec.LogFile, append([]byte(header), buf.Bytes()...), 0o600); err != nil {
+	clean, n := RedactSecrets(buf.Bytes())
+	if n > 0 {
+		header += fmt.Sprintf("# redacted %d secret-like value(s) before saving\n", n)
+	}
+	if err := os.WriteFile(rec.LogFile, append([]byte(header), clean...), 0o600); err != nil {
 		return rec, err
 	}
 	meta, _ := json.MarshalIndent(rec, "", "  ")
