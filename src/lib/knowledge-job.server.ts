@@ -236,6 +236,8 @@ export async function runKnowledgeJob(deps: JobDeps, trigger = "schedule"): Prom
     inserted = 0,
     duplicates = 0;
   const errors: { source: string; error: string }[] = [];
+  let result: JobResult | undefined;
+  let failure: unknown;
   try {
     // Reconcile abandoned history before this attempt; the DB lease proves no
     // currently valid collector overlaps. This is failure evidence, not a receipt.
@@ -349,12 +351,21 @@ export async function runKnowledgeJob(deps: JobDeps, trigger = "schedule"): Prom
       .abortSignal(AbortSignal.timeout(2_000));
     if (finalized.error)
       throw new Error("Run outcome could not be persisted; completion is unconfirmed.");
-    return { status, runId, fetched, inserted, duplicates, brief: brief.status };
-  } finally {
+    result = { status, runId, fetched, inserted, duplicates, brief: brief.status };
+  } catch (error) {
+    failure = error;
+  }
+  try {
     const released = await admin
       .rpc("release_owned_knowledge_lease", { _owner: owner })
       .abortSignal(AbortSignal.timeout(2_000));
     if (released.error || released.data !== true)
       throw new Error("Knowledge lease release failed; wait for expiry before another attempt.");
+  } catch (error) {
+    if (failure) console.error("Knowledge attempt and lease cleanup both failed.");
+    failure = error;
   }
+  if (failure) throw failure;
+  if (!result) throw new Error("Knowledge outcome is unavailable.");
+  return result;
 }
