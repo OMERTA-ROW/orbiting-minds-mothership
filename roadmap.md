@@ -1,5 +1,12 @@
 # Cosmic Mothership redesign
 
+## Owner reconciliation — 2026-10-22, current work
+- [ ] Reconcile all blueprint families against current source and hosted evidence; replace stale prerequisite claims, retaining demo/external blockers.
+- [ ] Repair and regression-test daily collection reliability, persisted runs, cancellation/lease handling and approval-bound reading.
+- [ ] Audit and fix CLI manifest JSON exit parity, release-path integrity and saved-log credential redaction; run source tests and package checks.
+- [ ] Repeat available authenticated project/media/review isolation and nonmonetary Arena checks; record unavailable credentials/accounts without invented passes.
+- [ ] Check existing repository/provider/signing prerequisites read-only; prepare preview evidence, never publish/install or broaden grants.
+
 ## Current requests — SEO and least-privilege connections
 - [x] Review current SEO foundations: page basics, favicon, search metadata and social previews pass. Owner approved the homepage noindex correction; homepage now opts into indexing in preview, with beta/private routes still excluded. No publishing or domain changes; live metadata waits for a separately approved publish.
 - [ ] Add one supported per-account social OAuth flow with explained scopes, truthful status and revocation. Blocker: no LinkedIn per-user client; owner declined the client setup card. No shared account fallback or fake connection controls.
