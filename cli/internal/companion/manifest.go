@@ -49,7 +49,9 @@ func ReleaseManifest(dir string) ([]ManifestEntry, error) {
 		e := ManifestEntry{Platform: parts[0], Arch: parts[1], Artifact: p, SHA256: a.SHA256}
 		checked, pathErr := releaseArtifact(dir, a.File)
 		got, err := "", pathErr
-		if pathErr == nil { got, err = sha256File(checked) }
+		if pathErr == nil {
+			got, err = sha256File(checked)
+		}
 		switch {
 		case err != nil:
 			e.Fingerprint = "MISSING FILE"

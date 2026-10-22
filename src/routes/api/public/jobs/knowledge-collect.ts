@@ -9,12 +9,26 @@ export const Route = createFileRoute("/api/public/jobs/knowledge-collect")({
         const authFailure = await authenticateCronRequest(request);
         if (authFailure) return authFailure;
         const body = await request.json().catch(() => null);
-        if (!body || body.kind !== "daily" || Object.keys(body).length !== 1) return Response.json({ error: "Invalid job request" }, { status: 400 });
-        return dispatchKnowledgeWork(request, async () => {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { runKnowledgeJob } = await import("@/lib/knowledge-job.server");
-          return runKnowledgeJob({ admin: supabaseAdmin, fetch, now: () => new Date(), apiKey: process.env["LOVABLE_API_KEY"], background: !import.meta.env.DEV }, import.meta.env.DEV ? "preview_verification" : "schedule");
-        }, import.meta.env.DEV);
+        if (!body || body.kind !== "daily" || Object.keys(body).length !== 1)
+          return Response.json({ error: "Invalid job request" }, { status: 400 });
+        return dispatchKnowledgeWork(
+          request,
+          async () => {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { runKnowledgeJob } = await import("@/lib/knowledge-job.server");
+            return runKnowledgeJob(
+              {
+                admin: supabaseAdmin,
+                fetch,
+                now: () => new Date(),
+                apiKey: process.env["LOVABLE_API_KEY"],
+                background: !import.meta.env.DEV,
+              },
+              import.meta.env.DEV ? "preview_verification" : "schedule",
+            );
+          },
+          import.meta.env.DEV,
+        );
       },
     },
   },

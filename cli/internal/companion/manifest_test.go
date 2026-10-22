@@ -47,20 +47,34 @@ func TestManifestJSONExitParity(t *testing.T) {
 			h := hex.EncodeToString(sum[:])
 			if state != "missing" {
 				data := []byte("original")
-				if state == "tampered" { data = []byte("changed") }
-				if err := os.WriteFile(filepath.Join(dir, "a.zip"), data, 0600); err != nil { t.Fatal(err) }
+				if state == "tampered" {
+					data = []byte("changed")
+				}
+				if err := os.WriteFile(filepath.Join(dir, "a.zip"), data, 0600); err != nil {
+					t.Fatal(err)
+				}
 			}
-			if err := os.WriteFile(filepath.Join(dir, "source-manifest.json"), []byte(`{"artifacts":[{"target":"linux/amd64","file":"a.zip","sha256":"`+h+`"}]}`), 0600); err != nil { t.Fatal(err) }
+			if err := os.WriteFile(filepath.Join(dir, "source-manifest.json"), []byte(`{"artifacts":[{"target":"linux/amd64","file":"a.zip","sha256":"`+h+`"}]}`), 0600); err != nil {
+				t.Fatal(err)
+			}
 			want := 3
-			if state == "matching" { want = 0 }
+			if state == "matching" {
+				want = 0
+			}
 			for _, asJSON := range []bool{false, true} {
 				args := []string{"release", "manifest", "--dir", dir}
-				if asJSON { args = append(args, "--json") }
+				if asJSON {
+					args = append(args, "--json")
+				}
 				var out, errOut bytes.Buffer
-				if got := Run(args, "evolution", &out, &errOut); got != want { t.Fatalf("json=%v got %d want %d", asJSON, got, want) }
+				if got := Run(args, "evolution", &out, &errOut); got != want {
+					t.Fatalf("json=%v got %d want %d", asJSON, got, want)
+				}
 				if asJSON {
 					var entries []ManifestEntry
-					if err := json.Unmarshal(out.Bytes(), &entries); err != nil || len(entries) != 1 { t.Fatalf("invalid JSON: %v", err) }
+					if err := json.Unmarshal(out.Bytes(), &entries); err != nil || len(entries) != 1 {
+						t.Fatalf("invalid JSON: %v", err)
+					}
 				}
 			}
 		})

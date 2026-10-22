@@ -30,7 +30,9 @@ func RedactSecrets(in []byte) ([]byte, int) {
 	n := 0
 	out := headerPattern.ReplaceAllFunc(in, func(m []byte) []byte {
 		s := headerPattern.FindSubmatch(m)
-		if string(m[len(s[1]):]) == redacted { return m }
+		if string(m[len(s[1]):]) == redacted {
+			return m
+		}
 		n++
 		return append(append([]byte{}, s[1]...), redacted...)
 	})

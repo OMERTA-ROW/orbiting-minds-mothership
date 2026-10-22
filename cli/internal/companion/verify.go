@@ -81,7 +81,9 @@ func VerifyRelease(dir string) (ReleaseReport, error) {
 		r.Files++
 		p, pathErr := releaseArtifact(dir, parts[1])
 		got, err := "", pathErr
-		if pathErr == nil { got, err = sha256File(p) }
+		if pathErr == nil {
+			got, err = sha256File(p)
+		}
 		if err != nil {
 			r.HashErrors = append(r.HashErrors, parts[1]+": missing")
 		} else if got != parts[0] {
@@ -106,10 +108,16 @@ func VerifyRelease(dir string) (ReleaseReport, error) {
 			r.HashErrors = append(r.HashErrors, "malformed source manifest")
 		} else {
 			entries, err := ReleaseManifest(dir)
-			if err != nil { r.HashErrors = append(r.HashErrors, "invalid source manifest") } else {
-				if len(entries) != len(checksums) { r.HashErrors = append(r.HashErrors, "manifest/checksum coverage mismatch") }
+			if err != nil {
+				r.HashErrors = append(r.HashErrors, "invalid source manifest")
+			} else {
+				if len(entries) != len(checksums) {
+					r.HashErrors = append(r.HashErrors, "manifest/checksum coverage mismatch")
+				}
 				for _, entry := range entries {
-					if checksums[filepath.Base(entry.Artifact)] != entry.SHA256 { r.HashErrors = append(r.HashErrors, "manifest/checksum digest mismatch") }
+					if checksums[filepath.Base(entry.Artifact)] != entry.SHA256 {
+						r.HashErrors = append(r.HashErrors, "manifest/checksum digest mismatch")
+					}
 				}
 			}
 		}
