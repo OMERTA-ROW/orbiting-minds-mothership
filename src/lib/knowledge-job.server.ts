@@ -343,7 +343,7 @@ export async function runKnowledgeJob(deps: JobDeps, trigger = "schedule"): Prom
                 summary: e.summary,
                 categories: e.categories,
                 published_at: e.publishedAt,
-                run_id: runId,
+                run_id: currentRunId,
               })),
               { onConflict: "url", ignoreDuplicates: true },
             )

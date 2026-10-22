@@ -165,9 +165,12 @@ const maxLog = 1 << 20
 
 type cappedBuffer struct {
 	mu sync.Mutex
-	bytes.Buffer
+	buffer bytes.Buffer
 	truncated bool
 }
+
+func (c *cappedBuffer) Bytes() []byte { c.mu.Lock(); defer c.mu.Unlock(); return append([]byte(nil), c.buffer.Bytes()...) }
+func (c *cappedBuffer) Len() int { return c.buffer.Len() }
 
 func (c *cappedBuffer) Write(b []byte) (int, error) {
 	c.mu.Lock()
@@ -179,10 +182,10 @@ func (c *cappedBuffer) Write(b []byte) (int, error) {
 	}
 	if len(b) > room {
 		c.truncated = true
-		c.Buffer.Write(b[:room])
+		c.buffer.Write(b[:room])
 		return len(b), nil
 	}
-	return c.Buffer.Write(b)
+	return c.buffer.Write(b)
 }
 
 // minimalEnv passes only what toolchains need, so tokens in the parent shell are not inherited.
