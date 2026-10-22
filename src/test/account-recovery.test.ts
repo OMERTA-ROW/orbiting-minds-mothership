@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readRecoveryHint, rememberRecoveryHint, RECOVERY_HINT_KEY } from "@/lib/account-recovery";
 
-afterEach(() => { sessionStorage.clear(); vi.restoreAllMocks(); });
+afterEach(() => {
+  sessionStorage.clear();
+  vi.restoreAllMocks();
+});
 describe("recovery presentation is bound to a validated account", () => {
   it("rejects legacy true flags and hints from another account", () => {
     sessionStorage.setItem(RECOVERY_HINT_KEY, "true");
@@ -17,7 +20,17 @@ describe("recovery presentation is bound to a validated account", () => {
     expect(readRecoveryHint(sessionStorage, "owner-a")).toBeNull();
   });
   it("fails closed for a blocked storage read without throwing on hint writes", () => {
-    const blocked = { getItem: vi.fn(() => { throw new Error("unavailable"); }), setItem: vi.fn(() => { throw new Error("unavailable"); }), removeItem: vi.fn(() => { throw new Error("unavailable"); }) };
+    const blocked = {
+      getItem: vi.fn(() => {
+        throw new Error("unavailable");
+      }),
+      setItem: vi.fn(() => {
+        throw new Error("unavailable");
+      }),
+      removeItem: vi.fn(() => {
+        throw new Error("unavailable");
+      }),
+    };
     expect(readRecoveryHint(blocked, "owner-a")).toBeNull();
     expect(() => rememberRecoveryHint(blocked, "owner-a")).not.toThrow();
     expect(() => rememberRecoveryHint(blocked, null)).not.toThrow();
