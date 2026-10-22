@@ -113,6 +113,13 @@
       "when": 1792710239226,
       "tag": "0015_knowledge_lease_ownership_and_beta_access_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792710751063,
+      "tag": "0016_knowledge_least_privilege_grants",
+      "breakpoints": true
     }
   ]
 }

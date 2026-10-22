@@ -1,0 +1,4 @@
+REVOKE ALL ON TABLE public.knowledge_runs, public.knowledge_items, public.knowledge_briefs, public.knowledge_job_state FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.knowledge_runs, public.knowledge_items, public.knowledge_briefs, public.knowledge_job_state TO authenticated;
+GRANT ALL ON TABLE public.knowledge_runs, public.knowledge_items, public.knowledge_briefs, public.knowledge_job_state TO service_role;
+COMMENT ON TABLE public.knowledge_job_state IS 'Service-managed collector lease and owner-confirmed AI pauses. Approved readers have SELECT only; no client writes or self-resume.';
