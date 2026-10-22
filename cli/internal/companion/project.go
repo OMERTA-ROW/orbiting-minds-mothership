@@ -226,13 +226,21 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	// Keep a descriptor to the approved run directory before executing project code.
 	// Child renames/symlink substitutions cannot redirect these writes elsewhere.
 	runs := filepath.Join(p.Root, profileDir, "runs")
-	if err := os.MkdirAll(runs, 0o700); err != nil { return rec, err }
-	if err := validateProjectRoot(p.Root); err != nil { return rec, err }
+	if err := os.MkdirAll(runs, 0o700); err != nil {
+		return rec, err
+	}
+	if err := validateProjectRoot(p.Root); err != nil {
+		return rec, err
+	}
 	runRoot, err := os.OpenRoot(runs)
-	if err != nil { return rec, err }
+	if err != nil {
+		return rec, err
+	}
 	defer runRoot.Close()
 	original, err := runRoot.Stat(".")
-	if err != nil { return rec, err }
+	if err != nil {
+		return rec, err
+	}
 	rec = RunRecord{ID: time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(idBytes), Project: p.Name, Task: task, Argv: t.argv, Started: time.Now().UTC().Format(time.RFC3339)}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -261,9 +269,13 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	default:
 		rec.Result = "PASSED"
 	}
-	if err := validateProjectRoot(p.Root); err != nil { return rec, err }
+	if err := validateProjectRoot(p.Root); err != nil {
+		return rec, err
+	}
 	current, err := os.Stat(runs)
-	if err != nil || !os.SameFile(original, current) { return rec, errors.New("run directory changed during task; output was not saved") }
+	if err != nil || !os.SameFile(original, current) {
+		return rec, errors.New("run directory changed during task; output was not saved")
+	}
 	rec.LogFile = filepath.Join(runs, rec.ID+".log")
 	header := fmt.Sprintf("# evolution sandbox run %s\n# project=%s task=%s platform=%s/%s argv=%q\n# isolation: LOCAL PROCESS ONLY (not a container or VM)\n", rec.ID, p.Name, task, runtime.GOOS, runtime.GOARCH, t.argv)
 	clean, n := RedactSecrets(buf.Bytes())
@@ -284,9 +296,14 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 
 func writeRunFile(root *os.Root, name string, data []byte) error {
 	f, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	_, writeErr := f.Write(data)
 	closeErr := f.Close()
-	if writeErr != nil || closeErr != nil { _ = root.Remove(name); return errors.New("run output could not be saved") }
+	if writeErr != nil || closeErr != nil {
+		_ = root.Remove(name)
+		return errors.New("run output could not be saved")
+	}
 	return nil
 }

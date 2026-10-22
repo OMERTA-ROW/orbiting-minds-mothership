@@ -59,7 +59,9 @@ func TestRedactsUnterminatedQuotedCredentialFragments(t *testing.T) {
 	for _, quote := range []string{`"`, `'`} {
 		for _, suffix := range []string{"", "\nnormal output"} {
 			out, count := RedactSecrets([]byte("password=" + quote + "alpha beta gamma" + suffix))
-			if count != 1 || strings.Contains(string(out), "alpha") || strings.Contains(string(out), "beta") || strings.Contains(string(out), "gamma") { t.Fatal("truncated quoted credential leaked") }
+			if count != 1 || strings.Contains(string(out), "alpha") || strings.Contains(string(out), "beta") || strings.Contains(string(out), "gamma") {
+				t.Fatal("truncated quoted credential leaked")
+			}
 		}
 	}
 }

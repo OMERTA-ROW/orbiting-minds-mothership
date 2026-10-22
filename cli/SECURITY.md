@@ -23,8 +23,10 @@ before display or saving (not streamed live). Structured tokens, auth/cookie
 headers and incomplete private-key blocks are covered; unknown secrets may still
 escape. Do not execute untrusted projects or rely on redaction as credential custody.
 Use a private dedicated directory, never a shared/writable system binary path.
-Race-resistant descriptor-relative file operations, native ACLs and interrupted
-uninstall recovery require additional review before distribution.
+Run logs use a pre-opened Go directory handle and exclusive writes; a task replacing
+the run directory is rejected. This bounds log persistence, not project execution
+or bind mounts. Native ACLs, other install paths and interrupted uninstall recovery
+require additional review before distribution.
 
 ## Future identity / secret storage (disabled)
 

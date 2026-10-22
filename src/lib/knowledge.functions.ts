@@ -10,7 +10,7 @@ export const readKnowledge = createServerFn({ method: "GET" }).middleware([requi
     context.supabase.from("knowledge_briefs").select("*").order("brief_date", { ascending: false }).limit(7),
     context.supabase.from("knowledge_items").select("id, source_name, title, url, summary, categories, published_at, collected_at").order("collected_at", { ascending: false }).limit(60),
     context.supabase.from("knowledge_runs").select("*").order("started_at", { ascending: false }).limit(14),
-    context.supabase.from("knowledge_job_state").select("paused_reason, paused_at").eq("id", 1).maybeSingle(),
+    context.supabase.from("knowledge_job_state").select("paused_reason, paused_at, brief_attempt_pending").eq("id", 1).maybeSingle(),
   ]);
   const error = briefs.error || items.error || runs.error || state.error;
   if (error) throw new Error("Stored knowledge could not be read.");

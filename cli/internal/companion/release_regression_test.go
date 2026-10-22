@@ -110,22 +110,35 @@ func TestTruncatedPrivateKeyAndConcurrentBuffer(t *testing.T) {
 
 func TestTaskCannotRedirectSavedRunDirectory(t *testing.T) {
 	dir, outside := t.TempDir(), t.TempDir()
-	if err := os.Symlink(outside, filepath.Join(dir, "probe")); err != nil { t.Skip("symlinks unavailable") }
+	if err := os.Symlink(outside, filepath.Join(dir, "probe")); err != nil {
+		t.Skip("symlinks unavailable")
+	}
 	os.Remove(filepath.Join(dir, "probe"))
-	os.WriteFile(filepath.Join(dir,"go.mod"), []byte("module example.test/swapped\n\ngo 1.25\n"),0600)
-	os.WriteFile(filepath.Join(dir,"x_test.go"), []byte(`package swapped
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.test/swapped\n\ngo 1.25\n"), 0600)
+	os.WriteFile(filepath.Join(dir, "x_test.go"), []byte(`package swapped
 import("os";"testing")
-func TestSwap(t *testing.T){ if e:=os.Rename(".evolution/runs",".evolution/original"); e!=nil {t.Fatal(e)}; if e:=os.Symlink(`+fmt.Sprintf("%q",outside)+`,".evolution/runs"); e!=nil {t.Fatal(e)} }`),0600)
-	p,err:=UseProject("swapped",dir,true); if err!=nil{t.Fatal(err)}
-	if _,err:=RunSandbox(p,"go-test",true,time.Minute,&bytes.Buffer{});err==nil{t.Fatal("swapped metadata accepted")}
-	entries,err:=os.ReadDir(outside);if err!=nil||len(entries)!=0{t.Fatal("output escaped approved directory")}
+func TestSwap(t *testing.T){ if e:=os.Rename(".evolution/runs",".evolution/original"); e!=nil {t.Fatal(e)}; if e:=os.Symlink(`+fmt.Sprintf("%q", outside)+`,".evolution/runs"); e!=nil {t.Fatal(e)} }`), 0600)
+	p, err := UseProject("swapped", dir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := RunSandbox(p, "go-test", true, time.Minute, &bytes.Buffer{}); err == nil {
+		t.Fatal("swapped metadata accepted")
+	}
+	entries, err := os.ReadDir(outside)
+	if err != nil || len(entries) != 0 {
+		t.Fatal("output escaped approved directory")
+	}
 }
 
 func TestQuotedCredentialsAtOutputCapStayRedacted(t *testing.T) {
-	for _,quote:=range []byte{'"','\''} {
-		b:=&cappedBuffer{}
-		b.Write(bytes.Repeat([]byte("x"),maxLog-48));b.Write([]byte("\npassword="+string(quote)+"alpha beta gamma delta epsilon zeta eta theta"))
-		clean,_:=RedactSecrets(b.Bytes())
-		if !b.truncated || bytes.Contains(clean,[]byte("alpha")) || bytes.Contains(clean,[]byte("beta")) || bytes.Contains(clean,[]byte("gamma")){t.Fatal("capped quoted credential leaked")}
+	for _, quote := range []byte{'"', '\''} {
+		b := &cappedBuffer{}
+		b.Write(bytes.Repeat([]byte("x"), maxLog-48))
+		b.Write([]byte("\npassword=" + string(quote) + "alpha beta gamma delta epsilon zeta eta theta"))
+		clean, _ := RedactSecrets(b.Bytes())
+		if !b.truncated || bytes.Contains(clean, []byte("alpha")) || bytes.Contains(clean, []byte("beta")) || bytes.Contains(clean, []byte("gamma")) {
+			t.Fatal("capped quoted credential leaked")
+		}
 	}
 }

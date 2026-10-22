@@ -50,12 +50,12 @@ function KnowledgePage() {
         </p>
       ) : (
         <>
-          {data.state?.paused_reason && (
+          {(data.state?.paused_reason || data.state?.brief_attempt_pending) && (
             <p
               role="status"
               className="mt-6 border-l border-warning px-4 py-3 text-xs text-warning"
             >
-              AI brief paused: {data.state.paused_reason}. Feed collection continues.
+              AI brief paused: {data.state?.paused_reason ?? "Previous AI attempt is unresolved; owner confirmation required"}. Feed collection continues.
             </p>
           )}
           <section className="mt-8" aria-label="Latest brief">
