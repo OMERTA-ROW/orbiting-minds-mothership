@@ -161,3 +161,12 @@ export const realMoneyBetting = {
   enabled: false,
   status: "Research only: requires counsel, licensing, age/geo checks and explicit owner approval.",
 } as const;
+
+/** Standings describe only the retained local sample races, never shared telemetry. */
+export function arenaStandings(history: readonly ArenaHistory[]) {
+  const results = history.map((h) => simulateRace(h.seed));
+  return arenaRacers.map((r) => {
+    const times = results.map((result) => result.totals.find((t) => t.racerId === r.id)?.time ?? 0);
+    return { id: r.id, wins: results.filter((result) => result.order[0] === r.id).length, races: results.length, averageSeconds: times.length ? times.reduce((sum, t) => sum + t, 0) / times.length : null };
+  }).sort((a, b) => b.wins - a.wins || (a.averageSeconds ?? Infinity) - (b.averageSeconds ?? Infinity) || a.id.localeCompare(b.id));
+}
