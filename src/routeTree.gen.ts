@@ -15,6 +15,7 @@ import { Route as AgentDebriefRouteImport } from './routes/agent-debrief'
 import { Route as AgentLoungeRouteImport } from './routes/agent-lounge'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as ApprovalLedgerRouteImport } from './routes/approval-ledger'
+import { Route as ArenaRouteImport } from './routes/arena'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CareRouteImport } from './routes/care'
 import { Route as CareAgentRouteImport } from './routes/care-agent'
@@ -65,6 +66,7 @@ import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
 import { Route as AuthenticatedBetaOmniRouteImport } from './routes/_authenticated/beta-omni'
+import { Route as AuthenticatedKnowledgeBriefRouteImport } from './routes/_authenticated/knowledge-brief'
 import { Route as AuthenticatedQuantumStudioRouteImport } from './routes/_authenticated/quantum-studio'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 import { Route as ApiOmniRouteImport } from './routes/api/omni'
@@ -74,6 +76,7 @@ import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
 import { Route as GuardianIncidentsIdRouteImport } from './routes/guardian-incidents_.$id'
 import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archives_.$id'
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
+import { Route as ApiPublicJobsKnowledgeCollectRouteImport } from './routes/api/public/jobs/knowledge-collect'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -102,6 +105,11 @@ const AgentsRoute = AgentsRouteImport.update({
 const ApprovalLedgerRoute = ApprovalLedgerRouteImport.update({
   id: '/approval-ledger',
   path: '/approval-ledger',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArenaRoute = ArenaRouteImport.update({
+  id: '/arena',
+  path: '/arena',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -354,6 +362,12 @@ const AuthenticatedBetaOmniRoute = AuthenticatedBetaOmniRouteImport.update({
   path: '/beta-omni',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedKnowledgeBriefRoute =
+  AuthenticatedKnowledgeBriefRouteImport.update({
+    id: '/knowledge-brief',
+    path: '/knowledge-brief',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedQuantumStudioRoute =
   AuthenticatedQuantumStudioRouteImport.update({
     id: '/quantum-studio',
@@ -400,6 +414,12 @@ const RoboticsIdRoute = RoboticsIdRouteImport.update({
   path: '/robotics/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicJobsKnowledgeCollectRoute =
+  ApiPublicJobsKnowledgeCollectRouteImport.update({
+    id: '/api/public/jobs/knowledge-collect',
+    path: '/api/public/jobs/knowledge-collect',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -407,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/arena': typeof ArenaRoute
   '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
@@ -457,6 +478,7 @@ export interface FileRoutesByFullPath {
   '/voice': typeof VoiceRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
@@ -466,6 +488,7 @@ export interface FileRoutesByFullPath {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -473,6 +496,7 @@ export interface FileRoutesByTo {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/arena': typeof ArenaRoute
   '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
@@ -523,6 +547,7 @@ export interface FileRoutesByTo {
   '/voice': typeof VoiceRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
@@ -532,6 +557,7 @@ export interface FileRoutesByTo {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -541,6 +567,7 @@ export interface FileRoutesById {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/arena': typeof ArenaRoute
   '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
@@ -591,6 +618,7 @@ export interface FileRoutesById {
   '/voice': typeof VoiceRoute
   '/_authenticated/beta': typeof AuthenticatedBetaRoute
   '/_authenticated/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/_authenticated/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
@@ -600,6 +628,7 @@ export interface FileRoutesById {
   '/guardian-incidents_/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives_/$id': typeof IncidentArchivesIdRoute
   '/robotics_/$id': typeof RoboticsIdRoute
+  '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -609,6 +638,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/arena'
     | '/auth'
     | '/care'
     | '/care-agent'
@@ -659,6 +689,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/beta'
     | '/beta-omni'
+    | '/knowledge-brief'
     | '/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -668,6 +699,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/public/jobs/knowledge-collect'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -675,6 +707,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/arena'
     | '/auth'
     | '/care'
     | '/care-agent'
@@ -725,6 +758,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/beta'
     | '/beta-omni'
+    | '/knowledge-brief'
     | '/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -734,6 +768,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/public/jobs/knowledge-collect'
   id:
     | '__root__'
     | '/'
@@ -742,6 +777,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/arena'
     | '/auth'
     | '/care'
     | '/care-agent'
@@ -792,6 +828,7 @@ export interface FileRouteTypes {
     | '/voice'
     | '/_authenticated/beta'
     | '/_authenticated/beta-omni'
+    | '/_authenticated/knowledge-brief'
     | '/_authenticated/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -801,6 +838,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents_/$id'
     | '/incident-archives_/$id'
     | '/robotics_/$id'
+    | '/api/public/jobs/knowledge-collect'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -810,6 +848,7 @@ export interface RootRouteChildren {
   AgentLoungeRoute: typeof AgentLoungeRoute
   AgentsRoute: typeof AgentsRoute
   ApprovalLedgerRoute: typeof ApprovalLedgerRoute
+  ArenaRoute: typeof ArenaRoute
   AuthRoute: typeof AuthRoute
   CareRoute: typeof CareRoute
   CareAgentRoute: typeof CareAgentRoute
@@ -866,6 +905,7 @@ export interface RootRouteChildren {
   GuardianIncidentsIdRoute: typeof GuardianIncidentsIdRoute
   IncidentArchivesIdRoute: typeof IncidentArchivesIdRoute
   RoboticsIdRoute: typeof RoboticsIdRoute
+  ApiPublicJobsKnowledgeCollectRoute: typeof ApiPublicJobsKnowledgeCollectRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -910,6 +950,13 @@ declare module '@tanstack/react-router' {
       path: '/approval-ledger'
       fullPath: '/approval-ledger'
       preLoaderRoute: typeof ApprovalLedgerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/arena': {
+      id: '/arena'
+      path: '/arena'
+      fullPath: '/arena'
+      preLoaderRoute: typeof ArenaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -1262,6 +1309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBetaOmniRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/knowledge-brief': {
+      id: '/_authenticated/knowledge-brief'
+      path: '/knowledge-brief'
+      fullPath: '/knowledge-brief'
+      preLoaderRoute: typeof AuthenticatedKnowledgeBriefRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/quantum-studio': {
       id: '/_authenticated/quantum-studio'
       path: '/quantum-studio'
@@ -1325,18 +1379,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoboticsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jobs/knowledge-collect': {
+      id: '/api/public/jobs/knowledge-collect'
+      path: '/api/public/jobs/knowledge-collect'
+      fullPath: '/api/public/jobs/knowledge-collect'
+      preLoaderRoute: typeof ApiPublicJobsKnowledgeCollectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
   AuthenticatedBetaOmniRoute: typeof AuthenticatedBetaOmniRoute
+  AuthenticatedKnowledgeBriefRoute: typeof AuthenticatedKnowledgeBriefRoute
   AuthenticatedQuantumStudioRoute: typeof AuthenticatedQuantumStudioRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBetaRoute: AuthenticatedBetaRoute,
   AuthenticatedBetaOmniRoute: AuthenticatedBetaOmniRoute,
+  AuthenticatedKnowledgeBriefRoute: AuthenticatedKnowledgeBriefRoute,
   AuthenticatedQuantumStudioRoute: AuthenticatedQuantumStudioRoute,
 }
 
@@ -1350,6 +1413,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgentLoungeRoute: AgentLoungeRoute,
   AgentsRoute: AgentsRoute,
   ApprovalLedgerRoute: ApprovalLedgerRoute,
+  ArenaRoute: ArenaRoute,
   AuthRoute: AuthRoute,
   CareRoute: CareRoute,
   CareAgentRoute: CareAgentRoute,
@@ -1406,6 +1470,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuardianIncidentsIdRoute: GuardianIncidentsIdRoute,
   IncidentArchivesIdRoute: IncidentArchivesIdRoute,
   RoboticsIdRoute: RoboticsIdRoute,
+  ApiPublicJobsKnowledgeCollectRoute: ApiPublicJobsKnowledgeCollectRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

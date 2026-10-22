@@ -203,4 +203,12 @@ Validation: 743 app tests (25 new audio/consent cases), 37 retained hosted media
 - [x] Verify sample code, navigation, filters, attribution, accessibility and disabled external actions; report working versus mock.
 
 ## Notion blueprint intake (Oct 22)
-- [ ] Parts 1-2 received (backlog only; see .lovable/plan archives). Waiting for part 3 before gap review and scoped plan.
+- [x] Parts 1-3 received and reviewed against the app (Oct 22).
+- [x] Independent daily knowledge job: 5 public feeds (AlphaSignal first), dedupe, cited AI brief, run history, lease, pause handling; scheduled 06:00 UTC. Live schedule needs publish to reach the deployed route.
+- [x] Racing Arena prototype: seeded races, exact replay check, points-only predictions; real-money betting disabled.
+- [ ] Launch gate: signed-in end-to-end QA — blocked: no test account exists (QA accounts were removed).
+- [ ] Launch gate: one real developer connector (GitHub single-repo) — blocked: per-user OAuth setup / scope limits.
+- [ ] Launch gate: one real social provider — blocked: LinkedIn setup declined; no provider credentials.
+- [ ] Launch gate: Guardian security QA evidence (rate limits, backup/restore, incident response) — needs owner review.
+- [ ] Launch gate: founder end-to-end review and approval before publish.
+- Deduplicated backlog (all already present as labeled DEMO/private beta or blocked): OMNI Autopilot, Communications, Adaptive Engine, Distro/YouTube upload, Podcast/Game/Genesis Forge, Web Forge, Quantum/FFmpeg, CLI signed releases, Care/Updates/Pilot/Voice native agents, Devices/Fleet pairing, Code Vault signing, Release Galaxy, Commons/Pulse, Genesis bounties/Stripe, Global Brain/DNA/Invention Engine/Time Machine, OMNI coding sandbox (Linux), Founder dashboard telemetry, real-money betting (research only).

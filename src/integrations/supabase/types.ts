@@ -341,6 +341,144 @@ export type Database = {
           },
         ]
       }
+      knowledge_briefs: {
+        Row: {
+          brief_date: string
+          created_at: string
+          entries: Json
+          id: string
+          item_count: number
+          model: string
+          overview: string
+          run_id: string | null
+        }
+        Insert: {
+          brief_date: string
+          created_at?: string
+          entries?: Json
+          id?: string
+          item_count?: number
+          model: string
+          overview: string
+          run_id?: string | null
+        }
+        Update: {
+          brief_date?: string
+          created_at?: string
+          entries?: Json
+          id?: string
+          item_count?: number
+          model?: string
+          overview?: string
+          run_id?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_items: {
+        Row: {
+          categories: string[]
+          collected_at: string
+          id: string
+          published_at: string | null
+          run_id: string | null
+          source_id: string
+          source_name: string
+          summary: string
+          title: string
+          url: string
+        }
+        Insert: {
+          categories?: string[]
+          collected_at?: string
+          id?: string
+          published_at?: string | null
+          run_id?: string | null
+          source_id: string
+          source_name: string
+          summary?: string
+          title: string
+          url: string
+        }
+        Update: {
+          categories?: string[]
+          collected_at?: string
+          id?: string
+          published_at?: string | null
+          run_id?: string | null
+          source_id?: string
+          source_name?: string
+          summary?: string
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      knowledge_job_state: {
+        Row: {
+          id: number
+          lease_until: string | null
+          paused_at: string | null
+          paused_reason: string | null
+          paused_status: number | null
+        }
+        Insert: {
+          id?: number
+          lease_until?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
+          paused_status?: number | null
+        }
+        Update: {
+          id?: number
+          lease_until?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
+          paused_status?: number | null
+        }
+        Relationships: []
+      }
+      knowledge_runs: {
+        Row: {
+          brief_message: string | null
+          brief_status: string
+          duplicates: number
+          fetched: number
+          finished_at: string | null
+          id: string
+          inserted: number
+          source_errors: Json
+          started_at: string
+          status: string
+          trigger: string
+        }
+        Insert: {
+          brief_message?: string | null
+          brief_status?: string
+          duplicates?: number
+          fetched?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          source_errors?: Json
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Update: {
+          brief_message?: string | null
+          brief_status?: string
+          duplicates?: number
+          fetched?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          source_errors?: Json
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
       omni_social_drafts: {
         Row: {
           content: Json
@@ -450,6 +588,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_knowledge_lease: { Args: { _minutes: number }; Returns: boolean }
       forge_release_transition: {
         Args: {
           _action: string
@@ -482,6 +621,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      is_knowledge_reader: { Args: never; Returns: boolean }
       omni_social_transition: {
         Args: {
           _action: string
