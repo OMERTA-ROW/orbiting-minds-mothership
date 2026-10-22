@@ -38,11 +38,11 @@
 - Nexus keeps separate consented local records and isolated base-version drafts; corrected example labels overlay stored data, why: preserve work without secure chat or execution claims.
 - Public OMNI stays local DEMO; beta OMNI streams request-local Responses with verified identity/approval/owned context and no history or tools, why: inference grants no execution authority.
 - Entertainment/Cartoon use separate validated local stores, revision-bound reviews and fresh Guardian/Nexus pause checks, why: samples, timing and preparation exports confer no processing, rights clearance or publication.
-- CLI remains offline source in `cli/`, never web-imported; access policy is inert/exportable, why: no billing/auth entitlement or signed distribution claims.
+- CLI remains offline source in `cli/`, never web-imported; fixed local tasks use synchronized capped output redacted before display/save, manifest and checksum coverage share fail-closed exits, why: no remote sandbox, credential custody or signing claims.
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
 - Launch Control is dated QA; opt-in PATH discovery and browser cost math never imply approvals/uploads/charges.
 - Quantum/Forge use approved private owner-project media, bounded PCM with bundled WaveFile, inert web drafts and immutable digest-reviewed versions; OMNI gets text only, why: consistent SSR exports; plans confer no file/publish authority.
 - Creator/Distro use immutable owner-project drafts, digests and row-locked access/review/revoke; post-edit prefills require downloaded WAV QA, why: manual ZIPs never imply hosting, receipts, schedules or recall.
 - OMNI private operations use strict proposals and owner-scoped row-locked social draft/review/stop records with explicit grant revokes and typed non-null consent; no provider endpoints, why: declarations confer no posting, CI, scopes or release authority.
-- Daily knowledge uses one cron-authenticated public route, service-role writes, DB lease, URL dedupe, source-grounded briefs and persisted 402/403 pauses; approved beta readers only, why: retrieval, not retraining or execution.
+- Daily knowledge uses one cron-authenticated public route, request-bound waitUntil only when supported, bounded attempts, token-owned DB lease, URL dedupe, checked persistence and owner-confirmed pauses/refusals; approved beta readers only, why: acceptance is not durable delivery or retraining.
 - Racing Arena is deterministic seeded simulation with browser-local points; real-money betting stays a disabled constant, why: no value, wagering or licensing claims.

@@ -41,10 +41,10 @@ async function writeBrief(deps: JobDeps, runId: string): Promise<{ status: strin
   const { admin, now } = deps;
   const today = utcDate(now());
   const signal = deps.signal ?? AbortSignal.timeout(150_000);
-  const existing = await admin.from("knowledge_briefs").select("id").eq("brief_date", today).maybeSingle().abortSignal(signal);
+  const existing = await admin.from("knowledge_briefs").select("id").eq("brief_date", today).abortSignal(signal).maybeSingle();
   if (existing.error) return { status: "failed", message: "Existing brief could not be checked; no AI request made." };
   if (existing.data) return { status: "already_written", message: "Today's brief already exists." };
-  const state = await admin.from("knowledge_job_state").select("paused_reason, paused_status").eq("id", 1).maybeSingle().abortSignal(signal);
+  const state = await admin.from("knowledge_job_state").select("paused_reason, paused_status").eq("id", 1).abortSignal(signal).maybeSingle();
   if (state.error || !state.data) return { status: "failed", message: "AI pause state could not be checked; no AI request made." };
   const paused = state.data?.paused_reason;
   // Owner confirmation is required; labels or manual invocations never bypass pauses.
@@ -64,14 +64,19 @@ async function writeBrief(deps: JobDeps, runId: string): Promise<{ status: strin
   if (!res.ok) {
     const failure = safeGatewayFailure(res.status, body);
     if ([402, 403, 404].includes(res.status)) {
-      const savedPause = await admin.from("knowledge_job_state").update({ paused_reason: failure.message, paused_status: res.status, paused_at: now().toISOString() }).eq("id", 1).abortSignal(signal);
+      const savedPause = await admin.from("knowledge_job_state").update({ paused_reason: failure.message, paused_status: res.status, paused_at: now().toISOString() }).eq("id", 1).abortSignal(AbortSignal.timeout(2_000));
       if (savedPause.error) throw new Error("AI pause could not be persisted. Owner action required before another attempt.");
       return { status: "paused", message: failure.message };
     }
     return { status: res.status === 429 || res.status >= 500 ? "retry_next_run" : "failed", message: failure.message };
   }
   const out = extractOutput(body);
-  if (out.refusal || !out.text) return { status: "refused", message: "The model declined or returned no brief. Items remain stored." };
+  if (out.refusal || !out.text) {
+    const message = "The model declined or returned no brief. Owner action is required for new brief work; items remain stored.";
+    const pause = await admin.from("knowledge_job_state").update({ paused_reason: message, paused_status: 200, paused_at: now().toISOString() }).eq("id", 1).abortSignal(AbortSignal.timeout(2_000));
+    if (pause.error) throw new Error("Refusal stop could not be persisted. Owner action required before another attempt.");
+    return { status: "refused", message };
+  }
   let parsed;
   try { parsed = briefSchema.parse(JSON.parse(out.text)); } catch { return { status: "failed", message: "The brief did not match the required format." }; }
   const grounded = groundBrief(parsed, new Set(items.data.map((i) => i.url)));
@@ -94,7 +99,7 @@ export async function runKnowledgeJob(deps: JobDeps, trigger = "schedule"): Prom
     // currently valid collector overlaps. This is failure evidence, not a receipt.
     const abandoned = await admin.from("knowledge_runs").update({ status: "failed", finished_at: now().toISOString(), brief_status: "interrupted", brief_message: "Previous attempt did not finalize before its lease expired." }).eq("status", "running").abortSignal(signal);
     if (abandoned.error) throw new Error("Interrupted run history could not be reconciled.");
-    const run = await admin.from("knowledge_runs").insert({ trigger }).select("id").single().abortSignal(signal);
+    const run = await admin.from("knowledge_runs").insert({ trigger }).select("id").abortSignal(signal).single();
     if (run.error) throw new Error("Run could not be recorded.");
     const runId = run.data.id;
     const sources = (deps.sources ?? knowledgeSources).slice(0, 5);

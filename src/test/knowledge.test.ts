@@ -114,6 +114,17 @@ describe("daily knowledge job (no browser or owner session)", () => {
     await runKnowledgeJob({ admin, fetch: f, now: () => new Date(), apiKey: "fixture", sources: source });
     expect(calls).toBe(0); expect(db.state.paused_status).toBe(402);
   });
+  it("persists a terminal HTTP-200 refusal so later automatic runs cannot replay it", async () => {
+    const { admin, db } = fakeAdmin(); let calls = 0;
+    const f: typeof fetch = async (input) => {
+      if (String(input).includes("ai.gateway")) { calls++; return new Response(JSON.stringify({ output: [{ content: [{ type: "refusal", refusal: "Declined" }] }] })); }
+      return new Response(rss);
+    };
+    const deps = { admin, fetch: f, now: () => new Date(), apiKey: "fixture", sources: source };
+    expect((await runKnowledgeJob(deps)).brief).toBe("refused");
+    expect((await runKnowledgeJob(deps)).brief).toBe("paused");
+    expect(calls).toBe(1); expect(db.state.paused_status).toBe(200);
+  });
   it("does not call a lease infrastructure error contention", async () => {
     const { admin } = fakeAdmin({ leaseError: true });
     await expect(runKnowledgeJob({ admin, fetch: fetchStub(), now: () => new Date(), apiKey: "fixture", sources: source })).rejects.toThrow("lease could not be checked");
