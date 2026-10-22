@@ -14,7 +14,7 @@ function AuthPage() {
   useEffect(() => { if (ready && user) void navigate({ to: "/beta", replace: true }); }, [user, ready, navigate]);
   const oauth = async (provider: "google" | "lovable") => {
     setBusy(true); setNotice("");
-    try { const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: `${window.location.origin}/auth` }); if (result.error) throw result.error; if (!result.redirected) await navigate({ to: "/beta", replace: true }); }
+    try { const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: `${window.location.origin}/auth` }); if (result.error) throw result.error; if (!result.redirected) { const { data, error } = await supabase.auth.getUser(); if (error || !data.user) throw new Error("Sign-in could not be confirmed. Please try again."); await navigate({ to: "/beta", replace: true }); } }
     catch (e) { setNotice(e instanceof Error ? e.message : "Sign-in unavailable."); }
     finally { setBusy(false); }
   };
@@ -35,7 +35,7 @@ function AuthPage() {
       <Button type="submit" variant="cosmic" className="w-full" disabled={busy || !hydrated}>{busy ? "Please wait…" : mode === "signup" ? "Create account" : mode === "reset" ? "Send reset link" : "Sign in"}</Button>
     </form>
     {notice && <p role="status" className="mt-5 break-words text-sm leading-6 text-warning">{notice}</p>}
-    <div className="mt-5 flex flex-wrap gap-2"><Button variant="ghost" onClick={() => { setMode(mode === "signup" ? "login" : "signup"); setNotice(""); }}>{mode === "signup" ? "Already have an account" : "Create an account"}</Button><Button variant="ghost" onClick={() => setMode(mode === "reset" ? "login" : "reset")}>{mode === "reset" ? "Back to sign in" : "Forgot password"}</Button></div>
+    <div className="mt-5 flex flex-wrap gap-2"><Button variant="ghost" disabled={busy} onClick={() => { setMode(mode === "signup" ? "login" : "signup"); setNotice(""); }}>{mode === "signup" ? "Already have an account" : "Create an account"}</Button><Button variant="ghost" disabled={busy} onClick={() => { setMode(mode === "reset" ? "login" : "reset"); setNotice(""); }}>{mode === "reset" ? "Back to sign in" : "Forgot password"}</Button></div>
     <div className="mt-5 space-y-3 border-t border-border pt-6"><Button variant="signal" className="w-full" disabled={busy} onClick={() => void oauth("google")}>Continue with Google</Button><Button className="lovable-auth-button w-full" disabled={busy} onClick={() => void oauth("lovable")}>Continue with Lovable</Button></div>
     <Button asChild variant="ghost" className="mt-6"><Link to="/launch-control">Launch readiness</Link></Button>
   </section>;
