@@ -59,6 +59,8 @@ export const navItems = [
   { to: "/roadmap", label: "Roadmap" },
   { to: "/partnerships", label: "Partnerships" },
   { to: "/dashboard", label: "Demo Dashboard" },
+  { to: "/arena", label: "Racing Arena · Simulation" },
+  { to: "/knowledge-brief", label: "Daily Knowledge Brief · Beta" },
 ] as const;
 
 export function SiteNav() {

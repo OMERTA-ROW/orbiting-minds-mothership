@@ -15,6 +15,7 @@ import { Route as AgentDebriefRouteImport } from './routes/agent-debrief'
 import { Route as AgentLoungeRouteImport } from './routes/agent-lounge'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as ApprovalLedgerRouteImport } from './routes/approval-ledger'
+import { Route as ArenaRouteImport } from './routes/arena'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CareRouteImport } from './routes/care'
 import { Route as CareAgentRouteImport } from './routes/care-agent'
@@ -104,6 +105,11 @@ const AgentsRoute = AgentsRouteImport.update({
 const ApprovalLedgerRoute = ApprovalLedgerRouteImport.update({
   id: '/approval-ledger',
   path: '/approval-ledger',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArenaRoute = ArenaRouteImport.update({
+  id: '/arena',
+  path: '/arena',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -421,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/arena': typeof ArenaRoute
   '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
@@ -489,6 +496,7 @@ export interface FileRoutesByTo {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/arena': typeof ArenaRoute
   '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
@@ -559,6 +567,7 @@ export interface FileRoutesById {
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
+  '/arena': typeof ArenaRoute
   '/auth': typeof AuthRoute
   '/care': typeof CareRoute
   '/care-agent': typeof CareAgentRoute
@@ -629,6 +638,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/arena'
     | '/auth'
     | '/care'
     | '/care-agent'
@@ -697,6 +707,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/arena'
     | '/auth'
     | '/care'
     | '/care-agent'
@@ -766,6 +777,7 @@ export interface FileRouteTypes {
     | '/agent-lounge'
     | '/agents'
     | '/approval-ledger'
+    | '/arena'
     | '/auth'
     | '/care'
     | '/care-agent'
@@ -836,6 +848,7 @@ export interface RootRouteChildren {
   AgentLoungeRoute: typeof AgentLoungeRoute
   AgentsRoute: typeof AgentsRoute
   ApprovalLedgerRoute: typeof ApprovalLedgerRoute
+  ArenaRoute: typeof ArenaRoute
   AuthRoute: typeof AuthRoute
   CareRoute: typeof CareRoute
   CareAgentRoute: typeof CareAgentRoute
@@ -937,6 +950,13 @@ declare module '@tanstack/react-router' {
       path: '/approval-ledger'
       fullPath: '/approval-ledger'
       preLoaderRoute: typeof ApprovalLedgerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/arena': {
+      id: '/arena'
+      path: '/arena'
+      fullPath: '/arena'
+      preLoaderRoute: typeof ArenaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -1393,6 +1413,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgentLoungeRoute: AgentLoungeRoute,
   AgentsRoute: AgentsRoute,
   ApprovalLedgerRoute: ApprovalLedgerRoute,
+  ArenaRoute: ArenaRoute,
   AuthRoute: AuthRoute,
   CareRoute: CareRoute,
   CareAgentRoute: CareAgentRoute,
