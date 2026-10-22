@@ -35,22 +35,26 @@ describe("brief grounding", () => {
 });
 
 // Minimal in-memory stand-in for the database client, enough for the job's calls.
-function fakeAdmin(opts: { leaseFree?: boolean; paused?: { reason: string; status: number } } = {}) {
+function fakeAdmin(opts: { leaseFree?: boolean; paused?: { reason: string; status: number }; stateError?: boolean; missingState?: boolean; existingError?: boolean; finalizeError?: boolean; leaseError?: boolean; releaseError?: boolean } = {}) {
   const db = { items: [] as Record<string, unknown>[], runs: [] as Record<string, unknown>[], briefs: [] as Record<string, unknown>[], state: { paused_reason: opts.paused?.reason ?? null, paused_status: opts.paused?.status ?? null, lease_until: null as string | null } };
   const builder = (table: string) => {
-    let filterUrls: string[] | null = null; let payload: unknown = null; let op = "select";
+    let filterUrls: string[] | null = null; let payload: unknown = null; let op = "select"; let idFilter: string | null = null;
     const exec = () => {
       if (table === "knowledge_items") {
         if (op === "upsert") { const rows = (payload as Record<string, unknown>[]).filter((r) => !db.items.some((i) => i["url"] === r["url"])); db.items.push(...rows.map((r) => ({ ...r, collected_at: new Date().toISOString() }))); return { data: rows.map((_, i) => ({ id: String(i) })), error: null }; }
-        return { data: filterUrls ? db.items.filter((i) => filterUrls!.includes(i["url"] as string)) : db.items, error: null };
+        return { data: filterUrls ? db.items.filter((i) => filterUrls?.includes(i["url"] as string)) : db.items, error: null };
       }
-      if (table === "knowledge_runs") { if (op === "insert") { db.runs.push({ id: "run1", ...(payload as object) }); return { data: { id: "run1" }, error: null }; } if (op === "update") Object.assign(db.runs[0]!, payload); return { data: null, error: null }; }
-      if (table === "knowledge_briefs") { if (op === "insert") { db.briefs.push(payload as Record<string, unknown>); return { data: null, error: null }; } return { data: db.briefs[0] ?? null, error: null }; }
-      if (table === "knowledge_job_state") { if (op === "update") Object.assign(db.state, payload); return { data: db.state, error: null }; }
+      if (table === "knowledge_runs") {
+        if (op === "insert") { const id = `run${db.runs.length + 1}`; db.runs.push({ id, ...(payload as object) }); return { data: { id }, error: null }; }
+        if (op === "update" && idFilter) { if (opts.finalizeError) return { data: null, error: new Error("write unavailable") }; const row = db.runs.find((r) => r["id"] === idFilter); if (row) Object.assign(row, payload); }
+        return { data: null, error: null };
+      }
+      if (table === "knowledge_briefs") { if (op === "insert") { db.briefs.push(payload as Record<string, unknown>); return { data: null, error: null }; } return { data: db.briefs[0] ?? null, error: opts.existingError ? new Error("read unavailable") : null }; }
+      if (table === "knowledge_job_state") { if (op === "update") Object.assign(db.state, payload); return { data: opts.missingState ? null : db.state, error: opts.stateError ? new Error("read unavailable") : null }; }
       return { data: null, error: null };
     };
     const q: Record<string, unknown> = {
-      select: () => q, eq: () => q, gte: () => q, order: () => q, limit: () => q,
+      select: () => q, eq: (column: string, value: string) => { if (column === "id") idFilter = value; return q; }, gte: () => q, order: () => q, limit: () => q, abortSignal: () => q,
       in: (_c: string, v: string[]) => { filterUrls = v; return q; },
       insert: (p: unknown) => { op = "insert"; payload = p; return q; },
       upsert: (p: unknown) => { op = "upsert"; payload = p; return q; },
@@ -60,7 +64,10 @@ function fakeAdmin(opts: { leaseFree?: boolean; paused?: { reason: string; statu
     };
     return q;
   };
-  const admin = { from: builder, rpc: async () => ({ data: opts.leaseFree ?? true, error: null }) };
+  const admin = { from: builder, rpc: (name: string) => {
+    const result = name === "release_owned_knowledge_lease" ? { data: true, error: opts.releaseError ? new Error("release error") : null } : { data: opts.leaseFree ?? true, error: opts.leaseError ? new Error("lease error") : null };
+    return { then: (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve), abortSignal() { return this; } };
+  } };
   return { db, admin: admin as never };
 }
 const source = [{ id: "s", name: "Sample", feed: "https://ex.com/feed", kind: "vendor" as const }];
@@ -94,5 +101,27 @@ describe("daily knowledge job (no browser or owner session)", () => {
     let aiCalls = 0; const f = (async (i: RequestInfo | URL) => { if (String(i).includes("ai.gateway")) aiCalls++; return new Response(rss); }) as typeof fetch;
     await runKnowledgeJob({ admin, fetch: f, now: () => new Date(), apiKey: "k", sources: source });
     expect(aiCalls).toBe(0);
+  });
+  it.each([{ stateError: true }, { missingState: true }, { existingError: true }])("fails closed on unavailable pause/idempotency reads: %o", async (opts) => {
+    const { admin } = fakeAdmin(opts); let calls = 0;
+    const f: typeof fetch = async (input) => { if (String(input).includes("ai.gateway")) calls++; return new Response(rss); };
+    const result = await runKnowledgeJob({ admin, fetch: f, now: () => new Date(), apiKey: "fixture", sources: source });
+    expect(calls).toBe(0); expect(result.brief).toBe("failed");
+  });
+  it("does not automatically probe or clear a credit pause", async () => {
+    const { admin, db } = fakeAdmin({ paused: { reason: "Credits required", status: 402 } }); let calls = 0;
+    const f: typeof fetch = async (input) => { if (String(input).includes("ai.gateway")) calls++; return new Response(rss); };
+    await runKnowledgeJob({ admin, fetch: f, now: () => new Date(), apiKey: "fixture", sources: source });
+    expect(calls).toBe(0); expect(db.state.paused_status).toBe(402);
+  });
+  it("does not call a lease infrastructure error contention", async () => {
+    const { admin } = fakeAdmin({ leaseError: true });
+    await expect(runKnowledgeJob({ admin, fetch: fetchStub(), now: () => new Date(), apiKey: "fixture", sources: source })).rejects.toThrow("lease could not be checked");
+  });
+  it("cannot report completed when final history or lease release fails", async () => {
+    for (const opts of [{ finalizeError: true }, { releaseError: true }]) {
+      const { admin } = fakeAdmin(opts);
+      await expect(runKnowledgeJob({ admin, fetch: fetchStub(), now: () => new Date(), apiKey: "fixture", sources: source })).rejects.toThrow();
+    }
   });
 });
