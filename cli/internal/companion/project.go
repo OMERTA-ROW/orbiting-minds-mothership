@@ -47,6 +47,22 @@ var sandboxTasks = map[string]sandboxTask{
 
 func profilePath(root string) string { return filepath.Join(root, profileDir, "project.json") }
 
+func validateProjectRoot(root string) error {
+	if !filepath.IsAbs(root) || filepath.Clean(root) != root { return errors.New("choose a clean absolute project path") }
+	for path := root; ; path = filepath.Dir(path) {
+		info, err := os.Lstat(path)
+		if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 { return errors.New("project path must contain only existing non-symlink directories") }
+		if filepath.Dir(path) == path { break }
+	}
+	for _, path := range []string{filepath.Join(root, profileDir), filepath.Join(root, profileDir, "runs")} {
+		info, err := os.Lstat(path)
+		if err == nil && (!info.IsDir() || info.Mode()&os.ModeSymlink != 0) { return errors.New("project metadata directory cannot be a symlink or file") }
+		if err != nil && !os.IsNotExist(err) { return errors.New("project metadata directory could not be checked") }
+	}
+	if info, err := os.Lstat(profilePath(root)); err == nil && !info.Mode().IsRegular() { return errors.New("project profile cannot be a symlink or directory") } else if err != nil && !os.IsNotExist(err) { return errors.New("project profile could not be checked") }
+	return nil
+}
+
 func UseProject(name, dir string, approve bool) (ProjectProfile, error) {
 	var p ProjectProfile
 	if !approve {
@@ -59,6 +75,7 @@ func UseProject(name, dir string, approve bool) (ProjectProfile, error) {
 		return p, errors.New("--dir must be an absolute path")
 	}
 	root := filepath.Clean(dir)
+	if err := validateProjectRoot(root); err != nil { return p, err }
 	info, err := os.Stat(root)
 	if err != nil || !info.IsDir() {
 		return p, errors.New("--dir must be an existing directory")
@@ -76,11 +93,12 @@ func LoadProject(dir string) (ProjectProfile, error) {
 	if !filepath.IsAbs(dir) {
 		return p, errors.New("--project must be an absolute path")
 	}
+	if err := validateProjectRoot(filepath.Clean(dir)); err != nil { return p, err }
 	data, err := os.ReadFile(profilePath(filepath.Clean(dir)))
 	if err != nil {
 		return p, errors.New("no project profile; run evolution project use first")
 	}
-	if json.Unmarshal(data, &p) != nil || p.Root != filepath.Clean(dir) || !projectName.MatchString(p.Name) {
+	if json.Unmarshal(data, &p) != nil || p.Root != filepath.Clean(dir) || !projectName.MatchString(p.Name) || p.Sandbox != "local" {
 		return p, errors.New("project profile is invalid or was moved; re-run evolution project use")
 	}
 	return p, nil
@@ -170,6 +188,8 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	if !approve {
 		return rec, errors.New("add --approve to run this task in the project directory")
 	}
+	if err := validateProjectRoot(p.Root); err != nil { return rec, err }
+	if p.Sandbox != "local" || !projectName.MatchString(p.Name) { return rec, errors.New("invalid local project profile") }
 	if _, err := os.Stat(filepath.Join(p.Root, t.marker)); err != nil {
 		return rec, fmt.Errorf("task %s needs %s in the project root", task, t.marker)
 	}
@@ -178,7 +198,7 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 		return rec, fmt.Errorf("%s is not installed on this machine", t.argv[0])
 	}
 	idBytes := make([]byte, 6)
-	_, _ = rand.Read(idBytes)
+	if _, err := rand.Read(idBytes); err != nil { return rec, errors.New("run identifier could not be generated") }
 	rec = RunRecord{ID: time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(idBytes), Project: p.Name, Task: task, Argv: t.argv, Started: time.Now().UTC().Format(time.RFC3339)}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -222,9 +242,9 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	if n > 0 {
 		header += fmt.Sprintf("# redacted %d secret-like value(s) before saving\n", n)
 	}
-	if err := os.WriteFile(rec.LogFile, append([]byte(header), clean...), 0o600); err != nil {
+	if err := writeExclusive(rec.LogFile, append([]byte(header), clean...), 0o600); err != nil {
 		return rec, err
 	}
 	meta, _ := json.MarshalIndent(rec, "", "  ")
-	return rec, os.WriteFile(filepath.Join(runs, rec.ID+".json"), append(meta, '\n'), 0o600)
+	return rec, writeExclusive(filepath.Join(runs, rec.ID+".json"), append(meta, '\n'), 0o600)
 }

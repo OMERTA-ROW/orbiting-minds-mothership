@@ -30,6 +30,19 @@ func TestProjectRequiresApprovalAndAbsoluteDir(t *testing.T) {
 	}
 }
 
+func TestProjectRejectsSymlinkedMetadataAndInvalidSandbox(t *testing.T) {
+	dir, outside := t.TempDir(), t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(dir, ".evolution")); err != nil { t.Skip("symlinks unavailable") }
+	if _, err := UseProject("demo", dir, true); err == nil { t.Fatal("metadata symlink accepted") }
+	if _, err := os.Stat(filepath.Join(outside,"project.json")); !os.IsNotExist(err) { t.Fatal("outside project changed") }
+	os.Remove(filepath.Join(dir,".evolution"))
+	p,err:=UseProject("demo",dir,true);if err!=nil{t.Fatal(err)}
+	os.WriteFile(profilePath(dir),[]byte(`{"name":"demo","root":"`+dir+`","sandbox":"cloud"}`),0600)
+	if _,err:=LoadProject(dir);err==nil{t.Fatal("unsupported sandbox accepted")}
+	p.Sandbox="cloud"
+	if _,err:=RunSandbox(p,"go-test",true,time.Second,&bytes.Buffer{});err==nil{t.Fatal("unsupported sandbox executed")}
+}
+
 func TestRouteNeverClaimsModel(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module x\n\ngo 1.21\n"), 0o600)

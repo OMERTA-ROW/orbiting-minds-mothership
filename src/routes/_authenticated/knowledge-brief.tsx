@@ -21,7 +21,7 @@ function KnowledgePage() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-10">
       <header className="border-b border-border pb-7">
-        <p className="eyebrow">Server job · runs daily without you online</p>
+        <p className="eyebrow">Daily schedule · stored collection attempts</p>
         <h1 className="mt-4 text-3xl">Daily Knowledge Brief</h1>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">
           Collected from public feeds: {knowledgeSources.map((s) => s.name).join(", ")}. Stored for review and retrieval only. Nothing here retrains a model or changes any project.
