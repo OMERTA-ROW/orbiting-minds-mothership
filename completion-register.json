@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-10-22",
-  "updated_at": "2026-10-22T23:52:00Z",
+  "updated_at": "2026-10-22T23:54:00Z",
   "project_name": "Evolution Mothership",
   "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
   "source_note_urls": [
@@ -29,7 +29,7 @@
   "evidence": {
     "current": {
       "command": "bunx vitest run",
-      "result": "Passed: 914 tests / 54 files, 2026-10-22 23:48 UTC",
+      "result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
       "runtime": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
       "passed": true
     },
@@ -40,8 +40,8 @@
       "passed": true
     },
     "unit-auth": {
-      "command": "bunx vitest run src/test/account-recovery.test.ts src/test/account-provider.test.tsx src/test/reset-password.test.tsx src/test/beta-auth.test.ts",
-      "result": "Passed: 25 tests / 4 files",
+      "command": "bunx vitest run src/test/auth-page.test.tsx src/test/account-recovery.test.ts src/test/account-provider.test.tsx src/test/reset-password.test.tsx src/test/beta-auth.test.ts",
+      "result": "Passed: 28 tests / 5 files",
       "runtime": "Mocked race/error/denied/session behavior; not proof of delivery, broker or hosted denial.",
       "passed": true
     },
@@ -206,7 +206,8 @@
             "src/routes/auth.tsx",
             "src/routes/reset-password.tsx",
             "src/lib/account-recovery.ts",
-            "src/test/test_account_foundation.py"
+            "src/test/test_account_foundation.py",
+            "src/test/auth-page.test.tsx"
           ],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
@@ -439,7 +440,7 @@
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Existing typed capability graph and role/provider references with disabled/unavailable labels.",
           "test_command": "bunx vitest run",
-          "test_result": "Passed: 914 tests / 54 files, 2026-10-22 23:48 UTC",
+          "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
           "next_action": "Supported per-user clients/adapter capabilities and verified scopes required for live discovery.",
@@ -651,7 +652,7 @@
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Existing synthetic journey/references, not operational discovery/invention/coding loop.",
           "test_command": "bunx vitest run",
-          "test_result": "Passed: 914 tests / 54 files, 2026-10-22 23:48 UTC",
+          "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
           "next_action": "Step 6 scoped repo/pilot outcome and attribution required; map each research concept without simulating execution receipts.",
@@ -906,7 +907,7 @@
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Local consent/dry-run/update/health/fleet/voice reference screens; no enrollment/OS actions.",
           "test_command": "bunx vitest run",
-          "test_result": "Passed: 914 tests / 54 files, 2026-10-22 23:48 UTC",
+          "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
           "next_action": "Signed native adapters, device identity/OS grants, module-specific secure records/qualified review.",
@@ -1369,7 +1370,7 @@
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "All listed local/sample consent/review/search/export/reference families present; no operational shared collaboration claim.",
           "test_command": "bunx vitest run",
-          "test_result": "Passed: 914 tests / 54 files, 2026-10-22 23:48 UTC",
+          "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
           "next_action": "Per-family authenticated collaborator/visibility/moderation/data model and selected enabled beta scope.",
@@ -1460,7 +1461,7 @@
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Bounded synthetic scenarios/research only; no hardware, institution/partner enrollment or physical safety proof.",
           "test_command": "bunx vitest run",
-          "test_result": "Passed: 914 tests / 54 files, 2026-10-22 23:48 UTC",
+          "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
           "next_action": "Qualified independent domain/safety validation, partner/operator consent and signed hardware adapters.",
@@ -1558,7 +1559,7 @@
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Desktop/mobile scripted flows and routing/reduced-motion unit coverage exist; current mobile recovery success checked.",
           "test_command": "bunx vitest run",
-          "test_result": "Passed: 914 tests / 54 files, 2026-10-22 23:48 UTC",
+          "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
           "next_action": "Independent keyboard/screen-reader audit, full selected workflow coverage and long-lived/browser-storage testing.",
@@ -1631,7 +1632,7 @@
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Dated evidence/privacy/cost/limitations documented; isolation boundaries tested. No full independent launch signoff.",
           "test_command": "bunx vitest run",
-          "test_result": "Passed: 914 tests / 54 files, 2026-10-22 23:48 UTC",
+          "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
           "next_action": "Authorized restore drill, named incident/support owners, independent security/privacy and cost/limit decision.",
@@ -1668,7 +1669,7 @@
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Canonical register, prior reconciliation and new account evidence ready; no completed release/rollback package.",
           "test_command": "bunx vitest run",
-          "test_result": "Passed: 914 tests / 54 files, 2026-10-22 23:48 UTC",
+          "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
           "next_action": "Review selected beta scope and all remaining blockers before concrete release proposal.",
