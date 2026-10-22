@@ -212,3 +212,8 @@ Validation: 743 app tests (25 new audio/consent cases), 37 retained hosted media
 - [ ] Launch gate: Guardian security QA evidence (rate limits, backup/restore, incident response) — needs owner review.
 - [ ] Launch gate: founder end-to-end review and approval before publish.
 - Deduplicated backlog (all already present as labeled DEMO/private beta or blocked): OMNI Autopilot, Communications, Adaptive Engine, Distro/YouTube upload, Podcast/Game/Genesis Forge, Web Forge, Quantum/FFmpeg, CLI signed releases, Care/Updates/Pilot/Voice native agents, Devices/Fleet pairing, Code Vault signing, Release Galaxy, Commons/Pulse, Genesis bounties/Stripe, Global Brain/DNA/Invention Engine/Time Machine, OMNI coding sandbox (Linux), Founder dashboard telemetry, real-money betting (research only).
+
+## CLI repository and signing (2026-10-22)
+- [x] CLI project targeting, OMNI routing (no model call), allowlisted local sandbox runs with saved logs, real SHA-256 release verify; signing scaffold (`cli/SIGNING.md`, dormant `cli/ci/release-signing.yml.example`).
+- [ ] Reviewable branch on a dedicated repository. Blocker: owner must connect Git (Project settings → Git) or name a destination; no external repo is linked.
+- [ ] Real signatures. Blockers: owner decisions on Apple Developer ID, Windows Authenticode/Azure Trusted Signing, and cosign keyless via selected GitHub repo; secrets via secure form only.

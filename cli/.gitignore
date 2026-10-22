@@ -3,3 +3,4 @@
 /evolution.exe
 *.test__pycache__/
 *.pyc
+.evolution/
