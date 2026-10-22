@@ -1,10 +1,11 @@
 """Retained browser regression, explicit --run; no public release/provider actions."""
 import asyncio,os,secrets,uuid,requests
 from pathlib import Path
+from qa_target import require_qa_target
 from playwright.async_api import async_playwright
 async def main():
  Path('/tmp/browser/knowledge-reader').mkdir(parents=True,exist_ok=True)
- base=os.environ['SUPABASE_URL'];admin=os.environ['SUPABASE_SERVICE_ROLE_KEY'];uid=None
+ base=require_qa_target();admin=os.environ['SUPABASE_SERVICE_ROLE_KEY'];uid=None
  def call(method,path,data=None):
   h={'apikey':admin,'Content-Type':'application/json','Prefer':'return=representation'}
   if not admin.startswith('sb_'):h['Authorization']='Bearer '+admin
@@ -19,7 +20,8 @@ async def main():
    await page.get_by_role('button',name='Sign in',exact=True).click();await page.wait_for_url('**/beta')
    await page.goto('http://localhost:8080/knowledge-brief',wait_until='networkidle')
    await page.get_by_text('Your account is not approved or is paused.',exact=False).wait_for();print('PASS authenticated unapproved reader blocked')
-   assert call('PATCH','/rest/v1/beta_access?user_id=eq.'+uid,{'ai_approved':True}).ok
+   approved=call('PATCH','/rest/v1/beta_access?user_id=eq.'+uid,{'ai_approved':True})
+   if not approved.ok: raise RuntimeError('Temporary QA approval failed')
    await page.reload(wait_until='networkidle')
    await page.get_by_role('region',name='Latest brief').get_by_role('heading').first.wait_for()
    assert await page.get_by_role('region',name='Latest brief').get_by_role('link',name='Source',exact=False).count()>0
@@ -34,8 +36,13 @@ async def main():
    await browser.close()
  finally:
   if uid:
-   for table,field in [('beta_audit','owner_id'),('beta_access','user_id')]:assert call('DELETE','/rest/v1/'+table+'?'+field+'=eq.'+uid).ok
-   assert call('DELETE','/auth/v1/admin/users/'+uid).ok
+   failures=[]
+   for path in ['/rest/v1/beta_audit?owner_id=eq.'+uid,'/rest/v1/beta_access?user_id=eq.'+uid,'/auth/v1/admin/users/'+uid]:
+    try:
+     response=call('DELETE',path)
+     if not response.ok: failures.append('Temporary QA cleanup request failed')
+    except requests.RequestException: failures.append('Temporary QA cleanup request unavailable')
+   if failures: raise RuntimeError('; '.join(failures))
   print('Temporary reader account and audit removed')
 if __name__ == "__main__":
  import sys

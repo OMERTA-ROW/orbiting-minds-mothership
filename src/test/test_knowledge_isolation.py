@@ -6,10 +6,11 @@ import secrets
 import sys
 import uuid
 import requests
+from qa_target import require_qa_target
 
 def main():
     if sys.argv[1:] != ['--run']: raise SystemExit('Use --run for temporary QA.')
-    base=os.environ['SUPABASE_URL']; key=os.environ['SUPABASE_PUBLISHABLE_KEY']; admin=os.environ['SUPABASE_SERVICE_ROLE_KEY']
+    base=require_qa_target(); key=os.environ['SUPABASE_PUBLISHABLE_KEY']; admin=os.environ['SUPABASE_SERVICE_ROLE_KEY']
     users=[]; checks=0; owner=str(uuid.uuid4()); held=False
     def call(method,path,data=None,token=None,privileged=False):
         credential=admin if privileged else key
@@ -49,6 +50,7 @@ def main():
         check('owner pauses account',call('PATCH','/rest/v1/beta_access?user_id=eq.'+a['id'],{'paused':True},a['token']).ok)
         check('paused reader no items',call('GET','/rest/v1/knowledge_items?limit=1',token=a['token']).json()==[])
         check('client cannot clear job pause',call('PATCH','/rest/v1/knowledge_job_state?id=eq.1',{'paused_reason':None,'paused_status':None},a['token']).status_code==403)
+        check('client cannot clear durable AI guard',call('PATCH','/rest/v1/knowledge_job_state?id=eq.1',{'brief_attempt_pending':False},a['token']).status_code==403)
         claim='/rest/v1/rpc/claim_owned_knowledge_lease';release='/rest/v1/rpc/release_owned_knowledge_lease'
         check('client cannot claim job lease',call('POST',claim,{'_owner':owner,'_minutes':10},a['token']).status_code in (401,403,404))
         r=call('POST',claim,{'_owner':owner,'_minutes':1},privileged=True)
