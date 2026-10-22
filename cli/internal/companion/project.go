@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -127,11 +128,14 @@ type RunRecord struct {
 const maxLog = 1 << 20
 
 type cappedBuffer struct {
+	mu sync.Mutex
 	bytes.Buffer
 	truncated bool
 }
 
 func (c *cappedBuffer) Write(b []byte) (int, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	room := maxLog - c.Len()
 	if room <= 0 {
 		c.truncated = true
@@ -179,9 +183,13 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, t.argv[1:]...)
+	// Bound waiting on inherited stdout/stderr pipes; not process-tree isolation.
+	cmd.WaitDelay = 500 * time.Millisecond
 	cmd.Dir, cmd.Env = p.Root, minimalEnv()
 	buf := &cappedBuffer{}
-	cmd.Stdout, cmd.Stderr = io.MultiWriter(buf, live), io.MultiWriter(buf, live)
+	// One synchronized capped sink avoids stdout/stderr races. Display only
+	// after redaction, so terminal capture cannot expose raw child credentials.
+	cmd.Stdout, cmd.Stderr = buf, buf
 	start := time.Now()
 	runErr := cmd.Run()
 	rec.Seconds = float64(time.Since(start).Milliseconds()) / 1000
@@ -206,6 +214,7 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	rec.LogFile = filepath.Join(runs, rec.ID+".log")
 	header := fmt.Sprintf("# evolution sandbox run %s\n# project=%s task=%s platform=%s/%s argv=%q\n# isolation: LOCAL PROCESS ONLY (not a container or VM)\n", rec.ID, p.Name, task, runtime.GOOS, runtime.GOARCH, t.argv)
 	clean, n := RedactSecrets(buf.Bytes())
+	if live != nil { if _, err := live.Write(clean); err != nil { return rec, err } }
 	if n > 0 {
 		header += fmt.Sprintf("# redacted %d secret-like value(s) before saving\n", n)
 	}

@@ -19,7 +19,7 @@ jobs:
           cd "$RUNNER_TEMP/stage"
           for f in *.zip; do cosign sign-blob --yes --output-signature "$f.sig" --output-certificate "$f.pem" "$f"; done
           for f in *.zip; do cosign verify-blob --signature "$f.sig" --certificate "$f.pem" \
-            --certificate-identity-regexp "^https://github.com/OWNER_REPO_REQUIRED/" \
+            --certificate-identity "https://github.com/OWNER_REPO_REQUIRED/.github/workflows/OWNER_APPROVED_WORKFLOW_REQUIRED.yml@refs/tags/OWNER_APPROVED_TAG_REQUIRED" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com "$f"; done
       - run: go run ./cmd/evolution release verify --dir "$RUNNER_TEMP/stage"
       # macOS notarization and Windows Authenticode jobs: add on macos/windows runners
