@@ -2,6 +2,11 @@
 
 Updated 2026-10-22. All three Notion parts and Dashboard/Racing notes reconciled against current source, migrations and actual QA. Part 3 recovered from chat and retained in `.lovable/blueprint/`; earlier detailed dated tracker retained in `.lovable/history/roadmap-before-reconciliation-2026-10-22.md`. Evidence and exact commands: `.lovable/evolution-reconciliation-2026-10-22.md`.
 
+## Ordered owner refinement — 23:41 UTC
+- [ ] Adopt the supplied fifteen-step process as `completion-register.json`, with item-level evidence and a blueprint crosswalk; no Notion access or duplicate build needed.
+- [ ] Execute the next feasible Step 2 account-foundation repair and verify it; retain unverified email delivery, recovery, renewal and OAuth gates individually.
+- [ ] Keep the register current; do not mark an entire milestone verified because its prototype exists. Release remains a separate Step 15 decision.
+
 **Statuses:** IMPLEMENTED + TESTED means the stated bounded behavior, not production certification; DEMO ONLY means local/sample/reference; BLOCKED/DEFERRED names a missing external prerequisite or separate required decision. No stale Notion checkbox overrides source evidence. Existing black/gold design and owned records preserved.
 
 ## Current owner work — completed
