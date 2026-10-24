@@ -74,6 +74,13 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 | Racing Arena spectator/replay/performance/local standings | IMPLEMENTED + TESTED DEMO deterministic numeric races/complete replay/local points/wins/mean times | Trusted multiuser competitions/custom racers/anti-cheat/isolation/shared leaderboard need authenticated records and supported runner; browser points confer no authority/value |
 | Future real-money betting | BLOCKED/DEFERRED research only; disabled constant tested | Counsel/jurisdictions/licensing/authorized provider/age-geo/responsible gambling/integrity review plus explicit separate owner approval; excluded from current implementation |
 
+
+## Deferred Step 10 backlog — captured 2026-10-24 (not started)
+- [ ] **Film (10.05):** real multitrack video/audio timeline, trim/reorder, captions, dialogue cleanup, color correction, transitions, aspect-ratio/export presets.
+- [ ] **Music (10.06):** multitrack editing, stem separation, noise cleanup, beat/tempo alignment, EQ/compression/mastering with preview.
+- [ ] **Shared (10.07):** conversational voice/typed editing with reviewable changes, nondestructive originals, undo/version history, proxy previews, resumable jobs.
+- Gated behind verified terminal/project routing, sandbox execution and Guardian controls; each future feature needs a supported processing adapter, real usable output, provenance and acceptance tests. Software-development advanced features were mentioned but not specified — scope not invented. No deployment, purchase, publishing or provider connection authorized by this capture.
+
 ## Exact open gates and secure owner actions
 - [ ] **Repository/branch** — inspect Project settings → Git; select exact CLI repository/destination and source license. Agent cannot verify UI Git sync or create/push a review branch with current internal-only access. No account-wide permission fallback.
 - [ ] **Signing** — choose Apple Developer ID, Windows certificate/Azure, selected-repo Sigstore trust identity and native runner policies. Inputs absent/unverified; use Project Settings → Secrets / CI secure secrets, never chat. No purchase or activation implied.
