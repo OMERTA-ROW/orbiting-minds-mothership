@@ -79,6 +79,10 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] **Film (10.05):** real multitrack video/audio timeline, trim/reorder, captions, dialogue cleanup, color correction, transitions, aspect-ratio/export presets.
 - [ ] **Music (10.06):** multitrack editing, stem separation, noise cleanup, beat/tempo alignment, EQ/compression/mastering with preview.
 - [ ] **Shared (10.07):** conversational voice/typed editing with reviewable changes, nondestructive originals, undo/version history, proxy previews, resumable jobs.
+- [ ] **Game engine foundation (10.08):** voice/typed goals → reviewable engine project changes; one supported engine adapter first, honest capability detection, no installed-Unity/Unreal claims.
+- [ ] **Game world & content (10.09):** scene/world/terrain, asset import with provenance/license metadata, animation/audio, gameplay scripting, NPC/navigation, interactions, inventory/quests/save systems.
+- [ ] **Game quality & delivery (10.10):** playable previews, automated gameplay/regression checks, CPU/GPU/memory/frame-time profiling vs measured baseline, versioned snapshots/undo, reproducible builds, export only for explicitly tested platforms.
+- [ ] **First game milestone (10.11):** one small playable scene with movement, one interaction, save/load, actual build and recorded test evidence. Multiplayer separately gated later; ancient-Egypt "Anomaly" concept is a future target project only, not a rebuild/publish instruction.
 - Gated behind verified terminal/project routing, sandbox execution and Guardian controls; each future feature needs a supported processing adapter, real usable output, provenance and acceptance tests. Software-development advanced features were mentioned but not specified — scope not invented. No deployment, purchase, publishing or provider connection authorized by this capture.
 
 ## Exact open gates and secure owner actions
