@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { seo } from "@/lib/seo";
-import { Square, Send, Trash2 } from "lucide-react";
+import { useSpeechInput } from "@/hooks/use-speech-input";
+import { Square, Send, Trash2, Mic } from "lucide-react";
 import { z } from "zod";
 const studioSearch = z.object({ studioGoal: z.string().max(1000).optional().catch(undefined), studioProject: z.string().uuid().optional().catch(undefined) });
 export const Route = createFileRoute("/_authenticated/beta-omni")({ validateSearch: studioSearch, head: () => seo("OMNI · Authorized beta conversation", "Talk to OMNI through authorized Lovable AI with private project context, explicit consent, real streaming and token usage. Temporary single-turn requests; no tools execute."), loader: ({ context }) => context.queryClient.ensureQueryData(betaQuery), component: LiveOmni });
@@ -19,6 +20,7 @@ function LiveOmni() {
   const draft = Route.useSearch();
   const [projectId, setProject] = useState(data.projects.find(p => p.id === draft.studioProject)?.id ?? data.projects[0]?.id ?? ""), [text, setText] = useState(draft.studioGoal ?? ""), [consent, setConsent] = useState(false), [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]), [thinking, setThinking] = useState(""), [busy, setBusy] = useState(false), [notice, setNotice] = useState(""), [usage, setUsage] = useState<Extract<OmniEvent, { type: "done" }> | null>(null);
   const current = useRef<AbortController | null>(null);
+  const speech = useSpeechInput((spoken) => setText(prev => (prev ? prev.trimEnd() + " " : "") + spoken));
   const paused = guardian.paused || data.access?.paused;
   useEffect(() => () => current.current?.abort(), []);
   useEffect(() => { if (paused) current.current?.abort(); }, [paused]);
