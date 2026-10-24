@@ -632,6 +632,80 @@
      "missing_input": "Missing separate release approval and supported deployed background execution; after approval observe scheduler-fired persistence with browser closed. No second cron.",
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
      "release_receipt": null
+    },
+    {
+     "id": "05.05",
+     "requirement": "Self-learning / improved learning core for Omni, merged with Knowledge Fusion, project memory and the feedback loop — honestly defined as consented persistent memory + retrieval + evaluated workflow improvement, not automatic foundation-model retraining or unchecked self-modification. Learn approved user/project preferences, accepted corrections, successful/failed task patterns and verified test outcomes with provenance, confidence, timestamps/version and expiry; distinguish user facts from inference; retrieved instructions/content remain untrusted. Per-user/project isolation, opt-in retention, view/edit/delete/reset/export memory, revocation and secrets exclusion. No cross-customer private memory sharing or training on customer data by default.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "02",
+      "05.03"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no learning store, evaluation pipeline or model training active.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Design the consented memory store and retrieval boundary; owner opt-in policy before any persistence.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "05.06",
+     "requirement": "Evaluated improvement pipeline: suggest and version improvements to prompts/routing/tool selection against fixed evaluation tasks, compare baseline vs candidate for quality/cost/latency and regressions, stage/rollback and require policy-authorized promotion. Never modify Guardian permissions, risk caps or release policy through learning; high-stakes/trading strategy adaptations remain separately gated and tested (13.10/13.11). Agent agreement is not evidence and self-evaluation is not independent verification. Model fine-tuning, if ever selected, is a separate explicitly consented project requiring data rights/privacy/cost decisions and evals.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "05.05",
+      "03"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no learning store, evaluation pipeline or model training active.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Define fixed evaluation tasks and baseline metrics before any candidate promotion.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "05.07",
+     "requirement": "First learning milestone: an approved correction is saved, correctly retrieved only in the authorized context next session, measurably changes task behavior, and deletion/revocation stops retrieval — with recorded actual evidence.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "05.05"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no learning store, evaluation pipeline or model training active.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Build only after core terminal/sandbox/Guardian gates; no purchases, new providers, public deploy, live trading or model training authorized by this capture.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
     }
    ]
   },
