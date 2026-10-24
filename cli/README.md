@@ -105,6 +105,29 @@ saved with actual exit status in `.evolution/runs`; output appears after executi
 not live. Secrets outside common patterns can still escape. Timeout does not
 guarantee termination of every descendant process on every OS.
 
+### Local workspace and project folders
+
+`workspace init [--dir <absolute-dir>] --approve` creates the local workspace —
+defaulting to `Omni Projects` on the owner's real Desktop (existing
+OneDrive-redirected Desktop folders are detected; an otherwise relocated or
+localized Desktop can be passed via `--dir`) — prints the actual location and
+saves the choice in the per-user config directory (`workspace.json`, mode 0600),
+never in shell startup files. `workspace status [--json]` shows the saved
+workspace, its projects and each project's exact output location.
+`workspace set --dir <new> --move|--keep --approve` changes the root: `--move`
+relocates existing projects with same-filesystem renames only (pre-flight
+collision checks refuse the whole move before touching anything; a cross-device
+move stops honestly and reports what already moved), `--keep` leaves projects at
+their original locations. `project new <name> --template game|video|blank
+--approve` creates a project folder inside the workspace with fixed starter
+subfolders (game: Code, Game Assets, Audio, Builds, Exports; video: Footage,
+Music, Edits, Finished Videos) and reuses the standard `.evolution/project.json`
+tracking. `project open --project <dir> --approve` opens the folder in the
+platform file manager (open/xdg-open/explorer, fixed argv, no shell) and reports
+honestly when no supported opener exists. Existing names, relative paths,
+symlink components and traversal are refused; nothing is silently overwritten.
+The browser app cannot create, see or open these local folders.
+
 `release manifest --dir <stage> [--json]` lists all six supported target shapes,
 artifact paths, digests and unverified signature-file presence. Missing/mismatched
 files exit 3 in both text and JSON. `release verify` rejects incomplete checksum
