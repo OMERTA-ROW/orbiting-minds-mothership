@@ -76,7 +76,7 @@ func TestChangeDiffDetectsAddedModifiedRemoved(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() { println(\"changed\") }\n"), 0o600)
 	os.WriteFile(filepath.Join(dir, "added.go"), []byte("package main\n"), 0o600)
 	os.Remove(filepath.Join(dir, "go.mod"))
-	diff, err := ChangeDiff(p, rec.ID)
+	diff, err := DiffChange(p, rec.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestChangeDiffDetectsAddedModifiedRemoved(t *testing.T) {
 	if status["added.go"] != "added" || status["main.go"] != "modified" || status["go.mod"] != "removed" {
 		t.Fatalf("wrong statuses: %v", status)
 	}
-	again, err := ChangeDiff(p, rec.ID)
+	again, err := DiffChange(p, rec.ID)
 	if err != nil || again.Added != diff.Added || again.Modified != diff.Modified || again.Removed != diff.Removed {
 		t.Fatal("diff must be reproducible")
 	}

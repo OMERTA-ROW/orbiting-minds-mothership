@@ -118,7 +118,7 @@ func runChange(args []string, out, errOut io.Writer) int {
 		if len(pos) != 2 {
 			return invalid(errOut)
 		}
-		diff, err := ChangeDiff(p, pos[1])
+		diff, err := DiffChange(p, pos[1])
 		if err != nil {
 			fmt.Fprintln(errOut, "Diff blocked:", err)
 			return 1
