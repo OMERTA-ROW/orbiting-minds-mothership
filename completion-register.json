@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "created_at": "2026-10-22",
- "updated_at": "2026-10-24T15:19:09Z",
+ "updated_at": "2026-10-24T15:20:46Z",
  "project_name": "Evolution Mothership",
  "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
  "source_note_urls": [
@@ -131,6 +131,19 @@
     "blocked_unchanged": [
      "processing adapters",
      "durable job runtime",
+     "per-feature owner approvals"
+    ]
+   },
+   {
+    "date": "2026-10-24T15:20:46Z",
+    "actor": "lovable-implementation",
+    "summary": "Owner backlog capture: deferred advanced game-development requirements appended to Step 10 (engine foundation, world/content, quality/delivery, first playable-scene milestone; multiplayer separately gated; Anomaly concept is a future target only). No implementation started; terminal/OmniBridge priority and pending approvals preserved; no purchase, provider grant, deployment or distribution authorized.",
+    "tests": [
+     "python3 src/test/test_completion_register.py — register schema revalidated after append"
+    ],
+    "blocked_unchanged": [
+     "engine adapter selection/installation",
+     "engine test/profiling tooling",
      "per-feature owner approvals"
     ]
    }
@@ -1252,6 +1265,102 @@
      "requirement": "Shared: conversational voice/typed editing with reviewable changes, nondestructive originals, undo/version history, proxy previews for large video, resumable processing jobs.",
      "missing_input": "Durable job execution runtime, proxy-rendering adapter, versioned media storage; owner approval per studio.",
      "next_action": "Implement only after the film/music adapters exist; software-development advanced features were mentioned by the owner but not specified — do not invent that scope."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies engine/adapter approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no implementation started.",
+     "verified_scope": "None — captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; no purchase, provider grant, production deployment or distribution authorized by this capture",
+     "release_receipt": null,
+     "id": "10.08",
+     "requirement": "Game engine foundation: voice/typed goals become reviewable engine project changes; supported engine adapters with honest capability detection, starting with ONE supported engine; no claim of installed Unity/Unreal or any engine not actually detected.",
+     "missing_input": "A selected, actually installed/licensed engine or open engine adapter with verified capability detection; owner approval of the first engine.",
+     "next_action": "Gate behind verified core terminal/project routing, sandbox execution and Guardian controls; detect and report real capabilities before any editing claim."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies engine/adapter approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no implementation started.",
+     "verified_scope": "None — captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; no purchase, provider grant, production deployment or distribution authorized by this capture",
+     "release_receipt": null,
+     "id": "10.09",
+     "requirement": "World and content: scene/world and terrain construction; asset import with provenance/license metadata; animation and audio integration; gameplay scripting, NPC/navigation, interactions, inventory/quests/save systems. Source assets, project/agent isolation and Guardian controls preserved.",
+     "missing_input": "Working engine adapter from the foundation item plus rights-cleared asset sources and per-feature owner approval.",
+     "next_action": "Implement per-feature with real engine evidence; asset provenance/license metadata recorded at import, never asserted retroactively."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies engine/adapter approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no implementation started.",
+     "verified_scope": "None — captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; no purchase, provider grant, production deployment or distribution authorized by this capture",
+     "release_receipt": null,
+     "id": "10.10",
+     "requirement": "Quality and delivery: playable previews; automated gameplay/regression checks; CPU/GPU/memory/frame-time profiling and optimization against a measured baseline; versioned project snapshots/undo; reproducible builds and export only for explicitly tested platforms.",
+     "missing_input": "Engine test/profiling tooling in the supported environment; recorded baselines; per-platform test evidence before any export claim.",
+     "next_action": "No platform export is listed as supported until a real build for that platform passes recorded tests."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies engine/adapter approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no implementation started.",
+     "verified_scope": "None — captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; no purchase, provider grant, production deployment or distribution authorized by this capture",
+     "release_receipt": null,
+     "id": "10.11",
+     "requirement": "First milestone: one small playable scene with movement, one interaction, save/load, an actual build and recorded test evidence. Optional multiplayer is a separately gated later milestone. The owner's ancient-Egypt 'Anomaly' concept is a future target project only — not an instruction to rebuild or publish that game now.",
+     "missing_input": "All foundation/content/quality items above; separate explicit owner decision for multiplayer and for any Anomaly project work.",
+     "next_action": "Attempt only after the foundation adapter is verified; record build and test evidence in this register before any further game scope."
     }
    ]
   },
