@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "created_at": "2026-10-22",
- "updated_at": "2026-10-24T15:15:52Z",
+ "updated_at": "2026-10-24T15:19:09Z",
  "project_name": "Evolution Mothership",
  "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
  "source_note_urls": [
@@ -119,6 +119,19 @@
      "GitHub/mail/social per-user connectors absent or declined",
      "signing accounts/native runners absent",
      "server-enforced Guardian agent scopes need new backend tables"
+    ]
+   },
+   {
+    "date": "2026-10-24T15:19:09Z",
+    "actor": "lovable-implementation",
+    "summary": "Owner backlog capture: deferred advanced film/music/shared creative-production requirements appended to Step 10 as Deferred items. No implementation started; current Omni Terminal/OmniBridge priority and pending approvals preserved; no deployment, purchase, publishing or new provider connection authorized.",
+    "tests": [
+     "python3 src/test/test_completion_register.py — register schema revalidated after append"
+    ],
+    "blocked_unchanged": [
+     "processing adapters",
+     "durable job runtime",
+     "per-feature owner approvals"
     ]
    }
   ]
@@ -1167,6 +1180,78 @@
      "missing_input": null,
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
      "release_receipt": null
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies adapter/account approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no implementation started.",
+     "verified_scope": "None — captured as deferred advanced creative production requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": null,
+     "runtime_evidence": null,
+     "release_status": "Not released; no deployment, purchase, external publishing or provider connection authorized by this capture",
+     "release_receipt": null,
+     "id": "10.05",
+     "requirement": "Film: real multitrack video/audio timeline, trim/reorder scenes, captions, dialogue cleanup, color correction, transitions, aspect-ratio/export presets.",
+     "missing_input": "Supported video processing adapter (e.g. verified FFmpeg runtime), authorized private media storage, named owner approval per feature.",
+     "next_action": "Gate behind verified core terminal/project routing, sandbox execution and Guardian controls; each feature needs real usable output, provenance and acceptance tests before any enabled claim."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies adapter/account approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no implementation started.",
+     "verified_scope": "None — captured as deferred advanced creative production requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": null,
+     "runtime_evidence": null,
+     "release_status": "Not released; no deployment, purchase, external publishing or provider connection authorized by this capture",
+     "release_receipt": null,
+     "id": "10.06",
+     "requirement": "Music: multitrack editing, vocal/instrument stem separation, noise cleanup, beat/tempo alignment, EQ/compression/mastering with preview.",
+     "missing_input": "Supported audio processing/stem-separation adapter, authorized private media storage, named owner approval per feature.",
+     "next_action": "Same gating as film; label planned/unavailable honestly until a real adapter produces verifiable output."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies adapter/account approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no implementation started.",
+     "verified_scope": "None — captured as deferred advanced creative production requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": null,
+     "runtime_evidence": null,
+     "release_status": "Not released; no deployment, purchase, external publishing or provider connection authorized by this capture",
+     "release_receipt": null,
+     "id": "10.07",
+     "requirement": "Shared: conversational voice/typed editing with reviewable changes, nondestructive originals, undo/version history, proxy previews for large video, resumable processing jobs.",
+     "missing_input": "Durable job execution runtime, proxy-rendering adapter, versioned media storage; owner approval per studio.",
+     "next_action": "Implement only after the film/music adapters exist; software-development advanced features were mentioned by the owner but not specified — do not invent that scope."
     }
    ]
   },
