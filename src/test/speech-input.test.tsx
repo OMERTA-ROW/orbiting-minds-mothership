@@ -52,13 +52,13 @@ describe("useSpeechInput", () => {
   });
 
   it("dictates final transcripts into the callback without sending anything", () => {
-    (window as Record<string, unknown>).SpeechRecognition = FakeRecognition;
+    setCtor("SpeechRecognition");
     const onTranscript = vi.fn();
     const h = renderHook(() => useSpeechInput(onTranscript));
     expect(h.result.current.supported).toBe(true);
     act(() => h.result.current.start());
     expect(h.result.current.listening).toBe(true);
-    const rec = FakeRecognition.instances[0];
+    const rec = FakeRecognition.instances[0]!;
     expect(rec.started).toBe(true);
     act(() => rec.emitFinal("  review the sandbox plan  "));
     expect(onTranscript).toHaveBeenCalledWith("review the sandbox plan");
@@ -69,7 +69,7 @@ describe("useSpeechInput", () => {
   });
 
   it("surfaces declined microphone permission honestly", () => {
-    (window as Record<string, unknown>).SpeechRecognition = FakeRecognition;
+    setCtor("SpeechRecognition");
     const h = renderHook(() => useSpeechInput(vi.fn()));
     act(() => h.result.current.start());
     act(() => FakeRecognition.instances[0].onerror?.({ error: "not-allowed" }));
@@ -79,7 +79,7 @@ describe("useSpeechInput", () => {
   });
 
   it("aborts recognition on unmount", () => {
-    (window as Record<string, unknown>).SpeechRecognition = FakeRecognition;
+    setCtor("SpeechRecognition");
     const h = renderHook(() => useSpeechInput(vi.fn()));
     act(() => h.result.current.start());
     h.unmount();
@@ -87,7 +87,7 @@ describe("useSpeechInput", () => {
   });
 
   it("detects the webkit-prefixed constructor", () => {
-    (window as Record<string, unknown>).webkitSpeechRecognition = FakeRecognition;
+    setCtor("webkitSpeechRecognition");
     expect(speechRecognitionCtor()).toBe(FakeRecognition);
   });
 });
