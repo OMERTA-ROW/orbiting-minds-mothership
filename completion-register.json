@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "created_at": "2026-10-22",
- "updated_at": "2026-10-24T15:21:59Z",
+ "updated_at": "2026-10-24T15:23:00Z",
  "project_name": "Evolution Mothership",
  "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
  "source_note_urls": [
@@ -159,6 +159,19 @@
      "server-enforced Guardian scopes",
      "per-platform official requirements review",
      "test accounts"
+    ]
+   },
+   {
+    "date": "2026-10-24T15:23:00Z",
+    "actor": "lovable-implementation",
+    "summary": "Owner backlog capture: deferred game server creation appended to Step 10 alongside gaming items (reviewable server configs/adapters, license verification, isolated test lifecycle, persistence/backup/rollback, bounded load tests; generation vs running vs hosted distinguished). No installations, provisioning, purchases or public launch; core work and pending approvals preserved.",
+    "tests": [
+     "python3 src/test/test_completion_register.py — register schema revalidated after append"
+    ],
+    "blocked_unchanged": [
+     "game license/dedicated-server verification",
+     "isolated test environment",
+     "hosting/provider decision"
     ]
    }
   ]
@@ -1375,6 +1388,54 @@
      "requirement": "First milestone: one small playable scene with movement, one interaction, save/load, an actual build and recorded test evidence. Optional multiplayer is a separately gated later milestone. The owner's ancient-Egypt 'Anomaly' concept is a future target project only — not an instruction to rebuild or publish that game now.",
      "missing_input": "All foundation/content/quality items above; separate explicit owner decision for multiplayer and for any Anomaly project work.",
      "next_action": "Attempt only after the foundation adapter is verified; record build and test evidence in this register before any further game scope."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies game license/hosting approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no server installation, provisioning or configuration generation started.",
+     "verified_scope": "None — captured as deferred game-server requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; hosting/provider selection, costs, public ports and production deployment remain separately reviewed actions",
+     "release_receipt": null,
+     "id": "10.12",
+     "requirement": "Game server creation for other compatible game modules: generate reviewable dedicated/private server configurations and supported game/module adapters; explicitly verify each game's license/modding/server support; versioned module/plugin dependencies with compatibility checks; isolated local test server lifecycle (start/stop/logs/health), player access roles and secure secrets; save persistence, backup/restore and rollback; multiplayer/session connectivity and bounded load/performance tests. Distinguish server configuration generation vs a tested running server vs a publicly hosted server; no universal compatibility claim.",
+     "missing_input": "A selected game/module with verified license and dedicated-server support; isolated test environment; secure secret storage via Project Settings/CI secrets, never chat.",
+     "next_action": "Implement per-game with real evidence after core terminal setup and verification; configuration generation, a tested running server and public hosting are separate verified states."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies game license/hosting approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no server installation, provisioning or configuration generation started.",
+     "verified_scope": "None — captured as deferred game-server requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; hosting/provider selection, costs, public ports and production deployment remain separately reviewed actions",
+     "release_receipt": null,
+     "id": "10.13",
+     "requirement": "First game-server milestone: one supported game/module server starts in an isolated test environment, accepts an authorized test client, persists and restores state, and stops cleanly — with actual recorded evidence.",
+     "missing_input": "The server-creation item above plus an authorized test client and owner approval of the first game/module.",
+     "next_action": "Attempt only after the game engine foundation (10.08) and core verification; record start/connect/save/restore/stop evidence in this register before any hosting discussion."
     }
    ]
   },
