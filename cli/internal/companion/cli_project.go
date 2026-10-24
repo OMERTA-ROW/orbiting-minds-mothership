@@ -53,9 +53,41 @@ func runProject(args []string, out, errOut io.Writer) int {
 	}
 	switch pos[0] {
 	case "new":
-		return runProjectNew(append([]string{pos[1]}^[:0:0], pos[1:]...), out, errOut)
+		if len(pos) != 2 {
+			return invalid(errOut)
+		}
+		template := f["--template"]
+		if template == "" {
+			template = "blank"
+		}
+		c, err := loadWorkspace()
+		if err != nil {
+			fmt.Fprintln(errOut, err)
+			return 1
+		}
+		p, created, err := NewWorkspaceProject(c, pos[1], template, f["--approve"] == "1")
+		if err != nil {
+			fmt.Fprintln(errOut, "Project not created:", err)
+			return 1
+		}
+		text := fmt.Sprintf("Project %q created at %s (template %s).\nSaved outputs for this project live exactly under %s.\nCreated folders: %s", p.Name, p.Root, templateLabel(p.Template), p.Root, strings.Join(created, ", "))
+		return emit(out, f["--json"] == "1", p, text)
 	case "open":
-		return runProjectOpen(args, out, errOut)
+		if len(pos) != 1 {
+			return invalid(errOut)
+		}
+		p, err := LoadProject(f["--project"])
+		if err != nil {
+			fmt.Fprintln(errOut, err)
+			return 1
+		}
+		opened, err := OpenProjectFolder(p, f["--approve"] == "1")
+		if err != nil {
+			fmt.Fprintln(errOut, "Open folder blocked:", err)
+			return 1
+		}
+		fmt.Fprintf(out, "Opened %s in your file manager.\n", opened)
+		return 0
 	case "use":
 		if len(pos) != 2 {
 			return invalid(errOut)
