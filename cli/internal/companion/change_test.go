@@ -164,7 +164,7 @@ func TestSupportMatrixNeverClaimsInstallerOrSignatures(t *testing.T) {
 	}
 	for _, e := range entries {
 		joined := strings.Join([]string{e.SourceBuild, e.NativeExecution, e.Signing, e.Install, e.Update, e.Rollback, e.Uninstall}, " ")
-		if strings.Contains(joined, "VERIFIED installer") || strings.Contains(joined, "SIGNED ") {
+		if strings.Contains(joined, "SIGNATURE VERIFIED") || strings.Contains(joined, "installer available") {
 			t.Fatalf("matrix must not claim signing/installer support: %s", e.Target)
 		}
 		if !strings.Contains(e.Signing, "UNSIGNED") || !strings.Contains(e.Install, "NOT AVAILABLE") {
