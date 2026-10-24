@@ -216,7 +216,7 @@ func ListChanges(p ProjectProfile) ([]ChangeRecord, error) {
 		return nil, errors.New("no recorded change proposals for this project")
 	}
 	defer dir.Close()
-	entries, err := dir.ReadDir(".")
+	entries, err := fs.ReadDir(dir.FS(), ".")
 	if err != nil {
 		return nil, err
 	}
@@ -237,8 +237,8 @@ func ListChanges(p ProjectProfile) ([]ChangeRecord, error) {
 	return out, nil
 }
 
-// ChangeDiff compares the recorded baseline with the current working tree.
-func ChangeDiff(p ProjectProfile, id string) (ChangeDiff, error) {
+// DiffChange compares the recorded baseline with the current working tree.
+func DiffChange(p ProjectProfile, id string) (ChangeDiff, error) {
 	rec, err := LoadChange(p, id)
 	if err != nil {
 		return ChangeDiff{}, err
