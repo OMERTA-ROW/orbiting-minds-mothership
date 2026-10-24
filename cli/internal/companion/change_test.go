@@ -173,14 +173,16 @@ func TestSupportMatrixNeverClaimsInstallerOrSignatures(t *testing.T) {
 	}
 }
 
+func RunS(a []string, o, e *bytes.Buffer) int { return Run(a, "evolution", o, e) }
+
 func TestCLIChangeAndMatrixCommands(t *testing.T) {
 	p, dir := changeProject(t)
 	var out, errOut bytes.Buffer
-	if code := Run([]string{"change", "new", "baseline snapshot", "--project", dir}, &out, &errOut); code != 1 {
+	if code := RunS([]string{"change", "new", "baseline snapshot", "--project", dir}, &out, &errOut); code != 1 {
 		t.Fatalf("unapproved change must fail, got %d", code)
 	}
 	out.Reset()
-	if code := Run([]string{"change", "new", "baseline snapshot", "--project", dir, "--approve"}, &out, &errOut); code != 0 {
+	if code := RunS([]string{"change", "new", "baseline snapshot", "--project", dir, "--approve"}, &out, &errOut); code != 0 {
 		t.Fatalf("change new failed: %d %s", code, errOut.String())
 	}
 	recs, err := ListChanges(p)
@@ -188,15 +190,15 @@ func TestCLIChangeAndMatrixCommands(t *testing.T) {
 		t.Fatalf("proposal must be listed: %v %v", recs, err)
 	}
 	out.Reset()
-	if code := Run([]string{"change", "diff", recs[0].ID, "--project", dir}, &out, &errOut); code != 0 || !strings.Contains(out.String(), "unchanged") {
+	if code := RunS([]string{"change", "diff", recs[0].ID, "--project", dir}, &out, &errOut); code != 0 || !strings.Contains(out.String(), "unchanged") {
 		t.Fatalf("diff failed: %d %s %s", code, out.String(), errOut.String())
 	}
 	out.Reset()
-	if code := Run([]string{"release", "matrix"}, &out, &errOut); code != 0 || !strings.Contains(out.String(), "UNSIGNED") || !strings.Contains(out.String(), "NOT AVAILABLE") {
+	if code := RunS([]string{"release", "matrix"}, &out, &errOut); code != 0 || !strings.Contains(out.String(), "UNSIGNED") || !strings.Contains(out.String(), "NOT AVAILABLE") {
 		t.Fatalf("matrix must be honest: %d %s", code, out.String())
 	}
 	out.Reset()
-	if code := Run([]string{"release", "matrix", "--json"}, &out, &errOut); code != 0 {
+	if code := RunS([]string{"release", "matrix", "--json"}, &out, &errOut); code != 0 {
 		t.Fatalf("matrix json failed: %d", code)
 	}
 	var parsed []SupportMatrixEntry
