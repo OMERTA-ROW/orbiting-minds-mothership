@@ -109,15 +109,23 @@ Local source commands:
   evolution uninstall --dir <same-directory> --approve
   evolution project use <name> --dir <absolute-project-dir> --approve
   evolution project show --project <dir> [--json]
-  evolution sandbox run <go-test|go-vet|go-build|npm-test> --project <dir> --approve [--timeout 300]
+  evolution change new "<summary>" --project <dir> --approve [--json]
+                             Records a reviewable file-level fingerprint manifest
+  evolution change list --project <dir> [--json]
+  evolution change diff <id> --project <dir> [--json]
+                             Shows added/modified/removed files since the manifest
+  evolution sandbox run <go-test|go-vet|go-build|npm-test> --project <dir> --approve [--change <id>] [--timeout 300]
                              Runs ONE fixed command locally (no shell); real log saved
                              to <dir>/.evolution/runs. Local process, not a container.
+                             --change binds the run record to a reviewed manifest.
   evolution omni route "<goal>" --project <dir> [--json]
                              Shows OMNI routing for a project; no model is called
   evolution release verify --dir <staged-release> [--json]
                              Checks SHA256SUMS; reports UNSIGNED unless signature files exist
   evolution release manifest --dir <staged-release> [--json]
-                             Lists platform/arch, artifact path, SHA-256 check and signing status
+                              Lists platform/arch, artifact path, SHA-256 check and signing status
+  evolution release matrix [--json]
+                              Honest per-target support: build, signing, install/update/rollback
 
 PLANNED / BLOCKED — no authentication, API calls or tool execution:
   evolution login
@@ -191,6 +199,8 @@ func Run(args []string, invoked string, out, errOut io.Writer) int {
 		return 0
 	case "project":
 		return runProject(args[1:], out, errOut)
+	case "change":
+		return runChange(args[1:], out, errOut)
 	case "sandbox":
 		return runSandboxCmd(args[1:], out, errOut)
 	case "release":

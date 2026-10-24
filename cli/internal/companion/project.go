@@ -60,7 +60,7 @@ func validateProjectRoot(root string) error {
 			break
 		}
 	}
-	for _, path := range []string{filepath.Join(root, profileDir), filepath.Join(root, profileDir, "runs")} {
+	for _, path := range []string{filepath.Join(root, profileDir), filepath.Join(root, profileDir, "runs"), filepath.Join(root, profileDir, "changes")} {
 		info, err := os.Lstat(path)
 		if err == nil && (!info.IsDir() || info.Mode()&os.ModeSymlink != 0) {
 			return errors.New("project metadata directory cannot be a symlink or file")
@@ -152,6 +152,7 @@ type RunRecord struct {
 	ID        string   `json:"id"`
 	Project   string   `json:"project"`
 	Task      string   `json:"task"`
+	Change    string   `json:"change,omitempty"`
 	Argv      []string `json:"argv"`
 	Started   string   `json:"started"`
 	Seconds   float64  `json:"seconds"`
@@ -201,6 +202,10 @@ func minimalEnv() []string {
 }
 
 func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Duration, live io.Writer) (RunRecord, error) {
+	return runSandbox(p, task, "", approve, timeout, live)
+}
+
+func runSandbox(p ProjectProfile, task, changeID string, approve bool, timeout time.Duration, live io.Writer) (RunRecord, error) {
 	var rec RunRecord
 	t, ok := sandboxTasks[task]
 	if !ok {
@@ -244,7 +249,7 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	if err != nil {
 		return rec, err
 	}
-	rec = RunRecord{ID: time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(idBytes), Project: p.Name, Task: task, Argv: t.argv, Started: time.Now().UTC().Format(time.RFC3339)}
+	rec = RunRecord{ID: time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(idBytes), Project: p.Name, Task: task, Change: changeID, Argv: t.argv, Started: time.Now().UTC().Format(time.RFC3339)}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, t.argv[1:]...)
@@ -281,6 +286,9 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	}
 	rec.LogFile = filepath.Join(runs, rec.ID+".log")
 	header := fmt.Sprintf("# evolution sandbox run %s\n# project=%s task=%s platform=%s/%s argv=%q\n# isolation: LOCAL PROCESS ONLY (not a container or VM)\n", rec.ID, p.Name, task, runtime.GOOS, runtime.GOARCH, t.argv)
+	if rec.Change != "" {
+		header += fmt.Sprintf("# change=%s (reviewed file-level manifest bound to this run)\n", rec.Change)
+	}
 	clean, n := RedactSecrets(buf.Bytes())
 	if live != nil {
 		if _, err := live.Write(clean); err != nil {

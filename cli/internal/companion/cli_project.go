@@ -74,8 +74,67 @@ func runProject(args []string, out, errOut io.Writer) int {
 	return invalid(errOut)
 }
 
+func runChange(args []string, out, errOut io.Writer) int {
+	f, pos, ok := flags(args, map[string]bool{"--project": true})
+	if !ok || len(pos) < 1 {
+		return invalid(errOut)
+	}
+	p, err := LoadProject(f["--project"])
+	if err != nil {
+		fmt.Fprintln(errOut, err)
+		return 1
+	}
+	switch pos[0] {
+	case "new":
+		if len(pos) != 2 {
+			return invalid(errOut)
+		}
+		rec, err := ChangeNew(p, pos[1], f["--approve"] == "1")
+		if err != nil {
+			fmt.Fprintln(errOut, "Change not recorded:", err)
+			return 1
+		}
+		text := fmt.Sprintf("Change proposal %s recorded (%d files fingerprinted, %d oversized skipped).\nReview: evolution change diff %s --project <dir>\nTest:   evolution sandbox run <task> --project <dir> --change %s --approve\n%s", rec.ID, len(rec.Files), rec.Skipped, rec.ID, rec.ID, rec.Note)
+		return emit(out, f["--json"] == "1", rec, text)
+	case "list":
+		if len(pos) != 1 {
+			return invalid(errOut)
+		}
+		recs, err := ListChanges(p)
+		if err != nil {
+			fmt.Fprintln(errOut, err)
+			return 1
+		}
+		text := "No change proposals recorded."
+		if len(recs) > 0 {
+			text = ""
+			for _, r := range recs {
+				text += fmt.Sprintf("%s · %s · %d files\n", r.ID, r.Summary, len(r.Files))
+			}
+			text += "File-level manifests for human review; not agent-authored changes."
+		}
+		return emit(out, f["--json"] == "1", recs, text)
+	case "diff":
+		if len(pos) != 2 {
+			return invalid(errOut)
+		}
+		diff, err := DiffChange(p, pos[1])
+		if err != nil {
+			fmt.Fprintln(errOut, "Diff blocked:", err)
+			return 1
+		}
+		text := fmt.Sprintf("CHANGE %s · %s\nadded %d · modified %d · removed %d · unchanged %d\n", diff.ChangeID, diff.Summary, diff.Added, diff.Modified, diff.Removed, diff.Unchanged)
+		for _, e := range diff.Entries {
+			text += fmt.Sprintf("  %-8s %s (%d -> %d bytes)\n", e.Status, e.Path, e.OldSize, e.NewSize)
+		}
+		text += diff.Note
+		return emit(out, f["--json"] == "1", diff, text)
+	}
+	return invalid(errOut)
+}
+
 func runSandboxCmd(args []string, out, errOut io.Writer) int {
-	f, pos, ok := flags(args, map[string]bool{"--project": true, "--timeout": true})
+	f, pos, ok := flags(args, map[string]bool{"--project": true, "--timeout": true, "--change": true})
 	if !ok || len(pos) != 2 || pos[0] != "run" {
 		return invalid(errOut)
 	}
@@ -92,12 +151,20 @@ func runSandboxCmd(args []string, out, errOut io.Writer) int {
 		fmt.Fprintln(errOut, err)
 		return 1
 	}
-	rec, err := RunSandbox(p, pos[1], f["--approve"] == "1", time.Duration(timeout)*time.Second, out)
+	var rec RunRecord
+	if changeID := f["--change"]; changeID != "" {
+		rec, err = RunSandboxWithChange(p, pos[1], changeID, f["--approve"] == "1", time.Duration(timeout)*time.Second, out)
+	} else {
+		rec, err = RunSandbox(p, pos[1], f["--approve"] == "1", time.Duration(timeout)*time.Second, out)
+	}
 	if err != nil {
 		fmt.Fprintln(errOut, "Sandbox run blocked:", err)
 		return 1
 	}
 	fmt.Fprintf(out, "\n[EVOLUTION] %s %s in %.1fs (exit %d) · log %s\n", rec.Task, rec.Result, rec.Seconds, rec.ExitCode, rec.LogFile)
+	if rec.Change != "" {
+		fmt.Fprintf(out, "[EVOLUTION] bound to reviewed change manifest %s\n", rec.Change)
+	}
 	if rec.Result != "PASSED" {
 		return 3
 	}
@@ -124,8 +191,17 @@ func runRoute(args []string, out, errOut io.Writer) int {
 
 func runRelease(args []string, out, errOut io.Writer) int {
 	f, pos, ok := flags(args, map[string]bool{"--dir": true})
-	if !ok || len(pos) != 1 || (pos[0] != "verify" && pos[0] != "manifest") {
+	if !ok || len(pos) != 1 || (pos[0] != "verify" && pos[0] != "manifest" && pos[0] != "matrix") {
 		return invalid(errOut)
+	}
+	if pos[0] == "matrix" {
+		entries := SupportMatrix()
+		text := "TARGET SUPPORT MATRIX — honest verification state\n"
+		for _, e := range entries {
+			text += fmt.Sprintf("%s\n  build:     %s\n  native:    %s\n  signing:   %s\n  install:   %s\n  update:    %s\n  rollback:  %s\n  uninstall: %s\n", e.Target, e.SourceBuild, e.NativeExecution, e.Signing, e.Install, e.Update, e.Rollback, e.Uninstall)
+		}
+		text += "No signed installer, update service or native verification exists yet."
+		return emit(out, f["--json"] == "1", entries, text)
 	}
 	if pos[0] == "manifest" {
 		entries, err := ReleaseManifest(f["--dir"])

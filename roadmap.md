@@ -1,6 +1,8 @@
 # Evolution — reconciled blueprint roadmap
 
-Updated 2026-10-22. All three Notion parts and Dashboard/Racing notes reconciled against current source, migrations and actual QA. Part 3 recovered from chat and retained in `.lovable/blueprint/`; earlier detailed dated tracker retained in `.lovable/history/roadmap-before-reconciliation-2026-10-22.md`. Evidence and exact commands: `.lovable/evolution-reconciliation-2026-10-22.md`.
+Updated 2026-10-24: Oct 24 owner instruction (Omni Terminal/OmniBridge push) reconciled — CLI gained reviewable file-level change manifests (`evolution change new/list/diff`) bound to real sandbox runs via `--change`, plus an honest per-target support matrix (`evolution release matrix`); beta OMNI gained opt-in browser dictation with typed fallback and review-before-send. Go `-race` tests + vet pass; 5 speech-input tests pass. Still blocked: GitHub/mail/social per-user connectors (absent or declined), signing accounts/native runners, server-enforced Guardian agent scopes (needs new backend tables). No connectors linked, nothing published.
+
+Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes reconciled against current source, migrations and actual QA. Part 3 recovered from chat and retained in `.lovable/blueprint/`; earlier detailed dated tracker retained in `.lovable/history/roadmap-before-reconciliation-2026-10-22.md`. Evidence and exact commands: `.lovable/evolution-reconciliation-2026-10-22.md`.
 
 ## Ordered owner refinement — 23:41 UTC
 - [x] Adopt the supplied fifteen-step process as the canonical `completion-register.json`: 54 exact acceptance items and 25 original family crosswalks, required owners/dependencies/files/commands/runtime/next actions/release states. Three register validation tests pass. Supplied text used; no Notion page read/write or new connection required.
