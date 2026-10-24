@@ -1128,7 +1128,7 @@
     },
     {
      "id": "09.06",
-     "requirement": "Autonomous publishing pipeline for multiple posts across arbitrarily many owner-authorized connected accounts (no artificial fixed account-count cap, while honoring actual provider account/app quotas, rate limits, OAuth eligibility, hosting/storage/compute capacity and disclosed plan economics): approved source artifact to platform-specific formatting/metadata/captions/accessibility and content/platform variants, durable queue with per-account timezone/schedule and multiple queued posts per account, sequential account-by-account processing (never simultaneous bulk blast), policy-authorized publishing, real external receipts, deduplication/idempotency, bounded retries with backoff, pause/cancel/revoke controls and clear progress/status. Explicit selected destination per post; one expired/failed connection must not block unrelated authorized accounts. Queued or submitted is never labeled published.",
+     "requirement": "Autonomous publishing pipeline for multiple posts across arbitrarily many owner-authorized connected accounts (no artificial fixed account-count cap, while honoring actual provider account/app quotas, rate limits, OAuth eligibility, hosting/storage/compute capacity and disclosed plan economics): approved source artifact to platform-specific formatting/metadata/captions/accessibility and content/platform variants, including picture/image posts (single images and multi-image/carousel only where the platform supports it) with platform-specific dimensions/formats, captions, alt text, preview and authorized asset selection. Durable queue with per-account timezone/schedule and multiple queued posts per account; owner-selectable dispatch mode — sequential account-by-account OR parallel fan-out to all selected authorized accounts from one action/schedule (parallel means concurrent dispatch within provider rate limits and configured worker/resource limits, never guaranteed exact same-second publication). Policy-authorized publishing, real external receipts tracked independently per account, deduplication/idempotency, retry of failed targets only, pause/cancel/revoke controls and clear progress/status. Explicit selected destination per post; one expired/failed connection must not block unrelated authorized accounts. Queued or submitted is never labeled published.",
      "status": "Deferred",
      "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
      "dependencies": [
@@ -1147,7 +1147,7 @@
      "test_result": "Not run / not established",
      "evidence_ref": "unrun",
      "runtime_evidence": "No operational or release claim.",
-     "next_action": "Requires a verified provider route (09.02) and owner-authorized pilot after dry-run and failure/revocation tests; multi-account queue, isolation and failure-independence tests precede any pilot.",
+     "next_action": "Requires a verified provider route (09.02) and owner-authorized pilot after dry-run and failure/revocation tests; multi-account queue, selectable sequential/parallel dispatch, image-variant and failure-independence tests precede any pilot.",
      "missing_input": null,
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
      "release_receipt": null
