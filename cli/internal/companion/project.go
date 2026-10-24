@@ -152,6 +152,7 @@ type RunRecord struct {
 	ID        string   `json:"id"`
 	Project   string   `json:"project"`
 	Task      string   `json:"task"`
+	Change    string   `json:"change,omitempty"`
 	Argv      []string `json:"argv"`
 	Started   string   `json:"started"`
 	Seconds   float64  `json:"seconds"`
@@ -201,6 +202,10 @@ func minimalEnv() []string {
 }
 
 func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Duration, live io.Writer) (RunRecord, error) {
+	return runSandbox(p, task, "", approve, timeout, live)
+}
+
+func runSandbox(p ProjectProfile, task, changeID string, approve bool, timeout time.Duration, live io.Writer) (RunRecord, error) {
 	var rec RunRecord
 	t, ok := sandboxTasks[task]
 	if !ok {
@@ -244,7 +249,7 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 	if err != nil {
 		return rec, err
 	}
-	rec = RunRecord{ID: time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(idBytes), Project: p.Name, Task: task, Argv: t.argv, Started: time.Now().UTC().Format(time.RFC3339)}
+	rec = RunRecord{ID: time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(idBytes), Project: p.Name, Task: task, Change: changeID, Argv: t.argv, Started: time.Now().UTC().Format(time.RFC3339)}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, t.argv[1:]...)
