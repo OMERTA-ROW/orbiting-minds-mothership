@@ -107,8 +107,22 @@ Local source commands:
                              Opt-in local PATH-name tool discovery; nothing sent
   evolution install --dir <new-absolute-directory> --approve [--with-omni]
   evolution uninstall --dir <same-directory> --approve
+  evolution workspace init [--dir <absolute-dir>] --approve
+                             Creates/defaults the local workspace (<Desktop>/Omni
+                             Projects) on THIS machine and saves the choice
+  evolution workspace status [--json]
+                             Shows the saved workspace and its projects
+  evolution workspace set --dir <absolute-dir> --move|--keep --approve
+                             Changes the workspace; --move relocates existing
+                             projects (no overwrites), --keep leaves them in place
+  evolution project new <name> [--template game|video|blank] --approve
+                             Creates a project folder with starter subfolders
+                             inside the configured workspace
   evolution project use <name> --dir <absolute-project-dir> --approve
   evolution project show --project <dir> [--json]
+  evolution project open --project <dir> --approve
+                             Opens the project folder in your file manager
+                             (only where a supported local opener exists)
   evolution change new "<summary>" --project <dir> --approve [--json]
                              Records a reviewable file-level fingerprint manifest
   evolution change list --project <dir> [--json]
@@ -197,6 +211,8 @@ func Run(args []string, invoked string, out, errOut io.Writer) int {
 		}
 		fmt.Fprintln(out, "Local source operation completed. No PATH, shell configuration, keys or other tools changed.")
 		return 0
+	case "workspace":
+		return runWorkspace(args[1:], out, errOut)
 	case "project":
 		return runProject(args[1:], out, errOut)
 	case "change":
