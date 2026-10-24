@@ -1537,6 +1537,55 @@
      "requirement": "First game-server milestone: one supported game/module server starts in an isolated test environment, accepts an authorized test client, persists and restores state, and stops cleanly — with actual recorded evidence.",
      "missing_input": "The server-creation item above plus an authorized test client and owner approval of the first game/module.",
      "next_action": "Attempt only after the game engine foundation (10.08) and core verification; record start/connect/save/restore/stop evidence in this register before any hosting discussion."
+    },
+    {
+     "id": "10.14",
+     "requirement": "Creator Enhancement shared layer across Omni/OmniBridge: automatic media/project enhancement, not merely workflow coordination. On authorized upload, detect supported input and offer account/project opt-in automatic enhancement within declared budget/resource limits — photos (exposure/color/noise/sharpness, optional upscale), audio (noise reduction, loudness/clarity, avoid clipping), movies/YouTube series (dialogue cleanup, levels, supported stabilization/color/captions, consistent series presets); games require an actual editable project or supported asset/build adapter — profile first and propose measured performance/asset improvements, never arbitrary binary modification or guaranteed quality/FPS. Preserve originals, create versioned derivatives, before/after preview, undo/revert, provenance and changed-settings logs. Conservative presets preserve identity, voice and creative intent; generative alterations separately selectable. Expensive/destructive/unsupported operations must not trigger blindly — show estimates and honor owner policy. Actual processing adapters, quality checks/regression tests and useful output are required before any verified label. Auto-enhancement does not auto-authorize publishing or ad spend. No promise that every upload or game can be enhanced.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "10.01",
+      "10.04"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no processing adapter, enhancement or provider connected.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Select first supported photo/audio processing adapter and owner opt-in policy; estimates and consent precede any operation.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "10.15",
+     "requirement": "First Creator Enhancement milestone: one real supported photo or audio input produces a preserved original plus an enhanced derivative, before/after comparison and rollback, with recorded test evidence; video and game adapters follow with separate acceptance evidence.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "10.14"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no processing adapter, enhancement or provider connected.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Owner selects the first real input and supported adapter after core terminal/sandbox/Guardian gates.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
     }
    ]
   },
