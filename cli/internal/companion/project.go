@@ -60,7 +60,7 @@ func validateProjectRoot(root string) error {
 			break
 		}
 	}
-	for _, path := range []string{filepath.Join(root, profileDir), filepath.Join(root, profileDir, "runs")} {
+	for _, path := range []string{filepath.Join(root, profileDir), filepath.Join(root, profileDir, "runs"), filepath.Join(root, profileDir, "changes")} {
 		info, err := os.Lstat(path)
 		if err == nil && (!info.IsDir() || info.Mode()&os.ModeSymlink != 0) {
 			return errors.New("project metadata directory cannot be a symlink or file")
@@ -286,6 +286,9 @@ func runSandbox(p ProjectProfile, task, changeID string, approve bool, timeout t
 	}
 	rec.LogFile = filepath.Join(runs, rec.ID+".log")
 	header := fmt.Sprintf("# evolution sandbox run %s\n# project=%s task=%s platform=%s/%s argv=%q\n# isolation: LOCAL PROCESS ONLY (not a container or VM)\n", rec.ID, p.Name, task, runtime.GOOS, runtime.GOARCH, t.argv)
+	if rec.Change != "" {
+		header += fmt.Sprintf("# change=%s (reviewed file-level manifest bound to this run)\n", rec.Change)
+	}
 	clean, n := RedactSecrets(buf.Bytes())
 	if live != nil {
 		if _, err := live.Write(clean); err != nil {
