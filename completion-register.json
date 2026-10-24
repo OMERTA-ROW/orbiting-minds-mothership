@@ -2101,6 +2101,106 @@
      "requirement": "First MCP milestone: one compatible client discovers tools and completes an authorized read-only job/artifact lookup, with cross-user denial and revocation tests passing.",
      "missing_input": "All interface and read-only tool items above; a real test client and test accounts.",
      "next_action": "Attempt only after the authenticated interface is verified; record client, transport and denial/revocation evidence in this register."
+    },
+    {
+     "id": "13.09",
+     "requirement": "Financial trading module coordinated by Omni through an internal specialist agent (no new agent name): read-only research and simulation first — account/portfolio monitoring, strategy research and advanced configurable strategy skills, backtesting and paper trading with point-in-time data and provenance, out-of-sample/walk-forward validation, transaction fees/slippage/liquidity modeling, drawdown/exposure and benchmark comparisons; avoid look-ahead and survivorship bias and label all hypothetical results. Asset classes/brokers/exchanges are not yet selected — do not assume stocks/crypto/options or connect accounts.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "02",
+      "03"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no broker/exchange/data provider connected, no orders or funds moved.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Owner selects asset classes, data sources and broker candidates; point-in-time data provenance established before any backtest claim.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "13.10",
+     "requirement": "Trading risk and control architecture: per-user/account isolation, order/position reconciliation, stale data detection, duplicate prevention, bounded retries that cannot duplicate orders, limits for size/exposure/leverage/daily loss and spend, monitoring, emergency stop, audit and disconnect/revoke. No leverage or derivatives enabled by default. Strategy changes are versioned, paper-tested and approved under explicit account policy before any live promotion. Autonomous actions only within separately authorized revocable rules; no withdrawal permission ever.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "13.09",
+      "03"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no broker/exchange/data provider connected, no orders or funds moved.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Design controls alongside paper trading; emergency stop and risk-limit behavior tested before any live consideration.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "13.11",
+     "requirement": "Optional autonomous order execution and 'auto-enhance trading': evidence-based strategy evaluation and proposed improvements — never guaranteed profit or automatic unchecked live strategy changes. Live trading stays disabled pending explicit owner-selected broker/account, secure scoped credentials, supported API and compliance review, and configured risk policy. Account-owner authorization and applicable platform/regulatory requirements must be validated before any public trading service claim.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "13.09",
+      "13.10"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no broker/exchange/data provider connected, no orders or funds moved.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Blocked on owner-selected broker/account, scoped credentials, API/compliance review and risk policy; remains disabled.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "13.12",
+     "requirement": "First trading milestone: a reproducible paper-trading workflow with recorded hypothetical orders, reconciliation and tested emergency-stop/risk-limit behavior, with recorded evidence; hypothetical results labeled, no live orders.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "13.09",
+      "13.10"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no broker/exchange/data provider connected, no orders or funds moved.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Build only after core terminal/sandbox/Guardian gates; no paid data, purchases or live activation authorized by this capture.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
     }
    ]
   },
