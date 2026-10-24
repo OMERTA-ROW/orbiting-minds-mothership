@@ -95,6 +95,16 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] **First milestone (13.08):** one compatible client discovers tools and completes an authorized read-only job/artifact lookup, with cross-user denial/revocation tests.
 - Public endpoint deployment, directory submission, external distribution and publishing remain separate reviewable actions; no purchases or credential collection in chat.
 
+## Deferred Steps 9/11 backlog — autonomous publishing & marketing, captured 2026-10-24 (not started)
+- [ ] **Provider capability matrix (09.05):** supported official adapters across social, podcast and other publishing platforms — per-provider account authorization, prerequisites/API access, supported media, limits, receipt/status semantics, manual handoff where no supported route. Broad coverage goal; never a claim all platforms are supported.
+- [ ] **Autonomous publishing pipeline (09.06):** approved artifact → platform formatting/metadata/captions/accessibility → calendar/timezone queue → policy-authorized publish → real external receipt → status/retry/idempotency/revoke/cancel. Queued/submitted is never labeled published.
+- [ ] **Revocable autonomous rules (09.07):** owner-enabled per account/content/channel rules with schedule, rate and allowed actions; outside rules → human review. Audit, credential safeguards, user/project isolation, duplicate-post prevention, provider policy/consent compliance, no fake engagement or spam.
+- [ ] **Podcast hosting/RSS & directories (09.08):** distinguish hosting delivery, directory submission and acceptance from confirmed downstream availability.
+- [ ] **Marketing engine (11.04):** goals/audience/brand settings, sourced market/competitor research, campaign/content strategy, repurposing, SEO, organic social, consent-based email, A/B tests, attributable conversion/ROI with honest uncertainty and sample sizes, bounded optimization.
+- [ ] **Paid campaigns (11.05):** separate owner-enabled budgets, spending caps and stop controls; no actual spending authorized by this capture.
+- [ ] **Pilot gate (11.06):** dry-run, failure, revocation and duplicate-prevention tests before any real owner-authorized pilot.
+- Merges with existing 09.01–09.04 and 11.01–11.03 (email/social providers, autopublish rules, distribution routes); no duplicate build. This is backlog authorization only — no messages sent, content published, ads bought, accounts connected or deployment. Gated behind verified core terminal/project routing, sandbox execution and Guardian controls.
+
 ## Exact open gates and secure owner actions
 - [ ] **Repository/branch** — inspect Project settings → Git; select exact CLI repository/destination and source license. Agent cannot verify UI Git sync or create/push a review branch with current internal-only access. No account-wide permission fallback.
 - [ ] **Signing** — choose Apple Developer ID, Windows certificate/Azure, selected-repo Sigstore trust identity and native runner policies. Inputs absent/unverified; use Project Settings → Secrets / CI secure secrets, never chat. No purchase or activation implied.
