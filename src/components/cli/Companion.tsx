@@ -98,6 +98,7 @@ export function Companion() {
             { id: "value", label: "Access & measured value" },
             { id: "estimate", label: "AI cost estimator" },
             { id: "discover", label: "Private local discovery" },
+            { id: "workspace", label: "Workspace & folders" },
             { id: "architecture", label: "Architecture & release gates" },
           ].map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="min-h-11 whitespace-normal">
