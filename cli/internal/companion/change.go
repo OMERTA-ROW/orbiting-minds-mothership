@@ -1,6 +1,7 @@
 package companion
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -135,7 +136,7 @@ func changesDir(root string) string { return filepath.Join(root, profileDir, "ch
 
 func newChangeID() (string, error) {
 	b := make([]byte, 6)
-	if _, err := randRead(b); err != nil {
+	if _, err := rand.Read(b); err != nil {
 		return "", errors.New("change identifier could not be generated")
 	}
 	return time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(b), nil
@@ -287,19 +288,5 @@ func RunSandboxWithChange(p ProjectProfile, task, changeID string, approve bool,
 	if err != nil {
 		return RunRecord{}, err
 	}
-	rec, err := runSandbox(p, task, approve, timeout, live)
-	if err != nil {
-		return rec, err
-	}
-	rec.Change = change.ID
-	meta, _ := json.MarshalIndent(rec, "", "  ")
-	dir, err := os.OpenRoot(filepath.Join(p.Root, profileDir, "runs"))
-	if err != nil {
-		return rec, err
-	}
-	defer dir.Close()
-	if err := writeRunFile(dir, rec.ID+".json", append(meta, '\n')); err != nil {
-		return rec, fmt.Errorf("run finished but the change-bound record could not be saved: %w", err)
-	}
-	return rec, nil
+	return runSandbox(p, task, change.ID, approve, timeout, live)
 }
