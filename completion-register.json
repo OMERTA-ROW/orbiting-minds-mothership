@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "created_at": "2026-10-22",
- "updated_at": "2026-10-24T15:20:46Z",
+ "updated_at": "2026-10-24T15:21:59Z",
  "project_name": "Evolution Mothership",
  "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
  "source_note_urls": [
@@ -145,6 +145,20 @@
      "engine adapter selection/installation",
      "engine test/profiling tooling",
      "per-feature owner approvals"
+    ]
+   },
+   {
+    "date": "2026-10-24T15:21:59Z",
+    "actor": "lovable-implementation",
+    "summary": "Owner backlog capture: deferred Omni MCP server + connector distribution requirements appended to Step 13 (authenticated interface, read-only first tools, platform submission packages/matrix, first compatible-client milestone). No MCP server, OAuth activation, endpoint deployment or platform submission started; ongoing terminal/OmniBridge work and pending approvals preserved.",
+    "tests": [
+     "python3 src/test/test_completion_register.py — register schema revalidated after append"
+    ],
+    "blocked_unchanged": [
+     "managed OAuth activation + consent route",
+     "server-enforced Guardian scopes",
+     "per-platform official requirements review",
+     "test accounts"
     ]
    }
   ]
@@ -1679,6 +1693,102 @@
      "missing_input": "Qualified independent domain/safety validation, partner/operator consent and signed hardware adapters.",
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
      "release_receipt": null
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies platform/account approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
+     "verified_scope": "None — captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; public endpoint deployment, directory submission, external distribution and publishing remain separate reviewable actions",
+     "release_receipt": null,
+     "id": "13.05",
+     "requirement": "Omni MCP interface: standards-compatible authenticated remote MCP server with supported transport/version negotiation, capability discovery, owner/project-scoped tools and resources, revocation, audit, usage limits and safe untrusted-content handling; OAuth/secure credential setup with the app's existing permissions and RLS preserved.",
+     "missing_input": "Activated managed OAuth authorization server, consent route that preserves the full return URL through sign-in and sign-up, and owner approval of the exposed capability set.",
+     "next_action": "Build only after core verification (Steps 2-4, 7); never use service-role keys, widened anonymous policies or pasted session tokens as the integration mechanism."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies platform/account approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
+     "verified_scope": "None — captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; public endpoint deployment, directory submission, external distribution and publishing remain separate reviewable actions",
+     "release_receipt": null,
+     "id": "13.06",
+     "requirement": "Initial read-only tools: list capabilities, inspect job status, retrieve authorized artifacts, prepare export. Write/publish/execute tools require appropriate explicit scopes and Guardian gates before they exist.",
+     "missing_input": "The MCP interface item above plus server-enforced Guardian scope checks and per-scope owner grants.",
+     "next_action": "Read-only tools first; each privileged tool is a separately reviewed scope with audit and revocation evidence."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies platform/account approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
+     "verified_scope": "None — captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; public endpoint deployment, directory submission, external distribution and publishing remain separate reviewable actions",
+     "release_receipt": null,
+     "id": "13.07",
+     "requirement": "Platform connector distribution: per-platform client setup and connector/app submission packages prepared only after checking each platform's current official requirements; compatibility/support matrix distinguishing private connection tested vs submitted vs directory approved; privacy/support docs, domain-ownership requirements, test accounts and reproducible client acceptance tests.",
+     "missing_input": "Each platform's current official requirements reviewed at submission time; test accounts; domain verification where the platform requires it.",
+     "next_action": "Never claim all AIs connected; record exact hosting/auth/client-registration prerequisites rather than inventing platform approvals. No purchases or credential collection in chat."
+    },
+    {
+     "status": "Deferred",
+     "owner": "Lovable implementation when unblocked; founder supplies platform/account approvals",
+     "dependencies": [
+      "02",
+      "03",
+      "04",
+      "07"
+     ],
+     "changed_files": [],
+     "commit": null,
+     "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
+     "verified_scope": "None — captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
+     "test_command": null,
+     "test_result": "No tests run; item is a deferred requirement, not implemented work.",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "release_status": "Not released; public endpoint deployment, directory submission, external distribution and publishing remain separate reviewable actions",
+     "release_receipt": null,
+     "id": "13.08",
+     "requirement": "First MCP milestone: one compatible client discovers tools and completes an authorized read-only job/artifact lookup, with cross-user denial and revocation tests passing.",
+     "missing_input": "All interface and read-only tool items above; a real test client and test accounts.",
+     "next_action": "Attempt only after the authenticated interface is verified; record client, transport and denial/revocation evidence in this register."
     }
    ]
   },
@@ -2156,6 +2266,13 @@
     "13"
    ],
    "source": "All three retained blueprint parts and roadmap.md family disposition"
+  },
+  {
+   "family": "Omni MCP server and connector distribution to other agent platforms",
+   "steps": [
+    "13"
+   ],
+   "note": "Captured 2026-10-24 as deferred later-phase work after core verification; public endpoint deployment, directory submission and external distribution remain separate reviewable actions."
   }
  ],
  "next_unmet_feasible": "Step 2: defined owner settings/consent records or remaining account lifecycle acceptance; real inbox/OAuth/embedded-storage tests require secure owner action. Do not begin unrelated new demo pages.",
