@@ -50,7 +50,7 @@ export function useSpeechInput(onTranscript: (text: string) => void) {
       let finalText = "";
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
-        if (result.isFinal && result[0]) finalText += result[0].transcript;
+        if (result?.isFinal && result[0]) finalText += result[0].transcript;
       }
       if (finalText.trim()) callback.current(finalText.trim());
     };

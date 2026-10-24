@@ -72,7 +72,7 @@ describe("useSpeechInput", () => {
     setCtor("SpeechRecognition");
     const h = renderHook(() => useSpeechInput(vi.fn()));
     act(() => h.result.current.start());
-    act(() => FakeRecognition.instances[0].onerror?.({ error: "not-allowed" }));
+    act(() => FakeRecognition.instances[0]!.onerror?.({ error: "not-allowed" }));
     expect(h.result.current.state).toBe("error");
     expect(h.result.current.error).toContain("permission");
     h.unmount();
@@ -83,7 +83,7 @@ describe("useSpeechInput", () => {
     const h = renderHook(() => useSpeechInput(vi.fn()));
     act(() => h.result.current.start());
     h.unmount();
-    expect(FakeRecognition.instances[0].aborted).toBe(true);
+    expect(FakeRecognition.instances[0]!.aborted).toBe(true);
   });
 
   it("detects the webkit-prefixed constructor", () => {
