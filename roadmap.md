@@ -85,6 +85,14 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] **First game milestone (10.11):** one small playable scene with movement, one interaction, save/load, actual build and recorded test evidence. Multiplayer separately gated later; ancient-Egypt "Anomaly" concept is a future target project only, not a rebuild/publish instruction.
 - Gated behind verified terminal/project routing, sandbox execution and Guardian controls; each future feature needs a supported processing adapter, real usable output, provenance and acceptance tests. Software-development advanced features were mentioned but not specified — scope not invented. No deployment, purchase, publishing or provider connection authorized by this capture.
 
+
+## Deferred Step 13 backlog — Omni MCP & connector distribution, captured 2026-10-24 (not started)
+- [ ] **MCP interface (13.05):** standards-compatible authenticated remote MCP server — transport/version negotiation, capability discovery, owner/project-scoped tools/resources, revocation, audit, limits, safe untrusted-content handling; OAuth/secure credentials, existing RLS preserved.
+- [ ] **Read-only first tools (13.06):** list capabilities, job status, authorized artifact retrieval, export preparation; write/publish/execute tools need explicit scopes + Guardian gates.
+- [ ] **Platform distribution (13.07):** per-platform client setup/submission packages only after checking current official requirements; compatibility matrix (private tested vs submitted vs directory approved); privacy/support docs, domain ownership, test accounts, reproducible client acceptance tests. Never claim all AIs connected.
+- [ ] **First milestone (13.08):** one compatible client discovers tools and completes an authorized read-only job/artifact lookup, with cross-user denial/revocation tests.
+- Public endpoint deployment, directory submission, external distribution and publishing remain separate reviewable actions; no purchases or credential collection in chat.
+
 ## Exact open gates and secure owner actions
 - [ ] **Repository/branch** — inspect Project settings → Git; select exact CLI repository/destination and source license. Agent cannot verify UI Git sync or create/push a review branch with current internal-only access. No account-wide permission fallback.
 - [ ] **Signing** — choose Apple Developer ID, Windows certificate/Azure, selected-repo Sigstore trust identity and native runner policies. Inputs absent/unverified; use Project Settings → Secrets / CI secure secrets, never chat. No purchase or activation implied.
