@@ -26,6 +26,7 @@ type ProjectProfile struct {
 	Root      string `json:"root"`
 	Sandbox   string `json:"sandbox"` // "local" only; "cloud" is BLOCKED until a sandbox service exists
 	CreatedAt string `json:"created_at"`
+	Template  string `json:"template,omitempty"` // starter folder shape: game, video, blank or "" for pre-existing dirs
 }
 
 const profileDir = ".evolution"
