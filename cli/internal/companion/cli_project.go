@@ -23,8 +23,8 @@ func flags(args []string, valued map[string]bool) (map[string]string, []string, 
 				}
 				i++
 				f[a] = args[i]
-			} else if a == "--approve" || a == "--json" {
-				f[a] = "1"
+		} else if a == "--approve" || a == "--json" || a == "--move" || a == "--keep" {
+			f[a] = "1"
 			} else {
 				return nil, nil, false
 			}
@@ -47,11 +47,15 @@ func emit(out io.Writer, asJSON bool, v any, text string) int {
 }
 
 func runProject(args []string, out, errOut io.Writer) int {
-	f, pos, ok := flags(args, map[string]bool{"--dir": true, "--project": true})
+	f, pos, ok := flags(args, map[string]bool{"--dir": true, "--project": true, "--template": true})
 	if !ok || len(pos) < 1 {
 		return invalid(errOut)
 	}
 	switch pos[0] {
+	case "new":
+		return runProjectNew(append([]string{pos[1]}^[:0:0], pos[1:]...), out, errOut)
+	case "open":
+		return runProjectOpen(args, out, errOut)
 	case "use":
 		if len(pos) != 2 {
 			return invalid(errOut)
