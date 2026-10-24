@@ -31,11 +31,16 @@ class FakeRecognition {
   }
 }
 
+const win = window as unknown as Record<string, unknown>;
+const setCtor = (key: "SpeechRecognition" | "webkitSpeechRecognition") => {
+  win[key] = FakeRecognition;
+};
+
 describe("useSpeechInput", () => {
   afterEach(() => {
     FakeRecognition.instances = [];
-    delete (window as Record<string, unknown>).SpeechRecognition;
-    delete (window as Record<string, unknown>).webkitSpeechRecognition;
+    delete win["SpeechRecognition"];
+    delete win["webkitSpeechRecognition"];
     vi.unstubAllGlobals();
   });
 
