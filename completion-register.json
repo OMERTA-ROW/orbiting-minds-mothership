@@ -1100,6 +1100,107 @@
      "missing_input": "Enabled provider test plus exact revocable grant/limits/owner approval; no implicit send/post permission.",
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
      "release_receipt": null
+    },
+    {
+     "id": "09.05",
+     "requirement": "Provider capability matrix across social, podcast and other publishing platforms via supported official adapters: per-provider account authorization, prerequisites/API access, supported media, limits, receipt/status semantics and manual handoff where no supported route exists. Broad coverage goal, never a claim that all platforms are supported.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "09.01",
+      "09.02"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no adapter, account or platform connected.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Check each platform's current official API requirements before any adapter work; declined connections stay declined.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "09.06",
+     "requirement": "Autonomous publishing pipeline: approved source artifact to platform-specific formatting/metadata/captions/accessibility, calendar/timezone queue, policy-authorized publishing, real external receipt, then status/retry/idempotency/revoke/cancel. Queued or submitted is never labeled published.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "09.02",
+      "09.05",
+      "11.01"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; existing private draft/review/stop intentions unchanged, no external publish.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Requires a verified provider route (09.02) and owner-authorized pilot after dry-run and failure/revocation tests.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "09.07",
+     "requirement": "Revocable autonomous publishing rules: owner enables per account/content/channel rules with schedule, rate and allowed actions; anything outside rules requests human review. Audit all actions, safeguard credentials, isolate users/projects, prevent duplicate posts, respect provider policies and consent, no fake engagement or spam.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "09.04",
+      "09.06"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; reviewed preparation rules/revoke remain local, no autonomous external actions.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Server-enforced rules need backend tables and Guardian gates; explicit owner approval per rule set.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "09.08",
+     "requirement": "Podcast hosting/RSS delivery and directory submission: distinguish hosting delivery, directory submission and directory acceptance from confirmed downstream availability on each listening platform.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "11.01",
+      "11.02"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; manual RSS/WAV ZIP QA path unchanged, no hosting or submission.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Owner-selected podcast host and directory accounts; submission/acceptance evidence per directory.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
     }
    ]
   },
@@ -1519,6 +1620,81 @@
      "evidence_ref": "planning",
      "runtime_evidence": "Owner/project revision-bound draft/review/stop, audit/readback; no external post/receipt/scopes.",
      "next_action": "Filmhub package/QC/account, VEVO distributor approval, verified Vydia eligibility; no invented API/partnership/receipt.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "11.04",
+     "requirement": "Marketing strategy engine: goals/audience/brand settings, sourced market and competitor research, campaign and content strategy, repurposing, SEO, organic social, consent-based email campaigns, A/B tests, attributable conversion/ROI reporting with honest uncertainty and sample sizes, bounded optimization.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "09.05",
+      "09.06"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; saved 2026-10-21 research/plan reused, no campaign executed.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Owner brand/audience settings and approved research sources; consent basis for any email list.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "11.05",
+     "requirement": "Paid campaign adapters with separate owner-enabled budgets, spending caps and stop controls; no actual spending authorized by this capture.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "11.04"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no ad account connected and no spend.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Explicit owner budget approval per platform plus verified billing/stop controls before any pilot.",
+     "missing_input": null,
+     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "11.06",
+     "requirement": "Dry-run and failure/revocation test gate: every publishing or marketing automation proves dry-run, failure handling, revocation and duplicate-prevention tests before a real owner-authorized pilot.",
+     "status": "Deferred",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "09.06",
+      "09.07",
+      "11.04"
+     ],
+     "changed_files": [
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
+     "verified_scope": "Backlog capture only; no pilot authorized.",
+     "test_command": null,
+     "test_result": "Not run / not established",
+     "evidence_ref": "unrun",
+     "runtime_evidence": "No operational or release claim.",
+     "next_action": "Define pilot scope with the owner after a verified provider route exists.",
      "missing_input": null,
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
      "release_receipt": null
