@@ -26,6 +26,7 @@ type ProjectProfile struct {
 	Root      string `json:"root"`
 	Sandbox   string `json:"sandbox"` // "local" only; "cloud" is BLOCKED until a sandbox service exists
 	CreatedAt string `json:"created_at"`
+	Template  string `json:"template,omitempty"` // starter folder shape: game, video, blank or "" for pre-existing dirs
 }
 
 const profileDir = ".evolution"
@@ -99,7 +100,7 @@ func UseProject(name, dir string, approve bool) (ProjectProfile, error) {
 	if err := os.MkdirAll(filepath.Join(root, profileDir, "runs"), 0o700); err != nil {
 		return p, err
 	}
-	p = ProjectProfile{name, root, "local", time.Now().UTC().Format(time.RFC3339)}
+	p = ProjectProfile{name, root, "local", time.Now().UTC().Format(time.RFC3339), ""}
 	data, _ := json.MarshalIndent(p, "", "  ")
 	return p, os.WriteFile(profilePath(root), append(data, '\n'), 0o600)
 }

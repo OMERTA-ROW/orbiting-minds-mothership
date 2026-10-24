@@ -98,6 +98,7 @@ export function Companion() {
             { id: "value", label: "Access & measured value" },
             { id: "estimate", label: "AI cost estimator" },
             { id: "discover", label: "Private local discovery" },
+            { id: "workspace", label: "Workspace & folders" },
             { id: "architecture", label: "Architecture & release gates" },
           ].map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="min-h-11 whitespace-normal">
@@ -295,6 +296,55 @@ export function Companion() {
         </TabsContent>
         <TabsContent value="estimate" className="pt-8"><CostEstimator /></TabsContent>
         <TabsContent value="discover" className="pt-8"><LocalDiscovery /></TabsContent>
+        <TabsContent value="workspace" className="pt-8">
+          <section aria-label="Local project workspace" className="min-w-0">
+            <p className="eyebrow">Local only / explicit approval / no browser access</p>
+            <h2 className="mt-4 text-3xl">One workspace. A real folder per project.</h2>
+            <p className="mt-5 max-w-3xl text-sm leading-7 text-muted-foreground">
+              The offline companion source can create a local workspace — by default an{" "}
+              <span className="text-gold-light">Omni Projects</span> folder on your actual Desktop
+              (OneDrive-redirected Desktops are detected; a custom directory is supported) — and one
+              real folder per project with fixed starter subfolders.{" "}
+              <span className="text-warning">
+                This website cannot create, see or open folders on your device.
+              </span>{" "}
+              Every command below runs only in your own terminal from source you build yourself.
+            </p>
+            <div className="mt-7 grid gap-8 md:grid-cols-2">
+              <div>
+                <h3 className="text-xl">Set up and inspect</h3>
+                <pre className="mt-4 whitespace-pre-wrap break-words border-y border-border py-4 font-mono text-xs leading-7 text-gold-light">
+                  {"SOURCE-ONLY REFERENCE · NOT AN INSTALL COMMAND\nevolution workspace init --approve\nevolution workspace init --dir <your-folder> --approve\nevolution workspace status\nevolution workspace set --dir <new-folder> --move --approve\nevolution workspace set --dir <new-folder> --keep --approve"}
+                </pre>
+                <p className="mt-4 text-xs leading-7 text-muted-foreground">
+                  Init prints the actual location it created and saves the choice in a per-user
+                  config file — never in shell startup files. Changing the workspace explicitly
+                  offers <span className="text-gold-light">--move</span> (relocate existing projects,
+                  refusing collisions and cross-device moves) or{" "}
+                  <span className="text-gold-light">--keep</span> (leave them where they are). Status
+                  shows the current project and the exact folder where outputs are saved.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-xl">Create and open projects</h3>
+                <pre className="mt-4 whitespace-pre-wrap break-words border-y border-border py-4 font-mono text-xs leading-7 text-gold-light">
+                  {"evolution project new anomaly --template game --approve\nevolution project new documentary --template video --approve\nevolution project open --project <dir> --approve"}
+                </pre>
+                <p className="mt-4 text-xs leading-7 text-muted-foreground">
+                  Game template: Code, Game Assets, Audio, Builds, Exports. Video template: Footage,
+                  Music, Edits, Finished Videos. Existing names are refused — nothing is silently
+                  overwritten — and path traversal or symlink escapes are rejected. Open uses your
+                  platform's file manager only where a supported opener exists, and says so plainly
+                  when it does not.
+                </p>
+                <p className="mt-4 text-xs leading-7 text-warning">
+                  No signed download exists yet: these commands are implemented and tested in
+                  unreleased source, not installed on your machine by this project.
+                </p>
+              </div>
+            </div>
+          </section>
+        </TabsContent>
         <TabsContent value="architecture" className="pt-8">
           <section>
             <p className="eyebrow">Source scaffold / not a release service</p>

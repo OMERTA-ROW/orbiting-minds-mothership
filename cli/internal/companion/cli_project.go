@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,8 +24,8 @@ func flags(args []string, valued map[string]bool) (map[string]string, []string, 
 				}
 				i++
 				f[a] = args[i]
-			} else if a == "--approve" || a == "--json" {
-				f[a] = "1"
+		} else if a == "--approve" || a == "--json" || a == "--move" || a == "--keep" {
+			f[a] = "1"
 			} else {
 				return nil, nil, false
 			}
@@ -47,11 +48,47 @@ func emit(out io.Writer, asJSON bool, v any, text string) int {
 }
 
 func runProject(args []string, out, errOut io.Writer) int {
-	f, pos, ok := flags(args, map[string]bool{"--dir": true, "--project": true})
+	f, pos, ok := flags(args, map[string]bool{"--dir": true, "--project": true, "--template": true})
 	if !ok || len(pos) < 1 {
 		return invalid(errOut)
 	}
 	switch pos[0] {
+	case "new":
+		if len(pos) != 2 {
+			return invalid(errOut)
+		}
+		template := f["--template"]
+		if template == "" {
+			template = "blank"
+		}
+		c, err := loadWorkspace()
+		if err != nil {
+			fmt.Fprintln(errOut, err)
+			return 1
+		}
+		p, created, err := NewWorkspaceProject(c, pos[1], template, f["--approve"] == "1")
+		if err != nil {
+			fmt.Fprintln(errOut, "Project not created:", err)
+			return 1
+		}
+		text := fmt.Sprintf("Project %q created at %s (template %s).\nSaved outputs for this project live exactly under %s.\nCreated folders: %s", p.Name, p.Root, templateLabel(p.Template), p.Root, strings.Join(created, ", "))
+		return emit(out, f["--json"] == "1", p, text)
+	case "open":
+		if len(pos) != 1 {
+			return invalid(errOut)
+		}
+		p, err := LoadProject(f["--project"])
+		if err != nil {
+			fmt.Fprintln(errOut, err)
+			return 1
+		}
+		opened, err := OpenProjectFolder(p, f["--approve"] == "1")
+		if err != nil {
+			fmt.Fprintln(errOut, "Open folder blocked:", err)
+			return 1
+		}
+		fmt.Fprintf(out, "Opened %s in your file manager.\n", opened)
+		return 0
 	case "use":
 		if len(pos) != 2 {
 			return invalid(errOut)
