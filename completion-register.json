@@ -174,7 +174,13 @@
      "hosting/provider decision"
     ]
    }
-  ]
+  ],
+  "cli-workspace": {
+   "command": "cd cli && go vet ./... && go test -race -count=1 ./...",
+   "result": "Passed: vet clean; race-enabled suite ok (53.4s) with 6 new workspace tests covering persistence, custom paths, redirected Desktop, templates, collisions, traversal/symlink refusal, move/keep and opener approval.",
+   "runtime": "Isolated sandbox temp directories on Linux/amd64; no user device touched, no install, no network.",
+   "passed": true
+  }
  },
  "steps": [
   {
@@ -854,6 +860,40 @@
      "next_action": "First milestone: one small reproducible defect -> isolated fix -> meaningful regression test passing -> reviewed diff and rollback, with recorded evidence; requires the authorized test repository from 06.01.",
      "missing_input": null,
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "06.06",
+     "requirement": "OMNI project workspace/folders in the offline Go companion: default local workspace at an 'Omni Projects' folder on the owner's real Desktop (OneDrive-redirected Desktop detected, custom --dir supported), actual location shown during setup, choice persisted in per-user config; per-project directories with fixed templates (game: Code, Game Assets, Audio, Builds, Exports; video: Footage, Music, Edits, Finished Videos); reuse of .evolution/project.json tracking; current project and exact saved output location shown; Open project folder via the platform file manager where a supported opener exists; workspace changes explicitly offer --move (collision-refusing, same-filesystem) or --keep; path traversal, symlink escapes, collisions and silent overwrites refused; browser/cloud UI honestly states it cannot create local folders.",
+     "status": "Verified working",
+     "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
+     "dependencies": [
+      "06.03"
+     ],
+     "changed_files": [
+      "cli/internal/companion/workspace.go",
+      "cli/internal/companion/workspace_test.go",
+      "cli/internal/companion/cli_workspace.go",
+      "cli/internal/companion/cli_project.go",
+      "cli/internal/companion/commands.go",
+      "cli/internal/companion/project.go",
+      "cli/README.md",
+      "src/components/cli/Companion.tsx",
+      "src/data/evolution.ts",
+      "AGENTS.md",
+      "completion-register.json",
+      "roadmap.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. The separate github.com/street-Tech666/Omni copy is not auto-synced; reconcile without force pushes when the owner requests it.",
+     "verified_scope": "Local source only: workspace init/status/set, project new/open, default/custom Desktop resolution, persistence, templates, conflict/symlink/traversal refusal and move/keep relocation, all in sandbox temp directories. Not installed on any device; no signed distribution.",
+     "test_command": "cd cli && go vet ./... && go test -race -count=1 ./...",
+     "test_result": "Passed: go vet clean; full suite with race detector ok (53.4s) including 6 new workspace tests (default/custom persistence, OneDrive-redirected Desktop detection, relative/symlink refusal, game+video templates, name-collision and traversal refusal, move/keep with content preservation and destination-collision pre-flight, opener approval gate).",
+     "evidence_ref": "cli-workspace",
+     "runtime_evidence": "Real folder creation, config persistence and relocation exercised in isolated temp dirs on Linux/amd64; browser UI (Platform page Workspace tab) labels local-only honestly and performs no file operations.",
+     "next_action": "Native macOS/Windows opener and Desktop-redirect behavior need host tests before any distribution; reconcile with the separate GitHub copy only on owner request.",
+     "missing_input": null,
+     "release_status": "Not released; unsigned source prototype only, nothing installed or published",
      "release_receipt": null
     }
    ]
