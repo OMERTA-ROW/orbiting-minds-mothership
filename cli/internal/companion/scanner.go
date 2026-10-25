@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
-	"time"
 )
 
 type ScannerInfo struct {

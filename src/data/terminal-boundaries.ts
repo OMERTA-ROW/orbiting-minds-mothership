@@ -86,7 +86,7 @@ export const maintenanceCommands = [
     command: "evolution malware scan --project <dir> --device local",
     state: "BLOCKED",
     detail:
-      "No enrolled scan capability or verified real scanner here. Fixed-argument adapter tested with disposable process fixtures only.",
+      "No enrolled scan capability or verified real scanner here. Fixed-argument prototype exists only in tests; no scanner execution compiled into the source binary.",
   },
   {
     command: "evolution malware status",

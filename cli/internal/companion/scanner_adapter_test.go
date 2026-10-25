@@ -52,6 +52,9 @@ func scanSelectedFile(ctx context.Context, p ProjectProfile, device, relative, e
 	err = version.Run()
 	cleanup()
 	if err != nil {
+		if runCtx.Err()==context.Canceled{e.Result="VERSION CANCELLED: no file scan started";return e,nil}
+		if runCtx.Err()==context.DeadlineExceeded{e.Result="VERSION TIMED OUT: no file scan started";return e,nil}
+		e.Result="VERSION ERROR: no file scan started"
 		return e, errors.New("scanner version unavailable; no file scan started")
 	}
 	clean, _ := RedactSecrets(versionBuf.Bytes())
