@@ -1,0 +1,18 @@
+/** Manually researched official snapshots, not live legal research or applicability determinations. */
+export type LegalSource = {
+  id: string; title: string; url: string; jurisdiction: string;
+  status: "effective-rule" | "enacted-statute" | "official-guidance" | "proposal";
+  retrievedAt: string; effectiveDate: string | null; effectiveNote: string; summary: string;
+};
+
+export const legalSources: LegalSource[] = [
+  { id: "frcp-5.2", title: "FRCP 5.2 · Privacy protection", url: "https://www.uscourts.gov/sites/default/files/document/federal-rules-of-civil-procedure.pdf", jurisdiction: "US federal district court · civil", status: "effective-rule", retrievedAt: "2026-10-25", effectiveDate: null, effectiveNote: "Official compilation effective December 1, 2025; rule-specific amendment/effective date not verified.", summary: "Covered filings generally limit taxpayer/SSN and financial account numbers to last four digits, birth dates to year, and minors' names to initials. Exceptions and court orders require human review." },
+  { id: "frcp-10", title: "FRCP 10 · Form of pleadings", url: "https://www.uscourts.gov/sites/default/files/document/federal-rules-of-civil-procedure.pdf", jurisdiction: "US federal district court · civil", status: "effective-rule", retrievedAt: "2026-10-25", effectiveDate: null, effectiveNote: "Official compilation effective December 1, 2025; rule-specific amendment/effective date not verified.", summary: "Pleading captions include court, title, file number and Rule 7(a) designation. Use numbered paragraphs and separate counts when clarity requires. This template is not a court-approved form." },
+  { id: "frcp-11", title: "FRCP 11 · Human signature & representations", url: "https://www.uscourts.gov/sites/default/files/document/federal-rules-of-civil-procedure.pdf", jurisdiction: "US federal district court · civil", status: "effective-rule", retrievedAt: "2026-10-25", effectiveDate: null, effectiveNote: "Official compilation effective December 1, 2025; rule-specific amendment/effective date not verified.", summary: "The responsible attorney or unrepresented party signs and makes the required representations after reasonable inquiry. Omni supplies no signature or factual/legal certification." },
+  { id: "local-rules", title: "U.S. Courts · Current & local rules", url: "https://www.uscourts.gov/forms-rules/current-rules-practice-procedure", jurisdiction: "US federal courts", status: "official-guidance", retrievedAt: "2026-10-25", effectiveDate: "2025-12-01", effectiveNote: "Page identifies the national compilation in effect from December 1, 2025; local rules and pending proposals have separate dates.", summary: "National rules do not replace court-specific local rules, standing orders or filing procedures. Pending/proposed amendments are not treated as effective rules." },
+  { id: "court-directory", title: "U.S. Courts · Find a court", url: "https://www.uscourts.gov/about-federal-courts/federal-courts-public/court-website-links", jurisdiction: "US federal courts", status: "official-guidance", retrievedAt: "2026-10-25", effectiveDate: null, effectiveNote: "Directory has no rule effective date; chosen court and current local rules still require review.", summary: "Identify the exact court's official site before reviewing its current rules and electronic filing instructions." },
+];
+
+export function effectiveSources(sources: LegalSource[]) {
+  return sources.filter((s) => s.status === "effective-rule" || s.status === "enacted-statute");
+}
