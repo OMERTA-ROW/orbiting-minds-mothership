@@ -1,7 +1,7 @@
 /** Rights workspace (local). Organises matters; never files, pays, signs or sends. Not legal advice or representation. */
 export type Module = "copyright" | "trademark" | "copywriting";
 export type MatterState = "prepared" | "submitted" | "receipt-confirmed" | "pending-action" | "registered";
-export type RightsFile = { name: string; sha256: string; folder: "Originals" | "Evidence" | "Specimens" | "Drafts" | "Submitted" | "Receipts" | "Certificates" | "Correspondence"; sourceUrl?: string; capturedAt?: string; mockup?: boolean };
+export type RightsFile = { name: string; sha256: string; folder: "Originals" | "Evidence" | "Specimens" | "Drafts" | "Submitted" | "Receipts" | "Certificates" | "Correspondence"; sourceUrl?: string | undefined; capturedAt?: string | undefined; mockup?: boolean | undefined };
 export type Contribution = { who: string; kind: "human" | "ai"; part: string };
 export type Matter = {
   id: string; clientId: string; module: Module; title: string; mark?: string; goods?: string; jurisdiction: "US";
