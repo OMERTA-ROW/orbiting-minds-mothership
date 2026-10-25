@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { digestText } from "@/lib/omni-marketing";
 import { CATEGORIES, COMPANION_REQUIRED, INTAKE_KEY, MAX_FILES, MAX_FILE_BYTES, classify, importInto, loadIntake, recategorize, saveIntake, type Category, type IntakeProject } from "@/lib/omni-intake";
 
 async function hashFile(file: File) {
   const buf = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-void digestText;
 
 export function OmniIntake() {
   const [projects, setProjects] = useState<IntakeProject[]>([]);
