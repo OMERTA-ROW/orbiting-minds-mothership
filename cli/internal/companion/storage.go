@@ -103,6 +103,7 @@ func excludedStoragePath(relative string, directory bool) bool {
 func ReportStorage(ctx context.Context, p ProjectProfile, device string, now time.Time) (StorageReport, error) {
 	r := StorageReport{Version: 1, Device: device, Project: p.Name, Root: p.Root, At: now.UTC().Format(time.RFC3339Nano), CategoryBytes: map[string]int64{"cache":0,"temp":0,"other":0}, LargeFiles: []StorageFile{}, Candidates: []StorageFile{}, Boundary: storageNativeBoundary, Complete: true}
 	if err := maintenanceTarget(p, device); err != nil { return r, err }
+	if stat,err:=os.Lstat(p.Root);err!=nil||!safeStorageOwner(stat){return r,errors.New("selected project ownership/permissions adapter unavailable or unsafe")}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second); defer cancel()
 	root, err := os.OpenRoot(p.Root); if err != nil { return r, errors.New("selected project unavailable") }; defer root.Close()
 	queue := []string{"."}; entries := 0
@@ -116,7 +117,7 @@ func ReportStorage(ctx context.Context, p ProjectProfile, device string, now tim
 		for {
 			batch, readErr := dir.ReadDir(128)
 			for _, entry := range batch {
-				entries++; if entries>storageMaxEntries { dir.Close(); r.Complete=false; return finishStorageReport(r,p),nil }
+				entries++; if entries>storageMaxEntries { dir.Close(); r.Complete=false; if err:=validateCurrentProject(p);err!=nil{return r,err};return finishStorageReport(r,p),nil }
 				if ctx.Err()!=nil { dir.Close(); return r, errors.New("storage report cancelled or exceeded 10 seconds") }
 				name:=path.Join(rel,entry.Name()); stat, err:=root.Lstat(name)
 				if err!=nil || stat.Mode()&os.ModeSymlink!=0 || excludedStoragePath(name,stat.IsDir()) || !safeStorageOwner(stat) { r.ExcludedEntries++; continue }

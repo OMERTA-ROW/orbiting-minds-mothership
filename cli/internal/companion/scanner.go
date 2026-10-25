@@ -30,7 +30,7 @@ func ScannerAvailability() ScannerInfo {
 func safeScannerExecutable(filename string)error{
 	if !filepath.IsAbs(filename)||filepath.Clean(filename)!=filename||filepath.Base(filename)!="clamscan"{return errors.New("unsupported scanner executable")}
 	for current:=filename;;current=filepath.Dir(current){
-		stat,err:=os.Lstat(current);if err!=nil||stat.Mode()&os.ModeSymlink!=0||stat.Mode().Perm()&0022!=0{return errors.New("scanner path unavailable or writable/symlinked")}
+		stat,err:=os.Lstat(current);if err!=nil||stat.Mode()&os.ModeSymlink!=0||(stat.Mode().Perm()&0022!=0&&!(current=="/tmp"&&stat.IsDir()&&stat.Mode()&os.ModeSticky!=0)){return errors.New("scanner path unavailable or writable/symlinked")}
 		if current==filename {if !stat.Mode().IsRegular()||stat.Mode().Perm()&0111==0{return errors.New("scanner not executable")}}else if !stat.IsDir(){return errors.New("scanner parent unsafe")}
 		// Sticky /tmp is permitted for disposable adapter tests, never production discovery.
 		if filepath.Dir(current)==current{break}

@@ -347,8 +347,8 @@ export function Companion() {
             </div>
           </section>
         </TabsContent>
+        <TabsContent value="maintenance" className="pt-8"><Maintenance /></TabsContent>
         <TabsContent value="architecture" className="pt-8">
-          <MaintenanceArchitectureSpacer />
           <section>
             <p className="eyebrow">Source scaffold / not a release service</p>
             <h2 className="mt-4 text-3xl">Small executable. Explicit trust.</h2>
