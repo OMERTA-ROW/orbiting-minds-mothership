@@ -242,7 +242,7 @@ func Run(args []string, invoked string, out, errOut io.Writer) int {
 	case "guardian":
 		return runGuardian(args[1:], out, errOut)
 	case "device", "storage", "malware", "operation", "terminal":
-		return runMaintenance(command,args[1:],out,errOut)
+		return runMaintenance(command, args[1:], out, errOut)
 	case "release":
 		return runRelease(args[1:], out, errOut)
 	case "omni":

@@ -4,15 +4,72 @@ import { Button } from "@/components/ui/button";
 import { maintenanceCommands, terminalBoundaries } from "@/data/terminal-boundaries";
 
 export function Maintenance() {
-  return <section aria-label="Terminal maintenance and security" className="min-w-0">
-    <p className="eyebrow">Local development source / read-only first</p>
-    <h2 className="mt-4 text-3xl">Device care. Explicit boundaries.</h2>
-    <p className="mt-5 max-w-3xl text-sm leading-7 text-muted-foreground">This browser has no enrolled device or local companion connection. Linux source can report selected-project storage metadata and prepare cache/temp review plans; cleanup and real malware scans remain blocked. No owner-device scan or cleanup was performed.</p>
-    <div className="mt-6 flex flex-wrap gap-3"><Button variant="outline" disabled className="h-auto min-h-11 whitespace-normal"><LockKeyhole size={16} />Device access · not connected</Button><Button asChild variant="signal"><Link to="/guardian"><Shield size={16} />Guardian evidence<ArrowUpRight size={16} /></Link></Button></div>
-    <div className="mt-8 divide-y divide-border border-y border-border">{maintenanceCommands.map(item => <div key={item.command} className="py-5"><p className="font-mono text-[10px] text-warning">{item.state}</p><code className="mt-3 block break-all text-xs text-gold-light">{item.command}</code><p className="mt-3 max-w-3xl text-xs leading-7 text-muted-foreground">{item.detail}</p></div>)}</div>
-    <p className="mt-6 max-w-3xl text-xs leading-7 text-warning">Plans exclude personal documents/media, credentials, application data, backups, trash, system paths, unsafe permissions and links. Recent modification is only an activity hint; no reliable open-file lock check exists. Without supported safe trash and recovery, apply changes nothing.</p>
-    <h3 className="mt-10 text-2xl">Terminal coverage in this project</h3>
-    <div className="mt-6 divide-y divide-border">{terminalBoundaries.map(item => <div key={item.name} className="py-6"><p className="font-mono text-[10px] text-warning">{item.status}</p><h4 className="mt-3 text-lg">{item.name}</h4><p className="mt-2 break-words font-mono text-[10px] text-gold-light">{item.location}</p><p className="mt-3 max-w-3xl text-xs leading-7 text-muted-foreground">{item.access}</p></div>)}</div>
-    <div className="mt-8 border-t border-border pt-6"><h3 className="text-xl">Not automatically covered</h3><p className="mt-4 max-w-3xl text-xs leading-7 text-muted-foreground">github.com/street-Tech666/Omni is a separate copy, not synchronized or updated here. evoomni.tech, www.evoomni.tech and the existing published Lovable site were not redeployed or disruptively tested. No other website, repository or terminal inherits these controls.</p><p className="mt-4 max-w-3xl text-xs leading-7 text-muted-foreground">Required before device activation: signed scoped companion enrollment, server-validated owner/device/project permissions, expiring capabilities and revocation, confirmed durable rate limits, protected audit, supported trash/recovery and native scanner evidence. No standard backend limiter exists. macOS/Windows adapters and native permission/cancel checks remain unverified; iOS/Android browser terminals cannot scan other apps or manage device storage.</p></div>
-  </section>;
+  return (
+    <section aria-label="Terminal maintenance and security" className="min-w-0">
+      <p className="eyebrow">Local development source / read-only first</p>
+      <h2 className="mt-4 text-3xl">Device care. Explicit boundaries.</h2>
+      <p className="mt-5 max-w-3xl text-sm leading-7 text-muted-foreground">
+        This browser has no enrolled device or local companion connection. Linux source can report
+        selected-project storage metadata and prepare cache/temp review plans; cleanup and real
+        malware scans remain blocked. No owner-device scan or cleanup was performed.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Button variant="outline" disabled className="h-auto min-h-11 whitespace-normal">
+          <LockKeyhole size={16} />
+          Device access · not connected
+        </Button>
+        <Button asChild variant="signal">
+          <Link to="/guardian">
+            <Shield size={16} />
+            Guardian evidence
+            <ArrowUpRight size={16} />
+          </Link>
+        </Button>
+      </div>
+      <div className="mt-8 divide-y divide-border border-y border-border">
+        {maintenanceCommands.map((item) => (
+          <div key={item.command} className="py-5">
+            <p className="font-mono text-[10px] text-warning">{item.state}</p>
+            <code className="mt-3 block break-all text-xs text-gold-light">{item.command}</code>
+            <p className="mt-3 max-w-3xl text-xs leading-7 text-muted-foreground">{item.detail}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-6 max-w-3xl text-xs leading-7 text-warning">
+        Plans exclude personal documents/media, credentials, application data, backups, trash,
+        system paths, unsafe permissions and links. Recent modification is only an activity hint; no
+        reliable open-file lock check exists. Without supported safe trash and recovery, apply
+        changes nothing.
+      </p>
+      <h3 className="mt-10 text-2xl">Terminal coverage in this project</h3>
+      <div className="mt-6 divide-y divide-border">
+        {terminalBoundaries.map((item) => (
+          <div key={item.name} className="py-6">
+            <p className="font-mono text-[10px] text-warning">{item.status}</p>
+            <h4 className="mt-3 text-lg">{item.name}</h4>
+            <p className="mt-2 break-words font-mono text-[10px] text-gold-light">
+              {item.location}
+            </p>
+            <p className="mt-3 max-w-3xl text-xs leading-7 text-muted-foreground">{item.access}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-8 border-t border-border pt-6">
+        <h3 className="text-xl">Not automatically covered</h3>
+        <p className="mt-4 max-w-3xl text-xs leading-7 text-muted-foreground">
+          github.com/street-Tech666/Omni is a separate copy, not synchronized or updated here.
+          evoomni.tech, www.evoomni.tech and the existing published Lovable site were not redeployed
+          or disruptively tested. No other website, repository or terminal inherits these controls.
+        </p>
+        <p className="mt-4 max-w-3xl text-xs leading-7 text-muted-foreground">
+          Required before device activation: signed scoped companion enrollment, server-validated
+          owner/device/project permissions, expiring capabilities and revocation, confirmed durable
+          rate limits, protected audit, supported trash/recovery and native scanner evidence. No
+          standard backend limiter exists. macOS/Windows adapters and native permission/cancel
+          checks remain unverified; iOS/Android browser terminals cannot scan other apps or manage
+          device storage.
+        </p>
+      </div>
+    </section>
+  );
 }

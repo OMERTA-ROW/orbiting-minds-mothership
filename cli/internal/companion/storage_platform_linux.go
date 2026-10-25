@@ -9,7 +9,9 @@ import (
 
 func storageFree(root string) (*uint64, string) {
 	var stat syscall.Statfs_t
-	if syscall.Statfs(root, &stat) != nil || stat.Bsize <= 0 { return nil, "UNAVAILABLE" }
+	if syscall.Statfs(root, &stat) != nil || stat.Bsize <= 0 {
+		return nil, "UNAVAILABLE"
+	}
 	bytes := stat.Bavail * uint64(stat.Bsize)
 	return &bytes, "Linux filesystem available bytes; not cleanup savings"
 }
