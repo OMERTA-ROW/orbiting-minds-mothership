@@ -15,6 +15,7 @@ export const navItems = [
   { to: "/command-nexus", label: "Command Nexus · Demo" },
   { to: "/omnibridge", label: "OmniBridge · Demo" },
   { to: "/omni", label: "OMNI Assistant · Demo" },
+  { to: "/omni-marketing", label: "OMNI Marketing · Local" },
   { to: "/entertainment", label: "Entertainment Galaxy · Demo" },
   { to: "/cartoon-galaxy", label: "Cartoon Galaxy · Demo" },
   { to: "/pathway", label: "AI Pathway" },
