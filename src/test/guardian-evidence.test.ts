@@ -112,9 +112,19 @@ describe("Guardian offline evidence validation, never authorization", () => {
   });
   it("identifies authorization without result as unknown, not success", async () => {
     const id = "20261025T161500Z-0123456789ab";
-    const first = await signedEvent({ rule: "task-authorization", action: "AUTHORIZED", evidence: `Run ${id}; authorization only.` });
+    const first = await signedEvent({
+      rule: "task-authorization",
+      action: "AUTHORIZED",
+      evidence: `Run ${id}; authorization only.`,
+    });
     expect(unresolvedGuardianRuns([first])).toEqual([id]);
-    const second = await signedEvent({ sequence: 2, previous: first.sha256, rule: "task-result", action: "FAILED", evidence: `Run ${id}; actual failure.` });
+    const second = await signedEvent({
+      sequence: 2,
+      previous: first.sha256,
+      rule: "task-result",
+      action: "FAILED",
+      evidence: `Run ${id}; actual failure.`,
+    });
     expect(unresolvedGuardianRuns([first, second])).toEqual([]);
   });
 });

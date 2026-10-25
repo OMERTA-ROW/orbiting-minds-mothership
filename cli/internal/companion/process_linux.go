@@ -21,7 +21,9 @@ func containProcess(cmd *exec.Cmd) func() {
 		}
 		once.Do(func() {
 			killErr = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-			if killErr == syscall.ESRCH { killErr = os.ErrProcessDone }
+			if killErr == syscall.ESRCH {
+				killErr = os.ErrProcessDone
+			}
 		})
 		return killErr
 	}
