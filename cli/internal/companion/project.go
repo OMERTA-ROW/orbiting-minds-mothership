@@ -313,7 +313,7 @@ func runSandboxContext(parent context.Context, p ProjectProfile, task, changeID 
 	default:
 		rec.Result = "PASSED"
 	}
-	if err := recordSecurity(p, "info", "task-result", rec.Result, "Fixed local task completed with recorded exit status; containment boundary: "+processBoundary+"."); err != nil { return rec, err }
+	if err := recordSecurity(p, "info", "task-result", rec.Result, fmt.Sprintf("Run %s; exit %d; containment boundary: %s.", rec.ID, rec.ExitCode, processBoundary)); err != nil { return rec, err }
 	if err := validateProjectRoot(p.Root); err != nil {
 		return rec, err
 	}

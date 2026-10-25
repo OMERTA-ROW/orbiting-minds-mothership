@@ -144,6 +144,7 @@ func newChangeID() (string, error) {
 // ChangeNew records a reviewable baseline snapshot inside the project only.
 func ChangeNew(p ProjectProfile, summary string, approve bool) (ChangeRecord, error) {
 	var rec ChangeRecord
+	if err := validateCurrentProject(p); err != nil { return rec, err }
 	if !approve {
 		return rec, errors.New("add --approve to record a change proposal in that project")
 	}
@@ -185,6 +186,7 @@ func ChangeNew(p ProjectProfile, summary string, approve bool) (ChangeRecord, er
 // proposals that belong to a different project profile.
 func LoadChange(p ProjectProfile, id string) (ChangeRecord, error) {
 	var rec ChangeRecord
+	if err := validateCurrentProject(p); err != nil { return rec, err }
 	if !changeIDPattern.MatchString(id) {
 		return rec, errors.New("invalid change identifier")
 	}
@@ -208,6 +210,7 @@ func LoadChange(p ProjectProfile, id string) (ChangeRecord, error) {
 
 // ListChanges returns recorded proposals for the project, oldest first.
 func ListChanges(p ProjectProfile) ([]ChangeRecord, error) {
+	if err := validateCurrentProject(p); err != nil { return nil, err }
 	if err := validateProjectRoot(p.Root); err != nil {
 		return nil, err
 	}
