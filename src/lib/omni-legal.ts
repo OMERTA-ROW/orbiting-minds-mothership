@@ -18,6 +18,12 @@ export function sampleLegalDraft(): LegalDraft {
     exhibits: [{ id: "A", title: "Fictional delivery note", original: "SYNTHETIC EXHIBIT A\nAn imaginary parcel was recorded as delivered in this training example. No real people, transactions or case evidence." }, { id: "B", title: "Fictional correspondence", original: "SYNTHETIC EXHIBIT B\nExample A asks Example B to review an imaginary delivery. Not a real message and never sent." }] };
 }
 
+/** Any edited reviewed content requires a fresh privacy declaration. */
+export function updateLegalDraft(draft: LegalDraft, patch: Partial<LegalDraft>): LegalDraft {
+  const contentChanged = Object.keys(patch).some((key) => key !== "privacyReviewed");
+  return { ...draft, ...patch, ...(contentChanged ? { privacyReviewed: false } : {}) };
+}
+
 /** Convenience redaction only. Names/minors/free-form identifiers cannot be detected reliably. */
 export function redactLegalText(text: string): { text: string; count: number } {
   let count = 0;

@@ -14,8 +14,11 @@ export async function prepareLegalPacket(draft: LegalDraft, links: RequirementLi
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Courier);
   const ascii = (text: string) => text.replace(/[^\x20-\x7e\n]/g, "?");
+  let totalRows = 0;
   function addText(text: string) {
     const rows = ascii(text).split("\n").flatMap((line) => line.match(/.{1,86}/g) ?? [""]);
+    totalRows += rows.length;
+    if (totalRows > 1200) throw new Error("Synthetic packet exceeds line/page limits.");
     let page = pdf.addPage([612, 792]);
     let y = 730;
     for (const row of rows) {

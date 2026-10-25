@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PDFDocument } from "pdf-lib";
 import { strFromU8, unzipSync } from "fflate";
 import { effectiveSources, legalSources } from "@/data/omni-legal-sources";
-import { appendLegalAudit, initialRequirementLinks, missingInformation, preparationState, redactLegalText, requestFilingTransition, reviewRequirement, sampleLegalDraft, sourceChecklist } from "@/lib/omni-legal";
+import { appendLegalAudit, initialRequirementLinks, missingInformation, preparationState, redactLegalText, requestFilingTransition, reviewRequirement, sampleLegalDraft, sourceChecklist, updateLegalDraft } from "@/lib/omni-legal";
 import { prepareLegalPacket } from "@/lib/omni-legal-export";
 
 describe("Omni Legal preparation boundary", () => {
@@ -92,5 +92,15 @@ describe("Omni Legal preparation boundary", () => {
     const source = legalSources.find((s) => s.id === "28-usc-2071");
     expect(source).toMatchObject({ status: "enacted-statute", effectiveDate: "1988-12-01", retrievedAt: "2026-10-25" });
     expect(sourceChecklist(sampleLegalDraft()).find((c) => c.id === "local")?.sourceId).toBe("28-usc-2071");
+  });
+  it("requires fresh privacy review after any reviewed caption or document change", () => {
+    const draft = { ...sampleLegalDraft(), privacyReviewed: true };
+    for (const patch of [{ court: "Changed fictional court" }, { caseNumber: "CHANGED" }, { partyA: "Fictional new party" }, { documentTitle: "Changed title" }, { body: "Changed synthetic text" }]) {
+      expect(updateLegalDraft(draft, patch).privacyReviewed).toBe(false);
+    }
+    expect(updateLegalDraft(sampleLegalDraft(), { privacyReviewed: true }).privacyReviewed).toBe(true);
+  });
+  it("bounds line/page work for newline-heavy documents", async () => {
+    await expect(prepareLegalPacket({ ...sampleLegalDraft(), body: "\n".repeat(19000) }, [], [])).rejects.toThrow("line/page limits");
   });
 });

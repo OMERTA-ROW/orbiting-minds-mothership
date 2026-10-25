@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DemoBadge } from "@/components/evo";
 import { legalSources } from "@/data/omni-legal-sources";
-import { appendLegalAudit, initialRequirementLinks, missingInformation, preparationState, redactLegalText, reviewRequirement, sampleLegalDraft, sourceChecklist, transmissionGate, type Jurisdiction, type LegalAuditEvent, type LegalDraft, type RequirementLink } from "@/lib/omni-legal";
+import { appendLegalAudit, initialRequirementLinks, missingInformation, preparationState, redactLegalText, reviewRequirement, sampleLegalDraft, sourceChecklist, transmissionGate, updateLegalDraft, type Jurisdiction, type LegalAuditEvent, type LegalDraft, type RequirementLink } from "@/lib/omni-legal";
 
 export function OmniLegal() {
   const [draft, setDraft] = useState(sampleLegalDraft);
@@ -22,7 +22,7 @@ export function OmniLegal() {
 
   function edit(patch: Partial<LegalDraft>) {
     revision.current++;
-    const next = { ...draft, ...patch };
+    const next = updateLegalDraft(draft, patch);
     setDraft(next); setPacket(null); setNotice("");
     setAudit((events) => appendLegalAudit(events, "draft-edited", next));
   }
@@ -48,7 +48,7 @@ export function OmniLegal() {
       if (revision.current !== startedRevision) return;
       setPacket(prepared); setAudit(events);
       setNotice("Synthetic PDF and exhibit packet prepared. Missing fields and unresolved reviews remain listed; nothing submitted.");
-    } catch { setNotice("Packet could not be prepared. No transmission occurred."); }
+    } catch { if (revision.current === startedRevision) setNotice("Packet could not be prepared. No transmission occurred."); }
     finally { setBusy(false); }
   }
   function download(kind: "pdf" | "zip") {
