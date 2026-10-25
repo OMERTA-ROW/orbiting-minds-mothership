@@ -136,6 +136,25 @@ func TestStorageExactConfirmationExpiredChangedAndTraversalPlanRefused(t *testin
 	}
 }
 
+func TestStorageSameSizeRestoredMtimeReplacementAndParentSymlinkRefused(t *testing.T){
+	p,now:=maintenanceFixture(t);plan,err:=PlanCleanup(context.Background(),p,"local",[]string{"cache"},now);if err!=nil{t.Fatal(err)}
+	file:=plan.Files[0];filename:=filepath.Join(p.Root,file.Path);old,_:=time.Parse(time.RFC3339Nano,file.Modified)
+	os.WriteFile(filename,[]byte("abcdefgh"),0600);os.Chtimes(filename,old,old)
+	if err:=ValidateCleanupPlan(context.Background(),p,"local",plan,plan.SHA256,now);err==nil{t.Fatal("same-size/time modified file accepted")}
+	p,now=maintenanceFixture(t);plan,err=PlanCleanup(context.Background(),p,"local",[]string{"cache"},now);if err!=nil{t.Fatal(err)}
+	cache:=filepath.Join(p.Root,".evolution/cache");os.Rename(cache,cache+"-original");os.Symlink(cache+"-original",cache)
+	if err:=ValidateCleanupPlan(context.Background(),p,"local",plan,plan.SHA256,now);err==nil{t.Fatal("parent symlink substituted")}
+}
+
+func TestStorageCandidateSizeBoundAndDuplicateTargets(t *testing.T){
+	p,now:=maintenanceFixture(t)
+	large:=filepath.Join(p.Root,".evolution/cache/bounded.bin");f,err:=os.Create(large);if err!=nil{t.Fatal(err)};f.Truncate(storageMaxBytes+1);f.Close();os.Chtimes(large,now.Add(-2*time.Hour),now.Add(-2*time.Hour))
+	plan,err:=PlanCleanup(context.Background(),p,"local",[]string{"cache"},now);if err!=nil{t.Fatal(err)}
+	for _,file:=range plan.Files{if file.Bytes>256<<20{t.Fatal("oversized candidate selected")}}
+	plan.Files=append(plan.Files,plan.Files[0]);plan.EstimatedBytes+=plan.Files[0].Bytes;plan.SHA256=cleanupDigest(plan)
+	if err:=ValidateCleanupPlan(context.Background(),p,"local",plan,plan.SHA256,now);err==nil{t.Fatal("duplicate cleanup target accepted")}
+}
+
 func TestStorageApplyAlwaysBlockedAndPreservesFiles(t *testing.T) {
 	p, now := maintenanceFixture(t)
 	plan, err := PlanCleanup(context.Background(), p, "local", []string{"cache"}, now)
@@ -211,7 +230,7 @@ func TestScannerDisposableFixedArgvVersionResultRedactionAndCancel(t *testing.T)
 	// This is a compiled adapter fixture, NOT ClamAV and NOT malware detection.
 	fixture := `package main
 import("fmt";"os";"time")
-func main(){if len(os.Args)==2&&os.Args[1]=="--version"{fmt.Println("ClamAV fixture-only/NO-REAL-DATABASE");return};if len(os.Args)!=10||os.Args[1]!="--no-summary"||os.Args[8]!="--"{os.Exit(2)};fmt.Println("password=synthetic-secret");if os.Args[9][len(os.Args[9])-8:]=="slow.bin"{time.Sleep(10*time.Second)};os.Exit(1)}`
+func main(){if len(os.Args)==2&&os.Args[1]=="--version"{fmt.Println("ClamAV fixture-only/NO-REAL-DATABASE");return};want:=[]string{"--no-summary","--follow-file-symlinks=0","--follow-dir-symlinks=0","--max-filesize=16M","--max-scansize=32M","--max-recursion=8","--max-files=100","--"};if len(os.Args)!=10{os.Exit(2)};for i,arg:=range want{if os.Args[i+1]!=arg{os.Exit(2)}};fmt.Println("password=synthetic-secret");target:=os.Args[9];if target[len(target)-8:]=="slow.bin"{time.Sleep(10*time.Second)};if target[len(target)-9:]=="error.bin"{os.Exit(2)};os.Exit(1)}`
 	os.WriteFile(source, []byte(fixture), 0600)
 	if output, err := exec.Command("go", "build", "-o", binary, source).CombinedOutput(); err != nil {
 		t.Fatal(string(output), err)
@@ -240,4 +259,6 @@ func main(){if len(os.Args)==2&&os.Args[1]=="--version"{fmt.Println("ClamAV fixt
 	if _, err := scanSelectedFile(context.Background(), p, "remote", "Code/main.go", binary, true, time.Second); err == nil {
 		t.Fatal("remote scanner target accepted")
 	}
+	os.WriteFile(filepath.Join(p.Root,"Code/error.bin"),[]byte("disposable"),0600)
+	e,err=scanSelectedFile(context.Background(),p,"local","Code/error.bin",binary,true,time.Second);if err!=nil||e.ExitCode!=2||!strings.HasPrefix(e.Result,"ENGINE ERROR"){t.Fatalf("engine error mislabeled %+v %v",e,err)}
 }
