@@ -9,6 +9,7 @@ import { commandConflictPlan, cliPlatformChecks, type CliPlatform } from "@/lib/
 import { CompatibilityValue } from "./CompatibilityValue";
 import { CostEstimator } from "./CostEstimator";
 import { LocalDiscovery } from "./LocalDiscovery";
+import { Maintenance } from "./Maintenance";
 
 export function Companion() {
   const [platform, setPlatform] = useState<CliPlatform>("macOS"),
@@ -99,6 +100,7 @@ export function Companion() {
             { id: "estimate", label: "AI cost estimator" },
             { id: "discover", label: "Private local discovery" },
             { id: "workspace", label: "Workspace & folders" },
+            { id: "maintenance", label: "Maintenance & security" },
             { id: "architecture", label: "Architecture & release gates" },
           ].map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="min-h-11 whitespace-normal">
@@ -346,6 +348,7 @@ export function Companion() {
           </section>
         </TabsContent>
         <TabsContent value="architecture" className="pt-8">
+          <MaintenanceArchitectureSpacer />
           <section>
             <p className="eyebrow">Source scaffold / not a release service</p>
             <h2 className="mt-4 text-3xl">Small executable. Explicit trust.</h2>
