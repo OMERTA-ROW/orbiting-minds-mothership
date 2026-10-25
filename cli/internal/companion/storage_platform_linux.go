@@ -23,8 +23,11 @@ func safeStorageOwner(info os.FileInfo) bool {
 }
 
 func storageIdentity(info os.FileInfo) string {
-	stat,ok:=info.Sys().(*syscall.Stat_t);if !ok{return ""}
-	return fmt.Sprintf("%d:%d:%d:%d",stat.Dev,stat.Ino,stat.Ctim.Sec,stat.Ctim.Nsec)
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("%d:%d:%d:%d", stat.Dev, stat.Ino, stat.Ctim.Sec, stat.Ctim.Nsec)
 }
 
 const storageNativeBoundary = "Linux UID, nonshared write permissions and hardlink metadata checked; not enrolled owner identity"

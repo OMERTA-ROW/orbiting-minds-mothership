@@ -82,11 +82,15 @@ func runMaintenance(command string, args []string, out, errOut io.Writer) int {
 			fmt.Fprintln(errOut, "Report denied:", err)
 			return 1
 		}
-		text:=fmt.Sprintf("READ-ONLY PROJECT METADATA · %s\nObserved %d files / %d bytes; excluded %d entries; complete=%t\nCategory bytes: cache=%d temp=%d other=%d\nFree space: %s",p.Root,r.ObservedFiles,r.ObservedBytes,r.ExcludedEntries,r.Complete,r.CategoryBytes["cache"],r.CategoryBytes["temp"],r.CategoryBytes["other"],r.FreeStatus)
-		if r.FreeBytes!=nil{text+=fmt.Sprintf(" (%d bytes)",*r.FreeBytes)}
-		for _,file:=range r.LargeFiles{text+=fmt.Sprintf("\n  %d bytes · %s · %s",file.Bytes,file.Category,file.Path)}
-		text+="\nNo entire-device scan, cleanup or savings claim."
-		return emit(out,f["--json"]=="1",r,text)
+		text := fmt.Sprintf("READ-ONLY PROJECT METADATA · %s\nObserved %d files / %d bytes; excluded %d entries; complete=%t\nCategory bytes: cache=%d temp=%d other=%d\nFree space: %s", p.Root, r.ObservedFiles, r.ObservedBytes, r.ExcludedEntries, r.Complete, r.CategoryBytes["cache"], r.CategoryBytes["temp"], r.CategoryBytes["other"], r.FreeStatus)
+		if r.FreeBytes != nil {
+			text += fmt.Sprintf(" (%d bytes)", *r.FreeBytes)
+		}
+		for _, file := range r.LargeFiles {
+			text += fmt.Sprintf("\n  %d bytes · %s · %s", file.Bytes, file.Category, file.Path)
+		}
+		text += "\nNo entire-device scan, cleanup or savings claim."
+		return emit(out, f["--json"] == "1", r, text)
 	case "plan":
 		plan, err := PlanCleanup(ctx, p, device, strings.Split(f["--categories"], ","), time.Now())
 		if err != nil {
@@ -95,7 +99,7 @@ func runMaintenance(command string, args []string, out, errOut io.Writer) int {
 		}
 		return emit(out, f["--json"] == "1", plan, fmt.Sprintf("DRY-RUN ONLY · %s\nSelected %d files / %d bytes, categories %v\nExact plan fingerprint: %s\n%s\nNo files moved/deleted; export JSON for exact target review.", p.Root, len(plan.Files), plan.EstimatedBytes, plan.Categories, plan.SHA256, plan.Apply))
 	case "apply":
-		if f["--device"]!="local" || f["--approve"] != "1" || f["--plan"] == "" || f["--confirm"] == "" {
+		if f["--device"] != "local" || f["--approve"] != "1" || f["--plan"] == "" || f["--confirm"] == "" {
 			fmt.Fprintln(errOut, "Exact saved plan, fingerprint and --approve required. Nothing changed.")
 			return 1
 		}
@@ -116,8 +120,18 @@ func runMaintenance(command string, args []string, out, errOut io.Writer) int {
 
 func loadCleanupPlan(filename string) (CleanupPlan, error) {
 	var plan CleanupPlan
-	if !filepath.IsAbs(filename)||filepath.Clean(filename)!=filename{return plan,fmt.Errorf("clean absolute plan path required")}
-	for parent:=filepath.Dir(filename);;parent=filepath.Dir(parent){stat,err:=os.Lstat(parent);if err!=nil||!stat.IsDir()||stat.Mode()&os.ModeSymlink!=0{return plan,fmt.Errorf("unsafe plan parent")};if filepath.Dir(parent)==parent{break}}
+	if !filepath.IsAbs(filename) || filepath.Clean(filename) != filename {
+		return plan, fmt.Errorf("clean absolute plan path required")
+	}
+	for parent := filepath.Dir(filename); ; parent = filepath.Dir(parent) {
+		stat, err := os.Lstat(parent)
+		if err != nil || !stat.IsDir() || stat.Mode()&os.ModeSymlink != 0 {
+			return plan, fmt.Errorf("unsafe plan parent")
+		}
+		if filepath.Dir(parent) == parent {
+			break
+		}
+	}
 	info, err := os.Lstat(filename)
 	if err != nil || !info.Mode().IsRegular() || info.Size() > 2<<20 || !safeStorageOwner(info) {
 		return plan, fmt.Errorf("unsafe plan")
