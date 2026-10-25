@@ -103,7 +103,26 @@ runs one fixed local argv. It is not isolated from local files or network.
 Stdout/stderr are synchronized, capped at 1 MiB, redacted before display and
 saved with actual exit status in `.evolution/runs`; output appears after execution,
 not live. Secrets outside common patterns can still escape. Timeout does not
-guarantee termination of every descendant process on every OS.
+guarantee termination of every descendant process on every OS. Linux now targets
+the new process group on timeout/Ctrl-C and cleans up attached descendants;
+detached descendants can escape, and other hosts remain direct-process only.
+
+### Local Guardian evidence (development source only)
+
+Every local task/routing/change-manifest boundary reloads the saved project
+binding. Changed or withdrawn selections are denied before execution; this is
+not an authenticated owner capability. Actual task denials/authorization/results
+and fixed advisory injection-pattern warnings form a bounded local hash chain
+in `.evolution/security/events.jsonl` (0700 directory, 0600 file, 2 MiB maximum).
+Audit corruption, unsafe paths, capacity or interrupted writes block new tasks,
+preserving originals for owner review. No prompt/source/secret values are recorded.
+
+`guardian audit --project <absolute-dir> --json` exports verified local records.
+Guardian's Development Evidence tab can inspect that export without uploading it;
+an independently saved chain head optionally detects replacement/truncation.
+Same-user writers can rewrite all local metadata and evidence. Hash consistency
+is not a signature, trusted ownership or immutable audit; no connected auth sensor,
+server capability, durable limiter or automatic restore exists. See SECURITY.md.
 
 ### Local workspace and project folders
 
