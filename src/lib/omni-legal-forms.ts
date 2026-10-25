@@ -9,6 +9,16 @@ export const officialBlankForms: readonly OfficialBlankForm[] = [
   { id: "MC-030", title: "Declaration", kind: "declaration", sourceUrl: "https://courts.ca.gov/forms-rules/court-forms", pdfUrl: "https://courts.ca.gov/sites/default/files/courts/default/2024-11/mc030.pdf", revisionDate: "2006-01-01", verifiedAt: "2026-10-25", sha256: "ed3f3ff115c7b6c5cfc6aa63939615f5dc1d7e44c31e4b7b5e7316a45ea2ff9a", note: "General declaration, not a notarized affidavit. Retrieve only for declaration review; do not assume it replaces a court-specific form." },
 ];
 
+export function validateOfficialFormRequest(input: unknown) {
+  if (!input || typeof input !== "object" || !("id" in input) || typeof input.id !== "string" || Object.keys(input).length !== 1 || !officialBlankForms.some((f) => f.id === input.id)) throw new Error("Unknown official blank form.");
+  return { id: input.id };
+}
+
+export function officialFormFingerprintMatches(id: string, sha256: string) {
+  const form = officialBlankForms.find((f) => f.id === id);
+  return Boolean(form && form.sha256 === sha256);
+}
+
 export function resolveBlankFormCatalog(selection: FormSelection) {
   const missing = [!selection.state && "State", !selection.county && "County", !selection.court && "Court", !selection.filingType && "Filing / case type"].filter((v): v is string => Boolean(v));
   if (missing.length) return { status: "selection-required" as const, forms: [] as OfficialBlankForm[], missing, note: "Select a catalog jurisdiction and filing type. No case details required." };

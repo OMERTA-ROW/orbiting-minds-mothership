@@ -16,11 +16,14 @@ export function OmniLegalForms() {
   const [manual, setManual] = useState<{ metadata: Awaited<ReturnType<typeof inspectManualLegalPdf>>; original: Uint8Array } | null>(null);
   const [notice, setNotice] = useState("");
   const revision = useRef(0);
+  const manualRevision = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
   const fetchForm = useServerFn(retrieveOfficialBlankForm);
   const fetchRef = useRef(fetchForm);
   fetchRef.current = fetchForm;
   const catalog = resolveBlankFormCatalog(selection);
+
+  useEffect(() => () => { manualRevision.current++; }, []);
 
   useEffect(() => {
     const token = ++revision.current;
@@ -51,15 +54,15 @@ export function OmniLegalForms() {
   }
   async function manualIntake(file: File | undefined) {
     if (!file) return;
-    const token = revision.current;
+    const token = ++manualRevision.current;
     setNotice("");
     try {
       if (file.size > BLANK_FORM_MAX_BYTES) throw new Error("PDF must be at most 4 MiB.");
       const original = new Uint8Array(await file.arrayBuffer());
       const metadata = await inspectManualLegalPdf(file.name, original, confirmed);
-      if (revision.current !== token) return;
+      if (manualRevision.current !== token) return;
       setManual({ metadata, original }); setNotice("Unverified manual PDF retained in this session only. No upload, parsing, official-form claim or completion.");
-    } catch (error) { if (revision.current === token) setNotice(error instanceof Error ? error.message : "Manual PDF intake failed."); }
+    } catch (error) { if (manualRevision.current === token) setNotice(error instanceof Error ? error.message : "Manual PDF intake failed."); }
     finally { if (fileInput.current) fileInput.current.value = ""; }
   }
 
@@ -85,9 +88,9 @@ export function OmniLegalForms() {
       </article>;
     })}
     <div className="mt-5 flex flex-wrap gap-5"><a href={officialFormDirectory} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-gold underline">Official California forms<ArrowUpRight className="size-3" /></a><a href={officialCourtDirectory} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-gold underline">Official court directory<ArrowUpRight className="size-3" /></a></div>
-    <section className="mt-7 border-t border-border pt-5"><h3 className="text-lg">Manual PDF · separate, unverified</h3><p className="mt-3 text-xs leading-6 text-warning">Blank or synthetic PDF only, 4 MiB maximum. Real private case uploads remain blocked. No Desktop write, cloud upload, embedded-PDF rendering, completed affidavit or signature generation.</p><label className="mt-4 flex items-start gap-3 text-xs leading-5"><input type="checkbox" className="mt-1 accent-gold" aria-label="Blank or synthetic manual PDF confirmation" checked={confirmed} onChange={(e) => { revision.current++; setConfirmed(e.target.checked); if (!e.target.checked) setManual(null); }} />I confirm this PDF is blank or fictional, with no real case records.</label>
+    <section className="mt-7 border-t border-border pt-5"><h3 className="text-lg">Manual PDF · separate, unverified</h3><p className="mt-3 text-xs leading-6 text-warning">Blank or synthetic PDF only, 4 MiB maximum. Real private case uploads remain blocked. No Desktop write, cloud upload, embedded-PDF rendering, completed affidavit or signature generation.</p><label className="mt-4 flex items-start gap-3 text-xs leading-5"><input type="checkbox" className="mt-1 accent-gold" aria-label="Blank or synthetic manual PDF confirmation" checked={confirmed} onChange={(e) => { manualRevision.current++; setConfirmed(e.target.checked); if (!e.target.checked) setManual(null); }} />I confirm this PDF is blank or fictional, with no real case records.</label>
       <input ref={fileInput} type="file" accept=".pdf,application/pdf" aria-label="Manual blank or synthetic PDF" className="hidden" onChange={(e) => void manualIntake(e.target.files?.[0])} />
-      <div className="mt-4 flex flex-wrap gap-3"><Button variant="ghost" disabled={!confirmed} onClick={() => fileInput.current?.click()}><Upload />Choose manual PDF</Button>{manual && <><Button variant="ghost" onClick={() => download(manual.original, manual.metadata.name)}><Download />Preserved original</Button><Button variant="ghost" onClick={() => { revision.current++; setManual(null); setNotice("Manual session copy removed. Original file unchanged."); }}>Remove session copy</Button></>}</div>
+      <div className="mt-4 flex flex-wrap gap-3"><Button variant="ghost" disabled={!confirmed} onClick={() => fileInput.current?.click()}><Upload />Choose manual PDF</Button>{manual && <><Button variant="ghost" onClick={() => download(manual.original, manual.metadata.name)}><Download />Preserved original</Button><Button variant="ghost" onClick={() => { manualRevision.current++; setManual(null); setNotice("Manual session copy removed. Original file unchanged."); }}>Remove session copy</Button></>}</div>
       {manual && <p className="mt-4 break-all text-[11px] leading-6 text-muted-foreground">{manual.metadata.name} · {manual.metadata.bytes} bytes · MANUAL / UNVERIFIED · received {manual.metadata.receivedAt}<br />SHA-256 {manual.metadata.sha256}</p>}
       {notice && <p role="status" className="mt-3 text-xs leading-6 text-warning">{notice}</p>}
     </section>

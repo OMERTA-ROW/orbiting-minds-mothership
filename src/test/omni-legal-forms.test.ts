@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { BLANK_FORM_MAX_BYTES, inspectManualLegalPdf, officialBlankForms, resolveBlankFormCatalog } from "@/lib/omni-legal-forms";
+import { BLANK_FORM_MAX_BYTES, inspectManualLegalPdf, officialBlankForms, officialFormFingerprintMatches, resolveBlankFormCatalog, validateOfficialFormRequest } from "@/lib/omni-legal-forms";
 import { FORM_MAX_BYTES, fetchOfficialBlankPdf } from "@/lib/omni-legal-form-fetch.server";
 
 const selected = { state: "CA", county: "Los Angeles", court: "Superior Court of California, County of Los Angeles", filingType: "small-claims-claim" };
@@ -37,6 +37,15 @@ describe("Omni Legal verified public blank form selection", () => {
 });
 
 describe("bounded official PDF retrieval", () => {
+  it("accepts only a fixed form ID with no caller URL, record or credential fields", () => {
+    expect(validateOfficialFormRequest({ id: "SC-100" })).toEqual({ id: "SC-100" });
+    for (const input of [null, { id: "invented-affidavit" }, { id: "SC-100", url: "https://courts.ca.gov/private" }, { id: "SC-100", case: "record" }]) expect(() => validateOfficialFormRequest(input)).toThrow();
+  });
+  it("refuses changed official source versions until the catalog is reverified", () => {
+    expect(officialFormFingerprintMatches("SC-100", "ef3421b14ebf64dbf884566ff659b39776035ec5b6e6500be0af91e3cc15533c")).toBe(true);
+    expect(officialFormFingerprintMatches("SC-100", "0".repeat(64))).toBe(false);
+    expect(officialFormFingerprintMatches("invented-affidavit", "0".repeat(64))).toBe(false);
+  });
   it("preserves bytes and computes fingerprint/retrieval date with no private-data request", async () => {
     const fetcher = vi.fn(async () => response()) as unknown as typeof fetch;
     const result = await fetchOfficialBlankPdf(url, [url], fetcher);
