@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Check, Download, FileText, FolderOpen, Scale, Shield, Terminal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,31 +15,38 @@ export function OmniLegal() {
   const [busy, setBusy] = useState(false);
   const [packet, setPacket] = useState<{ pdf: Uint8Array; zip: Uint8Array; redactions: number } | null>(null);
   const [notice, setNotice] = useState("");
+  const revision = useRef(0);
   const state = preparationState(draft);
   const checklist = sourceChecklist(draft);
   const redaction = redactLegalText(draft.body);
 
   function edit(patch: Partial<LegalDraft>) {
+    revision.current++;
     const next = { ...draft, ...patch };
     setDraft(next); setPacket(null); setNotice("");
     setAudit((events) => appendLegalAudit(events, "draft-edited", next));
   }
   function editLink(index: number, patch: Partial<RequirementLink>) {
+    revision.current++;
     setLinks((items) => items.map((item, i) => i === index ? { ...item, ...patch } : item));
     setPacket(null);
   }
   function reset() {
+    revision.current++;
     const next = sampleLegalDraft();
     setDraft(next); setLinks(initialRequirementLinks()); setPacket(null); setConfirmed(false);
     setAudit([]); setNotice("Synthetic session reset. No case files stored or uploaded.");
   }
   async function prepare() {
     if (!confirmed || busy) return;
+    const startedRevision = revision.current;
     setBusy(true); setNotice("");
     try {
       const events = appendLegalAudit(audit, "packet-prepared", draft);
       const { prepareLegalPacket } = await import("@/lib/omni-legal-export");
-      setPacket(await prepareLegalPacket(draft, links, events)); setAudit(events);
+      const prepared = await prepareLegalPacket(draft, links, events);
+      if (revision.current !== startedRevision) return;
+      setPacket(prepared); setAudit(events);
       setNotice("Synthetic PDF and exhibit packet prepared. Missing fields and unresolved reviews remain listed; nothing submitted.");
     } catch { setNotice("Packet could not be prepared. No transmission occurred."); }
     finally { setBusy(false); }
@@ -84,7 +91,7 @@ export function OmniLegal() {
             <p className="mt-3 text-xs leading-6 text-muted-foreground">Redacted derivative · {redaction.count} pattern matches. Incomplete detection; names, minors, exceptions and court orders need human review.</p>
             <pre className="mt-4 min-h-40 whitespace-pre-wrap break-words border-y border-border py-5 font-mono text-xs leading-6">{redaction.text}</pre>
             <h3 className="mt-5 text-sm text-warning">Missing information</h3><ul className="mt-2 space-y-1 text-xs leading-6 text-muted-foreground">{missingInformation(draft).map((m) => <li key={m}>— {m}</li>)}{missingInformation(draft).length === 0 && <li>Basic fields present. Local rules, signatures, deadlines and legal sufficiency remain unresolved.</li>}</ul>
-            <label className="mt-5 flex items-start gap-3 text-xs leading-5"><input type="checkbox" checked={confirmed} onChange={(e) => { setConfirmed(e.target.checked); if (!e.target.checked) setPacket(null); }} className="mt-1 accent-gold" />These are fictional documents only. The ZIP includes unchanged, unredacted synthetic originals.</label>
+            <label className="mt-5 flex items-start gap-3 text-xs leading-5"><input type="checkbox" checked={confirmed} onChange={(e) => { revision.current++; setConfirmed(e.target.checked); if (!e.target.checked) setPacket(null); }} className="mt-1 accent-gold" />These are fictional documents only. The ZIP includes unchanged, unredacted synthetic originals.</label>
             <div className="mt-5 flex flex-wrap gap-3"><Button variant="signal" disabled={!confirmed || busy} onClick={() => void prepare()}><FileText />{busy ? "Preparing…" : "Prepare synthetic packet"}</Button>{packet && <><Button variant="ghost" onClick={() => download("pdf")}><Download />PDF</Button><Button variant="ghost" onClick={() => download("zip")}><Download />Exhibit ZIP</Button></>}</div>
             <p className="mt-4 text-[11px] leading-6 text-muted-foreground">Export only · basic letter-size PDF, not court-validated or PDF/A. Non-ASCII glyphs become “?”. Originals stay byte-identical in the ZIP. Any edit invalidates the prepared packet.</p>
           </section>

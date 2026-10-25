@@ -34,7 +34,7 @@ export function sourceChecklist(draft: LegalDraft) {
     { id: "court", label: "Exact court and jurisdiction", sourceId: federal ? "court-directory" : null, satisfied: Boolean(draft.court.trim()) && (federal || Boolean(draft.region.trim())), note: federal ? "Federal civil rules only; venue and subject-matter jurisdiction are not determined." : "State/local sources unavailable in this slice. Federal rules are not applied to this selection." },
     { id: "caption", label: "Caption, case/file number & pleading designation", sourceId: federal ? "frcp-10" : null, satisfied: Boolean(draft.caseNumber.trim() && draft.partyA.trim() && draft.partyB.trim() && draft.documentTitle.trim()), note: "For a new matter, case-number handling must be checked with the court; no number invented." },
     { id: "privacy", label: "Redaction & human privacy review", sourceId: federal ? "frcp-5.2" : null, satisfied: draft.privacyReviewed, note: "Pattern redaction is incomplete. Review minors, identifiers, exceptions, sealed material and court orders manually." },
-    { id: "local", label: "Current local rules, standing orders & PDF limits", sourceId: federal ? "local-rules" : null, satisfied: false, note: "Unresolved: court-specific format, accessibility, attachments and filing procedure not verified." },
+    { id: "local", label: "Current local rules, standing orders & PDF limits", sourceId: federal ? "28-usc-2071" : null, satisfied: false, note: "Unresolved: court-specific format, accessibility, attachments and filing procedure not verified. Section 2071 provides rulemaking authority, not case-specific requirements." },
     { id: "signature", label: "Responsible human signature & reasonable inquiry", sourceId: federal ? "frcp-11" : null, satisfied: false, note: "Not signed. Human factual, legal and procedural review remains required." },
     { id: "deadlines", label: "Deadline, triggering event & service requirements", sourceId: null, satisfied: false, note: "UNVERIFIED — no deadline calculated, no service performed; court rules and trigger evidence required." },
   ];
@@ -61,6 +61,7 @@ export function requestFilingTransition(current: PreparationState, requested: Fi
 
 export function initialRequirementLinks(): RequirementLink[] {
   return [
+    { sourceId: "28-usc-2071", codePath: "src/lib/omni-legal.ts#sourceChecklist", testPath: "src/test/omni-legal.test.ts", applicability: "unresolved", question: "Which court rules and effective dates govern this matter? This statute does not establish substantive software requirements or legal compliance." },
     { sourceId: "frcp-5.2", codePath: "src/lib/omni-legal.ts#redactLegalText", testPath: "src/test/omni-legal.test.ts", applicability: "unresolved", question: "Does this product handle court filings? Review rule scope, exceptions, minors and manual redaction; this pattern filter alone is insufficient." },
     { sourceId: "frcp-11", codePath: "src/lib/omni-legal.ts#requestFilingTransition", testPath: "src/test/omni-legal.test.ts", applicability: "unresolved", question: "Who is responsible for factual/legal inquiry and signature? No model or local approval can certify compliance." },
   ];

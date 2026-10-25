@@ -6,6 +6,11 @@ import { missingInformation, preparationState, redactLegalText, sourceChecklist,
 /** Browser-safe bounded PDF generation; no document parser, network or server files. */
 export async function prepareLegalPacket(draft: LegalDraft, links: RequirementLink[], audit: LegalAuditEvent[]) {
   if (draft.body.length > 20000 || draft.exhibits.length > 8 || draft.exhibits.some((e) => e.original.length > 20000)) throw new Error("Synthetic packet exceeds preparation limits.");
+  const ids = new Set<string>();
+  for (const exhibit of draft.exhibits) {
+    if (!/^[A-Z]{1,2}$/.test(exhibit.id) || ids.has(exhibit.id)) throw new Error("Invalid or duplicate exhibit identifier.");
+    ids.add(exhibit.id);
+  }
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Courier);
   const ascii = (text: string) => text.replace(/[^\x20-\x7e\n]/g, "?");
