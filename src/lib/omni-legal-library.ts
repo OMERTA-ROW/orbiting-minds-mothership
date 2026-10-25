@@ -39,5 +39,5 @@ export function manualClassification(selection: LibrarySelection, confirmedSelec
   if (librarySelectionMissing(selection).length || confirmedSelection !== JSON.stringify(selection)) throw new Error("Confirm the actual state, county, court and filing type for this document.");
   if (!["blank-unverified", "synthetic-completed"].includes(kind)) throw new Error("Real private completed uploads remain blocked.");
   if (kind === "synthetic-completed" && !/^SYNTHETIC-[A-Za-z0-9-]{1,60}$/.test(syntheticCaseId)) throw new Error("Use a fictional SYNTHETIC- case ID; real case intake is unavailable.");
-  return { selection: { ...selection }, segments: legalLibrarySegments(selection), kind, caseId: kind === "synthetic-completed" ? syntheticCaseId : null, scope: "session-only-unverified" as const, sharedBlankLibrary: false as const, locationDeterminesCourt: false as const };
+  return { selection: { courtLevel: selection.courtLevel, state: selection.state, county: selection.county, court: selection.court, filingType: selection.filingType }, segments: legalLibrarySegments(selection), kind, caseId: kind === "synthetic-completed" ? syntheticCaseId : null, scope: "session-only-unverified" as const, sharedBlankLibrary: false as const, locationDeterminesCourt: false as const };
 }

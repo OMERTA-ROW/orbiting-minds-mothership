@@ -22,6 +22,7 @@ describe("Legal Forms confirmed-jurisdiction library", () => {
     const outOfLocation = { ...state, residence: "New York", gps: [40, -74], uploadOrigin: "New York", ipLocation: "New York" };
     const record = manualClassification(outOfLocation, JSON.stringify(outOfLocation), "blank-unverified", "");
     expect(record.segments[1]).toBe("California"); expect(record.segments[2]).toBe("Los Angeles"); expect(record.locationDeterminesCourt).toBe(false);
+    expect(record.selection).not.toHaveProperty("gps"); expect(record.selection).not.toHaveProperty("uploadOrigin");
   });
   it("never promotes manual blank or fictional completed copies into shared official blanks", () => {
     const blank = manualClassification(state, JSON.stringify(state), "blank-unverified", "");
