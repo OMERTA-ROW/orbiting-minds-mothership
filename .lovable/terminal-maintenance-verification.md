@@ -16,7 +16,7 @@ Date: 2026-10-25. Extends Guardian Step 3 and terminal Step 7; no duplicate back
 
 ## Actual commands / evidence
 
-- Go 1.25.7: `go test -race -count=1 ./...` and `go vet ./...` in `cli/` PASS. Most recent full run before extra Linux UID fixture: 38.471s; final command/result recorded in register. Ten maintenance top-level cases plus separate OS-user exclusion case, existing Guardian/workspace/manifest/redaction/project regression suite retained.
+- Go 1.25.7: `go test -race -count=1 ./...` and `go vet ./...` in `cli/` PASS; final full race suite **36.584s**. Ten maintenance top-level cases plus separate OS-user exclusion case, existing Guardian/workspace/manifest/redaction/project regression suite retained. Final focused app suite **114 tests / 6 files PASS**.
 - `bunx vitest run`: **933 tests / 57 files PASS** (maintenance changes introduced no markup/copy tests).
 - `bunx eslint src/components/cli/Maintenance.tsx src/components/cli/Companion.tsx src/data/terminal-boundaries.ts` PASS; project formatting applied.
 - All six unsigned source targets cross-compiled (Linux/macOS/Windows × amd64/arm64). Only Linux amd64 executed; native macOS/Windows and real scanner not verified.
