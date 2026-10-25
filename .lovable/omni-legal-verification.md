@@ -1,0 +1,31 @@
+# Omni Legal — scoped development evidence
+
+## Implemented scope
+- `/omni-legal`, discoverable in navigation/command search, Rights and OmniBridge. Existing routes/data untouched.
+- Session-only synthetic drafting with federal/state/local selection, exact court/region fields, basic missing-information flags and a human privacy review declaration.
+- Two preserved fictional exhibits; real downloadable PDF and ZIP with Originals/Drafts/Review/Audit organization. Original UTF-8 texts retained unchanged; redacted derivatives marked SYNTHETIC / NOT FOR FILING. Basic PDF is not court-validated/PDF-A; non-ASCII glyphs replaced with `?`, originals unaffected.
+- Official-source register: FRCP 5.2, 10, 11, current/local-rule overview, court directory, and enacted 28 USC 2071; retrieval 2026-10-25. Source dates have explicit scope; unknown rule-specific effective dates marked unverified. Sources are researched snapshots, not an automatic current-law service. Proposals excluded from effective-law/rule results.
+- Software review links sourced requirements to actual code/test references and editable unresolved questions; self-declared applicability is not a legal determination or executed-test evidence. No generated-code automation or compliance certificate.
+- E-filing transition function refuses submitted/accepted/rejected; unavailable court button. No authentic receipt producer exists, so no simulated success can advance status. Basic fields only derive draft / ready FOR review, never ready to file.
+- Offline Go `evolution omni legal status|checklist --project <dir> [--jurisdiction federal|state|local] [--json]`; `omni legal` alias same behavior. Existing project binding required, strict arguments, fixed metadata only. No case contents read, logged or uploaded, no command writes, no model/network/credentials. CLI/browser state separate.
+- Fixed session action/time/jurisdiction/state activity, maximum 100 entries; content excluded. Editable session history, not trusted or immutable audit. Draft edits and confirmation revocation invalidate packets; late preparation results are revision guarded.
+
+## Source evidence
+- U.S. Courts official civil-rule PDF and current rules pages researched by read-only official-source task. HEAD checks returned 200 for PDF/current rules/directory; current directory URL uses `/court-role-and-structure/court-website-links`.
+- Direct gateway read of `https://uscode.house.gov/us/usc/119-124/t28/s2071/` confirms enacted text current through Public Law 119-124 (October 15, 2026) and the official section note making the 1988 amendment effective December 1, 1988.
+- Legacy `view.xhtml` lookup returned Page Not Found; not counted as a verified source. The working version-pinned official URL is used. No real case records consulted.
+
+## Verification (updated after actual runs)
+- Focused legal/unit/routing and CLI tests: pending final rerun.
+- Synthetic UI → jurisdiction → missing flags → real PDF/exhibit ZIP → source checklist → review state → edit invalidation → unavailable integration → session reset: pending browser check.
+- Preview build: latest harness build OK during implementation; final log check pending.
+
+## Pending / blocked
+- **Real case data:** deliberately not accepted. Needs owner/project/case-scoped private storage/access/revocation, retention, protected audit, redaction review and security/isolation acceptance. No authenticated case-vault tests performed or claimed. No case data stored in localStorage.
+- **Current substantive statutes and state/local rules:** selected practice area and exact jurisdiction/court, official-source refresh/versioning/currency checks and responsible legal reviewer. No broad determination that generated software satisfies federal/state/local law.
+- **Court packet formats/parsers:** jurisdiction-specific forms/PDF standards/accessible tagging, signed/verified companion and supported original PDF/document handling. This increment edits synthetic text and uses fixed synthetic exhibits only; no real uploads, Desktop writes, shared terminal/UI case records or restart persistence.
+- **Transmission:** exact court/provider supported authenticated integration and official permission, secure credentials/scopes, explicit per-transmission user confirmation, Guardian gates, idempotency, authentic provider receipt/court evidence verification and development test account. Court submissions/payments/service/signatures unrun and prohibited in this build.
+- No production deployment/publish, owner-device changes, accounts connected or external repository sync. No manual commit created; source managed by Lovable.
+
+## Changed files
+`src/data/omni-legal-sources.ts`, `src/lib/omni-legal.ts`, `src/lib/omni-legal-export.ts`, `src/components/omnibridge/OmniLegal.tsx`, `src/routes/omni-legal.tsx`, `src/components/SiteNav.tsx`, `src/components/omnibridge/OmniBridge.tsx`, `src/components/omnibridge/OmniRights.tsx`, `src/test/omni-legal.test.ts`, `src/test/app-routing.test.tsx`, `cli/internal/companion/legal.go`, `cli/internal/companion/legal_test.go`, `cli/internal/companion/commands.go`, `cli/README.md`, `package.json`, `bun.lock`, `AGENTS.md`, `roadmap.md`, `completion-register.json`, `src/test/test_completion_register.py`, this report. Legal guardrails also stored in project memory.

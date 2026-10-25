@@ -41,7 +41,7 @@ describe("Omni Legal preparation boundary", () => {
     expect(effectiveSources([source, { ...source, id: "proposal", status: "proposal" }]).map((s) => s.id)).toEqual([source.id]);
   });
   it("flags unresolved software applicability and unverified effective date", () => {
-    const link = initialRequirementLinks()[0];
+    const link = initialRequirementLinks().find((l) => l.sourceId === "frcp-5.2");
     if (!link) throw new Error("Missing traceability fixture");
     const review = reviewRequirement(link, "state");
     expect(review.problems).toContain("Federal rule applicability to state/local software is unresolved");
@@ -80,5 +80,17 @@ describe("Omni Legal preparation boundary", () => {
   });
   it("rejects oversized synthetic packets without producing exports", async () => {
     await expect(prepareLegalPacket({ ...sampleLegalDraft(), body: "x".repeat(20001) }, [], [])).rejects.toThrow("limits");
+  });
+  it("rejects exhibit traversal and duplicate identifiers instead of overwriting ZIP entries", async () => {
+    const draft = sampleLegalDraft();
+    const exhibit = draft.exhibits[0];
+    if (!exhibit) throw new Error("Missing exhibit fixture");
+    await expect(prepareLegalPacket({ ...draft, exhibits: [{ ...exhibit, id: "../outside" }] }, [], [])).rejects.toThrow("identifier");
+    await expect(prepareLegalPacket({ ...draft, exhibits: [exhibit, exhibit] }, [], [])).rejects.toThrow("identifier");
+  });
+  it("links enacted federal rulemaking authority without treating it as a compliance result", () => {
+    const source = legalSources.find((s) => s.id === "28-usc-2071");
+    expect(source).toMatchObject({ status: "enacted-statute", effectiveDate: "1988-12-01", retrievedAt: "2026-10-25" });
+    expect(sourceChecklist(sampleLegalDraft()).find((c) => c.id === "local")?.sourceId).toBe("28-usc-2071");
   });
 });
