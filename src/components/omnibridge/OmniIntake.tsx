@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, COMPANION_REQUIRED, INTAKE_KEY, MAX_FILES, MAX_FILE_BYTES, classify, importInto, loadIntake, recategorize, saveIntake, type Category, type IntakeProject } from "@/lib/omni-intake";
+import { initialEngine, metadataChecks, noteProject, resume, rollback, stop, tick, type EngineState } from "@/lib/omni-enhance";
+const ENGINE_KEY = "evolution.omni-enhance.v1";
 
 async function hashFile(file: File) {
   const buf = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
@@ -13,6 +15,18 @@ export function OmniIntake() {
   const [msg, setMsg] = useState("");
   useEffect(() => { setProjects(loadIntake(localStorage.getItem(INTAKE_KEY))); setLoaded(true); }, []);
   useEffect(() => { if (loaded) localStorage.setItem(INTAKE_KEY, saveIntake(projects)); }, [projects, loaded]);
+  const [engine, setEngine] = useState<EngineState>(initialEngine);
+  useEffect(() => { try { const v = localStorage.getItem(ENGINE_KEY); if (v) setEngine(JSON.parse(v)); } catch { /* keep default */ } }, []);
+  useEffect(() => { if (loaded) localStorage.setItem(ENGINE_KEY, JSON.stringify(engine)); }, [engine, loaded]);
+  useEffect(() => {
+    if (!loaded) return;
+    setEngine((s) => {
+      let n = s;
+      for (const p of projects) n = noteProject(n, p.id, `${p.category}|${p.files.map((f) => f.sha256).join(",")}`);
+      const byId = Object.fromEntries(projects.map((p) => [p.id, p]));
+      return tick(n, (id) => metadataChecks(byId[id]?.files ?? [], byId[id]?.category ?? "Inbox"), new Date().toISOString());
+    });
+  }, [projects, loaded]);
 
   async function take(list: FileList | File[]) {
     const files = [...list].slice(0, MAX_FILES + 1);
