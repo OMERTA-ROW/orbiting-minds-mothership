@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "created_at": "2026-10-22",
- "updated_at": "2026-10-25T16:43:08.254943Z",
+ "updated_at": "2026-10-25T18:20:00Z",
  "project_name": "Evolution Mothership",
  "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
  "source_note_urls": [
@@ -103,6 +103,12 @@
    "command": "python3 src/test/test_completion_register.py",
    "result": "Passed: 3 structural/evidence-rule tests; 15 ordered milestones, 54 requirement items, 25 original blueprint families mapped",
    "runtime": "Local ordered register with all supplied requirement destinations and prior-evidence crosswalk; no Notion write.",
+   "passed": true
+  },
+  "omni-legal": {
+   "command": "bunx vitest run; go test -race -count=1 ./...; go vet ./... (cli); python3 /tmp/browser/omni-legal/check_legal.py",
+   "result": "Full app 992 tests / 62 files PASS; legal 15 tests PASS; focused Omni/routing/SEO 124 PASS. CLI suite PASS (57.623s) and vet PASS. Real Linux binary no-mutation/three jurisdictions/submission refusal PASS; six unsigned source targets compile.",
+   "runtime": "Synthetic UI jurisdiction/missing flags/PDF + byte-identical ZIP originals/source-backed checklist/review state/edit invalidation/session reset/mobile PASS with no page errors. First browser attempt timed out awaiting export; fresh run passed; no initial pass claimed. Source snapshots and session-only preparation, not legal advice/private case protection/filing authority. Final detailed evidence in .lovable/omni-legal-verification.md.",
    "passed": true
   },
   "entries": [
@@ -2456,6 +2462,25 @@
      "missing_input": null,
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
      "release_receipt": null
+    },
+    {
+     "id": "13.13",
+     "requirement": "Omni Legal: legal drafting/organization, exhibits, federal/state/local court selection, current official statutes/rules/court research with source/jurisdiction/effective/retrieval dates and proposals distinguished; procedural checklists, reviewed PDF/exhibit e-filing preparation/export. Software legal-requirements review links sourced applicability questions to generated code/tests without automatic compliance claims. Submitted requires authentic provider receipt; accepted/rejected require court evidence. Future transmission requires explicit user confirmation and supported authenticated court integration; unsupported courts preparation/export only. Scoped private case access, protected audit/redaction and no secrets/case contents in terminal logs. Synthetic first acceptance only; no court submission/payment/service/signature/real case records or deployment.",
+     "status": "In progress",
+     "owner": "Lovable implementation; owner/legal reviewer selects practice area/court and future scoped integration",
+     "dependencies": ["02", "03", "04", "06", "07"],
+     "changed_files": ["src/data/omni-legal-sources.ts", "src/lib/omni-legal.ts", "src/lib/omni-legal-export.ts", "src/components/omnibridge/OmniLegal.tsx", "src/routes/omni-legal.tsx", "src/components/SiteNav.tsx", "src/components/omnibridge/OmniBridge.tsx", "src/components/omnibridge/OmniRights.tsx", "src/test/omni-legal.test.ts", "src/test/app-routing.test.tsx", "cli/internal/companion/legal.go", "cli/internal/companion/legal_test.go", "cli/internal/companion/commands.go", "cli/README.md", "AGENTS.md", "roadmap.md", "completion-register.json", "src/test/test_completion_register.py", "package.json", "bun.lock", ".lovable/omni-legal-verification.md"],
+     "commit": null,
+     "commit_note": "Lovable-managed development; no manual commit, external repository sync or release created.",
+     "verified_scope": "Synthetic session-only drafting, two preserved exhibits, actual PDF/ZIP, missing flags, dated federal rule/statute snapshots, software code/test reference review and fixed metadata session audit. Offline project-bound legal status/checklist only; state/local sources and all real case/transmission adapters disabled. This bounded synthetic slice is tested; full requirement is not operational.",
+     "test_command": "bunx vitest run src/test/omni-legal.test.ts; bunx vitest run; go test -race -count=1 ./...; go vet ./... (cwd cli); python3 /tmp/browser/omni-legal/check_legal.py",
+     "test_result": "15 legal and 992 full app tests PASS; CLI race/vet PASS; real Linux command smoke, six unsigned builds and desktop/mobile synthetic PDF/exhibit flow PASS. Authenticated case isolation and actual filings NOT IMPLEMENTED/NOT RUN.",
+     "evidence_ref": "omni-legal",
+     "runtime_evidence": "Downloaded real 6466-byte PDF and ZIP; originals byte-identical; missing fields flagged, review state derived, edit invalidates export, unsupported jurisdiction has no applied federal sources, court action disabled, no page errors or mobile overflow. No localStorage case persistence; reload resets synthetic session.",
+     "next_action": "Keep real cases/transmission blocked. Extend official-source currency and jurisdiction-specific format/requirements only after exact court/practice area selection; implement scoped case vault/retention/revocation/audit and verified companion before real data. Integrate generated-code traceability under existing project permissions, never legal-compliance certification.",
+     "missing_input": "Exact court/practice area and responsible legal review; scoped private case storage/access/revocation and protected audit; supported authenticated court/provider, secure scopes/test account/receipt verification and explicit transmission confirmation. Native companion bridge and court PDF/format QA unavailable.",
+     "release_status": "Not published/deployed; real records/submissions/payments/service/signatures prohibited in this build",
+     "release_receipt": null
     }
    ]
   },
@@ -2860,7 +2885,8 @@
    "steps": [
     "13"
    ],
-   "source": "All three retained blueprint parts and roadmap.md family disposition"
+   "source": "All three retained blueprint parts and roadmap.md family disposition",
+   "legal_crosswalk": "13.13 Omni Legal added 2026-10-25: synthetic procedural preparation and sourced software requirement/code/test review; private cases and court transmission remain blocked. Legal work complements existing Rights, never replaces its records or grants."
   },
   {
    "family": "Commons / Knowledge Exchange / Pulse / capsules / homecoming",

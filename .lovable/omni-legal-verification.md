@@ -15,10 +15,13 @@
 - Direct gateway read of `https://uscode.house.gov/us/usc/119-124/t28/s2071/` confirms enacted text current through Public Law 119-124 (October 15, 2026) and the official section note making the 1988 amendment effective December 1, 1988.
 - Legacy `view.xhtml` lookup returned Page Not Found; not counted as a verified source. The working version-pinned official URL is used. No real case records consulted.
 
-## Verification (updated after actual runs)
-- Focused legal/unit/routing and CLI tests: pending final rerun.
-- Synthetic UI → jurisdiction → missing flags → real PDF/exhibit ZIP → source checklist → review state → edit invalidation → unavailable integration → session reset: pending browser check.
-- Preview build: latest harness build OK during implementation; final log check pending.
+## Actual verification
+- `bunx vitest run src/test/omni-legal.test.ts src/test/omni-rights.test.ts src/test/omni-marketing.test.ts src/test/omni-intake.test.ts src/test/omni-enhance.test.ts src/test/app-routing.test.tsx src/test/seo.test.ts`: **124 PASS**, including **15 legal rules/export tests**. Concrete missing-field/review states, illegal filing transitions, incomplete redaction, date/proposal semantics, applicability questions, bounded metadata audit, actual PDF and byte-identical ZIP, unsupported jurisdictions, oversize/traversal/duplicate refusal.
+- `bunx vitest run`: **992 tests / 62 files PASS** (18:18 UTC). No manual app build/typecheck; harness is authoritative for preview compilation.
+- CLI `go test -race -count=1 ./...`: **PASS, 57.623s**, `go vet ./...`: PASS. Go 1.25.7. Four new tests cover alias project-bound read-only flow, state/local source refusal, missing/forged/symlink binding, unsafe transmission/argument/no-echo denials. Local binding is not authenticated customer isolation.
+- Actual compiled Linux binary in disposable fixture: federal/state/local status/checklist, no mutation by snapshots, submission refusal **PASS**. Six unsigned Darwin/Linux/Windows × amd64/arm64 builds PASS; native macOS/Windows/ARM execution unrun.
+- `python3 /tmp/browser/omni-legal/check_legal.py`: synthetic UI → jurisdiction → missing flags → real **6466-byte PDF** and ZIP → byte-identical original/exhibit → source checklist → ready FOR review → edit invalidation → unavailable court → state/local no applied federal sources → metadata/reset/reload → mobile **PASS**, no page errors or overflow. Screenshots `/tmp/browser/omni-legal/{1_packet,2_sources,3_mobile}.png` inspected. First run timed out awaiting export; fresh run passed with preparation notice and no errors, not counted as an initial pass.
+- Preview harness build OK after latest source edits. Canonical register records 13.13 In progress; this synthetic increment is tested, full protected/live legal workflow remains pending.
 
 ## Pending / blocked
 - **Real case data:** deliberately not accepted. Needs owner/project/case-scoped private storage/access/revocation, retention, protected audit, redaction review and security/isolation acceptance. No authenticated case-vault tests performed or claimed. No case data stored in localStorage.
