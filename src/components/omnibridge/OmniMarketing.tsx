@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DemoBadge } from "@/components/evo";
+import { OmniIntake } from "./OmniIntake";
 import {
   ACCEPTED_TYPES, ADAPTERS, MAX_BRIEF_BYTES, PLANNED_TYPES, STORE_KEY, bookPreferences, cancelJobs, cloneCampaign,
   compareStrategies, draftAssets, intakeFile, loadStore, planJobs, revokeChannel, routeScore, saveStore, selectRoute,
@@ -46,6 +47,7 @@ export function OmniMarketing() {
         <p className="mt-3 max-w-3xl text-xs leading-6 text-warning">Campaigns are saved in this browser only. Scores are planning heuristics, not market research. No publishing account is connected, so nothing is posted, sent or spent; jobs stay blocked with the exact requirement.</p>
       </header>
 
+      <OmniIntake />
       <section className="mt-6 border border-border p-5">
         <h2 className="text-xl">1 · Upload a brief</h2>
         <p className="mt-2 text-xs text-muted-foreground">Accepted now: {ACCEPTED_TYPES.join(", ")} up to {MAX_BRIEF_BYTES / 1000} KB. Planned: {PLANNED_TYPES.join(", ")}. Content is never executed.</p>

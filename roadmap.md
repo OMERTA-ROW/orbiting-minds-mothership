@@ -154,3 +154,5 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 
 - [x] OMNI Marketing local vertical slice (/omni-marketing): text/MD/JSON brief intake, market inference with evidence, 3-route comparison, draft assets, validation, zero-spend policy, idempotent blocked jobs, cancel/revoke/clone; 14 tests.
 - [ ] OMNI Marketing real publishing adapter — blocked: owner-authorized provider app/test account (e.g. LinkedIn w_member_social); server-side job store; PDF/DOCX/media/archive parsers; metrics.
+- [x] OMNI intake (browser): drop/file/folder picker, category or Inbox, hash dedup, versioning, traversal/self-import refusal, recategorize, history; 9 tests.
+- [ ] OMNI Desktop workspace import/watch — needs Go companion import/watch commands + native host test (unrun).
