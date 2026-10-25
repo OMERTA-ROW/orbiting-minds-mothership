@@ -158,3 +158,5 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] OMNI Desktop workspace import/watch — needs Go companion import/watch commands + native host test (unrun).
 - [x] OMNI enhancement default-on (browser model): auto-queue on import, baseline/candidate, regression rejection, loop guard, offline/budget, stop/resume, rollback; 10 tests.
 - [ ] OMNI background companion service (startup registration, resource limits, uninstall) — not implemented; native hosts unrun.
+- [x] OMNI Rights local slice (/omni-rights): fictional client matters, specimen URL/date/mockup flags, fixture email filing, draft-only replies, send policy, dedupe, client isolation; 10 tests.
+- [ ] OMNI Rights live: client mailbox connection, Copyright Office/USPTO filing (portal handoff only), deadline notifications, Desktop Rights folders via companion — blocked/unrun.
