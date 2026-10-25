@@ -15,7 +15,9 @@ func containProcess(cmd *exec.Cmd) func() {
 	var once sync.Once
 	var killErr error
 	kill := func() error {
-		if cmd.Process == nil { return nil }
+		if cmd.Process == nil {
+			return nil
+		}
 		once.Do(func() { killErr = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) })
 		return killErr
 	}

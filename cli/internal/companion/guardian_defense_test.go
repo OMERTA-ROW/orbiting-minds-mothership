@@ -154,37 +154,55 @@ func TestGuardianKnownGoodOwnerReselectionRecoversOnlySelectedProject(t *testing
 	p := defenseProject(t)
 	other := defenseProject(t)
 	os.Remove(profilePath(p.Root))
-	if _, err := RunSandbox(p, "go-test", true, time.Minute, nil); err == nil { t.Fatal("withdrawn project ran") }
+	if _, err := RunSandbox(p, "go-test", true, time.Minute, nil); err == nil {
+		t.Fatal("withdrawn project ran")
+	}
 	if err := validateCurrentProject(p); err == nil {
 		t.Fatal("stale profile valid")
 	}
 	if err := validateCurrentProject(other); err != nil {
 		t.Fatal("unrelated project locked out")
 	}
-	if _, err := UseProject(p.Name, p.Root, true); err != nil { t.Fatal(err) }
+	if _, err := UseProject(p.Name, p.Root, true); err != nil {
+		t.Fatal(err)
+	}
 	reviewed, err := LoadProject(p.Root)
 	if err != nil || validateCurrentProject(reviewed) != nil {
 		t.Fatal("owner selection did not recover")
 	}
 	os.WriteFile(filepath.Join(p.Root, "x.go"), []byte("package defense\n"), 0600)
 	rec, err := RunSandbox(reviewed, "go-test", true, time.Minute, nil)
-	if err != nil || rec.Result != "PASSED" { t.Fatalf("reviewed project failed real recovery run: %+v %v", rec, err) }
+	if err != nil || rec.Result != "PASSED" {
+		t.Fatalf("reviewed project failed real recovery run: %+v %v", rec, err)
+	}
 	events, err := SecurityAudit(reviewed)
-	if err != nil || len(events) != 3 || events[0].Action != "DENIED" || events[2].Action != "PASSED" { t.Fatal("recovery evidence missing", err) }
+	if err != nil || len(events) != 3 || events[0].Action != "DENIED" || events[2].Action != "PASSED" {
+		t.Fatal("recovery evidence missing", err)
+	}
 }
 
 func TestGuardianAuditSymlinkAndSizeLimitCannotAuthorize(t *testing.T) {
 	p := defenseProject(t)
 	outside := t.TempDir()
-	if err := os.Symlink(outside, filepath.Join(p.Root, profileDir, "security")); err != nil { t.Skip("symlinks unavailable") }
-	if _, err := RunSandbox(p, "go-test", true, time.Minute, nil); err == nil { t.Fatal("symlink audit authorized task") }
+	if err := os.Symlink(outside, filepath.Join(p.Root, profileDir, "security")); err != nil {
+		t.Skip("symlinks unavailable")
+	}
+	if _, err := RunSandbox(p, "go-test", true, time.Minute, nil); err == nil {
+		t.Fatal("symlink audit authorized task")
+	}
 	entries, _ := os.ReadDir(outside)
-	if len(entries) != 0 { t.Fatal("audit escaped approved project") }
+	if len(entries) != 0 {
+		t.Fatal("audit escaped approved project")
+	}
 	os.Remove(filepath.Join(p.Root, profileDir, "security"))
-	if err := recordSecurity(p, "info", "test", "DENIED", "Fixed test evidence"); err != nil { t.Fatal(err) }
+	if err := recordSecurity(p, "info", "test", "DENIED", "Fixed test evidence"); err != nil {
+		t.Fatal(err)
+	}
 	path := filepath.Join(p.Root, profileDir, "security", "events.jsonl")
 	os.WriteFile(path, bytes.Repeat([]byte("x"), maxSecurityAudit+1), 0600)
-	if _, err := RunSandbox(p, "go-test", true, time.Minute, nil); err == nil { t.Fatal("oversized audit authorized task") }
+	if _, err := RunSandbox(p, "go-test", true, time.Minute, nil); err == nil {
+		t.Fatal("oversized audit authorized task")
+	}
 }
 
 func TestGuardianRejectsUnboundedTimeoutAndPreCancelledJob(t *testing.T) {
