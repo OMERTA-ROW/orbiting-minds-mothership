@@ -134,6 +134,9 @@ Local source commands:
                              --change binds the run record to a reviewed manifest.
   evolution omni route "<goal>" --project <dir> [--json]
                              Shows OMNI routing for a project; no model is called
+  evolution omni legal status|checklist --project <dir> [--jurisdiction federal|state|local] [--json]
+                             Read-only synthetic legal preparation reference;
+                             no case file access, court submission or signature
   evolution guardian audit --project <dir> [--json]
                              Reads real local security decisions; hash chain only,
                              not signed/immutable or a hosted Guardian connection
@@ -246,6 +249,9 @@ func Run(args []string, invoked string, out, errOut io.Writer) int {
 	case "release":
 		return runRelease(args[1:], out, errOut)
 	case "omni":
+		if len(args) > 1 && args[1] == "legal" {
+			return runLegal(args[2:], out, errOut)
+		}
 		if len(args) > 1 && args[1] == "route" {
 			return runRoute(args[2:], out, errOut)
 		}

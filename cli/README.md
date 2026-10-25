@@ -108,6 +108,22 @@ the new process group on timeout/Ctrl-C and cleans up attached descendants;
 detached descendants can escape, and other hosts remain direct-process only.
 
 ### Local Guardian evidence (development source only)
+### Omni Legal reference (development source only)
+
+`evolution omni legal status|checklist --project <absolute-dir>
+[--jurisdiction federal|state|local] [--json]` (or `omni legal ...` when invoked
+through the alias) validates the saved local project binding and returns fixed
+synthetic preparation metadata plus dated official federal civil rule links.
+It reads no case files, creates no folders/logs, accepts no credentials and makes
+no network/model/court calls. State/local sources remain unavailable and do not
+inherit federal rule applicability. Missing/forged/symlink project bindings fail.
+Draft and ready-for-review are preparation states only; authentic provider receipt
+and court evidence would be required for submitted/accepted/rejected, and no
+transmission adapter exists. The browser `/omni-legal` page separately prepares
+synthetic PDF/exhibit ZIP review packets in memory, not the Desktop or case vault.
+No legal advice, signature, service, payment, verified deadline or compliance claim.
+
+### Local Guardian evidence (development source only)
 
 Every local task/routing/change-manifest boundary reloads the saved project
 binding. Changed or withdrawn selections are denied before execution; this is
