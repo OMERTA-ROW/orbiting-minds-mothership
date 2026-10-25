@@ -28,13 +28,13 @@ type FileFingerprint struct {
 }
 
 type ChangeRecord struct {
-	ID        string                      `json:"id"`
-	Project   string                      `json:"project"`
-	Summary   string                      `json:"summary"`
-	CreatedAt string                      `json:"created_at"`
-	Files     map[string]FileFingerprint  `json:"files"`
-	Skipped   int                         `json:"skipped_oversized"`
-	Note      string                      `json:"note"`
+	ID        string                     `json:"id"`
+	Project   string                     `json:"project"`
+	Summary   string                     `json:"summary"`
+	CreatedAt string                     `json:"created_at"`
+	Files     map[string]FileFingerprint `json:"files"`
+	Skipped   int                        `json:"skipped_oversized"`
+	Note      string                     `json:"note"`
 }
 
 type ChangeDiffEntry struct {
@@ -59,10 +59,10 @@ type ChangeDiff struct {
 }
 
 const (
-	maxSnapshotFiles   = 5000
-	maxSnapshotFile    = 1 << 20  // 1 MiB per file
-	maxSnapshotTotal   = 256 << 20 // 256 MiB total
-	changeNote         = "File-level fingerprint manifest for human review; not a line diff, not an agent-authored change, not test evidence."
+	maxSnapshotFiles = 5000
+	maxSnapshotFile  = 1 << 20   // 1 MiB per file
+	maxSnapshotTotal = 256 << 20 // 256 MiB total
+	changeNote       = "File-level fingerprint manifest for human review; not a line diff, not an agent-authored change, not test evidence."
 )
 
 var changeIDPattern = regexp.MustCompile(`^\d{8}T\d{6}Z-[0-9a-f]{12}$`)
@@ -144,6 +144,9 @@ func newChangeID() (string, error) {
 // ChangeNew records a reviewable baseline snapshot inside the project only.
 func ChangeNew(p ProjectProfile, summary string, approve bool) (ChangeRecord, error) {
 	var rec ChangeRecord
+	if err := validateCurrentProject(p); err != nil {
+		return rec, err
+	}
 	if !approve {
 		return rec, errors.New("add --approve to record a change proposal in that project")
 	}
@@ -185,6 +188,9 @@ func ChangeNew(p ProjectProfile, summary string, approve bool) (ChangeRecord, er
 // proposals that belong to a different project profile.
 func LoadChange(p ProjectProfile, id string) (ChangeRecord, error) {
 	var rec ChangeRecord
+	if err := validateCurrentProject(p); err != nil {
+		return rec, err
+	}
 	if !changeIDPattern.MatchString(id) {
 		return rec, errors.New("invalid change identifier")
 	}
@@ -208,6 +214,9 @@ func LoadChange(p ProjectProfile, id string) (ChangeRecord, error) {
 
 // ListChanges returns recorded proposals for the project, oldest first.
 func ListChanges(p ProjectProfile) ([]ChangeRecord, error) {
+	if err := validateCurrentProject(p); err != nil {
+		return nil, err
+	}
 	if err := validateProjectRoot(p.Root); err != nil {
 		return nil, err
 	}

@@ -134,6 +134,9 @@ Local source commands:
                              --change binds the run record to a reviewed manifest.
   evolution omni route "<goal>" --project <dir> [--json]
                              Shows OMNI routing for a project; no model is called
+  evolution guardian audit --project <dir> [--json]
+                             Reads real local security decisions; hash chain only,
+                             not signed/immutable or a hosted Guardian connection
   evolution release verify --dir <staged-release> [--json]
                              Checks SHA256SUMS; reports UNSIGNED unless signature files exist
   evolution release manifest --dir <staged-release> [--json]
@@ -219,6 +222,8 @@ func Run(args []string, invoked string, out, errOut io.Writer) int {
 		return runChange(args[1:], out, errOut)
 	case "sandbox":
 		return runSandboxCmd(args[1:], out, errOut)
+	case "guardian":
+		return runGuardian(args[1:], out, errOut)
 	case "release":
 		return runRelease(args[1:], out, errOut)
 	case "omni":

@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -139,6 +140,14 @@ func RouteGoal(p ProjectProfile, goal string) (RouteRequest, error) {
 	if len(goal) < 5 || len(goal) > 500 {
 		return RouteRequest{}, errors.New("goal must be 5-500 characters")
 	}
+	if err := validateCurrentProject(p); err != nil {
+		return RouteRequest{}, err
+	}
+	for _, rule := range InjectionIndicators(goal) {
+		if err := recordSecurity(p, "warning", rule, "ADVISORY", "Fixed text pattern matched in a local routing goal; no model or tool authority granted."); err != nil {
+			return RouteRequest{}, err
+		}
+	}
 	tasks := []string{}
 	for _, id := range []string{"go-test", "go-vet", "npm-test"} {
 		if _, err := os.Stat(filepath.Join(p.Root, sandboxTasks[id].marker)); err == nil {
@@ -150,28 +159,33 @@ func RouteGoal(p ProjectProfile, goal string) (RouteRequest, error) {
 }
 
 type RunRecord struct {
-	ID        string   `json:"id"`
-	Project   string   `json:"project"`
-	Task      string   `json:"task"`
-	Change    string   `json:"change,omitempty"`
-	Argv      []string `json:"argv"`
-	Started   string   `json:"started"`
-	Seconds   float64  `json:"seconds"`
-	ExitCode  int      `json:"exit_code"`
-	Result    string   `json:"result"`
-	LogFile   string   `json:"log_file"`
-	Truncated bool     `json:"truncated"`
+	ID          string   `json:"id"`
+	Project     string   `json:"project"`
+	Task        string   `json:"task"`
+	Change      string   `json:"change,omitempty"`
+	Argv        []string `json:"argv"`
+	Started     string   `json:"started"`
+	Seconds     float64  `json:"seconds"`
+	ExitCode    int      `json:"exit_code"`
+	Result      string   `json:"result"`
+	LogFile     string   `json:"log_file"`
+	Truncated   bool     `json:"truncated"`
+	Containment string   `json:"containment,omitempty"`
 }
 
 const maxLog = 1 << 20
 
 type cappedBuffer struct {
-	mu sync.Mutex
-	buffer bytes.Buffer
+	mu        sync.Mutex
+	buffer    bytes.Buffer
 	truncated bool
 }
 
-func (c *cappedBuffer) Bytes() []byte { c.mu.Lock(); defer c.mu.Unlock(); return append([]byte(nil), c.buffer.Bytes()...) }
+func (c *cappedBuffer) Bytes() []byte {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]byte(nil), c.buffer.Bytes()...)
+}
 func (c *cappedBuffer) Len() int { return c.buffer.Len() }
 
 func (c *cappedBuffer) Write(b []byte) (int, error) {
@@ -207,13 +221,43 @@ func RunSandbox(p ProjectProfile, task string, approve bool, timeout time.Durati
 }
 
 func runSandbox(p ProjectProfile, task, changeID string, approve bool, timeout time.Duration, live io.Writer) (RunRecord, error) {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	return runSandboxContext(ctx, p, task, changeID, approve, timeout, live)
+}
+
+func validateCurrentProject(p ProjectProfile) error {
+	current, err := LoadProject(p.Root)
+	if err != nil || current != p {
+		return errors.New("selected project profile changed or was withdrawn; owner must review and select it again")
+	}
+	return nil
+}
+
+func runSandboxContext(parent context.Context, p ProjectProfile, task, changeID string, approve bool, timeout time.Duration, live io.Writer) (RunRecord, error) {
 	var rec RunRecord
+	if err := validateCurrentProject(p); err != nil {
+		_ = recordSecurity(p, "warning", "project-binding", "DENIED", "Selected local project profile did not match the current saved profile. No process started.")
+		return rec, err
+	}
 	t, ok := sandboxTasks[task]
 	if !ok {
+		if err := recordSecurity(p, "warning", "task-allowlist", "DENIED", "Unknown task requested; fixed task allowlist denied execution."); err != nil {
+			return rec, err
+		}
 		return rec, errors.New("unknown task; allowed: go-test, go-vet, go-build, npm-test")
 	}
 	if !approve {
+		if err := recordSecurity(p, "warning", "explicit-approval", "DENIED", "Local task lacked explicit operator approval. No process started."); err != nil {
+			return rec, err
+		}
 		return rec, errors.New("add --approve to run this task in the project directory")
+	}
+	if timeout <= 0 || timeout > 30*time.Minute {
+		return rec, errors.New("task timeout must be positive and at most 30 minutes")
+	}
+	if parent.Err() != nil {
+		return rec, errors.New("task cancelled before authorization")
 	}
 	if err := validateProjectRoot(p.Root); err != nil {
 		return rec, err
@@ -251,9 +295,12 @@ func runSandbox(p ProjectProfile, task, changeID string, approve bool, timeout t
 		return rec, err
 	}
 	rec = RunRecord{ID: time.Now().UTC().Format("20060102T150405Z") + "-" + hex.EncodeToString(idBytes), Project: p.Name, Task: task, Change: changeID, Argv: t.argv, Started: time.Now().UTC().Format(time.RFC3339)}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, t.argv[1:]...)
+	cleanup := containProcess(cmd)
+	defer cleanup()
+	rec.Containment = processBoundary
 	// Bound waiting on inherited stdout/stderr pipes; not process-tree isolation.
 	cmd.WaitDelay = 500 * time.Millisecond
 	cmd.Dir, cmd.Env = p.Root, minimalEnv()
@@ -261,13 +308,23 @@ func runSandbox(p ProjectProfile, task, changeID string, approve bool, timeout t
 	// One synchronized capped sink avoids stdout/stderr races. Display only
 	// after redaction, so terminal capture cannot expose raw child credentials.
 	cmd.Stdout, cmd.Stderr = buf, buf
+	// Recheck after setup, then persist authorization evidence before startup.
+	if err := validateCurrentProject(p); err != nil {
+		return rec, err
+	}
+	if err := recordSecurity(p, "info", "task-authorization", "AUTHORIZED", fmt.Sprintf("Run %s; current local project binding, fixed task and explicit approval checked. Authorization is not execution or completion evidence.", rec.ID)); err != nil {
+		return rec, err
+	}
 	start := time.Now()
 	runErr := cmd.Run()
+	cleanup()
 	rec.Seconds = float64(time.Since(start).Milliseconds()) / 1000
 	rec.Truncated = buf.truncated
 	switch {
 	case ctx.Err() == context.DeadlineExceeded:
 		rec.ExitCode, rec.Result = -1, "TIMED OUT"
+	case ctx.Err() == context.Canceled:
+		rec.ExitCode, rec.Result = -1, "CANCELLED"
 	case runErr != nil:
 		var ee *exec.ExitError
 		if errors.As(runErr, &ee) {
@@ -277,6 +334,9 @@ func runSandbox(p ProjectProfile, task, changeID string, approve bool, timeout t
 		}
 	default:
 		rec.Result = "PASSED"
+	}
+	if err := recordSecurity(p, "info", "task-result", rec.Result, fmt.Sprintf("Run %s; exit %d; containment boundary: %s. Cancellation denotes context cancellation/signal request, not universal descendant verification.", rec.ID, rec.ExitCode, processBoundary)); err != nil {
+		return rec, err
 	}
 	if err := validateProjectRoot(p.Root); err != nil {
 		return rec, err

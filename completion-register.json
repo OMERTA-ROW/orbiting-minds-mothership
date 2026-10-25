@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "created_at": "2026-10-22",
- "updated_at": "2026-10-24T15:23:00Z",
+ "updated_at": "2026-10-25T16:30:13.847458Z",
  "project_name": "Evolution Mothership",
  "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
  "source_note_urls": [
@@ -173,12 +173,33 @@
      "isolated test environment",
      "hosting/provider decision"
     ]
+   },
+   {
+    "date": "2026-10-25T16:30:13.847458Z",
+    "actor": "lovable-implementation",
+    "summary": "Owner-approved Guardian defense-in-depth smallest reversible local increment: saved-project binding at task/routing/change boundaries; real bounded private hash-chain evidence; advisory injection indicators never permissions; Linux process-group Ctrl-C/timeout cleanup; actual evidence viewer and owner recovery. Existing auth/Guardian demos preserved; no shared backend/live disruption or production release.",
+    "tests": [
+     "PASS: Go race suite 35.481s and vet; app 933 tests / 57 files; 11 new evidence tests; actual local binary 12-event export and desktop/mobile tamper/clear flow; six unsigned source targets compile; no fresh hosted adversarial tests."
+    ],
+    "blocked_unchanged": [
+     "auth-failure event adapter and owner-only hosted audit",
+     "short-lived authenticated capabilities and session revoke",
+     "custom durable rate-limit tradeoff/quotas require confirmation; no standard limiter",
+     "isolated durable jobs/container and native macOS/Windows descendant adapters",
+     "external audit anchor and reviewed version restoration"
+    ]
    }
   ],
   "cli-workspace": {
    "command": "cd cli && go vet ./... && go test -race -count=1 ./...",
    "result": "Passed: vet clean; race-enabled suite ok (53.4s) with 6 new workspace tests covering persistence, custom paths, redirected Desktop, templates, collisions, traversal/symlink refusal, move/keep and opener approval.",
    "runtime": "Isolated sandbox temp directories on Linux/amd64; no user device touched, no install, no network.",
+   "passed": true
+  },
+  "guardian-defense": {
+   "command": "go test -race -count=1 ./...; go vet ./... (cwd cli); bunx vitest run; python3 /tmp/browser/guardian-defense/local_flow.py; python3 /tmp/browser/guardian-defense/check_evidence.py",
+   "result": "PASS: Go race suite 35.481s and vet; app 933 tests / 57 files; 11 new evidence tests; actual local binary 12-event export and desktop/mobile tamper/clear flow; six unsigned source targets compile; no fresh hosted adversarial tests.",
+   "runtime": "Development Linux amd64 only: real selected project PASS/FAIL/restored PASS and Ctrl-C attached-descendant stopped, exported evidence read through Guardian UI without uploads. Local chain/selection are not authenticated capabilities, immutable audit or filesystem/network isolation. Report: .lovable/guardian-defense-verification.md.",
    "passed": true
   }
  },
@@ -361,7 +382,7 @@
    "items": [
     {
      "id": "03.01",
-     "requirement": "Enforce scoped actions, server-side checks, audit history, cancellation, resource limits and emergency stop.",
+     "requirement": "Enforce scoped actions, server-side checks, audit history, cancellation, resource limits and emergency stop. Ghost security is owner-visible quiet defense, never stealth/retaliation/invulnerability. Extend independent default-deny owner/project authorization, scoped expiring/revocable capabilities, auth/tool/file/injection evidence, redacted restricted tamper evidence, bounded supported job containment and reviewed owner recovery; AI/advisory detection must never grant permission or weaken policy.",
      "status": "In progress",
      "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
      "dependencies": [
@@ -370,23 +391,38 @@
      "changed_files": [
       "src/lib/omni-social.functions.ts",
       "src/lib/knowledge-job.server.ts",
-      "src/lib/beta-auth.server.ts"
+      "src/lib/beta-auth.server.ts",
+      "cli/internal/companion/project.go",
+      "cli/internal/companion/change.go",
+      "cli/internal/companion/commands.go",
+      "cli/internal/companion/security_audit.go",
+      "cli/internal/companion/process_linux.go",
+      "cli/internal/companion/process_other.go",
+      "cli/internal/companion/cli_guardian.go",
+      "cli/internal/companion/guardian_defense_test.go",
+      "cli/README.md",
+      "cli/SECURITY.md",
+      "src/lib/guardian-evidence.ts",
+      "src/components/guardian/DevelopmentEvidence.tsx",
+      "src/components/guardian/Center.tsx",
+      "src/test/guardian-evidence.test.ts",
+      ".lovable/guardian-defense-verification.md"
      ],
      "commit": null,
-     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
-     "verified_scope": "Real private draft/review/stop and beta server guards; bounded collector/resources; Guardian native controls demo only.",
-     "test_command": "python3 src/test/test_omni_social_workflow.py --run",
-     "test_result": "Prior reconciliation: 38 hosted checks passed",
-     "evidence_ref": "planning",
-     "runtime_evidence": "Owner/project revision-bound draft/review/stop, audit/readback; no external post/receipt/scopes.",
-     "next_action": "Need selected executing adapter and owner-approved durable request/concurrency quotas; no standard limiter/ad-hoc spending policy silently chosen.",
+     "commit_note": "Lovable-managed development revisions; observed 482dc10bf68b6719a37d612e9f583b4c18e62bad before final evidence/register edits, not a final external GitHub commit/PR. No manual commit/push; separate Omni copy unchanged.",
+     "verified_scope": "Retained real beta/review/stop controls. New local CLI saved-project binding, fixed-task deny/approval, advisory-only routing patterns, bounded private local audit and Linux attached-process-group cancellation tested. Browser imports display actual export; no hosted Guardian scopes, rate limiter, authentication-failure feed, file-request sensor, remote containment or immutable audit claimed.",
+     "test_command": "go test -race -count=1 ./...; go vet ./... (cwd cli); bunx vitest run; python3 /tmp/browser/guardian-defense/local_flow.py; python3 /tmp/browser/guardian-defense/check_evidence.py",
+     "test_result": "PASS: Go race suite 35.481s and vet; app 933 tests / 57 files; 11 new evidence tests; actual local binary 12-event export and desktop/mobile tamper/clear flow; six unsigned source targets compile; no fresh hosted adversarial tests.",
+     "evidence_ref": "guardian-defense",
+     "runtime_evidence": "Development Linux amd64 only: real selected project PASS/FAIL/restored PASS and Ctrl-C attached-descendant stopped, exported evidence read through Guardian UI without uploads. Local chain/selection are not authenticated capabilities, immutable audit or filesystem/network isolation. Report: .lovable/guardian-defense-verification.md.",
+     "next_action": "Implement authenticated owner-scoped event/capability/audit adapters in isolated development backend; confirm custom durable rate-limit tradeoff and concrete quotas (no standard limiter); choose isolated job runner/session-revoke and reviewed version-restoration adapters before activation.",
      "missing_input": null,
-     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_status": "Development source/preview only; no production deploy, signing, install, provider connection or live-site disruptive testing",
      "release_receipt": null
     },
     {
      "id": "03.02",
-     "requirement": "Test denied actions, expired/revoked access, failed jobs, retries and idempotency.",
+     "requirement": "Test denied actions, expired/revoked access, failed jobs, retries and idempotency. Acceptance separates authorized baseline, cross-user denial, forged/expired/revoked capabilities, prompt-based secret/privilege attempts, rate bounds, cancellation descendants and owner recovery from classifier false positives/negatives.",
      "status": "In progress",
      "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
      "dependencies": [
@@ -395,18 +431,33 @@
      "changed_files": [
       "src/test/knowledge.test.ts",
       "src/test/test_knowledge_isolation.py",
-      "src/test/omni-operations.test.ts"
+      "src/test/omni-operations.test.ts",
+      "cli/internal/companion/project.go",
+      "cli/internal/companion/change.go",
+      "cli/internal/companion/commands.go",
+      "cli/internal/companion/security_audit.go",
+      "cli/internal/companion/process_linux.go",
+      "cli/internal/companion/process_other.go",
+      "cli/internal/companion/cli_guardian.go",
+      "cli/internal/companion/guardian_defense_test.go",
+      "cli/README.md",
+      "cli/SECURITY.md",
+      "src/lib/guardian-evidence.ts",
+      "src/components/guardian/DevelopmentEvidence.tsx",
+      "src/components/guardian/Center.tsx",
+      "src/test/guardian-evidence.test.ts",
+      ".lovable/guardian-defense-verification.md"
      ],
      "commit": null,
-     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
-     "verified_scope": "Denied owner actions, revision/revocation gates and collector no-replay/failed-write safeguards tested; full external-job expiry/retry/cancellation receipts absent.",
-     "test_command": "python3 /tmp/browser/collector/check_background.py; EVOLUTION_QA_APPROVED_BACKEND_URL=\"$SUPABASE_URL\" python3 src/test/test_knowledge_isolation.py --run",
-     "test_result": "Prior reconciliation: two final preview attempts 70/2/68 and 70/0/70; 27 hosted checks passed",
-     "evidence_ref": "knowledge",
-     "runtime_evidence": "7 completed persisted attempts, 88 unique entries, 1 existing brief/19 citations, released lease/clear guard. Manual preview runs, not cron delivery. No new brief forced.",
-     "next_action": "Executing adapter and real expiry/stop acceptance test required; provider denials remain terminal.",
+     "commit_note": "Lovable-managed development revisions; observed 482dc10bf68b6719a37d612e9f583b4c18e62bad before final evidence/register edits, not a final external GitHub commit/PR. No manual commit/push; separate Omni copy unchanged.",
+     "verified_scope": "Actual local baseline, forged/stale/withdrawn/mismatched profile denial, unknown-task/no-approval denial, literal injection false-positive/false-negative separation, tampered/busy/unsafe/full audit, positive timeout cap/pre-cancel, Linux attached child cancellation and actual owner recovery tested. Existing mocked bearer/project tests rerun; no fresh hosted cross-user, capability-expiry or rate-limit acceptance.",
+     "test_command": "go test -race -count=1 ./...; go vet ./... (cwd cli); bunx vitest run; python3 /tmp/browser/guardian-defense/local_flow.py; python3 /tmp/browser/guardian-defense/check_evidence.py",
+     "test_result": "PASS: Go race suite 35.481s and vet; app 933 tests / 57 files; 11 new evidence tests; actual local binary 12-event export and desktop/mobile tamper/clear flow; six unsigned source targets compile; no fresh hosted adversarial tests.",
+     "evidence_ref": "guardian-defense",
+     "runtime_evidence": "Development Linux amd64 only: real selected project PASS/FAIL/restored PASS and Ctrl-C attached-descendant stopped, exported evidence read through Guardian UI without uploads. Local chain/selection are not authenticated capabilities, immutable audit or filesystem/network isolation. Report: .lovable/guardian-defense-verification.md.",
+     "next_action": "Require actual auth-event/capability/rate/job adapters before those acceptance tests; do not promote local binding or mocked identity denial to hosted security proof. No disruptive shared live-site testing.",
      "missing_input": null,
-     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_status": "Development source/preview only; no production deploy, signing, install, provider connection or live-site disruptive testing",
      "release_receipt": null
     },
     {
@@ -421,18 +472,32 @@
       "cli/internal/companion/redact.go",
       "cli/internal/companion/project.go",
       "cli/internal/companion/release_regression_test.go",
-      "src/test/test_quantum_isolation.py"
+      "src/test/test_quantum_isolation.py",
+      "cli/internal/companion/change.go",
+      "cli/internal/companion/commands.go",
+      "cli/internal/companion/security_audit.go",
+      "cli/internal/companion/process_linux.go",
+      "cli/internal/companion/process_other.go",
+      "cli/internal/companion/cli_guardian.go",
+      "cli/internal/companion/guardian_defense_test.go",
+      "cli/README.md",
+      "cli/SECURITY.md",
+      "src/lib/guardian-evidence.ts",
+      "src/components/guardian/DevelopmentEvidence.tsx",
+      "src/components/guardian/Center.tsx",
+      "src/test/guardian-evidence.test.ts",
+      ".lovable/guardian-defense-verification.md"
      ],
      "commit": null,
-     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
-     "verified_scope": "Private bounded WAV upload isolation and real capped/chunked/structured/truncated CLI redaction tests; best-effort unknown formats caveat.",
-     "test_command": "go test -race -count=1 ./...; go vet ./... (cwd cli, Go 1.25.7 via Nix)",
-     "test_result": "Prior reconciliation final commands passed; not rerun for account-only refinement",
-     "evidence_ref": "cli",
-     "runtime_evidence": "Real local child tasks, capped-output fixture, symlink substitution rejection, JSON/text failure parity. Local process, not container/VM.",
-     "next_action": "Retain unknown-secret limitation and no untrusted local execution; no credential-custody guarantee.",
+     "commit_note": "Lovable-managed development revisions; observed 482dc10bf68b6719a37d612e9f583b4c18e62bad before final evidence/register edits, not a final external GitHub commit/PR. No manual commit/push; separate Omni copy unchanged.",
+     "verified_scope": "Existing capped/chunked/structured/truncated secret-redaction CLI tests rerun; private upload isolation is dated prior evidence, not rerun here. New local audit omits untrusted prompt/content/credentials, rejects symlink/nonprivate/corrupt/oversized evidence and chains SHA-256. External-head validation detects changed/replaced/truncated exports; same-user rewrite/unknown-secret caveats remain.",
+     "test_command": "go test -race -count=1 ./...; go vet ./... (cwd cli); bunx vitest run; python3 /tmp/browser/guardian-defense/local_flow.py; python3 /tmp/browser/guardian-defense/check_evidence.py",
+     "test_result": "PASS: Go race suite 35.481s and vet; app 933 tests / 57 files; 11 new evidence tests; actual local binary 12-event export and desktop/mobile tamper/clear flow; six unsigned source targets compile; no fresh hosted adversarial tests.",
+     "evidence_ref": "guardian-defense",
+     "runtime_evidence": "Development Linux amd64 only: real selected project PASS/FAIL/restored PASS and Ctrl-C attached-descendant stopped, exported evidence read through Guardian UI without uploads. Local chain/selection are not authenticated capabilities, immutable audit or filesystem/network isolation. Report: .lovable/guardian-defense-verification.md.",
+     "next_action": "Retain best-effort redaction and same-user limitations. Hosted Guardian audit requires owner-only grants/retention and independent external anchor; no immutable evidence or Windows ACL claim.",
      "missing_input": null,
-     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_status": "Development source/preview only; no production deploy, signing, install, provider connection or live-site disruptive testing",
      "release_receipt": null
     }
    ]
@@ -970,18 +1035,31 @@
      ],
      "changed_files": [
       "cli/SECURITY.md",
-      "cli/internal/companion/project.go"
+      "cli/internal/companion/project.go",
+      "cli/internal/companion/change.go",
+      "cli/internal/companion/commands.go",
+      "cli/internal/companion/security_audit.go",
+      "cli/internal/companion/process_linux.go",
+      "cli/internal/companion/process_other.go",
+      "cli/internal/companion/cli_guardian.go",
+      "cli/internal/companion/guardian_defense_test.go",
+      "cli/README.md",
+      "src/lib/guardian-evidence.ts",
+      "src/components/guardian/DevelopmentEvidence.tsx",
+      "src/components/guardian/Center.tsx",
+      "src/test/guardian-evidence.test.ts",
+      ".lovable/guardian-defense-verification.md"
      ],
      "commit": null,
-     "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
-     "verified_scope": "Direct-process timeout, capped logs, allowlisted argv/environment are tested but not filesystem/network isolation or portable descendant stop.",
-     "test_command": "go test -race -count=1 ./...; go vet ./... (cwd cli, Go 1.25.7 via Nix)",
-     "test_result": "Prior reconciliation final commands passed; not rerun for account-only refinement",
-     "evidence_ref": "cli",
-     "runtime_evidence": "Real local child tasks, capped-output fixture, symlink substitution rejection, JSON/text failure parity. Local process, not container/VM.",
-     "next_action": "Supported container/VM/sandbox adapter with explicit owner policy and host QA, not ordinary shell execution.",
-     "missing_input": "Supported container/VM/sandbox adapter with explicit owner policy and host QA, not ordinary shell execution.",
-     "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "commit_note": "Lovable-managed development revisions; observed 482dc10bf68b6719a37d612e9f583b4c18e62bad before final evidence/register edits, not a final external GitHub commit/PR. No manual commit/push; separate Omni copy unchanged.",
+     "verified_scope": "Fixed argv/environment, actual local runs and Linux timeout/Ctrl-C process-group cleanup tested with attached descendant checked stopped. Detached descendants may escape; macOS/Windows direct-process only. No filesystem/network/container isolation, remote jobs or universal descendants claim.",
+     "test_command": "go test -race -count=1 ./...; go vet ./... (cwd cli); bunx vitest run; python3 /tmp/browser/guardian-defense/local_flow.py; python3 /tmp/browser/guardian-defense/check_evidence.py",
+     "test_result": "PASS: Go race suite 35.481s and vet; app 933 tests / 57 files; 11 new evidence tests; actual local binary 12-event export and desktop/mobile tamper/clear flow; six unsigned source targets compile; no fresh hosted adversarial tests.",
+     "evidence_ref": "guardian-defense",
+     "runtime_evidence": "Development Linux amd64 only: real selected project PASS/FAIL/restored PASS and Ctrl-C attached-descendant stopped, exported evidence read through Guardian UI without uploads. Local chain/selection are not authenticated capabilities, immutable audit or filesystem/network isolation. Report: .lovable/guardian-defense-verification.md.",
+     "next_action": "Supported isolated container/VM/runner with explicit filesystem/network/CPU/memory limits and authenticated owner/capability policy; macOS/Windows process-tree adapters and host QA. Local Linux containment does not satisfy entire isolation requirement.",
+     "missing_input": "Supported isolated container/VM/runner with explicit filesystem/network/CPU/memory limits and authenticated owner/capability policy; macOS/Windows process-tree adapters and host QA. Local Linux containment does not satisfy entire isolation requirement.",
+     "release_status": "Development source/preview only; no production deploy, signing, install, provider connection or live-site disruptive testing",
      "release_receipt": null
     },
     {
