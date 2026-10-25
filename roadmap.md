@@ -170,14 +170,14 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] **Milestone 1 — pairing + selected-file transfer (Honeycomb, pending):** one-time QR or manual expiring code; device identity shown and approved; trust persisted securely; approved selected-file transfer across different internet networks; integrity (hash) verification; revoked device denied. Phones/tablets/laptops/desktops in all directions desired, but each platform exposes only actually supported capabilities — no promise of unattended iOS or browser background access. Files stay separate; no blanket sync. Not verified here.
 - [ ] **Milestone 2 — Omni enhancement (pending, starts only after Milestone 1 evidence):** user-selected project review, proposed diff, isolated tests with real evidence, explicit apply approval and rollback. Until then: no untrusted code execution; no integration, scan or test is claimed live.
 
-## Queued add-ons (owner request 2026-10-25; after in-progress work; unpublished)
-Order: start with A1 and A2. Label unwired items Demo, setup-dependent items Blocked.
+## Queued add-ons (owner request 2026-10-25; after in-progress work AND the 15-step completion register; unpublished; clarification, not a duplicate build)
+Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Blocked.
 - [ ] A1 Truth badges: Live / Demo / Blocked on every card, panel and agent (extends existing DemoBadge).
 - [ ] A2 Hive Jobs: one shared job record (id, project, requested by, approval state, masked logs, result, timestamps); single Mothership feed.
-- [ ] A3 Project auto-registration from manifest (name, URL, status endpoint) as orbital nodes; seed HERCULES, Honeycomb Terminal, Honeycomb Vault.
+- [ ] A3 Project auto-registration from manifest (name, URL, health endpoint, owner) as orbital nodes; seed HERCULES, Honeycomb Terminal, Honeycomb Vault.
 - [ ] A4 Command palette: start a job from Cmd+K and voice button routing to OMNI (palette navigation already exists).
 - [ ] A5 Mission Replay: scrubbable per-job timeline (asked / approved / changed / failed).
 - [ ] A6 AI cost meter: per-project and per-agent usage/spend, monthly cap, alerts.
 - [ ] A7 Daily knowledge collector: add AlphaSignal + sources, Adopt/Test/Watch/Pivot brief, run history/failures (scheduled collector already exists; extend, don't rebuild).
 - [ ] A8 Project Health honeycomb heatmap (uptime, errors, last deploy).
-- [ ] A9 CLI bridge: doctor/build/test/status as jobs triggerable by Honeycomb Terminal (Blocked until Honeycomb pairing is proven).
+- [ ] A9 CLI bridge: doctor/build/test/status as jobs one-tap triggerable by Honeycomb Terminal (Blocked until Honeycomb pairing is proven).
