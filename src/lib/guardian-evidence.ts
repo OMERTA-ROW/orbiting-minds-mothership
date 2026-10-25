@@ -30,6 +30,18 @@ const eventSchema = z
 export type GuardianEvidenceEvent = z.infer<typeof eventSchema>;
 export const maxGuardianEvidenceBytes = 2 * 1024 * 1024;
 
+// Missing result is unknown, not proof the task started, stopped or succeeded.
+export function unresolvedGuardianRuns(events: GuardianEvidenceEvent[]): string[] {
+  const pending = new Set<string>();
+  for (const event of events) {
+    const id = event.evidence.match(/^Run (\d{8}T\d{6}Z-[a-f0-9]{12});/)?.[1];
+    if (!id) continue;
+    if (event.rule === "task-authorization" && event.action === "AUTHORIZED") pending.add(id);
+    if (event.rule === "task-result") pending.delete(id);
+  }
+  return [...pending];
+}
+
 export async function validateGuardianEvidence(
   raw: string,
   expectedHead = "",

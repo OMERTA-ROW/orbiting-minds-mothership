@@ -58,6 +58,16 @@ require additional review before distribution.
   descendant adapter, code-version restoration or Parrot integration exists here.
   No standard backend limiter exists; custom durable tradeoffs/quotas need explicit
   confirmation. Auth/capability/rate acceptance is not claimed by local tests.
+- Interrupted local lock recovery is deliberately manual: verify the originating
+  writer/task is stopped, retain the original evidence and independently stored
+  head, then remove only the empty `.evolution/security/.lock` directory after
+  owner review. Never remove a possibly active lock, rewrite corrupt evidence or
+  delete project files. Capacity/corruption needs preserved archival and separately
+  reviewed repair; this increment provides no automated repair command.
+- Authorization and result evidence name the same run ID. Authorization-only
+  records are outcome unknown, not execution, completion or containment proof;
+  the imported owner view flags them. CANCELLED means context cancelled/signal
+  requested; the tests separately observe attached descendant termination.
 
 ## Future identity / secret storage (disabled)
 

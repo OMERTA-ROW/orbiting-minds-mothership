@@ -3,6 +3,7 @@
 package companion
 
 import (
+	"os"
 	"os/exec"
 	"sync"
 	"syscall"
@@ -18,7 +19,10 @@ func containProcess(cmd *exec.Cmd) func() {
 		if cmd.Process == nil {
 			return nil
 		}
-		once.Do(func() { killErr = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) })
+		once.Do(func() {
+			killErr = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			if killErr == syscall.ESRCH { killErr = os.ErrProcessDone }
+		})
 		return killErr
 	}
 	cmd.Cancel = kill

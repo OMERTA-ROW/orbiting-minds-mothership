@@ -312,7 +312,7 @@ func runSandboxContext(parent context.Context, p ProjectProfile, task, changeID 
 	if err := validateCurrentProject(p); err != nil {
 		return rec, err
 	}
-	if err := recordSecurity(p, "info", "task-authorization", "AUTHORIZED", "Current local project binding, fixed task and explicit approval checked. Not an authenticated user capability."); err != nil {
+	if err := recordSecurity(p, "info", "task-authorization", "AUTHORIZED", fmt.Sprintf("Run %s; current local project binding, fixed task and explicit approval checked. Authorization is not execution or completion evidence.", rec.ID)); err != nil {
 		return rec, err
 	}
 	start := time.Now()
@@ -335,7 +335,7 @@ func runSandboxContext(parent context.Context, p ProjectProfile, task, changeID 
 	default:
 		rec.Result = "PASSED"
 	}
-	if err := recordSecurity(p, "info", "task-result", rec.Result, fmt.Sprintf("Run %s; exit %d; containment boundary: %s.", rec.ID, rec.ExitCode, processBoundary)); err != nil {
+	if err := recordSecurity(p, "info", "task-result", rec.Result, fmt.Sprintf("Run %s; exit %d; containment boundary: %s. Cancellation denotes context cancellation/signal request, not universal descendant verification.", rec.ID, rec.ExitCode, processBoundary)); err != nil {
 		return rec, err
 	}
 	if err := validateProjectRoot(p.Root); err != nil {

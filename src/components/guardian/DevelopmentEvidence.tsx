@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   maxGuardianEvidenceBytes,
   validateGuardianEvidence,
+  unresolvedGuardianRuns,
   type GuardianEvidenceEvent,
 } from "@/lib/guardian-evidence";
 
@@ -127,6 +128,7 @@ export function DevelopmentEvidence() {
             Internal fingerprints consistent
             {head.trim() ? " · matches saved head" : " · external anchor not supplied"}.
           </p>
+          {unresolvedGuardianRuns(events).map(id => <p key={id} role="status" className="mt-4 break-all text-sm text-warning">Run {id}: outcome unknown; authorization recorded without a result. Owner review required; no completion or containment claimed.</p>)}
           {!events.length && (
             <p className="mt-4 text-sm text-muted-foreground">
               Empty evidence export; no activity recorded.
@@ -159,6 +161,7 @@ export function DevelopmentEvidence() {
           project profile. Explicitly reselect only the known-good local project after review; this
           does not restore code versions. No automatic deletion or unrelated-account lockout.
         </p>
+        <p className="mt-4 max-w-3xl text-xs leading-loose text-muted-foreground">For an interrupted local evidence lock: confirm the original task/writer is stopped, preserve the evidence and head, then remove only the empty .evolution/security/.lock directory after owner review. Corrupt/full evidence requires a separate preserved archive; never silently reset it.</p>
         <Button variant="outline" disabled className="mt-5 h-auto min-h-11 whitespace-normal">
           <LockKeyhole size={16} />
           Hosted revoke / restore · adapter unavailable
