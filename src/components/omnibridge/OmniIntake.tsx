@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, COMPANION_REQUIRED, INTAKE_KEY, MAX_FILES, MAX_FILE_BYTES, classify, importInto, loadIntake, recategorize, saveIntake, type Category, type IntakeProject } from "@/lib/omni-intake";
+import { initialEngine, metadataChecks, noteProject, resume, rollback, stop, tick, type EngineState } from "@/lib/omni-enhance";
+const ENGINE_KEY = "evolution.omni-enhance.v1";
 
 async function hashFile(file: File) {
   const buf = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
@@ -13,6 +15,18 @@ export function OmniIntake() {
   const [msg, setMsg] = useState("");
   useEffect(() => { setProjects(loadIntake(localStorage.getItem(INTAKE_KEY))); setLoaded(true); }, []);
   useEffect(() => { if (loaded) localStorage.setItem(INTAKE_KEY, saveIntake(projects)); }, [projects, loaded]);
+  const [engine, setEngine] = useState<EngineState>(initialEngine);
+  useEffect(() => { try { const v = localStorage.getItem(ENGINE_KEY); if (v) setEngine(JSON.parse(v)); } catch { /* keep default */ } }, []);
+  useEffect(() => { if (loaded) localStorage.setItem(ENGINE_KEY, JSON.stringify(engine)); }, [engine, loaded]);
+  useEffect(() => {
+    if (!loaded) return;
+    setEngine((s) => {
+      let n = s;
+      for (const p of projects) n = noteProject(n, p.id, `${p.category}|${p.files.map((f) => f.sha256).join(",")}`);
+      const byId = Object.fromEntries(projects.map((p) => [p.id, p]));
+      return tick(n, (id) => metadataChecks(byId[id]?.files ?? [], byId[id]?.category ?? "Inbox"), new Date().toISOString());
+    });
+  }, [projects, loaded]);
 
   async function take(list: FileList | File[]) {
     const files = [...list].slice(0, MAX_FILES + 1);
@@ -61,6 +75,20 @@ export function OmniIntake() {
           <ul className="mt-2 text-muted-foreground">{p.history.map((h, i) => <li key={i}>{h}</li>)}</ul>
         </li>
       ))}</ul>
+      <div className="mt-6 border-t border-gold/30 pt-4 text-xs">
+        <h3 className="text-lg">Automatic enhancement · on by default</h3>
+        <p className="mt-1 text-muted-foreground">Status: <b className="text-gold">{engine.stopped ? "stopped" : engine.queue.length ? "running" : "idle"}</b> · queue {engine.queue.length} · {engine.budgetPerTick} projects per pass. Runs only while this page is open; continuous background work needs the companion. Checks are file-list metadata only — nothing is rewritten, uploaded or sent to AI.</p>
+        <div className="mt-2 flex gap-2">
+          {engine.stopped
+            ? <Button size="sm" variant="cosmic" onClick={() => setEngine((s) => resume(s, new Date().toISOString()))}>Resume</Button>
+            : <Button size="sm" variant="ghost" onClick={() => setEngine((s) => stop(s, new Date().toISOString()))}>Emergency stop</Button>}
+        </div>
+        <ul className="mt-3 space-y-1">{engine.candidates.slice(-8).reverse().map((c) => {
+          const name = projects.find((p) => p.id === c.projectId)?.name ?? "removed project";
+          return <li key={c.id}><b className="uppercase text-gold">{c.state}</b> · {name} · {c.changes.join("; ") || "no gaps found"}
+            {engine.accepted[c.projectId] && c.state === "promoted" && <Button size="sm" variant="ghost" onClick={() => setEngine((s) => rollback(s, c.projectId, new Date().toISOString()))}>Roll back</Button>}</li>;
+        })}</ul>
+      </div>
     </section>
   );
 }

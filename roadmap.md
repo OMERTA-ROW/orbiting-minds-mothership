@@ -156,3 +156,5 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] OMNI Marketing real publishing adapter — blocked: owner-authorized provider app/test account (e.g. LinkedIn w_member_social); server-side job store; PDF/DOCX/media/archive parsers; metrics.
 - [x] OMNI intake (browser): drop/file/folder picker, category or Inbox, hash dedup, versioning, traversal/self-import refusal, recategorize, history; 9 tests.
 - [ ] OMNI Desktop workspace import/watch — needs Go companion import/watch commands + native host test (unrun).
+- [x] OMNI enhancement default-on (browser model): auto-queue on import, baseline/candidate, regression rejection, loop guard, offline/budget, stop/resume, rollback; 10 tests.
+- [ ] OMNI background companion service (startup registration, resource limits, uninstall) — not implemented; native hosts unrun.
