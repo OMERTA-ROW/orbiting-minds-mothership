@@ -107,7 +107,7 @@
   },
   "omni-legal": {
    "command": "bunx vitest run; go test -race -count=1 ./...; go vet ./... (cli); python3 /tmp/browser/omni-legal/check_legal.py",
-   "result": "Full app 992 tests / 62 files PASS; legal 15 tests PASS; focused Omni/routing/SEO 124 PASS. CLI suite PASS (57.623s) and vet PASS. Real Linux binary no-mutation/three jurisdictions/submission refusal PASS; six unsigned source targets compile.",
+   "result": "Full app 994 tests / 62 files PASS; legal 17 tests PASS; focused Omni/routing/SEO 126 PASS. CLI suite PASS (57.623s) and vet PASS. Real Linux binary no-mutation/three jurisdictions/submission refusal PASS; six unsigned source targets compile.",
    "runtime": "Synthetic UI jurisdiction/missing flags/PDF + byte-identical ZIP originals/source-backed checklist/review state/edit invalidation/session reset/mobile PASS with no page errors. First browser attempt timed out awaiting export; fresh run passed; no initial pass claimed. Source snapshots and session-only preparation, not legal advice/private case protection/filing authority. Final detailed evidence in .lovable/omni-legal-verification.md.",
    "passed": true
   },
@@ -2474,7 +2474,7 @@
      "commit_note": "Lovable-managed development; no manual commit, external repository sync or release created.",
      "verified_scope": "Synthetic session-only drafting, two preserved exhibits, actual PDF/ZIP, missing flags, dated federal rule/statute snapshots, software code/test reference review and fixed metadata session audit. Offline project-bound legal status/checklist only; state/local sources and all real case/transmission adapters disabled. This bounded synthetic slice is tested; full requirement is not operational.",
      "test_command": "bunx vitest run src/test/omni-legal.test.ts; bunx vitest run; go test -race -count=1 ./...; go vet ./... (cwd cli); python3 /tmp/browser/omni-legal/check_legal.py",
-     "test_result": "15 legal and 992 full app tests PASS; CLI race/vet PASS; real Linux command smoke, six unsigned builds and desktop/mobile synthetic PDF/exhibit flow PASS. Authenticated case isolation and actual filings NOT IMPLEMENTED/NOT RUN.",
+     "test_result": "17 legal and 994 full app tests PASS; CLI race/vet PASS; real Linux command smoke, six unsigned builds and desktop/mobile synthetic PDF/exhibit flow PASS. Authenticated case isolation and actual filings NOT IMPLEMENTED/NOT RUN.",
      "evidence_ref": "omni-legal",
      "runtime_evidence": "Downloaded real 6466-byte PDF and ZIP; originals byte-identical; missing fields flagged, review state derived, edit invalidates export, unsupported jurisdiction has no applied federal sources, court action disabled, no page errors or mobile overflow. No localStorage case persistence; reload resets synthetic session.",
      "next_action": "Keep real cases/transmission blocked. Extend official-source currency and jurisdiction-specific format/requirements only after exact court/practice area selection; implement scoped case vault/retention/revocation/audit and verified companion before real data. Integrate generated-code traceability under existing project permissions, never legal-compliance certification.",
