@@ -66,4 +66,3 @@ type ScanEvidence struct {
 	Truncated   bool    `json:"truncated"`
 	Containment string  `json:"containment"`
 }
-

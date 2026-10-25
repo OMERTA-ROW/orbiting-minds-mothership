@@ -124,8 +124,6 @@ Same-user writers can rewrite all local metadata and evidence. Hash consistency
 is not a signature, trusted ownership or immutable audit; no connected auth sensor,
 server capability, durable limiter or automatic restore exists. See SECURITY.md.
 
-### Local workspace and project folders
-
 ### Terminal maintenance development increment — read-only first
 
 `device identity` / `device permissions` report an unattested local invocation

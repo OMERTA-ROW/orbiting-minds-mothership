@@ -69,8 +69,6 @@ require additional review before distribution.
   the imported owner view flags them. CANCELLED means context cancelled/signal
   requested; the tests separately observe attached descendant termination.
 
-## Future identity / secret storage (disabled)
-
 ## Terminal maintenance boundary — 2026-10-25
 
 Maintenance observes only an explicitly selected non-system local project. Linux

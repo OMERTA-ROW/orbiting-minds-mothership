@@ -299,6 +299,10 @@ func main(){if len(os.Args)==2&&os.Args[1]=="--version"{fmt.Println("ClamAV fixt
 	if err != nil || e.ExitCode != 2 || !strings.HasPrefix(e.Result, "ENGINE ERROR") {
 		t.Fatalf("engine error mislabeled %+v %v", e, err)
 	}
-	ctx,cancel=context.WithCancel(context.Background());go func(){time.Sleep(100*time.Millisecond);cancel()}()
-	e,err=scanSelectedFile(ctx,p,"local","Code/slow.bin",binary,true,time.Second);if err!=nil||!strings.HasPrefix(e.Result,"CANCELLED"){t.Fatalf("active cancellation missing %+v %v",e,err)}
+	ctx, cancel = context.WithCancel(context.Background())
+	go func() { time.Sleep(100 * time.Millisecond); cancel() }()
+	e, err = scanSelectedFile(ctx, p, "local", "Code/slow.bin", binary, true, time.Second)
+	if err != nil || !strings.HasPrefix(e.Result, "CANCELLED") {
+		t.Fatalf("active cancellation missing %+v %v", e, err)
+	}
 }
