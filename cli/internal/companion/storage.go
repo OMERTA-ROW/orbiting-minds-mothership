@@ -25,6 +25,7 @@ type StorageFile struct {
 	Bytes    int64  `json:"bytes"`
 	Modified string `json:"modified"`
 	Mode     uint32 `json:"mode"`
+	Identity string `json:"identity"`
 }
 
 type StorageReport struct {
@@ -197,7 +198,7 @@ func ReportStorage(ctx context.Context, p ProjectProfile, device string, now tim
 					continue
 				}
 				category := storageCategory(name)
-				file := StorageFile{name, category, stat.Size(), stat.ModTime().UTC().Format(time.RFC3339Nano), uint32(stat.Mode().Perm())}
+				file := StorageFile{name, category, stat.Size(), stat.ModTime().UTC().Format(time.RFC3339Nano), uint32(stat.Mode().Perm()),storageIdentity(stat)}
 				r.ObservedFiles++
 				r.ObservedBytes += stat.Size()
 				r.CategoryBytes[category] += stat.Size()
@@ -278,11 +279,13 @@ func PlanCleanup(ctx context.Context, p ProjectProfile, device string, categorie
 }
 
 // Revalidation is useful even while apply is disabled: nothing is moved/deleted.
-// Metadata cannot prove a file is unused; same-size/mtime changes remain possible.
+// Metadata cannot prove a file is unused; inode/ctime are local metadata, not trust.
 func ValidateCleanupPlan(ctx context.Context, p ProjectProfile, device string, plan CleanupPlan, confirmation string, now time.Time) error {
+	ctx,cancel:=context.WithTimeout(ctx,10*time.Second);defer cancel()
 	if err := maintenanceTarget(p, device); err != nil {
 		return err
 	}
+	if stat,err:=os.Lstat(p.Root);err!=nil||!safeStorageOwner(stat){return errors.New("unsafe project ownership/permissions")}
 	if plan.Version != 1 || plan.Device != device || plan.Profile != p || plan.SHA256 != cleanupDigest(plan) || confirmation != plan.SHA256 {
 		return errors.New("exact device/project/plan fingerprint confirmation required")
 	}
@@ -326,7 +329,7 @@ func ValidateCleanupPlan(ctx context.Context, p ProjectProfile, device string, p
 			}
 		}
 		stat, err := root.Lstat(file.Path)
-		if err != nil || !stat.Mode().IsRegular() || !safeStorageOwner(stat) || stat.Size() != file.Bytes || stat.ModTime().UTC().Format(time.RFC3339Nano) != file.Modified || uint32(stat.Mode().Perm()) != file.Mode || now.Sub(stat.ModTime()) < storageActiveAge {
+		if err != nil || !stat.Mode().IsRegular() || !safeStorageOwner(stat) || file.Identity=="" || storageIdentity(stat)!=file.Identity || stat.Size() != file.Bytes || stat.ModTime().UTC().Format(time.RFC3339Nano) != file.Modified || uint32(stat.Mode().Perm()) != file.Mode || now.Sub(stat.ModTime()) < storageActiveAge {
 			return errors.New("cleanup target changed, active or unsafe")
 		}
 		total += file.Bytes

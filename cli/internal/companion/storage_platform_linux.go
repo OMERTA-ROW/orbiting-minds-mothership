@@ -3,6 +3,7 @@
 package companion
 
 import (
+	"fmt"
 	"os"
 	"syscall"
 )
@@ -19,6 +20,11 @@ func storageFree(root string) (*uint64, string) {
 func safeStorageOwner(info os.FileInfo) bool {
 	stat, ok := info.Sys().(*syscall.Stat_t)
 	return ok && stat.Uid == uint32(os.Getuid()) && (!info.Mode().IsRegular() || stat.Nlink == 1) && info.Mode().Perm()&0022 == 0
+}
+
+func storageIdentity(info os.FileInfo) string {
+	stat,ok:=info.Sys().(*syscall.Stat_t);if !ok{return ""}
+	return fmt.Sprintf("%d:%d:%d:%d",stat.Dev,stat.Ino,stat.Ctim.Sec,stat.Ctim.Nsec)
 }
 
 const storageNativeBoundary = "Linux UID, nonshared write permissions and hardlink metadata checked; not enrolled owner identity"
