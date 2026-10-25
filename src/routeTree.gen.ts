@@ -44,6 +44,7 @@ import { Route as LaunchControlRouteImport } from './routes/launch-control'
 import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as OmniRouteImport } from './routes/omni'
+import { Route as OmniLegalRouteImport } from './routes/omni-legal'
 import { Route as OmniMarketingRouteImport } from './routes/omni-marketing'
 import { Route as OmniRightsRouteImport } from './routes/omni-rights'
 import { Route as OmnibridgeRouteImport } from './routes/omnibridge'
@@ -252,6 +253,11 @@ const MothershipRoute = MothershipRouteImport.update({
 const OmniRoute = OmniRouteImport.update({
   id: '/omni',
   path: '/omni',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OmniLegalRoute = OmniLegalRouteImport.update({
+  id: '/omni-legal',
+  path: '/omni-legal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OmniMarketingRoute = OmniMarketingRouteImport.update({
@@ -468,6 +474,7 @@ export interface FileRoutesByFullPath {
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
+  '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
   '/omni-rights': typeof OmniRightsRoute
   '/omnibridge': typeof OmnibridgeRoute
@@ -539,6 +546,7 @@ export interface FileRoutesByTo {
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
+  '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
   '/omni-rights': typeof OmniRightsRoute
   '/omnibridge': typeof OmnibridgeRoute
@@ -612,6 +620,7 @@ export interface FileRoutesById {
   '/marketplace': typeof MarketplaceRoute
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
+  '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
   '/omni-rights': typeof OmniRightsRoute
   '/omnibridge': typeof OmnibridgeRoute
@@ -685,6 +694,7 @@ export interface FileRouteTypes {
     | '/marketplace'
     | '/mothership'
     | '/omni'
+    | '/omni-legal'
     | '/omni-marketing'
     | '/omni-rights'
     | '/omnibridge'
@@ -756,6 +766,7 @@ export interface FileRouteTypes {
     | '/marketplace'
     | '/mothership'
     | '/omni'
+    | '/omni-legal'
     | '/omni-marketing'
     | '/omni-rights'
     | '/omnibridge'
@@ -828,6 +839,7 @@ export interface FileRouteTypes {
     | '/marketplace'
     | '/mothership'
     | '/omni'
+    | '/omni-legal'
     | '/omni-marketing'
     | '/omni-rights'
     | '/omnibridge'
@@ -901,6 +913,7 @@ export interface RootRouteChildren {
   MarketplaceRoute: typeof MarketplaceRoute
   MothershipRoute: typeof MothershipRoute
   OmniRoute: typeof OmniRoute
+  OmniLegalRoute: typeof OmniLegalRoute
   OmniMarketingRoute: typeof OmniMarketingRoute
   OmniRightsRoute: typeof OmniRightsRoute
   OmnibridgeRoute: typeof OmnibridgeRoute
@@ -1179,6 +1192,13 @@ declare module '@tanstack/react-router' {
       path: '/omni'
       fullPath: '/omni'
       preLoaderRoute: typeof OmniRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/omni-legal': {
+      id: '/omni-legal'
+      path: '/omni-legal'
+      fullPath: '/omni-legal'
+      preLoaderRoute: typeof OmniLegalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/omni-marketing': {
@@ -1482,6 +1502,7 @@ const rootRouteChildren: RootRouteChildren = {
   MarketplaceRoute: MarketplaceRoute,
   MothershipRoute: MothershipRoute,
   OmniRoute: OmniRoute,
+  OmniLegalRoute: OmniLegalRoute,
   OmniMarketingRoute: OmniMarketingRoute,
   OmniRightsRoute: OmniRightsRoute,
   OmnibridgeRoute: OmnibridgeRoute,

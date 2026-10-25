@@ -171,6 +171,7 @@ export function OmniBridge() {
         {(
           [
             { to: "/code-vault", label: "Version & signature gates" },
+            { to: "/omni-legal", label: "Omni Legal · preparation" },
             { to: "/approval-ledger", label: "Approval Ledger" },
             { to: "/experiment-replay", label: "Oracle Replay" },
             { to: "/embassy", label: "Operator onboarding" },

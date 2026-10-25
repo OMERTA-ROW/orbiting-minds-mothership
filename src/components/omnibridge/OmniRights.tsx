@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { DemoBadge } from "@/components/evo";
 import { ADAPTERS, canSend, ingestEmail, rightsPath, specimenFlags, visibleTo, type Matter, type RightsFile } from "@/lib/omni-rights";
@@ -41,6 +42,7 @@ export function OmniRights() {
       <header className="border-b border-gold/30 pb-6">
         <div className="flex flex-wrap items-center gap-3"><span className="eyebrow">OMNI / rights workspace</span><DemoBadge label="LOCAL · FICTIONAL SAMPLES" /></div>
         <h1 className="mt-4 text-4xl">OMNI Rights</h1>
+        <Button asChild variant="ghost" size="sm" className="mt-3"><Link to="/omni-legal">Omni Legal · synthetic preparation</Link></Button>
         <p className="mt-3 max-w-3xl text-xs leading-6 text-warning">Organising tool, not a lawyer or filing service. Saved in this browser only. Storing a file or fingerprint is not registration; capturing a specimen is not acceptance. No filings, payments, signatures or emails happen here.</p>
       </header>
       <label className="mt-6 flex items-center gap-3 text-xs">Client
