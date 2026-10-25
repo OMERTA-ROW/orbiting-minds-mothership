@@ -124,6 +124,48 @@ Same-user writers can rewrite all local metadata and evidence. Hash consistency
 is not a signature, trusted ownership or immutable audit; no connected auth sensor,
 server capability, durable limiter or automatic restore exists. See SECURITY.md.
 
+### Terminal maintenance development increment — read-only first
+
+`device identity` / `device permissions` report an unattested local invocation
+with no enrolled scopes; they collect no hardware identity. `terminal security`
+names existing local safeguards and missing auth/capabilities/rate limiting.
+Remote targets are denied; this is not authenticated multiuser enforcement.
+
+`storage report --project <absolute-dir> [--device local] [--json]` observes
+selected-project metadata only on Linux: at most 5,000 entries / 10 seconds,
+large-file list, category byte totals, exclusions and filesystem available bytes.
+Excluded personal/media/credential/application/backup/system paths and unsafe
+permissions, symlinks and hardlinks are not read. This is partial observation,
+not a whole-device usage scan or savings claim. Other native adapters fail closed.
+
+`storage plan --project <dir> --categories cache,temp --json` returns a dry-run
+plan for old files in that project's `.evolution/cache` / `.evolution/tmp` only.
+10-minute expiry, exact file path/category/size/mode/mtime/inode/ctime metadata,
+256 MiB candidate limit, project/profile binding and fingerprint. No writes from
+report/plan, no content read or file removal. Recent-file exclusion does not prove
+inactivity; open-file checks and safe pinned operation targets remain unavailable.
+
+`storage apply --project <dir> --device local --plan <absolute-json-file>
+--confirm <exact-plan-sha256> --approve` revalidates the exact review and stale
+targets, then returns BLOCKED: no enrolled capability or safe trash/recovery
+adapter. No apply operation is enabled and no reversibility is claimed.
+
+`malware availability` / `status` inspect fixed installed Linux clamscan
+locations without executing them. Missing/PRESENT/UNSUPPORTED is not scanner
+trust, a version or a malware verdict. `malware scan` stays blocked. A fixed-argv
+ClamAV prototype lives ONLY in `_test.go`, excluded from binaries, with compiled
+disposable process fixtures. No real engine/database exists here or was tested.
+Pathname rechecks do not guarantee filesystem confinement; a native safe target
+adapter, engine trust/database evidence and scoped enrollment are still required.
+No scanner install/update/upload/remediation or security-policy change.
+
+`operation status` / `cancel` return unsupported: no background/remote service.
+Foreground read-only reports respect Ctrl-C; existing Linux task process-group
+cancellation remains separate. macOS/Windows storage ownership/free-space/trash/
+scanner adapters, mobile OS permissions, server capabilities/revocation/rate
+limits and protected hosted audit are pending. The browser Maintenance & security
+tab lists actual coverage; it has no local device access.
+
 ### Local workspace and project folders
 
 `workspace init [--dir <absolute-dir>] --approve` creates the local workspace —

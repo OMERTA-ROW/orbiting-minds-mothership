@@ -69,6 +69,33 @@ require additional review before distribution.
   the imported owner view flags them. CANCELLED means context cancelled/signal
   requested; the tests separately observe attached descendant termination.
 
+## Terminal maintenance boundary — 2026-10-25
+
+Maintenance observes only an explicitly selected non-system local project. Linux
+UID, hardlink count and nonshared-write permission checks bound metadata access;
+5,000 entries / 10-second traversal and partial refusal bound work. No file content
+read by reports/plans. Candidate count/bytes, exact categories/paths, profile and
+10-minute fingerprint review plus mtime/inode/ctime protect stale-plan validation.
+These are same-user metadata checks, not cryptographic file integrity, active-file
+locks or authenticated enrolled identity. Read-only commands do not persist paths
+or audit, preserving their no-mutation default; output is local, keep exports private.
+
+Cleanup apply is not implemented/enabled: valid review returns blocked without
+trash/recovery, secure enrollment and scoped capability adapters. No destructive
+fallback, silent trash emptying, file removal, app uninstall or formatting exists.
+Scanner subprocess implementation is test-only and excluded from binaries because
+passing a pathname cannot safely pin access against concurrent symlink substitution.
+No genuine ClamAV engine/version/database/result was verified. Availability only
+checks fixed installed paths; no process, file upload, update or remediation.
+
+Cross-user/device authorization, server short-lived scopes/revoke, durable limiter,
+safe native targets, owner recovery and endpoint Guardian emergency stop still need
+adapters before any browser-to-device or remote endpoint exists. No standard limiter
+primitive; custom durable policy/quotas need confirmation. macOS/Windows native
+metadata/ACL, scanner/trash/cancel adapters remain unavailable/unverified; mobile
+browsers cannot access other apps' files or disable OS restrictions. The external
+Omni repository and deployed websites do not inherit these development changes.
+
 ## Future identity / secret storage (disabled)
 
 - Owner-approved OAuth via browser, PKCE/state, exact verified callback/origin

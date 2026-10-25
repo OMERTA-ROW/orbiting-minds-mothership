@@ -9,6 +9,7 @@ import { commandConflictPlan, cliPlatformChecks, type CliPlatform } from "@/lib/
 import { CompatibilityValue } from "./CompatibilityValue";
 import { CostEstimator } from "./CostEstimator";
 import { LocalDiscovery } from "./LocalDiscovery";
+import { Maintenance } from "./Maintenance";
 
 export function Companion() {
   const [platform, setPlatform] = useState<CliPlatform>("macOS"),
@@ -99,6 +100,7 @@ export function Companion() {
             { id: "estimate", label: "AI cost estimator" },
             { id: "discover", label: "Private local discovery" },
             { id: "workspace", label: "Workspace & folders" },
+            { id: "maintenance", label: "Maintenance & security" },
             { id: "architecture", label: "Architecture & release gates" },
           ].map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="min-h-11 whitespace-normal">
@@ -294,8 +296,12 @@ export function Companion() {
         <TabsContent value="value" className="pt-8">
           <CompatibilityValue />
         </TabsContent>
-        <TabsContent value="estimate" className="pt-8"><CostEstimator /></TabsContent>
-        <TabsContent value="discover" className="pt-8"><LocalDiscovery /></TabsContent>
+        <TabsContent value="estimate" className="pt-8">
+          <CostEstimator />
+        </TabsContent>
+        <TabsContent value="discover" className="pt-8">
+          <LocalDiscovery />
+        </TabsContent>
         <TabsContent value="workspace" className="pt-8">
           <section aria-label="Local project workspace" className="min-w-0">
             <p className="eyebrow">Local only / explicit approval / no browser access</p>
@@ -314,21 +320,25 @@ export function Companion() {
               <div>
                 <h3 className="text-xl">Set up and inspect</h3>
                 <pre className="mt-4 whitespace-pre-wrap break-words border-y border-border py-4 font-mono text-xs leading-7 text-gold-light">
-                  {"SOURCE-ONLY REFERENCE · NOT AN INSTALL COMMAND\nevolution workspace init --approve\nevolution workspace init --dir <your-folder> --approve\nevolution workspace status\nevolution workspace set --dir <new-folder> --move --approve\nevolution workspace set --dir <new-folder> --keep --approve"}
+                  {
+                    "SOURCE-ONLY REFERENCE · NOT AN INSTALL COMMAND\nevolution workspace init --approve\nevolution workspace init --dir <your-folder> --approve\nevolution workspace status\nevolution workspace set --dir <new-folder> --move --approve\nevolution workspace set --dir <new-folder> --keep --approve"
+                  }
                 </pre>
                 <p className="mt-4 text-xs leading-7 text-muted-foreground">
                   Init prints the actual location it created and saves the choice in a per-user
                   config file — never in shell startup files. Changing the workspace explicitly
-                  offers <span className="text-gold-light">--move</span> (relocate existing projects,
-                  refusing collisions and cross-device moves) or{" "}
-                  <span className="text-gold-light">--keep</span> (leave them where they are). Status
-                  shows the current project and the exact folder where outputs are saved.
+                  offers <span className="text-gold-light">--move</span> (relocate existing
+                  projects, refusing collisions and cross-device moves) or{" "}
+                  <span className="text-gold-light">--keep</span> (leave them where they are).
+                  Status shows the current project and the exact folder where outputs are saved.
                 </p>
               </div>
               <div>
                 <h3 className="text-xl">Create and open projects</h3>
                 <pre className="mt-4 whitespace-pre-wrap break-words border-y border-border py-4 font-mono text-xs leading-7 text-gold-light">
-                  {"evolution project new anomaly --template game --approve\nevolution project new documentary --template video --approve\nevolution project open --project <dir> --approve"}
+                  {
+                    "evolution project new anomaly --template game --approve\nevolution project new documentary --template video --approve\nevolution project open --project <dir> --approve"
+                  }
                 </pre>
                 <p className="mt-4 text-xs leading-7 text-muted-foreground">
                   Game template: Code, Game Assets, Audio, Builds, Exports. Video template: Footage,
@@ -344,6 +354,9 @@ export function Companion() {
               </div>
             </div>
           </section>
+        </TabsContent>
+        <TabsContent value="maintenance" className="pt-8">
+          <Maintenance />
         </TabsContent>
         <TabsContent value="architecture" className="pt-8">
           <section>

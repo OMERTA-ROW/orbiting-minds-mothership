@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "created_at": "2026-10-22",
- "updated_at": "2026-10-25T16:30:13.847458Z",
+ "updated_at": "2026-10-25T16:43:08.254943Z",
  "project_name": "Evolution Mothership",
  "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
  "source_note_urls": [
@@ -188,6 +188,22 @@
      "isolated durable jobs/container and native macOS/Windows descendant adapters",
      "external audit anchor and reviewed version restoration"
     ]
+   },
+   {
+    "date": "2026-10-25T16:43:08.254943Z",
+    "actor": "lovable-implementation",
+    "summary": "Owner-authorized terminal maintenance smallest development increment extends local companion and Guardian, no duplicate controls: selected-project read-only metadata reports/free bytes, reviewed expiring cleanup plans with stale-target refusal, blocked apply/scan, honest identity/permission/operation/scanner/security statuses and terminal surface inventory. Real scanner execution remains test-only pending safe native target/engine/enrollment.",
+    "tests": [
+     "PASS: final Go race suite 36.584s/vet; 11 new maintenance top-level tests; app 933 tests/57 files, focused 114/6; actual disposable binary report/free bytes and 2 files/12 bytes plan unchanged; valid apply blocked, wrong/stale/remote denied; browser/mobile coverage view; six unsigned targets compile. No real malware engine or owner-device action."
+    ],
+    "blocked_unchanged": [
+     "authenticated owner/device/project enrollment and short-lived scoped capabilities/revoke",
+     "confirmed custom durable rate limit/quotas, no standard primitive",
+     "safe trash/recovery, active-file locking and native pinned targets",
+     "genuine installed scanner/version/database/scan evidence",
+     "background status/cancel service and macOS/Windows/mobile adapters",
+     "external Omni repo not synchronized, no production release"
+    ]
    }
   ],
   "cli-workspace": {
@@ -200,6 +216,12 @@
    "command": "go test -race -count=1 ./...; go vet ./... (cwd cli); bunx vitest run; python3 /tmp/browser/guardian-defense/local_flow.py; python3 /tmp/browser/guardian-defense/check_evidence.py",
    "result": "PASS: Go race suite 35.481s and vet; app 933 tests / 57 files; 11 new evidence tests; actual local binary 12-event export and desktop/mobile tamper/clear flow; six unsigned source targets compile; no fresh hosted adversarial tests.",
    "runtime": "Development Linux amd64 only: real selected project PASS/FAIL/restored PASS and Ctrl-C attached-descendant stopped, exported evidence read through Guardian UI without uploads. Local chain/selection are not authenticated capabilities, immutable audit or filesystem/network isolation. Report: .lovable/guardian-defense-verification.md.",
+   "passed": true
+  },
+  "terminal-maintenance": {
+   "command": "go test -race -count=1 ./...; go vet ./... (cwd cli); bunx vitest run; python3 /tmp/browser/maintenance/local_flow.py; python3 /tmp/browser/maintenance/check_view.py; python3 src/test/test_completion_register.py",
+   "result": "PASS: final Go race suite 36.584s/vet; 11 new maintenance top-level tests; app 933 tests/57 files, focused 114/6; actual disposable binary report/free bytes and 2 files/12 bytes plan unchanged; valid apply blocked, wrong/stale/remote denied; browser/mobile coverage view; six unsigned targets compile. No real malware engine or owner-device action.",
+   "runtime": "Linux amd64 disposable fixtures only; local report/plan no data mutation; exact apply gate never deletes; scanner subprocess prototype is test-only and excluded from binary. No fresh hosted customer/device isolation, enrolled scopes, scanner engine/database or safe trash recovery. .lovable/terminal-maintenance-verification.md",
    "passed": true
   }
  },
@@ -415,7 +437,7 @@
      "test_result": "PASS: Go race suite 35.481s and vet; app 933 tests / 57 files; 11 new evidence tests; actual local binary 12-event export and desktop/mobile tamper/clear flow; six unsigned source targets compile; no fresh hosted adversarial tests.",
      "evidence_ref": "guardian-defense",
      "runtime_evidence": "Development Linux amd64 only: real selected project PASS/FAIL/restored PASS and Ctrl-C attached-descendant stopped, exported evidence read through Guardian UI without uploads. Local chain/selection are not authenticated capabilities, immutable audit or filesystem/network isolation. Report: .lovable/guardian-defense-verification.md.",
-     "next_action": "Implement authenticated owner-scoped event/capability/audit adapters in isolated development backend; confirm custom durable rate-limit tradeoff and concrete quotas (no standard limiter); choose isolated job runner/session-revoke and reviewed version-restoration adapters before activation.",
+     "next_action": "Implement authenticated owner-scoped event/capability/audit adapters in isolated development backend; confirm custom durable rate-limit tradeoff and concrete quotas (no standard limiter); choose isolated job runner/session-revoke and reviewed version-restoration adapters before activation. Terminal maintenance coverage is 07.05; apply/scans remain blocked, no duplicate Guardian authorization model.",
      "missing_input": null,
      "release_status": "Development source/preview only; no production deploy, signing, install, provider connection or live-site disruptive testing",
      "release_receipt": null
@@ -1086,6 +1108,47 @@
      "next_action": "Keep final artifacts unsigned until Step 8 signing/native verification.",
      "missing_input": null,
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+     "release_receipt": null
+    },
+    {
+     "id": "07.05",
+     "requirement": "Extend authorized terminal/device storage maintenance and defensive scanner support: inventory project terminal surfaces; default read-only local reports/dry-run, exact device/project/path/category review, byte/file estimates/exclusions, explicit operation confirmation, stale-target/symlink/traversal/unsafe permission denial; recoverable trash/recovery only where supported. Installed supported scanner fixed no-remediation argv with engine/version/time/exit evidence; no clean claims, installation, upload or policy changes. Actual device endpoints require server auth, owner/device/project isolation, expiring scoped capabilities/revocation, rate limits, Guardian audit/emergency stop. Mobile/external targets explicit; no automatic coverage. Test on disposable fixtures only.",
+     "status": "In progress",
+     "owner": "Lovable implementation; founder supplies reviewed device/native runtime authorization",
+     "dependencies": [
+      "03",
+      "06",
+      "07.03",
+      "08"
+     ],
+     "changed_files": [
+      "cli/internal/companion/storage.go",
+      "cli/internal/companion/storage_platform_linux.go",
+      "cli/internal/companion/storage_platform_other.go",
+      "cli/internal/companion/maintenance_cli.go",
+      "cli/internal/companion/maintenance_test.go",
+      "cli/internal/companion/storage_owner_linux_test.go",
+      "cli/internal/companion/scanner.go",
+      "cli/internal/companion/scanner_adapter_test.go",
+      "cli/internal/companion/commands.go",
+      "cli/README.md",
+      "cli/SECURITY.md",
+      "src/data/terminal-boundaries.ts",
+      "src/components/cli/Maintenance.tsx",
+      "src/components/cli/Companion.tsx",
+      "AGENTS.md",
+      ".lovable/terminal-maintenance-verification.md"
+     ],
+     "commit": null,
+     "commit_note": "Lovable-managed source/preview only; observed 9ef24c551955e00706506884890cae1818ab95fa before final evidence/register edits, not final external GitHub commit/PR. No manual push or separate Omni sync.",
+     "verified_scope": "Bounded Linux selected-project metadata/free-space report and cache/tmp dry-run plans, exact confirmation/10-minute expiry/inode+ctime stale checks, exclusions/UID/links/permissions and read-only no-mutation default tested. Public apply and malware scans blocked; scanner fixture only, no installed engine. Device identity unattested; operation service unsupported. Browser coverage view has no device access.",
+     "test_command": "go test -race -count=1 ./...; go vet ./... (cwd cli); bunx vitest run; python3 /tmp/browser/maintenance/local_flow.py; python3 /tmp/browser/maintenance/check_view.py; python3 src/test/test_completion_register.py",
+     "test_result": "PASS: final Go race suite 36.584s/vet; 11 new maintenance top-level tests; app 933 tests/57 files, focused 114/6; actual disposable binary report/free bytes and 2 files/12 bytes plan unchanged; valid apply blocked, wrong/stale/remote denied; browser/mobile coverage view; six unsigned targets compile. No real malware engine or owner-device action.",
+     "evidence_ref": "terminal-maintenance",
+     "runtime_evidence": "Linux amd64 disposable fixtures only; local report/plan no data mutation; exact apply gate never deletes; scanner subprocess prototype is test-only and excluded from binary. No fresh hosted customer/device isolation, enrolled scopes, scanner engine/database or safe trash recovery. .lovable/terminal-maintenance-verification.md",
+     "next_action": "Authenticated signed device enrollment/scopes, native safe targets/active-file and trash restore adapters, genuine existing scanner/database isolated smoke evidence, durable status/cancel and confirmed custom rate-limit design/quotas; native macOS/Windows/mobile tests before enabling device operations.",
+     "missing_input": "No enrolled signed device companion/capability or safe trash/restore adapter; no installed supported malware scanner in sandbox. No standard backend limiter; custom durable tradeoff/quotas need confirmation. External repository access not automatically granted.",
+     "release_status": "Development source and preview only; nothing cleaned/scanned on owner devices, installed, purchased, connected or deployed",
      "release_receipt": null
     }
    ]
@@ -2752,7 +2815,8 @@
    "steps": [
     "08"
    ],
-   "source": "All three retained blueprint parts and roadmap.md family disposition"
+   "source": "All three retained blueprint parts and roadmap.md family disposition",
+   "maintenance_crosswalk": "07.05: bounded local metadata/plan and unavailable device/scanner gates; existing browser CARE/Guardian demos remain separate."
   },
   {
    "family": "Gmail / Outlook communications / social autopilot / Adaptive Engine",
