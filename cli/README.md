@@ -107,7 +107,6 @@ guarantee termination of every descendant process on every OS. Linux now targets
 the new process group on timeout/Ctrl-C and cleans up attached descendants;
 detached descendants can escape, and other hosts remain direct-process only.
 
-### Local Guardian evidence (development source only)
 ### Omni Legal reference (development source only)
 
 `evolution omni legal status|checklist --project <absolute-dir>

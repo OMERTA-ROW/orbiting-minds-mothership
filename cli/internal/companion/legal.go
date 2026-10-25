@@ -8,25 +8,25 @@ import (
 // Legal commands read only the existing project binding. No case-file reads,
 // writes, arbitrary arguments, models, network, credentials or transmission.
 type LegalChecklistItem struct {
-	Rule string `json:"rule"`
-	Requirement string `json:"requirement"`
-	Source string `json:"source_url"`
-	Jurisdiction string `json:"jurisdiction"`
-	Retrieved string `json:"retrieved_at"`
+	Rule          string `json:"rule"`
+	Requirement   string `json:"requirement"`
+	Source        string `json:"source_url"`
+	Jurisdiction  string `json:"jurisdiction"`
+	Retrieved     string `json:"retrieved_at"`
 	EffectiveNote string `json:"effective_date_note"`
-	State string `json:"state"`
+	State         string `json:"state"`
 }
 
 type LegalReport struct {
-	Mode string `json:"mode"`
-	Jurisdiction string `json:"jurisdiction"`
-	State string `json:"preparation_state"`
-	Transmission string `json:"transmission"`
-	Deadlines string `json:"deadlines"`
-	CaseAccess string `json:"case_access"`
-	UI string `json:"ui_path"`
-	Checklist []LegalChecklistItem `json:"checklist"`
-	Limits string `json:"limits"`
+	Mode         string               `json:"mode"`
+	Jurisdiction string               `json:"jurisdiction"`
+	State        string               `json:"preparation_state"`
+	Transmission string               `json:"transmission"`
+	Deadlines    string               `json:"deadlines"`
+	CaseAccess   string               `json:"case_access"`
+	UI           string               `json:"ui_path"`
+	Checklist    []LegalChecklistItem `json:"checklist"`
+	Limits       string               `json:"limits"`
 }
 
 func legalReport(jurisdiction string) LegalReport {
@@ -61,11 +61,17 @@ func runLegal(args []string, out, errOut io.Writer) int {
 		return invalid(errOut)
 	}
 	for key := range f {
-		if key != "--project" && key != "--jurisdiction" && key != "--json" { return invalid(errOut) }
+		if key != "--project" && key != "--jurisdiction" && key != "--json" {
+			return invalid(errOut)
+		}
 	}
 	jurisdiction := f["--jurisdiction"]
-	if jurisdiction == "" { jurisdiction = "federal" }
-	if jurisdiction != "federal" && jurisdiction != "state" && jurisdiction != "local" { return invalid(errOut) }
+	if jurisdiction == "" {
+		jurisdiction = "federal"
+	}
+	if jurisdiction != "federal" && jurisdiction != "state" && jurisdiction != "local" {
+		return invalid(errOut)
+	}
 	if _, err := LoadProject(f["--project"]); err != nil {
 		fmt.Fprintln(errOut, "Legal reference blocked: select a valid existing local project. No case content read or operation performed.")
 		return 1
