@@ -137,6 +137,23 @@ Local source commands:
   evolution guardian audit --project <dir> [--json]
                              Reads real local security decisions; hash chain only,
                              not signed/immutable or a hosted Guardian connection
+  evolution device identity|permissions [--device local] [--json]
+                             Local invocation only; NOT enrolled; no granted scopes
+  evolution storage report --project <dir> [--device local] [--json]
+                             Read-only bounded project metadata/free-space report
+  evolution storage plan --project <dir> --categories cache,temp [--json]
+                             Dry-run exact Evolution cache/tmp files; no mutation
+  evolution storage apply --project <dir> --device local --plan <json> --confirm <sha256> --approve
+                             Revalidates review, then BLOCKED without authenticated
+                             capabilities and safe trash/recovery; no deletion
+  evolution malware availability|status [--device local] [--json]
+                             Installed scanner metadata only; NOT SCANNED
+  evolution malware scan --project <dir> --device local
+                             BLOCKED until scoped enrollment/native scan verification
+  evolution operation status|cancel [--device local]
+                             Background service unsupported; foreground Ctrl-C only
+  evolution terminal security [--device local] [--json]
+                             Honest local enforcement and missing adapter status
   evolution release verify --dir <staged-release> [--json]
                              Checks SHA256SUMS; reports UNSIGNED unless signature files exist
   evolution release manifest --dir <staged-release> [--json]
@@ -224,6 +241,8 @@ func Run(args []string, invoked string, out, errOut io.Writer) int {
 		return runSandboxCmd(args[1:], out, errOut)
 	case "guardian":
 		return runGuardian(args[1:], out, errOut)
+	case "device", "storage", "malware", "operation", "terminal":
+		return runMaintenance(command,args[1:],out,errOut)
 	case "release":
 		return runRelease(args[1:], out, errOut)
 	case "omni":
