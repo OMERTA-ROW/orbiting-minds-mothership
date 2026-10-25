@@ -8,10 +8,10 @@ const worse: Evaluator = () => ({ baseline: [{ name: "a", score: 1 }], changes: 
 describe("Omni enhancement", () => {
   it("is enabled by default", () => expect(initialEngine().enabled).toBe(true));
   it("import queues work without opt-in", () => expect(noteProject(initialEngine(), "p", "h1").queue).toEqual(["p"]));
-  it("passing candidate is promoted", () => expect(tick(noteProject(initialEngine(), "p", "h"), better, now).accepted.p).toBeDefined());
+  it("passing candidate is promoted", () => expect(tick(noteProject(initialEngine(), "p", "h"), better, now).accepted["p"]).toBeDefined());
   it("regression fails promotion", () => {
     const s = tick(noteProject(initialEngine(), "p", "h"), worse, now);
-    expect(s.candidates[0]!.state).toBe("rejected"); expect(s.accepted.p).toBeUndefined();
+    expect(s.candidates[0]!.state).toBe("rejected"); expect(s.accepted["p"]).toBeUndefined();
   });
   it("equal scores are inconclusive", () => expect(decide([{ name: "a", score: 1 }], [{ name: "a", score: 1 }])).toBe("inconclusive"));
   it("unchanged files and Omni writes do not loop", () => {
@@ -29,5 +29,5 @@ describe("Omni enhancement", () => {
     let s = initialEngine(); for (const id of ["a", "b", "c", "d"]) s = noteProject(s, id, id);
     expect(tick(s, better, now).queue).toEqual(["d"]);
   });
-  it("rollback restores original", () => expect(rollback(tick(noteProject(initialEngine(), "p", "h"), better, now), "p", now).accepted.p).toBeUndefined());
+  it("rollback restores original", () => expect(rollback(tick(noteProject(initialEngine(), "p", "h"), better, now), "p", now).accepted["p"]).toBeUndefined());
 });
