@@ -22,6 +22,6 @@ export async function inspectManualLegalPdf(name: string, bytes: Uint8Array, syn
   if (!/\.pdf$/i.test(name) || name.length > 200 || /[\/\\\u0000-\u001f]/.test(name)) throw new Error("Select a plain PDF filename.");
   if (!bytes.length || bytes.length > BLANK_FORM_MAX_BYTES) throw new Error("PDF must be nonempty and at most 4 MiB.");
   if (new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") throw new Error("PDF signature missing.");
-  const sha256 = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  const sha256 = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array(bytes)))].map((b) => b.toString(16).padStart(2, "0")).join("");
   return { name, bytes: bytes.length, sha256, provenance: "manual-unverified" as const, receivedAt: new Date().toISOString(), completedAffidavit: false as const };
 }

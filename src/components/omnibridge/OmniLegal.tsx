@@ -4,11 +4,13 @@ import { ArrowUpRight, Check, Download, FileText, FolderOpen, Scale, Shield, Ter
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DemoBadge } from "@/components/evo";
+import { OmniLegalForms } from "@/components/omnibridge/OmniLegalForms";
 import { legalSources } from "@/data/omni-legal-sources";
 import { appendLegalAudit, initialRequirementLinks, missingInformation, preparationState, redactLegalText, reviewRequirement, sampleLegalDraft, sourceChecklist, transmissionGate, updateLegalDraft, type Jurisdiction, type LegalAuditEvent, type LegalDraft, type RequirementLink } from "@/lib/omni-legal";
 
 export function OmniLegal() {
   const [draft, setDraft] = useState(sampleLegalDraft);
+  const [formsSession, setFormsSession] = useState(0);
   const [links, setLinks] = useState(initialRequirementLinks);
   const [audit, setAudit] = useState<LegalAuditEvent[]>([]);
   const [confirmed, setConfirmed] = useState(false);
@@ -34,6 +36,7 @@ export function OmniLegal() {
   function reset() {
     revision.current++;
     const next = sampleLegalDraft();
+    setFormsSession((n) => n + 1);
     setDraft(next); setLinks(initialRequirementLinks()); setPacket(null); setConfirmed(false);
     setAudit([]); setNotice("Synthetic session reset. No case files stored or uploaded.");
   }
@@ -67,6 +70,7 @@ export function OmniLegal() {
       <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[10px] text-muted-foreground"><span>CASE ACCESS: REAL RECORDS BLOCKED</span><span>DEADLINES: UNVERIFIED</span><span>COURTS: NOT CONNECTED</span></div>
     </header>
 
+    <OmniLegalForms key={formsSession} />
     <section className="my-6 grid gap-5 border-b border-border pb-6 sm:grid-cols-3">
       <label className="text-xs text-muted-foreground">Jurisdiction<select aria-label="Jurisdiction" className="exchange-select mt-2 w-full" value={draft.jurisdiction} onChange={(e) => edit({ jurisdiction: e.target.value as Jurisdiction, privacyReviewed: false })}><option value="federal">Federal · US civil district court</option><option value="state">State · preparation only</option><option value="local">Local · preparation only</option></select></label>
       <label className="text-xs text-muted-foreground">State / local region<input aria-label="State or local region" maxLength={120} value={draft.region} onChange={(e) => edit({ region: e.target.value })} className="exchange-select mt-2 w-full" placeholder="Not selected" /></label>
