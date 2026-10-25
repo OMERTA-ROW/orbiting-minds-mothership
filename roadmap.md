@@ -151,3 +151,6 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] **Backup/incident response** — authorized controlled restore drill, recovery evidence and named incident owner/escalation; unsigned audit metadata is not a complete trusted incident program.
 - [ ] **Broader modules/media/hardware** — exact per-module authorization/data models, rights/private evidence/native signatures/qualified review and supported processor/adapters. Larger operational features remain sequentially deferred at these explicit prerequisites.
 - [ ] **Founder launch/audience** — owner reviews all gates and chooses release/audience; historically public hosting was reported. No public setting or deployment changed this turn. Preview completion is not deployment.
+
+- [x] OMNI Marketing local vertical slice (/omni-marketing): text/MD/JSON brief intake, market inference with evidence, 3-route comparison, draft assets, validation, zero-spend policy, idempotent blocked jobs, cancel/revoke/clone; 14 tests.
+- [ ] OMNI Marketing real publishing adapter — blocked: owner-authorized provider app/test account (e.g. LinkedIn w_member_social); server-side job store; PDF/DOCX/media/archive parsers; metrics.
