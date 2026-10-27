@@ -23,6 +23,7 @@ import { useGuardian } from "@/hooks/use-guardian";
 import { useNexus } from "@/hooks/use-nexus";
 import { readCreativePause } from "@/hooks/use-cartoon";
 import { downloadCreative } from "@/components/entertainment/CreativeRegistry";
+import { OmniActivation } from "./OmniActivation";
 
 export function OmniAssistant({
   worldId,
@@ -103,6 +104,7 @@ export function OmniAssistant({
           </p>
         </div>
       </header>
+      <OmniActivation />
       <div className="my-6 flex flex-wrap items-center justify-between gap-4">
         <label className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground">
           Selected world
@@ -120,7 +122,12 @@ export function OmniAssistant({
           </select>
         </label>
         <div className="flex gap-2">
-          <Button asChild variant="cosmic" size="sm"><Link to="/beta-omni">Authorized beta OMNI<ArrowUpRight size={13} /></Link></Button>
+          <Button asChild variant="cosmic" size="sm">
+            <Link to="/beta-omni">
+              Authorized beta OMNI
+              <ArrowUpRight size={13} />
+            </Link>
+          </Button>
           <Button asChild variant="signal" size="sm">
             <Link to="/omnibridge">
               Capability graph

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "created_at": "2026-10-22",
- "updated_at": "2026-10-25T18:20:00Z",
+ "updated_at": "2026-10-27T01:50:00Z",
  "project_name": "Evolution Mothership",
  "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
  "source_note_urls": [
@@ -85,6 +85,12 @@
    "command": "python3 src/test/test_arena_workflow.py --run; bunx vitest run src/test/arena.test.ts",
    "result": "Prior reconciliation browser workflow passed; 8 Arena tests pass in full suite",
    "runtime": "Seeded numerical replay, finish award/local persistence/standings/mobile/storage failures; no shared anti-cheat or authenticated results.",
+   "passed": true
+  },
+  "omni-activation": {
+   "command": "bunx vitest run; python3 /tmp/browser/omni-activation/check_activation.py; disposable Linux source build and help/version/doctor/security/login/agents/connect/start/omni smoke; python3 src/test/test_completion_register.py",
+   "result": "1038 app tests / 67 files PASS, including 188 focused tests and 15 new activation/verified-email checks. Browser desktop/mobile and signed-out snapshot denial PASS; anonymous/forged model requests 401, foreign origin 403. Linux offline help/version/doctor/security exit 0; login/agents/connect/start/omni exit 2. No real inference attempted.",
+   "runtime": "Read-only backend checks found zero auth users/zero verified approved accounts and absent owner_config/claim_owner/caller_role. Existing service key present and no saved OMNI block, but orphan beta approval is not usable identity. No account/schema/provider changes; no native connection, independent agents, model response or release verified. Evidence .lovable/omni-activation-verification.md.",
    "passed": true
   },
   "omni": {
@@ -556,7 +562,7 @@
     {
      "id": "04.01",
      "requirement": "Complete one real authorized model connection with honest model attribution, usage limits and error handling.",
-     "status": "In progress",
+     "status": "Blocked",
      "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
      "dependencies": [
       "02",
@@ -564,24 +570,28 @@
      ],
      "changed_files": [
       "src/lib/ai/omni-responses.server.ts",
-      "src/routes/_authenticated/beta-omni.tsx"
+      "src/routes/_authenticated/beta-omni.tsx",
+      "src/lib/omni-activation.functions.ts",
+      "src/lib/beta-auth.server.ts",
+      "src/test/omni-activation-server.test.ts",
+      ".lovable/omni-activation-verification.md"
      ],
      "commit": null,
      "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
-     "verified_scope": "Existing bounded private authorized inference and denial/error UI; earlier real response recorded, preserved model selection.",
-     "test_command": "Earlier authenticated beta OMNI browser verification (2026-10-21); current automated omni-server/assistant tests retained",
-     "test_result": "Prior record reports a real authorized response; fresh model/cost/Stop end-to-end NOT RUN in this refinement",
-     "evidence_ref": "omni",
-     "runtime_evidence": "Request-local text/model attribution and project checks; no executing tools or autonomous agent activity.",
-     "next_action": "Fresh real model/usage/cost/Stop QA and owner-approved request quotas outstanding; do not force charged requests merely for register.",
-     "missing_input": null,
+     "verified_scope": "Existing provider/model selection preserved; read-only private readiness snapshot added, verified email now required server-side, and safe live request denials checked. Ready never means actual inference or command authority.",
+     "test_command": "bunx vitest run; python3 /tmp/browser/omni-activation/check_activation.py",
+     "test_result": "1038 tests/67 files PASS; 188 focused PASS; signed-out/forged/cross-origin browser request denials PASS. No authenticated model response possible or attempted.",
+     "evidence_ref": "omni-activation",
+     "runtime_evidence": "2026-10-27 read-only check: zero auth users/verified approved accounts; owner bootstrap and membership RPC absent. Gateway key present with no saved block is configuration only, not activation.",
+     "next_action": "Authorize isolated backend owner/invitation setup separately, supply real owner identity through secure activation, confirm account and obtain explicit existing beta AI approval; then consented project request/usage/Stop QA. No schema/accounts may change in this request.",
+     "missing_input": "Verified owner account and applicable AI approval do not exist; owner bootstrap/invitation schema remains pending on shared backend. Real accounts/schema changes prohibited in this activation request.",
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
      "release_receipt": null
     },
     {
      "id": "04.02",
      "requirement": "Route a request to an explicitly selected project; retain permitted context and show real task state.",
-     "status": "In progress",
+     "status": "Blocked",
      "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
      "dependencies": [
       "02",
@@ -589,17 +599,21 @@
      ],
      "changed_files": [
       "src/components/omnibridge/OmniAssistant.tsx",
-      "src/routes/_authenticated/beta-omni.tsx"
+      "src/routes/_authenticated/beta-omni.tsx",
+      "src/components/omnibridge/OmniActivation.tsx",
+      "src/lib/omni-activation.ts",
+      "src/test/omni-activation.test.ts",
+      ".lovable/omni-activation-verification.md"
      ],
      "commit": null,
      "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
-     "verified_scope": "Beta OMNI accepts selected owned project/text-only context; local Nexus intentions/threads separate.",
-     "test_command": "Earlier authenticated beta OMNI browser verification (2026-10-21); current automated omni-server/assistant tests retained",
-     "test_result": "Prior record reports a real authorized response; fresh model/cost/Stop end-to-end NOT RUN in this refinement",
-     "evidence_ref": "omni",
-     "runtime_evidence": "Request-local text/model attribution and project checks; no executing tools or autonomous agent activity.",
-     "next_action": "Fresh signed-in model project readback/state QA; no persistent chat or native task execution implied.",
-     "missing_input": null,
+     "verified_scope": "Selected-project existing inference gates retained; public Omni now links explicit private readiness/sign-in and separately labeled Demo conversation. Companion/agents remain disconnected.",
+     "test_command": "bunx vitest run; python3 /tmp/browser/omni-activation/check_activation.py",
+     "test_result": "1038 tests/67 files PASS; desktop/mobile checkpoint panel, private-route sign-in redirect and request denials PASS. Signed-in project/model runtime NOT RUN.",
+     "evidence_ref": "omni-activation",
+     "runtime_evidence": "Sign-in required at /auth; readiness uses revalidated caller and owner-scoped project count. Zero auth users prevented authenticated request readback without prohibited account creation.",
+     "next_action": "After separately authorized verified owner/account activation and project selection, complete consented real request and read back response/usage/Stop. Native execution needs enrolled authenticated companion and fixed scoped runner, not web activation.",
+     "missing_input": "No verified account/owned project session available; native bridge, CLI login and independent agent runner are not implemented. Account creation prohibited this turn.",
      "release_status": "Not released by this work; existing visual prototype hosting unchanged",
      "release_receipt": null
     },

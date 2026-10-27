@@ -188,3 +188,10 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [ ] BLOCKED: apply `.lovable/pending/owner-invitations.sql` — draft shares live backend; needs owner approval or separate test project
 - [ ] BLOCKED: owner email for `owner_config` (owner supplies); runtime role/invite/isolation tests after activation
 - [ ] Vault real-credential storage stays off (no audited encryption); CLI login not implemented
+
+## Current Omni activation request — 2026-10-27
+- [x] Inspect configured AI, current account activation and native connectivity without service/schema/account writes: zero auth users/verified approved accounts; owner bootstrap/membership RPC absent. One orphan beta approval grants no identity. AI key present/no saved block proves configuration only; no bridge service or independent agent runner.
+- [x] Add explicit read-only authenticated readiness checks and secure handoffs in existing Omni/agent/CLI surfaces; require verified email for inference, retain Demo/Blocked labels and no automatic execution. No member schema/roles/self-approval bypass.
+- [x] Test safe runtime denials, local permission rules and browser flows: 1038 tests/67 files PASS (188 focused); anonymous/forged model 401 and cross-origin 403; desktop/mobile readiness/sign-in/demo labels PASS, no page errors; actual Linux offline source help/version/doctor/security 0 and login/agents/connect/start/omni 2. Lint/build/register PASS. Evidence `.lovable/omni-activation-verification.md`; no model inference, native installation, account creation or publication.
+- [ ] **Blocked live activation (04.01/04.02):** separately authorized isolated owner/invitation setup + actual confirmed owner/account + explicit beta AI approval/private project/consent. Shared schema and real accounts cannot change under this request.
+- [ ] **Blocked terminal/agents:** no secure authenticated companion/Honeycomb enrollment, CLI login, OS vault/scoped runner or independent agent adapter. Source commands are offline development only, not owner desktop/runtime proof; full prerequisites in evidence note.

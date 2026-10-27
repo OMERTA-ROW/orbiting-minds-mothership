@@ -61,7 +61,8 @@ export function Companion() {
             </Button>
           </div>
           <p className="mt-4 text-xs leading-6 text-warning">
-            Browser OMNI is a local DEMO template, not connected AI. Nothing is installed.
+            OMNI offers a separate verified-account AI channel and a local Demo template. Desktop
+            login and agent execution remain Blocked; nothing is installed.
           </p>
         </div>
       </header>
@@ -166,6 +167,25 @@ export function Companion() {
                   </li>
                 ))}
               </ol>
+              <div className="mt-6 border-t border-border pt-5">
+                <h3 className="text-lg">Offline source smoke commands</h3>
+                <p className="mt-3 text-xs leading-7 text-muted-foreground">
+                  From a reviewed copy of this project's cli folder, with Go 1.25+ and an existing
+                  staging directory. These are source-development commands, not a signed download or
+                  desktop AI activation. Linux execution is tested separately; other hosts need
+                  native checks.
+                </p>
+                <pre className="mt-4 overflow-auto whitespace-pre-wrap break-words border-y border-border py-4 font-mono text-xs leading-7 text-gold-light">
+                  {
+                    "go build -trimpath -o <absolute-staging-path>/evolution ./cmd/evolution\n<absolute-staging-path>/evolution help\n<absolute-staging-path>/evolution doctor --json\n<absolute-staging-path>/evolution terminal security"
+                  }
+                </pre>
+                <p className="mt-3 text-xs leading-6 text-warning">
+                  No start service or working CLI login exists. Do not pass passwords or tokens to
+                  commands. The separate Omni repository is not confirmed synchronized with this
+                  source.
+                </p>
+              </div>
             </section>
             <aside className="min-w-0 border-t border-border pt-6 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
               <p className="font-mono text-[10px] text-warning">
