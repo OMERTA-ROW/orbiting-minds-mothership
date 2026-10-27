@@ -31,4 +31,22 @@ describe("Persisted OMNI agent request", () => {
   it("keeps the guard if saving the result fails", async () => { m.runQuery.mockResolvedValueOnce({ data: { id }, error: null }).mockResolvedValueOnce({ data: { status: "running" }, error: null }).mockResolvedValueOnce({ data: { status: "running" }, error: null }).mockResolvedValueOnce({ data: null, error: new Error("write failed") }).mockResolvedValueOnce({ data: { ...run, status: "running" }, error: null }); const text = await (await handleOmniAgent(request())).text(); expect(text).toContain("Result could not be saved"); expect(m.clear).not.toHaveBeenCalled(); });
   it("preserves a provider 403 and persists denial without retry", async () => { m.call.mockReturnValue(call((async function* () { yield { type: "error", error: new Error("denied") }; })(), { status: 403, message: "Provider access denied" })); const response = await handleOmniAgent(request()); expect(response.status).toBe(403); expect(await response.json()).toEqual({ message: "Provider access denied" }); expect(m.update).toHaveBeenCalledWith({ blocked_status: 403, message: "Provider access denied" }); expect(m.call).toHaveBeenCalledTimes(1); });
   it("upstream Stop aborts model and never completes the run", async () => { let observed: AbortSignal | undefined; m.call.mockImplementation((_r, _k, _c, _m, signal: AbortSignal) => { observed = signal; return call((async function* () { yield { type: "text-delta", text: "partial" }; await new Promise<void>(resolve => signal.addEventListener("abort", () => resolve(), { once: true })); })()); }); const response = await handleOmniAgent(request()); const reader = response.body?.getReader(); if (!reader) throw new Error("Missing stream"); await reader.read(); await reader.cancel(); await vi.waitFor(() => expect(observed?.aborted).toBe(true)); await vi.waitFor(() => expect(m.update).toHaveBeenCalledWith(expect.objectContaining({ status: "cancelled" }))); expect(m.update).not.toHaveBeenCalledWith(expect.objectContaining({ status: "completed" })); });
+  it("account pause aborts before first model text and saves paused status", async () => {
+    let signal: AbortSignal | undefined;
+    m.call.mockImplementation((_r, _k, _c, _m, s: AbortSignal) => { signal = s; return call((async function* () { await new Promise<void>(resolve => s.addEventListener("abort", () => resolve(), { once: true })); })()); });
+    const response = await handleOmniAgent(request());
+    m.auth.mockRejectedValue(new Error("Account paused"));
+    const text = await response.text();
+    expect(signal?.aborted).toBe(true);
+    expect(m.update).toHaveBeenCalledWith(expect.objectContaining({ status: "paused" }));
+    expect(text).not.toContain('"type":"text"');
+  });
+  it("membership revocation cancels active inference without replay", async () => {
+    m.call.mockImplementation((_r, _k, _c, _m, s: AbortSignal) => call((async function* () { await new Promise<void>(resolve => s.addEventListener("abort", () => resolve(), { once: true })); })()));
+    const response = await handleOmniAgent(request());
+    m.role.mockResolvedValue({ data: null, error: null });
+    await response.text();
+    expect(m.update).toHaveBeenCalledWith(expect.objectContaining({ status: "denied" }));
+    expect(m.call).toHaveBeenCalledTimes(1);
+  });
 });

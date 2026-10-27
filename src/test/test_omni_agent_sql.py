@@ -19,10 +19,10 @@ def main():
     # Database bootstrap cannot run as root. Numeric fixture UID owns only this tmp directory.
     demote = None
     if os.getuid() == 0:
-        os.chown(base, 65534, 65534)
+        os.chown(base, 1000, 1000)
         def demote():
-            os.setgid(65534)
-            os.setuid(65534)
+            os.setgid(1000)
+            os.setuid(1000)
     def command(args):
         return subprocess.run(args, preexec_fn=demote, check=True, capture_output=True, text=True)
     env = dict(os.environ, PGHOST=str(base), PGPORT="55438", PGUSER="fixture", PGDATABASE="postgres")
