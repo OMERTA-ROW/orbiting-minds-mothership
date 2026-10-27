@@ -63,8 +63,8 @@ export function OmniActivation() {
               "Owner membership not checked. Invitations do not grant model or device permissions."}
           </p>
           <p className="mt-3 text-xs leading-6 text-warning">
-            Demo · agent declarations and Oracle/Guardian roles. No independent agent, tool runner
-            or command execution.
+            OMNI text agent built · activation pending verified membership and saved-run setup.
+            Oracle/Guardian declarations stay Demo. No tools or command execution.
           </p>
         </div>
         <div>

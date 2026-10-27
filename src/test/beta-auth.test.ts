@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ getUser: vi.fn(), access: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getUser: vi.fn(), access: vi.fn(), membership: vi.fn() }));
 vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({
     auth: { getUser: mocks.getUser },
+    rpc: mocks.membership,
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: mocks.access }) }) }),
   }),
 }));
@@ -16,15 +17,14 @@ describe("server AI permission boundary", () => {
   beforeEach(() => {
     vi.stubEnv("SUPABASE_URL", "https://example.test");
     vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "test-publishable");
-    mocks.getUser
-      .mockReset()
-      .mockResolvedValue({
-        data: { user: { id: "test-owner", email_confirmed_at: "2026-10-27T00:00:00Z" } },
-        error: null,
-      });
+    mocks.getUser.mockReset().mockResolvedValue({
+      data: { user: { id: "test-owner", email_confirmed_at: "2026-10-27T00:00:00Z" } },
+      error: null,
+    });
     mocks.access
       .mockReset()
       .mockResolvedValue({ data: { ai_approved: true, paused: false }, error: null });
+    mocks.membership.mockReset().mockResolvedValue({ data: "owner", error: null });
   });
   it("rejects anonymous requests before account/model access", async () => {
     await expect(authenticateBetaAi(request())).rejects.toMatchObject({ status: 401 });
@@ -86,6 +86,20 @@ describe("server AI permission boundary", () => {
     await expect(
       authenticateBetaAi(request({ authorization: "Bearer test" })),
     ).rejects.toMatchObject({ status: 403 });
+  });
+  it("blocks missing protected membership setup on every AI endpoint", async () => {
+    mocks.membership.mockResolvedValue({ data: null, error: { code: "PGRST202" } });
+    await expect(
+      authenticateBetaAi(request({ authorization: "Bearer test" })),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(mocks.access).not.toHaveBeenCalled();
+  });
+  it("does not let a beta approval substitute for membership", async () => {
+    mocks.membership.mockResolvedValue({ data: null, error: null });
+    await expect(
+      authenticateBetaAi(request({ authorization: "Bearer test" })),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(mocks.access).not.toHaveBeenCalled();
   });
   it("fails closed when permissions cannot be read", async () => {
     mocks.access.mockResolvedValue({ data: null, error: new Error("unavailable") });

@@ -54,7 +54,7 @@ describe("authenticated read-only activation snapshot", () => {
   });
   it("reads only caller permissions and owned project count, without granting pending roles", async () => {
     expect(await run()).toMatchObject({
-      state: "Ready for reviewed request",
+      state: "Blocked",
       membership: "unavailable",
       inferenceVerified: false,
       nativeConnected: false,
