@@ -34,7 +34,6 @@ describe("OMNI activation boundaries", () => {
     const result = omniReadiness({ ...baseline, membership: "unavailable" });
     expect(result.membership).toBe("unavailable");
     expect(result.ownerAccounts).toBe("Blocked · owner/invitation setup not activated");
-    // Existing explicitly approved beta access stays distinct from new owner roles.
-    expect(result.state).toBe("Ready for reviewed request");
+    expect(result.state).toBe("Blocked");
   });
 });

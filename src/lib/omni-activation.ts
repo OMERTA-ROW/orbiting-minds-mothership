@@ -12,6 +12,8 @@ export type OmniReadinessInput = {
 /** Readiness is permission/configuration evidence, never a successful model call. */
 export function omniReadiness(input: OmniReadinessInput) {
   const blockers: string[] = [];
+  if (input.membership === "unavailable" || input.membership === "unassigned")
+    blockers.push("Activate protected owner/member setup and confirm an assigned private membership.");
   if (!input.emailVerified) blockers.push("Confirm your account email.");
   if (!input.aiApproved) blockers.push("Founder AI approval is required for this account.");
   if (input.paused) blockers.push("Account AI is paused; review before resuming.");
@@ -37,7 +39,7 @@ export function omniReadiness(input: OmniReadinessInput) {
     inferenceVerified: false as const,
     nativeConnected: false as const,
     executionAllowed: false as const,
-    agents: "Demo · declarations only; no independent agent runtime" as const,
+    agents: "OMNI text agent built · activation and persisted inference not verified" as const,
   };
 }
 export type OmniReadiness = ReturnType<typeof omniReadiness> & { checkedAt: string; model: string };

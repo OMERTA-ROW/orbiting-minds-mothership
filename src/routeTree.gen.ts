@@ -75,6 +75,7 @@ import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedQuantumStudioRouteImport } from './routes/_authenticated/quantum-studio'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 import { Route as ApiOmniRouteImport } from './routes/api/omni'
+import { Route as ApiOmniAgentRouteImport } from './routes/api/omni-agent'
 import { Route as CapsulesIdRouteImport } from './routes/capsules_.$id'
 import { Route as ChallengesIdRouteImport } from './routes/challenges_.$id'
 import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
@@ -414,6 +415,11 @@ const ApiOmniRoute = ApiOmniRouteImport.update({
   path: '/api/omni',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOmniAgentRoute = ApiOmniAgentRouteImport.update({
+  id: '/api/omni-agent',
+  path: '/api/omni-agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CapsulesIdRoute = CapsulesIdRouteImport.update({
   id: '/capsules_/$id',
   path: '/capsules/$id',
@@ -517,6 +523,7 @@ export interface FileRoutesByFullPath {
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
+  '/api/omni-agent': typeof ApiOmniAgentRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
@@ -591,6 +598,7 @@ export interface FileRoutesByTo {
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
+  '/api/omni-agent': typeof ApiOmniAgentRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
   '/code-exchange/$id': typeof CodeExchangeIdRoute
@@ -667,6 +675,7 @@ export interface FileRoutesById {
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
+  '/api/omni-agent': typeof ApiOmniAgentRoute
   '/capsules_/$id': typeof CapsulesIdRoute
   '/challenges_/$id': typeof ChallengesIdRoute
   '/code-exchange_/$id': typeof CodeExchangeIdRoute
@@ -743,6 +752,7 @@ export interface FileRouteTypes {
     | '/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
+    | '/api/omni-agent'
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
@@ -817,6 +827,7 @@ export interface FileRouteTypes {
     | '/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
+    | '/api/omni-agent'
     | '/capsules/$id'
     | '/challenges/$id'
     | '/code-exchange/$id'
@@ -892,6 +903,7 @@ export interface FileRouteTypes {
     | '/_authenticated/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
+    | '/api/omni-agent'
     | '/capsules_/$id'
     | '/challenges_/$id'
     | '/code-exchange_/$id'
@@ -962,6 +974,7 @@ export interface RootRouteChildren {
   VoiceRoute: typeof VoiceRoute
   ApiEvolutionPathwayRoute: typeof ApiEvolutionPathwayRoute
   ApiOmniRoute: typeof ApiOmniRoute
+  ApiOmniAgentRoute: typeof ApiOmniAgentRoute
   CapsulesIdRoute: typeof CapsulesIdRoute
   ChallengesIdRoute: typeof ChallengesIdRoute
   CodeExchangeIdRoute: typeof CodeExchangeIdRoute
@@ -1435,6 +1448,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOmniRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/omni-agent': {
+      id: '/api/omni-agent'
+      path: '/api/omni-agent'
+      fullPath: '/api/omni-agent'
+      preLoaderRoute: typeof ApiOmniAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/capsules_/$id': {
       id: '/capsules_/$id'
       path: '/capsules/$id'
@@ -1569,6 +1589,7 @@ const rootRouteChildren: RootRouteChildren = {
   VoiceRoute: VoiceRoute,
   ApiEvolutionPathwayRoute: ApiEvolutionPathwayRoute,
   ApiOmniRoute: ApiOmniRoute,
+  ApiOmniAgentRoute: ApiOmniAgentRoute,
   CapsulesIdRoute: CapsulesIdRoute,
   ChallengesIdRoute: ChallengesIdRoute,
   CodeExchangeIdRoute: CodeExchangeIdRoute,

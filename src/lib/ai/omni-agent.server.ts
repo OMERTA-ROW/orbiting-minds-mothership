@@ -46,6 +46,8 @@ export async function handleOmniAgent(request: Request) {
     let cancelled = false, stopped: AgentState | undefined, text = "";
     let call: ReturnType<typeof createOmniCall> | undefined;
     let terminalStatus = 200, terminalMessage = "";
+    let ready: () => void = () => {};
+    const providerReady = new Promise<void>((resolve) => { ready = resolve; });
     const encoder = new TextEncoder();
     const body = new ReadableStream<Uint8Array>({
       async start(controller) {
@@ -72,6 +74,7 @@ export async function handleOmniAgent(request: Request) {
           if (signal.aborted) throw new DOMException("Stopped", "AbortError");
           send({ type: "state", id: input.requestId, status: "running" });
           call = createOmniCall(request, apiKey, JSON.stringify(project.data), input.message, signal);
+          ready();
           for await (const part of call.result.fullStream) {
             if (signal.aborted) break;
             if (part.type === "text-delta") { text += part.text; send({ type: "text", text: part.text }); }
@@ -92,6 +95,7 @@ export async function handleOmniAgent(request: Request) {
           else if (signal.aborted) { stopped ??= "cancelled"; terminalStatus = stopped === "cancelled" ? 499 : 403; terminalMessage ||= "Stopped. Partial text retained; billed usage may apply."; }
           else { stopped = "failed"; terminalStatus = error instanceof BetaHttpError ? error.status : 502; terminalMessage = error instanceof BetaHttpError ? error.message : "Agent did not finish. No tools ran; no automatic retry."; }
         } finally {
+          ready();
           clearInterval(interval);
           if (checking) await checking;
           const failure = call?.getFailure();
@@ -114,10 +118,18 @@ export async function handleOmniAgent(request: Request) {
       },
       cancel() { cancelled = true; abort.abort(); },
     });
-    // Start consumption before waiting for upstream headers; preserve upstream denial HTTP status.
-    // The model may not start if a final identity/cancellation check fails.
+    await providerReady;
+    if (call) {
+      await call.gateway.waitForRunId();
+      const failure = call.getFailure();
+      if (failure) { await new Response(body).text(); return jsonError(failure.status, failure.message); }
+    } else {
+      await new Response(body).text();
+      return jsonError(signal.aborted ? 499 : terminalStatus, terminalMessage || "No model request started.");
+    }
+    if (request.signal.aborted) { abort.abort(); return new Response(null, { status: 499 }); }
     const headers = { "Content-Type": "application/x-ndjson", "Cache-Control": "no-cache, no-store, no-transform", "X-Content-Type-Options": "nosniff" };
-    return new Response(body, { headers: getLovableAiGatewayResponseHeaders(undefined, headers) });
+    return new Response(body, { headers: getLovableAiGatewayResponseHeaders(call.getResponseHeaders(), headers) });
   } catch (error) {
     return jsonError(error instanceof BetaHttpError ? error.status : 403, error instanceof Error ? error.message : "Agent unavailable.");
   }
