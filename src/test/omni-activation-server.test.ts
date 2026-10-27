@@ -27,12 +27,10 @@ const run = () =>
 describe("authenticated read-only activation snapshot", () => {
   beforeEach(() => {
     vi.stubEnv("LOVABLE_API_KEY", "test-only-key");
-    mocks.identity
-      .mockReset()
-      .mockResolvedValue({
-        data: { user: { id: "verified-user", email_confirmed_at: "2026-10-27T00:00:00Z" } },
-        error: null,
-      });
+    mocks.identity.mockReset().mockResolvedValue({
+      data: { user: { id: "verified-user", email_confirmed_at: "2026-10-27T00:00:00Z" } },
+      error: null,
+    });
     mocks.access
       .mockReset()
       .mockResolvedValue({ data: { ai_approved: true, paused: false }, error: null });
