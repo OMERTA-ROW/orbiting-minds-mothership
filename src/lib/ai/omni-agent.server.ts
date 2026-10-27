@@ -100,7 +100,7 @@ export async function handleOmniAgent(request: Request) {
           if (checking) await checking;
           const failure = call?.getFailure();
           const status = stopped ?? "failed";
-          const usage = await call?.result.totalUsage.catch(() => undefined);
+          const usage = call ? await Promise.resolve(call.result.totalUsage).catch(() => undefined) : undefined;
           const result = await runs().update({ status, result: text.slice(0, 40000), error_status: status === "completed" ? null : terminalStatus, error_message: status === "completed" ? null : terminalMessage.slice(0, 1500), input_tokens: usage?.inputTokens ?? null, output_tokens: usage?.outputTokens ?? null, total_tokens: usage?.totalTokens ?? null, gateway_run_id: call?.gateway.getRunId() ?? null, finished_at: new Date().toISOString() } as never).eq("id", input.requestId).eq("owner_id", userId).eq("status", "running").select("*").maybeSingle();
           // Cancellation can win the row update; never overwrite it with completed.
           const readback = result.data ? result : await runs().select("*").eq("id", input.requestId).eq("owner_id", userId).maybeSingle();
