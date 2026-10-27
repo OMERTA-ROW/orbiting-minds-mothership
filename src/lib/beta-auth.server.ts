@@ -35,11 +35,22 @@ export async function authenticateBetaAi(request: Request) {
     throw new BetaHttpError(401, "Your session is invalid or expired. Sign in again.");
   if (!data.user.email_confirmed_at)
     throw new BetaHttpError(403, "Confirm your account email before sending a model request.");
-  const membership = await (client.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>).call(client, "caller_role");
+  const membership = await (
+    client.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>
+  ).call(client, "caller_role");
   if (membership.error)
-    throw new BetaHttpError(503, "Private owner/member setup is not activated. No model request started.");
-  try { assertAgentMembership(membership.data); }
-  catch (error) { throw new BetaHttpError(403, error instanceof Error ? error.message : "Private membership required."); }
+    throw new BetaHttpError(
+      503,
+      "Private owner/member setup is not activated. No model request started.",
+    );
+  try {
+    assertAgentMembership(membership.data);
+  } catch (error) {
+    throw new BetaHttpError(
+      403,
+      error instanceof Error ? error.message : "Private membership required.",
+    );
+  }
   const access = await client
     .from("beta_access")
     .select("ai_approved, paused")

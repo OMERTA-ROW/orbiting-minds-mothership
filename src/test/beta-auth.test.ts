@@ -17,12 +17,10 @@ describe("server AI permission boundary", () => {
   beforeEach(() => {
     vi.stubEnv("SUPABASE_URL", "https://example.test");
     vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "test-publishable");
-    mocks.getUser
-      .mockReset()
-      .mockResolvedValue({
-        data: { user: { id: "test-owner", email_confirmed_at: "2026-10-27T00:00:00Z" } },
-        error: null,
-      });
+    mocks.getUser.mockReset().mockResolvedValue({
+      data: { user: { id: "test-owner", email_confirmed_at: "2026-10-27T00:00:00Z" } },
+      error: null,
+    });
     mocks.access
       .mockReset()
       .mockResolvedValue({ data: { ai_approved: true, paused: false }, error: null });
@@ -91,12 +89,16 @@ describe("server AI permission boundary", () => {
   });
   it("blocks missing protected membership setup on every AI endpoint", async () => {
     mocks.membership.mockResolvedValue({ data: null, error: { code: "PGRST202" } });
-    await expect(authenticateBetaAi(request({ authorization: "Bearer test" }))).rejects.toMatchObject({ status: 503 });
+    await expect(
+      authenticateBetaAi(request({ authorization: "Bearer test" })),
+    ).rejects.toMatchObject({ status: 503 });
     expect(mocks.access).not.toHaveBeenCalled();
   });
   it("does not let a beta approval substitute for membership", async () => {
     mocks.membership.mockResolvedValue({ data: null, error: null });
-    await expect(authenticateBetaAi(request({ authorization: "Bearer test" }))).rejects.toMatchObject({ status: 403 });
+    await expect(
+      authenticateBetaAi(request({ authorization: "Bearer test" })),
+    ).rejects.toMatchObject({ status: 403 });
     expect(mocks.access).not.toHaveBeenCalled();
   });
   it("fails closed when permissions cannot be read", async () => {

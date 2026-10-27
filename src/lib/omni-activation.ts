@@ -13,7 +13,9 @@ export type OmniReadinessInput = {
 export function omniReadiness(input: OmniReadinessInput) {
   const blockers: string[] = [];
   if (input.membership === "unavailable" || input.membership === "unassigned")
-    blockers.push("Activate protected owner/member setup and confirm an assigned private membership.");
+    blockers.push(
+      "Activate protected owner/member setup and confirm an assigned private membership.",
+    );
   if (!input.emailVerified) blockers.push("Confirm your account email.");
   if (!input.aiApproved) blockers.push("Founder AI approval is required for this account.");
   if (input.paused) blockers.push("Account AI is paused; review before resuming.");
