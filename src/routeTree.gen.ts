@@ -69,7 +69,9 @@ import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
 import { Route as AuthenticatedBetaOmniRouteImport } from './routes/_authenticated/beta-omni'
+import { Route as AuthenticatedInviteRouteImport } from './routes/_authenticated/invite'
 import { Route as AuthenticatedKnowledgeBriefRouteImport } from './routes/_authenticated/knowledge-brief'
+import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
 import { Route as AuthenticatedQuantumStudioRouteImport } from './routes/_authenticated/quantum-studio'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 import { Route as ApiOmniRouteImport } from './routes/api/omni'
@@ -380,12 +382,22 @@ const AuthenticatedBetaOmniRoute = AuthenticatedBetaOmniRouteImport.update({
   path: '/beta-omni',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedInviteRoute = AuthenticatedInviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedKnowledgeBriefRoute =
   AuthenticatedKnowledgeBriefRouteImport.update({
     id: '/knowledge-brief',
     path: '/knowledge-brief',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMembersRoute = AuthenticatedMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedQuantumStudioRoute =
   AuthenticatedQuantumStudioRouteImport.update({
     id: '/quantum-studio',
@@ -499,7 +511,9 @@ export interface FileRoutesByFullPath {
   '/voice': typeof VoiceRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/invite': typeof AuthenticatedInviteRoute
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
+  '/members': typeof AuthenticatedMembersRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
@@ -571,7 +585,9 @@ export interface FileRoutesByTo {
   '/voice': typeof VoiceRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/invite': typeof AuthenticatedInviteRoute
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
+  '/members': typeof AuthenticatedMembersRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
@@ -645,7 +661,9 @@ export interface FileRoutesById {
   '/voice': typeof VoiceRoute
   '/_authenticated/beta': typeof AuthenticatedBetaRoute
   '/_authenticated/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/_authenticated/invite': typeof AuthenticatedInviteRoute
   '/_authenticated/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
+  '/_authenticated/members': typeof AuthenticatedMembersRoute
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRoute
@@ -719,7 +737,9 @@ export interface FileRouteTypes {
     | '/voice'
     | '/beta'
     | '/beta-omni'
+    | '/invite'
     | '/knowledge-brief'
+    | '/members'
     | '/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -791,7 +811,9 @@ export interface FileRouteTypes {
     | '/voice'
     | '/beta'
     | '/beta-omni'
+    | '/invite'
     | '/knowledge-brief'
+    | '/members'
     | '/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -864,7 +886,9 @@ export interface FileRouteTypes {
     | '/voice'
     | '/_authenticated/beta'
     | '/_authenticated/beta-omni'
+    | '/_authenticated/invite'
     | '/_authenticated/knowledge-brief'
+    | '/_authenticated/members'
     | '/_authenticated/quantum-studio'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -1369,11 +1393,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBetaOmniRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/invite': {
+      id: '/_authenticated/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof AuthenticatedInviteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/knowledge-brief': {
       id: '/_authenticated/knowledge-brief'
       path: '/knowledge-brief'
       fullPath: '/knowledge-brief'
       preLoaderRoute: typeof AuthenticatedKnowledgeBriefRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/members': {
+      id: '/_authenticated/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof AuthenticatedMembersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/quantum-studio': {
@@ -1452,14 +1490,18 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
   AuthenticatedBetaOmniRoute: typeof AuthenticatedBetaOmniRoute
+  AuthenticatedInviteRoute: typeof AuthenticatedInviteRoute
   AuthenticatedKnowledgeBriefRoute: typeof AuthenticatedKnowledgeBriefRoute
+  AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
   AuthenticatedQuantumStudioRoute: typeof AuthenticatedQuantumStudioRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBetaRoute: AuthenticatedBetaRoute,
   AuthenticatedBetaOmniRoute: AuthenticatedBetaOmniRoute,
+  AuthenticatedInviteRoute: AuthenticatedInviteRoute,
   AuthenticatedKnowledgeBriefRoute: AuthenticatedKnowledgeBriefRoute,
+  AuthenticatedMembersRoute: AuthenticatedMembersRoute,
   AuthenticatedQuantumStudioRoute: AuthenticatedQuantumStudioRoute,
 }
 
