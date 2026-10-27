@@ -18,8 +18,16 @@ No hosted changes were made. Preview and published app share this backend; separ
 
 ## Evidence scope
 - Read-only hosted check: 0 auth users; 1 orphan approval row; 4 retained projects; no `user_roles`, `caller_role` or `omni_agent_runs`; no saved OMNI provider block. No retained orphan record was claimed/reassigned.
-- Unit/isolated PostgreSQL/browser evidence is recorded below after verification. Mock provider tests do not prove actual inference.
+- `bunx vitest run`: **1,069 tests / 69 files PASS**; 29 new agent rules/handler checks plus two universal membership-denial checks. Full suite includes request-before-model ordering, dedupe, missing schema, denial persistence, exact returned usage, failed writes, Stop, account pause before first text and membership revocation. Provider responses are fixtures, not real inference.
+- `python3 src/test/test_omni_agent_sql.py`: **15 isolated PostgreSQL acceptance checks PASS** against the actual staged owner/agent SQL, with fictional `.invalid` identities only in a temporary Unix-socket database. Verified owner-email matching, role prerequisites, owner/project RLS, stable request identity/conflict, forged write denials and pause/revocation-safe cancellation. Initial local test bootstrap failed while preparing fixture identity; the final run passed. Local database was stopped/removed; no Cloud data changed.
+- `python3 /tmp/browser/omni-agent/check_agent.py`: actual public OMNI labels and private sign-in gate PASS, final private-route URL `/auth`; actual new endpoint anonymous/forged **401**, separate foreign-Origin **403**; desktop 1280×1800 and mobile 390×844 no overflow/page errors. Screenshots inspected. Authenticated saved-response UI cannot be exercised without creating an account, which this request forbids.
+- Changed production-code ESLint PASS; automatic preview build **OK** after correcting the SDK PromiseLike usage read. All content leaves retain app-specific head metadata; no content route added and no public settings changed.
 - **Actual inference: NOT RUN.** A direct gateway test would bypass the requested private-account/security path and cannot establish agent activation; it was not used as a workaround.
 - No accounts created, shared schema changes, emails, publishing, purchases, desktop access or native CLI login.
 
 Skills used: AI SDK gateway setup and OpenAI Responses streaming/recovery contracts.
+
+## Still blocked / concrete next owner action
+Explicitly authorize applying **both named pending scripts to the shared backend** (or provide genuinely isolated backend access), and choose the real owner email through secure configuration; then personally complete `/auth` confirmation and `/members` owner claim. A separate authorized AI approval is still required. These cannot be replaced by the current chat screen name or orphan approval row. No AI vendor connection/purchase is currently needed; actual model availability/credits remain unverified until the first authorized request.
+
+No app-native or platform approval card is available for this particular schema/owner configuration; separate chat authorization of the named shared-backend change is required before invoking its migration tool. Native desktop/CLI login remains entirely outside this web agent milestone.
