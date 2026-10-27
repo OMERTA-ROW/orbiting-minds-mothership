@@ -181,3 +181,10 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [ ] A7 Daily knowledge collector: add AlphaSignal + sources, Adopt/Test/Watch/Pivot brief, run history/failures (scheduled collector already exists; extend, don't rebuild).
 - [ ] A8 Project Health honeycomb heatmap (uptime, errors, last deploy).
 - [ ] A9 CLI bridge: doctor/build/test/status as jobs one-tap triggerable by Honeycomb Terminal (Blocked until Honeycomb pairing is proven).
+
+## Private owner accounts & invitations (owner request 2026-10-26/27)
+- [x] Invitation/role rules + tests (`src/lib/invitations.ts`)
+- [x] Server functions, `/members`, `/invite` pages (code complete; show "not activated" until SQL applied)
+- [ ] BLOCKED: apply `.lovable/pending/owner-invitations.sql` — draft shares live backend; needs owner approval or separate test project
+- [ ] BLOCKED: owner email for `owner_config` (owner supplies); runtime role/invite/isolation tests after activation
+- [ ] Vault real-credential storage stays off (no audited encryption); CLI login not implemented
