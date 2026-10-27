@@ -100,7 +100,7 @@ export async function handleOmniAgent(request: Request) {
           if (checking) await checking;
           const failure = call?.getFailure();
           const status = stopped ?? "failed";
-          const usage = call ? await Promise.resolve(call.result.totalUsage).catch(() => undefined) : undefined;
+          const usage = call && !signal.aborted ? await Promise.resolve(call.result.totalUsage).catch(() => undefined) : undefined;
           const result = await runs().update({ status, result: text.slice(0, 40000), error_status: status === "completed" ? null : terminalStatus, error_message: status === "completed" ? null : terminalMessage.slice(0, 1500), input_tokens: usage?.inputTokens ?? null, output_tokens: usage?.outputTokens ?? null, total_tokens: usage?.totalTokens ?? null, gateway_run_id: call?.gateway.getRunId() ?? null, finished_at: new Date().toISOString() } as never).eq("id", input.requestId).eq("owner_id", userId).eq("status", "running").select("*").maybeSingle();
           // Cancellation can win the row update; never overwrite it with completed.
           const readback = result.data ? result : await runs().select("*").eq("id", input.requestId).eq("owner_id", userId).maybeSingle();
@@ -112,7 +112,10 @@ export async function handleOmniAgent(request: Request) {
             if (cleared.error || !cleared.data) send({ type: "error", status: 503, message: "Result saved, but AI remains paused pending owner review." });
           }
           if (result.error || readback.error || !readback.data) send({ type: "error", status: 503, message: "Result could not be saved. AI remains paused; do not restart this request." });
-          else send({ type: "result", run: readback.data as unknown as OmniAgentRun });
+          else {
+            if (status !== "completed") send({ type: "error", status: terminalStatus, message: terminalMessage || "Agent stopped. No tools ran." });
+            send({ type: "result", run: readback.data as unknown as OmniAgentRun });
+          }
           if (!cancelled) controller.close();
         }
       },

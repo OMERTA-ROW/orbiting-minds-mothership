@@ -35,7 +35,7 @@ BEGIN
   IF u.id IS NULL OR u.email_confirmed_at IS NULL THEN RAISE EXCEPTION 'Confirmed account required'; END IF;
   IF public.caller_role() IS NULL THEN RAISE EXCEPTION 'Private membership required'; END IF;
   SELECT * INTO a FROM public.beta_access WHERE user_id = u.id FOR SHARE;
-  IF a.user_id IS NULL OR NOT a.ai_approved OR a.paused THEN RAISE EXCEPTION 'AI approval and unpaused account required'; END IF;
+  IF a.user_id IS NULL OR a.ai_approved IS DISTINCT FROM true OR a.paused IS DISTINCT FROM false THEN RAISE EXCEPTION 'AI approval and unpaused account required'; END IF;
   IF _consent IS DISTINCT FROM true THEN RAISE EXCEPTION 'Explicit AI and saved-text consent required'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.beta_projects WHERE id=_project AND owner_id=u.id) THEN RAISE EXCEPTION 'Owned project required'; END IF;
   INSERT INTO public.omni_agent_runs(id,owner_id,project_id,model,message,consent)
