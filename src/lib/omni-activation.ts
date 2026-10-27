@@ -16,14 +16,24 @@ export function omniReadiness(input: OmniReadinessInput) {
   if (!input.aiApproved) blockers.push("Founder AI approval is required for this account.");
   if (input.paused) blockers.push("Account AI is paused; review before resuming.");
   if (input.ownedProjects < 1) blockers.push("Select or create a private project in your account.");
-  if (!input.providerConfigured) blockers.push("Lovable AI service configuration is missing; use Project Settings → Secrets, never chat.");
-  if (!input.providerStateReadable) blockers.push("AI availability could not be checked; no request may start.");
-  if (input.providerBlocked) blockers.push("A saved provider block requires owner review; no automatic retry or reset.");
+  if (!input.providerConfigured)
+    blockers.push(
+      "Lovable AI service configuration is missing; use Project Settings → Secrets, never chat.",
+    );
+  if (!input.providerStateReadable)
+    blockers.push("AI availability could not be checked; no request may start.");
+  if (input.providerBlocked)
+    blockers.push("A saved provider block requires owner review; no automatic retry or reset.");
   return {
-    state: blockers.length ? "Blocked" as const : "Ready for reviewed request" as const,
+    state: blockers.length ? ("Blocked" as const) : ("Ready for reviewed request" as const),
     blockers,
     membership: input.membership,
-    ownerAccounts: input.membership === "unavailable" ? "Blocked · owner/invitation setup not activated" : input.membership === "unassigned" ? "Blocked · no assigned membership" : "Verified membership",
+    ownerAccounts:
+      input.membership === "unavailable"
+        ? "Blocked · owner/invitation setup not activated"
+        : input.membership === "unassigned"
+          ? "Blocked · no assigned membership"
+          : "Verified membership",
     inferenceVerified: false as const,
     nativeConnected: false as const,
     executionAllowed: false as const,

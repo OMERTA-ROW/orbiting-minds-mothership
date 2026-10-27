@@ -10,18 +10,35 @@ export const readOmniActivation = createServerFn({ method: "GET" })
     if (identity.error || !identity.data.user || identity.data.user.id !== context.userId) {
       throw new Error("Your session could not be revalidated. Sign in again.");
     }
-    const rpc = context.supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: { code?: string } | null }>;
+    const rpc = context.supabase.rpc as unknown as (
+      name: string,
+    ) => Promise<{ data: unknown; error: { code?: string } | null }>;
     const [access, projects, membership] = await Promise.all([
-      context.supabase.from("beta_access").select("ai_approved, paused").eq("user_id", context.userId).maybeSingle(),
-      context.supabase.from("beta_projects").select("id", { count: "exact", head: true }).eq("owner_id", context.userId),
+      context.supabase
+        .from("beta_access")
+        .select("ai_approved, paused")
+        .eq("user_id", context.userId)
+        .maybeSingle(),
+      context.supabase
+        .from("beta_projects")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", context.userId),
       rpc.call(context.supabase, "caller_role"),
     ]);
-    if (access.error || projects.error) throw new Error("Private permissions could not be checked. No request started.");
-    const role: OmniReadinessInput["membership"] = membership.error ? "unavailable" :
-      membership.data === "owner" || membership.data === "admin" || membership.data === "tester" ? membership.data : "unassigned";
+    if (access.error || projects.error)
+      throw new Error("Private permissions could not be checked. No request started.");
+    const role: OmniReadinessInput["membership"] = membership.error
+      ? "unavailable"
+      : membership.data === "owner" || membership.data === "admin" || membership.data === "tester"
+        ? membership.data
+        : "unassigned";
     // Availability is service-managed. No account/project data is read with this client.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const state = await supabaseAdmin.from("ai_gateway_state").select("blocked_status").eq("feature", "evolution-omni").maybeSingle();
+    const state = await supabaseAdmin
+      .from("ai_gateway_state")
+      .select("blocked_status")
+      .eq("feature", "evolution-omni")
+      .maybeSingle();
     const { omniModel } = await import("./ai/omni-responses.server");
     return {
       ...omniReadiness({

@@ -2,8 +2,13 @@ import { describe, expect, it } from "vitest";
 import { omniReadiness, type OmniReadinessInput } from "@/lib/omni-activation";
 
 const baseline: OmniReadinessInput = {
-  emailVerified: true, aiApproved: true, paused: false, ownedProjects: 1,
-  providerConfigured: true, providerStateReadable: true, providerBlocked: false,
+  emailVerified: true,
+  aiApproved: true,
+  paused: false,
+  ownedProjects: 1,
+  providerConfigured: true,
+  providerStateReadable: true,
+  providerBlocked: false,
   membership: "owner",
 };
 describe("OMNI activation boundaries", () => {
@@ -15,9 +20,13 @@ describe("OMNI activation boundaries", () => {
     expect(result.nativeConnected).toBe(false);
   });
   it.each([
-    ["emailVerified", false], ["aiApproved", false], ["paused", true],
-    ["ownedProjects", 0], ["providerConfigured", false],
-    ["providerStateReadable", false], ["providerBlocked", true],
+    ["emailVerified", false],
+    ["aiApproved", false],
+    ["paused", true],
+    ["ownedProjects", 0],
+    ["providerConfigured", false],
+    ["providerStateReadable", false],
+    ["providerBlocked", true],
   ] as const)("blocks reviewed inference when %s is %s", (field, value) => {
     expect(omniReadiness({ ...baseline, [field]: value }).state).toBe("Blocked");
   });
