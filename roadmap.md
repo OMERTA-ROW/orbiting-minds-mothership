@@ -188,3 +188,8 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [ ] BLOCKED: apply `.lovable/pending/owner-invitations.sql` — draft shares live backend; needs owner approval or separate test project
 - [ ] BLOCKED: owner email for `owner_config` (owner supplies); runtime role/invite/isolation tests after activation
 - [ ] Vault real-credential storage stays off (no audited encryption); CLI login not implemented
+
+## Current Omni activation request — 2026-10-27
+- [ ] Inspect configured AI, current account activation and native connectivity without service/schema/account writes.
+- [ ] Add explicit read-only authenticated readiness checks and secure handoffs in existing Omni/agent/CLI surfaces; retain Demo/Blocked labels and no automatic execution.
+- [ ] Test safe runtime denials, local permission rules and browser flows; record actual activation separately from configuration and source tests. No publication or native installation.

@@ -9,7 +9,7 @@ export const Route = createFileRoute("/omni")({
   head: () =>
     seo(
       "OMNI · Dedicated Coordinator",
-      "Evolution OmniBridge’s named coordinator: a clearly labeled temporary DEMO template conversation with explicit @omni routing, selected-world capability plans and human review. No connected OMNI inference or tool execution.",
+      "OMNI private connection checkpoints and authenticated AI handoff, alongside a separate Demo template conversation. No native terminal, independent agents or automatic tool execution.",
     ),
   component: Page,
 });

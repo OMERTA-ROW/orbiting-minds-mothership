@@ -11,6 +11,7 @@ export async function authenticateBetaAi(request: Request) {
   const client = createClient<Database>(url, key, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: `Bearer ${token}` }, fetch: (input, init) => { const headers = new Headers(init?.headers); headers.set("apikey", key); return fetch(input, { ...init, headers }); } } });
   const { data, error } = await client.auth.getUser(token);
   if (error || !data.user) throw new BetaHttpError(401, "Your session is invalid or expired. Sign in again.");
+  if (!data.user.email_confirmed_at) throw new BetaHttpError(403, "Confirm your account email before sending a model request.");
   const access = await client.from("beta_access").select("ai_approved, paused").eq("user_id", data.user.id).maybeSingle();
   if (access.error) throw new BetaHttpError(503, "Beta permission could not be checked. No request started.");
   try { assertBetaAiAccess(access.data); } catch (e) { throw new BetaHttpError(403, e instanceof Error ? e.message : "Beta access blocked"); }
