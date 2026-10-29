@@ -24,6 +24,7 @@ import { useNexus } from "@/hooks/use-nexus";
 import { readCreativePause } from "@/hooks/use-cartoon";
 import { downloadCreative } from "@/components/entertainment/CreativeRegistry";
 import { OmniActivation } from "./OmniActivation";
+import { OmniAutonomy } from "./OmniAutonomy";
 
 export function OmniAssistant({
   worldId,
@@ -105,6 +106,7 @@ export function OmniAssistant({
         </div>
       </header>
       <OmniActivation />
+      <OmniAutonomy />
       <div className="my-6 flex flex-wrap items-center justify-between gap-4">
         <label className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground">
           Selected world
