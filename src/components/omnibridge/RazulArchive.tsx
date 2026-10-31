@@ -63,8 +63,8 @@ export function RazulArchive() {
     ? retrieveEvents(store.events, store.grants, {
         consumer,
         projectId: firstProject.id,
-        kind: searchKind || undefined,
-        text: searchText || undefined,
+        ...(searchKind ? { kind: searchKind } : {}),
+        ...(searchText ? { text: searchText } : {}),
       })
     : { allowed: false as const, events: [], denial: "Enroll a project first." };
 
