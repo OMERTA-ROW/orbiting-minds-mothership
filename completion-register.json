@@ -1039,7 +1039,7 @@
         },
         {
           "id": "05.10",
-          "requirement": "RA'SUL as default active conversational agent/front door of the OMNI agent dashboard: owner-only private conversation interface answering from sourced memory/public research, authorized status inspection, specialist discovery via Agent Passports, scoped dispatch preparation to Jackboy/OMNI/Sabrina/JAX/Guardian, transparent handoffs and job progress, one consolidated thread. No blanket credentials; Guardian-enforced permissions; explicit owner approval for production changes and external actions; safe fallback when backend not connected.",
+          "requirement": "RA'SUL / Razul as default speaking/conversational central intelligence within OMNI Mothership, never a game advisor: searchable permissioned project history plus lawful public-source research; coordinates his proposed specialized research/monitoring workers over permitted topics and resident watchers only on owner-enrolled sites/apps. Sourced reports, timestamps/provenance, audit, subscriptions and transparent handoffs; scoped recommendations/dispatch to resident agents and Jackboy/OMNI/Sabrina/JAX/Guardian. Respect website policies, permissions/rate limits; no unauthorized scans, blanket surveillance or entire-internet claims. Preserve private owner access, specialist identities, infrastructure, Guardian gates and explicit owner approval for high-impact/external actions; no publishing or automatic tools.",
           "status": "Partially implemented",
           "owner": "Lovable implementation; live answers require activated owner account",
           "dependencies": [
@@ -1052,7 +1052,10 @@
             "src/lib/rasul-chat.ts",
             "src/lib/rasul-chat.test.ts",
             "src/components/omnibridge/RasulChat.tsx",
-            "src/routes/omni-razul.tsx"
+            "src/routes/omni-razul.tsx",
+            "src/routes/omni.tsx",
+            "src/routes/omni-agents.tsx",
+            "src/components/omnibridge/OmniBridge.tsx"
           ],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified.",
