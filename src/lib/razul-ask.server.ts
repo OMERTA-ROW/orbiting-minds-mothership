@@ -5,11 +5,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  confidenceFor,
-  questionHashInput,
-  rankForQuestion,
-} from "./razul-observatory";
+import { confidenceFor, questionHashInput, rankForQuestion } from "./razul-observatory";
 
 type Admin = SupabaseClient<Database>;
 
@@ -50,7 +46,9 @@ export async function answerRazulQuery(
 ): Promise<RazulAnswer> {
   const { admin, now } = deps;
   const hash = await sha256(questionHashInput(input.question));
-  const scopeKey = input.scopeCategories ? [...input.scopeCategories].sort().join(",") || "none" : "all";
+  const scopeKey = input.scopeCategories
+    ? [...input.scopeCategories].sort().join(",") || "none"
+    : "all";
 
   // Cache: fresh identical question + scope returns the stored answer.
   const cached = await admin
@@ -59,7 +57,8 @@ export async function answerRazulQuery(
     .eq("question_hash", hash)
     .eq("scope_key", scopeKey)
     .maybeSingle();
-  if (!cached.error &&
+  if (
+    !cached.error &&
     cached.data &&
     now().getTime() >= new Date(cached.data.created_at).getTime() &&
     now().getTime() - new Date(cached.data.created_at).getTime() < CACHE_TTL_MS
@@ -81,7 +80,11 @@ export async function answerRazulQuery(
     )
     .order("collected_at", { ascending: false })
     .limit(200);
-  if (input.scopeCategories) query = query.in("category", input.scopeCategories.length ? [...input.scopeCategories] : ["__no_authorized_categories__"]);
+  if (input.scopeCategories)
+    query = query.in(
+      "category",
+      input.scopeCategories.length ? [...input.scopeCategories] : ["__no_authorized_categories__"],
+    );
   const findings = await query;
   if (findings.error) throw new Error("The observatory index could not be searched.");
 
@@ -110,17 +113,15 @@ export async function answerRazulQuery(
       : "No matching findings in the observatory index yet; the next scheduled run may cover this.",
   };
 
-  await admin
-    .from("razul_query_cache")
-    .upsert(
-      {
-        question_hash: hash,
-        scope_key: scopeKey,
-        answer: JSON.parse(JSON.stringify(answer)),
-        created_at: now().toISOString(),
-      },
-      { onConflict: "question_hash,scope_key" },
-    );
+  await admin.from("razul_query_cache").upsert(
+    {
+      question_hash: hash,
+      scope_key: scopeKey,
+      answer: JSON.parse(JSON.stringify(answer)),
+      created_at: now().toISOString(),
+    },
+    { onConflict: "question_hash,scope_key" },
+  );
   await admin.from("razul_query_log").insert({
     question_hash: hash,
     agent: input.agent,

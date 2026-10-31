@@ -76,13 +76,27 @@ const finding = {
 
 describe("answerRazulQuery integration", () => {
   it("an empty authorized scope never searches all projects or categories", async () => {
-    const { admin } = fakeAdmin({ razul_findings: [finding], razul_query_cache: [], razul_query_log: [] });
-    const answer = await answerRazulQuery({ admin, now: () => new Date() }, { question: "ransomware", agent: "omni", scopeCategories: [] });
+    const { admin } = fakeAdmin({
+      razul_findings: [finding],
+      razul_query_cache: [],
+      razul_query_log: [],
+    });
+    const answer = await answerRazulQuery(
+      { admin, now: () => new Date() },
+      { question: "ransomware", agent: "omni", scopeCategories: [] },
+    );
     expect(answer.citations).toEqual([]);
   });
   it("high relevance alone cannot fabricate a match for an unrelated question", async () => {
-    const { admin } = fakeAdmin({ razul_findings: [finding], razul_query_cache: [], razul_query_log: [] });
-    const answer = await answerRazulQuery({ admin, now: () => new Date() }, { question: "archaeology pottery", agent: "omni" });
+    const { admin } = fakeAdmin({
+      razul_findings: [finding],
+      razul_query_cache: [],
+      razul_query_log: [],
+    });
+    const answer = await answerRazulQuery(
+      { admin, now: () => new Date() },
+      { question: "archaeology pottery", agent: "omni" },
+    );
     expect(answer.citations).toEqual([]);
   });
   it("answers one agent query with cited sources, confidence and evidence class", async () => {
@@ -108,7 +122,9 @@ describe("answerRazulQuery integration", () => {
     expect(log?.["agent"]).toBe("guardian");
     expect(log?.["result_count"]).toBe(1);
     expect(String(log?.["question_hash"])).toMatch(/^[0-9a-f]{64}$/);
-    expect(JSON.stringify(tables["razul_query_log"])).not.toContain("ransomware vulnerability advisory");
+    expect(JSON.stringify(tables["razul_query_log"])).not.toContain(
+      "ransomware vulnerability advisory",
+    );
   });
 
   it("serves a repeated question from cache and logs it as cached", async () => {

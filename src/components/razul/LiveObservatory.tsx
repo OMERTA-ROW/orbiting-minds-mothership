@@ -91,11 +91,16 @@ export function LiveObservatory() {
         return;
       }
       const access = await supabase.rpc("is_razul_owner");
-      if (access.error || access.data !== true) { if (!cancelled) setState({ kind: "gated" }); return; }
+      if (access.error || access.data !== true) {
+        if (!cancelled) setState({ kind: "gated" });
+        return;
+      }
       const [findings, run, sourceCount] = await Promise.all([
         supabase
           .from("razul_findings")
-          .select("id, title, url, source_name, category, topic, evidence_class, relevance, routed_to, collected_at")
+          .select(
+            "id, title, url, source_name, category, topic, evidence_class, relevance, routed_to, collected_at",
+          )
           .order("collected_at", { ascending: false })
           .limit(10),
         supabase
@@ -126,7 +131,8 @@ export function LiveObservatory() {
   return (
     <section className="rounded-xl border border-border/60 bg-card/40 p-6">
       <h2 className="font-display text-lg font-semibold text-foreground">
-        Public-feed observatory <span className="text-xs font-normal text-primary">RECORDED · OWNER ACCESS</span>
+        Public-feed observatory{" "}
+        <span className="text-xs font-normal text-primary">RECORDED · OWNER ACCESS</span>
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
         The scheduled pipeline ingests a small registry of permitted public feeds on a timer,
@@ -175,8 +181,8 @@ export function LiveObservatory() {
           {agent && agentFeed && !("error" in agentFeed) && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                Scoped feed for <span className="capitalize text-foreground">{agent}</span> —
-                only configured categories at relevance ≥ {agentFeed.minRelevance}.
+                Scoped feed for <span className="capitalize text-foreground">{agent}</span> — only
+                configured categories at relevance ≥ {agentFeed.minRelevance}.
               </p>
               {agentFeed.findings.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -251,7 +257,8 @@ export function LiveObservatory() {
                     {f.title}
                   </a>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {f.source_name} · {f.category}/{f.topic} · {f.evidence_class} · relevance {f.relevance}
+                    {f.source_name} · {f.category}/{f.topic} · {f.evidence_class} · relevance{" "}
+                    {f.relevance}
                     {f.routed_to.length > 0 && (
                       <span className="text-primary"> · routed to {f.routed_to.join(", ")}</span>
                     )}

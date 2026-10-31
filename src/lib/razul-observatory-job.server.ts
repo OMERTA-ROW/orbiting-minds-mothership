@@ -6,12 +6,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  KNOWLEDGE_LIMITS,
-  dedupeEntries,
-  parseFeed,
-  type FeedEntry,
-} from "./knowledge";
+import { KNOWLEDGE_LIMITS, dedupeEntries, parseFeed, type FeedEntry } from "./knowledge";
 import { readBoundedFeed } from "./knowledge-runtime.server";
 import {
   assignTopic,
@@ -199,11 +194,7 @@ export async function runRazulObservatoryJob(
         if (fresh.length) {
           const rows = fresh.map((e) => {
             const relevance = scoreRelevance(e, source.category);
-            const routedTo = routeFinding(
-              source.category,
-              relevance,
-              state.data.alert_threshold,
-            );
+            const routedTo = routeFinding(source.category, relevance, state.data.alert_threshold);
             if (routedTo.length) alerts += 1;
             const evidence = classifyEvidence(e, source);
             return {
@@ -232,11 +223,39 @@ export async function runRazulObservatoryJob(
           inserted += ins.data.length;
           duplicates += fresh.length - ins.data.length;
         }
-        const receipt = await admin.from("razul_source_checks").insert({ source_id: source.id, run_id: currentRunId, checked_at: now().toISOString(), status: "completed", fetched: entries.length, inserted: inserted - insertedBefore }).abortSignal(AbortSignal.timeout(2_000));
+        const receipt = await admin
+          .from("razul_source_checks")
+          .insert({
+            source_id: source.id,
+            run_id: currentRunId,
+            checked_at: now().toISOString(),
+            status: "completed",
+            fetched: entries.length,
+            inserted: inserted - insertedBefore,
+          })
+          .abortSignal(AbortSignal.timeout(2_000));
         if (receipt.error) throw new Error("Source check receipt failed");
       } catch (e) {
-        const code = !read.entries ? "fetch-failed" : e instanceof Error && e.message === "Source check receipt failed" ? "receipt-failed" : "processing-failed";
-        const failedReceipt = await admin.from("razul_source_checks").upsert({ source_id: source.id, run_id: currentRunId, checked_at: now().toISOString(), status: "failed", fetched: read.entries?.length ?? 0, inserted: 0, error_code: code }, { onConflict: "source_id,run_id" }).abortSignal(AbortSignal.timeout(2_000));
+        const code = !read.entries
+          ? "fetch-failed"
+          : e instanceof Error && e.message === "Source check receipt failed"
+            ? "receipt-failed"
+            : "processing-failed";
+        const failedReceipt = await admin
+          .from("razul_source_checks")
+          .upsert(
+            {
+              source_id: source.id,
+              run_id: currentRunId,
+              checked_at: now().toISOString(),
+              status: "failed",
+              fetched: read.entries?.length ?? 0,
+              inserted: 0,
+              error_code: code,
+            },
+            { onConflict: "source_id,run_id" },
+          )
+          .abortSignal(AbortSignal.timeout(2_000));
         if (failedReceipt.error) throw new Error("Source failure receipt could not be persisted.");
         errors.push({
           source: source.id,
@@ -333,7 +352,8 @@ export async function runRazulObservatoryJob(
           })
           .eq("id", runId)
           .abortSignal(AbortSignal.timeout(2_000));
-        if (failedOutcome.error) console.error("Observatory failure outcome could not be persisted.");
+        if (failedOutcome.error)
+          console.error("Observatory failure outcome could not be persisted.");
       } catch {
         console.error("Observatory failure outcome could not be persisted.");
       }
