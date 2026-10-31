@@ -29,7 +29,7 @@
   "evidence": {
     "current": {
       "command": "bunx vitest run",
-      "result": "Razul Sentinel network: 7 unit tests PASS; live sentinel->finding->jackboy/omni alert cycle verified with scope/expiry/forgery/revocation denials, 2026-10-31. Full suite re-run pending this turn.",
+      "result": "Passed: 1189 tests, 2026-10-31 13:54 UTC; harness build OK 13:56 UTC. Razul Sentinel live cycle verified (feedback routed to jackboy/omni, health history-only, out-of-scope/forged/revoked all 401).",
       "runtime": "Latest harness build OK. Owner-approved backend activation applied owner-invitations.sql + omni-agent.sql (12 RPCs verified present); Sabrina director browser flow ran radar (100/100 ready-for-review), strategic memory, weekly brief and Jackboy local-handoff feedback; /members redirects signed-out visitors to /auth. Not public-release, inference, outreach or credential evidence.",
       "passed": true
     },
