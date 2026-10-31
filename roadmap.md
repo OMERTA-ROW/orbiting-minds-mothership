@@ -208,6 +208,7 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 ## Angel Tech / Sabrina concept workspace — 2026-10-31
 - [x] `/angel-tech` local concept workspace: Sabrina marketing-intelligence notes, review-only campaign drafts, prospective consenting agent/research-group registry, perspective, invitation status, API/MCP compatibility, requested permissions, human approval, revocation, local history and JSON export.
 - [x] Sabrina added to the demo Agent Network as pending/local-drafts-only; navigation and OMNI handoff link added. No trend crawler, model inference, discovery, account connection, credential storage, unsolicited outreach or delivery.
+- [x] Sabrina director expansion (`src/lib/omni-sabrina.ts` + `SabrinaDirector.tsx`): Opportunity Radar (explainable keyword-overlap match scores, revoked excluded, unapproved gated, never auto-advanced), strategic memory with provenance/confidence/expiry (deletion stops retrieval; not model training), on-demand weekly ecosystem brief (owner-entered inputs only, honestly labeled), structured Jackboy feedback (local handoff, never dispatched). 13 tests pass; browser flow verified (radar 100/100 ready-for-review, brief, memory, feedback). Pure local computation — no crawler, inference or outreach.
 - [ ] BLOCKED live ambassador: verified owner/member activation, server-side records and permissions, official API/MCP credentials through secure settings, consenting outreach channel and independent human approval.
 
 ## Gateway Guardian gate + learning loop — 2026-10-31
