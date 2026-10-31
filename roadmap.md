@@ -199,3 +199,8 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [ ] **Blocked terminal/agents:** no secure authenticated companion/Honeycomb enrollment, CLI login, OS vault/scoped runner or independent agent adapter. Source commands are offline development only, not owner desktop/runtime proof; full prerequisites in evidence note.
 
 - Autonomous task mode (Omni): server-checked goal/allowlist/state machine built; BLOCKED until a real browser/computer executor or host companion exists and owner/member setup is activated. Tasks are not saved.
+
+## Angel Tech / Sabrina concept workspace — 2026-10-31
+- [x] `/angel-tech` local concept workspace: Sabrina marketing-intelligence notes, review-only campaign drafts, prospective consenting agent/research-group registry, perspective, invitation status, API/MCP compatibility, requested permissions, human approval, revocation, local history and JSON export.
+- [x] Sabrina added to the demo Agent Network as pending/local-drafts-only; navigation and OMNI handoff link added. No trend crawler, model inference, discovery, account connection, credential storage, unsolicited outreach or delivery.
+- [ ] BLOCKED live ambassador: verified owner/member activation, server-side records and permissions, official API/MCP credentials through secure settings, consenting outreach channel and independent human approval.

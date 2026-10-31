@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AgentDebriefRouteImport } from './routes/agent-debrief'
 import { Route as AgentLoungeRouteImport } from './routes/agent-lounge'
 import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as AngelTechRouteImport } from './routes/angel-tech'
 import { Route as ApprovalLedgerRouteImport } from './routes/approval-ledger'
 import { Route as ArenaRouteImport } from './routes/arena'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -106,6 +107,11 @@ const AgentLoungeRoute = AgentLoungeRouteImport.update({
 const AgentsRoute = AgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AngelTechRoute = AngelTechRouteImport.update({
+  id: '/angel-tech',
+  path: '/angel-tech',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApprovalLedgerRoute = ApprovalLedgerRouteImport.update({
@@ -462,6 +468,7 @@ export interface FileRoutesByFullPath {
   '/agent-debrief': typeof AgentDebriefRoute
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
+  '/angel-tech': typeof AngelTechRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
   '/arena': typeof ArenaRoute
   '/auth': typeof AuthRoute
@@ -537,6 +544,7 @@ export interface FileRoutesByTo {
   '/agent-debrief': typeof AgentDebriefRoute
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
+  '/angel-tech': typeof AngelTechRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
   '/arena': typeof ArenaRoute
   '/auth': typeof AuthRoute
@@ -614,6 +622,7 @@ export interface FileRoutesById {
   '/agent-debrief': typeof AgentDebriefRoute
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
+  '/angel-tech': typeof AngelTechRoute
   '/approval-ledger': typeof ApprovalLedgerRoute
   '/arena': typeof ArenaRoute
   '/auth': typeof AuthRoute
@@ -691,6 +700,7 @@ export interface FileRouteTypes {
     | '/agent-debrief'
     | '/agent-lounge'
     | '/agents'
+    | '/angel-tech'
     | '/approval-ledger'
     | '/arena'
     | '/auth'
@@ -766,6 +776,7 @@ export interface FileRouteTypes {
     | '/agent-debrief'
     | '/agent-lounge'
     | '/agents'
+    | '/angel-tech'
     | '/approval-ledger'
     | '/arena'
     | '/auth'
@@ -842,6 +853,7 @@ export interface FileRouteTypes {
     | '/agent-debrief'
     | '/agent-lounge'
     | '/agents'
+    | '/angel-tech'
     | '/approval-ledger'
     | '/arena'
     | '/auth'
@@ -919,6 +931,7 @@ export interface RootRouteChildren {
   AgentDebriefRoute: typeof AgentDebriefRoute
   AgentLoungeRoute: typeof AgentLoungeRoute
   AgentsRoute: typeof AgentsRoute
+  AngelTechRoute: typeof AngelTechRoute
   ApprovalLedgerRoute: typeof ApprovalLedgerRoute
   ArenaRoute: typeof ArenaRoute
   AuthRoute: typeof AuthRoute
@@ -1019,6 +1032,13 @@ declare module '@tanstack/react-router' {
       path: '/agents'
       fullPath: '/agents'
       preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/angel-tech': {
+      id: '/angel-tech'
+      path: '/angel-tech'
+      fullPath: '/angel-tech'
+      preLoaderRoute: typeof AngelTechRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/approval-ledger': {
@@ -1534,6 +1554,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgentDebriefRoute: AgentDebriefRoute,
   AgentLoungeRoute: AgentLoungeRoute,
   AgentsRoute: AgentsRoute,
+  AngelTechRoute: AngelTechRoute,
   ApprovalLedgerRoute: ApprovalLedgerRoute,
   ArenaRoute: ArenaRoute,
   AuthRoute: AuthRoute,

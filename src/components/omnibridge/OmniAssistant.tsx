@@ -136,6 +136,12 @@ export function OmniAssistant({
               <ArrowUpRight size={13} />
             </Link>
           </Button>
+          <Button asChild variant="signal" size="sm">
+            <Link to="/angel-tech">
+              Sabrina · Angel Tech
+              <ArrowUpRight size={13} />
+            </Link>
+          </Button>
           <Button
             variant="ghost"
             size="icon"

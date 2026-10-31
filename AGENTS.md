@@ -11,8 +11,8 @@
 
 ## Project rules
 - Prototype data stays separate from owned records; no live claims. SEO defaults to noindex; only approved leaves opt in.
-- Shared visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: consistent design.
-- Cosmic art uses deterministic light motion/static fallbacks; orbital controls use fixed buttons/mobile lists/tokens for accessibility.
+- Visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: consistent design.
+- Cosmic art uses deterministic motion/static fallbacks; orbital controls use accessible fixed buttons/lists/tokens.
 - Pathways use internal streaming routes and request-local AI; secrets server-only, why: drafting is not execution.
 - Persist AI denial/credit blocks service-only; clear after owner confirmation, why: prevent billed retries across reloads/restarts.
 - Command search uses typed data and validated parameters/anchors, why: exact results preserve interactions.
@@ -45,12 +45,12 @@
 - Maintenance reports use bounded metadata-only selected-project traversal; cleanup plans bind device/profile/category/file identity and remain inert without enrolled capabilities/trash recovery. Scanner argv is fixed and public scans blocked until native verification, why: local labels and filenames cannot authorize device actions or establish malware detection.
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
 - Account recovery presentation is user-bound and validated by the one root subscriber; updates revalidate identity and Cloud authorizes them, why: URL/storage hints alone cannot establish a recovery session and stale async identity must not survive logout.
-- The root completion-register.json is the canonical ordered item/evidence register; roadmap.md is its blueprint crosswalk/backlog, why: partial demos, verified code and released scope must remain separate and traceable.
-- Launch Control is dated QA; opt-in PATH discovery and browser cost math never imply approvals/uploads/charges.
+- completion-register.json is the canonical ordered item/evidence register; roadmap.md is its crosswalk/backlog, why: demos, verified code and released scope stay separate and traceable.
+- Launch Control is dated QA; PATH discovery and cost math never imply approvals/uploads/charges.
 - Quantum/Forge use approved private owner-project media, bounded PCM with bundled WaveFile, inert web drafts and immutable digest-reviewed versions; OMNI gets text only, why: consistent SSR exports; plans confer no file/publish authority.
 - Creator/Distro use immutable owner-project drafts, digests and row-locked access/review/revoke; post-edit prefills require downloaded WAV QA, why: manual ZIPs never imply hosting, receipts, schedules or recall.
 - OMNI private operations use strict proposals and owner-scoped row-locked social draft/review/stop records with explicit grant revokes and typed non-null consent; no provider endpoints, why: declarations confer no posting, CI, scopes or release authority.
 - Daily knowledge uses one cron-authenticated public route, supported request-bound waitUntil, bounded attempts, token-owned lease and durable pre-provider guard with checked singleton outcomes; approved readers and owner-confirmed recovery only, why: failed pause/result writes must not replay paid/denied requests; acceptance is not delivery or retraining.
 - Racing Arena is deterministic seeded simulation with browser-local points; real-money betting stays a disabled constant, why: no value, wagering or licensing claims.
 - Omni Legal uses session-only synthetic drafts/manual PDFs, confirmed-jurisdiction web library labels, dated official references and event-loaded PDF/ZIP exports; public blanks use fixed IDs, bounded no-redirect fetch and reviewed hashes; CLI stays metadata-only. Real cases/transmission/device sync disabled, why: web classification and references prove neither private access, court applicability nor OS scope.
-- Autonomous task mode validates membership/allowlist server-side and stops at blocked with no executor; protected actions never auto-run, why: client flags are not security and no work may be faked.
+- Autonomous tasks stop blocked without an executor; Sabrina/Angel Tech uses validated browser-local insight/draft/partnership records gated by owner authorization, human approval and invitation permission, why: local flags are not security, discovery, consent, credentials or outreach.
