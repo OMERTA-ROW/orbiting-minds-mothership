@@ -11,6 +11,9 @@
  * (missing prerequisite, named).
  */
 
+/** Conversation selection only; does not activate an agent or confer permissions. */
+export const DEFAULT_OMNI_CONVERSATION = "rasul" as const;
+
 export const RASUL_SPECIALISTS = [
   "jackboy",
   "omni",
@@ -168,7 +171,7 @@ export function buildDispatchRequest(id: string, text: string): DispatchRequest 
 /** Honest fallback answers when the backend is not connected. */
 export function rasulFallbackAnswer(intent: RasulIntent, signedIn: boolean): string {
   if (!signedIn) {
-    return "I am RA'SUL (Razul), OMNI Mothership's central cross-project intelligence and coordination agent — The Eternal Archivist. I coordinate only scoped, authorized resident watch agents on owner-enrolled sites and apps; that integration remains planned, and the game is only one participating project. My live memory and research answers require the verified owner account — sign in for access. Everything I can do without it is labeled simulated or blocked, never faked.";
+    return "I am RA'SUL / Razul, OMNI Mothership's default conversational central intelligence — The Eternal Archivist. My mission is permissioned, searchable project history and lawful public research. Specialized research workers and resident watchers on enrolled owned sites/apps remain proposed; the game is only one participating project. Source policies, permissions and rate limits apply, never blanket surveillance or entire-internet monitoring. My live research answers require approved owner access — sign in. Recommendations and dispatch preparation cannot bypass Guardian or owner approval; unconnected execution stays blocked.";
   }
   switch (intent) {
     case "status":
