@@ -922,6 +922,39 @@
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
           "release_receipt": null
+        },
+        {
+          "id": "05.08",
+          "requirement": "RAZUL 'The Eternal Archivist': central memory, history and public-internet intelligence agent for the OMNI ecosystem, reusable across enrolled owner-controlled projects. Append-only timestamped auditable event history (project events, agent reports, test results, code-change metadata, approvals, incidents, outcomes) with provenance, search, retention, redaction and per-project/per-consumer access segregation; project/agent/dependency knowledge graph and retrieval API for Jackboy, OMNI, Guardian, Sabrina, JAX; allowlisted public-source intelligence (RSS/API/public pages respecting robots, terms, rate limits, attribution) with dedupe, corroboration, relevance ranking and routed findings. No private communications, no secrets logging, no protected-site scraping, no entire-internet claims; scoped owner consent, least privilege and opt-in per project.",
+          "status": "Demo only",
+          "owner": "Lovable implementation; owner supplies backend activation for server persistence and scheduled discovery",
+          "dependencies": [
+            "02",
+            "04"
+          ],
+          "changed_files": [
+            "src/lib/omni-razul.ts",
+            "src/lib/omni-razul.test.ts",
+            "src/components/omnibridge/RazulArchive.tsx",
+            "src/routes/omni-razul.tsx",
+            "src/components/SiteNav.tsx",
+            "roadmap.md",
+            "completion-register.json"
+          ],
+          "commit": null,
+          "commit_note": "Lovable-managed work; no external or production commit.",
+          "evidence": [
+            "14 vitest tests PASS: opt-in enrollment consent, unenrolled-project refusal, secret-pattern rejection, hash-chain append + tamper detection, redaction with recorded reason preserving chain linkage, retention tombstoning, per-consumer grant denial/retrieval with kind+text filters, knowledge graph nodes/relations, source robots/terms/owner-approval attestation, finding dedupe by URL, cross-source corroboration, tag-based relevance, grant-gated routing, corrupt-store fallback.",
+            "Browser end-to-end PASS 2026-10-31: enrolled Honeycomb Terminal, appended a test-result event, retrieval as sabrina denied without grant, retrieval as jackboy returned the event after grant, knowledge graph rendered (3 nodes / 2 relations), registered an allowlisted RSS source and recorded a public finding routed to jackboy only. No page errors.",
+            "NOT done: server-side persistence, authenticated retrieval API, Guardian-enforced policies and scheduled public-web discovery need the activated owner backend; the only real scheduled collection remains the existing daily knowledge collector. The integrity chain is tamper-evident, not a cryptographic signature."
+          ],
+          "verified_scope": "Local reference implementation at /omni-razul: append-only tamper-evident event archive with provenance, redaction, retention tombstoning, per-project opt-in and per-consumer access grants; knowledge graph; allowlisted public-source registry with dedupe/corroboration/ranking/routing. Browser-local records only.",
+          "test_result": "14 vitest tests PASS; browser end-to-end retrieval + public-source alert PASS.",
+          "runtime_evidence": "Route /omni-razul renders with LOCAL REFERENCE \u00b7 NO SERVER PERSISTENCE and NO PRIVATE COMMS \u00b7 NO SECRETS badges; denial message shown for ungranted consumers.",
+          "next_action": "Blocked: server persistence tables + authenticated retrieval API + Guardian policy enforcement after owner account activation; scheduled discovery extends the existing knowledge collector rather than duplicating it.",
+          "release_status": "Not released; private prototype only.",
+          "test_command": "bunx vitest run src/lib/omni-razul.test.ts",
+          "verified_at": "2026-10-31"
         }
       ]
     },
