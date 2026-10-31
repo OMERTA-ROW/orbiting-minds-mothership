@@ -654,6 +654,68 @@ export type Database = {
         }
         Relationships: []
       }
+      razul_agent_feedback: {
+        Row: {
+          agent: string
+          created_at: string
+          created_by: string
+          finding_id: string
+          id: string
+          note: string
+          verdict: string
+        }
+        Insert: {
+          agent: string
+          created_at?: string
+          created_by: string
+          finding_id: string
+          id?: string
+          note?: string
+          verdict: string
+        }
+        Update: {
+          agent?: string
+          created_at?: string
+          created_by?: string
+          finding_id?: string
+          id?: string
+          note?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razul_agent_feedback_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "razul_findings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      razul_agent_feeds: {
+        Row: {
+          agent: string
+          alerts_enabled: boolean
+          categories: string[]
+          min_relevance: number
+          updated_at: string
+        }
+        Insert: {
+          agent: string
+          alerts_enabled?: boolean
+          categories?: string[]
+          min_relevance?: number
+          updated_at?: string
+        }
+        Update: {
+          agent?: string
+          alerts_enabled?: boolean
+          categories?: string[]
+          min_relevance?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       razul_findings: {
         Row: {
           category: string

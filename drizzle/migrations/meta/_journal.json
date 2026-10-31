@@ -162,6 +162,13 @@
       "when": 1793453437213,
       "tag": "0022_razul_corroboration_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793453741325,
+      "tag": "0023_razul_disciplines",
+      "breakpoints": true
     }
   ]
 }
