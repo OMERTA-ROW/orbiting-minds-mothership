@@ -8,7 +8,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian"] as const;
+const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian", "hercules"] as const;
 export type RazulAgent = (typeof AGENTS)[number];
 
 type Rpc = (
@@ -83,5 +83,71 @@ export const submitRazulFeedback = createServerFn({ method: "POST" })
       created_by: context.userId,
     });
     if (error) throw new Error("Feedback could not be recorded.");
+    return { ok: true };
+  });
+
+/**
+ * Ask Razul: authenticated shared research query. Retrieval is lexical-semantic
+ * over the observatory index (deterministic, no AI calls); answers carry cited
+ * sources with timestamps, evidence class and confidence. The raw question is
+ * never stored — only its hash, for cache and the privacy-safe query log.
+ */
+export const askRazul = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        question: z.string().trim().min(3).max(500),
+        agent: z.enum(AGENTS),
+        scopeCategories: z.array(z.string().max(40)).max(22).optional(),
+      })
+      .strict()
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await requireApprovedReader(context.supabase);
+    const { answerRazulQuery } = await import("@/lib/razul-ask.server");
+    return answerRazulQuery(
+      { admin: context.supabase, now: () => new Date() },
+      { question: data.question, agent: data.agent, scopeCategories: data.scopeCategories },
+    );
+  });
+
+/** Proactive alerts: an agent polls its own unread alert events. */
+export const listRazulAlerts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({ agent: z.enum(AGENTS), unreadOnly: z.boolean().default(true) })
+      .strict()
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await requireApprovedReader(context.supabase);
+    let query = context.supabase
+      .from("razul_alert_events")
+      .select(
+        "id, agent, relevance, created_at, read_at, razul_findings(title, url, source_name, category, topic, evidence_class)",
+      )
+      .eq("agent", data.agent)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (data.unreadOnly) query = query.is("read_at", null);
+    const { data: events, error } = await query;
+    if (error) throw new Error("Alert events could not be read.");
+    return { events };
+  });
+
+export const markRazulAlertRead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).strict().parse(d))
+  .handler(async ({ data, context }) => {
+    await requireApprovedReader(context.supabase);
+    const { error } = await context.supabase
+      .from("razul_alert_events")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", data.id)
+      .is("read_at", null);
+    if (error) throw new Error("Alert could not be marked read.");
     return { ok: true };
   });

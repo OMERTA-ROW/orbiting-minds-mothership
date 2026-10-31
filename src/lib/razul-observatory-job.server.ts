@@ -18,6 +18,7 @@ import {
   classifyEvidence,
   extractEntities,
   filterSources,
+  planAlertEvents,
   routeFinding,
   scoreRelevance,
   type ObservatorySource,
@@ -233,6 +234,42 @@ export async function runRazulObservatoryJob(
           source: source.id,
           error: e instanceof Error ? e.message.slice(0, 200) : "Unknown error",
         });
+      }
+    }
+
+    // Proactive alerts: fan out this run's routed findings to subscribed
+    // agents (alert events), honoring each agent's relevance floor. Capped.
+    const runFindings = await admin
+      .from("razul_findings")
+      .select("id, relevance, routed_to")
+      .eq("run_id", currentRunId)
+      .abortSignal(signal);
+    const routed = {
+      error: runFindings.error,
+      data: (runFindings.data ?? []).filter(
+        (f) => Array.isArray(f.routed_to) && f.routed_to.length > 0,
+      ),
+    };
+    if (!routed.error && routed.data.length) {
+      const feeds = await admin
+        .from("razul_agent_feeds")
+        .select("agent, min_relevance, alerts_enabled")
+        .eq("alerts_enabled", true)
+        .abortSignal(signal);
+      if (!feeds.error && feeds.data.length) {
+        const events = planAlertEvents(
+          routed.data.map((f) => ({
+            id: f.id,
+            relevance: f.relevance,
+            routed_to: f.routed_to as string[],
+          })),
+          feeds.data,
+        );
+        if (events.length)
+          await admin
+            .from("razul_alert_events")
+            .upsert(events, { onConflict: "finding_id,agent", ignoreDuplicates: true })
+            .abortSignal(signal);
       }
     }
 
