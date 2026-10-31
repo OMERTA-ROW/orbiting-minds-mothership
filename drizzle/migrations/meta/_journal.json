@@ -169,6 +169,13 @@
       "when": 1793453741325,
       "tag": "0023_razul_disciplines",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793454017791,
+      "tag": "0024_razul_ask_alerts",
+      "breakpoints": true
     }
   ]
 }

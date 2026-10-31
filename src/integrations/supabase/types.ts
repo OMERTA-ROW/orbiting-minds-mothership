@@ -716,6 +716,41 @@ export type Database = {
         }
         Relationships: []
       }
+      razul_alert_events: {
+        Row: {
+          agent: string
+          created_at: string
+          finding_id: string
+          id: string
+          read_at: string | null
+          relevance: number
+        }
+        Insert: {
+          agent: string
+          created_at?: string
+          finding_id: string
+          id?: string
+          read_at?: string | null
+          relevance: number
+        }
+        Update: {
+          agent?: string
+          created_at?: string
+          finding_id?: string
+          id?: string
+          read_at?: string | null
+          relevance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razul_alert_events_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "razul_findings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       razul_findings: {
         Row: {
           category: string
@@ -823,6 +858,54 @@ export type Database = {
           paused_reason?: string | null
           retention_days?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      razul_query_cache: {
+        Row: {
+          answer: Json
+          created_at: string
+          question_hash: string
+          scope_key: string
+        }
+        Insert: {
+          answer: Json
+          created_at?: string
+          question_hash: string
+          scope_key?: string
+        }
+        Update: {
+          answer?: Json
+          created_at?: string
+          question_hash?: string
+          scope_key?: string
+        }
+        Relationships: []
+      }
+      razul_query_log: {
+        Row: {
+          agent: string
+          cached: boolean
+          created_at: string
+          id: string
+          question_hash: string
+          result_count: number
+        }
+        Insert: {
+          agent: string
+          cached?: boolean
+          created_at?: string
+          id?: string
+          question_hash: string
+          result_count?: number
+        }
+        Update: {
+          agent?: string
+          cached?: boolean
+          created_at?: string
+          id?: string
+          question_hash?: string
+          result_count?: number
         }
         Relationships: []
       }
