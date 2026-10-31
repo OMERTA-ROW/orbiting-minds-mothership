@@ -654,6 +654,173 @@ export type Database = {
         }
         Relationships: []
       }
+      razul_findings: {
+        Row: {
+          category: string
+          collected_at: string
+          corroborations: number
+          id: string
+          published_at: string | null
+          relevance: number
+          routed_to: string[]
+          run_id: string | null
+          source_id: string
+          source_name: string
+          summary: string
+          title: string
+          url: string
+        }
+        Insert: {
+          category: string
+          collected_at?: string
+          corroborations?: number
+          id?: string
+          published_at?: string | null
+          relevance?: number
+          routed_to?: string[]
+          run_id?: string | null
+          source_id: string
+          source_name: string
+          summary?: string
+          title: string
+          url: string
+        }
+        Update: {
+          category?: string
+          collected_at?: string
+          corroborations?: number
+          id?: string
+          published_at?: string | null
+          relevance?: number
+          routed_to?: string[]
+          run_id?: string | null
+          source_id?: string
+          source_name?: string
+          summary?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razul_findings_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "razul_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      razul_job_state: {
+        Row: {
+          alert_threshold: number
+          blocked_sources: string[]
+          coverage: string[]
+          id: number
+          lease_owner: string | null
+          lease_until: string | null
+          paused_at: string | null
+          paused_reason: string | null
+          retention_days: number
+          updated_at: string
+        }
+        Insert: {
+          alert_threshold?: number
+          blocked_sources?: string[]
+          coverage?: string[]
+          id?: number
+          lease_owner?: string | null
+          lease_until?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
+          retention_days?: number
+          updated_at?: string
+        }
+        Update: {
+          alert_threshold?: number
+          blocked_sources?: string[]
+          coverage?: string[]
+          id?: number
+          lease_owner?: string | null
+          lease_until?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
+          retention_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      razul_runs: {
+        Row: {
+          alerts: number
+          duplicates: number
+          fetched: number
+          finished_at: string | null
+          id: string
+          inserted: number
+          source_errors: Json
+          started_at: string
+          status: string
+          trigger: string
+        }
+        Insert: {
+          alerts?: number
+          duplicates?: number
+          fetched?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          source_errors?: Json
+          started_at?: string
+          status?: string
+          trigger: string
+        }
+        Update: {
+          alerts?: number
+          duplicates?: number
+          fetched?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          source_errors?: Json
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
+      razul_sources: {
+        Row: {
+          active: boolean
+          added_at: string
+          category: string
+          id: string
+          kind: string
+          name: string
+          terms_note: string
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          added_at?: string
+          category: string
+          id: string
+          kind: string
+          name: string
+          terms_note: string
+          url: string
+        }
+        Update: {
+          active?: boolean
+          added_at?: string
+          category?: string
+          id?: string
+          kind?: string
+          name?: string
+          terms_note?: string
+          url?: string
+        }
+        Relationships: []
+      }
       studio_assets: {
         Row: {
           byte_size: number
@@ -781,6 +948,10 @@ export type Database = {
       claim_knowledge_lease: { Args: { _minutes: number }; Returns: boolean }
       claim_owned_knowledge_lease: {
         Args: { _minutes?: number; _owner: string }
+        Returns: boolean
+      }
+      claim_owned_razul_lease: {
+        Args: { _minutes: number; _owner: string }
         Returns: boolean
       }
       claim_owner: { Args: never; Returns: boolean }
@@ -916,10 +1087,22 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      razul_configure: {
+        Args: {
+          _blocked_sources: string[]
+          _coverage: string[]
+          _retention_days: number
+          _threshold: number
+        }
+        Returns: undefined
+      }
+      razul_pause: { Args: { _reason: string }; Returns: undefined }
+      razul_resume: { Args: never; Returns: undefined }
       release_owned_knowledge_lease: {
         Args: { _owner: string }
         Returns: boolean
       }
+      release_owned_razul_lease: { Args: { _owner: string }; Returns: boolean }
       remove_member: { Args: { _user_id: string }; Returns: undefined }
       revoke_invitation: { Args: { _id: string }; Returns: undefined }
       start_omni_agent_run: {
