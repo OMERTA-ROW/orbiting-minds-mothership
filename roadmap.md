@@ -200,6 +200,10 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 
 - Autonomous task mode (Omni): server-checked goal/allowlist/state machine built; BLOCKED until a real browser/computer executor or host companion exists and owner/member setup is activated. Tasks are not saved.
 
+## OMNI coding gateway for Jackboy — 2026-10-31
+- [x] `/omni-gateway` local planning workspace: owner-confirmed project enrollment with least-privilege scopes, Jackboy-approved task intake (approval note + no-untrusted-code attestation required), job state machine, forbidden-goal hints (merge/deploy/secrets/destructive), AngelTech quality and DemonTech defensive-security advisory feedback channels, revocation. 11 tests pass; records are browser-local only.
+- [ ] BLOCKED real gateway: authenticated private job API + least-privilege service identity (needs owner-approved backend schema on shared DB or isolated backend), isolated sandbox runner (none connected — untrusted code must never run without one), activated model inference for patch proposals, and owner-approved repository write path. Auto-merge/deploy/public terminal stay disabled by design.
+
 ## Angel Tech / Sabrina concept workspace — 2026-10-31
 - [x] `/angel-tech` local concept workspace: Sabrina marketing-intelligence notes, review-only campaign drafts, prospective consenting agent/research-group registry, perspective, invitation status, API/MCP compatibility, requested permissions, human approval, revocation, local history and JSON export.
 - [x] Sabrina added to the demo Agent Network as pending/local-drafts-only; navigation and OMNI handoff link added. No trend crawler, model inference, discovery, account connection, credential storage, unsolicited outreach or delivery.
