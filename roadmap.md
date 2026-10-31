@@ -240,3 +240,25 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [x] Dispatch queue `razul_dispatch_queue` + `razul_dispatch_scout` (owner/admin, active unexpired sentinels only): every dispatch recorded `blocked-guardian` because the Guardian policy engine is not connected — default deny, no simulated approval.
 - [x] Live cycle verified: in-scope feedback routed to Jackboy+OMNI, health history-only, out-of-scope kind 401, forged token 401, revoked sentinel 401; test data cleaned up. 7 unit tests PASS.
 - [ ] PENDING: owner enrollment UI, Agent Passports on dispatch, scout execution (needs sandbox runner + Guardian), offline retry/connection-status heartbeat UI, OMNI sandbox job assignment from findings. Auto-discovery means reading the enrollment registry — never network scanning.
+
+## RA'SUL independent platform migration (SEQUENCED — do not start early) — 2026-10-31
+Owner architecture decision: AFTER current OMNI/Jackboy/JAX priority work is completed and tested, migrate RA'SUL to a separate independent private intelligence backend (own database, scheduler, research workers, dispatcher) connected to OMNI as primary command center through authenticated APIs. Do NOT create/deploy the separate platform prematurely or interrupt current builds.
+
+Access model (binding):
+- Human access: strictly SINGLE OWNER ONLY — verified owner bootstrap, MFA, no public signup, no invitations, no other human accounts, protected routes, server-side roles/RLS, private logs and secrets, no public publishing.
+- Machine access: OMNI/Jackboy/JAX/Sentinels get narrowly scoped, revocable machine identities for approved data exchange only — never owner credentials or admin access. Guardian audit + emergency revocation on all machine identities.
+- Never assume owner email/identity; request secure verification through the editor when needed.
+
+Readiness prerequisites (all must be true before migration starts):
+1. Current OMNI/Jackboy/JAX priority work completed and tested (register items green).
+2. Activated single owner account with MFA on the current backend (owner bootstrap already staged; activation pending real email via secure editor flow).
+3. Sentinel network stable: enrollment, scoped credentials, revocation, dispatch queue exercised end-to-end.
+4. Guardian policy engine connected (today all dispatches are blocked-guardian by design).
+5. Separate backend provisioned as its own Lovable project/stack with its own database — no shared-schema coupling.
+
+Safe migration steps (when prerequisites met):
+1. Provision the independent Razul backend (own DB, scheduler, workers, dispatcher); single-owner auth with MFA; server-side roles/RLS; no signup/invitation paths.
+2. Issue scoped machine credentials per agent (OMNI, Jackboy, JAX, each Sentinel) with expiry + revocation; register them in Guardian audit.
+3. Replicate schema (sources/findings/runs/feeds/alerts/sentinels/dispatch) and migrate data with counts verified; keep the current backend read-only during cutover.
+4. Repoint OMNI command-center calls to the new authenticated APIs; run the Ask Razul + proactive-alert + Sentinel report acceptance tests against the new stack.
+5. Owner verification checkpoint (secure editor confirmation), then decommission Razul tables/schedules on the old backend; Guardian emergency-revocation drill before declaring done.
