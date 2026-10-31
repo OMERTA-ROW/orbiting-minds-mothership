@@ -126,7 +126,7 @@ export function LiveObservatory() {
     return () => {
       cancelled = true;
     };
-  }, [ready, user?.id]);
+  }, [ready, user]);
 
   return (
     <section className="rounded-xl border border-border/60 bg-card/40 p-6">
