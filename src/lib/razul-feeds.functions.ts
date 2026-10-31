@@ -11,13 +11,14 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian"] as const;
 export type RazulAgent = (typeof AGENTS)[number];
 
-async function requireApprovedReader(supabase: {
-  rpc: (
-    fn: string,
-    args?: Record<string, unknown>,
-  ) => Promise<{ data: unknown; error: { message: string } | null }>;
-}) {
-  const { data, error } = await supabase.rpc("is_knowledge_reader", {});
+type Rpc = (
+  fn: string,
+  args?: Record<string, unknown>,
+) => Promise<{ data: unknown; error: { message: string } | null }>;
+
+async function requireApprovedReader(supabase: { rpc: unknown }) {
+  const rpc = (supabase.rpc as unknown as Rpc).bind(supabase);
+  const { data, error } = await rpc("is_knowledge_reader", {});
   if (error) throw new Error("Access could not be verified.");
   if (data !== true)
     throw new Error("Razul intelligence feeds require an approved owner or member account.");
