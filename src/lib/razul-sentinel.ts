@@ -29,15 +29,19 @@ export interface SentinelReport {
 export function validateSentinelReport(body: unknown): string | null {
   if (!body || typeof body !== "object") return "Report must be an object";
   const b = body as Record<string, unknown>;
-  if (typeof b.sentinelId !== "string" || !/^[0-9a-f-]{36}$/i.test(b.sentinelId))
+  const sentinelId = b["sentinelId"];
+  const token = b["token"];
+  const kind = b["kind"];
+  const payload = b["payload"];
+  if (typeof sentinelId !== "string" || !/^[0-9a-f-]{36}$/i.test(sentinelId))
     return "sentinelId must be a UUID";
-  if (typeof b.token !== "string" || !/^[0-9a-f]{64}$/i.test(b.token))
+  if (typeof token !== "string" || !/^[0-9a-f]{64}$/i.test(token))
     return "token must be a 64-char hex string";
-  if (typeof b.kind !== "string" || !SENTINEL_KINDS.includes(b.kind as SentinelKind))
+  if (typeof kind !== "string" || !SENTINEL_KINDS.includes(kind as SentinelKind))
     return `kind must be one of ${SENTINEL_KINDS.join(", ")}`;
-  if (!b.payload || typeof b.payload !== "object" || Array.isArray(b.payload))
+  if (!payload || typeof payload !== "object" || Array.isArray(payload))
     return "payload must be an object";
-  if (JSON.stringify(b.payload).length > SENTINEL_LIMITS.maxPayloadBytes)
+  if (JSON.stringify(payload).length > SENTINEL_LIMITS.maxPayloadBytes)
     return "payload exceeds the size limit";
   return null;
 }
