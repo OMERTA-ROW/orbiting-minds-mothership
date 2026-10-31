@@ -69,7 +69,7 @@ export async function answerRazulQuery(
       result_count: (cached.data.answer as { citations?: unknown[] }).citations?.length ?? 0,
       cached: true,
     });
-    return { ...(cached.data.answer as Omit<RazulAnswer, "cached">), cached: true };
+    return { ...(cached.data.answer as unknown as Omit<RazulAnswer, "cached">), cached: true };
   }
 
   // Retrieval: recent findings, optionally narrowed to the project's scope.
