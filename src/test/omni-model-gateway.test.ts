@@ -68,8 +68,10 @@ describe("provider adapter registry", () => {
 
   it("capability discovery reports declarations and never claims a live probe", () => {
     const caps = discoverCapabilities([adapter()]);
-    expect(caps[0].probed).toBe(false);
-    expect(caps[0].note).toContain("no live probe");
+    const first = caps[0];
+    expect(first).toBeDefined();
+    expect(first?.probed).toBe(false);
+    expect(first?.note).toContain("no live probe");
   });
 });
 
