@@ -422,6 +422,63 @@ export function OmniGateway() {
         </ul>
       </section>
 
+      <section aria-label="Guardian policy gate" className="mt-10">
+        <h2 className="text-2xl">Guardian policy gate</h2>
+        <p className="mt-2 max-w-3xl text-xs leading-6 text-muted-foreground">
+          Guardian is not connected, so every action defaults to <strong>deny</strong> and the
+          decision is logged. A simulated approval is never substituted. Merge and deploy always
+          need initial human approval; scoped delegation is possible only afterward and only by
+          owner policy — merge/deploy itself can never be delegated.
+        </p>
+        <ul className="mt-4 space-y-1 text-xs text-muted-foreground">
+          {store.guardianDecisions.map((d) => (
+            <li key={d.id}>
+              {d.at.slice(0, 19)} · {d.action} · <strong>{d.outcome}</strong> · {d.basis} · {d.note}
+            </li>
+          ))}
+          {store.guardianDecisions.length === 0 && <li>No decisions logged yet.</li>}
+        </ul>
+      </section>
+
+      <section aria-label="Jackboy learning loop" className="mt-10">
+        <h2 className="text-2xl">Jackboy learning loop</h2>
+        <p className="mt-2 max-w-3xl text-xs leading-6 text-muted-foreground">
+          Human review outcomes are recorded as local lessons with provenance. This is not model
+          retraining and never changes policy or authority on its own.
+        </p>
+        <form onSubmit={saveLearning} className="mt-4 grid gap-3 md:grid-cols-3">
+          <label className="block text-xs">
+            Job
+            <select aria-label="Learning job" value={lnJob} onChange={(e) => setLnJob(e.target.value)} className={inputCls}>
+              <option value="">Select…</option>
+              {store.jobs.map((j) => (
+                <option key={j.id} value={j.id}>{j.goal.slice(0, 60)}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs">
+            Review outcome
+            <select aria-label="Review outcome" value={lnOutcome} onChange={(e) => setLnOutcome(e.target.value as LearningOutcome)} className={inputCls}>
+              {learningOutcomes.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs">
+            Lesson
+            <input aria-label="Lesson" value={lnLesson} onChange={(e) => setLnLesson(e.target.value)} className={inputCls} />
+          </label>
+          <div className="md:col-span-3">
+            <Button size="sm" type="submit">Record lesson</Button>
+          </div>
+        </form>
+        <ul className="mt-4 space-y-1 text-xs text-muted-foreground">
+          {store.learning.map((l) => (
+            <li key={l.id}>{l.at.slice(0, 10)} · {l.outcome} · {l.lesson}</li>
+          ))}
+        </ul>
+      </section>
+
       <div aria-live="polite" className="mt-6">
         {status && (
           <p role="status" className="text-xs text-gold">
