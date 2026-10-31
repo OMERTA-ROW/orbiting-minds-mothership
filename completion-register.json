@@ -1060,6 +1060,18 @@
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified.",
           "evidence": "rasul-front-door",
+          "all_seeing_eye": {
+            "status": "Implemented awaiting test",
+            "scope": "Read-only owner infrastructure view embedded in existing /omni-razul, not a duplicate public dashboard. Fresh verified user/email + server role owner + signed aal2 required; caller RLS reads, private no-store, no admin/credentials/raw payloads/tasks/errors returned. Existing broader approved-reader feeds remain separate and unchanged.",
+            "changed_files": ["src/lib/razul-eye.ts", "src/lib/razul-eye.test.ts", "src/lib/razul-eye.functions.ts", "src/components/razul/AllSeeingEye.tsx", "src/routes/omni-razul.tsx"],
+            "implemented": "Bounded recent ingestion runs, job pause/lease/retention metadata, sources, sourced findings and timestamps, Sentinel scopes/expiry/last-report, dispatch/Guardian recorded state, Passport declarations, subscription configuration, searchable newest-first metadata chronology. No jobs or monitoring started by inspection.",
+            "test_command": "bunx vitest run src/lib/razul-eye.test.ts src/lib/rasul-chat.test.ts src/lib/omni-razul.test.ts src/lib/razul-sentinel.test.ts src/lib/razul-ask.test.ts src/lib/razul-passport.test.ts src/test/omni-assistant.test.ts src/test/omni-agents.test.ts src/test/app-routing.test.tsx",
+            "test_result": "137 tests PASS (12 new owner/MFA/identity denial and metadata tests). Browser signed-out view and anonymous server-function denial PASS; default Razul preserved, mobile no horizontal overflow/page errors. Preview build OK.",
+            "runtime_evidence": "Existing configured has_role definition read back; 0 auth accounts / 0 owner roles. Session mint refused for no users. Positive authenticated owner/MFA infrastructure retrieval NOT RUN; no invented identity or fixtures.",
+            "planned": "Per-source last-checked receipts (currently unknown), authorized continuous API/crawling adapters, resident watcher lifecycle, private history corrections/retention controls, trusted audit and Guardian-controlled execution. Existing feed/dispatch metadata is not proof these are live.",
+            "missing_input": "Verified real OMNI owner activation and MFA session for positive retrieval; source-specific receipts and approved adapters for continuous monitoring; live Guardian and enrolled runner/watchers for execution.",
+            "release_status": "No publication/deployment, backend/schema/scheduler/provider or external-project change"
+          },
           "notes": "One consolidated thread, session-only (no persistence; questions tool unavailable so shape/storage chosen per owner 'one thread' request and stated). Research/status use authenticated Ask Razul when signed in; signed-out gets honest blocked fallback. Dispatches always pending-approval; execution blocked until Guardian+runner. Browser verified signed-out flow."
         }
       ]
