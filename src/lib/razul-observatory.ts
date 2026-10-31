@@ -5,7 +5,12 @@
  * communications ever enter this pipeline, and no exhaustive-coverage claim.
  */
 
-export type EvidenceClass = "established" | "preliminary" | "hypothesis" | "speculation";
+export type EvidenceClass =
+  | "established"
+  | "preliminary"
+  | "hypothesis"
+  | "speculation"
+  | "belief";
 
 export interface ObservatorySource {
   id: string;
@@ -72,6 +77,41 @@ const CATEGORY_KEYWORDS: Record<string, readonly string[]> = {
     "agency", "report",
   ],
   news: ["breaking", "report", "announced", "says", "according"],
+  linguistics: [
+    "language", "grammar", "dialect", "phonet", "syntax", "linguist",
+    "word", "translation", "endangered language", "etymolog",
+  ],
+  archaeology: [
+    "archaeolog", "ancient", "civilization", "excavat", "artifact", "tomb",
+    "ruins", "bronze age", "roman", "egypt", "mayan", "fossil",
+  ],
+  architecture: [
+    "architect", "building", "structure", "bridge", "design", "construction",
+    "monument", "cathedral",
+  ],
+  religion: [
+    "religion", "church", "temple", "faith", "belief", "spiritual",
+    "scientology", "buddhis", "hindu", "islam", "christian", "ritual",
+  ],
+  astrology: [
+    "astrolog", "horoscope", "zodiac", "natal chart", "mercury retrograde",
+  ],
+  culture: [
+    "culture", "art", "museum", "film", "music", "literature", "festival",
+    "heritage", "tradition",
+  ],
+  geography: [
+    "geograph", "map", "border", "territory", "region", "island", "river",
+    "mountain", "country",
+  ],
+  engineering: [
+    "engineer", "robot", "battery", "semiconductor", "chip", "material",
+    "manufactur", "sensor", "drone",
+  ],
+  "emerging-tech": [
+    "quantum comput", "biotech", "nanotech", "6g", "fusion", "neural interface",
+    "autonomous", "humanoid", "synthetic",
+  ],
 };
 
 /** Keyword-based relevance 0–100: title hits weigh double, capped. */
@@ -144,12 +184,20 @@ export function extractEntities(title: string): string[] {
  * preliminary; speculative language lowers the class; official government
  * sources are established. Never upgrades a weak text to established.
  */
+/**
+ * Belief and interpretive traditions (astrology, religion, and similar) are
+ * classified as 'belief' — never as scientific findings, regardless of source.
+ */
+const BELIEF_CATEGORIES = new Set(["astrology", "religion"]);
+
 export function classifyEvidence(
   entry: { title: string; summary: string },
   source: { category: string; id: string },
 ): { evidenceClass: EvidenceClass; strength: number } {
   const text = `${entry.title} ${entry.summary}`.toLowerCase();
   const official = ["cisa", "usgs", "nasa", "esa"].some((k) => source.id.startsWith(k));
+  if (BELIEF_CATEGORIES.has(source.category))
+    return { evidenceClass: "belief", strength: 15 };
   if (/speculat|hypothesi|might one day|could one day/.test(text))
     return { evidenceClass: "speculation", strength: 20 };
   if (/preliminary|early results|suggests|may indicate|propose/.test(text))
@@ -174,6 +222,15 @@ const CATEGORY_ROUTES: Record<string, readonly string[]> = {
   papers: ["sabrina", "omni"],
   "government-data": ["omni", "jackboy"],
   news: ["sabrina"],
+  linguistics: ["sabrina", "omni"],
+  archaeology: ["sabrina", "omni"],
+  architecture: ["sabrina"],
+  religion: ["sabrina"],
+  astrology: ["sabrina"],
+  culture: ["sabrina"],
+  geography: ["sabrina", "omni"],
+  engineering: ["jackboy", "omni"],
+  "emerging-tech": ["jackboy", "omni", "sabrina"],
 };
 
 /**

@@ -129,4 +129,45 @@ describe("classifyEvidence", () => {
       ),
     ).toEqual({ evidenceClass: "established", strength: 80 });
   });
+
+  it("classifies astrology as belief, never as a scientific finding", () => {
+    expect(
+      classifyEvidence(
+        { title: "Mercury retrograde forecast", summary: "" },
+        { category: "astrology", id: "some-astrology-feed" },
+      ),
+    ).toEqual({ evidenceClass: "belief", strength: 15 });
+  });
+
+  it("classifies religion coverage as belief even from official-sounding sources", () => {
+    expect(
+      classifyEvidence(
+        { title: "Church announces new temple", summary: "" },
+        { category: "religion", id: "nasa-breaking" },
+      ).evidenceClass,
+    ).toBe("belief");
+  });
+});
+
+describe("expanded disciplines", () => {
+  it("scores linguistics content", () => {
+    expect(
+      scoreRelevance({ title: "Endangered language grammar documented", summary: "" }, "linguistics"),
+    ).toBeGreaterThan(0);
+  });
+
+  it("scores archaeology content", () => {
+    expect(
+      scoreRelevance({ title: "Ancient Roman tomb excavated in Egypt", summary: "" }, "archaeology"),
+    ).toBeGreaterThan(0);
+  });
+
+  it("routes emerging tech to Jackboy, OMNI and Sabrina", () => {
+    expect(routeFinding("emerging-tech", 60, 40)).toEqual(["jackboy", "omni", "sabrina"]);
+  });
+
+  it("routes belief-tradition categories to Sabrina only", () => {
+    expect(routeFinding("astrology", 60, 40)).toEqual(["sabrina"]);
+    expect(routeFinding("religion", 60, 40)).toEqual(["sabrina"]);
+  });
 });

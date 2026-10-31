@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { getRazulAgentFeed, submitRazulFeedback } from "@/lib/razul-feeds.functions";
+
+const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian"] as const;
+type Agent = (typeof AGENTS)[number];
 
 interface FindingRow {
   id: string;
@@ -34,6 +38,44 @@ export function LiveObservatory() {
     | { kind: "gated" }
     | { kind: "ready"; findings: FindingRow[]; run: RunRow | null; sources: number }
   >({ kind: "loading" });
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [agentFeed, setAgentFeed] = useState<
+    { findings: FindingRow[]; minRelevance: number } | { error: string } | null
+  >(null);
+  const [feedbackSent, setFeedbackSent] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!agent || state.kind !== "ready") {
+      setAgentFeed(null);
+      return;
+    }
+    let cancelled = false;
+    getRazulAgentFeed({ data: { agent, limit: 20 } })
+      .then((res) => {
+        if (!cancelled)
+          setAgentFeed({
+            findings: (res.findings ?? []) as FindingRow[],
+            minRelevance: res.configured ? res.minRelevance : 40,
+          });
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setAgentFeed({ error: e instanceof Error ? e.message : "Feed unavailable" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [agent, state.kind]);
+
+  async function sendFeedback(findingId: string, verdict: "useful" | "not-useful") {
+    if (!agent) return;
+    try {
+      await submitRazulFeedback({ data: { findingId, agent, verdict, note: "" } });
+      setFeedbackSent((prev) => ({ ...prev, [findingId]: verdict }));
+    } catch {
+      setFeedbackSent((prev) => ({ ...prev, [findingId]: "failed" }));
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +145,85 @@ export function LiveObservatory() {
               ? ` · last run ${state.run.status} — ${state.run.inserted} new of ${state.run.fetched} fetched, ${state.run.alerts} alerts routed`
               : " · no runs recorded yet"}
           </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Agent feed:</span>
+            {AGENTS.map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => setAgent(agent === a ? null : a)}
+                className={`rounded-full border px-3 py-1 text-xs capitalize transition-colors ${
+                  agent === a
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border/60 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+          {agent && agentFeed && "error" in agentFeed && (
+            <p className="text-sm text-muted-foreground">{agentFeed.error}</p>
+          )}
+          {agent && agentFeed && !("error" in agentFeed) && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Scoped feed for <span className="capitalize text-foreground">{agent}</span> —
+                only configured categories at relevance ≥ {agentFeed.minRelevance}.
+              </p>
+              {agentFeed.findings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No findings match this agent's scope yet.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {agentFeed.findings.map((f) => (
+                    <li
+                      key={f.id}
+                      className="rounded-md border border-border/40 bg-background/40 px-3 py-2"
+                    >
+                      <a
+                        href={f.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-foreground underline-offset-2 hover:underline"
+                      >
+                        {f.title}
+                      </a>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {f.source_name} · {f.category}/{f.topic} · {f.evidence_class} · relevance{" "}
+                        {f.relevance}
+                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-xs">
+                        {feedbackSent[f.id] ? (
+                          <span className="text-muted-foreground">
+                            Feedback {feedbackSent[f.id] === "failed" ? "failed" : "recorded"}
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => sendFeedback(f.id, "useful")}
+                              className="rounded border border-border/60 px-2 py-0.5 text-muted-foreground hover:text-foreground"
+                            >
+                              Useful
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => sendFeedback(f.id, "not-useful")}
+                              className="rounded border border-border/60 px-2 py-0.5 text-muted-foreground hover:text-foreground"
+                            >
+                              Not useful
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           {state.findings.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No findings stored yet; the next scheduled run will populate this index.
