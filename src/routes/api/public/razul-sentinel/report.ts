@@ -68,6 +68,21 @@ export const Route = createFileRoute("/api/public/razul-sentinel/report")({
             .select("name")
             .eq("id", sentinelId)
             .single();
+          const sourceName = `Sentinel: ${sentinel.data?.name ?? sentinelId}`;
+          // Sentinels enrolled before source registration existed still need a
+          // provenance source row for the findings foreign key.
+          await supabaseAdmin.from("razul_sources").upsert(
+            {
+              id: `sentinel:${sentinelId}`,
+              name: sourceName,
+              url: `sentinel://${sentinelId}`,
+              kind: "sentinel",
+              category: "project-operations",
+              terms_note: "Owner-enrolled project sentinel; scoped credential reports only.",
+              active: true,
+            } as never,
+            { onConflict: "id" },
+          );
           const title =
             typeof payload.title === "string" && payload.title.trim()
               ? payload.title.slice(0, 300)
