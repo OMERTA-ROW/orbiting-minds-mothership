@@ -264,6 +264,11 @@
       "command": "bunx vitest run src/lib/razul-sentinel.test.ts + live curl cycle against /api/public/razul-sentinel/report",
       "result": "7 unit tests PASS. Live: feedback report accepted+routed (finding + jackboy/omni alert rows verified in DB), health stored history-only, out-of-scope kind 401, forged token 401, revoked sentinel 401; test sentinel and rows deleted after verification.",
       "passed": true
+    },
+    "rasul-front-door": {
+      "command": "bunx vitest run src/lib/rasul-chat.test.ts + Playwright /omni-razul",
+      "result": "12 unit tests PASS. Browser: agents answer with verified label, Guardian dispatch prepared pending-approval with blocked execution and named prerequisite, handoff transparency rendered. Build OK 14:02 UTC.",
+      "passed": true
     }
   },
   "steps": [
@@ -998,6 +1003,28 @@
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified.",
           "evidence": "razul-sentinel-network",
           "notes": "Live cycle verified 2026-10-31: enrolled test sentinel (scoped: feedback+health, 1h expiry) -> POST /api/public/razul-sentinel/report accepted in-scope feedback (routed to jackboy+omni alert events via a provenance finding row) and health (history only); out-of-scope diagnostic and forged token both rejected 401; revoked sentinel rejected 401; test data removed. Dispatch queue exists but every dispatch is recorded blocked-guardian because the Guardian policy engine is not connected (default deny, no simulated approval). Scout execution, Agent Passports on dispatch, offline retry and owner enrollment UI remain pending."
+        },
+        {
+          "id": "05.10",
+          "requirement": "RA'SUL as default active conversational agent/front door of the OMNI agent dashboard: owner-only private conversation interface answering from sourced memory/public research, authorized status inspection, specialist discovery via Agent Passports, scoped dispatch preparation to Jackboy/OMNI/Sabrina/JAX/Guardian, transparent handoffs and job progress, one consolidated thread. No blanket credentials; Guardian-enforced permissions; explicit owner approval for production changes and external actions; safe fallback when backend not connected.",
+          "status": "Partially implemented",
+          "owner": "Lovable implementation; live answers require activated owner account",
+          "dependencies": [
+            "05.08",
+            "05.09",
+            "02",
+            "03"
+          ],
+          "changed_files": [
+            "src/lib/rasul-chat.ts",
+            "src/lib/rasul-chat.test.ts",
+            "src/components/omnibridge/RasulChat.tsx",
+            "src/routes/omni-razul.tsx"
+          ],
+          "commit": null,
+          "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified.",
+          "evidence": "rasul-front-door",
+          "notes": "One consolidated thread, session-only (no persistence; questions tool unavailable so shape/storage chosen per owner 'one thread' request and stated). Research/status use authenticated Ask Razul when signed in; signed-out gets honest blocked fallback. Dispatches always pending-approval; execution blocked until Guardian+runner. Browser verified signed-out flow."
         }
       ]
     },
