@@ -213,3 +213,8 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [x] Guardian policy gate in `/omni-gateway`: default-deny when unavailable, logged decisions, no simulated approval; merge/deploy need initial human approval and can never be delegated; scoped owner delegation only for non-merge actions.
 - [x] Jackboy learning loop: human review outcomes recorded as local provenance-tagged lessons; not retraining, never changes policy. 17 gateway tests, 83 focused tests pass.
 - [ ] BLOCKED end-to-end: authenticated job lifecycle, isolated generation/tests and live Guardian review request all need the activated backend, service identity and sandbox runner; no connection claimed before end-to-end tests.
+
+## OMNI multi-agent registry — 2026-10-31
+- [x] `/omni-agents` local registry: owner-confirmed agent registration with categorized roles (AngelTech research/creation/quality, DemonTech defensive security, Guardian permissions/audit, OMNI core), capability declarations scoped to opted-in projects, task/result/coordination reports that never execute, agent-to-agent coordination between registered agents only, and immediate owner pause/resume. 11 tests, 82 focused tests pass.
+- [x] Approval boundaries enforced in rules: irreversible, high-impact, private-data and production actions always require owner/human approval regardless of declarations.
+- [ ] BLOCKED live agents: runner, model inference, backend membership and Guardian policy engine all pending; no live integration claimed until end-to-end tests.
