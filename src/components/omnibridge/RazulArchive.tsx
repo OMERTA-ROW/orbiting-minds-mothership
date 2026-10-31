@@ -205,13 +205,14 @@ export function RazulArchive() {
     <main className="mx-auto max-w-[1500px] px-5 pb-24 pt-8 md:px-10">
       <header className="relative overflow-hidden border-b border-gold/30 pb-8">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="eyebrow">OMNI ecosystem / central memory</span>
+          <span className="eyebrow">OMNI Mothership / cross-project intelligence</span>
           <DemoBadge label="LOCAL REFERENCE · NO SERVER PERSISTENCE" />
           <DemoBadge label="NO PRIVATE COMMS · NO SECRETS" />
         </div>
-        <h1 className="mt-5 max-w-4xl text-5xl leading-tight">RAZUL · The Eternal Archivist</h1>
+        <h1 className="mt-5 max-w-4xl text-5xl leading-tight">RA'SUL (Razul) · The Eternal Archivist</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-          RAZUL keeps timestamped, append-only, tamper-evident history for enrolled owner-controlled
+          RA'SUL is the central cross-project intelligence and coordination agent within OMNI Mothership.
+          This local archive keeps timestamped, append-only, tamper-evident history for enrolled owner-controlled
           projects: events, agent reports, test results, code-change metadata, approvals, incidents
           and outcomes — with provenance, search, retention, redaction and per-consumer access
           segregation for Jackboy, OMNI, Guardian, Sabrina and JAX.
