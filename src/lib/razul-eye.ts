@@ -85,7 +85,10 @@ export interface EyeSnapshot extends EyeRecords {
 export function eyeLabel(value: string) {
   if (/(?:bearer\s|api[_ -]?key|password|secret|token\s*[=:]|-----BEGIN)/i.test(value))
     return "[restricted text omitted]";
-  return [...value].map((character) => character.charCodeAt(0) < 32 ? " " : character).join("").slice(0, 160);
+  return [...value]
+    .map((character) => (character.charCodeAt(0) < 32 ? " " : character))
+    .join("")
+    .slice(0, 160);
 }
 export function eyeSourceUrl(value: string): string | null {
   try {
