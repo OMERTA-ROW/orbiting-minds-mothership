@@ -247,6 +247,63 @@ export function routeFinding(
   return [...(CATEGORY_ROUTES[category] ?? ["omni"])];
 }
 
+/** Normalize a question for cache keys and privacy-safe logging. */
+export function questionHashInput(question: string): string {
+  return question.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 500);
+}
+
+const STOP_TOKENS = new Set([
+  "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "is", "are",
+  "what", "which", "how", "why", "when", "who", "with", "about", "latest",
+  "new", "news", "tell", "me",
+]);
+
+export function tokenize(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .split(/\s+/)
+    .filter((t) => t.length > 2 && !STOP_TOKENS.has(t));
+}
+
+/**
+ * Lexical semantic retrieval: token-overlap scoring of a question against a
+ * finding's title, summary, topic and entities. Deterministic, no AI calls.
+ */
+export function rankForQuestion<T extends {
+  title: string;
+  summary: string;
+  topic: string;
+  entities: string[];
+  relevance: number;
+}>(question: string, findings: readonly T[], limit = 5): T[] {
+  const tokens = new Set(tokenize(question));
+  if (!tokens.size) return [];
+  return findings
+    .map((f) => {
+      const hay = tokenize(`${f.title} ${f.summary} ${f.topic} ${f.entities.join(" ")}`);
+      const hits = hay.filter((t) => tokens.has(t)).length;
+      return { f, score: hits * 10 + Math.min(f.relevance, 100) / 10 };
+    })
+    .filter((r) => r.score > 1)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((r) => r.f);
+}
+
+/** Confidence blends evidence class, relevance, and corroboration count. */
+export function confidenceFor(input: {
+  evidenceClass: EvidenceClass;
+  relevance: number;
+  corroborations: number;
+}): number {
+  const base = { established: 60, preliminary: 40, hypothesis: 25, speculation: 10, belief: 5 }[
+    input.evidenceClass
+  ];
+  const corroboration = Math.min(input.corroborations - 1, 3) * 8;
+  return Math.min(100, base + Math.round(input.relevance / 5) + corroboration);
+}
+
 /**
  * Owner controls applied to the registry: active sources, not blocked,
  * whose category is inside the configured coverage. Sources rotate by
