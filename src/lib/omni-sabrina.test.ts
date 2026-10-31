@@ -91,14 +91,14 @@ describe("opportunityRadar", () => {
     const unapproved = makeProspect({ ownerAuthorization: false, humanApproval: "not-reviewed" });
     const radar = opportunityRadar([makeInsight()], [revoked, unapproved]);
     expect(radar).toHaveLength(1);
-    expect(radar[0].gate).toBe("gated");
-    expect(radar[0].gateReasons.join(" ")).toMatch(/Owner authorization missing/);
+    expect(radar[0]?.gate).toBe("gated");
+    expect(radar[0]?.gateReasons.join(" ")).toMatch(/Owner authorization missing/);
   });
 
   it("marks fully approved matches ready for review and sorts by score", () => {
     const radar = opportunityRadar([makeInsight()], [makeProspect()]);
-    expect(radar[0].gate).toBe("ready-for-review");
-    expect(radar[0].gateReasons).toEqual([]);
+    expect(radar[0]?.gate).toBe("ready-for-review");
+    expect(radar[0]?.gateReasons).toEqual([]);
   });
 });
 
