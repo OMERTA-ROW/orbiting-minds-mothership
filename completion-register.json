@@ -29,8 +29,8 @@
  "evidence": {
   "current": {
    "command": "bunx vitest run",
-   "result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
-   "runtime": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
+   "result": "Passed: 1089 tests / 71 files, 2026-10-31 05:13 UTC",
+   "runtime": "Latest harness build OK; Angel Tech/Sabrina browser flow saved a local insight, review-only campaign and unsent invitation draft. Not public-release, discovery, consent, credential or outreach evidence.",
    "passed": true
   },
   "account": {
