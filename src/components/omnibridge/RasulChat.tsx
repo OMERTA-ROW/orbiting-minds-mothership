@@ -1,5 +1,6 @@
 /**
- * RA'SUL — the owner-only conversational front door of the OMNI dashboard.
+ * RA'SUL — OMNI Mothership's central cross-project intelligence and coordination agent.
+ * Owner-only conversational front door; resident watch-agent coordination remains staged.
  * One consolidated thread (session-only, no persistence by design). Research
  * answers use the authenticated Ask Razul path with citations; status,
  * agent discovery and dispatch planning are transparent about what is
@@ -156,11 +157,17 @@ export function RasulChat() {
     <section aria-label="RA'SUL conversation" className="rounded-xl border border-border bg-card p-4">
       <header className="mb-3 flex items-center gap-2">
         <Eye className="h-5 w-5 text-primary" aria-hidden />
-        <h2 className="text-lg font-semibold text-foreground">RA'SUL — Front Door</h2>
+        <h2 className="text-lg font-semibold text-foreground">RA'SUL — Central Intelligence</h2>
         <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
           {signedIn === null ? "checking access…" : signedIn ? "owner session active" : "sign in for live answers"}
         </span>
       </header>
+
+      <p className="mb-3 text-sm text-muted-foreground">
+        OMNI Mothership's central cross-project intelligence and coordination agent.
+        Scoped resident watch-agent coordination across owner-enrolled sites and apps is planned;
+        the game is only one participating project.
+      </p>
 
       <div className="mb-3 max-h-96 space-y-3 overflow-y-auto pr-1" role="log" aria-live="polite">
         {messages.length === 0 && (

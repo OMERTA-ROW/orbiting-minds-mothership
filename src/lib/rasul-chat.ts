@@ -1,6 +1,8 @@
 /**
  * RA'SUL conversational front door — pure planning logic.
- * Razul is the default active agent of the OMNI dashboard: it answers from
+ * RA'SUL (Razul) is OMNI Mothership's central cross-project intelligence and coordination agent.
+ * Resident watch-agent coordination is staged for scoped owner-enrolled sites/apps;
+ * the game is only one participating project. The default conversational agent answers from
  * sourced memory/research, inspects authorized status, discovers specialists
  * via Agent Passports, and prepares scoped dispatches. It never replaces
  * specialist agents, never holds blanket credentials, and every dispatch
@@ -166,7 +168,7 @@ export function buildDispatchRequest(id: string, text: string): DispatchRequest 
 /** Honest fallback answers when the backend is not connected. */
 export function rasulFallbackAnswer(intent: RasulIntent, signedIn: boolean): string {
   if (!signedIn) {
-    return "I am RA'SUL, the archivist front door of this Mothership. My live memory and research answers require the verified owner account — sign in to activate them. Everything I can do without it is labeled simulated or blocked, never faked.";
+    return "I am RA'SUL (Razul), OMNI Mothership's central cross-project intelligence and coordination agent — The Eternal Archivist. I coordinate only scoped, authorized resident watch agents on owner-enrolled sites and apps; that integration remains planned, and the game is only one participating project. My live memory and research answers require the verified owner account — sign in for access. Everything I can do without it is labeled simulated or blocked, never faked.";
   }
   switch (intent) {
     case "status":

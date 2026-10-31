@@ -15,8 +15,8 @@ function RazulPage() {
 export const Route = createFileRoute("/omni-razul")({
   head: () =>
     seo(
-      "RAZUL · The Eternal Archivist",
-      "Owner-only conversational front door of the OMNI Mothership: sourced research answers, transparent agent handoffs and approval-gated dispatches, plus the append-only project history and public-internet observatory.",
+      "RA'SUL (Razul) · OMNI Central Intelligence",
+      "RA'SUL is OMNI Mothership's central cross-project intelligence and coordination agent, with sourced research and permissioned history. Scoped resident watch-agent coordination across owner-enrolled sites and apps remains staged; the game is only one participating project.",
     ),
   component: RazulPage,
 });
