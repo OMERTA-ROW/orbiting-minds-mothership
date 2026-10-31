@@ -127,6 +127,20 @@
       "when": 1792711730921,
       "tag": "0017_knowledge_durable_ai_attempt_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793452032413,
+      "tag": "0018_owner_invitations_and_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793452063480,
+      "tag": "0019_omni_agent_runs",
+      "breakpoints": true
     }
   ]
 }

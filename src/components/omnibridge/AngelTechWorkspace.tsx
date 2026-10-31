@@ -23,6 +23,7 @@ import {
   type PermissionOption,
   type Prospect,
 } from "@/lib/omni-angel-tech";
+import { SabrinaDirector } from "./SabrinaDirector";
 
 const emptyStore: AngelTechStore = { insights: [], prospects: [], drafts: [] };
 const stamp = () => new Date().toISOString();
@@ -568,9 +569,11 @@ export function AngelTechWorkspace() {
         </div>
       </section>
 
+      <SabrinaDirector insights={store.insights} prospects={store.prospects} drafts={store.drafts} />
+
       <section className="mt-8 border border-border p-5" aria-labelledby="coordination">
         <h2 id="coordination" className="text-2xl">
-          4 · Coordination concept
+          8 · Coordination concept
         </h2>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {coordinationLanes.map((lane) => (
