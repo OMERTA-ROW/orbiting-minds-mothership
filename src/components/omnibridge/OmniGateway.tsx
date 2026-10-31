@@ -7,15 +7,19 @@ import {
   feedbackChannels,
   forbiddenGoalHints,
   gatewayReadiness,
+  guardianDecide,
+  learningOutcomes,
   loadGatewayStore,
   OMNI_GATEWAY_STORE_KEY,
   projectScopes,
   receiveJob,
+  recordLearning,
   revokeProject,
   type EnrolledProject,
   type FeedbackChannel,
   type GatewayJob,
   type GatewayStore,
+  type LearningOutcome,
   type ProjectScope,
 } from "@/lib/omni-gateway";
 
@@ -47,6 +51,11 @@ export function OmniGateway() {
   const [fbJob, setFbJob] = useState("");
   const [fbChannel, setFbChannel] = useState<FeedbackChannel>("angeltech-quality");
   const [fbNote, setFbNote] = useState("");
+
+  // learning loop form
+  const [lnJob, setLnJob] = useState("");
+  const [lnOutcome, setLnOutcome] = useState<LearningOutcome>("accepted");
+  const [lnLesson, setLnLesson] = useState("");
 
   useEffect(() => {
     window.localStorage.setItem(OMNI_GATEWAY_STORE_KEY, JSON.stringify(store));
@@ -133,6 +142,37 @@ export function OmniGateway() {
       ),
     }));
     setStatus("Enrollment revoked; scopes withdrawn.");
+  }
+
+  function saveLearning(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    try {
+      const at = new Date().toISOString();
+      const rec = recordLearning(
+        { jobId: lnJob, outcome: lnOutcome, lesson: lnLesson },
+        crypto.randomUUID(),
+        at,
+      );
+      // Every review also logs a Guardian decision; Guardian is not connected,
+      // so the recorded decision is an explicit default-deny, never an approval.
+      const decision = guardianDecide({
+        id: crypto.randomUUID(),
+        at,
+        jobId: lnJob,
+        action: "submit-review",
+        guardianAvailable: false,
+      });
+      setStore((s) => ({
+        ...s,
+        learning: [...s.learning, rec],
+        guardianDecisions: [...s.guardianDecisions, decision],
+      }));
+      setLnLesson("");
+      setStatus("Review lesson recorded locally; Guardian decision logged as default-deny.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lesson was not accepted.");
+    }
   }
 
   return (
@@ -377,6 +417,86 @@ export function OmniGateway() {
           {store.feedback.map((f) => (
             <li key={f.id}>
               {f.at.slice(0, 10)} · {f.channel} · {f.note}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-label="Guardian policy gate" className="mt-10">
+        <h2 className="text-2xl">Guardian policy gate</h2>
+        <p className="mt-2 max-w-3xl text-xs leading-6 text-muted-foreground">
+          Guardian is not connected, so every action defaults to <strong>deny</strong> and the
+          decision is logged. A simulated approval is never substituted. Merge and deploy always
+          need initial human approval; scoped delegation is possible only afterward and only by
+          owner policy — merge/deploy itself can never be delegated.
+        </p>
+        <ul className="mt-4 space-y-1 text-xs text-muted-foreground">
+          {store.guardianDecisions.map((d) => (
+            <li key={d.id}>
+              {d.at.slice(0, 19)} · {d.action} · <strong>{d.outcome}</strong> · {d.basis} · {d.note}
+            </li>
+          ))}
+          {store.guardianDecisions.length === 0 && <li>No decisions logged yet.</li>}
+        </ul>
+      </section>
+
+      <section aria-label="Jackboy learning loop" className="mt-10">
+        <h2 className="text-2xl">Jackboy learning loop</h2>
+        <p className="mt-2 max-w-3xl text-xs leading-6 text-muted-foreground">
+          Human review outcomes are recorded as local lessons with provenance. This is not model
+          retraining and never changes policy or authority on its own.
+        </p>
+        <form onSubmit={saveLearning} className="mt-4 grid gap-3 md:grid-cols-3">
+          <label className="block text-xs">
+            Job
+            <select
+              aria-label="Learning job"
+              value={lnJob}
+              onChange={(e) => setLnJob(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Select…</option>
+              {store.jobs.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.goal.slice(0, 60)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs">
+            Review outcome
+            <select
+              aria-label="Review outcome"
+              value={lnOutcome}
+              onChange={(e) => setLnOutcome(e.target.value as LearningOutcome)}
+              className={inputCls}
+            >
+              {learningOutcomes.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs">
+            Lesson
+            <input
+              aria-label="Lesson"
+              value={lnLesson}
+              onChange={(e) => setLnLesson(e.target.value)}
+              className={inputCls}
+            />
+          </label>
+          <div className="md:col-span-3">
+            <Button size="sm" type="submit">
+              Record lesson
+            </Button>
+          </div>
+        </form>
+        <ul className="mt-4 space-y-1 text-xs text-muted-foreground">
+          {store.learning.map((l) => (
+            <li key={l.id}>
+              {l.at.slice(0, 10)} · {l.outcome} · {l.lesson}
             </li>
           ))}
         </ul>

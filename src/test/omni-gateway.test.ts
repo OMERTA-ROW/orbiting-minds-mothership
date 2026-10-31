@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  createDelegation,
+  guardianDecide,
+  recordLearning,
   addFeedback,
   canJobTransition,
   emptyGatewayStore,
@@ -180,5 +183,87 @@ describe("readiness and store", () => {
   it("loads an empty store from missing or corrupt data", () => {
     expect(loadGatewayStore(null)).toEqual(emptyGatewayStore);
     expect(loadGatewayStore("{bad json")).toEqual(emptyGatewayStore);
+  });
+});
+
+describe("Guardian policy gate", () => {
+  it("defaults to deny when Guardian is unavailable and logs the decision", () => {
+    const d = guardianDecide({
+      id: "66666666-6666-4666-8666-666666666666",
+      at: now,
+      jobId: jid,
+      action: "generate-patch",
+      guardianAvailable: false,
+    });
+    expect(d.outcome).toBe("deny");
+    expect(d.basis).toBe("default-deny-unavailable");
+    expect(d.note).toContain("No simulated approval");
+  });
+
+  it("merge/deploy need human approval first, then allow only via that approval", () => {
+    const base = { id: jid, at: now, jobId: jid, guardianAvailable: true };
+    expect(guardianDecide({ ...base, action: "merge" }).outcome).toBe("deny");
+    const approved = guardianDecide({ ...base, action: "merge", humanApproved: true });
+    expect(approved.outcome).toBe("allow");
+    expect(approved.basis).toBe("human-approval");
+  });
+
+  it("merge/deploy can never be delegated, even by owner policy", () => {
+    expect(() => createDelegation({ action: "merge", note: "auto-merge main", at: now })).toThrow(
+      /cannot be delegated/,
+    );
+    expect(() => createDelegation({ action: "deploy", note: "auto-deploy", at: now })).toThrow();
+  });
+
+  it("allows scoped owner delegation for non-merge actions when Guardian is available", () => {
+    const delegation = createDelegation({
+      action: "run-sandbox-tests",
+      note: "Owner delegates sandbox test runs for Jackboy project",
+      at: now,
+    });
+    expect(delegation.grantedBy).toBe("owner");
+    const d = guardianDecide({
+      id: jid,
+      at: now,
+      jobId: jid,
+      action: "run-sandbox-tests",
+      guardianAvailable: true,
+      delegations: [delegation],
+    });
+    expect(d.outcome).toBe("allow");
+    expect(d.basis).toBe("owner-policy");
+  });
+});
+
+describe("Jackboy learning loop", () => {
+  it("records human review outcomes as local lessons, never retraining", () => {
+    const rec = recordLearning(
+      { jobId: jid, outcome: "changes-requested", lesson: "Prefer named exports in this module." },
+      "77777777-7777-4777-8777-777777777777",
+      now,
+    );
+    expect(rec.source).toBe("human-review");
+    expect(rec.retraining).toBe(false);
+    expect(() =>
+      recordLearning(
+        { jobId: jid, outcome: "auto", lesson: "Invalid outcome value here." },
+        jid,
+        now,
+      ),
+    ).toThrow();
+  });
+
+  it("store round-trips guardian decisions, delegations and learning records", () => {
+    const store = loadGatewayStore(
+      JSON.stringify({
+        ...emptyGatewayStore,
+        guardianDecisions: [{ id: "1" }],
+        delegations: [{ action: "generate-patch" }],
+        learning: [{ id: "2" }],
+      }),
+    );
+    expect(store.guardianDecisions).toHaveLength(1);
+    expect(store.delegations).toHaveLength(1);
+    expect(store.learning).toHaveLength(1);
   });
 });

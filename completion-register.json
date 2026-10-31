@@ -1225,7 +1225,8 @@
           "evidence": [
             "11 vitest tests pass: enrollment owner-confirmation/scope rules, revocation denial, Jackboy-approval and no-untrusted-code attestation required, immediate blocked state with no patch/evidence, forbidden goal hints (merge/deploy/secrets/destructive), project-id mismatch rejection, terminal state machine, advisory-only feedback channels, blocked readiness with prerequisites, corrupt-store fallback.",
             "Route /omni-gateway renders local-only enrollment, task intake, job log and advisory feedback UI with BLOCKED · RUNNER NOT CONNECTED badge; browser-local records only.",
-            "NOT done: no authenticated job API, service identity, sandbox runner, model inference, patch generation, test execution, repository write, merge or deploy — all blocked pending owner-approved backend activation and an isolated runner."
+            "NOT done: no authenticated job API, service identity, sandbox runner, model inference, patch generation, test execution, repository write, merge or deploy — all blocked pending owner-approved backend activation and an isolated runner.",
+            "2026-10-31 update: Guardian policy gate added — default-deny when unavailable, every decision logged, no simulated approval; merge/deploy require initial human approval and can never be delegated; scoped owner delegation only for non-merge actions. Jackboy learning loop records human review outcomes as local provenance-tagged lessons (retraining: false). 17 gateway tests pass; 83 focused tests pass."
           ],
           "verified_at": "2026-10-31"
         }
