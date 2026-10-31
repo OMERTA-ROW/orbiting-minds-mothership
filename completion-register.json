@@ -29,7 +29,7 @@
   "evidence": {
     "current": {
       "command": "bunx vitest run",
-      "result": "Passed: 1189 tests, 2026-10-31 13:54 UTC; harness build OK 13:56 UTC. Razul Sentinel live cycle verified (feedback routed to jackboy/omni, health history-only, out-of-scope/forged/revoked all 401).",
+      "result": "Passed: 1236 tests / 84 files, 2026-10-31 18:07 UTC; focused Razul 171 tests / 12 files and 38 isolated PostgreSQL calls plus anonymous execute denial PASS. Preview source receipt run partial: 43 fetched/0 inserted/43 deduped/0 alerts; 3 success and 2 failed source checks read back. Prior Sentinel live-cycle evidence retained, not rerun.",
       "runtime": "Latest harness build OK. Owner-approved backend activation applied owner-invitations.sql + omni-agent.sql (12 RPCs verified present); Sabrina director browser flow ran radar (100/100 ready-for-review), strategic memory, weekly brief and Jackboy local-handoff feedback; /members redirects signed-out visitors to /auth. Not public-release, inference, outreach or credential evidence.",
       "passed": true
     },
@@ -935,8 +935,8 @@
         },
         {
           "id": "05.08",
-          "requirement": "RAZUL 'The Eternal Archivist': central memory, history and public-internet intelligence agent for the OMNI ecosystem, reusable across enrolled owner-controlled projects. Append-only timestamped auditable event history (project events, agent reports, test results, code-change metadata, approvals, incidents, outcomes) with provenance, search, retention, redaction and per-project/per-consumer access segregation; project/agent/dependency knowledge graph and retrieval API for Jackboy, OMNI, Guardian, Sabrina, JAX; allowlisted public-source intelligence (RSS/API/public pages respecting robots, terms, rate limits, attribution) with dedupe, corroboration, relevance ranking and routed findings. No private communications, no secrets logging, no protected-site scraping, no entire-internet claims; scoped owner consent, least privilege and opt-in per project.",
-          "status": "Partially implemented",
+          "requirement": "Razul Central Intelligence (RA'SUL alias, The Eternal Archivist): central speaking intelligence, All-Seeing Eye and historical records for OMNI/Evolution across enrolled owned projects, never game-exclusive. Permissioned sourced events/research, search, provenance/timestamps/evidence classes, corrections/retention, resident/watch-agent directory and scoped retrieval/handoffs to Jackboy/OMNI/Guardian/Sabrina/JAX/Hercules. Approved public sources only respecting legal/site policies, rate limits, minimization and opt-in; no secrets/private communications, unauthorized scans or entire-internet claims. Guardian and owner approval for high-impact changes/transfers; no publishing or paid services.",
+          "status": "In progress",
           "owner": "Lovable implementation; scheduled public-source observatory is live on the backend; private-event persistence and authenticated retrieval API still need owner account activation",
           "dependencies": [
             "02",
@@ -972,12 +972,14 @@
             "REAL 2026-10-31 (all-discipline expansion): migration 0023 added 22-category coverage including linguistics, archaeology, architecture, religion, astrology, culture, geography, engineering, emerging-tech; a distinct 'belief' evidence class for belief/interpretive traditions (never classified as scientific findings); 5 more real feeds (Language Log, Phys.org archaeology/technology, BBC arts/world) for 18 total; razul_agent_feeds seeded per-agent scopes (jackboy/jax/omni/sabrina/guardian) with relevance floors and alert toggles; razul_agent_feedback append-only attributed feedback; authenticated server functions getRazulAgentFeed/submitRazulFeedback gated by is_knowledge_reader; agent feed selector + feedback buttons on /omni-razul. Live run b777c619: 70 fetched, 15 new, 55 deduped. 21 vitest tests PASS (belief classification, discipline scoring, routing).",
             "Still NOT done after all-discipline expansion: no reputable permitted astrology/religion feed is seeded yet (taxonomy exists, sources pending owner-approved registration); agent feeds are pull-based reading, not push delivery; feedback does not yet adjust ranking; runtime verification of the authenticated feed path needs an activated owner account.",
             "REAL 2026-10-31 (shared research service): migration 0024 added razul_query_cache (6h TTL, hash-keyed), razul_query_log (hashes/counts only, never raw questions), razul_alert_events (finding x agent dedupe key, read receipts) and the Hercules subscription; migration 0025 added NASA Image of the Day (19 sources). askRazul/listRazulAlerts/markRazulAlertRead server functions are approved-reader gated. 3 integration tests PASS for the full ask pipeline (cited sources with timestamps/evidence/confidence, cache hit path, scope narrowing, hash-only logging); 3 planAlertEvents tests PASS (per-agent floors, disabled alerts, 50-event cap). Live ingestion runs continue to insert new findings (15/14/13 across three windows).",
-            "Still NOT done after shared-service work: authenticated runtime verification of askRazul and alert polling needs an activated owner account; the alert event bus has not yet fired live (no new finding crossed an agent's relevance floor in the runs since the feature shipped — the fan-out is unit-tested and will fire on the next qualifying scheduled run); push notification delivery (email/webhook) is not built — agents poll."
+            "Still NOT done after shared-service work: authenticated runtime verification of askRazul and alert polling needs an activated owner account; the alert event bus has not yet fired live (no new finding crossed an agent's relevance floor in the runs since the feature shipped — the fan-out is unit-tested and will fire on the next qualifying scheduled run); push notification delivery (email/webhook) is not built — agents poll.",
+            "Consolidation 18:07 UTC: migration 0029 applied; seven existing control RPCs NULL-safe verified-owner+confirmed-email+aal2 only; restrictive private infrastructure policies (11 tables) plus Sentinel source/finding boundary preserve ordinary public-feed access. Source receipt and metadata control-audit tables explicitly granted/RLS, subscription RPC and triggers. Existing preview feed job HTTP 200 partial: 43 fetched, 0 stored, 43 duplicate, 0 alerts; saved success checks for USGS/BBC science/Language Log and fetch-failed checks for arXiv physics/Phys archaeology. No new sources/schedules, private users or external actions.",
+            "Implemented not positive-owner verified: All-Seeing Eye saved pause, public retention/threshold/source blocks and six agent subscription settings, receipt freshness/failure, finding search/evidence/revision display, chronology including control changes; owner/MFA and explicit confirmation enforced. Research scope intersected with stored subscription, empty-scope and unrelated-query regression repaired; status chat uses infrastructure not research relevance, stale async replies invalidated. Full app 1236 PASS, focused 171 PASS, local PostgreSQL 38 calls plus anonymous execute denial PASS. Owner count/account count/passports/Sentinels all zero; owner readback/setting flow and Ops->Jackboy->OMNI->Guardian pilot blocked, not replaced with fake identities."
           ],
           "verified_scope": "Local reference implementation at /omni-razul: append-only tamper-evident event archive with provenance, redaction, retention tombstoning, per-project opt-in and per-consumer access grants; knowledge graph; allowlisted public-source registry with dedupe/corroboration/ranking/routing. Browser-local records only.",
           "test_result": "14 vitest tests PASS; browser end-to-end retrieval + public-source alert PASS.",
           "runtime_evidence": "Route /omni-razul renders with LOCAL REFERENCE · NO SERVER PERSISTENCE and NO PRIVATE COMMS · NO SECRETS badges; denial message shown for ungranted consumers.",
-          "next_action": "Blocked: server persistence tables + authenticated retrieval API + Guardian policy enforcement after owner account activation; scheduled discovery extends the existing knowledge collector rather than duplicating it.",
+          "next_action": "Verified OMNI owner activation/MFA and real positive UI readback required; then scoped project enrollment/machine reads, private version/correction history and Guardian/runner pilot. Existing feed job/receipts reused; continuous crawlers/source policy gates and later independent backend remain unimplemented/gated.",
           "release_status": "Not released; private prototype only.",
           "test_command": "bunx vitest run src/lib/omni-razul.test.ts",
           "verified_at": "2026-10-31"
@@ -985,8 +987,13 @@
         {
           "id": "05.09",
           "requirement": "RAZUL distributed agent network: secure authenticated lightweight Razul Sentinel connectors per owner-enrolled project (scoped expiring credentials, no blanket access) reporting health/diagnostics/releases/feedback/project events into the central history; dispatcher and queue for AngelTech research scouts and DemonTech defensive inspectors with Guardian policy approval (default deny while unavailable), rate limits, audit and revocation; actionable findings routed to Jackboy/OMNI/Sabrina/JAX. Auto-discovery = reading the enrollment registry, never scanning. No unauthorized external scanning or persistent hidden access.",
-          "status": "Partially implemented",
+          "status": "In progress",
           "owner": "Lovable implementation; owner enrollment requires activated owner account",
+          "verified_scope": "Prior bounded Sentinel report acceptance/denial cycle; current owner-MFA control restrictions and Guardian default deny. No resident runtime or cross-project machine-read API proved.",
+          "test_result": "7 Sentinel tests retained in 171 focused tests PASS; 38 isolated SQL calls test owner restrictions. Prior live Sentinel cycle not rerun this increment.",
+          "runtime_evidence": "Prior feedback routed to Jackboy/OMNI and health stored with forged/revoked denial; zero current hosted Sentinels/passports, no connected runner/Guardian.",
+          "next_action": "Activate verified owner/MFA, explicitly enroll one project with scoped identity and authenticated resident read interface, then Guardian+isolated-runner pilot.",
+          "release_status": "Not released; no project agent activated or public publishing.",
           "dependencies": [
             "05.08",
             "02",
@@ -1040,8 +1047,13 @@
         {
           "id": "05.10",
           "requirement": "RA'SUL / Razul as default speaking/conversational central intelligence within OMNI Mothership, never a game advisor: searchable permissioned project history plus lawful public-source research; coordinates his proposed specialized research/monitoring workers over permitted topics and resident watchers only on owner-enrolled sites/apps. Sourced reports, timestamps/provenance, audit, subscriptions and transparent handoffs; scoped recommendations/dispatch to resident agents and Jackboy/OMNI/Sabrina/JAX/Guardian. Respect website policies, permissions/rate limits; no unauthorized scans, blanket surveillance or entire-internet claims. Preserve private owner access, specialist identities, infrastructure, Guardian gates and explicit owner approval for high-impact/external actions; no publishing or automatic tools.",
-          "status": "Partially implemented",
+          "status": "In progress",
           "owner": "Lovable implementation; live answers require activated owner account",
+          "verified_scope": "Exact default Razul Central Intelligence speaking identity, session-only local handoff planning, owner-gated infrastructure/status and research code, bounded source receipts and controls. Positive authenticated UI flow remains unverified.",
+          "test_result": "Full app 1236 tests PASS, focused 171 PASS, 38 isolated SQL calls plus anon execute denial PASS; anonymous browser default identity/status/Guardian-denial PASS.",
+          "runtime_evidence": "Existing preview feed run saved 5 source receipts (3 success/2 failed), 43 duplicates/no new rows; signed-out owner controls hidden, MFA gate preserved. Zero real owner accounts; no fake session.",
+          "next_action": "Verified OMNI owner/MFA sign-in and readback, scoped enrolled agents with live Guardian/isolated runner; public research receipts do not prove project health or worker execution.",
+          "release_status": "Not released; no publishing, paid calls or external project deployment.",
           "dependencies": [
             "05.08",
             "05.09",
@@ -1062,15 +1074,15 @@
           "evidence": "rasul-front-door",
           "all_seeing_eye": {
             "status": "Implemented awaiting test",
-            "scope": "Read-only owner infrastructure view embedded in existing /omni-razul, not a duplicate public dashboard. Fresh verified user/email + server role owner + signed aal2 required; caller RLS reads, private no-store, no admin/credentials/raw payloads/tasks/errors returned. Existing broader approved-reader feeds remain separate and unchanged.",
+            "scope": "Owner infrastructure and exact-confirmation controls embedded in /omni-razul, not a duplicate dashboard. Fresh verified user/email+owner+aal2; caller RLS/no-store, NULL-safe SQL controls and restrictive private-read boundary. Public-feed records remain separately readable to approved readers; no machine read grant assumed.",
             "changed_files": ["src/lib/razul-eye.ts", "src/lib/razul-eye.test.ts", "src/lib/razul-eye.functions.ts", "src/components/razul/AllSeeingEye.tsx", "src/routes/omni-razul.tsx"],
             "implemented": "Bounded recent ingestion runs, job pause/lease/retention metadata, sources, sourced findings and timestamps, Sentinel scopes/expiry/last-report, dispatch/Guardian recorded state, Passport declarations, subscription configuration, searchable newest-first metadata chronology. No jobs or monitoring started by inspection.",
             "test_command": "bunx vitest run src/lib/razul-eye.test.ts src/lib/rasul-chat.test.ts src/lib/omni-razul.test.ts src/lib/razul-sentinel.test.ts src/lib/razul-ask.test.ts src/lib/razul-passport.test.ts src/test/omni-assistant.test.ts src/test/omni-agents.test.ts src/test/app-routing.test.tsx",
             "test_result": "137 tests PASS (12 new owner/MFA/identity denial and metadata tests). Browser signed-out view and anonymous server-function denial PASS; default Razul preserved, mobile no horizontal overflow/page errors. Preview build OK.",
             "runtime_evidence": "Existing configured has_role definition read back; 0 auth accounts / 0 owner roles. Session mint refused for no users. Positive authenticated owner/MFA infrastructure retrieval NOT RUN; no invented identity or fixtures.",
-            "planned": "Per-source last-checked receipts (currently unknown), authorized continuous API/crawling adapters, resident watcher lifecycle, private history corrections/retention controls, trusted audit and Guardian-controlled execution. Existing feed/dispatch metadata is not proof these are live.",
+            "planned": "Receipt recording verified in a bounded public-feed run; owner saved controls/UI search implemented but positive owner acceptance blocked. Remaining: authorized continuous API/crawling, resident watcher lifecycle and scoped machine reads, private historical versions/corrections and trusted audit, Guardian-controlled runner execution. Metadata/declarations are not proof of these.",
             "missing_input": "Verified real OMNI owner activation and MFA session for positive retrieval; source-specific receipts and approved adapters for continuous monitoring; live Guardian and enrolled runner/watchers for execution.",
-            "release_status": "No publication/deployment, backend/schema/scheduler/provider or external-project change"
+            "release_status": "Owner-authorized migration 0029 and one existing preview feed check only; no app publication/deployment, scheduler/provider/external-project change or paid inference"
           },
           "notes": "One consolidated thread, session-only (no persistence; questions tool unavailable so shape/storage chosen per owner 'one thread' request and stated). Research/status use authenticated Ask Razul when signed in; signed-out gets honest blocked fallback. Dispatches always pending-approval; execution blocked until Guardian+runner. Browser verified signed-out flow."
         }

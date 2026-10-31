@@ -12,7 +12,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { Eye, Send, ShieldCheck, ArrowUpRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { useAccount } from "@/hooks/use-account";
+import { getRazulEye } from "@/lib/razul-eye.functions";
 import { askRazul } from "@/lib/razul-feeds.functions";
 import {
   buildDispatchRequest,
@@ -29,6 +30,8 @@ interface Citation {
   sourceName: string;
   evidenceClass: string;
   confidence: number;
+  publishedAt?: string | null;
+  collectedAt?: string;
 }
 
 interface ChatMessage {
@@ -42,25 +45,31 @@ interface ChatMessage {
 }
 
 const STATUS_STYLE: Record<HandoffNote["status"], string> = {
-  verified: "text-emerald-400",
-  simulated: "text-amber-400",
-  blocked: "text-red-400",
+  verified: "text-success",
+  simulated: "text-warning",
+  blocked: "text-destructive",
 };
 
 let counter = 0;
 const nextId = () => `m${++counter}`;
 
 export function RasulChat() {
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const { user, ready } = useAccount();
+  const signedIn = ready ? !!user : null;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const ask = useServerFn(askRazul);
+  const inspect = useServerFn(getRazulEye);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const generation = useRef(0);
 
-  useEffect(() => {
-    void supabase.auth.getUser().then(({ data }) => setSignedIn(!!data.user));
-  }, []);
+  useEffect(
+    () => () => {
+      generation.current += 1;
+    },
+    [],
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -72,6 +81,7 @@ export function RasulChat() {
     if (!text || busy) return;
     setInput("");
     setBusy(true);
+    const current = ++generation.current;
     const intent = classifyIntent(text);
     const handoffs = planHandoffs(intent, text);
     const ownerMsg: ChatMessage = { id: nextId(), role: "owner", text, label: "verified" };
@@ -97,12 +107,9 @@ export function RasulChat() {
     } else if (intent === "status") {
       if (signedIn) {
         try {
-          const answer = (await ask({
-            data: { question: "current project status and recent activity", agent: "omni" },
-          })) as { answerSummary: string; citations: Citation[] };
+          const snapshot = await inspect();
           reply.label = "verified";
-          reply.text = answer.answerSummary;
-          reply.citations = answer.citations;
+          reply.text = `Owner infrastructure snapshot at ${snapshot.readAt}: ${snapshot.projects.length} Passport declarations, ${snapshot.sentinels.length} Sentinel records, ${snapshot.queue.length} dispatch records. Most recent ingestion: ${snapshot.runs[0]?.status ?? "unknown"}, finished ${snapshot.runs[0]?.finished_at ?? "not recorded"}. These are recorded observations, not proof resident watchers or scraping workers are active. Guardian/executor dispatch remains blocked.`;
         } catch (err) {
           reply.label = "blocked";
           reply.text = `${rasulFallbackAnswer("status", true)} (${err instanceof Error ? err.message : "unknown error"})`;
@@ -119,7 +126,8 @@ export function RasulChat() {
             data: { question: text, agent: "omni" },
           })) as { answerSummary: string; citations: Citation[]; cached: boolean };
           reply.label = "verified";
-          reply.text = answer.answerSummary + (answer.cached ? " (served from the 6-hour answer cache)" : "");
+          reply.text =
+            answer.answerSummary + (answer.cached ? " (served from the 6-hour answer cache)" : "");
           reply.citations = answer.citations;
         } catch (err) {
           reply.label = "blocked";
@@ -131,8 +139,10 @@ export function RasulChat() {
       }
     }
 
-    setMessages((prev) => [...prev, ownerMsg, reply]);
-    setBusy(false);
+    if (generation.current === current) {
+      setMessages((prev) => [...prev, ownerMsg, reply]);
+      setBusy(false);
+    }
   }
 
   function approveDispatch(id: string) {
@@ -155,36 +165,46 @@ export function RasulChat() {
   }
 
   return (
-    <section aria-label="RA'SUL conversation" className="rounded-xl border border-border bg-card p-4">
+    <section
+      aria-label="RA'SUL conversation"
+      className="rounded-xl border border-border bg-card p-4"
+    >
       <header className="mb-3 flex flex-wrap items-center gap-2">
         <Eye className="h-5 w-5 text-primary" aria-hidden />
-        <h2 className="text-lg font-semibold text-foreground">Razul Central Intelligence (RA'SUL)</h2>
+        <h2 className="text-lg font-semibold text-foreground">Razul Central Intelligence</h2>
         <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
-          {signedIn === null ? "checking access…" : signedIn ? "signed in · research permission checked on request" : "sign in for live answers"}
+          {signedIn === null
+            ? "checking access…"
+            : signedIn
+              ? "signed in · research permission checked on request"
+              : "sign in for live answers"}
         </span>
       </header>
 
       <p className="mb-3 text-sm text-muted-foreground">
-        Razul Central Intelligence (RA'SUL) is OMNI Mothership's default speaking intelligence:
-        searchable, permissioned historical records across enrolled owned projects and lawful public research.
-        The Itanimulli game server is one participating project, not Razul's home or exclusive assignment.
+        RA'SUL is OMNI Mothership's default speaking intelligence: searchable, permissioned
+        historical records across enrolled owned projects and lawful public research. The Itanimulli
+        game server is one participating project, not Razul's home or exclusive assignment.
       </p>
       <p className="mb-3 text-xs leading-6 text-muted-foreground">
         Proposed: his specialized research/monitoring agents across permitted public topics and
         scoped resident watchers on owner-authorized sites/apps, with sourced reports, timestamps,
         provenance, audit logs, subscriptions and transparent handoffs. No unauthorized scanning,
         blanket surveillance or entire-internet monitoring. Website policies, permissions and rate
-        limits apply; recommendations never bypass Guardian or owner approval for high-impact actions.
+        limits apply; recommendations never bypass Guardian or owner approval for high-impact
+        actions.
       </p>
       <Button asChild variant="ghost" size="sm" className="mb-3">
-        <Link to="/omni-razul">History &amp; public-source observatory <ArrowUpRight size={14} /></Link>
+        <Link to="/omni-razul">
+          History &amp; public-source observatory <ArrowUpRight size={14} />
+        </Link>
       </Button>
 
       <div className="mb-3 max-h-96 space-y-3 overflow-y-auto pr-1" role="log" aria-live="polite">
         {messages.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Ask about public research, project status, or the specialist agents — or prepare a scoped dispatch.
-            One consolidated thread, this session only; nothing is stored.
+            Ask about public research, project status, or the specialist agents — or prepare a
+            scoped dispatch. One consolidated thread, this session only; nothing is stored.
           </p>
         )}
         {messages.map((m) => (
@@ -196,7 +216,9 @@ export function RasulChat() {
             >
               <p className="whitespace-pre-wrap">{m.text}</p>
               {m.role === "rasul" && (
-                <p className={`mt-1 text-xs font-medium uppercase tracking-wide ${STATUS_STYLE[m.label]}`}>
+                <p
+                  className={`mt-1 text-xs font-medium uppercase tracking-wide ${STATUS_STYLE[m.label]}`}
+                >
                   {m.label}
                 </p>
               )}
@@ -204,11 +226,18 @@ export function RasulChat() {
                 <ul className="mt-2 space-y-1 border-t border-border pt-2 text-xs">
                   {m.citations.map((c) => (
                     <li key={c.url}>
-                      <a href={c.url} target="_blank" rel="noreferrer" className="text-primary underline">
+                      <a
+                        href={c.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary underline"
+                      >
                         {c.title}
                       </a>{" "}
                       <span className="text-muted-foreground">
-                        — {c.sourceName}, {c.evidenceClass}, confidence {c.confidence}
+                        — {c.sourceName}, {c.evidenceClass}, confidence {c.confidence} · collected{" "}
+                        {c.collectedAt ?? "not recorded"} · published{" "}
+                        {c.publishedAt ?? "not recorded"}
                       </span>
                     </li>
                   ))}
@@ -232,18 +261,25 @@ export function RasulChat() {
                         if (m.dispatch) approveDispatch(m.dispatch.id);
                       }}
                     >
-                      <ShieldCheck className="mr-1 h-3 w-3" aria-hidden /> Approve request (execution still blocked)
+                      <ShieldCheck className="mr-1 h-3 w-3" aria-hidden /> Review local request
+                      (execution blocked)
                     </Button>
                   )}
                 </div>
               )}
             </div>
             {m.handoffs && m.handoffs.length > 0 && (
-              <ul className="mt-1 space-y-0.5 pl-3 text-xs text-muted-foreground" aria-label="agent handoffs">
+              <ul
+                className="mt-1 space-y-0.5 pl-3 text-xs text-muted-foreground"
+                aria-label="agent handoffs"
+              >
                 {m.handoffs.map((h, i) => (
                   <li key={i}>
-                    <span className="font-medium text-foreground">{h.agent.toUpperCase()}</span> — {h.action}{" "}
-                    <span className={STATUS_STYLE[h.status]}>({h.status}: {h.reason})</span>
+                    <span className="font-medium text-foreground">{h.agent.toUpperCase()}</span> —{" "}
+                    {h.action}{" "}
+                    <span className={STATUS_STYLE[h.status]}>
+                      ({h.status}: {h.reason})
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -260,6 +296,7 @@ export function RasulChat() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask RA'SUL, or “dispatch … to Jackboy”"
           aria-label="Message RA'SUL"
+          maxLength={500}
           className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
         <Button type="submit" disabled={busy || !input.trim()} size="sm">

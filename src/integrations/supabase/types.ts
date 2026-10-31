@@ -751,6 +751,33 @@ export type Database = {
           },
         ]
       }
+      razul_control_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          id: string
+          occurred_at: string
+          record_id: string
+          record_type: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          id?: string
+          occurred_at?: string
+          record_id: string
+          record_type: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          id?: string
+          occurred_at?: string
+          record_id?: string
+          record_type?: string
+        }
+        Relationships: []
+      }
       razul_dispatch_queue: {
         Row: {
           created_at: string
@@ -1117,6 +1144,54 @@ export type Database = {
         }
         Relationships: []
       }
+      razul_source_checks: {
+        Row: {
+          checked_at: string
+          error_code: string | null
+          fetched: number
+          id: string
+          inserted: number
+          run_id: string
+          source_id: string
+          status: string
+        }
+        Insert: {
+          checked_at?: string
+          error_code?: string | null
+          fetched?: number
+          id?: string
+          inserted?: number
+          run_id: string
+          source_id: string
+          status: string
+        }
+        Update: {
+          checked_at?: string
+          error_code?: string | null
+          fetched?: number
+          id?: string
+          inserted?: number
+          run_id?: string
+          source_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razul_source_checks_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "razul_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "razul_source_checks_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "razul_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       razul_sources: {
         Row: {
           active: boolean
@@ -1243,6 +1318,7 @@ export type Database = {
         Args: { _token_hash: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      assert_razul_owner: { Args: never; Returns: undefined }
       caller_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1333,6 +1409,7 @@ export type Database = {
         Returns: boolean
       }
       is_knowledge_reader: { Args: never; Returns: boolean }
+      is_razul_owner: { Args: never; Returns: boolean }
       list_invitations: {
         Args: never
         Returns: {
@@ -1448,6 +1525,15 @@ export type Database = {
       razul_sentinel_verify: {
         Args: { _id: string; _kind: string; _token_hash: string }
         Returns: boolean
+      }
+      razul_set_subscription: {
+        Args: {
+          _agent: string
+          _categories: string[]
+          _enabled: boolean
+          _floor: number
+        }
+        Returns: undefined
       }
       razul_upsert_passport: {
         Args: {

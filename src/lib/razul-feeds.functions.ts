@@ -7,6 +7,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { setResponseHeader } from "@tanstack/react-start/server";
 
 const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian", "hercules"] as const;
 export type RazulAgent = (typeof AGENTS)[number];
@@ -17,17 +18,21 @@ type Rpc = (
 ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
 async function requireApprovedReader(supabase: { rpc: unknown }) {
+  setResponseHeader("Cache-Control", "private, no-store");
   const rpc = (supabase.rpc as unknown as Rpc).bind(supabase);
-  const { data, error } = await rpc("is_knowledge_reader", {});
+  const { data, error } = await rpc("is_razul_owner", {});
   if (error) throw new Error("Access could not be verified.");
   if (data !== true)
-    throw new Error("Razul intelligence feeds require an approved owner or member account.");
+    throw new Error("Razul workspace requires the verified owner with strong MFA.");
 }
 
 export const getRazulAgentFeed = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ agent: z.enum(AGENTS), limit: z.number().int().min(1).max(50).default(20) }).strict().parse(d),
+    z
+      .object({ agent: z.enum(AGENTS), limit: z.number().int().min(1).max(50).default(20) })
+      .strict()
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await requireApprovedReader(context.supabase);
@@ -38,9 +43,7 @@ export const getRazulAgentFeed = createServerFn({ method: "GET" })
       .maybeSingle();
     if (feed.error) throw new Error("Agent feed configuration could not be read.");
     if (!feed.data) return { agent: data.agent, configured: false as const, findings: [] };
-    const categories = feed.data.categories.length
-      ? feed.data.categories
-      : ["__none__"]; // empty config means the agent follows nothing
+    const categories = feed.data.categories.length ? feed.data.categories : ["__none__"]; // empty config means the agent follows nothing
     const findings = await context.supabase
       .from("razul_findings")
       .select(
@@ -107,9 +110,18 @@ export const askRazul = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireApprovedReader(context.supabase);
     const { answerRazulQuery } = await import("@/lib/razul-ask.server");
+    const feed = await context.supabase
+      .from("razul_agent_feeds")
+      .select("categories")
+      .eq("agent", data.agent)
+      .maybeSingle();
+    if (feed.error || !feed.data) throw new Error("Existing agent subscription required.");
+    const categories = data.scopeCategories
+      ? feed.data.categories.filter((category) => data.scopeCategories?.includes(category))
+      : feed.data.categories;
     return answerRazulQuery(
       { admin: context.supabase, now: () => new Date() },
-      { question: data.question, agent: data.agent, scopeCategories: data.scopeCategories },
+      { question: data.question, agent: data.agent, scopeCategories: categories },
     );
   });
 

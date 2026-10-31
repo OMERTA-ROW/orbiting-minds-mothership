@@ -17,7 +17,7 @@ function RazulPage() {
 export const Route = createFileRoute("/omni-razul")({
   head: () =>
     seo(
-      "Razul Central Intelligence (RA'SUL) · All-Seeing Eye",
+      "Razul Central Intelligence · All-Seeing Eye",
       "Razul Central Intelligence is OMNI/Evolution's cross-project speaking intelligence and private All-Seeing Eye observatory: owner/MFA-gated infrastructure, lawful public research and historical records. Game servers are participating projects, not exclusive assignments; watchers and scoped dispatch remain proposed and Guardian-gated.",
     ),
   component: RazulPage,

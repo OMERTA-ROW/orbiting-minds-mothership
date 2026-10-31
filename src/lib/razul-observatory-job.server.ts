@@ -6,12 +6,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  KNOWLEDGE_LIMITS,
-  dedupeEntries,
-  parseFeed,
-  type FeedEntry,
-} from "./knowledge";
+import { KNOWLEDGE_LIMITS, dedupeEntries, parseFeed, type FeedEntry } from "./knowledge";
 import { readBoundedFeed } from "./knowledge-runtime.server";
 import {
   assignTopic,
@@ -55,7 +50,7 @@ async function readFeed(deps: RazulJobDeps, source: SourceRow): Promise<FeedEntr
     signal: deps.signal
       ? AbortSignal.any([deps.signal, AbortSignal.timeout(7_000)])
       : AbortSignal.timeout(10_000),
-    redirect: "follow",
+    redirect: "error",
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const text = await readBoundedFeed(res, KNOWLEDGE_LIMITS.maxFeedBytes);
@@ -143,6 +138,7 @@ export async function runRazulObservatoryJob(
       .from("razul_runs")
       .select("id", { count: "exact", head: true })
       .abortSignal(signal);
+    if (runCount.error) throw new Error("Run rotation could not be verified.");
     const sources = filterSources(
       registry.data as SourceRow[],
       {
@@ -167,6 +163,7 @@ export async function runRazulObservatoryJob(
     for (const read of reads) {
       const { source } = read;
       try {
+        const insertedBefore = inserted;
         if (!read.entries) throw new Error(read.error);
         const entries = read.entries;
         fetched += entries.length;
@@ -183,9 +180,10 @@ export async function runRazulObservatoryJob(
         // source strengthens the existing finding instead of duplicating it.
         for (const k of known.data) {
           if (k.source_id !== source.id) {
-            await admin
+            const corroboration = await admin
               .rpc("razul_increment_corroboration", { _url: k.url })
               .abortSignal(AbortSignal.timeout(2_000));
+            if (corroboration.error) throw new Error("Corroboration record failed");
           }
         }
         const { fresh, duplicates: d } = dedupeEntries(
@@ -196,11 +194,7 @@ export async function runRazulObservatoryJob(
         if (fresh.length) {
           const rows = fresh.map((e) => {
             const relevance = scoreRelevance(e, source.category);
-            const routedTo = routeFinding(
-              source.category,
-              relevance,
-              state.data.alert_threshold,
-            );
+            const routedTo = routeFinding(source.category, relevance, state.data.alert_threshold);
             if (routedTo.length) alerts += 1;
             const evidence = classifyEvidence(e, source);
             return {
@@ -229,10 +223,43 @@ export async function runRazulObservatoryJob(
           inserted += ins.data.length;
           duplicates += fresh.length - ins.data.length;
         }
+        const receipt = await admin
+          .from("razul_source_checks")
+          .insert({
+            source_id: source.id,
+            run_id: currentRunId,
+            checked_at: now().toISOString(),
+            status: "completed",
+            fetched: entries.length,
+            inserted: inserted - insertedBefore,
+          })
+          .abortSignal(AbortSignal.timeout(2_000));
+        if (receipt.error) throw new Error("Source check receipt failed");
       } catch (e) {
+        const code = !read.entries
+          ? "fetch-failed"
+          : e instanceof Error && e.message === "Source check receipt failed"
+            ? "receipt-failed"
+            : "processing-failed";
+        const failedReceipt = await admin
+          .from("razul_source_checks")
+          .upsert(
+            {
+              source_id: source.id,
+              run_id: currentRunId,
+              checked_at: now().toISOString(),
+              status: "failed",
+              fetched: read.entries?.length ?? 0,
+              inserted: 0,
+              error_code: code,
+            },
+            { onConflict: "source_id,run_id" },
+          )
+          .abortSignal(AbortSignal.timeout(2_000));
+        if (failedReceipt.error) throw new Error("Source failure receipt could not be persisted.");
         errors.push({
           source: source.id,
-          error: e instanceof Error ? e.message.slice(0, 200) : "Unknown error",
+          error: code,
         });
       }
     }
@@ -250,13 +277,15 @@ export async function runRazulObservatoryJob(
         (f) => Array.isArray(f.routed_to) && f.routed_to.length > 0,
       ),
     };
-    if (!routed.error && routed.data.length) {
+    if (routed.error) throw new Error("Alert candidates could not be verified");
+    if (routed.data.length) {
       const feeds = await admin
         .from("razul_agent_feeds")
         .select("agent, min_relevance, alerts_enabled")
         .eq("alerts_enabled", true)
         .abortSignal(signal);
-      if (!feeds.error && feeds.data.length) {
+      if (feeds.error) throw new Error("Subscriptions could not be verified");
+      if (feeds.data.length) {
         const events = planAlertEvents(
           routed.data.map((f) => ({
             id: f.id,
@@ -265,11 +294,13 @@ export async function runRazulObservatoryJob(
           })),
           feeds.data,
         );
-        if (events.length)
-          await admin
+        if (events.length) {
+          const eventWrite = await admin
             .from("razul_alert_events")
             .upsert(events, { onConflict: "finding_id,agent", ignoreDuplicates: true })
             .abortSignal(signal);
+          if (eventWrite.error) throw new Error("Alert outcomes could not be stored");
+        }
       }
     }
 
@@ -277,11 +308,12 @@ export async function runRazulObservatoryJob(
     const cutoff = new Date(
       now().getTime() - state.data.retention_days * 24 * 3600_000,
     ).toISOString();
-    await admin
+    const retention = await admin
       .from("razul_findings")
       .delete()
       .lt("collected_at", cutoff)
       .abortSignal(signal);
+    if (retention.error) throw new Error("Retention outcome could not be verified");
 
     const allFailed = sources.length > 0 && errors.length === sources.length;
     const status = allFailed ? "failed" : errors.length ? "partial" : "completed";
@@ -307,7 +339,7 @@ export async function runRazulObservatoryJob(
     failure = error;
     if (runId) {
       try {
-        await admin
+        const failedOutcome = await admin
           .from("razul_runs")
           .update({
             status: "failed",
@@ -320,6 +352,8 @@ export async function runRazulObservatoryJob(
           })
           .eq("id", runId)
           .abortSignal(AbortSignal.timeout(2_000));
+        if (failedOutcome.error)
+          console.error("Observatory failure outcome could not be persisted.");
       } catch {
         console.error("Observatory failure outcome could not be persisted.");
       }

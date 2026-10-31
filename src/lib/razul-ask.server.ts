@@ -5,11 +5,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  confidenceFor,
-  questionHashInput,
-  rankForQuestion,
-} from "./razul-observatory";
+import { confidenceFor, questionHashInput, rankForQuestion } from "./razul-observatory";
 
 type Admin = SupabaseClient<Database>;
 
@@ -50,7 +46,9 @@ export async function answerRazulQuery(
 ): Promise<RazulAnswer> {
   const { admin, now } = deps;
   const hash = await sha256(questionHashInput(input.question));
-  const scopeKey = (input.scopeCategories ?? []).join(",") || "all";
+  const scopeKey = input.scopeCategories
+    ? [...input.scopeCategories].sort().join(",") || "none"
+    : "all";
 
   // Cache: fresh identical question + scope returns the stored answer.
   const cached = await admin
@@ -60,7 +58,9 @@ export async function answerRazulQuery(
     .eq("scope_key", scopeKey)
     .maybeSingle();
   if (
+    !cached.error &&
     cached.data &&
+    now().getTime() >= new Date(cached.data.created_at).getTime() &&
     now().getTime() - new Date(cached.data.created_at).getTime() < CACHE_TTL_MS
   ) {
     await admin.from("razul_query_log").insert({
@@ -80,7 +80,11 @@ export async function answerRazulQuery(
     )
     .order("collected_at", { ascending: false })
     .limit(200);
-  if (input.scopeCategories?.length) query = query.in("category", [...input.scopeCategories]);
+  if (input.scopeCategories)
+    query = query.in(
+      "category",
+      input.scopeCategories.length ? [...input.scopeCategories] : ["__no_authorized_categories__"],
+    );
   const findings = await query;
   if (findings.error) throw new Error("The observatory index could not be searched.");
 
@@ -105,21 +109,19 @@ export async function answerRazulQuery(
     cached: false,
     citations,
     answerSummary: citations.length
-      ? `${citations.length} cited finding${citations.length === 1 ? "" : "s"} from the observatory index, newest first.`
+      ? `${citations.length} cited finding${citations.length === 1 ? "" : "s"} from the bounded observatory index, ranked by text relevance. Confidence and evidence classes are heuristic, not verification.`
       : "No matching findings in the observatory index yet; the next scheduled run may cover this.",
   };
 
-  await admin
-    .from("razul_query_cache")
-    .upsert(
-      {
-        question_hash: hash,
-        scope_key: scopeKey,
-        answer: JSON.parse(JSON.stringify(answer)),
-        created_at: now().toISOString(),
-      },
-      { onConflict: "question_hash,scope_key" },
-    );
+  await admin.from("razul_query_cache").upsert(
+    {
+      question_hash: hash,
+      scope_key: scopeKey,
+      answer: JSON.parse(JSON.stringify(answer)),
+      created_at: now().toISOString(),
+    },
+    { onConflict: "question_hash,scope_key" },
+  );
   await admin.from("razul_query_log").insert({
     question_hash: hash,
     agent: input.agent,

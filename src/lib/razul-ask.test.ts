@@ -75,6 +75,30 @@ const finding = {
 };
 
 describe("answerRazulQuery integration", () => {
+  it("an empty authorized scope never searches all projects or categories", async () => {
+    const { admin } = fakeAdmin({
+      razul_findings: [finding],
+      razul_query_cache: [],
+      razul_query_log: [],
+    });
+    const answer = await answerRazulQuery(
+      { admin, now: () => new Date() },
+      { question: "ransomware", agent: "omni", scopeCategories: [] },
+    );
+    expect(answer.citations).toEqual([]);
+  });
+  it("high relevance alone cannot fabricate a match for an unrelated question", async () => {
+    const { admin } = fakeAdmin({
+      razul_findings: [finding],
+      razul_query_cache: [],
+      razul_query_log: [],
+    });
+    const answer = await answerRazulQuery(
+      { admin, now: () => new Date() },
+      { question: "archaeology pottery", agent: "omni" },
+    );
+    expect(answer.citations).toEqual([]);
+  });
   it("answers one agent query with cited sources, confidence and evidence class", async () => {
     const { admin, inserted, upserted, tables } = fakeAdmin({
       razul_findings: [finding],
@@ -87,18 +111,20 @@ describe("answerRazulQuery integration", () => {
     );
     expect(answer.cached).toBe(false);
     expect(answer.citations).toHaveLength(1);
-    const cite = answer.citations[0]!;
-    expect(cite.url).toBe("https://www.cisa.gov/alert1");
-    expect(cite.evidenceClass).toBe("established");
-    expect(cite.confidence).toBeGreaterThan(60);
-    expect(cite.publishedAt).toBe("2026-10-30T00:00:00Z");
+    const cite = answer.citations[0];
+    expect(cite?.url).toBe("https://www.cisa.gov/alert1");
+    expect(cite?.evidenceClass).toBe("established");
+    expect(cite?.confidence).toBeGreaterThan(60);
+    expect(cite?.publishedAt).toBe("2026-10-30T00:00:00Z");
     // Cache written, query logged with hash only.
     expect(upserted.some((u) => u.table === "razul_query_cache")).toBe(true);
-    const log = inserted.find((i) => i.table === "razul_query_log")!.rows[0]!;
-    expect(log["agent"]).toBe("guardian");
-    expect(log["result_count"]).toBe(1);
-    expect(String(log["question_hash"])).toMatch(/^[0-9a-f]{64}$/);
-    expect(JSON.stringify(tables["razul_query_log"])).not.toContain("ransomware vulnerability advisory");
+    const log = inserted.find((i) => i.table === "razul_query_log")?.rows[0];
+    expect(log?.["agent"]).toBe("guardian");
+    expect(log?.["result_count"]).toBe(1);
+    expect(String(log?.["question_hash"])).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.stringify(tables["razul_query_log"])).not.toContain(
+      "ransomware vulnerability advisory",
+    );
   });
 
   it("serves a repeated question from cache and logs it as cached", async () => {
@@ -114,9 +140,9 @@ describe("answerRazulQuery integration", () => {
     const second = await answerRazulQuery(deps, input);
     expect(second.cached).toBe(true);
     expect(second.citations).toEqual(first.citations);
-    const logs = tables["razul_query_log"]!;
+    const logs = tables["razul_query_log"] ?? [];
     expect(logs).toHaveLength(2);
-    expect(logs[1]!["cached"]).toBe(true);
+    expect(logs[1]?.["cached"]).toBe(true);
   });
 
   it("narrows retrieval to the requested project scope categories", async () => {

@@ -285,7 +285,7 @@ export function rankForQuestion<T extends {
       const hits = hay.filter((t) => tokens.has(t)).length;
       return { f, score: hits * 10 + Math.min(f.relevance, 100) / 10 };
     })
-    .filter((r) => r.score > 1)
+    .filter((r) => r.score > 1 && tokenize(`${r.f.title} ${r.f.summary} ${r.f.topic} ${r.f.entities.join(" ")}`).some((token) => tokens.has(token)))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((r) => r.f);
@@ -297,9 +297,7 @@ export function confidenceFor(input: {
   relevance: number;
   corroborations: number;
 }): number {
-  const base = { established: 60, preliminary: 40, hypothesis: 25, speculation: 10, belief: 5 }[
-    input.evidenceClass
-  ];
+  const base = ({ established: 60, preliminary: 40, hypothesis: 25, speculation: 10, belief: 5 } as Record<string, number>)[input.evidenceClass] ?? 0;
   const corroboration = Math.min(input.corroborations - 1, 3) * 8;
   return Math.min(100, base + Math.round(input.relevance / 5) + corroboration);
 }

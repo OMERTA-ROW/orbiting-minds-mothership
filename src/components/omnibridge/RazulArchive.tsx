@@ -209,7 +209,7 @@ export function RazulArchive() {
           <DemoBadge label="LOCAL REFERENCE · NO SERVER PERSISTENCE" />
           <DemoBadge label="NO PRIVATE COMMS · NO SECRETS" />
         </div>
-        <h1 className="mt-5 max-w-4xl text-5xl leading-tight">Razul Central Intelligence (RA'SUL)</h1>
+        <h1 className="mt-5 max-w-4xl text-5xl leading-tight">Razul Central Intelligence</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
           The Eternal Archivist — OMNI Mothership's central cross-project speaking intelligence,
           All-Seeing Eye observatory, authorized public-source research and historical records layer

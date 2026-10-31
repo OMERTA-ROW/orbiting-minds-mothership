@@ -11,7 +11,7 @@ export const Route = createFileRoute("/omni")({
   }),
   head: () =>
     seo(
-      "OMNI · Razul Central Intelligence (RA'SUL)",
+      "OMNI · Razul Central Intelligence",
       "Razul Central Intelligence (RA'SUL) is OMNI Mothership's default speaking agent for permissioned historical records and lawful public research across enrolled owned projects. The game server is one project, not his home; scoped watcher coordination and dispatch retain Guardian and owner approval gates.",
     ),
   component: Page,
