@@ -12,9 +12,12 @@ const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian"] as const;
 export type RazulAgent = (typeof AGENTS)[number];
 
 async function requireApprovedReader(supabase: {
-  rpc: (fn: string) => Promise<{ data: unknown; error: { message: string } | null }>;
+  rpc: (
+    fn: string,
+    args?: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
 }) {
-  const { data, error } = await supabase.rpc("is_knowledge_reader");
+  const { data, error } = await supabase.rpc("is_knowledge_reader", {});
   if (error) throw new Error("Access could not be verified.");
   if (data !== true)
     throw new Error("Razul intelligence feeds require an approved owner or member account.");
