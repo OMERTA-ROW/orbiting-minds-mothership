@@ -14,6 +14,9 @@ import {
 } from "./knowledge";
 import { readBoundedFeed } from "./knowledge-runtime.server";
 import {
+  assignTopic,
+  classifyEvidence,
+  extractEntities,
   filterSources,
   routeFinding,
   scoreRelevance,

@@ -148,6 +148,13 @@
       "when": 1793453103858,
       "tag": "0020_razul_observatory",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793453404879,
+      "tag": "0021_razul_observatory_universal",
+      "breakpoints": true
     }
   ]
 }
