@@ -82,11 +82,11 @@ export function routeFinding(
  * Owner controls applied to the registry: active sources, not blocked,
  * whose category is inside the configured coverage. Bounded to maxSources.
  */
-export function filterSources(
-  sources: readonly ObservatorySource[],
+export function filterSources<T extends ObservatorySource>(
+  sources: readonly T[],
   controls: ObservatoryControls,
   maxSources = 5,
-): ObservatorySource[] {
+): T[] {
   const blocked = new Set(controls.blockedSources);
   const coverage = new Set(controls.coverage);
   return sources
