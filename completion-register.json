@@ -926,8 +926,8 @@
         {
           "id": "05.08",
           "requirement": "RAZUL 'The Eternal Archivist': central memory, history and public-internet intelligence agent for the OMNI ecosystem, reusable across enrolled owner-controlled projects. Append-only timestamped auditable event history (project events, agent reports, test results, code-change metadata, approvals, incidents, outcomes) with provenance, search, retention, redaction and per-project/per-consumer access segregation; project/agent/dependency knowledge graph and retrieval API for Jackboy, OMNI, Guardian, Sabrina, JAX; allowlisted public-source intelligence (RSS/API/public pages respecting robots, terms, rate limits, attribution) with dedupe, corroboration, relevance ranking and routed findings. No private communications, no secrets logging, no protected-site scraping, no entire-internet claims; scoped owner consent, least privilege and opt-in per project.",
-          "status": "Demo only",
-          "owner": "Lovable implementation; owner supplies backend activation for server persistence and scheduled discovery",
+          "status": "Partially implemented",
+          "owner": "Lovable implementation; scheduled public-source observatory is live on the backend; private-event persistence and authenticated retrieval API still need owner account activation",
           "dependencies": [
             "02",
             "04"
@@ -938,6 +938,12 @@
             "src/components/omnibridge/RazulArchive.tsx",
             "src/routes/omni-razul.tsx",
             "src/components/SiteNav.tsx",
+            "src/lib/razul-observatory.ts",
+            "src/lib/razul-observatory.test.ts",
+            "src/lib/razul-observatory-job.server.ts",
+            "src/routes/api/public/jobs/razul-observe.ts",
+            "src/components/razul/LiveObservatory.tsx",
+            ".lovable/pending/razul-observatory.sql",
             "roadmap.md",
             "completion-register.json"
           ],
