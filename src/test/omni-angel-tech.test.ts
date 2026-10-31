@@ -18,7 +18,8 @@ const validProspect: ProspectInput = {
   organization: "Public Research Group",
   focus: "Studies accessible AI collaboration patterns for creators.",
   source: "Owner-entered public website note",
-  perspective: "Interested in consent-first agent partnerships and transparent research boundaries.",
+  perspective:
+    "Interested in consent-first agent partnerships and transparent research boundaries.",
   compatibility: ["api-documented", "mcp-documented"],
   permissions: ["public-research", "draft-campaign", "prepare-invitation"],
   ownerAuthorization: true,
@@ -45,12 +46,20 @@ describe("Angel Tech / Sabrina local workspace", () => {
 
   it("requires human approval before invitation preparation", () => {
     const prospect = createProspect({ ...validProspect, humanApproval: "not-reviewed" }, "p1", now);
-    expect(invitationBlockers(prospect)).toContain("Human approval has not approved this prospect.");
+    expect(invitationBlockers(prospect)).toContain(
+      "Human approval has not approved this prospect.",
+    );
   });
 
   it("requires the prepare-invitation permission", () => {
-    const prospect = createProspect({ ...validProspect, permissions: ["public-research"] }, "p1", now);
-    expect(invitationBlockers(prospect)).toContain("The prepare-invitation permission is not granted.");
+    const prospect = createProspect(
+      { ...validProspect, permissions: ["public-research"] },
+      "p1",
+      now,
+    );
+    expect(invitationBlockers(prospect)).toContain(
+      "The prepare-invitation permission is not granted.",
+    );
   });
 
   it("prepares a local draft but never sends it", () => {
@@ -64,7 +73,9 @@ describe("Angel Tech / Sabrina local workspace", () => {
   it("does not prepare duplicate drafts", () => {
     const first = prepareInvitation(createProspect(validProspect, "p1", now), now).prospect;
     const second = prepareInvitation(first, now);
-    expect(second.blockers).toContain("An invitation draft already exists; delivery remains blocked.");
+    expect(second.blockers).toContain(
+      "An invitation draft already exists; delivery remains blocked.",
+    );
   });
 
   it("revocation clears permissions and blocks future drafts", () => {
@@ -107,7 +118,12 @@ describe("Angel Tech / Sabrina local workspace", () => {
       now,
     );
     const draft = draftCampaign(insight, "d1", now);
-    expect(draft.channels).toEqual(["owner-review", "omni-checkpoint", "jackboy-context", "jax-approval"]);
+    expect(draft.channels).toEqual([
+      "owner-review",
+      "omni-checkpoint",
+      "jackboy-context",
+      "jax-approval",
+    ]);
     expect(draft.body).toContain("No campaign has been published");
   });
 

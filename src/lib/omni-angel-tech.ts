@@ -74,16 +74,24 @@ export function createProspect(input: unknown, id: string, now: string): Prospec
 /** Exact gates before Sabrina may prepare a local invitation draft. */
 export function invitationBlockers(prospect: Prospect): string[] {
   const blockers: string[] = [];
-  if (prospect.status === "revoked") blockers.push("Revoked records cannot be contacted or reused.");
-  if (prospect.status === "invitation-drafted") blockers.push("An invitation draft already exists; delivery remains blocked.");
+  if (prospect.status === "revoked")
+    blockers.push("Revoked records cannot be contacted or reused.");
+  if (prospect.status === "invitation-drafted")
+    blockers.push("An invitation draft already exists; delivery remains blocked.");
   if (!prospect.ownerAuthorization) blockers.push("Explicit owner authorization is missing.");
-  if (prospect.humanApproval !== "approved") blockers.push("Human approval has not approved this prospect.");
-  if (!prospect.permissions.includes("prepare-invitation")) blockers.push("The prepare-invitation permission is not granted.");
-  if (prospect.consent !== "not-requested") blockers.push("Consent state does not allow a new draft.");
+  if (prospect.humanApproval !== "approved")
+    blockers.push("Human approval has not approved this prospect.");
+  if (!prospect.permissions.includes("prepare-invitation"))
+    blockers.push("The prepare-invitation permission is not granted.");
+  if (prospect.consent !== "not-requested")
+    blockers.push("Consent state does not allow a new draft.");
   return blockers;
 }
 
-export function prepareInvitation(prospect: Prospect, now: string): { prospect: Prospect; blockers: string[] } {
+export function prepareInvitation(
+  prospect: Prospect,
+  now: string,
+): { prospect: Prospect; blockers: string[] } {
   const blockers = invitationBlockers(prospect);
   if (blockers.length) {
     return {
@@ -92,7 +100,10 @@ export function prepareInvitation(prospect: Prospect, now: string): { prospect: 
         ...prospect,
         status: prospect.status === "revoked" ? "revoked" : "blocked",
         updatedAt: now,
-        history: [...prospect.history, `${now} invitation preparation blocked: ${blockers.join(" ")}`],
+        history: [
+          ...prospect.history,
+          `${now} invitation preparation blocked: ${blockers.join(" ")}`,
+        ],
       },
     };
   }
@@ -109,7 +120,10 @@ export function prepareInvitation(prospect: Prospect, now: string): { prospect: 
       status: "invitation-drafted",
       updatedAt: now,
       invitationDraft,
-      history: [...prospect.history, `${now} local invitation draft prepared; delivery still blocked`],
+      history: [
+        ...prospect.history,
+        `${now} local invitation draft prepared; delivery still blocked`,
+      ],
     },
   };
 }
@@ -178,13 +192,30 @@ export function draftCampaign(insight: SabrinaInsight, id: string, now: string):
 }
 
 export const coordinationLanes = [
-  { name: "Jackboy", role: "Invention context", status: "Concept handoff", boundary: "No automatic message or task transfer." },
-  { name: "OMNI", role: "Coordinator checkpoint", status: "Concept handoff", boundary: "No model request, tool execution or autonomous action." },
-  { name: "JAX", role: "Final human approval", status: "Required", boundary: "No outreach, spend, publishing or credential use without explicit approval." },
+  {
+    name: "Jackboy",
+    role: "Invention context",
+    status: "Concept handoff",
+    boundary: "No automatic message or task transfer.",
+  },
+  {
+    name: "OMNI",
+    role: "Coordinator checkpoint",
+    status: "Concept handoff",
+    boundary: "No model request, tool execution or autonomous action.",
+  },
+  {
+    name: "JAX",
+    role: "Final human approval",
+    status: "Required",
+    boundary: "No outreach, spend, publishing or credential use without explicit approval.",
+  },
 ] as const;
 
 export function readinessSummary(prospects: Prospect[]) {
-  const approved = prospects.filter((p) => p.humanApproval === "approved" && p.ownerAuthorization).length;
+  const approved = prospects.filter(
+    (p) => p.humanApproval === "approved" && p.ownerAuthorization,
+  ).length;
   const drafted = prospects.filter((p) => p.status === "invitation-drafted").length;
   return {
     total: prospects.length,
@@ -206,7 +237,11 @@ const storeSchema = z.object({
   prospects: z.array(z.any()),
   drafts: z.array(z.any()),
 });
-export type AngelTechStore = { insights: SabrinaInsight[]; prospects: Prospect[]; drafts: CampaignDraft[] };
+export type AngelTechStore = {
+  insights: SabrinaInsight[];
+  prospects: Prospect[];
+  drafts: CampaignDraft[];
+};
 
 export function loadAngelTechStore(raw: string | null): AngelTechStore {
   if (!raw) return { insights: [], prospects: [], drafts: [] };
