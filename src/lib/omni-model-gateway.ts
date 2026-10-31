@@ -116,13 +116,19 @@ export function issuePassport(input: unknown, id: string, now: string): AgentPas
     issuedAt: now,
     health: "unknown",
     revoked: false,
-    history: [`${now} · passport issued for project ${parsed.projectId}; health unknown until a real probe`],
+    history: [
+      `${now} · passport issued for project ${parsed.projectId}; health unknown until a real probe`,
+    ],
   };
 }
 
 export function revokePassport(p: AgentPassport, now: string): AgentPassport {
   if (p.revoked) return p;
-  return { ...p, revoked: true, history: [...p.history, `${now} · passport revoked; all permissions withdrawn`] };
+  return {
+    ...p,
+    revoked: true,
+    history: [...p.history, `${now} · passport revoked; all permissions withdrawn`],
+  };
 }
 
 // ---- Routing and the Jackboy dispatch loop -----------------------------------
@@ -155,7 +161,11 @@ export function routeTask(
   if (!adapter)
     return { ...base, kind: "blocked", reason: "Passport references an unknown adapter." };
   if (adapter.status === "credential-missing")
-    return { ...base, kind: "blocked", reason: `Adapter ${adapter.name} is missing its credential.` };
+    return {
+      ...base,
+      kind: "blocked",
+      reason: `Adapter ${adapter.name} is missing its credential.`,
+    };
   return {
     ...base,
     kind: "planned",

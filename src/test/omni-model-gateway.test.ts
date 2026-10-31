@@ -21,7 +21,13 @@ const pid = "11111111-1111-4111-8111-111111111111";
 
 function adapter(): ProviderAdapter {
   return declareAdapter(
-    { name: "Owner Cloud LLM", kind: "cloud-api", endpoint: "https://api.example.com", models: ["model-a"], credentialName: "OWNER_LLM_KEY" },
+    {
+      name: "Owner Cloud LLM",
+      kind: "cloud-api",
+      endpoint: "https://api.example.com",
+      models: ["model-a"],
+      credentialName: "OWNER_LLM_KEY",
+    },
     adId,
     now,
   );
@@ -46,7 +52,12 @@ function passport(): AgentPassport {
 describe("provider adapter registry", () => {
   it("marks cloud APIs without a credential as credential-missing, never connected", () => {
     const a = declareAdapter(
-      { name: "Keyless API", kind: "cloud-api", endpoint: "https://api.example.com", models: ["m1"] },
+      {
+        name: "Keyless API",
+        kind: "cloud-api",
+        endpoint: "https://api.example.com",
+        models: ["m1"],
+      },
       adId,
       now,
     );
@@ -69,7 +80,15 @@ describe("agent passports", () => {
     expect(p.revoked).toBe(false);
     expect(() =>
       issuePassport(
-        { agentName: "X", specialty: "s", adapterId: adId, projectId: pid, permissions: ["report-gaps"], endpoint: "e", ownerConfirmed: false },
+        {
+          agentName: "X",
+          specialty: "s",
+          adapterId: adId,
+          projectId: pid,
+          permissions: ["report-gaps"],
+          endpoint: "e",
+          ownerConfirmed: false,
+        },
         ppId,
         now,
       ),
@@ -82,7 +101,12 @@ describe("agent passports", () => {
     const r = routeTask(p, adapter(), "inspect-own-project", adId, now);
     expect(r.kind).toBe("blocked");
     expect(() =>
-      recordDispatch({ passportId: ppId, stage: "inspect", summary: "Trying to inspect after revoke." }, p, adId, now),
+      recordDispatch(
+        { passportId: ppId, stage: "inspect", summary: "Trying to inspect after revoke." },
+        p,
+        adId,
+        now,
+      ),
     ).toThrow(/revoked/);
   });
 });
@@ -113,27 +137,52 @@ describe("Jackboy dispatch loop", () => {
   it("records inspect, gap-report, dispatch and outcome stages as simulated", () => {
     const p = passport();
     for (const stage of ["inspect", "gap-report", "dispatch", "outcome"] as const) {
-      const rec = recordDispatch({ passportId: ppId, stage, summary: `Stage ${stage} recorded for review.` }, p, adId, now);
+      const rec = recordDispatch(
+        { passportId: ppId, stage, summary: `Stage ${stage} recorded for review.` },
+        p,
+        adId,
+        now,
+      );
       expect(rec.simulated).toBe(true);
     }
     expect(() =>
-      recordDispatch({ passportId: ppId, stage: "inspect", summary: "Unknown passport record here." }, undefined, adId, now),
+      recordDispatch(
+        { passportId: ppId, stage: "inspect", summary: "Unknown passport record here." },
+        undefined,
+        adId,
+        now,
+      ),
     ).toThrow(/Unknown passport/);
   });
 });
 
 describe("JAX broker constraints", () => {
   it("never allows Honeycomb Vault secrets", () => {
-    const d = jaxBrokerDecision({ action: "read", targetScope: "honeycomb-vault-secrets", hasConsent: true, submitsExternalData: false });
+    const d = jaxBrokerDecision({
+      action: "read",
+      targetScope: "honeycomb-vault-secrets",
+      hasConsent: true,
+      submitsExternalData: false,
+    });
     expect(d.allowed).toBe(false);
     expect(d.reason).toContain("Honeycomb Vault");
   });
 
   it("blocks external data submission without consent, allows approved broker work", () => {
     expect(
-      jaxBrokerDecision({ action: "submit", targetScope: "partner-api", hasConsent: false, submitsExternalData: true }).allowed,
+      jaxBrokerDecision({
+        action: "submit",
+        targetScope: "partner-api",
+        hasConsent: false,
+        submitsExternalData: true,
+      }).allowed,
     ).toBe(false);
-    const ok = jaxBrokerDecision({ action: "broker", targetScope: "partner-api", hasConsent: true, submitsExternalData: true });
+    const ok = jaxBrokerDecision({
+      action: "broker",
+      targetScope: "partner-api",
+      hasConsent: true,
+      submitsExternalData: true,
+    });
     expect(ok.allowed).toBe(true);
     expect(ok.reason).toContain("runner");
   });
