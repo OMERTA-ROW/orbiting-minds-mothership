@@ -80,7 +80,7 @@ export async function answerRazulQuery(
     )
     .order("collected_at", { ascending: false })
     .limit(200);
-  if (input.scopeCategories?.length) query = query.in("category", [...input.scopeCategories]);
+  if (input.scopeCategories) query = query.in("category", input.scopeCategories.length ? [...input.scopeCategories] : ["__no_authorized_categories__"]);
   const findings = await query;
   if (findings.error) throw new Error("The observatory index could not be searched.");
 

@@ -24,7 +24,7 @@ export interface EyeRecords {
   queue: Pick<Row<"razul_dispatch_queue">, "id" | "scout_type" | "status" | "guardian_status" | "created_at" | "updated_at">[];
   events: Pick<Row<"razul_sentinel_events">, "id" | "sentinel_id" | "kind" | "created_at">[];
   projects: Pick<Row<"razul_project_passports">, "id" | "project" | "resident_agent" | "status" | "version" | "updated_at">[];
-  findings: Pick<Row<"razul_findings">, "id" | "title" | "url" | "source_name" | "source_id" | "collected_at" | "published_at" | "evidence_class"> & Partial<Pick<Row<"razul_findings">, "revision" | "category" | "topic" | "evidence_strength">> extends infer Finding ? Finding[] : never;
+  findings: (Pick<Row<"razul_findings">, "id" | "title" | "url" | "source_name" | "source_id" | "collected_at" | "published_at" | "evidence_class"> & Partial<Pick<Row<"razul_findings">, "revision" | "category" | "topic" | "evidence_strength">>)[];
   feeds: Pick<Row<"razul_agent_feeds">, "agent" | "categories" | "min_relevance" | "alerts_enabled">[];
 }
 export interface EyeHistoryEntry { id: string; at: string; kind: string; label: string }
