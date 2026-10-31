@@ -29,8 +29,14 @@
   "evidence": {
     "current": {
       "command": "bunx vitest run",
-      "result": "Passed: 1089 tests / 71 files, 2026-10-31 05:13 UTC",
-      "runtime": "Latest harness build OK; Angel Tech/Sabrina browser flow saved a local insight, review-only campaign and unsent invitation draft. Not public-release, discovery, consent, credential or outreach evidence.",
+      "result": "Passed: 1141 tests / 75 files, 2026-10-31 13:10 UTC",
+      "runtime": "Latest harness build OK. Owner-approved backend activation applied owner-invitations.sql + omni-agent.sql (12 RPCs verified present); Sabrina director browser flow ran radar (100/100 ready-for-review), strategic memory, weekly brief and Jackboy local-handoff feedback; /members redirects signed-out visitors to /auth. Not public-release, inference, outreach or credential evidence.",
+      "passed": true
+    },
+    "sabrina-director": {
+      "command": "bunx vitest run src/lib/omni-sabrina.test.ts; python3 /tmp/browser/sabrina/check.py",
+      "result": "13 tests PASS; browser flow PASS (radar, memory, brief, feedback saved locally; members gate redirects to sign-in)",
+      "runtime": "Opportunity Radar keyword-overlap scores with gates, expiring strategic memory (deletion stops retrieval), on-demand weekly brief, local-handoff Jackboy feedback. Pure local computation over owner-entered records; no crawler, inference, outreach or dispatch.",
       "passed": true
     },
     "account": {
@@ -90,7 +96,7 @@
     "omni-agent": {
       "command": "bunx vitest run; python3 src/test/test_omni_agent_sql.py; python3 /tmp/browser/omni-agent/check_agent.py; changed-code eslint; python3 src/test/test_completion_register.py",
       "result": "1069 tests/69 files PASS; 15 disposable PostgreSQL checks PASS against actual staged owner/agent SQL; lint/preview build OK; desktop/mobile public/sign-in gate and anonymous/forged 401/foreign-origin 403 PASS. Authenticated inference NOT RUN.",
-      "runtime": "Text-only adapter, saved-run UI/RPCs, request identity/claim, durable provider guard, Stop/pause/member rechecks built. Mock provider tests only; no verified hosted accounts or installed owner/member/run schema. No hosted changes. Exact prerequisites .lovable/omni-agent-activation.md.",
+      "runtime": "Text-only adapter, saved-run UI/RPCs, request identity/claim, durable provider guard, Stop/pause/member rechecks built. 2026-10-31: owner-approved migration applied both pending SQL scripts; all 12 owner/invitation/agent RPCs verified live. Backend holds zero accounts/roles/invitations/runs. Remaining owner steps: real owner email into owner_config (service-role, never invented), /auth signup + email confirm, Claim owner on /members, then separately authorized beta AI approval. First real inference still NOT RUN.",
       "passed": true
     },
     "omni-activation": {
