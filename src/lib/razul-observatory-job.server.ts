@@ -18,6 +18,7 @@ import {
   classifyEvidence,
   extractEntities,
   filterSources,
+  planAlertEvents,
   routeFinding,
   scoreRelevance,
   type ObservatorySource,
