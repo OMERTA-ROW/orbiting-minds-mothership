@@ -183,6 +183,13 @@
       "when": 1793454352829,
       "tag": "0025_razul_source_nasa_iotd",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793454669920,
+      "tag": "0026_razul_sentinel_network",
+      "breakpoints": true
     }
   ]
 }

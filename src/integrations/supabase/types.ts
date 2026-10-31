@@ -751,6 +751,50 @@ export type Database = {
           },
         ]
       }
+      razul_dispatch_queue: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          guardian_status: string
+          id: string
+          scout_type: string
+          sentinel_id: string
+          status: string
+          task: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          guardian_status?: string
+          id?: string
+          scout_type: string
+          sentinel_id: string
+          status?: string
+          task: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          guardian_status?: string
+          id?: string
+          scout_type?: string
+          sentinel_id?: string
+          status?: string
+          task?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razul_dispatch_queue_sentinel_id_fkey"
+            columns: ["sentinel_id"]
+            isOneToOne: false
+            referencedRelation: "razul_sentinels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       razul_findings: {
         Row: {
           category: string
@@ -945,6 +989,71 @@ export type Database = {
           started_at?: string
           status?: string
           trigger?: string
+        }
+        Relationships: []
+      }
+      razul_sentinel_events: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          sentinel_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          payload: Json
+          sentinel_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          sentinel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razul_sentinel_events_sentinel_id_fkey"
+            columns: ["sentinel_id"]
+            isOneToOne: false
+            referencedRelation: "razul_sentinels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      razul_sentinels: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          last_seen_at: string | null
+          name: string
+          scopes: string[]
+          status: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_seen_at?: string | null
+          name: string
+          scopes?: string[]
+          status?: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_seen_at?: string | null
+          name?: string
+          scopes?: string[]
+          status?: string
+          token_hash?: string
         }
         Relationships: []
       }
@@ -1256,12 +1365,30 @@ export type Database = {
         }
         Returns: undefined
       }
+      razul_dispatch_scout: {
+        Args: { _scout_type: string; _sentinel_id: string; _task: string }
+        Returns: string
+      }
+      razul_enroll_sentinel: {
+        Args: {
+          _hours: number
+          _name: string
+          _scopes: string[]
+          _token_hash: string
+        }
+        Returns: string
+      }
       razul_increment_corroboration: {
         Args: { _url: string }
         Returns: undefined
       }
       razul_pause: { Args: { _reason: string }; Returns: undefined }
       razul_resume: { Args: never; Returns: undefined }
+      razul_revoke_sentinel: { Args: { _id: string }; Returns: undefined }
+      razul_sentinel_verify: {
+        Args: { _id: string; _kind: string; _token_hash: string }
+        Returns: boolean
+      }
       release_owned_knowledge_lease: {
         Args: { _owner: string }
         Returns: boolean
