@@ -905,6 +905,66 @@ export type Database = {
         }
         Relationships: []
       }
+      razul_project_passports: {
+        Row: {
+          architecture: string
+          created_at: string
+          documentation_url: string | null
+          features: string[]
+          id: string
+          lessons: string[]
+          pending_tasks: string[]
+          permissions: string[]
+          project: string
+          provenance: string
+          purpose: string
+          resident_agent: string
+          status: string
+          tools: string[]
+          updated_at: string
+          verified_tests: string[]
+          version: number
+        }
+        Insert: {
+          architecture?: string
+          created_at?: string
+          documentation_url?: string | null
+          features?: string[]
+          id?: string
+          lessons?: string[]
+          pending_tasks?: string[]
+          permissions?: string[]
+          project: string
+          provenance?: string
+          purpose?: string
+          resident_agent: string
+          status?: string
+          tools?: string[]
+          updated_at?: string
+          verified_tests?: string[]
+          version?: number
+        }
+        Update: {
+          architecture?: string
+          created_at?: string
+          documentation_url?: string | null
+          features?: string[]
+          id?: string
+          lessons?: string[]
+          pending_tasks?: string[]
+          permissions?: string[]
+          project?: string
+          provenance?: string
+          purpose?: string
+          resident_agent?: string
+          status?: string
+          tools?: string[]
+          updated_at?: string
+          verified_tests?: string[]
+          version?: number
+        }
+        Relationships: []
+      }
       razul_query_cache: {
         Row: {
           answer: Json
@@ -1388,6 +1448,24 @@ export type Database = {
       razul_sentinel_verify: {
         Args: { _id: string; _kind: string; _token_hash: string }
         Returns: boolean
+      }
+      razul_upsert_passport: {
+        Args: {
+          _architecture: string
+          _documentation_url: string
+          _features: string[]
+          _lessons: string[]
+          _pending_tasks: string[]
+          _permissions: string[]
+          _project: string
+          _provenance: string
+          _purpose: string
+          _resident_agent: string
+          _status: string
+          _tools: string[]
+          _verified_tests: string[]
+        }
+        Returns: string
       }
       release_owned_knowledge_lease: {
         Args: { _owner: string }
