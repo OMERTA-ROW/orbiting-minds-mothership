@@ -45,8 +45,8 @@
 - Maintenance reports use bounded metadata-only selected-project traversal; cleanup plans bind device/profile/category/file identity and remain inert without enrolled capabilities/trash recovery. Scanner argv is fixed and public scans blocked until native verification, why: local labels and filenames cannot authorize device actions or establish malware detection.
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
 - Account recovery presentation is user-bound and validated by the one root subscriber; updates revalidate identity and Cloud authorizes them, why: URL/storage hints alone cannot establish a recovery session and stale async identity must not survive logout.
-- The root completion-register.json is the canonical ordered item/evidence register; roadmap.md is its blueprint crosswalk/backlog, why: partial demos, verified code and released scope must remain separate and traceable.
-- Launch Control is dated QA; opt-in PATH discovery and browser cost math never imply approvals/uploads/charges.
+- completion-register.json is the canonical ordered item/evidence register; roadmap.md is its crosswalk/backlog, why: demos, verified code and released scope stay separate and traceable.
+- Launch Control is dated QA; PATH discovery and cost math never imply approvals/uploads/charges.
 - Quantum/Forge use approved private owner-project media, bounded PCM with bundled WaveFile, inert web drafts and immutable digest-reviewed versions; OMNI gets text only, why: consistent SSR exports; plans confer no file/publish authority.
 - Creator/Distro use immutable owner-project drafts, digests and row-locked access/review/revoke; post-edit prefills require downloaded WAV QA, why: manual ZIPs never imply hosting, receipts, schedules or recall.
 - OMNI private operations use strict proposals and owner-scoped row-locked social draft/review/stop records with explicit grant revokes and typed non-null consent; no provider endpoints, why: declarations confer no posting, CI, scopes or release authority.
