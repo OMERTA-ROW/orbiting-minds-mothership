@@ -5,7 +5,12 @@
  * communications ever enter this pipeline, and no exhaustive-coverage claim.
  */
 
-export type EvidenceClass = "established" | "preliminary" | "hypothesis" | "speculation";
+export type EvidenceClass =
+  | "established"
+  | "preliminary"
+  | "hypothesis"
+  | "speculation"
+  | "belief";
 
 export interface ObservatorySource {
   id: string;
