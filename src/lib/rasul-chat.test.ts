@@ -50,9 +50,9 @@ describe("buildDispatchRequest", () => {
 describe("planHandoffs", () => {
   it("dispatch plans name rasul preparation plus the target with its honest status", () => {
     const plan = planHandoffs("dispatch", "dispatch to sabrina");
-    expect(plan[0].agent).toBe("rasul");
-    expect(plan[1].agent).toBe("sabrina");
-    expect(plan[1].status).toBe("simulated");
+    expect(plan[0]?.agent).toBe("rasul");
+    expect(plan[1]?.agent).toBe("sabrina");
+    expect(plan[1]?.status).toBe("simulated");
   });
   it("agents intent lists every specialist capability", () => {
     expect(planHandoffs("agents", "")).toHaveLength(SPECIALIST_CAPABILITIES.length);
