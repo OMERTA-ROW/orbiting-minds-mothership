@@ -16,6 +16,7 @@ export const navItems = [
   { to: "/omnibridge", label: "OmniBridge · Demo" },
   { to: "/omni", label: "OMNI Assistant · Demo" },
   { to: "/omni-marketing", label: "OMNI Marketing · Local" },
+  { to: "/angel-tech", label: "Angel Tech · Sabrina Concept" },
   { to: "/omni-rights", label: "OMNI Rights · Local" },
   { to: "/omni-legal", label: "Omni Legal · Synthetic" },
   { to: "/entertainment", label: "Entertainment Galaxy · Demo" },

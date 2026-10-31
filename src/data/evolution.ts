@@ -257,6 +257,7 @@ export const agents = [
   { name: "Sentinel", role: "Code review", consent: "Granted", scope: "Propose only", trust: 94 },
   { name: "Atlas", role: "Research mapping", consent: "Granted", scope: "Read public refs", trust: 89 },
   { name: "Forge", role: "Test generation", consent: "Pending", scope: "Sandbox only", trust: 71 },
+  { name: "Sabrina", role: "Angel Tech marketing intelligence", consent: "Pending", scope: "Local drafts only · no outreach", trust: 50 },
   { name: "Echo", role: "Docs writer", consent: "Revoked", scope: "—", trust: 60 },
 ];
 
