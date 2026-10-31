@@ -339,8 +339,19 @@ export type GatewayStore = {
   projects: EnrolledProject[];
   jobs: GatewayJob[];
   feedback: FeedbackEntry[];
+  guardianDecisions: GuardianDecision[];
+  delegations: DelegationPolicy[];
+  learning: LearningRecord[];
 };
-export const emptyGatewayStore: GatewayStore = { version: 1, projects: [], jobs: [], feedback: [] };
+export const emptyGatewayStore: GatewayStore = {
+  version: 1,
+  projects: [],
+  jobs: [],
+  feedback: [],
+  guardianDecisions: [],
+  delegations: [],
+  learning: [],
+};
 
 export function loadGatewayStore(raw: string | null): GatewayStore {
   if (!raw) return emptyGatewayStore;
@@ -351,6 +362,9 @@ export function loadGatewayStore(raw: string | null): GatewayStore {
       projects: Array.isArray(parsed.projects) ? parsed.projects : [],
       jobs: Array.isArray(parsed.jobs) ? parsed.jobs : [],
       feedback: Array.isArray(parsed.feedback) ? parsed.feedback : [],
+      guardianDecisions: Array.isArray(parsed.guardianDecisions) ? parsed.guardianDecisions : [],
+      delegations: Array.isArray(parsed.delegations) ? parsed.delegations : [],
+      learning: Array.isArray(parsed.learning) ? parsed.learning : [],
     };
   } catch {
     return emptyGatewayStore;
