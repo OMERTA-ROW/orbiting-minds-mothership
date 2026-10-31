@@ -530,6 +530,71 @@ export type Database = {
         }
         Relationships: []
       }
+      omni_agent_runs: {
+        Row: {
+          consent: boolean
+          created_at: string
+          error_message: string | null
+          error_status: number | null
+          finished_at: string | null
+          gateway_run_id: string | null
+          id: string
+          input_tokens: number | null
+          message: string
+          model: string
+          output_tokens: number | null
+          owner_id: string
+          project_id: string
+          result: string
+          status: string
+          total_tokens: number | null
+        }
+        Insert: {
+          consent: boolean
+          created_at?: string
+          error_message?: string | null
+          error_status?: number | null
+          finished_at?: string | null
+          gateway_run_id?: string | null
+          id: string
+          input_tokens?: number | null
+          message: string
+          model: string
+          output_tokens?: number | null
+          owner_id: string
+          project_id: string
+          result?: string
+          status?: string
+          total_tokens?: number | null
+        }
+        Update: {
+          consent?: boolean
+          created_at?: string
+          error_message?: string | null
+          error_status?: number | null
+          finished_at?: string | null
+          gateway_run_id?: string | null
+          id?: string
+          input_tokens?: number | null
+          message?: string
+          model?: string
+          output_tokens?: number | null
+          owner_id?: string
+          project_id?: string
+          result?: string
+          status?: string
+          total_tokens?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_agent_runs_project_id_owner_id_fkey"
+            columns: ["project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "beta_projects"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
       omni_social_drafts: {
         Row: {
           content: Json
@@ -686,6 +751,33 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      cancel_omni_agent_run: {
+        Args: { _id: string }
+        Returns: {
+          consent: boolean
+          created_at: string
+          error_message: string | null
+          error_status: number | null
+          finished_at: string | null
+          gateway_run_id: string | null
+          id: string
+          input_tokens: number | null
+          message: string
+          model: string
+          output_tokens: number | null
+          owner_id: string
+          project_id: string
+          result: string
+          status: string
+          total_tokens: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "omni_agent_runs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       claim_knowledge_lease: { Args: { _minutes: number }; Returns: boolean }
       claim_owned_knowledge_lease: {
         Args: { _minutes?: number; _owner: string }
@@ -770,6 +862,33 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_omni_agent_runs: {
+        Args: { _project: string }
+        Returns: {
+          consent: boolean
+          created_at: string
+          error_message: string | null
+          error_status: number | null
+          finished_at: string | null
+          gateway_run_id: string | null
+          id: string
+          input_tokens: number | null
+          message: string
+          model: string
+          output_tokens: number | null
+          owner_id: string
+          project_id: string
+          result: string
+          status: string
+          total_tokens: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_agent_runs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       omni_social_transition: {
         Args: {
           _action: string
@@ -803,6 +922,38 @@ export type Database = {
       }
       remove_member: { Args: { _user_id: string }; Returns: undefined }
       revoke_invitation: { Args: { _id: string }; Returns: undefined }
+      start_omni_agent_run: {
+        Args: {
+          _consent: boolean
+          _id: string
+          _message: string
+          _project: string
+        }
+        Returns: {
+          consent: boolean
+          created_at: string
+          error_message: string | null
+          error_status: number | null
+          finished_at: string | null
+          gateway_run_id: string | null
+          id: string
+          input_tokens: number | null
+          message: string
+          model: string
+          output_tokens: number | null
+          owner_id: string
+          project_id: string
+          result: string
+          status: string
+          total_tokens: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "omni_agent_runs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "owner" | "admin" | "tester"
