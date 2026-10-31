@@ -114,9 +114,9 @@ describe("answerRazulQuery integration", () => {
     const second = await answerRazulQuery(deps, input);
     expect(second.cached).toBe(true);
     expect(second.citations).toEqual(first.citations);
-    const logs = tables.razul_query_log!;
+    const logs = tables["razul_query_log"]!;
     expect(logs).toHaveLength(2);
-    expect(logs[1]!.cached).toBe(true);
+    expect(logs[1]!["cached"]).toBe(true);
   });
 
   it("narrows retrieval to the requested project scope categories", async () => {
