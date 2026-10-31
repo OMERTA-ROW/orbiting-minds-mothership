@@ -97,7 +97,7 @@ export const Route = createFileRoute("/api/public/razul-sentinel/report")({
               source_name: sourceName,
               title,
               url: typeof rawUrl === "string" && rawUrl.trim() ? rawUrl : `sentinel://${sentinelId}`,
-              summary: typeof rawSummary === "string" ? rawSummary.slice(0, 2000) : undefined,
+              summary: typeof rawSummary === "string" ? rawSummary.slice(0, 2000) : "",
               category: "sentinel",
               relevance: 50,
               routed_to: targets,
