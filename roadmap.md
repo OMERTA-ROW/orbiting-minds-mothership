@@ -244,9 +244,11 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 ## RA'SUL independent platform migration (SEQUENCED — do not start early) — 2026-10-31
 Owner architecture decision: AFTER current OMNI/Jackboy/JAX priority work is completed and tested, migrate RA'SUL to a separate independent private intelligence backend (own database, scheduler, research workers, dispatcher) connected to OMNI as primary command center through authenticated APIs. Do NOT create/deploy the separate platform prematurely or interrupt current builds.
 
-Access model (binding):
-- Human access: strictly SINGLE OWNER ONLY — verified owner bootstrap, MFA, no public signup, no invitations, no other human accounts, protected routes, server-side roles/RLS, private logs and secrets, no public publishing.
-- Machine access: OMNI/Jackboy/JAX/Sentinels get narrowly scoped, revocable machine identities for approved data exchange only — never owner credentials or admin access. Guardian audit + emergency revocation on all machine identities.
+Access model (binding, clarified 2026-10-31):
+- Owner-facing hub/control panel: centralized ONLY in the main OMNI Mothership project. Razul has NO separate public dashboard and NO owner logins; no other project gets owner-facing Razul controls.
+- Human access: strictly SINGLE OWNER ONLY via the verified OMNI owner account with strong MFA — no public signup, no invitations for Razul controls, no other human accounts, protected routes, server-side roles/RLS, private logs and secrets, no public publishing.
+- Machine access: other owned projects connect through authorized, revocable machine identities/Sentinels — never owner credentials or admin access. Guardian audit + emergency revocation on all machine identities.
+- Dispatch scope: Razul's AngelTech/DemonTech workers go only to enrolled owned projects and permitted public internet sources, respecting authorization, site policies and rate limits — never unauthorized third-party deployments. Jackboy/JAX receive scoped findings only.
 - Never assume owner email/identity; request secure verification through the editor when needed.
 
 Readiness prerequisites (all must be true before migration starts):
@@ -254,7 +256,7 @@ Readiness prerequisites (all must be true before migration starts):
 2. Activated single owner account with MFA on the current backend (owner bootstrap already staged; activation pending real email via secure editor flow).
 3. Sentinel network stable: enrollment, scoped credentials, revocation, dispatch queue exercised end-to-end.
 4. Guardian policy engine connected (today all dispatches are blocked-guardian by design).
-5. Separate backend provisioned as its own Lovable project/stack with its own database — no shared-schema coupling.
+5. Separate backend provisioned as its own stack with its own database, schedulers, workers and dispatcher — no shared-schema coupling; backend-only, no dashboard or login surface of its own.
 
 Safe migration steps (when prerequisites met):
 1. Provision the independent Razul backend (own DB, scheduler, workers, dispatcher); single-owner auth with MFA; server-side roles/RLS; no signup/invitation paths.
