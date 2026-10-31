@@ -172,3 +172,37 @@ describe("expanded disciplines", () => {
     expect(routeFinding("religion", 60, 40)).toEqual(["sabrina"]);
   });
 });
+
+describe("planAlertEvents", () => {
+  const subs = [
+    { agent: "guardian", min_relevance: 30, alerts_enabled: true },
+    { agent: "omni", min_relevance: 40, alerts_enabled: true },
+    { agent: "sabrina", min_relevance: 40, alerts_enabled: false },
+  ];
+
+  it("creates one event per finding per subscribed agent above its floor", () => {
+    const events = planAlertEvents(
+      [{ id: "f1", relevance: 50, routed_to: ["guardian", "omni", "sabrina"] }],
+      subs,
+    );
+    expect(events).toEqual([
+      { finding_id: "f1", agent: "guardian", relevance: 50 },
+      { finding_id: "f1", agent: "omni", relevance: 50 },
+    ]);
+  });
+
+  it("skips agents below their relevance floor and unrouted agents", () => {
+    const events = planAlertEvents(
+      [{ id: "f1", relevance: 35, routed_to: ["guardian", "omni"] }],
+      subs,
+    );
+    expect(events).toEqual([{ finding_id: "f1", agent: "guardian", relevance: 35 }]);
+  });
+
+  it("bounds events per run", () => {
+    const findings = Array.from({ length: 30 }, (_, i) => ({
+      id: `f${i}`, relevance: 90, routed_to: ["guardian", "omni"],
+    }));
+    expect(planAlertEvents(findings, subs)).toHaveLength(50);
+  });
+});
