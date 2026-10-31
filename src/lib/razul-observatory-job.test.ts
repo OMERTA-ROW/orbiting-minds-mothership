@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { runRazulObservatoryJob } from "./razul-observatory-job.server";
 
 /** Stateful service-contract fixture; no external requests or hosted writes. */
-function fixture(failedTable = "", paused = false) {
+function fixture(failedTable = "", paused = false, failedOp = "insert") {
   const rows: Record<string, Record<string, unknown>[]> = {
     razul_sources: [{ id: "cisa", name: "Fixture CISA", url: "https://fixture.invalid/feed", kind: "rss", category: "vulnerability", terms_note: "fixture", active: true }],
     razul_runs: [], razul_findings: [], razul_source_checks: [], razul_alert_events: [],
     razul_agent_feeds: [{ agent: "guardian", min_relevance: 30, alerts_enabled: true }],
-    razul_job_state: [{ paused_reason: paused ? "fixture pause" : null, alert_threshold: 40, retention_days: 90, coverage: ["vulnerability"], blocked_sources: [] }],
+    razul_job_state: [{ id: 1, paused_reason: paused ? "fixture pause" : null, alert_threshold: 40, retention_days: 90, coverage: ["vulnerability"], blocked_sources: [] }],
   };
   const calls: string[] = [];
   const admin = {
@@ -28,7 +28,7 @@ function fixture(failedTable = "", paused = false) {
         lt(key: string, value: string) { filters.push((row) => typeof row[key] === "string" && String(row[key]) < value); return builder; },
         then(resolve: (value: unknown) => unknown) {
           calls.push(`${table}:${op}`);
-          if (table === failedTable && (op === "insert" || op === "delete")) return Promise.resolve(resolve({ error: { message: "fixture failure" }, data: [], count: 0 }));
+          if (table === failedTable && op === failedOp) return Promise.resolve(resolve({ error: { message: "fixture failure" }, data: [], count: 0 }));
           const selected = (rows[table] ?? []).filter((row) => filters.every((fn) => fn(row)));
           let data = selected;
           if (op === "insert") { data = payload.map((row, i) => ({ id: `${table}-${i}`, ...row })); (rows[table] ??= []).push(...data); }
@@ -50,8 +50,8 @@ describe("Razul check and outcome recording", () => {
     const f = fixture();
     const result = await runRazulObservatoryJob(f.deps, "fixture");
     expect(result.status).toBe("completed");
-    expect(f.rows.razul_source_checks?.[0]).toMatchObject({ status: "completed", source_id: "cisa", checked_at: "2026-10-31T18:00:00.000Z", fetched: 1, inserted: 1 });
-    expect(f.rows.razul_alert_events?.[0]).toMatchObject({ agent: "guardian", finding_id: "razul_findings-0" });
+    expect(f.rows["razul_source_checks"]?.[0]).toMatchObject({ status: "completed", source_id: "cisa", checked_at: "2026-10-31T18:00:00.000Z", fetched: 1, inserted: 1 });
+    expect(f.rows["razul_alert_events"]?.[0]).toMatchObject({ agent: "guardian", finding_id: "razul_findings-0" });
   });
   it("owner pause makes no source fetch or run", async () => {
     const f = fixture("", true);
@@ -61,10 +61,10 @@ describe("Razul check and outcome recording", () => {
   it("failed alert persistence cannot claim completed", async () => {
     const f = fixture("razul_alert_events");
     await expect(runRazulObservatoryJob(f.deps)).rejects.toThrow("Alert outcomes could not be stored");
-    expect(f.rows.razul_runs?.[0]?.status).toBe("failed");
+    expect(f.rows["razul_runs"]?.[0]?.["status"]).toBe("failed");
   });
   it("failed retention is reported rather than silently successful", async () => {
-    const f = fixture("razul_findings");
-    expect((await runRazulObservatoryJob(f.deps)).status).toBe("failed");
+    const f = fixture("razul_findings", false, "delete");
+    await expect(runRazulObservatoryJob(f.deps)).rejects.toThrow("Retention outcome could not be verified");
   });
 });
