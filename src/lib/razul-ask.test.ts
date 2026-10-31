@@ -95,8 +95,8 @@ describe("answerRazulQuery integration", () => {
     // Cache written, query logged with hash only.
     expect(upserted.some((u) => u.table === "razul_query_cache")).toBe(true);
     const log = inserted.find((i) => i.table === "razul_query_log")!.rows[0]!;
-    expect(log.agent).toBe("guardian");
-    expect(log.result_count).toBe(1);
+    expect(log["agent"]).toBe("guardian");
+    expect(log["result_count"]).toBe(1);
     expect(String(log["question_hash"])).toMatch(/^[0-9a-f]{64}$/);
     expect(JSON.stringify(tables["razul_query_log"])).not.toContain("ransomware vulnerability advisory");
   });
