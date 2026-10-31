@@ -88,6 +88,7 @@ import { Route as GuardianIncidentsIdRouteImport } from './routes/guardian-incid
 import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archives_.$id'
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 import { Route as ApiPublicJobsKnowledgeCollectRouteImport } from './routes/api/public/jobs/knowledge-collect'
+import { Route as ApiPublicJobsRazulObserveRouteImport } from './routes/api/public/jobs/razul-observe'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -486,6 +487,12 @@ const ApiPublicJobsKnowledgeCollectRoute =
     path: '/api/public/jobs/knowledge-collect',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicJobsRazulObserveRoute =
+  ApiPublicJobsRazulObserveRouteImport.update({
+    id: '/api/public/jobs/razul-observe',
+    path: '/api/public/jobs/razul-observe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -566,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
+  '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -646,6 +654,7 @@ export interface FileRoutesByTo {
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
+  '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -728,6 +737,7 @@ export interface FileRoutesById {
   '/incident-archives_/$id': typeof IncidentArchivesIdRoute
   '/robotics_/$id': typeof RoboticsIdRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
+  '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -810,6 +820,7 @@ export interface FileRouteTypes {
     | '/incident-archives/$id'
     | '/robotics/$id'
     | '/api/public/jobs/knowledge-collect'
+    | '/api/public/jobs/razul-observe'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -890,6 +901,7 @@ export interface FileRouteTypes {
     | '/incident-archives/$id'
     | '/robotics/$id'
     | '/api/public/jobs/knowledge-collect'
+    | '/api/public/jobs/razul-observe'
   id:
     | '__root__'
     | '/'
@@ -971,6 +983,7 @@ export interface FileRouteTypes {
     | '/incident-archives_/$id'
     | '/robotics_/$id'
     | '/api/public/jobs/knowledge-collect'
+    | '/api/public/jobs/razul-observe'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1047,6 +1060,7 @@ export interface RootRouteChildren {
   IncidentArchivesIdRoute: typeof IncidentArchivesIdRoute
   RoboticsIdRoute: typeof RoboticsIdRoute
   ApiPublicJobsKnowledgeCollectRoute: typeof ApiPublicJobsKnowledgeCollectRoute
+  ApiPublicJobsRazulObserveRoute: typeof ApiPublicJobsRazulObserveRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1604,6 +1618,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJobsKnowledgeCollectRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jobs/razul-observe': {
+      id: '/api/public/jobs/razul-observe'
+      path: '/api/public/jobs/razul-observe'
+      fullPath: '/api/public/jobs/razul-observe'
+      preLoaderRoute: typeof ApiPublicJobsRazulObserveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1702,6 +1723,7 @@ const rootRouteChildren: RootRouteChildren = {
   IncidentArchivesIdRoute: IncidentArchivesIdRoute,
   RoboticsIdRoute: RoboticsIdRoute,
   ApiPublicJobsKnowledgeCollectRoute: ApiPublicJobsKnowledgeCollectRoute,
+  ApiPublicJobsRazulObserveRoute: ApiPublicJobsRazulObserveRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

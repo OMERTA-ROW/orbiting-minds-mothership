@@ -3,6 +3,7 @@ import { Archive, Globe, Search, ShieldCheck } from "lucide-react";
 import { ZodError } from "zod";
 import { Button } from "@/components/ui/button";
 import { DemoBadge } from "@/components/evo";
+import { LiveObservatory } from "@/components/razul/LiveObservatory";
 import {
   RAZUL_STORE_KEY,
   appendEvent,
@@ -573,6 +574,9 @@ export function RazulArchive() {
             ))}
           </ul>
         </section>
+      </div>
+      <div className="mx-auto mt-8 w-full max-w-6xl px-6 pb-16">
+        <LiveObservatory />
       </div>
     </main>
   );
