@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { getRazulAgentFeed, submitRazulFeedback } from "@/lib/razul-feeds.functions";
+
+const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian"] as const;
+type Agent = (typeof AGENTS)[number];
 
 interface FindingRow {
   id: string;
@@ -34,6 +38,44 @@ export function LiveObservatory() {
     | { kind: "gated" }
     | { kind: "ready"; findings: FindingRow[]; run: RunRow | null; sources: number }
   >({ kind: "loading" });
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [agentFeed, setAgentFeed] = useState<
+    { findings: FindingRow[]; minRelevance: number } | { error: string } | null
+  >(null);
+  const [feedbackSent, setFeedbackSent] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!agent || state.kind !== "ready") {
+      setAgentFeed(null);
+      return;
+    }
+    let cancelled = false;
+    getRazulAgentFeed({ data: { agent, limit: 20 } })
+      .then((res) => {
+        if (!cancelled)
+          setAgentFeed({
+            findings: (res.findings ?? []) as FindingRow[],
+            minRelevance: res.configured ? res.minRelevance : 40,
+          });
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setAgentFeed({ error: e instanceof Error ? e.message : "Feed unavailable" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [agent, state.kind]);
+
+  async function sendFeedback(findingId: string, verdict: "useful" | "not-useful") {
+    if (!agent) return;
+    try {
+      await submitRazulFeedback({ data: { findingId, agent, verdict, note: "" } });
+      setFeedbackSent((prev) => ({ ...prev, [findingId]: verdict }));
+    } catch {
+      setFeedbackSent((prev) => ({ ...prev, [findingId]: "failed" }));
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
