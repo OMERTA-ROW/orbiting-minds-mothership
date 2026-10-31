@@ -115,7 +115,7 @@ describe("Angel Tech / Sabrina local workspace", () => {
     const prospect = createProspect(validProspect, "p1", now);
     const store = { insights: [], prospects: [prospect], drafts: [] };
     expect(loadAngelTechStore(saveAngelTechStore(store)).prospects[0]?.id).toBe("p1");
-    expect(loadAngelTechStore("{bad json")).prospects).toEqual([]);
+    expect(loadAngelTechStore("{bad json").prospects).toEqual([]);
   });
 
   it("reports zero connected partnerships until credentials and consent exist", () => {
