@@ -1111,6 +1111,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      razul_increment_corroboration: {
+        Args: { _url: string }
+        Returns: undefined
+      }
       razul_pause: { Args: { _reason: string }; Returns: undefined }
       razul_resume: { Args: never; Returns: undefined }
       release_owned_knowledge_lease: {

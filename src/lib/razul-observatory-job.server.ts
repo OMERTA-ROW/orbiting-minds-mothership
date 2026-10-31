@@ -201,6 +201,7 @@ export async function runRazulObservatoryJob(
               state.data.alert_threshold,
             );
             if (routedTo.length) alerts += 1;
+            const evidence = classifyEvidence(e, source);
             return {
               source_id: source.id,
               source_name: source.name,
@@ -208,6 +209,10 @@ export async function runRazulObservatoryJob(
               url: e.url,
               summary: e.summary,
               category: source.category,
+              topic: assignTopic(e, source.category),
+              entities: extractEntities(e.title),
+              evidence_class: evidence.evidenceClass,
+              evidence_strength: evidence.strength,
               relevance,
               routed_to: routedTo,
               published_at: e.publishedAt,
