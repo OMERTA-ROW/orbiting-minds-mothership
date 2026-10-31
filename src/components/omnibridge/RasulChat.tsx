@@ -12,7 +12,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { Eye, Send, ShieldCheck, ArrowUpRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { useAccount } from "@/hooks/use-account";
+import { getRazulEye } from "@/lib/razul-eye.functions";
 import { askRazul } from "@/lib/razul-feeds.functions";
 import {
   buildDispatchRequest,
@@ -29,6 +30,8 @@ interface Citation {
   sourceName: string;
   evidenceClass: string;
   confidence: number;
+  publishedAt?: string | null;
+  collectedAt?: string;
 }
 
 interface ChatMessage {
@@ -42,25 +45,26 @@ interface ChatMessage {
 }
 
 const STATUS_STYLE: Record<HandoffNote["status"], string> = {
-  verified: "text-emerald-400",
-  simulated: "text-amber-400",
-  blocked: "text-red-400",
+  verified: "text-success",
+  simulated: "text-warning",
+  blocked: "text-destructive",
 };
 
 let counter = 0;
 const nextId = () => `m${++counter}`;
 
 export function RasulChat() {
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const { user, ready } = useAccount();
+  const signedIn = ready ? !!user : null;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const ask = useServerFn(askRazul);
+  const inspect = useServerFn(getRazulEye);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const generation = useRef(0);
 
-  useEffect(() => {
-    void supabase.auth.getUser().then(({ data }) => setSignedIn(!!data.user));
-  }, []);
+  useEffect(() => () => { generation.current += 1; }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -72,6 +76,7 @@ export function RasulChat() {
     if (!text || busy) return;
     setInput("");
     setBusy(true);
+    const current = ++generation.current;
     const intent = classifyIntent(text);
     const handoffs = planHandoffs(intent, text);
     const ownerMsg: ChatMessage = { id: nextId(), role: "owner", text, label: "verified" };
@@ -97,12 +102,9 @@ export function RasulChat() {
     } else if (intent === "status") {
       if (signedIn) {
         try {
-          const answer = (await ask({
-            data: { question: "current project status and recent activity", agent: "omni" },
-          })) as { answerSummary: string; citations: Citation[] };
+          const snapshot = await inspect();
           reply.label = "verified";
-          reply.text = answer.answerSummary;
-          reply.citations = answer.citations;
+          reply.text = `Owner infrastructure snapshot at ${snapshot.readAt}: ${snapshot.projects.length} Passport declarations, ${snapshot.sentinels.length} Sentinel records, ${snapshot.queue.length} dispatch records. Most recent ingestion: ${snapshot.runs[0]?.status ?? "unknown"}, finished ${snapshot.runs[0]?.finished_at ?? "not recorded"}. These are recorded observations, not proof resident watchers or scraping workers are active. Guardian/executor dispatch remains blocked.`;
         } catch (err) {
           reply.label = "blocked";
           reply.text = `${rasulFallbackAnswer("status", true)} (${err instanceof Error ? err.message : "unknown error"})`;
@@ -131,8 +133,10 @@ export function RasulChat() {
       }
     }
 
-    setMessages((prev) => [...prev, ownerMsg, reply]);
-    setBusy(false);
+    if (generation.current === current) {
+      setMessages((prev) => [...prev, ownerMsg, reply]);
+      setBusy(false);
+    }
   }
 
   function approveDispatch(id: string) {
@@ -158,14 +162,14 @@ export function RasulChat() {
     <section aria-label="RA'SUL conversation" className="rounded-xl border border-border bg-card p-4">
       <header className="mb-3 flex flex-wrap items-center gap-2">
         <Eye className="h-5 w-5 text-primary" aria-hidden />
-        <h2 className="text-lg font-semibold text-foreground">Razul Central Intelligence (RA'SUL)</h2>
+        <h2 className="text-lg font-semibold text-foreground">Razul Central Intelligence</h2>
         <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
           {signedIn === null ? "checking access…" : signedIn ? "signed in · research permission checked on request" : "sign in for live answers"}
         </span>
       </header>
 
       <p className="mb-3 text-sm text-muted-foreground">
-        Razul Central Intelligence (RA'SUL) is OMNI Mothership's default speaking intelligence:
+        RA'SUL is OMNI Mothership's default speaking intelligence:
         searchable, permissioned historical records across enrolled owned projects and lawful public research.
         The Itanimulli game server is one participating project, not Razul's home or exclusive assignment.
       </p>
@@ -208,7 +212,7 @@ export function RasulChat() {
                         {c.title}
                       </a>{" "}
                       <span className="text-muted-foreground">
-                        — {c.sourceName}, {c.evidenceClass}, confidence {c.confidence}
+                        — {c.sourceName}, {c.evidenceClass}, confidence {c.confidence} · collected {c.collectedAt ?? "not recorded"} · published {c.publishedAt ?? "not recorded"}
                       </span>
                     </li>
                   ))}
@@ -232,7 +236,7 @@ export function RasulChat() {
                         if (m.dispatch) approveDispatch(m.dispatch.id);
                       }}
                     >
-                      <ShieldCheck className="mr-1 h-3 w-3" aria-hidden /> Approve request (execution still blocked)
+                      <ShieldCheck className="mr-1 h-3 w-3" aria-hidden /> Review local request (execution blocked)
                     </Button>
                   )}
                 </div>
@@ -260,6 +264,7 @@ export function RasulChat() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask RA'SUL, or “dispatch … to Jackboy”"
           aria-label="Message RA'SUL"
+          maxLength={500}
           className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
         <Button type="submit" disabled={busy || !input.trim()} size="sm">
