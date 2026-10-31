@@ -83,9 +83,12 @@ export const Route = createFileRoute("/api/public/razul-sentinel/report")({
             } as never,
             { onConflict: "id" },
           );
+          const rawTitle = payload["title"];
+          const rawUrl = payload["url"];
+          const rawSummary = payload["summary"];
           const title =
-            typeof payload.title === "string" && payload.title.trim()
-              ? payload.title.slice(0, 300)
+            typeof rawTitle === "string" && rawTitle.trim()
+              ? rawTitle.slice(0, 300)
               : `Sentinel ${kind} report`;
           const finding = await supabaseAdmin
             .from("razul_findings")
@@ -93,8 +96,8 @@ export const Route = createFileRoute("/api/public/razul-sentinel/report")({
               source_id: `sentinel:${sentinelId}`,
               source_name: sourceName,
               title,
-              url: typeof payload.url === "string" && payload.url.trim() ? payload.url : `sentinel://${sentinelId}`,
-              summary: typeof payload.summary === "string" ? payload.summary.slice(0, 2000) : null,
+              url: typeof rawUrl === "string" && rawUrl.trim() ? rawUrl : `sentinel://${sentinelId}`,
+              summary: typeof rawSummary === "string" ? rawSummary.slice(0, 2000) : undefined,
               category: "sentinel",
               relevance: 50,
               routed_to: targets,
