@@ -46,7 +46,7 @@ async function sha256(text: string): Promise<string> {
 
 export async function answerRazulQuery(
   deps: AskDeps,
-  input: { question: string; agent: string; scopeCategories?: readonly string[] },
+  input: { question: string; agent: string; scopeCategories?: readonly string[] | undefined },
 ): Promise<RazulAnswer> {
   const { admin, now } = deps;
   const hash = await sha256(questionHashInput(input.question));
@@ -112,7 +112,12 @@ export async function answerRazulQuery(
   await admin
     .from("razul_query_cache")
     .upsert(
-      { question_hash: hash, scope_key: scopeKey, answer, created_at: now().toISOString() },
+      {
+        question_hash: hash,
+        scope_key: scopeKey,
+        answer: JSON.parse(JSON.stringify(answer)),
+        created_at: now().toISOString(),
+      },
       { onConflict: "question_hash,scope_key" },
     );
   await admin.from("razul_query_log").insert({

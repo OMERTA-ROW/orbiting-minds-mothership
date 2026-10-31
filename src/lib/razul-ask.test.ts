@@ -6,9 +6,8 @@
 import { describe, expect, it } from "vitest";
 import { answerRazulQuery } from "./razul-ask.server";
 
-interface Row {
-  [key: string]: unknown;
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Row = Record<string, any>;
 
 function fakeAdmin(tables: Record<string, Row[]>) {
   const inserted: { table: string; rows: Row[] }[] = [];
