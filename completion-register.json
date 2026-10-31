@@ -1002,6 +1002,39 @@
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified.",
           "evidence": "razul-sentinel-network",
+          "resident_ops_clarification": {
+            "recorded_at": "2026-10-31",
+            "status": "Deferred",
+            "scope": "Future staged implementation only; extends existing Passport/Sentinel/memory/front-door/Jackboy work, not a new duplicate network or activation.",
+            "related_items": ["05.08", "05.10", "07.06", "04.02", "03.01", "03.02", "06.02"],
+            "resident_role": "Every explicitly owner-enrolled project gets a resident Operations Agent separate from creative/specialized agents, with Project Knowledge Passport, scoped telemetry/health, redacted logs, change history, authorized app integrations, incident triage, scheduled checks, approved routine maintenance and structured issue reports.",
+            "project_requirements": {
+              "Itanimulli: The Rise of Kings": "Game Ops Agent covers game service/server monitoring, cloud storage/database sync health, world-event operations, player-data integrity, backup/restore verification, safe migrations and rollbacks; never autonomous destructive player-world changes.",
+              "NanoDrift": "NanoDrift Ops Agent handles app/site operations and diagnostics; separate from Nano. This clarification enrolls neither named project."
+            },
+            "interfaces": "Authenticated owner/project-scoped Ask Agent/status/incident interfaces for Jackboy, using narrow expiring revocable machine identities. Ops reports enter permissioned Ra'sul shared memory/agent directory with provenance, freshness, history, retention/redaction and offline incremental recovery; secrets and raw player data stay isolated.",
+            "coordination": "Jackboy queries resident diagnostics and focuses on coding, feature development, tests, cross-project integration and release coordination. OMNI executes scoped bounded jobs. Guardian enforces least privilege, approval gates, audit and secrets isolation; missing or denied Guardian/executor blocks advancement.",
+            "readiness_dependencies": [
+              "Current priority OMNI/Jackboy/JAX builds and auth/isolation acceptance completed and tested",
+              "Verified OMNI owner/MFA with explicit project enrollment and Passport bootstrap/sync/readback",
+              "Owner-selected single project, resident identity, approved telemetry/app/repository scopes",
+              "Authenticated resident reads, permissioned memory persistence and handoff receipts",
+              "Live Guardian authorization/revocation/audit and isolated OMNI test runner"
+            ],
+            "pilot": {
+              "status": "Deferred",
+              "project": null,
+              "flow": ["Ops Agent", "Ra'sul", "Jackboy", "OMNI isolated test", "Guardian approval"],
+              "pre_execution_gate": "Guardian must authorize the exact isolated test scope before OMNI runs it; the post-test verdict is not permission to execute retroactively.",
+              "acceptance": "One harmless real diagnostic/fixture issue, versioned attributed Passport/event persistence, authenticated Jackboy readback, bounded proposal, actual isolated test commands/logs/exit/results and rollback evidence, real authenticated evidence-bound Guardian verdict and a correlated chain. Owner approval still required for merge/deploy/high-impact/external or player-world changes.",
+              "denial_recovery_checks": ["cross-project/unauthorized access", "forged/expired/revoked identities", "secrets isolation", "stale/missing telemetry", "duplicate/offline restart recovery", "bounded retries", "pause/stop/revoke", "failed tests", "missing/denying Guardian", "fixture backup/restore/rollback"],
+              "test_command": null,
+              "test_result": "Not run; architecture clarification only",
+              "runtime_evidence": "No resident Ops lifecycle or Ops-to-Guardian pilot verified"
+            },
+            "architecture_boundary": "Owner hub remains only in OMNI Mothership; independent backend phase stays after current priority readiness. No separate dashboard/login, early provisioning, external project changes or public publishing.",
+            "evidence_path": "roadmap.md"
+          },
           "notes": "Live cycle verified 2026-10-31: enrolled test sentinel (scoped: feedback+health, 1h expiry) -> POST /api/public/razul-sentinel/report accepted in-scope feedback (routed to jackboy+omni alert events via a provenance finding row) and health (history only); out-of-scope diagnostic and forged token both rejected 401; revoked sentinel rejected 401; test data removed. Dispatch queue exists but every dispatch is recorded blocked-guardian because the Guardian policy engine is not connected (default deny, no simulated approval). Scout execution, Agent Passports on dispatch, offline retry and owner enrollment UI remain pending."
         },
         {
