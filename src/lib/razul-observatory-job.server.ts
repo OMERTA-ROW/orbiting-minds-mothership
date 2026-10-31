@@ -238,12 +238,17 @@ export async function runRazulObservatoryJob(
 
     // Proactive alerts: fan out this run's routed findings to subscribed
     // agents (alert events), honoring each agent's relevance floor. Capped.
-    const routed = await admin
+    const runFindings = await admin
       .from("razul_findings")
       .select("id, relevance, routed_to")
       .eq("run_id", currentRunId)
-      .neq("routed_to", "{}")
       .abortSignal(signal);
+    const routed = {
+      error: runFindings.error,
+      data: (runFindings.data ?? []).filter(
+        (f) => Array.isArray(f.routed_to) && f.routed_to.length > 0,
+      ),
+    };
     if (!routed.error && routed.data.length) {
       const feeds = await admin
         .from("razul_agent_feeds")
