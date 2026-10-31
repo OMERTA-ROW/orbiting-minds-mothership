@@ -40,7 +40,11 @@ describe("project enrollment", () => {
       ),
     ).toThrow();
     expect(() =>
-      enrollProject({ name: "Jackboy", origin: "repo", scopes: [], ownerConfirmed: true }, pid, now),
+      enrollProject(
+        { name: "Jackboy", origin: "repo", scopes: [], ownerConfirmed: true },
+        pid,
+        now,
+      ),
     ).toThrow();
   });
 

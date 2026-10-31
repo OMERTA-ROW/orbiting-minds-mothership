@@ -147,11 +147,14 @@ export function OmniGateway() {
       <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
         The gateway is designed to receive Jackboy-approved code tasks, propose patches, run them in
         an isolated sandbox and return logs, diffs and pass/fail evidence for review. None of that
-        pipeline is connected yet, so every task stops as <strong>Blocked</strong> before any code is
-        generated or executed. Records below are browser-local planning data only.
+        pipeline is connected yet, so every task stops as <strong>Blocked</strong> before any code
+        is generated or executed. Records below are browser-local planning data only.
       </p>
 
-      <section aria-label="Activation prerequisites" className="mt-8 rounded border border-gold/30 p-5">
+      <section
+        aria-label="Activation prerequisites"
+        className="mt-8 rounded border border-gold/30 p-5"
+      >
         <h2 className="text-xl">Activation prerequisites</h2>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
           {readiness.blockers.map((b) => (
@@ -166,25 +169,46 @@ export function OmniGateway() {
           <form onSubmit={saveEnrollment} className="mt-4 space-y-3">
             <label className="block text-xs">
               Project name
-              <input aria-label="Project name" value={pName} onChange={(e) => setPName(e.target.value)} className={inputCls} />
+              <input
+                aria-label="Project name"
+                value={pName}
+                onChange={(e) => setPName(e.target.value)}
+                className={inputCls}
+              />
             </label>
             <label className="block text-xs">
               Origin (label only — no repository is connected)
-              <input aria-label="Project origin" value={pOrigin} onChange={(e) => setPOrigin(e.target.value)} className={inputCls} />
+              <input
+                aria-label="Project origin"
+                value={pOrigin}
+                onChange={(e) => setPOrigin(e.target.value)}
+                className={inputCls}
+              />
             </label>
             <fieldset className="text-xs">
               <legend>Requested scopes (least privilege)</legend>
               {projectScopes.map((s) => (
                 <label key={s} className="mr-3 inline-flex items-center gap-1">
-                  <input type="checkbox" checked={pScopes.includes(s)} onChange={() => toggleScope(s)} /> {s}
+                  <input
+                    type="checkbox"
+                    checked={pScopes.includes(s)}
+                    onChange={() => toggleScope(s)}
+                  />{" "}
+                  {s}
                 </label>
               ))}
             </fieldset>
             <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={pConfirmed} onChange={(e) => setPConfirmed(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={pConfirmed}
+                onChange={(e) => setPConfirmed(e.target.checked)}
+              />
               I am the owner and confirm this enrollment
             </label>
-            <Button size="sm" type="submit">Enroll project</Button>
+            <Button size="sm" type="submit">
+              Enroll project
+            </Button>
           </form>
           <ul className="mt-4 space-y-2 text-xs">
             {store.projects.map((p: EnrolledProject) => (
@@ -197,7 +221,9 @@ export function OmniGateway() {
                 )}
               </li>
             ))}
-            {store.projects.length === 0 && <li className="text-muted-foreground">No projects enrolled.</li>}
+            {store.projects.length === 0 && (
+              <li className="text-muted-foreground">No projects enrolled.</li>
+            )}
           </ul>
         </section>
 
@@ -206,35 +232,64 @@ export function OmniGateway() {
           <form onSubmit={submitJob} className="mt-4 space-y-3">
             <label className="block text-xs">
               Enrolled project
-              <select aria-label="Enrolled project" value={jobProject} onChange={(e) => setJobProject(e.target.value)} className={inputCls}>
+              <select
+                aria-label="Enrolled project"
+                value={jobProject}
+                onChange={(e) => setJobProject(e.target.value)}
+                className={inputCls}
+              >
                 <option value="">Select…</option>
                 {enrolledProjects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="block text-xs">
               Task goal
-              <textarea aria-label="Task goal" value={goal} onChange={(e) => setGoal(e.target.value)} rows={3} className={inputCls} />
+              <textarea
+                aria-label="Task goal"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                rows={3}
+                className={inputCls}
+              />
             </label>
             {goal && forbiddenGoalHints(goal).length > 0 && (
               <p className="text-xs text-warning">
-                Goal mentions {forbiddenGoalHints(goal).join(", ")} — the gateway never performs these; owner review required.
+                Goal mentions {forbiddenGoalHints(goal).join(", ")} — the gateway never performs
+                these; owner review required.
               </p>
             )}
             <label className="block text-xs">
               Jackboy approval note
-              <input aria-label="Jackboy approval note" value={approvalNote} onChange={(e) => setApprovalNote(e.target.value)} className={inputCls} />
+              <input
+                aria-label="Jackboy approval note"
+                value={approvalNote}
+                onChange={(e) => setApprovalNote(e.target.value)}
+                className={inputCls}
+              />
             </label>
             <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={jackboyApproved} onChange={(e) => setJackboyApproved(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={jackboyApproved}
+                onChange={(e) => setJackboyApproved(e.target.checked)}
+              />
               Jackboy approved this task
             </label>
             <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={noUntrusted} onChange={(e) => setNoUntrusted(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={noUntrusted}
+                onChange={(e) => setNoUntrusted(e.target.checked)}
+              />
               This task does not ask OMNI to run scraped or untrusted code
             </label>
-            <Button size="sm" type="submit">Submit task</Button>
+            <Button size="sm" type="submit">
+              Submit task
+            </Button>
           </form>
         </section>
       </div>
@@ -244,16 +299,24 @@ export function OmniGateway() {
         <ul className="mt-4 space-y-3 text-xs">
           {store.jobs.map((j: GatewayJob) => (
             <li key={j.id} className="rounded border border-border p-3">
-              <p><strong>{j.goal.slice(0, 120)}</strong></p>
-              <p className="mt-1">State: <strong>{j.state}</strong> · not saved to any server</p>
+              <p>
+                <strong>{j.goal.slice(0, 120)}</strong>
+              </p>
+              <p className="mt-1">
+                State: <strong>{j.state}</strong> · not saved to any server
+              </p>
               <ol className="mt-2 space-y-1 text-muted-foreground">
                 {j.log.map((l, i) => (
-                  <li key={i}>{l.at.slice(11, 19)} · {l.state} · {l.note}</li>
+                  <li key={i}>
+                    {l.at.slice(11, 19)} · {l.state} · {l.note}
+                  </li>
                 ))}
               </ol>
             </li>
           ))}
-          {store.jobs.length === 0 && <li className="text-muted-foreground">No tasks submitted.</li>}
+          {store.jobs.length === 0 && (
+            <li className="text-muted-foreground">No tasks submitted.</li>
+          )}
         </ul>
       </section>
 
@@ -266,39 +329,70 @@ export function OmniGateway() {
         <form onSubmit={saveFeedback} className="mt-4 grid gap-3 md:grid-cols-3">
           <label className="block text-xs">
             Job
-            <select aria-label="Feedback job" value={fbJob} onChange={(e) => setFbJob(e.target.value)} className={inputCls}>
+            <select
+              aria-label="Feedback job"
+              value={fbJob}
+              onChange={(e) => setFbJob(e.target.value)}
+              className={inputCls}
+            >
               <option value="">Select…</option>
               {store.jobs.map((j) => (
-                <option key={j.id} value={j.id}>{j.goal.slice(0, 60)}</option>
+                <option key={j.id} value={j.id}>
+                  {j.goal.slice(0, 60)}
+                </option>
               ))}
             </select>
           </label>
           <label className="block text-xs">
             Channel
-            <select aria-label="Feedback channel" value={fbChannel} onChange={(e) => setFbChannel(e.target.value as FeedbackChannel)} className={inputCls}>
+            <select
+              aria-label="Feedback channel"
+              value={fbChannel}
+              onChange={(e) => setFbChannel(e.target.value as FeedbackChannel)}
+              className={inputCls}
+            >
               {feedbackChannels.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
             </select>
           </label>
           <label className="block text-xs">
             Advisory note
-            <input aria-label="Advisory note" value={fbNote} onChange={(e) => setFbNote(e.target.value)} className={inputCls} />
+            <input
+              aria-label="Advisory note"
+              value={fbNote}
+              onChange={(e) => setFbNote(e.target.value)}
+              className={inputCls}
+            />
           </label>
           <div className="md:col-span-3">
-            <Button size="sm" type="submit">Record feedback</Button>
+            <Button size="sm" type="submit">
+              Record feedback
+            </Button>
           </div>
         </form>
         <ul className="mt-4 space-y-1 text-xs text-muted-foreground">
           {store.feedback.map((f) => (
-            <li key={f.id}>{f.at.slice(0, 10)} · {f.channel} · {f.note}</li>
+            <li key={f.id}>
+              {f.at.slice(0, 10)} · {f.channel} · {f.note}
+            </li>
           ))}
         </ul>
       </section>
 
       <div aria-live="polite" className="mt-6">
-        {status && <p role="status" className="text-xs text-gold">{status}</p>}
-        {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+        {status && (
+          <p role="status" className="text-xs text-gold">
+            {status}
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="text-xs text-destructive">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );
