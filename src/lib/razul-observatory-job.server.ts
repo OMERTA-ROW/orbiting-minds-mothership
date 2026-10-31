@@ -236,6 +236,38 @@ export async function runRazulObservatoryJob(
       }
     }
 
+    // Proactive alerts: fan out this run's routed findings to subscribed
+    // agents (alert events), honoring each agent's relevance floor. Capped.
+    const routed = await admin
+      .from("razul_findings")
+      .select("id, relevance, routed_to")
+      .eq("run_id", currentRunId)
+      .neq("routed_to", "{}")
+      .abortSignal(signal);
+    if (!routed.error && routed.data.length) {
+      const feeds = await admin
+        .from("razul_agent_feeds")
+        .select("agent, min_relevance, alerts_enabled")
+        .eq("alerts_enabled", true)
+        .abortSignal(signal);
+      if (!feeds.error && feeds.data.length) {
+        const events = routed.data.flatMap((f) =>
+          feeds.data
+            .filter(
+              (a) =>
+                (f.routed_to as string[]).includes(a.agent) &&
+                f.relevance >= a.min_relevance,
+            )
+            .map((a) => ({ finding_id: f.id, agent: a.agent, relevance: f.relevance })),
+        ).slice(0, 50);
+        if (events.length)
+          await admin
+            .from("razul_alert_events")
+            .upsert(events, { onConflict: "finding_id,agent", ignoreDuplicates: true })
+            .abortSignal(signal);
+      }
+    }
+
     // Retention control: drop findings older than the configured window.
     const cutoff = new Date(
       now().getTime() - state.data.retention_days * 24 * 3600_000,
