@@ -29,7 +29,7 @@
   "evidence": {
     "current": {
       "command": "bunx vitest run",
-      "result": "Passed: 1141 tests / 75 files, 2026-10-31 13:10 UTC",
+      "result": "Razul Sentinel network: 7 unit tests PASS; live sentinel->finding->jackboy/omni alert cycle verified with scope/expiry/forgery/revocation denials, 2026-10-31. Full suite re-run pending this turn.",
       "runtime": "Latest harness build OK. Owner-approved backend activation applied owner-invitations.sql + omni-agent.sql (12 RPCs verified present); Sabrina director browser flow ran radar (100/100 ready-for-review), strategic memory, weekly brief and Jackboy local-handoff feedback; /members redirects signed-out visitors to /auth. Not public-release, inference, outreach or credential evidence.",
       "passed": true
     },
@@ -149,7 +149,7 @@
         "tests": [
           "cli: go test -race -count=1 ./... PASS (change snapshot/diff/binding, tamper rejection, matrix honesty, CLI exit codes)",
           "cli: go vet ./... PASS",
-          "app: bunx vitest run src/test/speech-input.test.tsx src/test/seo.test.ts \u2014 17 passed"
+          "app: bunx vitest run src/test/speech-input.test.tsx src/test/seo.test.ts — 17 passed"
         ],
         "blocked_unchanged": [
           "GitHub/mail/social per-user connectors absent or declined",
@@ -162,7 +162,7 @@
         "actor": "lovable-implementation",
         "summary": "Owner backlog capture: deferred advanced film/music/shared creative-production requirements appended to Step 10 as Deferred items. No implementation started; current Omni Terminal/OmniBridge priority and pending approvals preserved; no deployment, purchase, publishing or new provider connection authorized.",
         "tests": [
-          "python3 src/test/test_completion_register.py \u2014 register schema revalidated after append"
+          "python3 src/test/test_completion_register.py — register schema revalidated after append"
         ],
         "blocked_unchanged": [
           "processing adapters",
@@ -175,7 +175,7 @@
         "actor": "lovable-implementation",
         "summary": "Owner backlog capture: deferred advanced game-development requirements appended to Step 10 (engine foundation, world/content, quality/delivery, first playable-scene milestone; multiplayer separately gated; Anomaly concept is a future target only). No implementation started; terminal/OmniBridge priority and pending approvals preserved; no purchase, provider grant, deployment or distribution authorized.",
         "tests": [
-          "python3 src/test/test_completion_register.py \u2014 register schema revalidated after append"
+          "python3 src/test/test_completion_register.py — register schema revalidated after append"
         ],
         "blocked_unchanged": [
           "engine adapter selection/installation",
@@ -188,7 +188,7 @@
         "actor": "lovable-implementation",
         "summary": "Owner backlog capture: deferred Omni MCP server + connector distribution requirements appended to Step 13 (authenticated interface, read-only first tools, platform submission packages/matrix, first compatible-client milestone). No MCP server, OAuth activation, endpoint deployment or platform submission started; ongoing terminal/OmniBridge work and pending approvals preserved.",
         "tests": [
-          "python3 src/test/test_completion_register.py \u2014 register schema revalidated after append"
+          "python3 src/test/test_completion_register.py — register schema revalidated after append"
         ],
         "blocked_unchanged": [
           "managed OAuth activation + consent route",
@@ -202,7 +202,7 @@
         "actor": "lovable-implementation",
         "summary": "Owner backlog capture: deferred game server creation appended to Step 10 alongside gaming items (reviewable server configs/adapters, license verification, isolated test lifecycle, persistence/backup/rollback, bounded load tests; generation vs running vs hosted distinguished). No installations, provisioning, purchases or public launch; core work and pending approvals preserved.",
         "tests": [
-          "python3 src/test/test_completion_register.py \u2014 register schema revalidated after append"
+          "python3 src/test/test_completion_register.py — register schema revalidated after append"
         ],
         "blocked_unchanged": [
           "game license/dedicated-server verification",
@@ -258,6 +258,11 @@
       "command": "go test -race -count=1 ./...; go vet ./... (cwd cli); bunx vitest run; python3 /tmp/browser/maintenance/local_flow.py; python3 /tmp/browser/maintenance/check_view.py; python3 src/test/test_completion_register.py",
       "result": "PASS: final Go race suite 36.584s/vet; 11 new maintenance top-level tests; app 933 tests/57 files, focused 114/6; actual disposable binary report/free bytes and 2 files/12 bytes plan unchanged; valid apply blocked, wrong/stale/remote denied; browser/mobile coverage view; six unsigned targets compile. No real malware engine or owner-device action.",
       "runtime": "Linux amd64 disposable fixtures only; local report/plan no data mutation; exact apply gate never deletes; scanner subprocess prototype is test-only and excluded from binary. No fresh hosted customer/device isolation, enrolled scopes, scanner engine/database or safe trash recovery. .lovable/terminal-maintenance-verification.md",
+      "passed": true
+    },
+    "razul-sentinel-network": {
+      "command": "bunx vitest run src/lib/razul-sentinel.test.ts + live curl cycle against /api/public/razul-sentinel/report",
+      "result": "7 unit tests PASS. Live: feedback report accepted+routed (finding + jackboy/omni alert rows verified in DB), health stored history-only, out-of-scope kind 401, forged token 401, revoked sentinel 401; test sentinel and rows deleted after verification.",
       "passed": true
     }
   },
@@ -689,13 +694,13 @@
           "commit_note": "Lovable-managed work; no external or production commit.",
           "evidence": [
             "11 vitest tests pass: owner-confirmed registration with opted-in projects, declarations never live, immediate owner pause blocking reports and autonomy, resume, reports never execute, coordination only between registered agents, unregistered-agent rejection, undeclared-capability denial, all four approval boundaries require owner approval, blocked readiness, corrupt-store fallback.",
-            "Route /omni-agents renders local-only registry with readiness blockers, registration, pause/resume and reporting UI; CONCEPT \u00b7 NO AGENT IS LIVE badge.",
+            "Route /omni-agents renders local-only registry with readiness blockers, registration, pause/resume and reporting UI; CONCEPT · NO AGENT IS LIVE badge.",
             "NOT done: no live agent, runner, model inference, backend membership or Guardian policy engine; no live integration claimed."
           ],
           "verified_at": "2026-10-31",
           "verified_scope": "Local concept-stage registry only: categorized roles, owner-confirmed capability declarations, non-executing task/result/coordination records and owner pause. No live agent, runner, inference or backend membership.",
           "test_result": "11 vitest tests PASS (registration, pause blocking reports, coordination only between registered agents, undeclared-capability denial, approval boundaries, corrupt-store fallback).",
-          "runtime_evidence": "Route /omni-agents renders with CONCEPT \u00b7 NO AGENT IS LIVE badge; reports never execute; autonomy requires a connected runner that does not exist.",
+          "runtime_evidence": "Route /omni-agents renders with CONCEPT · NO AGENT IS LIVE badge; reports never execute; autonomy requires a connected runner that does not exist.",
           "next_action": "Blocked: authenticated backend membership, a real agent runner and live Guardian policy engine before any live integration claim.",
           "release_status": "Not released; private prototype only.",
           "test_command": "bunx vitest run src/test/omni-agents.test.ts"
@@ -723,13 +728,13 @@
           "commit_note": "Lovable-managed work; no external or production commit.",
           "evidence": [
             "11 vitest tests pass: cloud adapters without credentials marked credential-missing and never connected, discovery is declaration-only (probed=false), passports need owner confirmation and start health=unknown, revocation blocks routing and dispatch, routing blocks undeclared permissions/unknown adapters/missing credentials and never executes, dispatch stages recorded as simulated, JAX denied Honeycomb Vault secrets and external submission without consent, readiness separates real vs simulated with credential prerequisites and an unrunnable acceptance test, corrupt-store fallback.",
-            "Route /omni-models renders adapters, passports, routing plans, dispatch loop and real-vs-simulated panel; DECLARATIONS \u00b7 NO MODEL CONNECTED badge.",
+            "Route /omni-models renders adapters, passports, routing plans, dispatch loop and real-vs-simulated panel; DECLARATIONS · NO MODEL CONNECTED badge.",
             "NOT done: no provider credential, live probe, model call, runner or backend enrollment; no model claimed as connected."
           ],
           "verified_at": "2026-10-31",
           "verified_scope": "Declaration-only model gateway: adapter registry, capability discovery (probed=false), owner-confirmed passports, routing plans and simulated dispatch staging. No provider credential, probe, model call or runner.",
           "test_result": "11 vitest tests PASS (credential-missing adapters never connect, revocation blocks routing, JAX denied Vault secrets and non-consented external submission, acceptance test unrunnable).",
-          "runtime_evidence": "Route /omni-models renders with DECLARATIONS \u00b7 NO MODEL CONNECTED badge; real-vs-simulated panel lists credential prerequisites.",
+          "runtime_evidence": "Route /omni-models renders with DECLARATIONS · NO MODEL CONNECTED badge; real-vs-simulated panel lists credential prerequisites.",
           "next_action": "Blocked: owner-supplied provider credentials through secure settings, backend enrollment and a runner before the end-to-end acceptance test can run.",
           "release_status": "Not released; private prototype only.",
           "test_command": "bunx vitest run src/test/omni-model-gateway.test.ts"
@@ -851,7 +856,7 @@
         },
         {
           "id": "05.05",
-          "requirement": "Self-learning / improved learning core for Omni, merged with Knowledge Fusion, project memory and the feedback loop \u2014 honestly defined as consented persistent memory + retrieval + evaluated workflow improvement, not automatic foundation-model retraining or unchecked self-modification. Learn approved user/project preferences, accepted corrections, successful/failed task patterns and verified test outcomes with provenance, confidence, timestamps/version and expiry; distinguish user facts from inference; retrieved instructions/content remain untrusted. Per-user/project isolation, opt-in retention, view/edit/delete/reset/export memory, revocation and secrets exclusion. No cross-customer private memory sharing or training on customer data by default.",
+          "requirement": "Self-learning / improved learning core for Omni, merged with Knowledge Fusion, project memory and the feedback loop — honestly defined as consented persistent memory + retrieval + evaluated workflow improvement, not automatic foundation-model retraining or unchecked self-modification. Learn approved user/project preferences, accepted corrections, successful/failed task patterns and verified test outcomes with provenance, confidence, timestamps/version and expiry; distinguish user facts from inference; retrieved instructions/content remain untrusted. Per-user/project isolation, opt-in retention, view/edit/delete/reset/export memory, revocation and secrets exclusion. No cross-customer private memory sharing or training on customer data by default.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
@@ -901,7 +906,7 @@
         },
         {
           "id": "05.07",
-          "requirement": "First learning milestone: an approved correction is saved, correctly retrieved only in the authorized context next session, measurably changes task behavior, and deletion/revocation stops retrieval \u2014 with recorded actual evidence.",
+          "requirement": "First learning milestone: an approved correction is saved, correctly retrieved only in the authorized context next session, measurably changes task behavior, and deletion/revocation stops retrieval — with recorded actual evidence.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
@@ -966,11 +971,33 @@
           ],
           "verified_scope": "Local reference implementation at /omni-razul: append-only tamper-evident event archive with provenance, redaction, retention tombstoning, per-project opt-in and per-consumer access grants; knowledge graph; allowlisted public-source registry with dedupe/corroboration/ranking/routing. Browser-local records only.",
           "test_result": "14 vitest tests PASS; browser end-to-end retrieval + public-source alert PASS.",
-          "runtime_evidence": "Route /omni-razul renders with LOCAL REFERENCE \u00b7 NO SERVER PERSISTENCE and NO PRIVATE COMMS \u00b7 NO SECRETS badges; denial message shown for ungranted consumers.",
+          "runtime_evidence": "Route /omni-razul renders with LOCAL REFERENCE · NO SERVER PERSISTENCE and NO PRIVATE COMMS · NO SECRETS badges; denial message shown for ungranted consumers.",
           "next_action": "Blocked: server persistence tables + authenticated retrieval API + Guardian policy enforcement after owner account activation; scheduled discovery extends the existing knowledge collector rather than duplicating it.",
           "release_status": "Not released; private prototype only.",
           "test_command": "bunx vitest run src/lib/omni-razul.test.ts",
           "verified_at": "2026-10-31"
+        },
+        {
+          "id": "05.09",
+          "requirement": "RAZUL distributed agent network: secure authenticated lightweight Razul Sentinel connectors per owner-enrolled project (scoped expiring credentials, no blanket access) reporting health/diagnostics/releases/feedback/project events into the central history; dispatcher and queue for AngelTech research scouts and DemonTech defensive inspectors with Guardian policy approval (default deny while unavailable), rate limits, audit and revocation; actionable findings routed to Jackboy/OMNI/Sabrina/JAX. Auto-discovery = reading the enrollment registry, never scanning. No unauthorized external scanning or persistent hidden access.",
+          "status": "Partially implemented",
+          "owner": "Lovable implementation; owner enrollment requires activated owner account",
+          "dependencies": [
+            "05.08",
+            "02",
+            "03"
+          ],
+          "changed_files": [
+            "drizzle/migrations/0026_razul_sentinel_network.sql",
+            "drizzle/migrations/0027_razul_sentinel_source_registration.sql",
+            "src/lib/razul-sentinel.ts",
+            "src/routes/api/public/razul-sentinel/report.ts",
+            "src/lib/razul-sentinel.test.ts"
+          ],
+          "commit": null,
+          "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified.",
+          "evidence": "razul-sentinel-network",
+          "notes": "Live cycle verified 2026-10-31: enrolled test sentinel (scoped: feedback+health, 1h expiry) -> POST /api/public/razul-sentinel/report accepted in-scope feedback (routed to jackboy+omni alert events via a provenance finding row) and health (history only); out-of-scope diagnostic and forged token both rejected 401; revoked sentinel rejected 401; test data removed. Dispatch queue exists but every dispatch is recorded blocked-guardian because the Guardian policy engine is not connected (default deny, no simulated approval). Scout execution, Agent Passports on dispatch, offline retry and owner enrollment UI remain pending."
         }
       ]
     },
@@ -1346,14 +1373,14 @@
           "commit_note": "Lovable-managed work; no external or production commit.",
           "evidence": [
             "11 vitest tests pass: enrollment owner-confirmation/scope rules, revocation denial, Jackboy-approval and no-untrusted-code attestation required, immediate blocked state with no patch/evidence, forbidden goal hints (merge/deploy/secrets/destructive), project-id mismatch rejection, terminal state machine, advisory-only feedback channels, blocked readiness with prerequisites, corrupt-store fallback.",
-            "Route /omni-gateway renders local-only enrollment, task intake, job log and advisory feedback UI with BLOCKED \u00b7 RUNNER NOT CONNECTED badge; browser-local records only.",
-            "NOT done: no authenticated job API, service identity, sandbox runner, model inference, patch generation, test execution, repository write, merge or deploy \u2014 all blocked pending owner-approved backend activation and an isolated runner.",
-            "2026-10-31 update: Guardian policy gate added \u2014 default-deny when unavailable, every decision logged, no simulated approval; merge/deploy require initial human approval and can never be delegated; scoped owner delegation only for non-merge actions. Jackboy learning loop records human review outcomes as local provenance-tagged lessons (retraining: false). 17 gateway tests pass; 83 focused tests pass."
+            "Route /omni-gateway renders local-only enrollment, task intake, job log and advisory feedback UI with BLOCKED · RUNNER NOT CONNECTED badge; browser-local records only.",
+            "NOT done: no authenticated job API, service identity, sandbox runner, model inference, patch generation, test execution, repository write, merge or deploy — all blocked pending owner-approved backend activation and an isolated runner.",
+            "2026-10-31 update: Guardian policy gate added — default-deny when unavailable, every decision logged, no simulated approval; merge/deploy require initial human approval and can never be delegated; scoped owner delegation only for non-merge actions. Jackboy learning loop records human review outcomes as local provenance-tagged lessons (retraining: false). 17 gateway tests pass; 83 focused tests pass."
           ],
           "verified_at": "2026-10-31",
           "verified_scope": "Local planning workspace only: owner-confirmed project enrollment/scopes, Jackboy-approved task intake, blocked job state machine, Guardian default-deny gate with logged decisions, advisory feedback channels, local learning loop. No authenticated job API, sandbox runner, patch generation or repository write.",
           "test_result": "17 gateway vitest tests PASS; 83 focused tests PASS; browser verified enrollment, blocked job, default-deny log and lesson capture.",
-          "runtime_evidence": "Route /omni-gateway renders with BLOCKED \u00b7 RUNNER NOT CONNECTED badge; tasks always end Blocked: sandbox runner and job API not connected; merge/deploy need human approval and cannot be delegated.",
+          "runtime_evidence": "Route /omni-gateway renders with BLOCKED · RUNNER NOT CONNECTED badge; tasks always end Blocked: sandbox runner and job API not connected; merge/deploy need human approval and cannot be delegated.",
           "next_action": "Blocked: owner-approved backend job schema, least-privilege service identity, isolated sandbox runner and activated model inference; owner-approved repository write path. Auto-merge/deploy stay disabled by design.",
           "release_status": "Not released; private prototype only.",
           "test_command": "bunx vitest run src/test/omni-gateway.test.ts"
@@ -1616,7 +1643,7 @@
         },
         {
           "id": "09.06",
-          "requirement": "Autonomous publishing pipeline for multiple posts across arbitrarily many owner-authorized connected accounts (no artificial fixed account-count cap, while honoring actual provider account/app quotas, rate limits, OAuth eligibility, hosting/storage/compute capacity and disclosed plan economics): approved source artifact to platform-specific formatting/metadata/captions/accessibility and content/platform variants, including picture/image posts (single images and multi-image/carousel only where the platform supports it) with platform-specific dimensions/formats, captions, alt text, preview and authorized asset selection. Durable queue with per-account timezone/schedule and multiple queued posts per account; owner-selectable dispatch mode \u2014 sequential account-by-account OR parallel fan-out to all selected authorized accounts from one action/schedule (parallel means concurrent dispatch within provider rate limits and configured worker/resource limits, never guaranteed exact same-second publication). Policy-authorized publishing, real external receipts tracked independently per account, deduplication/idempotency, retry of failed targets only, pause/cancel/revoke controls and clear progress/status. Explicit selected destination per post; one expired/failed connection must not block unrelated authorized accounts. Queued or submitted is never labeled published.",
+          "requirement": "Autonomous publishing pipeline for multiple posts across arbitrarily many owner-authorized connected accounts (no artificial fixed account-count cap, while honoring actual provider account/app quotas, rate limits, OAuth eligibility, hosting/storage/compute capacity and disclosed plan economics): approved source artifact to platform-specific formatting/metadata/captions/accessibility and content/platform variants, including picture/image posts (single images and multi-image/carousel only where the platform supports it) with platform-specific dimensions/formats, captions, alt text, preview and authorized asset selection. Durable queue with per-account timezone/schedule and multiple queued posts per account; owner-selectable dispatch mode — sequential account-by-account OR parallel fan-out to all selected authorized accounts from one action/schedule (parallel means concurrent dispatch within provider rate limits and configured worker/resource limits, never guaranteed exact same-second publication). Policy-authorized publishing, real external receipts tracked independently per account, deduplication/idempotency, retry of failed targets only, pause/cancel/revoke controls and clear progress/status. Explicit selected destination per post; one expired/failed connection must not block unrelated authorized accounts. Queued or submitted is never labeled published.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
@@ -1822,7 +1849,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
-          "verified_scope": "None \u2014 captured as deferred advanced creative production requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred advanced creative production requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -1846,7 +1873,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
-          "verified_scope": "None \u2014 captured as deferred advanced creative production requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred advanced creative production requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -1870,7 +1897,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
-          "verified_scope": "None \u2014 captured as deferred advanced creative production requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred advanced creative production requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -1880,7 +1907,7 @@
           "id": "10.07",
           "requirement": "Shared: conversational voice/typed editing with reviewable changes, nondestructive originals, undo/version history, proxy previews for large video, resumable processing jobs.",
           "missing_input": "Durable job execution runtime, proxy-rendering adapter, versioned media storage; owner approval per studio.",
-          "next_action": "Implement only after the film/music adapters exist; software-development advanced features were mentioned by the owner but not specified \u2014 do not invent that scope."
+          "next_action": "Implement only after the film/music adapters exist; software-development advanced features were mentioned by the owner but not specified — do not invent that scope."
         },
         {
           "status": "Deferred",
@@ -1894,7 +1921,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
-          "verified_scope": "None \u2014 captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -1918,7 +1945,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
-          "verified_scope": "None \u2014 captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -1942,7 +1969,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
-          "verified_scope": "None \u2014 captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -1966,7 +1993,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
-          "verified_scope": "None \u2014 captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred game-development requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -1974,7 +2001,7 @@
           "release_status": "Not released; no purchase, provider grant, production deployment or distribution authorized by this capture",
           "release_receipt": null,
           "id": "10.11",
-          "requirement": "First milestone: one small playable scene with movement, one interaction, save/load, an actual build and recorded test evidence. Optional multiplayer is a separately gated later milestone. The owner's ancient-Egypt 'Anomaly' concept is a future target project only \u2014 not an instruction to rebuild or publish that game now.",
+          "requirement": "First milestone: one small playable scene with movement, one interaction, save/load, an actual build and recorded test evidence. Optional multiplayer is a separately gated later milestone. The owner's ancient-Egypt 'Anomaly' concept is a future target project only — not an instruction to rebuild or publish that game now.",
           "missing_input": "All foundation/content/quality items above; separate explicit owner decision for multiplayer and for any Anomaly project work.",
           "next_action": "Attempt only after the foundation adapter is verified; record build and test evidence in this register before any further game scope."
         },
@@ -1990,7 +2017,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no server installation, provisioning or configuration generation started.",
-          "verified_scope": "None \u2014 captured as deferred game-server requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred game-server requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -2014,7 +2041,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no server installation, provisioning or configuration generation started.",
-          "verified_scope": "None \u2014 captured as deferred game-server requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred game-server requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -2022,13 +2049,13 @@
           "release_status": "Not released; hosting/provider selection, costs, public ports and production deployment remain separately reviewed actions",
           "release_receipt": null,
           "id": "10.13",
-          "requirement": "First game-server milestone: one supported game/module server starts in an isolated test environment, accepts an authorized test client, persists and restores state, and stops cleanly \u2014 with actual recorded evidence.",
+          "requirement": "First game-server milestone: one supported game/module server starts in an isolated test environment, accepts an authorized test client, persists and restores state, and stops cleanly — with actual recorded evidence.",
           "missing_input": "The server-creation item above plus an authorized test client and owner approval of the first game/module.",
           "next_action": "Attempt only after the game engine foundation (10.08) and core verification; record start/connect/save/restore/stop evidence in this register before any hosting discussion."
         },
         {
           "id": "10.14",
-          "requirement": "Creator Enhancement shared layer across Omni/OmniBridge: automatic media/project enhancement, not merely workflow coordination. On authorized upload, detect supported input and offer account/project opt-in automatic enhancement within declared budget/resource limits \u2014 photos (exposure/color/noise/sharpness, optional upscale), audio (noise reduction, loudness/clarity, avoid clipping), movies/YouTube series (dialogue cleanup, levels, supported stabilization/color/captions, consistent series presets); games require an actual editable project or supported asset/build adapter \u2014 profile first and propose measured performance/asset improvements, never arbitrary binary modification or guaranteed quality/FPS. Preserve originals, create versioned derivatives, before/after preview, undo/revert, provenance and changed-settings logs. Conservative presets preserve identity, voice and creative intent; generative alterations separately selectable. Expensive/destructive/unsupported operations must not trigger blindly \u2014 show estimates and honor owner policy. Actual processing adapters, quality checks/regression tests and useful output are required before any verified label. Auto-enhancement does not auto-authorize publishing or ad spend. No promise that every upload or game can be enhanced.",
+          "requirement": "Creator Enhancement shared layer across Omni/OmniBridge: automatic media/project enhancement, not merely workflow coordination. On authorized upload, detect supported input and offer account/project opt-in automatic enhancement within declared budget/resource limits — photos (exposure/color/noise/sharpness, optional upscale), audio (noise reduction, loudness/clarity, avoid clipping), movies/YouTube series (dialogue cleanup, levels, supported stabilization/color/captions, consistent series presets); games require an actual editable project or supported asset/build adapter — profile first and propose measured performance/asset improvements, never arbitrary binary modification or guaranteed quality/FPS. Preserve originals, create versioned derivatives, before/after preview, undo/revert, provenance and changed-settings logs. Conservative presets preserve identity, voice and creative intent; generative alterations separately selectable. Expensive/destructive/unsupported operations must not trigger blindly — show estimates and honor owner policy. Actual processing adapters, quality checks/regression tests and useful output are required before any verified label. Auto-enhancement does not auto-authorize publishing or ad spend. No promise that every upload or game can be enhanced.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
@@ -2480,7 +2507,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
-          "verified_scope": "None \u2014 captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -2504,7 +2531,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
-          "verified_scope": "None \u2014 captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -2528,7 +2555,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
-          "verified_scope": "None \u2014 captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -2552,7 +2579,7 @@
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
-          "verified_scope": "None \u2014 captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
+          "verified_scope": "None — captured as deferred Omni MCP/connector-distribution requirements on 2026-10-24; not started, not claimed.",
           "test_command": null,
           "test_result": "No tests run; item is a deferred requirement, not implemented work.",
           "evidence_ref": "unrun",
@@ -2566,7 +2593,7 @@
         },
         {
           "id": "13.09",
-          "requirement": "Financial trading module coordinated by Omni through an internal specialist agent (no new agent name): read-only research and simulation first \u2014 account/portfolio monitoring, strategy research and advanced configurable strategy skills, backtesting and paper trading with point-in-time data and provenance, out-of-sample/walk-forward validation, transaction fees/slippage/liquidity modeling, drawdown/exposure and benchmark comparisons; avoid look-ahead and survivorship bias and label all hypothetical results. Asset classes/brokers/exchanges are not yet selected \u2014 do not assume stocks/crypto/options or connect accounts.",
+          "requirement": "Financial trading module coordinated by Omni through an internal specialist agent (no new agent name): read-only research and simulation first — account/portfolio monitoring, strategy research and advanced configurable strategy skills, backtesting and paper trading with point-in-time data and provenance, out-of-sample/walk-forward validation, transaction fees/slippage/liquidity modeling, drawdown/exposure and benchmark comparisons; avoid look-ahead and survivorship bias and label all hypothetical results. Asset classes/brokers/exchanges are not yet selected — do not assume stocks/crypto/options or connect accounts.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
@@ -2616,7 +2643,7 @@
         },
         {
           "id": "13.11",
-          "requirement": "Optional autonomous order execution and 'auto-enhance trading': evidence-based strategy evaluation and proposed improvements \u2014 never guaranteed profit or automatic unchecked live strategy changes. Live trading stays disabled pending explicit owner-selected broker/account, secure scoped credentials, supported API and compliance review, and configured risk policy. Account-owner authorization and applicable platform/regulatory requirements must be validated before any public trading service claim.",
+          "requirement": "Optional autonomous order execution and 'auto-enhance trading': evidence-based strategy evaluation and proposed improvements — never guaranteed profit or automatic unchecked live strategy changes. Live trading stays disabled pending explicit owner-selected broker/account, secure scoped credentials, supported API and compliance review, and configured risk policy. Account-owner authorization and applicable platform/regulatory requirements must be validated before any public trading service claim.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
