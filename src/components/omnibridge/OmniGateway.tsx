@@ -144,6 +144,37 @@ export function OmniGateway() {
     setStatus("Enrollment revoked; scopes withdrawn.");
   }
 
+  function saveLearning(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    try {
+      const at = new Date().toISOString();
+      const rec = recordLearning(
+        { jobId: lnJob, outcome: lnOutcome, lesson: lnLesson },
+        crypto.randomUUID(),
+        at,
+      );
+      // Every review also logs a Guardian decision; Guardian is not connected,
+      // so the recorded decision is an explicit default-deny, never an approval.
+      const decision = guardianDecide({
+        id: crypto.randomUUID(),
+        at,
+        jobId: lnJob,
+        action: "submit-review",
+        guardianAvailable: false,
+      });
+      setStore((s) => ({
+        ...s,
+        learning: [...s.learning, rec],
+        guardianDecisions: [...s.guardianDecisions, decision],
+      }));
+      setLnLesson("");
+      setStatus("Review lesson recorded locally; Guardian decision logged as default-deny.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lesson was not accepted.");
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-5 py-14">
       <div className="flex flex-wrap items-center justify-between gap-4">
