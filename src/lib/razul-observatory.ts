@@ -131,7 +131,9 @@ export function extractEntities(title: string): string[] {
   for (const match of title.matchAll(/CVE-\d{4}-\d{4,7}/g)) entities.add(match[0]);
   for (const match of title.matchAll(/\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,2})\b/g)) {
     const name = match[1];
-    if (!ENTITY_STOP.has(name.split(" ")[0] ?? "") && name.length > 3) entities.add(name);
+    if (!name) continue;
+    const firstWord = name.split(" ")[0] ?? "";
+    if (!ENTITY_STOP.has(firstWord) && name.length > 3) entities.add(name);
     if (entities.size >= 8) break;
   }
   return [...entities].slice(0, 8);
