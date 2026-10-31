@@ -6,7 +6,15 @@ import {
   planHandoffs,
   rasulFallbackAnswer,
   SPECIALIST_CAPABILITIES,
+  DEFAULT_OMNI_CONVERSATION,
 } from "./rasul-chat";
+
+describe("OMNI default conversation", () => {
+  it("defaults to Razul without replacing the OMNI execution specialist", () => {
+    expect(DEFAULT_OMNI_CONVERSATION).toBe("rasul");
+    expect(SPECIALIST_CAPABILITIES.find((c) => c.agent === "omni")?.status).toBe("blocked");
+  });
+});
 
 describe("classifyIntent", () => {
   it("routes dispatch verbs to dispatch", () => {

@@ -46,16 +46,17 @@ export function OmniBridge() {
       </header>
       <section className="mt-7 flex flex-wrap items-center justify-between gap-5 border-b border-gold/30 pb-6">
         <div>
-          <p className="eyebrow">Dedicated coordinator / model not connected</p>
-          <h2 className="mt-3 text-3xl">OMNI</h2>
+          <p className="eyebrow">Default conversation / permissioned intelligence</p>
+          <h2 className="mt-3 text-3xl">RA'SUL / Razul</h2>
           <p className="mt-3 text-xs leading-6 text-muted-foreground">
-            Oracle researches. OMNI coordinates. Guardian protects. Local template conversation, not
-            a model response.
+            RA'SUL is OMNI Mothership's central cross-project intelligence. OMNI remains the
+            scoped job coordinator; Oracle and specialists retain their roles. Guardian protects.
+            Resident watcher and research-worker coordination remains proposed, not live execution.
           </p>
         </div>
         <Button asChild variant="cosmic">
           <Link to="/omni" search={{ world: worldId }}>
-            Talk to OMNI · DEMO
+            Talk to RA'SUL
             <ArrowUpRight size={14} />
           </Link>
         </Button>

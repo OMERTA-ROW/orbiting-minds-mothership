@@ -19,7 +19,7 @@ export const navItems = [
   { to: "/mothership", label: "Mothership" },
   { to: "/command-nexus", label: "Command Nexus · Demo" },
   { to: "/omnibridge", label: "OmniBridge · Demo" },
-  { to: "/omni", label: "OMNI Assistant · Demo" },
+  { to: "/omni", label: "OMNI · RA'SUL Conversation" },
   { to: "/omni-marketing", label: "OMNI Marketing · Local" },
   { to: "/omni-gateway", label: "OMNI Coding Gateway · Blocked" },
   { to: "/omni-agents", label: "OMNI Agent Registry · Concept" },

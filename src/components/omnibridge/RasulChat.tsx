@@ -9,7 +9,8 @@
  */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Eye, Send, ShieldCheck } from "lucide-react";
+import { Eye, Send, ShieldCheck, ArrowUpRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { askRazul } from "@/lib/razul-feeds.functions";
@@ -155,19 +156,29 @@ export function RasulChat() {
 
   return (
     <section aria-label="RA'SUL conversation" className="rounded-xl border border-border bg-card p-4">
-      <header className="mb-3 flex items-center gap-2">
+      <header className="mb-3 flex flex-wrap items-center gap-2">
         <Eye className="h-5 w-5 text-primary" aria-hidden />
         <h2 className="text-lg font-semibold text-foreground">RA'SUL — Central Intelligence</h2>
         <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
-          {signedIn === null ? "checking access…" : signedIn ? "owner session active" : "sign in for live answers"}
+          {signedIn === null ? "checking access…" : signedIn ? "signed in · research permission checked on request" : "sign in for live answers"}
         </span>
       </header>
 
       <p className="mb-3 text-sm text-muted-foreground">
-        OMNI Mothership's central cross-project intelligence and coordination agent.
-        Scoped resident watch-agent coordination across owner-enrolled sites and apps is planned;
-        the game is only one participating project.
+        RA'SUL / Razul is OMNI Mothership's default conversational central intelligence:
+        searchable, permissioned historical records across enrolled owned projects and lawful public research.
+        The game is only one participating project.
       </p>
+      <p className="mb-3 text-xs leading-6 text-muted-foreground">
+        Proposed: his specialized research/monitoring agents across permitted public topics and
+        scoped resident watchers on owner-authorized sites/apps, with sourced reports, timestamps,
+        provenance, audit logs, subscriptions and transparent handoffs. No unauthorized scanning,
+        blanket surveillance or entire-internet monitoring. Website policies, permissions and rate
+        limits apply; recommendations never bypass Guardian or owner approval for high-impact actions.
+      </p>
+      <Button asChild variant="ghost" size="sm" className="mb-3">
+        <Link to="/omni-razul">History &amp; public-source observatory <ArrowUpRight size={14} /></Link>
+      </Button>
 
       <div className="mb-3 max-h-96 space-y-3 overflow-y-auto pr-1" role="log" aria-live="polite">
         {messages.length === 0 && (
@@ -217,7 +228,9 @@ export function RasulChat() {
                       size="sm"
                       variant="outline"
                       className="mt-2"
-                      onClick={() => approveDispatch(m.dispatch!.id)}
+                      onClick={() => {
+                        if (m.dispatch) approveDispatch(m.dispatch.id);
+                      }}
                     >
                       <ShieldCheck className="mr-1 h-3 w-3" aria-hidden /> Approve request (execution still blocked)
                     </Button>
@@ -247,8 +260,7 @@ export function RasulChat() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask RA'SUL, or “dispatch … to Jackboy”"
           aria-label="Message RA'SUL"
-          className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
-          autoFocus
+          className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
         <Button type="submit" disabled={busy || !input.trim()} size="sm">
           <Send className="mr-1 h-4 w-4" aria-hidden /> Send
