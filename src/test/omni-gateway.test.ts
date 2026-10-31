@@ -209,9 +209,9 @@ describe("Guardian policy gate", () => {
   });
 
   it("merge/deploy can never be delegated, even by owner policy", () => {
-    expect(() =>
-      createDelegation({ action: "merge", note: "auto-merge main", at: now }),
-    ).toThrow(/cannot be delegated/);
+    expect(() => createDelegation({ action: "merge", note: "auto-merge main", at: now })).toThrow(
+      /cannot be delegated/,
+    );
     expect(() => createDelegation({ action: "deploy", note: "auto-deploy", at: now })).toThrow();
   });
 
@@ -245,7 +245,11 @@ describe("Jackboy learning loop", () => {
     expect(rec.source).toBe("human-review");
     expect(rec.retraining).toBe(false);
     expect(() =>
-      recordLearning({ jobId: jid, outcome: "auto", lesson: "Invalid outcome value here." }, jid, now),
+      recordLearning(
+        { jobId: jid, outcome: "auto", lesson: "Invalid outcome value here." },
+        jid,
+        now,
+      ),
     ).toThrow();
   });
 

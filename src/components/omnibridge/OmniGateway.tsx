@@ -449,32 +449,55 @@ export function OmniGateway() {
         <form onSubmit={saveLearning} className="mt-4 grid gap-3 md:grid-cols-3">
           <label className="block text-xs">
             Job
-            <select aria-label="Learning job" value={lnJob} onChange={(e) => setLnJob(e.target.value)} className={inputCls}>
+            <select
+              aria-label="Learning job"
+              value={lnJob}
+              onChange={(e) => setLnJob(e.target.value)}
+              className={inputCls}
+            >
               <option value="">Select…</option>
               {store.jobs.map((j) => (
-                <option key={j.id} value={j.id}>{j.goal.slice(0, 60)}</option>
+                <option key={j.id} value={j.id}>
+                  {j.goal.slice(0, 60)}
+                </option>
               ))}
             </select>
           </label>
           <label className="block text-xs">
             Review outcome
-            <select aria-label="Review outcome" value={lnOutcome} onChange={(e) => setLnOutcome(e.target.value as LearningOutcome)} className={inputCls}>
+            <select
+              aria-label="Review outcome"
+              value={lnOutcome}
+              onChange={(e) => setLnOutcome(e.target.value as LearningOutcome)}
+              className={inputCls}
+            >
               {learningOutcomes.map((o) => (
-                <option key={o} value={o}>{o}</option>
+                <option key={o} value={o}>
+                  {o}
+                </option>
               ))}
             </select>
           </label>
           <label className="block text-xs">
             Lesson
-            <input aria-label="Lesson" value={lnLesson} onChange={(e) => setLnLesson(e.target.value)} className={inputCls} />
+            <input
+              aria-label="Lesson"
+              value={lnLesson}
+              onChange={(e) => setLnLesson(e.target.value)}
+              className={inputCls}
+            />
           </label>
           <div className="md:col-span-3">
-            <Button size="sm" type="submit">Record lesson</Button>
+            <Button size="sm" type="submit">
+              Record lesson
+            </Button>
           </div>
         </form>
         <ul className="mt-4 space-y-1 text-xs text-muted-foreground">
           {store.learning.map((l) => (
-            <li key={l.id}>{l.at.slice(0, 10)} · {l.outcome} · {l.lesson}</li>
+            <li key={l.id}>
+              {l.at.slice(0, 10)} · {l.outcome} · {l.lesson}
+            </li>
           ))}
         </ul>
       </section>

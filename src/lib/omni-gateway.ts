@@ -312,7 +312,13 @@ export type LearningRecord = LearningInput & {
 };
 
 export function recordLearning(input: unknown, id: string, now: string): LearningRecord {
-  return { ...learningInputSchema.parse(input), id, at: now, source: "human-review", retraining: false };
+  return {
+    ...learningInputSchema.parse(input),
+    id,
+    at: now,
+    source: "human-review",
+    retraining: false,
+  };
 }
 
 export type GatewayReadiness = {
