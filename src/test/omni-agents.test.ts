@@ -41,7 +41,9 @@ describe("agent registration", () => {
       projectIds: [pid],
     };
     expect(() => registerAgent({ ...base, ownerConfirmed: false }, aid, now)).toThrow();
-    expect(() => registerAgent({ ...base, ownerConfirmed: true, projectIds: [] }, aid, now)).toThrow();
+    expect(() =>
+      registerAgent({ ...base, ownerConfirmed: true, projectIds: [] }, aid, now),
+    ).toThrow();
   });
 
   it("registers as a declaration that is never live", () => {
@@ -57,7 +59,12 @@ describe("owner pause control", () => {
     const paused = pauseAgent(angel(), now);
     expect(paused.paused).toBe(true);
     expect(() =>
-      fileReport({ agentId: aid, kind: "task", summary: "Draft a research brief for review." }, [paused], bid, now),
+      fileReport(
+        { agentId: aid, kind: "task", summary: "Draft a research brief for review." },
+        [paused],
+        bid,
+        now,
+      ),
     ).toThrow(/paused/);
     expect(autonomyDecision(paused, "drafting").allowed).toBe(false);
     const resumed = resumeAgent(paused, now);
@@ -90,7 +97,12 @@ describe("task/result reporting and coordination", () => {
       now,
     );
     const ok = fileReport(
-      { agentId: aid, kind: "coordination", summary: "Please review the draft patch for risk.", toAgentId: bid },
+      {
+        agentId: aid,
+        kind: "coordination",
+        summary: "Please review the draft patch for risk.",
+        toAgentId: bid,
+      },
       [angel(), demon],
       "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
       now,
@@ -98,7 +110,12 @@ describe("task/result reporting and coordination", () => {
     expect(ok.toAgentId).toBe(bid);
     expect(() =>
       fileReport(
-        { agentId: aid, kind: "coordination", summary: "Coordinate with an unknown agent here.", toAgentId: pid },
+        {
+          agentId: aid,
+          kind: "coordination",
+          summary: "Coordinate with an unknown agent here.",
+          toAgentId: pid,
+        },
         [angel()],
         "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
         now,
@@ -108,7 +125,12 @@ describe("task/result reporting and coordination", () => {
 
   it("rejects reports from unregistered agents", () => {
     expect(() =>
-      fileReport({ agentId: bid, kind: "task", summary: "Unregistered agent reporting in." }, [angel()], bid, now),
+      fileReport(
+        { agentId: bid, kind: "task", summary: "Unregistered agent reporting in." },
+        [angel()],
+        bid,
+        now,
+      ),
     ).toThrow(/not registered/);
   });
 });

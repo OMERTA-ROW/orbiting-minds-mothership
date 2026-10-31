@@ -64,9 +64,7 @@ export function OmniAgentRegistry() {
     e.preventDefault();
     setError("");
     try {
-      const ids = projectIds
-        .split(/[\s,]+/)
-        .filter(Boolean);
+      const ids = projectIds.split(/[\s,]+/).filter(Boolean);
       const agent = registerAgent(
         { name, category, mission, capabilities: caps, projectIds: ids, ownerConfirmed: confirmed },
         crypto.randomUUID(),
@@ -111,7 +109,9 @@ export function OmniAgentRegistry() {
     const at = new Date().toISOString();
     setStore((s) => ({
       ...s,
-      agents: s.agents.map((a) => (a.id === id ? (paused ? resumeAgent(a, at) : pauseAgent(a, at)) : a)),
+      agents: s.agents.map((a) =>
+        a.id === id ? (paused ? resumeAgent(a, at) : pauseAgent(a, at)) : a,
+      ),
     }));
     setStatus(paused ? "Agent resumed." : "Agent paused by owner.");
   }
@@ -148,37 +148,67 @@ export function OmniAgentRegistry() {
           <form onSubmit={saveRegistration} className="mt-4 space-y-3">
             <label className="block text-xs">
               Agent name
-              <input aria-label="Agent name" value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+              <input
+                aria-label="Agent name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={inputCls}
+              />
             </label>
             <label className="block text-xs">
               Category
-              <select aria-label="Agent category" value={category} onChange={(e) => setCategory(e.target.value as AgentCategory)} className={inputCls}>
+              <select
+                aria-label="Agent category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as AgentCategory)}
+                className={inputCls}
+              >
                 {agentCategories.map((c) => (
-                  <option key={c} value={c}>{categoryLabels[c]}</option>
+                  <option key={c} value={c}>
+                    {categoryLabels[c]}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="block text-xs">
               Mission
-              <textarea aria-label="Agent mission" value={mission} onChange={(e) => setMission(e.target.value)} rows={3} className={inputCls} />
+              <textarea
+                aria-label="Agent mission"
+                value={mission}
+                onChange={(e) => setMission(e.target.value)}
+                rows={3}
+                className={inputCls}
+              />
             </label>
             <fieldset className="text-xs">
               <legend>Declared capabilities</legend>
               {agentCapabilities.map((c) => (
                 <label key={c} className="mr-3 inline-flex items-center gap-1">
-                  <input type="checkbox" checked={caps.includes(c)} onChange={() => toggleCap(c)} /> {c}
+                  <input type="checkbox" checked={caps.includes(c)} onChange={() => toggleCap(c)} />{" "}
+                  {c}
                 </label>
               ))}
             </fieldset>
             <label className="block text-xs">
               Opted-in project IDs (UUIDs, space or comma separated)
-              <input aria-label="Opted-in project IDs" value={projectIds} onChange={(e) => setProjectIds(e.target.value)} className={inputCls} />
+              <input
+                aria-label="Opted-in project IDs"
+                value={projectIds}
+                onChange={(e) => setProjectIds(e.target.value)}
+                className={inputCls}
+              />
             </label>
             <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+              />
               I am the owner and confirm this registration
             </label>
-            <Button size="sm" type="submit">Register agent</Button>
+            <Button size="sm" type="submit">
+              Register agent
+            </Button>
           </form>
         </section>
 
@@ -189,15 +219,25 @@ export function OmniAgentRegistry() {
               <li key={a.id} className="rounded border border-border p-3">
                 <p>
                   <strong>{a.name}</strong> · {categoryLabels[a.category]} ·{" "}
-                  {a.paused ? <span className="text-warning">paused</span> : "active declaration"} · not live
+                  {a.paused ? <span className="text-warning">paused</span> : "active declaration"} ·
+                  not live
                 </p>
-                <p className="mt-1 text-muted-foreground">Capabilities: {a.capabilities.join(", ")}</p>
-                <Button variant="outline" size="sm" className="mt-2" onClick={() => togglePause(a.id, a.paused)}>
+                <p className="mt-1 text-muted-foreground">
+                  Capabilities: {a.capabilities.join(", ")}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => togglePause(a.id, a.paused)}
+                >
                   {a.paused ? "Resume" : "Pause"}
                 </Button>
               </li>
             ))}
-            {store.agents.length === 0 && <li className="text-muted-foreground">No agents registered.</li>}
+            {store.agents.length === 0 && (
+              <li className="text-muted-foreground">No agents registered.</li>
+            )}
           </ul>
         </section>
       </div>
@@ -211,52 +251,93 @@ export function OmniAgentRegistry() {
         <form onSubmit={saveReport} className="mt-4 grid gap-3 md:grid-cols-2">
           <label className="block text-xs">
             Reporting agent
-            <select aria-label="Reporting agent" value={repAgent} onChange={(e) => setRepAgent(e.target.value)} className={inputCls}>
+            <select
+              aria-label="Reporting agent"
+              value={repAgent}
+              onChange={(e) => setRepAgent(e.target.value)}
+              className={inputCls}
+            >
               <option value="">Select…</option>
               {store.agents.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
               ))}
             </select>
           </label>
           <label className="block text-xs">
             Kind
-            <select aria-label="Report kind" value={repKind} onChange={(e) => setRepKind(e.target.value as ReportKind)} className={inputCls}>
+            <select
+              aria-label="Report kind"
+              value={repKind}
+              onChange={(e) => setRepKind(e.target.value as ReportKind)}
+              className={inputCls}
+            >
               {reportKinds.map((k) => (
-                <option key={k} value={k}>{k}</option>
+                <option key={k} value={k}>
+                  {k}
+                </option>
               ))}
             </select>
           </label>
           <label className="block text-xs">
             Coordinate with (optional)
-            <select aria-label="Coordination target" value={repTo} onChange={(e) => setRepTo(e.target.value)} className={inputCls}>
+            <select
+              aria-label="Coordination target"
+              value={repTo}
+              onChange={(e) => setRepTo(e.target.value)}
+              className={inputCls}
+            >
               <option value="">None</option>
               {store.agents.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
               ))}
             </select>
           </label>
           <label className="block text-xs">
             Approval boundary (optional)
-            <select aria-label="Approval boundary" value={repBoundary} onChange={(e) => setRepBoundary(e.target.value)} className={inputCls}>
+            <select
+              aria-label="Approval boundary"
+              value={repBoundary}
+              onChange={(e) => setRepBoundary(e.target.value)}
+              className={inputCls}
+            >
               <option value="">None</option>
               {approvalBoundaries.map((b) => (
-                <option key={b} value={b}>{b}</option>
+                <option key={b} value={b}>
+                  {b}
+                </option>
               ))}
             </select>
           </label>
           <label className="block text-xs md:col-span-2">
             Summary
-            <textarea aria-label="Report summary" value={repSummary} onChange={(e) => setRepSummary(e.target.value)} rows={2} className={inputCls} />
+            <textarea
+              aria-label="Report summary"
+              value={repSummary}
+              onChange={(e) => setRepSummary(e.target.value)}
+              rows={2}
+              className={inputCls}
+            />
           </label>
           <div className="md:col-span-2">
-            <Button size="sm" type="submit">File report</Button>
+            <Button size="sm" type="submit">
+              File report
+            </Button>
           </div>
         </form>
         <ul className="mt-4 space-y-1 text-xs text-muted-foreground">
           {store.reports.map((r) => (
             <li key={r.id}>
               {r.at.slice(0, 19)} · {r.kind} · {r.summary}
-              {r.boundary && <span className="text-warning"> · boundary: {r.boundary} — owner review required</span>}
+              {r.boundary && (
+                <span className="text-warning">
+                  {" "}
+                  · boundary: {r.boundary} — owner review required
+                </span>
+              )}
             </li>
           ))}
         </ul>

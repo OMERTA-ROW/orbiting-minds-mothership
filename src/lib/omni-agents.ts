@@ -139,7 +139,10 @@ export function autonomyDecision(
       reason: `${boundary} actions always need owner/human approval first.`,
     };
   if (!agent.capabilities.includes(capability))
-    return { allowed: false, reason: `${capability} is not a declared capability of ${agent.name}.` };
+    return {
+      allowed: false,
+      reason: `${capability} is not a declared capability of ${agent.name}.`,
+    };
   return { allowed: true, reason: "Declared capability; still requires a connected runner." };
 }
 
