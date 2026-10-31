@@ -53,7 +53,7 @@ export const Route = createFileRoute("/api/public/razul-sentinel/report")({
 
         const inserted = await supabaseAdmin
           .from("razul_sentinel_events")
-          .insert({ sentinel_id: sentinelId, kind, payload })
+          .insert({ sentinel_id: sentinelId, kind, payload: payload as never })
           .select("id")
           .single();
         if (inserted.error)
