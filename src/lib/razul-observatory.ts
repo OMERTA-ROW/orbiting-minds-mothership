@@ -304,6 +304,37 @@ export function confidenceFor(input: {
   return Math.min(100, base + Math.round(input.relevance / 5) + corroboration);
 }
 
+export interface AlertCandidate {
+  id: string;
+  relevance: number;
+  routed_to: string[];
+}
+
+export interface AgentSubscription {
+  agent: string;
+  min_relevance: number;
+  alerts_enabled: boolean;
+}
+
+/**
+ * Proactive alert fan-out: one event per finding x subscribed agent, honoring
+ * each agent's relevance floor and alert toggle. Bounded per run.
+ */
+export function planAlertEvents(
+  findings: readonly AlertCandidate[],
+  subscriptions: readonly AgentSubscription[],
+  maxEvents = 50,
+): { finding_id: string; agent: string; relevance: number }[] {
+  const active = subscriptions.filter((s) => s.alerts_enabled);
+  return findings
+    .flatMap((f) =>
+      active
+        .filter((a) => f.routed_to.includes(a.agent) && f.relevance >= a.min_relevance)
+        .map((a) => ({ finding_id: f.id, agent: a.agent, relevance: f.relevance })),
+    )
+    .slice(0, maxEvents);
+}
+
 /**
  * Owner controls applied to the registry: active sources, not blocked,
  * whose category is inside the configured coverage. Sources rotate by

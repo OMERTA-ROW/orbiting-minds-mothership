@@ -256,15 +256,14 @@ export async function runRazulObservatoryJob(
         .eq("alerts_enabled", true)
         .abortSignal(signal);
       if (!feeds.error && feeds.data.length) {
-        const events = routed.data.flatMap((f) =>
-          feeds.data
-            .filter(
-              (a) =>
-                (f.routed_to as string[]).includes(a.agent) &&
-                f.relevance >= a.min_relevance,
-            )
-            .map((a) => ({ finding_id: f.id, agent: a.agent, relevance: f.relevance })),
-        ).slice(0, 50);
+        const events = planAlertEvents(
+          routed.data.map((f) => ({
+            id: f.id,
+            relevance: f.relevance,
+            routed_to: f.routed_to as string[],
+          })),
+          feeds.data,
+        );
         if (events.length)
           await admin
             .from("razul_alert_events")
