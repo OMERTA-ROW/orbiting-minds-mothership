@@ -218,10 +218,12 @@ export function RazulArchive() {
           segregation for Jackboy, OMNI, Guardian, Sabrina and JAX.
         </p>
         <p className="mt-4 max-w-3xl border-l border-warning pl-4 text-xs leading-6 text-warning">
-          This is the local reference implementation. Server-side persistence, scheduled public-web
-          discovery and Guardian policy enforcement require the activated owner backend; the only
-          real scheduled collection today remains the existing daily knowledge collector. RAZUL does
-          not monitor the entire internet and never touches private communications or secrets.
+          This project-history archive is a local reference, not a private server audit.
+          The separate public-feed observatory uses existing authenticated research services and
+          stored source timestamps; specialized research workers, resident watchers and approved
+          task execution remain proposed. Guardian enforcement and owner activation are required
+          before rollout. Source policies, permissions and rate limits apply. RA'SUL never monitors
+          the entire internet or accesses private communications or secrets.
         </p>
       </header>
 

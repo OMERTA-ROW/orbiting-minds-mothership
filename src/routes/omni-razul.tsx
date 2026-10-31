@@ -16,7 +16,7 @@ export const Route = createFileRoute("/omni-razul")({
   head: () =>
     seo(
       "RA'SUL (Razul) · OMNI Central Intelligence",
-      "RA'SUL is OMNI Mothership's central cross-project intelligence and coordination agent, with sourced research and permissioned history. Scoped resident watch-agent coordination across owner-enrolled sites and apps remains staged; the game is only one participating project.",
+      "RA'SUL / Razul is OMNI Mothership's default conversational central intelligence for searchable permissioned history and lawful public research. Specialized research and scoped resident watcher coordination remains proposed; all tasks honor source policies, rate limits, Guardian and owner approval.",
     ),
   component: RazulPage,
 });
