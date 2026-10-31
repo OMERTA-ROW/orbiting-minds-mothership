@@ -11,8 +11,8 @@ export const Route = createFileRoute("/omni")({
   }),
   head: () =>
     seo(
-      "OMNI · RA'SUL Central Intelligence",
-      "RA'SUL / Razul is OMNI Mothership's default conversational central intelligence for permissioned project history and lawful public-source research. Scoped watcher coordination is proposed; OMNI specialist planning remains separate with Guardian and owner approval gates.",
+      "OMNI · Razul Central Intelligence (RA'SUL)",
+      "Razul Central Intelligence (RA'SUL) is OMNI Mothership's default speaking agent for permissioned historical records and lawful public research across enrolled owned projects. The game server is one project, not his home; scoped watcher coordination and dispatch retain Guardian and owner approval gates.",
     ),
   component: Page,
 });
@@ -22,7 +22,7 @@ function Page() {
   return (
     <Tabs defaultValue={DEFAULT_OMNI_CONVERSATION} className="mx-auto max-w-[1600px] px-5 py-8 md:px-10">
       <TabsList aria-label="OMNI conversations" className="mb-6 h-auto flex-wrap justify-start">
-        <TabsTrigger value="rasul">RA'SUL · Central Intelligence</TabsTrigger>
+        <TabsTrigger value="rasul">Razul Central Intelligence</TabsTrigger>
         <TabsTrigger value="omni">OMNI specialist · Demo</TabsTrigger>
       </TabsList>
       <TabsContent value="rasul" forceMount hidden={false} className="data-[state=inactive]:hidden">

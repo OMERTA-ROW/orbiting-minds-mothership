@@ -47,7 +47,7 @@ export function OmniBridge() {
       <section className="mt-7 flex flex-wrap items-center justify-between gap-5 border-b border-gold/30 pb-6">
         <div>
           <p className="eyebrow">Default conversation / permissioned intelligence</p>
-          <h2 className="mt-3 text-3xl">RA'SUL / Razul</h2>
+          <h2 className="mt-3 text-3xl">Razul Central Intelligence (RA'SUL)</h2>
           <p className="mt-3 text-xs leading-6 text-muted-foreground">
             RA'SUL is OMNI Mothership's central cross-project intelligence. OMNI remains the
             scoped job coordinator; Oracle and specialists retain their roles. Guardian protects.
@@ -56,7 +56,7 @@ export function OmniBridge() {
         </div>
         <Button asChild variant="cosmic">
           <Link to="/omni" search={{ world: worldId }}>
-            Talk to RA'SUL
+            Talk to Razul
             <ArrowUpRight size={14} />
           </Link>
         </Button>

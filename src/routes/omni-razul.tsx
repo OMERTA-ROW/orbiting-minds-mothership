@@ -17,8 +17,8 @@ function RazulPage() {
 export const Route = createFileRoute("/omni-razul")({
   head: () =>
     seo(
-      "RA'SUL · All-Seeing Eye Observatory",
-      "Razul's private intelligence observatory inside OMNI/Evolution: verified-owner MFA-gated infrastructure metadata, sourced findings and chronological history. Scoped watcher and continuous-monitoring capabilities remain proposed; no unrestricted scraping or entire-internet visibility.",
+      "Razul Central Intelligence (RA'SUL) · All-Seeing Eye",
+      "Razul Central Intelligence is OMNI/Evolution's cross-project speaking intelligence and private All-Seeing Eye observatory: owner/MFA-gated infrastructure, lawful public research and historical records. Game servers are participating projects, not exclusive assignments; watchers and scoped dispatch remain proposed and Guardian-gated.",
     ),
   component: RazulPage,
 });

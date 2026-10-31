@@ -209,9 +209,11 @@ export function RazulArchive() {
           <DemoBadge label="LOCAL REFERENCE · NO SERVER PERSISTENCE" />
           <DemoBadge label="NO PRIVATE COMMS · NO SECRETS" />
         </div>
-        <h1 className="mt-5 max-w-4xl text-5xl leading-tight">RA'SUL (Razul) · The Eternal Archivist</h1>
+        <h1 className="mt-5 max-w-4xl text-5xl leading-tight">Razul Central Intelligence (RA'SUL)</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-          RA'SUL is the central cross-project intelligence and coordination agent within OMNI Mothership.
+          The Eternal Archivist — OMNI Mothership's central cross-project speaking intelligence,
+          All-Seeing Eye observatory, authorized public-source research and historical records layer
+          for OMNI/Evolution. Scoped watcher coordination and dispatch to enrolled project agents remain proposed.
           This local archive keeps timestamped, append-only, tamper-evident history for enrolled owner-controlled
           projects: events, agent reports, test results, code-change metadata, approvals, incidents
           and outcomes — with provenance, search, retention, redaction and per-consumer access
