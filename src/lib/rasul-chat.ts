@@ -174,7 +174,7 @@ export function rasulFallbackAnswer(intent: RasulIntent, signedIn: boolean): str
     case "agents":
       return "The specialist registry above shows each agent's passport role and its honest current state — verified, simulated, or blocked with the named prerequisite.";
     case "dispatch":
-      return "Dispatch requests are prepared for your explicit approval. Execution stays blocked until the Guardian policy engine and the isolated job runner are connected — I will not simulate a completed job.";
+      return "Dispatch requests are prepared for your explicit approval. Execution stays blocked until the Guardian policy engine and the isolated job runner are connected — I will not simulate a finished job.";
     default:
       return "I could not reach the research index for that question. No answer was fabricated; try again once the backend connection is confirmed.";
   }
