@@ -208,3 +208,8 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [x] `/angel-tech` local concept workspace: Sabrina marketing-intelligence notes, review-only campaign drafts, prospective consenting agent/research-group registry, perspective, invitation status, API/MCP compatibility, requested permissions, human approval, revocation, local history and JSON export.
 - [x] Sabrina added to the demo Agent Network as pending/local-drafts-only; navigation and OMNI handoff link added. No trend crawler, model inference, discovery, account connection, credential storage, unsolicited outreach or delivery.
 - [ ] BLOCKED live ambassador: verified owner/member activation, server-side records and permissions, official API/MCP credentials through secure settings, consenting outreach channel and independent human approval.
+
+## Gateway Guardian gate + learning loop — 2026-10-31
+- [x] Guardian policy gate in `/omni-gateway`: default-deny when unavailable, logged decisions, no simulated approval; merge/deploy need initial human approval and can never be delegated; scoped owner delegation only for non-merge actions.
+- [x] Jackboy learning loop: human review outcomes recorded as local provenance-tagged lessons; not retraining, never changes policy. 17 gateway tests, 83 focused tests pass.
+- [ ] BLOCKED end-to-end: authenticated job lifecycle, isolated generation/tests and live Guardian review request all need the activated backend, service identity and sandbox runner; no connection claimed before end-to-end tests.
