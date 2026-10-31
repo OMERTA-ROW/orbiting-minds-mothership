@@ -15,8 +15,8 @@ function AgentDirectory() {
 export const Route = createFileRoute("/omni-agents")({
   head: () =>
     seo(
-      "RA'SUL · OMNI Agent Directory",
-      "RA'SUL is the default central-intelligence conversation above OMNI's specialist directory. Research access is authenticated; agent declarations, specialized workers and resident watchers remain proposed, with scopes, Guardian policy and owner approval required.",
+      "Razul Central Intelligence (RA'SUL) · Agent Directory",
+      "Razul Central Intelligence is OMNI Mothership's default cross-project speaking agent above its distinct specialist directory. Research access is authenticated; resident watchers and dispatch remain proposed with scopes, Guardian and owner approval. Itanimulli retains its own game-specific resident agents.",
     ),
   component: AgentDirectory,
 });

@@ -37,7 +37,7 @@ export function AllSeeingEye() {
     <section aria-labelledby="all-seeing-eye-title" className="mx-auto max-w-[1500px] border-y border-border px-5 py-8 md:px-10">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">RA'SUL / private intelligence observatory</p>
+          <p className="eyebrow">Razul Central Intelligence (RA'SUL) / private observatory</p>
           <h2 id="all-seeing-eye-title" className="mt-3 flex items-center gap-3 text-3xl"><Eye size={26} className="shrink-0 text-primary" />All-Seeing Eye</h2>
         </div>
         {user && <Button variant="outline" disabled={busy || !ready} onClick={() => void refresh()}><RefreshCw size={14} />{busy ? "Checking owner access…" : "Inspect owner records"}</Button>}

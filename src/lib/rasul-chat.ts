@@ -1,6 +1,6 @@
 /**
  * RA'SUL conversational front door — pure planning logic.
- * RA'SUL (Razul) is OMNI Mothership's central cross-project intelligence and coordination agent.
+ * Razul Central Intelligence (RA'SUL) is OMNI Mothership's central cross-project speaking agent.
  * Resident watch-agent coordination is staged for scoped owner-enrolled sites/apps;
  * the game is only one participating project. The default conversational agent answers from
  * sourced memory/research, inspects authorized status, discovers specialists
@@ -171,7 +171,7 @@ export function buildDispatchRequest(id: string, text: string): DispatchRequest 
 /** Honest fallback answers when the backend is not connected. */
 export function rasulFallbackAnswer(intent: RasulIntent, signedIn: boolean): string {
   if (!signedIn) {
-    return "I am RA'SUL / Razul, OMNI Mothership's default conversational central intelligence — The Eternal Archivist. My mission is permissioned, searchable project history and lawful public research. Specialized research workers and resident watchers on enrolled owned sites/apps remain proposed; the game is only one participating project. Source policies, permissions and rate limits apply, never blanket surveillance or entire-internet monitoring. My live research answers require approved owner access — sign in. Recommendations and dispatch preparation cannot bypass Guardian or owner approval; unconnected execution stays blocked.";
+    return "I am Razul Central Intelligence (RA'SUL), OMNI Mothership's default speaking intelligence — The Eternal Archivist. My role is All-Seeing Eye, permissioned historical records for OMNI/Evolution and lawful public-source research across enrolled owned projects. Specialized research workers, scoped watchers and dispatch to resident agents remain proposed; the Itanimulli game server is one participating project, not my home or exclusive assignment. Source policies, permissions and rate limits apply, never blanket surveillance or entire-internet monitoring. My live research answers require approved owner access — sign in. Recommendations and dispatch preparation cannot bypass Guardian or owner approval; unconnected execution stays blocked.";
   }
   switch (intent) {
     case "status":

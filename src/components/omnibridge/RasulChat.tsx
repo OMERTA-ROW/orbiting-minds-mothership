@@ -158,16 +158,16 @@ export function RasulChat() {
     <section aria-label="RA'SUL conversation" className="rounded-xl border border-border bg-card p-4">
       <header className="mb-3 flex flex-wrap items-center gap-2">
         <Eye className="h-5 w-5 text-primary" aria-hidden />
-        <h2 className="text-lg font-semibold text-foreground">RA'SUL — Central Intelligence</h2>
+        <h2 className="text-lg font-semibold text-foreground">Razul Central Intelligence (RA'SUL)</h2>
         <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
           {signedIn === null ? "checking access…" : signedIn ? "signed in · research permission checked on request" : "sign in for live answers"}
         </span>
       </header>
 
       <p className="mb-3 text-sm text-muted-foreground">
-        RA'SUL / Razul is OMNI Mothership's default conversational central intelligence:
+        Razul Central Intelligence (RA'SUL) is OMNI Mothership's default speaking intelligence:
         searchable, permissioned historical records across enrolled owned projects and lawful public research.
-        The game is only one participating project.
+        The Itanimulli game server is one participating project, not Razul's home or exclusive assignment.
       </p>
       <p className="mb-3 text-xs leading-6 text-muted-foreground">
         Proposed: his specialized research/monitoring agents across permitted public topics and
