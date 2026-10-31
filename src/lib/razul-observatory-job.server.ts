@@ -143,6 +143,7 @@ export async function runRazulObservatoryJob(
       .from("razul_runs")
       .select("id", { count: "exact", head: true })
       .abortSignal(signal);
+    if (runCount.error) throw new Error("Run rotation could not be verified.");
     const sources = filterSources(
       registry.data as SourceRow[],
       {
@@ -235,7 +236,8 @@ export async function runRazulObservatoryJob(
         if (receipt.error) throw new Error("Source check receipt failed");
       } catch (e) {
         const code = !read.entries ? "fetch-failed" : e instanceof Error && e.message === "Source check receipt failed" ? "receipt-failed" : "processing-failed";
-        await admin.from("razul_source_checks").upsert({ source_id: source.id, run_id: currentRunId, checked_at: now().toISOString(), status: "failed", fetched: read.entries?.length ?? 0, inserted: 0, error_code: code }, { onConflict: "source_id,run_id" }).abortSignal(AbortSignal.timeout(2_000));
+        const failedReceipt = await admin.from("razul_source_checks").upsert({ source_id: source.id, run_id: currentRunId, checked_at: now().toISOString(), status: "failed", fetched: read.entries?.length ?? 0, inserted: 0, error_code: code }, { onConflict: "source_id,run_id" }).abortSignal(AbortSignal.timeout(2_000));
+        if (failedReceipt.error) throw new Error("Source failure receipt could not be persisted.");
         errors.push({
           source: source.id,
           error: code,
@@ -318,7 +320,7 @@ export async function runRazulObservatoryJob(
     failure = error;
     if (runId) {
       try {
-        await admin
+        const failedOutcome = await admin
           .from("razul_runs")
           .update({
             status: "failed",
@@ -331,6 +333,7 @@ export async function runRazulObservatoryJob(
           })
           .eq("id", runId)
           .abortSignal(AbortSignal.timeout(2_000));
+        if (failedOutcome.error) console.error("Observatory failure outcome could not be persisted.");
       } catch {
         console.error("Observatory failure outcome could not be persisted.");
       }

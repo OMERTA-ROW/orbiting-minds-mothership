@@ -48,6 +48,11 @@ describe("All-Seeing Eye owner-only infrastructure", () => {
     expect(snapshot.history[0]?.id).toBe("event:119");
     expect(snapshot.history[99]?.id).toBe("event:20");
   });
+  it("source receipt and control-change history preserve actual event timestamps", () => {
+    const snapshot = makeEyeSnapshot({ ...empty, checks: [{ id: "c1", source_id: "cisa", checked_at: "2026-10-31T18:00:00Z", status: "failed", fetched: 0, inserted: 0, error_code: "fetch-failed" }], audit: [{ id: "a1", action: "UPDATE", record_type: "razul_agent_feeds", occurred_at: "2026-10-31T17:00:00Z" }] }, "2026-10-31T19:00:00Z");
+    expect(snapshot.history.map((r) => r.id)).toEqual(["check:c1", "audit:a1"]);
+    expect(snapshot.history[0]?.at).toBe("2026-10-31T18:00:00Z");
+  });
   it("omits credential-like labels and credential-bearing source links", () => {
     expect(eyeLabel("password=fictional-example")).toBe("[restricted text omitted]");
     expect(eyeSourceUrl("https://example.org/?token=fixture")).toBeNull();

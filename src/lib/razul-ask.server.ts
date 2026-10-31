@@ -50,7 +50,7 @@ export async function answerRazulQuery(
 ): Promise<RazulAnswer> {
   const { admin, now } = deps;
   const hash = await sha256(questionHashInput(input.question));
-  const scopeKey = (input.scopeCategories ?? []).join(",") || "all";
+  const scopeKey = input.scopeCategories ? [...input.scopeCategories].sort().join(",") || "none" : "all";
 
   // Cache: fresh identical question + scope returns the stored answer.
   const cached = await admin
@@ -59,8 +59,9 @@ export async function answerRazulQuery(
     .eq("question_hash", hash)
     .eq("scope_key", scopeKey)
     .maybeSingle();
-  if (
+  if (!cached.error &&
     cached.data &&
+    now().getTime() >= new Date(cached.data.created_at).getTime() &&
     now().getTime() - new Date(cached.data.created_at).getTime() < CACHE_TTL_MS
   ) {
     await admin.from("razul_query_log").insert({
@@ -105,7 +106,7 @@ export async function answerRazulQuery(
     cached: false,
     citations,
     answerSummary: citations.length
-      ? `${citations.length} cited finding${citations.length === 1 ? "" : "s"} from the observatory index, newest first.`
+      ? `${citations.length} cited finding${citations.length === 1 ? "" : "s"} from the bounded observatory index, ranked by text relevance. Confidence and evidence classes are heuristic, not verification.`
       : "No matching findings in the observatory index yet; the next scheduled run may cover this.",
   };
 

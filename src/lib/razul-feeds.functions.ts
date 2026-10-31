@@ -7,6 +7,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { setResponseHeader } from "@tanstack/react-start/server";
 
 const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian", "hercules"] as const;
 export type RazulAgent = (typeof AGENTS)[number];
@@ -17,6 +18,7 @@ type Rpc = (
 ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
 async function requireApprovedReader(supabase: { rpc: unknown }) {
+  setResponseHeader("Cache-Control", "private, no-store");
   const rpc = (supabase.rpc as unknown as Rpc).bind(supabase);
   const { data, error } = await rpc("is_razul_owner", {});
   if (error) throw new Error("Access could not be verified.");
