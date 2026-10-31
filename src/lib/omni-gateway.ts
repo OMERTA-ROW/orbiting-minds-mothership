@@ -183,6 +183,138 @@ export function addFeedback(input: unknown, id: string, now: string): FeedbackEn
   return { ...feedbackInputSchema.parse(input), id, at: now, advisory: true };
 }
 
+// ---- Guardian policy gate -------------------------------------------------
+// Guardian is a concept-stage policy engine here: no live Guardian service is
+// connected. The gate therefore defaults to DENY, logs every decision, and
+// never substitutes a simulated approval for a real one.
+
+export const guardianActions = [
+  "generate-patch",
+  "run-sandbox-tests",
+  "submit-review",
+  "merge",
+  "deploy",
+] as const;
+export type GuardianAction = (typeof guardianActions)[number];
+
+export type GuardianDecision = {
+  id: string;
+  at: string;
+  jobId: string;
+  action: GuardianAction;
+  outcome: "allow" | "deny";
+  basis: "owner-policy" | "human-approval" | "default-deny-unavailable";
+  note: string;
+};
+
+export type DelegationPolicy = {
+  action: GuardianAction;
+  delegated: boolean;
+  grantedBy: "owner";
+  note: string;
+  at: string;
+};
+
+/**
+ * Decide one action for a job. Merge/deploy require human approval first;
+ * scoped delegation is only possible afterward, and only by owner policy.
+ * When Guardian is unavailable (always, today) the outcome is deny.
+ */
+export function guardianDecide(input: {
+  id: string;
+  at: string;
+  jobId: string;
+  action: GuardianAction;
+  guardianAvailable: boolean;
+  humanApproved?: boolean;
+  delegations?: DelegationPolicy[];
+}): GuardianDecision {
+  const base = { id: input.id, at: input.at, jobId: input.jobId, action: input.action };
+  if (!input.guardianAvailable)
+    return {
+      ...base,
+      outcome: "deny",
+      basis: "default-deny-unavailable",
+      note: "Guardian policy engine unavailable; default deny. No simulated approval substituted.",
+    };
+  if (input.action === "merge" || input.action === "deploy") {
+    if (input.humanApproved)
+      return {
+        ...base,
+        outcome: "allow",
+        basis: "human-approval",
+        note: "Initial human approval recorded for this merge/deploy.",
+      };
+    const delegation = input.delegations?.find((d) => d.action === input.action && d.delegated);
+    if (delegation)
+      return {
+        ...base,
+        outcome: "allow",
+        basis: "owner-policy",
+        note: `Scoped owner delegation: ${delegation.note}`,
+      };
+    return {
+      ...base,
+      outcome: "deny",
+      basis: "default-deny-unavailable",
+      note: "Merge/deploy needs initial human approval or an explicit owner delegation policy.",
+    };
+  }
+  return {
+    ...base,
+    outcome: "allow",
+    basis: "owner-policy",
+    note: "Within enrolled project scopes; logged for audit.",
+  };
+}
+
+/** Owner-only scoped delegation; merge/deploy delegation is rejected outright. */
+export function createDelegation(input: {
+  action: GuardianAction;
+  note: string;
+  at: string;
+  mergeDeployDelegationRequested?: boolean;
+}): DelegationPolicy {
+  if (input.action === "merge" || input.action === "deploy")
+    throw new Error(
+      "Merge and deploy always need per-case human approval; they cannot be delegated.",
+    );
+  return {
+    action: input.action,
+    delegated: true,
+    grantedBy: "owner",
+    note: input.note,
+    at: input.at,
+  };
+}
+
+// ---- Jackboy learning loop --------------------------------------------------
+// Review outcomes are recorded as local, provenance-tagged lessons. This is not
+// model retraining and never changes policy or authority on its own.
+
+export const learningOutcomes = ["accepted", "changes-requested", "rejected"] as const;
+export type LearningOutcome = (typeof learningOutcomes)[number];
+
+export const learningInputSchema = z
+  .object({
+    jobId: z.string().uuid(),
+    outcome: z.enum(learningOutcomes),
+    lesson: longText.max(2000),
+  })
+  .strict();
+export type LearningInput = z.infer<typeof learningInputSchema>;
+
+export type LearningRecord = LearningInput & {
+  id: string;
+  at: string;
+  source: "human-review";
+  retraining: false;
+};
+
+export function recordLearning(input: unknown, id: string, now: string): LearningRecord {
+  return { ...learningInputSchema.parse(input), id, at: now, source: "human-review", retraining: false };
+}
+
 export type GatewayReadiness = {
   state: "Blocked";
   blockers: string[];
@@ -195,6 +327,8 @@ export function gatewayReadiness(): GatewayReadiness {
       "No least-privilege service identity or scoped project tokens exist.",
       "No isolated sandbox runner is connected; untrusted code must never run without one.",
       "No model inference path is activated for patch generation.",
+      "Guardian policy engine is not connected; every action defaults to deny and is logged.",
+      "Merge/deploy require initial human approval; scoped delegation exists only by owner policy.",
       "Repository writes, merge and deploy stay disabled pending owner approval.",
     ],
   };
