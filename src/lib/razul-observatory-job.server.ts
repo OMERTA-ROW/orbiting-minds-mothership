@@ -14,6 +14,9 @@ import {
 } from "./knowledge";
 import { readBoundedFeed } from "./knowledge-runtime.server";
 import {
+  assignTopic,
+  classifyEvidence,
+  extractEntities,
   filterSources,
   routeFinding,
   scoreRelevance,
@@ -134,11 +137,21 @@ export async function runRazulObservatoryJob(
       .select("id, name, url, kind, category, terms_note, active")
       .abortSignal(signal);
     if (registry.error) throw new Error("Source registry could not be read.");
-    const sources = filterSources(registry.data as SourceRow[], {
-      alertThreshold: state.data.alert_threshold,
-      coverage: state.data.coverage,
-      blockedSources: state.data.blocked_sources,
-    });
+    // Rotate the bounded per-run window so a large registry is covered over time.
+    const runCount = await admin
+      .from("razul_runs")
+      .select("id", { count: "exact", head: true })
+      .abortSignal(signal);
+    const sources = filterSources(
+      registry.data as SourceRow[],
+      {
+        alertThreshold: state.data.alert_threshold,
+        coverage: state.data.coverage,
+        blockedSources: state.data.blocked_sources,
+      },
+      5,
+      runCount.count ?? 0,
+    );
 
     const reads = await Promise.all(
       sources.map(async (source) => {
@@ -158,13 +171,22 @@ export async function runRazulObservatoryJob(
         fetched += entries.length;
         const known = await admin
           .from("razul_findings")
-          .select("url")
+          .select("url, source_id")
           .in(
             "url",
             entries.map((e) => e.url),
           )
           .abortSignal(signal);
         if (known.error) throw new Error("Duplicate check failed");
+        // Cross-source corroboration: a URL already stored from a different
+        // source strengthens the existing finding instead of duplicating it.
+        for (const k of known.data) {
+          if (k.source_id !== source.id) {
+            await admin
+              .rpc("razul_increment_corroboration", { _url: k.url })
+              .abortSignal(AbortSignal.timeout(2_000));
+          }
+        }
         const { fresh, duplicates: d } = dedupeEntries(
           entries,
           new Set(known.data.map((k) => k.url)),
@@ -179,6 +201,7 @@ export async function runRazulObservatoryJob(
               state.data.alert_threshold,
             );
             if (routedTo.length) alerts += 1;
+            const evidence = classifyEvidence(e, source);
             return {
               source_id: source.id,
               source_name: source.name,
@@ -186,6 +209,10 @@ export async function runRazulObservatoryJob(
               url: e.url,
               summary: e.summary,
               category: source.category,
+              topic: assignTopic(e, source.category),
+              entities: extractEntities(e.title),
+              evidence_class: evidence.evidenceClass,
+              evidence_strength: evidence.strength,
               relevance,
               routed_to: routedTo,
               published_at: e.publishedAt,

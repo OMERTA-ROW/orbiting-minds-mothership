@@ -659,45 +659,60 @@ export type Database = {
           category: string
           collected_at: string
           corroborations: number
+          entities: string[]
+          evidence_class: string
+          evidence_strength: number
           id: string
           published_at: string | null
           relevance: number
+          revision: number
           routed_to: string[]
           run_id: string | null
           source_id: string
           source_name: string
           summary: string
           title: string
+          topic: string
           url: string
         }
         Insert: {
           category: string
           collected_at?: string
           corroborations?: number
+          entities?: string[]
+          evidence_class?: string
+          evidence_strength?: number
           id?: string
           published_at?: string | null
           relevance?: number
+          revision?: number
           routed_to?: string[]
           run_id?: string | null
           source_id: string
           source_name: string
           summary?: string
           title: string
+          topic?: string
           url: string
         }
         Update: {
           category?: string
           collected_at?: string
           corroborations?: number
+          entities?: string[]
+          evidence_class?: string
+          evidence_strength?: number
           id?: string
           published_at?: string | null
           relevance?: number
+          revision?: number
           routed_to?: string[]
           run_id?: string | null
           source_id?: string
           source_name?: string
           summary?: string
           title?: string
+          topic?: string
           url?: string
         }
         Relationships: [
@@ -1094,6 +1109,10 @@ export type Database = {
           _retention_days: number
           _threshold: number
         }
+        Returns: undefined
+      }
+      razul_increment_corroboration: {
+        Args: { _url: string }
         Returns: undefined
       }
       razul_pause: { Args: { _reason: string }; Returns: undefined }

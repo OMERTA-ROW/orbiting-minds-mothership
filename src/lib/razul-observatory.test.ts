@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  assignTopic,
+  classifyEvidence,
+  extractEntities,
   filterSources,
   routeFinding,
   scoreRelevance,
@@ -64,5 +67,66 @@ describe("filterSources", () => {
       category: "ai-model", active: true,
     }));
     expect(filterSources(many, { ...controls, blockedSources: [] })).toHaveLength(5);
+  });
+
+  it("rotates the window so every source is covered across runs", () => {
+    const many = Array.from({ length: 8 }, (_, i) => ({
+      id: `s${i}`, name: `S${i}`, url: `https://x.example/${i}`, kind: "rss",
+      category: "ai-model", active: true,
+    }));
+    const seen = new Set<string>();
+    for (let rotation = 0; rotation < 8; rotation++) {
+      for (const s of filterSources(many, { ...controls, blockedSources: [] }, 5, rotation))
+        seen.add(s.id);
+    }
+    expect(seen.size).toBe(8);
+  });
+});
+
+describe("assignTopic", () => {
+  it("maps Mars content to the mars topic", () => {
+    expect(assignTopic({ title: "New Mars rover results", summary: "" }, "space")).toBe("mars");
+  });
+
+  it("falls back to the category when no subtopic matches", () => {
+    expect(assignTopic({ title: "General update", summary: "" }, "biology")).toBe("biology");
+  });
+});
+
+describe("extractEntities", () => {
+  it("extracts CVE identifiers and capitalized names, bounded and stopword-filtered", () => {
+    const entities = extractEntities(
+      "CVE-2026-12345 affects James Webb Telescope and Mars Observer, says The Agency",
+    );
+    expect(entities).toContain("CVE-2026-12345");
+    expect(entities).toContain("James Webb Telescope");
+    expect(entities.some((e) => e.startsWith("The"))).toBe(false);
+    expect(entities.length).toBeLessThanOrEqual(8);
+  });
+});
+
+describe("classifyEvidence", () => {
+  it("marks arXiv preprints as preliminary", () => {
+    expect(
+      classifyEvidence({ title: "We present a result", summary: "" }, { category: "papers", id: "arxiv-astro-ph" }),
+    ).toEqual({ evidenceClass: "preliminary", strength: 40 });
+  });
+
+  it("marks speculative language as speculation even from official sources", () => {
+    expect(
+      classifyEvidence(
+        { title: "Scientists speculate about future", summary: "" },
+        { category: "space", id: "nasa-breaking" },
+      ).evidenceClass,
+    ).toBe("speculation");
+  });
+
+  it("marks official government sources as established with high strength", () => {
+    expect(
+      classifyEvidence(
+        { title: "Magnitude 6.1 earthquake recorded", summary: "" },
+        { category: "government-data", id: "usgs-significant-quakes" },
+      ),
+    ).toEqual({ evidenceClass: "established", strength: 80 });
   });
 });

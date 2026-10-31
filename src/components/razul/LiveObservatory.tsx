@@ -8,6 +8,8 @@ interface FindingRow {
   url: string;
   source_name: string;
   category: string;
+  topic: string;
+  evidence_class: string;
   relevance: number;
   routed_to: string[];
   collected_at: string;
@@ -44,7 +46,7 @@ export function LiveObservatory() {
       const [findings, run, sourceCount] = await Promise.all([
         supabase
           .from("razul_findings")
-          .select("id, title, url, source_name, category, relevance, routed_to, collected_at")
+          .select("id, title, url, source_name, category, topic, evidence_class, relevance, routed_to, collected_at")
           .order("collected_at", { ascending: false })
           .limit(10),
         supabase
@@ -121,7 +123,7 @@ export function LiveObservatory() {
                     {f.title}
                   </a>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {f.source_name} · {f.category} · relevance {f.relevance}
+                    {f.source_name} · {f.category}/{f.topic} · {f.evidence_class} · relevance {f.relevance}
                     {f.routed_to.length > 0 && (
                       <span className="text-primary"> · routed to {f.routed_to.join(", ")}</span>
                     )}
