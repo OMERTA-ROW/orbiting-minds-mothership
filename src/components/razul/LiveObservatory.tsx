@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { getRazulAgentFeed, submitRazulFeedback } from "@/lib/razul-feeds.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { Button } from "@/components/ui/button";
+import { useAccount } from "@/hooks/use-account";
 
-const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian"] as const;
+const AGENTS = ["jackboy", "jax", "omni", "sabrina", "guardian", "hercules"] as const;
 type Agent = (typeof AGENTS)[number];
 
 interface FindingRow {
@@ -33,6 +36,9 @@ interface RunRow {
  * Requires a signed-in approved account; everyone else sees the honest gate.
  */
 export function LiveObservatory() {
+  const { user, ready } = useAccount();
+  const getFeed = useServerFn(getRazulAgentFeed);
+  const feedback = useServerFn(submitRazulFeedback);
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "gated" }
@@ -50,7 +56,7 @@ export function LiveObservatory() {
       return;
     }
     let cancelled = false;
-    getRazulAgentFeed({ data: { agent, limit: 20 } })
+    getFeed({ data: { agent, limit: 20 } })
       .then((res) => {
         if (!cancelled)
           setAgentFeed({
@@ -65,12 +71,12 @@ export function LiveObservatory() {
     return () => {
       cancelled = true;
     };
-  }, [agent, state.kind]);
+  }, [agent, state.kind, getFeed]);
 
   async function sendFeedback(findingId: string, verdict: "useful" | "not-useful") {
     if (!agent) return;
     try {
-      await submitRazulFeedback({ data: { findingId, agent, verdict, note: "" } });
+      await feedback({ data: { findingId, agent, verdict, note: "" } });
       setFeedbackSent((prev) => ({ ...prev, [findingId]: verdict }));
     } catch {
       setFeedbackSent((prev) => ({ ...prev, [findingId]: "failed" }));
@@ -80,11 +86,12 @@ export function LiveObservatory() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
+      if (!ready || !user) {
         if (!cancelled) setState({ kind: "gated" });
         return;
       }
+      const access = await supabase.rpc("is_razul_owner");
+      if (access.error || access.data !== true) { if (!cancelled) setState({ kind: "gated" }); return; }
       const [findings, run, sourceCount] = await Promise.all([
         supabase
           .from("razul_findings")
@@ -100,7 +107,7 @@ export function LiveObservatory() {
         supabase.from("razul_sources").select("id", { count: "exact", head: true }),
       ]);
       if (cancelled) return;
-      if (findings.error) {
+      if (findings.error || run.error || sourceCount.error) {
         setState({ kind: "gated" });
         return;
       }
@@ -114,12 +121,12 @@ export function LiveObservatory() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [ready, user?.id]);
 
   return (
     <section className="rounded-xl border border-border/60 bg-card/40 p-6">
       <h2 className="font-display text-lg font-semibold text-foreground">
-        Live Observatory <span className="text-xs font-normal text-primary">REAL</span>
+        Public-feed observatory <span className="text-xs font-normal text-primary">RECORDED · OWNER ACCESS</span>
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
         The scheduled pipeline ingests a small registry of permitted public feeds on a timer,
@@ -131,7 +138,7 @@ export function LiveObservatory() {
       )}
       {state.kind === "gated" && (
         <p className="mt-4 text-sm text-muted-foreground">
-          Sign in with an approved owner account to read the live observatory index.{" "}
+          Verified owner and strong MFA required to read Razul's observatory workspace.{" "}
           <Link to="/auth" className="text-primary underline-offset-2 hover:underline">
             Sign in
           </Link>
@@ -142,13 +149,13 @@ export function LiveObservatory() {
           <p className="text-xs text-muted-foreground">
             {state.sources} registered sources
             {state.run
-              ? ` · last run ${state.run.status} — ${state.run.inserted} new of ${state.run.fetched} fetched, ${state.run.alerts} alerts routed`
+              ? ` · last run ${state.run.status} at ${state.run.finished_at ?? "unknown"} — ${state.run.inserted} new of ${state.run.fetched} fetched, ${state.run.alerts} alerts recorded`
               : " · no runs recorded yet"}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">Agent feed:</span>
             {AGENTS.map((a) => (
-              <button
+              <Button
                 key={a}
                 type="button"
                 onClick={() => setAgent(agent === a ? null : a)}
@@ -159,7 +166,7 @@ export function LiveObservatory() {
                 }`}
               >
                 {a}
-              </button>
+              </Button>
             ))}
           </div>
           {agent && agentFeed && "error" in agentFeed && (
@@ -201,20 +208,20 @@ export function LiveObservatory() {
                           </span>
                         ) : (
                           <>
-                            <button
+                            <Button
                               type="button"
                               onClick={() => sendFeedback(f.id, "useful")}
                               className="rounded border border-border/60 px-2 py-0.5 text-muted-foreground hover:text-foreground"
                             >
                               Useful
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
                               onClick={() => sendFeedback(f.id, "not-useful")}
                               className="rounded border border-border/60 px-2 py-0.5 text-muted-foreground hover:text-foreground"
                             >
                               Not useful
-                            </button>
+                            </Button>
                           </>
                         )}
                       </div>
