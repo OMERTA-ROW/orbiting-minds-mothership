@@ -36,7 +36,7 @@ interface ChatMessage {
   label: "verified" | "simulated" | "blocked";
   handoffs?: HandoffNote[];
   citations?: Citation[];
-  dispatch?: DispatchRequest;
+  dispatch?: DispatchRequest | undefined;
 }
 
 const STATUS_STYLE: Record<HandoffNote["status"], string> = {
