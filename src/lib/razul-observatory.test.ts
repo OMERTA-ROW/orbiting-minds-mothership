@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  assignTopic,
+  classifyEvidence,
+  extractEntities,
   filterSources,
   routeFinding,
   scoreRelevance,

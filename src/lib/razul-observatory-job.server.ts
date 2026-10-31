@@ -183,7 +183,7 @@ export async function runRazulObservatoryJob(
         for (const k of known.data) {
           if (k.source_id !== source.id) {
             await admin
-              .rpc("razul_increment_corroboration" as never, { _url: k.url } as never)
+              .rpc("razul_increment_corroboration", { _url: k.url })
               .abortSignal(AbortSignal.timeout(2_000));
           }
         }
