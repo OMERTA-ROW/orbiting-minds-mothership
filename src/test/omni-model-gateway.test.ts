@@ -46,7 +46,7 @@ function passport(): AgentPassport {
 describe("provider adapter registry", () => {
   it("marks cloud APIs without a credential as credential-missing, never connected", () => {
     const a = declareAdapter(
-      { name: "Keyless API", kind: "cloud-api", endpoint: "https://api.example.com", models: ["m"] },
+      { name: "Keyless API", kind: "cloud-api", endpoint: "https://api.example.com", models: ["m1"] },
       adId,
       now,
     );
@@ -99,7 +99,7 @@ describe("routing", () => {
     expect(routeTask(p, adapter(), "draft-code", adId, now).kind).toBe("blocked");
     expect(routeTask(p, undefined, "inspect-own-project", adId, now).kind).toBe("blocked");
     const keyless = declareAdapter(
-      { name: "Keyless", kind: "cloud-api", endpoint: "https://x.example.com", models: ["m"] },
+      { name: "Keyless", kind: "cloud-api", endpoint: "https://x.example.com", models: ["m1"] },
       adId,
       now,
     );
