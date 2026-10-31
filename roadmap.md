@@ -264,3 +264,8 @@ Safe migration steps (when prerequisites met):
 3. Replicate schema (sources/findings/runs/feeds/alerts/sentinels/dispatch) and migrate data with counts verified; keep the current backend read-only during cutover.
 4. Repoint OMNI command-center calls to the new authenticated APIs; run the Ask Razul + proactive-alert + Sentinel report acceptance tests against the new stack.
 5. Owner verification checkpoint (secure editor confirmation), then decommission Razul tables/schedules on the old backend; Guardian emergency-revocation drill before declaring done.
+
+Dependency, enrollment and rollout checks for the Razul platform phase:
+- Dependency check: every OMNI/Jackboy/JAX register item green before provisioning begins; Guardian connected; Sentinel network stable.
+- Enrollment check: each owned project enrolls explicitly (owner-confirmed) with a scoped machine identity; enrollment registry is the only discovery mechanism; revocation tested per project before rollout continues.
+- Rollout checks: (1) single-owner MFA login to the Mothership hub works and no other login path exists; (2) machine identities cannot reach owner/admin functions (denial test per identity); (3) AngelTech/DemonTech dispatch respects per-project enrollment, site policies and rate limits (denial test on an unenrolled target); (4) Jackboy/JAX receive only their scoped findings (cross-scope read denied); (5) Guardian emergency revocation halts all machine access within one audit cycle; (6) no public route, dashboard or publishing surface exists on the Razul backend.
