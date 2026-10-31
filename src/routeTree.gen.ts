@@ -89,6 +89,7 @@ import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archiv
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 import { Route as ApiPublicJobsKnowledgeCollectRouteImport } from './routes/api/public/jobs/knowledge-collect'
 import { Route as ApiPublicJobsRazulObserveRouteImport } from './routes/api/public/jobs/razul-observe'
+import { Route as ApiPublicRazulSentinelReportRouteImport } from './routes/api/public/razul-sentinel/report'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -493,6 +494,12 @@ const ApiPublicJobsRazulObserveRoute =
     path: '/api/public/jobs/razul-observe',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicRazulSentinelReportRoute =
+  ApiPublicRazulSentinelReportRouteImport.update({
+    id: '/api/public/razul-sentinel/report',
+    path: '/api/public/razul-sentinel/report',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -574,6 +581,7 @@ export interface FileRoutesByFullPath {
   '/robotics/$id': typeof RoboticsIdRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
+  '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -655,6 +663,7 @@ export interface FileRoutesByTo {
   '/robotics/$id': typeof RoboticsIdRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
+  '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -738,6 +747,7 @@ export interface FileRoutesById {
   '/robotics_/$id': typeof RoboticsIdRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
+  '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -821,6 +831,7 @@ export interface FileRouteTypes {
     | '/robotics/$id'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
+    | '/api/public/razul-sentinel/report'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -902,6 +913,7 @@ export interface FileRouteTypes {
     | '/robotics/$id'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
+    | '/api/public/razul-sentinel/report'
   id:
     | '__root__'
     | '/'
@@ -984,6 +996,7 @@ export interface FileRouteTypes {
     | '/robotics_/$id'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
+    | '/api/public/razul-sentinel/report'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1061,6 +1074,7 @@ export interface RootRouteChildren {
   RoboticsIdRoute: typeof RoboticsIdRoute
   ApiPublicJobsKnowledgeCollectRoute: typeof ApiPublicJobsKnowledgeCollectRoute
   ApiPublicJobsRazulObserveRoute: typeof ApiPublicJobsRazulObserveRoute
+  ApiPublicRazulSentinelReportRoute: typeof ApiPublicRazulSentinelReportRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1625,6 +1639,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJobsRazulObserveRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/razul-sentinel/report': {
+      id: '/api/public/razul-sentinel/report'
+      path: '/api/public/razul-sentinel/report'
+      fullPath: '/api/public/razul-sentinel/report'
+      preLoaderRoute: typeof ApiPublicRazulSentinelReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1724,6 +1745,7 @@ const rootRouteChildren: RootRouteChildren = {
   RoboticsIdRoute: RoboticsIdRoute,
   ApiPublicJobsKnowledgeCollectRoute: ApiPublicJobsKnowledgeCollectRoute,
   ApiPublicJobsRazulObserveRoute: ApiPublicJobsRazulObserveRoute,
+  ApiPublicRazulSentinelReportRoute: ApiPublicRazulSentinelReportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
