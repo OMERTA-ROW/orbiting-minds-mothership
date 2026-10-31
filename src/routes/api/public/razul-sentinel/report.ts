@@ -59,27 +59,47 @@ export const Route = createFileRoute("/api/public/razul-sentinel/report")({
         if (inserted.error)
           return Response.json({ error: "Report could not be stored" }, { status: 500 });
 
-        // Actionable reports become alert events for Jackboy/OMNI.
+        // Actionable reports become a provenance-tagged finding plus alert
+        // events for the enabled Jackboy/OMNI feeds.
         const targets = sentinelAlertTargets(kind);
         if (targets.length) {
-          const feeds = await supabaseAdmin
-            .from("razul_agent_feeds")
-            .select("agent")
-            .in("agent", targets)
-            .eq("alerts_enabled", true);
-          if (!feeds.error && feeds.data.length) {
-            // Sentinel reports carry no finding row; store the reference in the
-            // event payload via a minimal finding entry is avoided — alerts for
-            // sentinel reports are recorded as project-event feedback rows.
-            await supabaseAdmin.from("razul_agent_feedback").insert(
-              feeds.data.map((f) => ({
-                finding_id: null,
-                agent: f.agent,
-                verdict: "useful",
-                note: `sentinel:${sentinelId}:${kind}`,
-                created_by: null,
-              })) as never,
-            );
+          const sentinel = await supabaseAdmin
+            .from("razul_sentinels")
+            .select("name")
+            .eq("id", sentinelId)
+            .single();
+          const title =
+            typeof payload.title === "string" && payload.title.trim()
+              ? payload.title.slice(0, 300)
+              : `Sentinel ${kind} report`;
+          const finding = await supabaseAdmin
+            .from("razul_findings")
+            .insert({
+              source_id: `sentinel:${sentinelId}`,
+              source_name: `Sentinel: ${sentinel.data?.name ?? sentinelId}`,
+              title,
+              url: typeof payload.url === "string" && payload.url.trim() ? payload.url : `sentinel://${sentinelId}`,
+              summary: typeof payload.summary === "string" ? payload.summary.slice(0, 2000) : null,
+              category: "sentinel",
+              relevance: 50,
+              routed_to: targets,
+              topic: "project-operations",
+              evidence_class: "sentinel-report",
+              evidence_strength: 40,
+            })
+            .select("id")
+            .single();
+          if (!finding.error) {
+            const feeds = await supabaseAdmin
+              .from("razul_agent_feeds")
+              .select("agent")
+              .in("agent", targets)
+              .eq("alerts_enabled", true);
+            if (!feeds.error && feeds.data.length) {
+              await supabaseAdmin.from("razul_alert_events").insert(
+                feeds.data.map((f) => ({ finding_id: finding.data.id, agent: f.agent, relevance: 50 })) as never,
+              );
+            }
           }
         }
         return Response.json({ accepted: true, id: inserted.data.id, routedTo: targets });
