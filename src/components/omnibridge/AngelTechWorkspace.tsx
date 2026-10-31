@@ -23,6 +23,7 @@ import {
   type PermissionOption,
   type Prospect,
 } from "@/lib/omni-angel-tech";
+import { SabrinaDirector } from "./SabrinaDirector";
 
 const emptyStore: AngelTechStore = { insights: [], prospects: [], drafts: [] };
 const stamp = () => new Date().toISOString();
