@@ -91,7 +91,7 @@ export const Route = createFileRoute("/api/public/razul-sentinel/report")({
             .from("razul_findings")
             .insert({
               source_id: `sentinel:${sentinelId}`,
-              source_name: `Sentinel: ${sentinel.data?.name ?? sentinelId}`,
+              source_name: sourceName,
               title,
               url: typeof payload.url === "string" && payload.url.trim() ? payload.url : `sentinel://${sentinelId}`,
               summary: typeof payload.summary === "string" ? payload.summary.slice(0, 2000) : null,
