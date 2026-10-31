@@ -142,6 +142,12 @@ export function OmniAssistant({
               <ArrowUpRight size={13} />
             </Link>
           </Button>
+          <Button asChild variant="signal" size="sm">
+            <Link to="/omni-gateway">
+              Coding gateway
+              <ArrowUpRight size={13} />
+            </Link>
+          </Button>
           <Button
             variant="ghost"
             size="icon"
