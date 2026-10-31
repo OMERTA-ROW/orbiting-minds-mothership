@@ -687,6 +687,34 @@
             "NOT done: no live agent, runner, model inference, backend membership or Guardian policy engine; no live integration claimed."
           ],
           "verified_at": "2026-10-31"
+        },
+        {
+          "id": "04.05",
+          "requirement": "Model-agnostic multi-agent gateway: extensible provider adapter registry for authorized model APIs and local models, declaration-based capability discovery, per-project agent passports (identity, specialty, permissions, project scope, endpoint, health), enrollment and routing; project-assigned agents inspect own project within approved scopes and send structured gap reports to Jackboy, who dispatches coding/tests through OMNI and reports outcomes; JAX as separately enrolled autonomous agent with approved broker workflow, no Honeycomb Vault secrets, no external data submission without consent. Show real vs simulated integrations, credential prerequisites and end-to-end acceptance test; never claim unconnected models.",
+          "status": "Demo only",
+          "owner": "Lovable implementation; owner supplies provider credentials, backend activation and runner",
+          "dependencies": [
+            "02",
+            "04.04",
+            "07"
+          ],
+          "changed_files": [
+            "src/lib/omni-model-gateway.ts",
+            "src/test/omni-model-gateway.test.ts",
+            "src/components/omnibridge/OmniModelGateway.tsx",
+            "src/routes/omni-models.tsx",
+            "src/components/SiteNav.tsx",
+            "roadmap.md",
+            "completion-register.json"
+          ],
+          "commit": null,
+          "commit_note": "Lovable-managed work; no external or production commit.",
+          "evidence": [
+            "11 vitest tests pass: cloud adapters without credentials marked credential-missing and never connected, discovery is declaration-only (probed=false), passports need owner confirmation and start health=unknown, revocation blocks routing and dispatch, routing blocks undeclared permissions/unknown adapters/missing credentials and never executes, dispatch stages recorded as simulated, JAX denied Honeycomb Vault secrets and external submission without consent, readiness separates real vs simulated with credential prerequisites and an unrunnable acceptance test, corrupt-store fallback.",
+            "Route /omni-models renders adapters, passports, routing plans, dispatch loop and real-vs-simulated panel; DECLARATIONS · NO MODEL CONNECTED badge.",
+            "NOT done: no provider credential, live probe, model call, runner or backend enrollment; no model claimed as connected."
+          ],
+          "verified_at": "2026-10-31"
         }
       ]
     },
