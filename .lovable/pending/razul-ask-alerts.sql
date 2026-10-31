@@ -55,7 +55,7 @@ create policy "Approved readers view query log"
   using (public.is_knowledge_reader());
 create policy "Approved readers log queries"
   on public.razul_query_log for insert to authenticated
-  using (public.is_knowledge_reader());
+  with check (public.is_knowledge_reader());
 create policy "Approved readers view alert events"
   on public.razul_alert_events for select to authenticated
   using (public.is_knowledge_reader());
