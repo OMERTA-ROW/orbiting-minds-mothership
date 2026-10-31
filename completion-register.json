@@ -660,6 +660,33 @@
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
           "release_receipt": null
+        },
+        {
+          "id": "04.04",
+          "requirement": "OMNI multi-agent registry and collaboration conventions: independent specialist agents across opted-in projects with categorized roles (AngelTech constructive research/creation/quality, DemonTech authorized defensive security/risk testing, Guardian permissions/audit, OMNI core coordination), capability declarations, task/result reporting, agent-to-agent coordination and owner pause control. Autonomous discovery, drafting, code generation and isolated testing allowed only through declared capabilities plus a connected runner; irreversible, high-impact, private-data and production actions always need owner approval.",
+          "status": "Demo only",
+          "owner": "Lovable implementation; owner supplies backend activation and runner",
+          "dependencies": [
+            "02",
+            "07"
+          ],
+          "changed_files": [
+            "src/lib/omni-agents.ts",
+            "src/test/omni-agents.test.ts",
+            "src/components/omnibridge/OmniAgentRegistry.tsx",
+            "src/routes/omni-agents.tsx",
+            "src/components/SiteNav.tsx",
+            "roadmap.md",
+            "completion-register.json"
+          ],
+          "commit": null,
+          "commit_note": "Lovable-managed work; no external or production commit.",
+          "evidence": [
+            "11 vitest tests pass: owner-confirmed registration with opted-in projects, declarations never live, immediate owner pause blocking reports and autonomy, resume, reports never execute, coordination only between registered agents, unregistered-agent rejection, undeclared-capability denial, all four approval boundaries require owner approval, blocked readiness, corrupt-store fallback.",
+            "Route /omni-agents renders local-only registry with readiness blockers, registration, pause/resume and reporting UI; CONCEPT · NO AGENT IS LIVE badge.",
+            "NOT done: no live agent, runner, model inference, backend membership or Guardian policy engine; no live integration claimed."
+          ],
+          "verified_at": "2026-10-31"
         }
       ]
     },
