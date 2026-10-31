@@ -23,6 +23,7 @@ export const navItems = [
   { to: "/omni-marketing", label: "OMNI Marketing · Local" },
   { to: "/omni-gateway", label: "OMNI Coding Gateway · Blocked" },
   { to: "/omni-agents", label: "OMNI Agent Registry · Concept" },
+  { to: "/omni-models", label: "OMNI Model Gateway · Declarations" },
   { to: "/angel-tech", label: "Angel Tech · Sabrina Concept" },
   { to: "/omni-rights", label: "OMNI Rights · Local" },
   { to: "/omni-legal", label: "Omni Legal · Synthetic" },
