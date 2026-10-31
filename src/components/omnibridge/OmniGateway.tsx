@@ -52,6 +52,11 @@ export function OmniGateway() {
   const [fbChannel, setFbChannel] = useState<FeedbackChannel>("angeltech-quality");
   const [fbNote, setFbNote] = useState("");
 
+  // learning loop form
+  const [lnJob, setLnJob] = useState("");
+  const [lnOutcome, setLnOutcome] = useState<LearningOutcome>("accepted");
+  const [lnLesson, setLnLesson] = useState("");
+
   useEffect(() => {
     window.localStorage.setItem(OMNI_GATEWAY_STORE_KEY, JSON.stringify(store));
   }, [store]);
