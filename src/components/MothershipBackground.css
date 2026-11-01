@@ -1,0 +1,119 @@
+.ms-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--obsidian);
+}
+
+.ms-camera {
+  position: absolute;
+  inset: 0;
+  animation: ms-camera 60s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* The uploaded image is 1920 × 1280; every overlay shares its frame. */
+.ms-scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(110vw, 165vh);
+  aspect-ratio: 1920 / 1280;
+  transform: translate(-50%, -50%);
+}
+
+.ms-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ms-core {
+  position: absolute;
+  left: 50%;
+  top: 59%;
+  width: 12%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--mothership-core-fill);
+  mix-blend-mode: screen;
+  animation: ms-pulse 5s ease-in-out infinite;
+}
+
+.ms-orbit {
+  position: absolute;
+  left: 50%;
+  top: 61%;
+  transform: translate(-50%, -50%) scaleY(0.3);
+}
+.ms-orbit--outer { width: 98%; aspect-ratio: 1; }
+.ms-orbit--inner { width: 46%; aspect-ratio: 1; top: 59%; transform: translate(-50%, -50%) scaleY(0.24); }
+
+.ms-spin {
+  position: absolute;
+  inset: 0;
+  animation: ms-spin 40s linear infinite;
+}
+.ms-orbit--offset .ms-spin { animation-delay: -20s; }
+.ms-spin--reverse { animation-duration: 18s; animation-direction: reverse; }
+
+.ms-light {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: var(--mothership-light);
+  box-shadow: var(--shadow-mothership-light);
+  mix-blend-mode: screen;
+}
+
+.ms-stars {
+  position: absolute;
+  inset: -600px 0 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 80px 120px, var(--ivory), transparent),
+    radial-gradient(1px 1px at 300px 420px, var(--gold-light), transparent),
+    radial-gradient(1.5px 1.5px at 520px 220px, var(--ivory), transparent),
+    radial-gradient(1px 1px at 210px 560px, var(--ivory), transparent);
+  background-size: 600px 600px;
+  opacity: 0.5;
+  animation: ms-stars 80s linear infinite;
+}
+
+.ms-vignette {
+  position: absolute;
+  inset: 0;
+  background: var(--mothership-vignette);
+}
+
+.ms-page { position: relative; min-height: 100svh; isolation: isolate; }
+.ms-content { position: relative; z-index: 1; }
+
+@keyframes ms-camera {
+  0%, 100% { transform: scale(1.05) translate(0, 0) rotate(0deg); }
+  25% { transform: scale(1.09) translate(-1.5%, 0.8%) rotate(0.6deg); }
+  50% { transform: scale(1.12) translate(0, 1.5%) rotate(0deg); }
+  75% { transform: scale(1.09) translate(1.5%, 0.8%) rotate(-0.6deg); }
+}
+@keyframes ms-pulse {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.9); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+}
+@keyframes ms-spin { to { transform: rotate(360deg); } }
+@keyframes ms-stars { to { transform: translateY(600px); } }
+
+@media (max-width: 767px) {
+  .ms-stars { opacity: 0.3; animation: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-bg *, .ms-bg *::before, .ms-bg *::after { animation: none !important; }
+  .ms-camera { will-change: auto; }
+}

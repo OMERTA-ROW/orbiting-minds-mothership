@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpRight, ChevronDown, Orbit, ShieldCheck, Fingerprint, Layers, Sparkles, Bot, Dna } from "lucide-react";
 import { modules } from "@/data/evolution";
-import { DemoBadge, OrbitExplorer, Section, Starfield } from "@/components/evo";
+import { DemoBadge, OrbitExplorer, Section } from "@/components/evo";
 import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
 import { isIndexable } from "@/lib/search-policy";
-import cosmos from "@/assets/mothership-cosmos.jpg";
+import MothershipBackground from "@/components/MothershipBackground";
 
 export const Route = createFileRoute("/")({
   head: () => seo("EVOLUTION — Cosmic Mothership", "All technology is converging here. Explore EVOLUTION's consent-first constellation of software, creators, AI agents and research. Bridge technology into its next evolution.", { indexable: isIndexable("/"), path: "/", image: "/og-home.jpg", imageAlt: "A celestial intelligence core surrounded by metallic-gold orbital rings" }),
@@ -20,18 +20,11 @@ const pillars = [
 
 function Index() {
   return (
-    <>
-      <section className="cosmic-hero relative isolate overflow-hidden"
-        onPointerMove={(e) => {
-          if (e.pointerType !== "mouse" || window.matchMedia("(prefers-reduced-motion: reduce), (max-width: 767px)").matches) return;
-          const bounds = e.currentTarget.getBoundingClientRect();
-          e.currentTarget.style.setProperty("--parallax-x", `${(e.clientX - bounds.left - bounds.width / 2) * 0.007}px`);
-          e.currentTarget.style.setProperty("--parallax-y", `${(e.clientY - bounds.top - bounds.height / 2) * 0.006}px`);
-        }}
-        onPointerLeave={(e) => { e.currentTarget.style.setProperty("--parallax-x", "0px"); e.currentTarget.style.setProperty("--parallax-y", "0px"); }}>
-        <img src={cosmos} width={1920} height={1280} fetchPriority="high" className="cosmic-hero-art absolute inset-0 h-full w-full object-cover" alt="A floating celestial intelligence core surrounded by metallic-gold orbital rings and connected planetary worlds" />
+    <div className="ms-page">
+      <MothershipBackground />
+      <div className="ms-content">
+      <section className="cosmic-hero relative isolate overflow-hidden">
         <div className="hero-vignette pointer-events-none absolute inset-0" aria-hidden />
-        <Starfield count={85} />
         <div className="hero-coordinates pointer-events-none absolute left-8 top-12 hidden font-mono text-[9px] leading-loose text-muted-foreground lg:block" aria-hidden>EVOLUTION NETWORK<br />MOTHERSHIP / 001</div>
         <DemoBadge className="absolute right-8 top-12 hidden md:inline-flex" />
         <div className="hero-copy relative z-10 mx-auto max-w-4xl px-6 text-center">
@@ -80,6 +73,7 @@ function Index() {
         <Section className="pt-20 text-center"><p className="eyebrow">Creator transmission</p><h2 className="mx-auto mt-5 max-w-3xl text-3xl leading-tight text-foreground md:text-4xl">A pathway for your concept</h2><p className="mx-auto mt-5 max-w-lg text-sm leading-loose text-muted-foreground">Describe a technology idea. Receive an AI-generated draft connecting relevant Mothership modules, proposed sandbox checks and an owner approval gate. No validation is run.</p><Button asChild variant="cosmic" className="mt-7 h-12 rounded-sm px-6"><Link to="/pathway"><Sparkles size={16} />Create an Evolution pathway<ArrowUpRight /></Link></Button></Section>
         <Section className="flex flex-col items-center gap-8 py-20 text-center md:py-28"><p className="eyebrow">Your next evolution begins here</p><h2 className="max-w-3xl text-3xl leading-tight text-foreground md:text-5xl">Walk a full evolution journey</h2><p className="max-w-lg text-sm leading-loose text-muted-foreground">From DNA profile to Guardian-approved rollout — fully simulated.</p><div className="flex flex-wrap justify-center gap-3"><Button asChild variant="cosmic" className="h-12 rounded-sm px-6"><Link to="/sandbox">Start the demo<ArrowRight /></Link></Button><Button asChild variant="signal" className="h-12 rounded-sm px-6"><Link to="/universe">Enter the Universe<ArrowUpRight /></Link></Button></div><DemoBadge /></Section>
       </div>
-    </>
+      </div>
+    </div>
   );
 }
