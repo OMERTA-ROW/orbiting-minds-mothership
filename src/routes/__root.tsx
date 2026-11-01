@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteNav, SiteFooter, navItems } from "../components/SiteNav";
 import { Starfield } from "../components/evo";
+import OrbitalBackground from "../components/OrbitalBackground";
 import { CommandPaletteProvider } from "@/components/CommandPalette";
 import { DemoExchangeProvider } from "@/hooks/use-demo-exchange";
 import { ExchangeLocaleProvider } from "@/hooks/use-exchange-locale";
@@ -141,6 +142,7 @@ function RootComponent() {
       <CommandPaletteProvider pages={navItems}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <div className="site-shell flex min-h-screen flex-col">
+        <OrbitalBackground />
         <div className="site-cosmos" aria-hidden><Starfield count={150} /></div>
         <SiteNav />
         <main className="flex-1">
