@@ -1,7 +1,7 @@
 # Evolution — reconciled blueprint roadmap
 
 ## Current visual update — 2026-11-01
-- [ ] Integrate the owner-supplied Mothership image/component and uploaded camera, reactor, ring-light, star and vignette styles inside the homepage's `ms-page` / `ms-content` wrapper; replace its static hero image, preserve existing content/interactions and verify desktop/mobile/reduced-motion rendering. No publishing or access changes.
+- [x] Integrated the owner-supplied Mothership image/component and uploaded camera, reactor, ring-light, star and vignette styles inside the homepage's `ms-page` / `ms-content` wrapper. Image and overlays share the actual 1920×1280 frame; lower content uses a readability veil. **66 routing/SEO tests PASS**; desktop 1974×1125 and mobile 390×844 image load, moving rings, navigation, anchor, no-overflow and reduced-motion checks PASS with no page errors; latest preview build OK. Existing content, other-route backgrounds and access preserved; nothing published.
 
 Updated 2026-10-24: Oct 24 owner instruction (Omni Terminal/OmniBridge push) reconciled — CLI gained reviewable file-level change manifests (`evolution change new/list/diff`) bound to real sandbox runs via `--change`, plus an honest per-target support matrix (`evolution release matrix`); beta OMNI gained opt-in browser dictation with typed fallback and review-before-send. Go `-race` tests + vet pass; 5 speech-input tests pass. Still blocked: GitHub/mail/social per-user connectors (absent or declined), signing accounts/native runners, server-enforced Guardian agent scopes (needs new backend tables). No connectors linked, nothing published.
 
