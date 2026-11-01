@@ -1,4 +1,4 @@
-import cosmos from "../../public/mothership-cosmos.jpg.asset.json";
+import cosmos from "@/assets/mothership-cosmos.jpg.asset.json";
 import "./MothershipBackground.css";
 
 export default function MothershipBackground() {
