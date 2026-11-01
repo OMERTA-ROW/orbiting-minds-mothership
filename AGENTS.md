@@ -12,7 +12,7 @@
 ## Project rules
 - Prototype data stays separate from owned records; no live claims. SEO defaults to noindex; only approved leaves opt in.
 - Visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: consistent design.
-- Cosmic art uses deterministic motion/static fallbacks; orbital controls use accessible fixed buttons/lists/tokens.
+- Cosmic art uses deterministic/static motion and accessible tokenized controls; homepage overlays share one image frame, why: alignment.
 - Pathways use internal streaming routes and request-local AI; secrets server-only, why: drafting is not execution.
 - Persist AI denial/credit blocks service-only; clear after owner confirmation, why: prevent billed retries across reloads/restarts.
 - Command search uses typed data and validated parameters/anchors, why: exact results preserve interactions.
