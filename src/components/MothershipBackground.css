@@ -95,6 +95,8 @@
 
 .ms-page { position: relative; min-height: 100svh; isolation: isolate; }
 .ms-content { position: relative; z-index: 1; }
+.ms-content > .cosmic-section,
+.ms-content > .journey-band { background: var(--mothership-content-veil); }
 
 @keyframes ms-camera {
   0%, 100% { transform: scale(1.05) translate(0, 0) rotate(0deg); }

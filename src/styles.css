@@ -83,6 +83,7 @@
   --mothership-light: color-mix(in oklab, var(--gold-light) 70%, var(--ivory));
   --shadow-mothership-light: 0 0 12px 4px color-mix(in oklab, var(--gold-light) 80%, transparent), 0 0 30px 10px color-mix(in oklab, var(--gold) 35%, transparent);
   --mothership-vignette: radial-gradient(ellipse at center, transparent 35%, color-mix(in oklab, var(--obsidian) 70%, transparent) 100%);
+  --mothership-content-veil: color-mix(in oklab, var(--obsidian) 90%, transparent);
 }
 
 @layer base {
