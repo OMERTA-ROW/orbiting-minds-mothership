@@ -79,6 +79,11 @@
   --hero-shade: linear-gradient(180deg, var(--background) 0%, transparent 16%, transparent 74%, var(--background) 100%);
   --star-veil: linear-gradient(180deg, transparent 5%, var(--background) 90%);
   --open-call-overlay: linear-gradient(90deg, color-mix(in oklab, var(--background) 95%, transparent) 0%, color-mix(in oklab, var(--background) 80%, transparent) 32%, transparent 75%), linear-gradient(180deg, transparent 70%, var(--background));
+  --mothership-core-fill: radial-gradient(circle, color-mix(in oklab, var(--gold-light) 75%, transparent), color-mix(in oklab, var(--gold) 25%, transparent) 40%, transparent 70%);
+  --mothership-light: color-mix(in oklab, var(--gold-light) 70%, var(--ivory));
+  --shadow-mothership-light: 0 0 12px 4px color-mix(in oklab, var(--gold-light) 80%, transparent), 0 0 30px 10px color-mix(in oklab, var(--gold) 35%, transparent);
+  --mothership-vignette: radial-gradient(ellipse at center, transparent 35%, color-mix(in oklab, var(--obsidian) 70%, transparent) 100%);
+  --mothership-content-veil: color-mix(in oklab, var(--obsidian) 90%, transparent);
 }
 
 @layer base {
@@ -140,7 +145,7 @@
 .nav-link { position: relative; padding: 28px 0; font-size: 12px; color: var(--muted-foreground); transition: color 180ms; }
 .nav-link:hover, .nav-link.is-current { color: var(--gold-light); }
 .nav-link.is-current::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--gold); }
-.cosmic-hero { height: min(calc(100svh - 136px), 1120px); min-height: 660px; background: var(--background); }
+.cosmic-hero { height: min(calc(100svh - 136px), 1120px); min-height: 660px; background: transparent; }
 .cosmic-hero-art { object-position: center 62%; transform: translate(var(--parallax-x, 0px), var(--parallax-y, 0px)) scale(1.025); transition: transform 600ms ease-out; }
 .hero-vignette { background: var(--hero-shade); }
 .hero-copy { padding-top: 65px; }
