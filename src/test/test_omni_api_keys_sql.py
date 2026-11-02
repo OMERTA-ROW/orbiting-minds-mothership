@@ -62,7 +62,7 @@ def main():
         sql(f"UPDATE auth.users SET email_confirmed_at=now() WHERE id='{OWNER}';")
 
         # Verified MFA owner creates; invalid inputs rejected.
-        key_id = caller(OWNER, 'aal2', create)
+        key_id = caller(OWNER, 'aal2', create).splitlines()[-1]
         assert len(key_id) == 36
         caller(OWNER, 'aal2', f"SELECT public.omni_api_key_create('Bad',ARRAY['admin'],'{HASH_B}','omni_bbbb',30);", False)
         caller(OWNER, 'aal2', f"SELECT public.omni_api_key_create('Bad',ARRAY['health'],'not-hex','omni_bbbb',30);", False)
