@@ -109,7 +109,7 @@ def main():
         assert caller(OTHER, 'aal2', "SELECT count(*) FROM public.omni_api_keys;").endswith('0')
         assert caller(OWNER, 'aal2', "SELECT count(*) FROM public.omni_api_keys;").endswith('2')
         # Hash is stored, never a plaintext secret; prefix is display-length only.
-        assert sql(f"SELECT key_hash='{HASH_B}' AND key_prefix='omni_bbbb' AND length(key_prefix)=12 FROM public.omni_api_keys WHERE id='{key_id}';") == 't'
+        assert sql(f"SELECT key_hash='{HASH_B}' AND key_prefix='omni_bbbb' AND length(key_prefix)<=12 FROM public.omni_api_keys WHERE id='{key_id}';") == 't'
         # Owner cannot insert fake audit rows directly.
         caller(OWNER, 'aal2', "INSERT INTO public.razul_control_audit(action,record_type,record_id) VALUES('fake','omni_api_key','fake');", False)
 
