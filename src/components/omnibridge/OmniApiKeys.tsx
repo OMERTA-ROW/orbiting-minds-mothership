@@ -33,7 +33,7 @@ export function OmniApiKeys() {
 
   const [keys, setKeys] = useState<OmniApiKeyRow[] | null>(null);
   const [audit, setAudit] = useState<AuditRow[]>([]);
-  const [accessError, setAccessError] = useState(false);
+  const [access, setAccess] = useState<"checking" | "ok" | "denied">("checking");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -50,7 +50,9 @@ export function OmniApiKeys() {
   }, [listKeys, listAudit]);
 
   useEffect(() => {
-    refresh().catch(() => setAccessError(true));
+    refresh()
+      .then(() => setAccess("ok"))
+      .catch(() => setAccess("denied"));
   }, [refresh]);
 
   async function run(action: () => Promise<{ id: string; secret?: string }>, done: string) {
