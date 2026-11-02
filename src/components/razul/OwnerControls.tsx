@@ -48,6 +48,14 @@ export function OwnerControls({
         Saved settings affect existing permitted feeds only. No new source, crawler, agent or job is
         started. Changes are recorded as metadata, not a trusted external audit.
       </p>
+      <p className="text-xs">
+        <a className="text-primary underline" href="/omni-api-keys">
+          Manage OMNI API credentials
+        </a>{" "}
+        <span className="text-muted-foreground">
+          — owner-only scoped keys for the authenticated health and jobs endpoints.
+        </span>
+      </p>
       <label className="flex items-start gap-2 text-sm">
         <input
           type="checkbox"
