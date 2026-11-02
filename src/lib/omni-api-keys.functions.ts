@@ -15,15 +15,6 @@ import {
   sha256Hex,
 } from "./omni-api-keys";
 
-async function requireOwner(context: {
-  supabase: Parameters<typeof importOwner>[0] extends never ? never : never;
-}) {
-  void context;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type importOwner = typeof import("./razul-owner.server");
-
 export const listOmniApiKeys = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
