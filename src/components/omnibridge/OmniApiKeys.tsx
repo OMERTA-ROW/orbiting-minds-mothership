@@ -71,14 +71,14 @@ export function OmniApiKeys() {
     }
   }
 
-  if (accessError) {
+  if (access !== "ok") {
     return (
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="text-2xl">OMNI API credentials</h1>
         <p className="mt-4 text-sm text-muted-foreground">
-          This workspace is private to the verified owner with strong MFA. Sign in through the
-          owner flow to manage API keys; no keys are visible or usable here without that verified
-          session.
+          {access === "checking"
+            ? "Checking owner access…"
+            : "This workspace is private to the verified owner with strong MFA. Sign in through the owner flow to manage API keys; no keys are visible or usable here without that verified session."}
         </p>
       </main>
     );
