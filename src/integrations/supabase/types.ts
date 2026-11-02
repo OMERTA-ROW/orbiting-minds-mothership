@@ -595,6 +595,48 @@ export type Database = {
           },
         ]
       }
+      omni_api_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          rotated_at: string | null
+          scopes: string[]
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          rotated_at?: string | null
+          scopes?: string[]
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          rotated_at?: string | null
+          scopes?: string[]
+          status?: string
+        }
+        Relationships: []
+      }
       omni_social_drafts: {
         Row: {
           content: Json
@@ -1465,6 +1507,25 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      omni_api_key_create: {
+        Args: {
+          _days: number
+          _key_hash: string
+          _key_prefix: string
+          _name: string
+          _scopes: string[]
+        }
+        Returns: string
+      }
+      omni_api_key_revoke: { Args: { _id: string }; Returns: undefined }
+      omni_api_key_rotate: {
+        Args: { _id: string; _key_hash: string; _key_prefix: string }
+        Returns: undefined
+      }
+      omni_api_key_verify: {
+        Args: { _key_hash: string; _scope: string }
+        Returns: string
       }
       omni_social_transition: {
         Args: {

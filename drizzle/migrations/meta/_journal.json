@@ -211,6 +211,13 @@
       "when": 1793469698307,
       "tag": "0029_razul_owner_controls_and_source_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793592243061,
+      "tag": "0030_omni_api_keys",
+      "breakpoints": true
     }
   ]
 }
