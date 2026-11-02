@@ -46,6 +46,7 @@ import { Route as MarketplaceRouteImport } from './routes/marketplace'
 import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as OmniRouteImport } from './routes/omni'
 import { Route as OmniAgentsRouteImport } from './routes/omni-agents'
+import { Route as OmniApiKeysRouteImport } from './routes/omni-api-keys'
 import { Route as OmniGatewayRouteImport } from './routes/omni-gateway'
 import { Route as OmniLegalRouteImport } from './routes/omni-legal'
 import { Route as OmniMarketingRouteImport } from './routes/omni-marketing'
@@ -89,6 +90,8 @@ import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archiv
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 import { Route as ApiPublicJobsKnowledgeCollectRouteImport } from './routes/api/public/jobs/knowledge-collect'
 import { Route as ApiPublicJobsRazulObserveRouteImport } from './routes/api/public/jobs/razul-observe'
+import { Route as ApiPublicOmniHealthRouteImport } from './routes/api/public/omni/health'
+import { Route as ApiPublicOmniJobsRouteImport } from './routes/api/public/omni/jobs'
 import { Route as ApiPublicRazulSentinelReportRouteImport } from './routes/api/public/razul-sentinel/report'
 
 const IndexRoute = IndexRouteImport.update({
@@ -273,6 +276,11 @@ const OmniRoute = OmniRouteImport.update({
 const OmniAgentsRoute = OmniAgentsRouteImport.update({
   id: '/omni-agents',
   path: '/omni-agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OmniApiKeysRoute = OmniApiKeysRouteImport.update({
+  id: '/omni-api-keys',
+  path: '/omni-api-keys',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OmniGatewayRoute = OmniGatewayRouteImport.update({
@@ -494,6 +502,16 @@ const ApiPublicJobsRazulObserveRoute =
     path: '/api/public/jobs/razul-observe',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOmniHealthRoute = ApiPublicOmniHealthRouteImport.update({
+  id: '/api/public/omni/health',
+  path: '/api/public/omni/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOmniJobsRoute = ApiPublicOmniJobsRouteImport.update({
+  id: '/api/public/omni/jobs',
+  path: '/api/public/omni/jobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicRazulSentinelReportRoute =
   ApiPublicRazulSentinelReportRouteImport.update({
     id: '/api/public/razul-sentinel/report',
@@ -538,6 +556,7 @@ export interface FileRoutesByFullPath {
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
   '/omni-agents': typeof OmniAgentsRoute
+  '/omni-api-keys': typeof OmniApiKeysRoute
   '/omni-gateway': typeof OmniGatewayRoute
   '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
@@ -581,6 +600,8 @@ export interface FileRoutesByFullPath {
   '/robotics/$id': typeof RoboticsIdRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
+  '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
+  '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
 }
 export interface FileRoutesByTo {
@@ -620,6 +641,7 @@ export interface FileRoutesByTo {
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
   '/omni-agents': typeof OmniAgentsRoute
+  '/omni-api-keys': typeof OmniApiKeysRoute
   '/omni-gateway': typeof OmniGatewayRoute
   '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
@@ -663,6 +685,8 @@ export interface FileRoutesByTo {
   '/robotics/$id': typeof RoboticsIdRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
+  '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
+  '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
 }
 export interface FileRoutesById {
@@ -704,6 +728,7 @@ export interface FileRoutesById {
   '/mothership': typeof MothershipRoute
   '/omni': typeof OmniRoute
   '/omni-agents': typeof OmniAgentsRoute
+  '/omni-api-keys': typeof OmniApiKeysRoute
   '/omni-gateway': typeof OmniGatewayRoute
   '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
@@ -747,6 +772,8 @@ export interface FileRoutesById {
   '/robotics_/$id': typeof RoboticsIdRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
+  '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
+  '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
 }
 export interface FileRouteTypes {
@@ -788,6 +815,7 @@ export interface FileRouteTypes {
     | '/mothership'
     | '/omni'
     | '/omni-agents'
+    | '/omni-api-keys'
     | '/omni-gateway'
     | '/omni-legal'
     | '/omni-marketing'
@@ -831,6 +859,8 @@ export interface FileRouteTypes {
     | '/robotics/$id'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
+    | '/api/public/omni/health'
+    | '/api/public/omni/jobs'
     | '/api/public/razul-sentinel/report'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -870,6 +900,7 @@ export interface FileRouteTypes {
     | '/mothership'
     | '/omni'
     | '/omni-agents'
+    | '/omni-api-keys'
     | '/omni-gateway'
     | '/omni-legal'
     | '/omni-marketing'
@@ -913,6 +944,8 @@ export interface FileRouteTypes {
     | '/robotics/$id'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
+    | '/api/public/omni/health'
+    | '/api/public/omni/jobs'
     | '/api/public/razul-sentinel/report'
   id:
     | '__root__'
@@ -953,6 +986,7 @@ export interface FileRouteTypes {
     | '/mothership'
     | '/omni'
     | '/omni-agents'
+    | '/omni-api-keys'
     | '/omni-gateway'
     | '/omni-legal'
     | '/omni-marketing'
@@ -996,6 +1030,8 @@ export interface FileRouteTypes {
     | '/robotics_/$id'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
+    | '/api/public/omni/health'
+    | '/api/public/omni/jobs'
     | '/api/public/razul-sentinel/report'
   fileRoutesById: FileRoutesById
 }
@@ -1037,6 +1073,7 @@ export interface RootRouteChildren {
   MothershipRoute: typeof MothershipRoute
   OmniRoute: typeof OmniRoute
   OmniAgentsRoute: typeof OmniAgentsRoute
+  OmniApiKeysRoute: typeof OmniApiKeysRoute
   OmniGatewayRoute: typeof OmniGatewayRoute
   OmniLegalRoute: typeof OmniLegalRoute
   OmniMarketingRoute: typeof OmniMarketingRoute
@@ -1074,6 +1111,8 @@ export interface RootRouteChildren {
   RoboticsIdRoute: typeof RoboticsIdRoute
   ApiPublicJobsKnowledgeCollectRoute: typeof ApiPublicJobsKnowledgeCollectRoute
   ApiPublicJobsRazulObserveRoute: typeof ApiPublicJobsRazulObserveRoute
+  ApiPublicOmniHealthRoute: typeof ApiPublicOmniHealthRoute
+  ApiPublicOmniJobsRoute: typeof ApiPublicOmniJobsRoute
   ApiPublicRazulSentinelReportRoute: typeof ApiPublicRazulSentinelReportRoute
 }
 
@@ -1336,6 +1375,13 @@ declare module '@tanstack/react-router' {
       path: '/omni-agents'
       fullPath: '/omni-agents'
       preLoaderRoute: typeof OmniAgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/omni-api-keys': {
+      id: '/omni-api-keys'
+      path: '/omni-api-keys'
+      fullPath: '/omni-api-keys'
+      preLoaderRoute: typeof OmniApiKeysRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/omni-gateway': {
@@ -1639,6 +1685,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJobsRazulObserveRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/omni/health': {
+      id: '/api/public/omni/health'
+      path: '/api/public/omni/health'
+      fullPath: '/api/public/omni/health'
+      preLoaderRoute: typeof ApiPublicOmniHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/jobs': {
+      id: '/api/public/omni/jobs'
+      path: '/api/public/omni/jobs'
+      fullPath: '/api/public/omni/jobs'
+      preLoaderRoute: typeof ApiPublicOmniJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/razul-sentinel/report': {
       id: '/api/public/razul-sentinel/report'
       path: '/api/public/razul-sentinel/report'
@@ -1708,6 +1768,7 @@ const rootRouteChildren: RootRouteChildren = {
   MothershipRoute: MothershipRoute,
   OmniRoute: OmniRoute,
   OmniAgentsRoute: OmniAgentsRoute,
+  OmniApiKeysRoute: OmniApiKeysRoute,
   OmniGatewayRoute: OmniGatewayRoute,
   OmniLegalRoute: OmniLegalRoute,
   OmniMarketingRoute: OmniMarketingRoute,
@@ -1745,6 +1806,8 @@ const rootRouteChildren: RootRouteChildren = {
   RoboticsIdRoute: RoboticsIdRoute,
   ApiPublicJobsKnowledgeCollectRoute: ApiPublicJobsKnowledgeCollectRoute,
   ApiPublicJobsRazulObserveRoute: ApiPublicJobsRazulObserveRoute,
+  ApiPublicOmniHealthRoute: ApiPublicOmniHealthRoute,
+  ApiPublicOmniJobsRoute: ApiPublicOmniJobsRoute,
   ApiPublicRazulSentinelReportRoute: ApiPublicRazulSentinelReportRoute,
 }
 export const routeTree = rootRouteImport
