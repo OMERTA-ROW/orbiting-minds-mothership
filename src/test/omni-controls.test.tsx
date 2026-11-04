@@ -90,7 +90,7 @@ describe("OMNI control reliability", () => {
     const mutate = action === "Rotate" ? mocks.rotate : mocks.revoke;
     mutate.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", ...(action === "Rotate" ? { secret: "synthetic-rotated-value" } : {}) });
     render(<OmniApiKeys />);
-    fireEvent.click(await screen.findByRole("button", { name: action, exact: undefined } as never));
+    fireEvent.click(await screen.findByRole("button", { name: action }));
     await waitFor(() => expect(mutate).toHaveBeenCalledWith({ data: { id: "11111111-1111-4111-8111-111111111111", confirm: true } }));
     await waitFor(() => expect(mocks.keys).toHaveBeenCalledTimes(2));
   });
