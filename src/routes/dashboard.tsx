@@ -4,6 +4,7 @@ import { agents, sampleProjects, demoProposals as proposals } from "@/data/evolu
 import { DemoBadge, PageHeader, Section } from "@/components/evo";
 import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/dashboard")({
   validateSearch: (search: Record<string, unknown>): { proposal?: string } => {
@@ -32,10 +33,11 @@ function Page() {
         </div>
       </Section>
       <Section>
-        <div className="mb-4 flex gap-2" role="tablist">
-          {tabs.map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn("rounded-full border px-4 py-1.5 text-sm", tab === t ? "border-gold bg-accent/60 text-gold-light" : "border-border text-muted-foreground")}>{t}</button>)}
-        </div>
-        <div className="glass overflow-x-auto p-2" role="tabpanel">
+        <Tabs value={tab} onValueChange={(value) => { if (tabs.some((t) => t === value)) setTab(value as (typeof tabs)[number]); }}>
+        <TabsList aria-label="Dashboard views" className="mb-4 h-auto max-w-full flex-wrap">
+          {tabs.map((t) => <TabsTrigger key={t} value={t}>{t}</TabsTrigger>)}
+        </TabsList>
+        <TabsContent value={tab} className="overflow-x-auto border-y border-border p-2">
           <table className="w-full min-w-[560px] text-left text-sm">
             {tab === "Projects" && (<>
               <thead className="text-xs uppercase text-muted-foreground"><tr><th className="p-3">Project</th><th>Version</th><th>Upgrade</th><th>Health</th><th>Readiness</th></tr></thead>
@@ -54,7 +56,7 @@ function Page() {
               <tbody>{agents.map((a) => <tr key={a.name} className="border-t border-border"><td className="p-3 text-gold-light">{a.name}</td><td>{a.role}</td><td>{a.consent}</td><td><Bar v={a.trust} /></td></tr>)}</tbody>
             </>)}
           </table>
-        </div>
+        </TabsContent></Tabs>
       </Section>
     </>
   );
