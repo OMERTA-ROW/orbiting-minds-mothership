@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { getRazulAgentFeed, submitRazulFeedback } from "@/lib/razul-feeds.functions";
@@ -49,6 +49,9 @@ export function LiveObservatory() {
     { findings: FindingRow[]; minRelevance: number } | { error: string } | null
   >(null);
   const [feedbackSent, setFeedbackSent] = useState<Record<string, string>>({});
+  const feedbackRevision = useRef(0);
+  useEffect(() => { feedbackRevision.current++; setState({ kind: "gated" }); setAgent(null); setAgentFeed(null); setFeedbackSent({}); }, [user?.id]);
+  useEffect(() => { feedbackRevision.current++; setAgentFeed(null); setFeedbackSent({}); }, [agent]);
 
   useEffect(() => {
     if (!agent || state.kind !== "ready") {
@@ -74,12 +77,14 @@ export function LiveObservatory() {
   }, [agent, state.kind, getFeed]);
 
   async function sendFeedback(findingId: string, verdict: "useful" | "not-useful") {
-    if (!agent) return;
+    if (!agent || feedbackSent[findingId] === "saving") return;
+    const current = feedbackRevision.current;
+    setFeedbackSent((prev) => ({ ...prev, [findingId]: "saving" }));
     try {
       await feedback({ data: { findingId, agent, verdict, note: "" } });
-      setFeedbackSent((prev) => ({ ...prev, [findingId]: verdict }));
+      if (feedbackRevision.current === current) setFeedbackSent((prev) => ({ ...prev, [findingId]: verdict }));
     } catch {
-      setFeedbackSent((prev) => ({ ...prev, [findingId]: "failed" }));
+      if (feedbackRevision.current === current) setFeedbackSent((prev) => ({ ...prev, [findingId]: "failed" }));
     }
   }
 
@@ -122,7 +127,7 @@ export function LiveObservatory() {
         run: (run.data as RunRow | null) ?? null,
         sources: sourceCount.count ?? 0,
       });
-    })();
+    })().catch(() => { if (!cancelled) setState({ kind: "gated" }); });
     return () => {
       cancelled = true;
     };
@@ -208,12 +213,13 @@ export function LiveObservatory() {
                         {f.relevance}
                       </p>
                       <div className="mt-1 flex items-center gap-2 text-xs">
-                        {feedbackSent[f.id] ? (
-                          <span className="text-muted-foreground">
-                            Feedback {feedbackSent[f.id] === "failed" ? "failed" : "recorded"}
+                        {feedbackSent[f.id] && feedbackSent[f.id] !== "failed" ? (
+                          <span role="status" className="text-muted-foreground">
+                            Feedback {feedbackSent[f.id] === "saving" ? "saving…" : "recorded"}
                           </span>
                         ) : (
                           <>
+                            {feedbackSent[f.id] === "failed" && <span role="status">Feedback failed. Retry; no confirmation was received.</span>}
                             <Button
                               type="button"
                               onClick={() => sendFeedback(f.id, "useful")}
