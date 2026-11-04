@@ -1,5 +1,10 @@
 # Evolution — reconciled blueprint roadmap
 
+## Current OMNI simplification and controls — 2026-11-04
+- [ ] Simplify OMNI with a scoped silver/gray theme, plain labels and fewer visible panels; preserve every feature and stored record.
+- [ ] Reproduce and repair broken/silent OMNI controls and obvious main-dashboard issues; test available actions and explain blocked actions.
+- [ ] Verify desktop/mobile layout, applicable regression tests and private-access denials; report owner-session or companion blockers. No secret, account, backend, visibility or publication changes.
+
 ## Current visual update — 2026-11-01
 - [x] Integrated the owner-supplied Mothership image/component and uploaded camera, reactor, ring-light, star and vignette styles inside the homepage's `ms-page` / `ms-content` wrapper. Image and overlays share the actual 1920×1280 frame; lower content uses a readability veil. **66 routing/SEO tests PASS**; desktop 1974×1125 and mobile 390×844 image load, moving rings, navigation, anchor, no-overflow and reduced-motion checks PASS with no page errors; latest preview build OK. Existing content, other-route backgrounds and access preserved; nothing published.
 
