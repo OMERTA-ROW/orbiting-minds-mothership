@@ -122,6 +122,7 @@ export function AngelTechWorkspace() {
   }
 
   function exportRecords() {
+    try {
     const blob = new Blob([saveAngelTechStore(store)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -129,6 +130,8 @@ export function AngelTechWorkspace() {
     link.download = `angel-tech-sabrina-local-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
+    setNotice("Local records download prepared. Nothing was sent to a partner.");
+    } catch { setNotice("Export failed. Local records are unchanged; retry the download."); }
   }
 
   return (

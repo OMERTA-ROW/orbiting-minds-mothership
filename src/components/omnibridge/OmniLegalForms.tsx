@@ -59,9 +59,12 @@ export function OmniLegalForms() {
     setIntake([]); setSelection((old) => ({ ...old, ...patch }));
   }
   function download(bytes: Uint8Array, name: string) {
+    try {
     const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: "application/pdf" }));
     const anchor = document.createElement("a"); anchor.href = url; anchor.download = name; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setNotice("PDF download prepared. No court submission or Desktop sync.");
+    } catch { setNotice("PDF download failed. The session copy is preserved; retry the download."); }
   }
   async function manualIntake(file: File | undefined) {
     if (!file) return;

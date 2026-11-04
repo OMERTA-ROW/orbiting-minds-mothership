@@ -111,7 +111,7 @@ export function RazulArchive() {
   }
 
   function toggleGrant(target: RazulConsumer) {
-    if (!firstProject) return;
+    if (!firstProject) { setNotice("Enroll a fictional project before changing local retrieval labels. No permission was granted."); return; }
     setStore((current) => {
       const existing = current.grants.some(
         (g) => g.projectId === firstProject.id && g.consumer === target,
@@ -177,11 +177,14 @@ export function RazulArchive() {
         setNotice("Duplicate URL from the same source; ignored.");
         return;
       }
+      const updated = result.updated;
+      const finding = result.finding;
+      if (!updated && !finding) { setNotice("No finding was accepted. Existing records are unchanged."); return; }
       setStore((current) => ({
         ...current,
-        findings: result.updated
-          ? current.findings.map((f) => (f.id === result.updated!.id ? result.updated! : f))
-          : [...current.findings, result.finding!],
+        findings: updated
+          ? current.findings.map((f) => (f.id === updated.id ? updated : f))
+          : finding ? [...current.findings, finding] : current.findings,
       }));
       setNotice(
         result.updated
