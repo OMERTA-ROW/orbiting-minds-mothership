@@ -86,9 +86,8 @@ export function OmniAssistant({
     }
   };
   return (
-    <main className="mx-auto max-w-[1600px] px-5 pb-20 pt-8 md:px-10">
+    <div className="mx-auto min-w-0 pb-12 pt-3">
       <header className="relative overflow-hidden border-b border-gold/30 pb-7">
-        <CoreGeometry className="pointer-events-none absolute -right-16 -top-36 w-96 opacity-25" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-3">
             <span className="eyebrow">OmniBridge / dedicated coordinator</span>
@@ -105,9 +104,9 @@ export function OmniAssistant({
           </p>
         </div>
       </header>
-      <OmniActivation />
-      <OmniAutonomy />
-      <div className="my-6 flex flex-wrap items-center justify-between gap-4">
+      <details className="omni-support"><summary>Connection status & accounts</summary><OmniActivation /></details>
+      <details className="omni-support"><summary>Autonomous tasks · executor not connected</summary><OmniAutonomy /></details>
+      <div className="my-6 grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
         <label className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground">
           Selected world
           <select
@@ -123,7 +122,7 @@ export function OmniAssistant({
             ))}
           </select>
         </label>
-        <div className="flex gap-2">
+        <div className="flex min-w-0 flex-wrap gap-2">
           <Button asChild variant="cosmic" size="sm">
             <Link to="/beta-omni">
               Authorized beta OMNI
@@ -156,7 +155,7 @@ export function OmniAssistant({
             onClick={() => {
               setMessages([]);
               setPlan(null);
-              setNotice("");
+              setNotice("Temporary conversation and plan cleared. Saved records unchanged.");
               setText("");
               textarea.current?.focus();
             }}
@@ -178,7 +177,7 @@ export function OmniAssistant({
           {notice}
         </p>
       )}
-      <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0 border-y border-border" aria-label="OMNI conversation">
           <div className="flex flex-wrap justify-between gap-3 border-b border-border py-4 text-[10px]">
             <span className="font-mono text-gold-light">OMNI / TEMPLATE CHANNEL</span>
@@ -282,6 +281,7 @@ export function OmniAssistant({
               I consent to temporary local planning with fictional, non-sensitive text only. No
               model request or storage.
             </label>
+            {!consent && <p className="mt-2 text-xs text-muted-foreground">Consent is required before sending a fictional planning request.</p>}
           </div>
         </section>
         <aside className="min-w-0">
@@ -298,11 +298,11 @@ export function OmniAssistant({
                 size="sm"
                 aria-pressed={targets.includes(t)}
                 disabled={t === "local" || paused}
-                onClick={() =>
-                  setTargets((prev) =>
-                    prev.includes(t) ? prev.filter((v) => v !== t) : [...prev, t],
-                  )
-                }
+                title={t === "local" ? "Required local template; no provider call" : "Toggle a draft routing label only; nothing is sent"}
+                onClick={() => {
+                  setTargets((prev) => prev.includes(t) ? prev.filter((v) => v !== t) : [...prev, t]);
+                  setNotice(`${t} draft routing updated. No provider connection or request.`);
+                }}
               >
                 {t === "local" ? "OMNI template" : `${t} · NOT SENT`}
               </Button>
@@ -416,16 +416,17 @@ export function OmniAssistant({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() =>
-                      downloadCreative("omni-temporary-plan.json", {
+                    onClick={() => {
+                      try { downloadCreative("omni-temporary-plan.json", {
                         mode: "DEMO",
                         model: null,
                         authenticated: false,
                         providerCalls: 0,
                         executionAllowed: false,
                         plan,
-                      })
-                    }
+                      }); setNotice("Plan download prepared. No task executed."); }
+                      catch { setNotice("Plan download failed. Your plan remains here; retry the export."); }
+                    }}
                   >
                     <Download size={13} />
                     Export plan
@@ -434,7 +435,7 @@ export function OmniAssistant({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setPlan({ ...plan, state: "Withdrawn" })}
+                      onClick={() => { setPlan({ ...plan, state: "Withdrawn" }); setNotice("Local plan withdrawn. No device or external task was running."); }}
                     >
                       Withdraw plan
                     </Button>
@@ -459,6 +460,6 @@ export function OmniAssistant({
           </nav>
         </aside>
       </div>
-    </main>
+    </div>
   );
 }
