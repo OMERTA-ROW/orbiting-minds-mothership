@@ -16,7 +16,7 @@ Presentation and browser-local reliability only. Existing features/routes/data r
 - Dashboard tabs already worked with mouse; moved to existing accessible tab control. Homepage links and Mothership module selectors tested, no defect found.
 
 ## Verification
-- `bunx vitest run`: 1,254 tests / 86 files passed before the final five additional credential-feedback tests; final rerun recorded in the roadmap/chat.
+- `bunx vitest run`: **1,259 tests / 86 files PASS** on the final rerun, including 12 control-regression tests.
 - `bunx vitest run src/test/omni-controls.test.tsx ...`: initial five failures reproduced; seven after-fix tests passed, related focused suite 123 passed / 9 files.
 - Playwright scripts in `/tmp/browser/omni-review/`: baseline/reproduce/flows/remaining/private_checks/bridge_final. Synthetic browser contexts only for local edits; session restoration origin-scoped, no tokens printed or screenshotted.
 - 53 main OMNI actions and 62 additional Sabrina/archive/legal/home/Mothership/menu actions completed; supplemental bridge proposal → review → export → withdrawal and adapter export passed. Local changes read back after reload.
