@@ -1,0 +1,7 @@
+# CLI architecture
+
+- CLI remains offline source in `cli/`, never web-imported; fixed local tasks use synchronized capped redacted output and pre-opened Go run-directory handles, manifest/checksum coverage shares fail-closed exits, why: no child-directed log paths, remote sandbox, credential custody or signing claims.
+- CLI manifests bind hashes/sizes, never contents, to runs via `--change`; release matrices list actual checks, why: evidence is not authorship, diffs or signing.
+- CLI workspace lives in a per-user config file plus real local folders (default `<Desktop>/Omni Projects`); fixed game/video/blank templates, `--move`/`--keep` relocation, refusal of collisions/symlinks/traversal, why: the browser must never claim it created local folders and files must survive workspace changes.
+- CLI tasks/routing/changes revalidate saved bindings; bounded private decision chains and Linux cancellation cover only the new process group. Browser imports review evidence, why: metadata is not authenticated authority, immutable audit or isolation.
+- Maintenance reports use bounded metadata-only selected-project traversal; cleanup plans bind device/profile/category/file identity and remain inert without enrolled capabilities/trash recovery. Scanner argv is fixed and public scans blocked until native verification, why: local labels and filenames cannot authorize device actions or establish malware detection.

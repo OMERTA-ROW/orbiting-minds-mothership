@@ -84,6 +84,63 @@
   --shadow-mothership-light: 0 0 12px 4px color-mix(in oklab, var(--gold-light) 80%, transparent), 0 0 30px 10px color-mix(in oklab, var(--gold) 35%, transparent);
   --mothership-vignette: radial-gradient(ellipse at center, transparent 35%, color-mix(in oklab, var(--obsidian) 70%, transparent) 100%);
   --mothership-content-veil: color-mix(in oklab, var(--obsidian) 90%, transparent);
+  --omni-background: oklch(0.17 0.002 260);
+  --omni-surface: oklch(0.21 0.002 260);
+  --omni-raised: oklch(0.27 0.002 260);
+  --omni-foreground: oklch(0.94 0.002 260);
+  --omni-secondary-text: oklch(0.75 0.002 260);
+  --omni-silver: oklch(0.85 0.003 260);
+  --omni-border: oklch(0.42 0.003 260);
+}
+
+.omni-theme {
+  --background: var(--omni-background);
+  --foreground: var(--omni-foreground);
+  --card: var(--omni-surface);
+  --card-foreground: var(--omni-foreground);
+  --popover: var(--omni-surface);
+  --popover-foreground: var(--omni-foreground);
+  --primary: var(--omni-silver);
+  --primary-foreground: var(--omni-background);
+  --secondary: var(--omni-raised);
+  --secondary-foreground: var(--omni-foreground);
+  --muted: var(--omni-raised);
+  --muted-foreground: var(--omni-secondary-text);
+  --accent: var(--omni-raised);
+  --accent-foreground: var(--omni-foreground);
+  --gold: var(--omni-silver);
+  --gold-light: var(--omni-foreground);
+  --border: var(--omni-border);
+  --input: var(--omni-border);
+  --ring: var(--omni-silver);
+  --warning: var(--omni-secondary-text);
+  --success: var(--omni-silver);
+  --gradient-gold: linear-gradient(var(--omni-silver), var(--omni-silver));
+  --gradient-glass: linear-gradient(var(--omni-surface), var(--omni-surface));
+  --shadow-glow: none;
+  --shadow-panel: none;
+}
+.omni-area { background: var(--background); }
+.omni-area > .orbital-background, .omni-area > .site-cosmos { display: none; }
+.omni-area h1, .omni-area h2, .omni-area h3 { font-family: var(--font-sans); }
+.omni-area h1:not(.omni-area-header h1) { font-size: 1.875rem; line-height: 1.3; }
+.omni-area .eyebrow { letter-spacing: 0; text-transform: none; font-family: var(--font-sans); }
+.omni-area button, .omni-area a.inline-flex { max-width: 100%; white-space: normal; height: auto; min-height: 36px; overflow-wrap: anywhere; }
+.omni-area summary { cursor: pointer; font-size: 14px; color: var(--foreground); }
+.omni-area section { min-width: 0; }
+.omni-area .omni-support { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+.omni-area .omni-support > summary { padding-block: 0.5rem; }
+.omni-area .omni-support > section { margin-block: 0.5rem; border: 0; }
+.omni-area .omni-support > div { padding-block: 1rem; }
+.omni-conversation-log { min-height: 270px; max-height: 540px; }
+@media (max-width: 639px) {
+  .omni-area .site-navigation > div { padding-inline: 16px; gap: 8px; }
+  .omni-area .site-navigation > div > a { min-width: 0; }
+  .omni-area .site-navigation .brand-mark { width: 28px; height: 28px; }
+  .omni-area .site-navigation > div > div { gap: 2px; flex-shrink: 0; }
+  .omni-area .exchange-select { max-width: 100%; }
+  .omni-area input[type="file"] { max-width: 100%; margin-left: 0; }
+  .omni-conversation-log { min-height: 240px; max-height: 420px; }
 }
 
 @layer base {

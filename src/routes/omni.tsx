@@ -20,10 +20,10 @@ function Page() {
   const { world } = Route.useSearch();
   const navigate = useNavigate();
   return (
-    <Tabs defaultValue={DEFAULT_OMNI_CONVERSATION} className="mx-auto max-w-[1600px] px-5 py-8 md:px-10">
+    <Tabs defaultValue={DEFAULT_OMNI_CONVERSATION} className="mx-auto max-w-[1440px] px-5 py-6 md:px-10">
       <TabsList aria-label="OMNI conversations" className="mb-6 h-auto flex-wrap justify-start">
         <TabsTrigger value="rasul">Razul Central Intelligence</TabsTrigger>
-        <TabsTrigger value="omni">OMNI specialist · Demo</TabsTrigger>
+        <TabsTrigger value="omni">Planning · Demo</TabsTrigger>
       </TabsList>
       <TabsContent value="rasul" forceMount hidden={false} className="data-[state=inactive]:hidden">
         <RasulChat />
