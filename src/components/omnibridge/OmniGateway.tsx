@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 import { Button } from "@/components/ui/button";
 import { DemoBadge } from "@/components/evo";
 import {
@@ -26,11 +27,7 @@ import {
 const inputCls = "mt-1 w-full rounded border border-border bg-background p-2 text-sm";
 
 export function OmniGateway() {
-  const [store, setStore] = useState<GatewayStore>(() =>
-    loadGatewayStore(
-      typeof window === "undefined" ? null : window.localStorage.getItem(OMNI_GATEWAY_STORE_KEY),
-    ),
-  );
+  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<GatewayStore>({ key: OMNI_GATEWAY_STORE_KEY, initial: loadGatewayStore(null), read: loadGatewayStore, collections: ["projects", "jobs", "feedback"] });
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -56,10 +53,6 @@ export function OmniGateway() {
   const [lnJob, setLnJob] = useState("");
   const [lnOutcome, setLnOutcome] = useState<LearningOutcome>("accepted");
   const [lnLesson, setLnLesson] = useState("");
-
-  useEffect(() => {
-    window.localStorage.setItem(OMNI_GATEWAY_STORE_KEY, JSON.stringify(store));
-  }, [store]);
 
   const readiness = gatewayReadiness();
   const enrolledProjects = store.projects.filter((p) => p.status === "enrolled");
@@ -190,6 +183,7 @@ export function OmniGateway() {
         pipeline is connected yet, so every task stops as <strong>Blocked</strong> before any code
         is generated or executed. Records below are browser-local planning data only.
       </p>
+      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
 
       <section
         aria-label="Activation prerequisites"

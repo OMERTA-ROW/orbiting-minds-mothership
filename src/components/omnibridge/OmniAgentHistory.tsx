@@ -26,7 +26,11 @@ export function OmniAgentHistory({ projectId, busy }: { projectId: string; busy:
           size="icon"
           aria-label="Refresh saved agent runs"
           disabled={!projectId || q.isFetching}
-          onClick={() => void q.refetch()}
+          onClick={async () => {
+            setNotice("Reading saved agent runs…");
+            const result = await q.refetch();
+            setNotice(result.error ? "Saved runs could not be refreshed. Check project access and retry." : "Saved agent runs refreshed.");
+          }}
         >
           <RefreshCw size={16} />
         </Button>
@@ -57,7 +61,8 @@ export function OmniAgentHistory({ projectId, busy }: { projectId: string; busy:
                     setNotice("");
                     try {
                       await cancel({ data: { id: run.id } });
-                      await q.refetch();
+                      const result = await q.refetch();
+                      setNotice(result.error ? "Cancellation recorded; list refresh failed. Refresh before retrying cancellation." : "Cancellation recorded and saved runs refreshed.");
                     } catch (error) {
                       setNotice(
                         error instanceof Error ? error.message : "Cancellation not confirmed.",

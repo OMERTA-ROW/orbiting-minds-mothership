@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 import { Button } from "@/components/ui/button";
 import { DemoBadge } from "@/components/evo";
 import {
@@ -23,11 +24,7 @@ import {
 const inputCls = "mt-1 w-full rounded border border-border bg-background p-2 text-sm";
 
 export function OmniModelGateway() {
-  const [store, setStore] = useState<ModelGatewayStore>(() =>
-    loadModelGatewayStore(
-      typeof window === "undefined" ? null : window.localStorage.getItem(OMNI_MODEL_GW_STORE_KEY),
-    ),
-  );
+  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<ModelGatewayStore>({ key: OMNI_MODEL_GW_STORE_KEY, initial: loadModelGatewayStore(null), read: loadModelGatewayStore, collections: ["adapters", "passports", "routes", "dispatches"] });
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -54,10 +51,6 @@ export function OmniModelGateway() {
   const [dPassport, setDPassport] = useState("");
   const [dStage, setDStage] = useState<DispatchStage>("inspect");
   const [dSummary, setDSummary] = useState("");
-
-  useEffect(() => {
-    window.localStorage.setItem(OMNI_MODEL_GW_STORE_KEY, JSON.stringify(store));
-  }, [store]);
 
   const readiness = modelGatewayReadiness();
   const capabilities = discoverCapabilities(store.adapters);
@@ -176,6 +169,7 @@ export function OmniModelGateway() {
         agents. Adapters, passports and routing are declarations and plans only: no provider
         credential, model endpoint or runner is connected, and nothing here claims otherwise.
       </p>
+      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
 
       <section aria-label="Real vs simulated" className="mt-8 rounded border border-gold/30 p-5">
         <h2 className="text-xl">Real vs simulated</h2>

@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -24,6 +25,7 @@ import { GuardianProvider } from "@/hooks/use-guardian";
 import { IncidentProvider } from "@/hooks/use-incidents";
 import { TrustedReleaseProvider } from "@/hooks/use-trusted-release";
 import { AccountProvider } from "@/hooks/use-account";
+import { OmniAreaHeader } from "@/components/omnibridge/OmniAreaHeader";
 
 function NotFoundComponent() {
   return (
@@ -128,6 +130,9 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const path = useRouterState({ select: (state) => state.location.pathname });
+  const omniArea = path.startsWith("/omni") || path === "/beta-omni" || path === "/angel-tech";
+  const calmArea = omniArea || path === "/dashboard";
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -141,11 +146,12 @@ function RootComponent() {
       <ExchangeLocaleProvider>
       <CommandPaletteProvider pages={navItems}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <div className="site-shell flex min-h-screen flex-col">
+      <div className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}`}>
         <OrbitalBackground />
         <div className="site-cosmos" aria-hidden><Starfield count={150} /></div>
         <SiteNav />
         <main className="flex-1">
+          {omniArea && <OmniAreaHeader />}
           <Outlet />
         </main>
         <SiteFooter />

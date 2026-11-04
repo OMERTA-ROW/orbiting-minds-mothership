@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, COMPANION_REQUIRED, INTAKE_KEY, MAX_FILES, MAX_FILE_BYTES, classify, importInto, loadIntake, recategorize, saveIntake, type Category, type IntakeProject } from "@/lib/omni-intake";
 import { initialEngine, metadataChecks, noteProject, resume, rollback, stop, tick, type EngineState } from "@/lib/omni-enhance";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 const ENGINE_KEY = "evolution.omni-enhance.v1";
 
 async function hashFile(file: File) {
@@ -10,14 +11,9 @@ async function hashFile(file: File) {
 }
 
 export function OmniIntake() {
-  const [projects, setProjects] = useState<IntakeProject[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const { records: projects, setRecords: setProjects, ready: loaded, storageNotice: intakeNotice } = useOmniLocalRecords<IntakeProject[]>({ key: INTAKE_KEY, initial: [], read: loadIntake, write: saveIntake, collections: ["projects"] });
   const [msg, setMsg] = useState("");
-  useEffect(() => { setProjects(loadIntake(localStorage.getItem(INTAKE_KEY))); setLoaded(true); }, []);
-  useEffect(() => { if (loaded) localStorage.setItem(INTAKE_KEY, saveIntake(projects)); }, [projects, loaded]);
-  const [engine, setEngine] = useState<EngineState>(initialEngine);
-  useEffect(() => { try { const v = localStorage.getItem(ENGINE_KEY); if (v) setEngine(JSON.parse(v)); } catch { /* keep default */ } }, []);
-  useEffect(() => { if (loaded) localStorage.setItem(ENGINE_KEY, JSON.stringify(engine)); }, [engine, loaded]);
+  const { records: engine, setRecords: setEngine, storageNotice: engineNotice } = useOmniLocalRecords<EngineState>({ key: ENGINE_KEY, initial: initialEngine(), read: (raw) => raw ? JSON.parse(raw) : initialEngine(), collections: ["queue", "candidates", "log"] });
   useEffect(() => {
     if (!loaded) return;
     setEngine((s) => {
@@ -29,11 +25,14 @@ export function OmniIntake() {
   }, [projects, loaded]);
 
   async function take(list: FileList | File[]) {
+    try {
     const files = [...list].slice(0, MAX_FILES + 1);
     if (!files.length) return;
     const paths = files.map((f) => (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name);
-    const root = paths[0]!.includes("/") ? paths[0]!.split("/")[0]! : files[0]!.name;
-    const incoming = await Promise.all(files.map(async (f, i) => ({ path: paths[i]!, bytes: f.size, sha256: f.size <= MAX_FILE_BYTES ? await hashFile(f) : "" })));
+    const first = paths[0];
+    if (!first) return;
+    const root = first.includes("/") ? (first.split("/")[0] ?? first) : first;
+    const incoming = await Promise.all(files.map(async (f, i) => ({ path: paths[i] ?? f.name, bytes: f.size, sha256: f.size <= MAX_FILE_BYTES ? await hashFile(f) : "" })));
     const now = new Date().toISOString();
     setProjects((all) => {
       const existing = all.find((p) => p.name === root);
@@ -42,11 +41,13 @@ export function OmniIntake() {
       setMsg(`${root}: ${report.added} new, ${report.versioned} versioned, ${report.unchanged} unchanged, ${report.rejected.length} rejected${report.rejected.length ? ` (${report.rejected.map((r) => `${r.path}: ${r.reason}`).join("; ")})` : ""}.`);
       return existing ? all.map((p) => (p.id === base.id ? project : p)) : [project, ...all];
     });
+    } catch { setMsg("Import failed. File reading or fingerprinting was unavailable; choose the files again. Existing project records are unchanged."); }
   }
 
   return (
     <section className="mt-6 border border-border p-5">
       <h2 className="text-xl">0 · Project intake</h2>
+      {(intakeNotice || engineNotice) && <p role="status" className="mt-3 text-sm text-warning">{intakeNotice} {engineNotice}</p>}
       <p className="mt-2 text-xs text-warning">Local companion required for Desktop folders. This browser only records file names, sizes and fingerprints here — nothing is written to your Desktop, uploaded to the cloud or watched.</p>
       <ul className="mt-2 text-xs text-muted-foreground">{COMPANION_REQUIRED.map((c) => <li key={c}>✗ {c} — needs the Omni companion</li>)}</ul>
       <div
@@ -70,7 +71,7 @@ export function OmniIntake() {
               {["Inbox", ...CATEGORIES].map((c) => <option key={c}>{c}</option>)}
             </select>
             <span className="text-muted-foreground">{p.files.length} file versions · planned path Omni Projects/{p.category}/{p.name}/Originals</span>
-            <Button size="sm" variant="ghost" onClick={() => setProjects((a) => a.filter((x) => x.id !== p.id))}>Remove record</Button>
+            <Button size="sm" variant="ghost" onClick={() => { setProjects((a) => a.filter((x) => x.id !== p.id)); setMsg("Local project record removed. Original files and Desktop folders are unchanged."); }}>Remove record</Button>
           </div>
           <ul className="mt-2 text-muted-foreground">{p.history.map((h, i) => <li key={i}>{h}</li>)}</ul>
         </li>

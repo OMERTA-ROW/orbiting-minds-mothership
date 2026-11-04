@@ -6,10 +6,10 @@ import { AllSeeingEye } from "@/components/razul/AllSeeingEye";
 
 function RazulPage() {
   return (
-    <div className="space-y-6">
-      <RasulChat />
+    <div className="mx-auto max-w-[1440px] px-5 pb-12 md:px-10">
       <AllSeeingEye />
-      <RazulArchive />
+      <details className="omni-support"><summary>Conversation</summary><RasulChat /></details>
+      <details className="omni-support"><summary>Local archive · Demo</summary><RazulArchive /></details>
     </div>
   );
 }

@@ -29,19 +29,21 @@ export function AllSeeingEye() {
     },
     [],
   );
+  useEffect(() => { revision.current++; setSnapshot(null); setBusy(false); setNotice(""); }, [user?.id]);
   async function refresh() {
     const current = ++revision.current;
     setBusy(true);
-    setSnapshot(null);
     setNotice("");
     try {
       const result = await read();
-      if (revision.current === current) setSnapshot(result);
+      if (revision.current === current) { setSnapshot(result); setNotice("Owner records refreshed. No jobs were started."); }
     } catch (e) {
-      if (revision.current === current)
+      if (revision.current === current) {
+        setSnapshot(null);
         setNotice(
           e instanceof Error ? e.message : "Owner infrastructure access could not be verified.",
         );
+      }
     } finally {
       if (revision.current === current) setBusy(false);
     }

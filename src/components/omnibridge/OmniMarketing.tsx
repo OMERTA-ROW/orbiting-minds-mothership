@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 import { Button } from "@/components/ui/button";
 import { DemoBadge } from "@/components/evo";
 import { OmniIntake } from "./OmniIntake";
@@ -11,16 +12,13 @@ import {
 const stamp = () => new Date().toISOString();
 
 export function OmniMarketing() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const { records: campaigns, setRecords: setCampaigns, storageNotice } = useOmniLocalRecords<Campaign[]>({ key: STORE_KEY, initial: [], read: loadStore, write: saveStore, collections: ["campaigns"] });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => { setCampaigns(loadStore(localStorage.getItem(STORE_KEY))); setLoaded(true); }, []);
-  useEffect(() => { if (loaded) localStorage.setItem(STORE_KEY, saveStore(campaigns)); }, [campaigns, loaded]);
   const active = campaigns.find((c) => c.id === activeId) ?? campaigns[0];
   const update = (fn: (c: Campaign) => Campaign) => active && setCampaigns((all) => all.map((c) => (c.id === active.id ? fn(c) : c)));
 
-  async function onFile(file: File) {
+  async function readFile(file: File) {
     setError("");
     const r = await intakeFile(file.name, file.size, file.size <= MAX_BRIEF_BYTES ? await file.text() : "");
     if (!r.ok) return setError(r.error);
@@ -38,6 +36,10 @@ export function OmniMarketing() {
     };
     setCampaigns((a) => [c, ...a]); setActiveId(c.id);
   }
+  async function onFile(file: File) {
+    try { await readFile(file); }
+    catch { setError("Brief was not imported. File reading or fingerprinting failed; select it again to retry. Existing campaigns are unchanged."); }
+  }
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 pb-20 pt-8 md:px-8">
@@ -46,6 +48,7 @@ export function OmniMarketing() {
         <h1 className="mt-4 text-4xl">OMNI Marketing</h1>
         <p className="mt-3 max-w-3xl text-xs leading-6 text-warning">Campaigns are saved in this browser only. Scores are planning heuristics, not market research. No publishing account is connected, so nothing is posted, sent or spent; jobs stay blocked with the exact requirement.</p>
       </header>
+      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
 
       <OmniIntake />
       <section className="mt-6 border border-border p-5">

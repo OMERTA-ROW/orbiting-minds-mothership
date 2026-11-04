@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { DemoBadge } from "@/components/evo";
 import { ADAPTERS, canSend, ingestEmail, rightsPath, specimenFlags, visibleTo, type Matter, type RightsFile } from "@/lib/omni-rights";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 
 const KEY = "evolution.omni-rights.v1";
 const sample = (clientId: string): Matter[] => [
@@ -16,23 +17,28 @@ async function sha(file: File) {
 }
 
 export function OmniRights() {
-  const [matters, setMatters] = useState<Matter[]>([]);
+  const { records: matters, setRecords: setMatters, storageNotice } = useOmniLocalRecords<Matter[]>({ key: KEY, initial: [], read: (raw) => raw ? JSON.parse(raw) : [...sample("client-a"), ...sample("client-b")], collections: [] });
   const [client, setClient] = useState("client-a");
   const [url, setUrl] = useState("");
   const [note, setNote] = useState("");
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => { try { const v = localStorage.getItem(KEY); setMatters(v ? JSON.parse(v) : [...sample("client-a"), ...sample("client-b")]); } catch { setMatters([]); } setLoaded(true); }, []);
-  useEffect(() => { if (loaded) localStorage.setItem(KEY, JSON.stringify(matters)); }, [matters, loaded]);
+  const [busy, setBusy] = useState(false);
   const mine = visibleTo(matters, client);
   const tm = mine.find((m) => m.module === "trademark");
 
   async function addSpecimen(file: File) {
-    if (!tm) return;
-    const f: RightsFile = { name: file.name, sha256: await sha(file), folder: "Specimens", sourceUrl: url || undefined, capturedAt: new Date().toISOString() };
-    setMatters((all) => all.map((m) => (m.id === tm.id ? { ...m, files: [...m.files, f], history: [...m.history, `specimen ${f.name} preserved unchanged`] } : m)));
+    if (busy) return;
+    if (!tm) { setNote("No trademark matter is available. Saved records have not been changed."); return; }
+    setBusy(true); setNote("Checking specimen fingerprint…");
+    try {
+      const f: RightsFile = { name: file.name, sha256: await sha(file), folder: "Specimens", sourceUrl: url || undefined, capturedAt: new Date().toISOString() };
+      setMatters((all) => all.map((m) => (m.id === tm.id ? { ...m, files: [...m.files, f], history: [...m.history, `specimen ${f.name} preserved unchanged`] } : m)));
+      setNote("Specimen fingerprint added to this browser record. Original file unchanged; no registration or upload.");
+    } catch {
+      setNote("Specimen was not added. The file could not be read or fingerprinted; select it again to retry. Existing records are unchanged.");
+    } finally { setBusy(false); }
   }
   function fixtureEmail() {
-    if (!tm) return;
+    if (!tm) { setNote("No trademark matter is available; fixture intake was not performed."); return; }
     const r = ingestEmail(matters, client, { id: `fixture-${client}`, from: "notices@example.test", subject: `Status for ${tm.reference}`, body: "Fixture notice. Please confirm receipt." });
     setMatters(r.matters); setNote(r.reason);
   }
@@ -45,6 +51,7 @@ export function OmniRights() {
         <Button asChild variant="ghost" size="sm" className="mt-3"><Link to="/omni-legal">Omni Legal · synthetic preparation</Link></Button>
         <p className="mt-3 max-w-3xl text-xs leading-6 text-warning">Organising tool, not a lawyer or filing service. Saved in this browser only. Storing a file or fingerprint is not registration; capturing a specimen is not acceptance. No filings, payments, signatures or emails happen here.</p>
       </header>
+      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
       <label className="mt-6 flex items-center gap-3 text-xs">Client
         <select aria-label="Client" className="exchange-select" value={client} onChange={(e) => { setClient(e.target.value); setNote(""); }}>
           <option value="client-a">Client A (fictional)</option><option value="client-b">Client B (fictional)</option>
@@ -60,7 +67,7 @@ export function OmniRights() {
           {m.module === "trademark" && (
             <div className="mt-3">
               <input aria-label="Capture URL" className="exchange-select" placeholder="https://… page the capture came from" value={url} onChange={(e) => setUrl(e.target.value)} />
-              <input aria-label="Specimen capture file" type="file" className="ml-3" onChange={(e) => { const f = e.target.files?.[0]; if (f) void addSpecimen(f); e.target.value = ""; }} />
+              <input aria-label="Specimen capture file" type="file" disabled={busy} className="ml-3" onChange={(e) => { const f = e.target.files?.[0]; if (f) void addSpecimen(f); e.target.value = ""; }} />
               <Button size="sm" variant="ghost" className="ml-3" onClick={fixtureEmail}>Ingest fixture email</Button>
             </div>
           )}

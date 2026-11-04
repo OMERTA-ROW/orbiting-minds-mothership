@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 import { Archive, Globe, Search, ShieldCheck } from "lucide-react";
 import { ZodError } from "zod";
 import { Button } from "@/components/ui/button";
@@ -42,20 +43,12 @@ const errorText = (error: unknown) =>
  * discovery or private-data access is connected here.
  */
 export function RazulArchive() {
-  const [store, setStore] = useState<RazulStore>(emptyRazulStore);
+  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<RazulStore>({ key: RAZUL_STORE_KEY, initial: emptyRazulStore, read: loadRazulStore, write: saveRazulStore, collections: ["enrollments", "events", "grants", "sources", "findings"] });
   const [notice, setNotice] = useState("");
-  const [loaded, setLoaded] = useState(false);
   const [consumer, setConsumer] = useState<RazulConsumer>("jackboy");
   const [searchText, setSearchText] = useState("");
   const [searchKind, setSearchKind] = useState<"" | EventKind>("");
 
-  useEffect(() => {
-    setStore(loadRazulStore(localStorage.getItem(RAZUL_STORE_KEY)));
-    setLoaded(true);
-  }, []);
-  useEffect(() => {
-    if (loaded) localStorage.setItem(RAZUL_STORE_KEY, saveRazulStore(store));
-  }, [loaded, store]);
 
   const firstProject = store.enrollments.find((e) => e.active);
   const chain = verifyChain(store.events);
@@ -118,7 +111,7 @@ export function RazulArchive() {
   }
 
   function toggleGrant(target: RazulConsumer) {
-    if (!firstProject) return;
+    if (!firstProject) { setNotice("Enroll a fictional project before changing local retrieval labels. No permission was granted."); return; }
     setStore((current) => {
       const existing = current.grants.some(
         (g) => g.projectId === firstProject.id && g.consumer === target,
@@ -184,11 +177,14 @@ export function RazulArchive() {
         setNotice("Duplicate URL from the same source; ignored.");
         return;
       }
+      const updated = result.updated;
+      const finding = result.finding;
+      if (!updated && !finding) { setNotice("No finding was accepted. Existing records are unchanged."); return; }
       setStore((current) => ({
         ...current,
-        findings: result.updated
-          ? current.findings.map((f) => (f.id === result.updated!.id ? result.updated! : f))
-          : [...current.findings, result.finding!],
+        findings: updated
+          ? current.findings.map((f) => (f.id === updated.id ? updated : f))
+          : finding ? [...current.findings, finding] : current.findings,
       }));
       setNotice(
         result.updated
@@ -580,6 +576,7 @@ export function RazulArchive() {
           </ul>
         </section>
       </div>
+      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
       <div className="mx-auto mt-8 w-full max-w-6xl px-6 pb-16">
         <LiveObservatory />
       </div>

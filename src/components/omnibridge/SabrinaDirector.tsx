@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 import { Radar, Trash2 } from "lucide-react";
 import { ZodError } from "zod";
 import { Button } from "@/components/ui/button";
@@ -36,18 +37,9 @@ type Props = { insights: SabrinaInsight[]; prospects: Prospect[]; drafts: Campai
  * over owner-entered records; nothing is crawled, inferred, sent or connected.
  */
 export function SabrinaDirector({ insights, prospects, drafts }: Props) {
-  const [store, setStore] = useState<SabrinaStore>(emptyStore);
+  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<SabrinaStore>({ key: SABRINA_STORE_KEY, initial: emptyStore, read: loadSabrinaStore, write: saveSabrinaStore, collections: ["memories", "briefs", "feedback"] });
   const [radar, setRadar] = useState<Opportunity[] | null>(null);
   const [notice, setNotice] = useState("");
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setStore(loadSabrinaStore(localStorage.getItem(SABRINA_STORE_KEY)));
-    setLoaded(true);
-  }, []);
-  useEffect(() => {
-    if (loaded) localStorage.setItem(SABRINA_STORE_KEY, saveSabrinaStore(store));
-  }, [loaded, store]);
 
   const activeMemories = recallMemories(store.memories, new Date());
   const latestBrief = store.briefs[0];
@@ -121,6 +113,7 @@ export function SabrinaDirector({ insights, prospects, drafts }: Props) {
 
   return (
     <>
+      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
       {notice && (
         <p
           role="status"

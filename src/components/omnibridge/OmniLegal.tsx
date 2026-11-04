@@ -56,10 +56,13 @@ export function OmniLegal() {
   }
   function download(kind: "pdf" | "zip") {
     if (!packet) return;
+    try {
     const bytes = new Uint8Array(packet[kind]);
     const url = URL.createObjectURL(new Blob([bytes], { type: kind === "pdf" ? "application/pdf" : "application/zip" }));
     const anchor = document.createElement("a"); anchor.href = url; anchor.download = `omni-legal-synthetic.${kind}`; anchor.click(); URL.revokeObjectURL(url);
     setAudit((events) => appendLegalAudit(events, "exported", draft));
+    setNotice(`${kind === "pdf" ? "PDF" : "Exhibit ZIP"} download prepared. Nothing was submitted.`);
+    } catch { setNotice("Download failed. Your prepared packet remains here; retry the download."); }
   }
 
   return <main className="mx-auto max-w-[1300px] px-4 pb-20 pt-8 md:px-8">
