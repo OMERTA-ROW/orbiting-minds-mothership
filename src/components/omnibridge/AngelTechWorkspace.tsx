@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 import { Download, ShieldCheck, Sparkles, UserCheck } from "lucide-react";
 import { ZodError } from "zod";
 import { Button } from "@/components/ui/button";
@@ -38,18 +39,9 @@ const errorText = (error: unknown) =>
       : "Invalid record.";
 
 export function AngelTechWorkspace() {
-  const [store, setStore] = useState<AngelTechStore>(emptyStore);
+  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<AngelTechStore>({ key: ANGEL_TECH_STORE_KEY, initial: emptyStore, read: loadAngelTechStore, write: saveAngelTechStore, collections: ["insights", "prospects", "drafts"] });
   const [selectedInsightId, setSelectedInsightId] = useState("");
   const [notice, setNotice] = useState("");
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setStore(loadAngelTechStore(localStorage.getItem(ANGEL_TECH_STORE_KEY)));
-    setLoaded(true);
-  }, []);
-  useEffect(() => {
-    if (loaded) localStorage.setItem(ANGEL_TECH_STORE_KEY, saveAngelTechStore(store));
-  }, [loaded, store]);
 
   const selectedInsight =
     store.insights.find((insight) => insight.id === selectedInsightId) ?? store.insights[0];
@@ -569,6 +561,7 @@ export function AngelTechWorkspace() {
         </div>
       </section>
 
+      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
       <SabrinaDirector insights={store.insights} prospects={store.prospects} drafts={store.drafts} />
 
       <section className="mt-8 border border-border p-5" aria-labelledby="coordination">

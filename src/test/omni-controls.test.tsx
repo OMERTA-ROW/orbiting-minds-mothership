@@ -65,7 +65,7 @@ describe("OMNI control reliability", () => {
     fireEvent.click(screen.getByLabelText(/I approve creating/));
     fireEvent.click(screen.getByRole("button", { name: "Create key" }));
     await screen.findByText("synthetic-show-once-value");
-    fireEvent.click(screen.getByRole("button", { name: "Copy", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Copy$/ }));
     await screen.findByText(/Copy failed/);
     expect(screen.getByText("synthetic-show-once-value")).toBeInTheDocument();
   });

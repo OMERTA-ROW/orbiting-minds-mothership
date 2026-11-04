@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 import { Button } from "@/components/ui/button";
 import { DemoBadge } from "@/components/evo";
 import {
@@ -29,11 +30,7 @@ const categoryLabels: Record<AgentCategory, string> = {
 };
 
 export function OmniAgentRegistry() {
-  const [store, setStore] = useState<AgentRegistryStore>(() =>
-    loadAgentRegistry(
-      typeof window === "undefined" ? null : window.localStorage.getItem(OMNI_AGENTS_STORE_KEY),
-    ),
-  );
+  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<AgentRegistryStore>({ key: OMNI_AGENTS_STORE_KEY, initial: loadAgentRegistry(null), read: loadAgentRegistry, collections: ["agents", "reports"] });
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -51,10 +48,6 @@ export function OmniAgentRegistry() {
   const [repSummary, setRepSummary] = useState("");
   const [repTo, setRepTo] = useState("");
   const [repBoundary, setRepBoundary] = useState<string>("");
-
-  useEffect(() => {
-    window.localStorage.setItem(OMNI_AGENTS_STORE_KEY, JSON.stringify(store));
-  }, [store]);
 
   const readiness = agentRegistryReadiness();
   const toggleCap = (c: AgentCapability) =>
@@ -113,7 +106,7 @@ export function OmniAgentRegistry() {
         a.id === id ? (paused ? resumeAgent(a, at) : pauseAgent(a, at)) : a,
       ),
     }));
-    setStatus(paused ? "Agent resumed." : "Agent paused by owner.");
+    setStatus(paused ? "Local agent declaration resumed. No agent is running." : "Local agent declaration paused. No live service was changed.");
   }
 
   return (
@@ -132,6 +125,7 @@ export function OmniAgentRegistry() {
         Registrations are capability declarations only — no agent runs, and irreversible,
         high-impact, private-data or production actions always need owner approval.
       </p>
+      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
 
       <section aria-label="Registry readiness" className="mt-8 rounded border border-gold/30 p-5">
         <h2 className="text-xl">Integration readiness</h2>

@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useOmniLocalRecords } from "@/hooks/use-omni-local-records";
 import { Archive, Globe, Search, ShieldCheck } from "lucide-react";
 import { ZodError } from "zod";
 import { Button } from "@/components/ui/button";
@@ -42,20 +43,12 @@ const errorText = (error: unknown) =>
  * discovery or private-data access is connected here.
  */
 export function RazulArchive() {
-  const [store, setStore] = useState<RazulStore>(emptyRazulStore);
+  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<RazulStore>({ key: RAZUL_STORE_KEY, initial: emptyRazulStore, read: loadRazulStore, write: saveRazulStore, collections: ["enrollments", "events", "grants", "sources", "findings"] });
   const [notice, setNotice] = useState("");
-  const [loaded, setLoaded] = useState(false);
   const [consumer, setConsumer] = useState<RazulConsumer>("jackboy");
   const [searchText, setSearchText] = useState("");
   const [searchKind, setSearchKind] = useState<"" | EventKind>("");
 
-  useEffect(() => {
-    setStore(loadRazulStore(localStorage.getItem(RAZUL_STORE_KEY)));
-    setLoaded(true);
-  }, []);
-  useEffect(() => {
-    if (loaded) localStorage.setItem(RAZUL_STORE_KEY, saveRazulStore(store));
-  }, [loaded, store]);
 
   const firstProject = store.enrollments.find((e) => e.active);
   const chain = verifyChain(store.events);
@@ -580,6 +573,7 @@ export function RazulArchive() {
           </ul>
         </section>
       </div>
+      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
       <div className="mx-auto mt-8 w-full max-w-6xl px-6 pb-16">
         <LiveObservatory />
       </div>
