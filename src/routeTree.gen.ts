@@ -73,6 +73,7 @@ import { Route as TrustRouteImport } from './routes/trust'
 import { Route as UniverseRouteImport } from './routes/universe'
 import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as VoiceRouteImport } from './routes/voice'
+import { Route as AuthenticatedAccountSecurityRouteImport } from './routes/_authenticated/account-security'
 import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
 import { Route as AuthenticatedBetaOmniRouteImport } from './routes/_authenticated/beta-omni'
 import { Route as AuthenticatedInviteRouteImport } from './routes/_authenticated/invite'
@@ -413,6 +414,12 @@ const VoiceRoute = VoiceRouteImport.update({
   path: '/voice',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAccountSecurityRoute =
+  AuthenticatedAccountSecurityRouteImport.update({
+    id: '/account-security',
+    path: '/account-security',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBetaRoute = AuthenticatedBetaRouteImport.update({
   id: '/beta',
   path: '/beta',
@@ -583,6 +590,7 @@ export interface FileRoutesByFullPath {
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
+  '/account-security': typeof AuthenticatedAccountSecurityRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
   '/invite': typeof AuthenticatedInviteRoute
@@ -668,6 +676,7 @@ export interface FileRoutesByTo {
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
+  '/account-security': typeof AuthenticatedAccountSecurityRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
   '/invite': typeof AuthenticatedInviteRoute
@@ -755,6 +764,7 @@ export interface FileRoutesById {
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
   '/voice': typeof VoiceRoute
+  '/_authenticated/account-security': typeof AuthenticatedAccountSecurityRoute
   '/_authenticated/beta': typeof AuthenticatedBetaRoute
   '/_authenticated/beta-omni': typeof AuthenticatedBetaOmniRoute
   '/_authenticated/invite': typeof AuthenticatedInviteRoute
@@ -842,6 +852,7 @@ export interface FileRouteTypes {
     | '/universe'
     | '/updates'
     | '/voice'
+    | '/account-security'
     | '/beta'
     | '/beta-omni'
     | '/invite'
@@ -927,6 +938,7 @@ export interface FileRouteTypes {
     | '/universe'
     | '/updates'
     | '/voice'
+    | '/account-security'
     | '/beta'
     | '/beta-omni'
     | '/invite'
@@ -1013,6 +1025,7 @@ export interface FileRouteTypes {
     | '/universe'
     | '/updates'
     | '/voice'
+    | '/_authenticated/account-security'
     | '/_authenticated/beta'
     | '/_authenticated/beta-omni'
     | '/_authenticated/invite'
@@ -1566,6 +1579,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VoiceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/account-security': {
+      id: '/_authenticated/account-security'
+      path: '/account-security'
+      fullPath: '/account-security'
+      preLoaderRoute: typeof AuthenticatedAccountSecurityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/beta': {
       id: '/_authenticated/beta'
       path: '/beta'
@@ -1710,6 +1730,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccountSecurityRoute: typeof AuthenticatedAccountSecurityRoute
   AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
   AuthenticatedBetaOmniRoute: typeof AuthenticatedBetaOmniRoute
   AuthenticatedInviteRoute: typeof AuthenticatedInviteRoute
@@ -1719,6 +1740,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccountSecurityRoute: AuthenticatedAccountSecurityRoute,
   AuthenticatedBetaRoute: AuthenticatedBetaRoute,
   AuthenticatedBetaOmniRoute: AuthenticatedBetaOmniRoute,
   AuthenticatedInviteRoute: AuthenticatedInviteRoute,
