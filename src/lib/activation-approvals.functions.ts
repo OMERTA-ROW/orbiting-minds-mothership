@@ -13,7 +13,6 @@ import {
   isMfaFresh,
   mfaAgeSeconds,
   normalizeRows,
-  type ApprovalRow,
 } from "./activation-approvals";
 
 export const listActivationApprovals = createServerFn({ method: "GET" })
@@ -46,7 +45,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
     const nowSeconds = Math.floor(Date.now() / 1000);
     return {
       viewerId: context.userId,
-      rows: normalizeRows(steps.data as Partial<ApprovalRow>[]),
+      rows: normalizeRows(steps.data),
       audit: audit.data,
       settings,
       mfaAgeSeconds: mfaAgeSeconds(context.claims["amr"], nowSeconds),

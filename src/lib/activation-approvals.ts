@@ -60,12 +60,20 @@ export interface ApprovalRow {
   decided_at: string | null;
   note: string;
   approval_expires_at: string | null;
-  spend_confirmations: unknown;
+  spend_confirmations: SpendConfirmations | null;
   revision: number;
 }
 
+export interface SpendConfirmations {
+  openai_cap_usd: number;
+  daily_limit_usd: number;
+  confirmed_at: string;
+}
+
 /** Fill missing rows as pending so the checklist always has 10 steps. */
-export function normalizeRows(rows: Partial<ApprovalRow>[]): ApprovalRow[] {
+export function normalizeRows(
+  rows: Array<Partial<Omit<ApprovalRow, "spend_confirmations">> & { spend_confirmations?: unknown }>,
+): ApprovalRow[] {
   return ACTIVATION_STEPS.map(({ step }) => {
     const found = rows.find((r) => r.step === step);
     return {
@@ -75,7 +83,7 @@ export function normalizeRows(rows: Partial<ApprovalRow>[]): ApprovalRow[] {
       decided_at: found?.decided_at ?? null,
       note: found?.note ?? "",
       approval_expires_at: found?.approval_expires_at ?? null,
-      spend_confirmations: found?.spend_confirmations ?? null,
+      spend_confirmations: (found?.spend_confirmations as SpendConfirmations | null) ?? null,
       revision: found?.revision ?? 0,
     };
   });
