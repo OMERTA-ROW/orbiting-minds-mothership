@@ -22,13 +22,20 @@ Must NOT be set until explicit owner approval after readiness review:
 - `JACKBOY_LINK_ORIGIN` (Jackboy Node host + OMNI client): HTTPS origin of Jackboy's Node listener that OMNI calls at `POST /api/public/omni/link`. No path/query/credentials.
 
 ## Runtime note
-OMNI's client for v2 is the Go companion inbox client (sessions held in memory only). This web app (Cloudflare Workers) does not host the v2 client or the runner.
+Two OMNI senders exist: the Go companion inbox client and the owner/MFA-gated in-app button. Both hold sessions in memory only. This web app never hosts the runner.
 
-## Jackboy Node 26+ host (owner, external)
-1. Provision Node ≥ 26 host (tested 26.13.0) with valid TLS cert/key at managed paths (`OMNI_LINK_TLS_CERT_FILE`, `OMNI_LINK_TLS_KEY_FILE`).
-2. Apply Jackboy migration `0044_omni_sessions.sql` via the approved migration process.
-3. Add managed config: the seven OMNI_LINK_* values, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JACKBOY_LINK_ORIGIN`, `OMNI_LINK_BIND_ADDRESS` (default 127.0.0.1; widening needs approval). Firewall to the OMNI host.
-4. Do not start `node scripts/omni-link-server.mjs` or set the two opt-in flags until the scoped test is approved.
+## Jackboy on Railway — owner decision 2026-11-06: option A
+Served from Jackboy's existing public web route `/api/public/omni/link` with Railway's managed certificate.
+No separate listener, no `OMNI_LINK_BIND_ADDRESS`, no `OMNI_LINK_TLS_CERT_FILE`/`OMNI_LINK_TLS_KEY_FILE`.
+1. Pin Node ≥ 26 on the Railway service (tested 26.13.0); the fixed runner refuses older Node.
+2. Apply Jackboy migration `drizzle/migrations/0030_omni_sessions.sql` via the approved process (earlier note "0044" was wrong).
+3. Confirm `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` on that service.
+4. Jackboy review: its handler requires the request URL to be `https:`; behind Railway's edge it may see HTTP. Needs a reviewed fix trusting only Railway's forwarded protocol.
+5. Do not set `OMNI_LINK_ENABLED` / `OMNI_LINK_NODE_RUNNER_ENABLED` until the scoped test is approved.
+
+## OMNI in-app button (Mothership)
+Uses the platform's standard fetch with public certificate validation; no CA file (`JACKBOY_LINK_CA_FILE` retired).
+Set only at approved activation: `JACKBOY_LINK_MOTHERSHIP_OWNER_ID`, `OMNI_LINK_APPROVAL_EXPIRES_AT`, `JACKBOY_LINK_ENABLED`, `JACKBOY_LINK_SELF_TEST_ENABLED`.
 
 ## Owner MFA (OMNI)
 Sign in with the confirmed account → claim owner → enroll authenticator (TOTP) → sign in again to reach aal2.

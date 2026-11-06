@@ -7,6 +7,32 @@ import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import { execFileSync } from "node:child_process";
+import { request as httpsRequest } from "node:https";
+
+// Test-only transport: trusts one local test certificate. Production uses the
+// platform fetch with public certificate validation and no CA option.
+const trustingFetch = (ca) => (url, init) =>
+  new Promise((resolveFetch, reject) => {
+    const req = httpsRequest(
+      url,
+      { method: init.method, headers: init.headers, ca, signal: init.signal },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("error", reject);
+        res.on("end", () =>
+          resolveFetch(
+            new Response(Buffer.concat(chunks), {
+              status: res.statusCode,
+              headers: Object.entries(res.headers).filter(([, v]) => typeof v === "string"),
+            }),
+          ),
+        );
+      },
+    );
+    req.on("error", reject);
+    req.end(init.body);
+  });
 
 test("Mothership client against real Jackboy handler over verified TLS and isolated PGlite", async (t) => {
   const root = process.env["JACKBOY_TEST_ROOT"];
@@ -132,15 +158,15 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
     const origin = `https://127.0.0.1:${server.address().port}`;
     const config = {
       origin,
-      ca: await readFile(cert),
       clientId: c.clientId,
       projectId: project,
       bootstrap: c.bootstrap,
       secret: c.secret,
       approvalExpiresAt: expiry,
     };
+    const trusted = { fetch: trustingFetch(await readFile(cert)) };
     const events = [];
-    const client = new JackboyLink(config, async (event, id) => events.push([event, id]));
+    const client = new JackboyLink(config, async (event, id) => events.push([event, id]), trusted);
     await t.test("handshake and fixed self-test persist and return audited status", async () => {
       await client.connect();
       assert.equal((await client.execute("submit", job)).status, "queued");
@@ -157,8 +183,12 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
       );
     });
     await t.test("rejects untrusted certificate and wrong scoped credentials", async () => {
-      const badCa = new JackboyLink({ ...config, ca: await readFile(otherCert) }, async () => {});
+      const badCa = new JackboyLink(config, async () => {}, {
+        fetch: trustingFetch(await readFile(otherCert)),
+      });
       await assert.rejects(badCa.connect());
+      const platformDefault = new JackboyLink(config, async () => {});
+      await assert.rejects(platformDefault.connect(), /connection failed/);
       const wrongNameServer = createLinkServer(
         { key: await readFile(otherKey), cert: await readFile(otherCert) },
         "https://127.0.0.1:0",
@@ -170,21 +200,25 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
           {
             ...config,
             origin: `https://127.0.0.1:${wrongNameServer.address().port}`,
-            ca: await readFile(otherCert),
           },
           async () => {},
+          { fetch: trustingFetch(await readFile(otherCert)) },
         );
         await assert.rejects(wrongName.connect());
       } finally {
         await new Promise((done) => wrongNameServer.close(done));
       }
-      const badKey = new JackboyLink({ ...config, bootstrap: "x".repeat(64) }, async () => {});
+      const badKey = new JackboyLink(
+        { ...config, bootstrap: "x".repeat(64) },
+        async () => {},
+        trusted,
+      );
       await assert.rejects(badKey.connect());
     });
     await t.test("rejects a response with an invalid HMAC proof", async () => {
       corruptProof = true;
       try {
-        const badProof = new JackboyLink(config, async () => {});
+        const badProof = new JackboyLink(config, async () => {}, trusted);
         await assert.rejects(badProof.connect(), /proof is invalid/);
       } finally {
         corruptProof = false;
@@ -193,9 +227,13 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
     await t.test("failed pre-request audit prevents outgoing handshake", async () => {
       const before = (await db.query("SELECT count(*)::int AS n FROM omni_link_sessions")).rows[0]
         .n;
-      const blocked = new JackboyLink(config, async () => {
-        throw Error("audit unavailable");
-      });
+      const blocked = new JackboyLink(
+        config,
+        async () => {
+          throw Error("audit unavailable");
+        },
+        trusted,
+      );
       await assert.rejects(blocked.connect(), /audit unavailable/);
       assert.equal(
         (await db.query("SELECT count(*)::int AS n FROM omni_link_sessions")).rows[0].n,
@@ -206,7 +244,7 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
       const id = "55555555-5555-4555-8555-555555555555";
       assert.equal((await client.execute("submit", id)).status, "queued");
       assert.equal((await client.execute("cancel", id)).status, "cancelled");
-      const fresh = new JackboyLink(config, async () => {});
+      const fresh = new JackboyLink(config, async () => {}, trusted);
       assert.equal((await fresh.execute("status", id)).status, "cancelled");
     });
     await t.test(
@@ -214,7 +252,7 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
       async () => {
         await db.exec("UPDATE omni_link_sessions SET expires_at=now()-interval '1 second'");
         await assert.rejects(client.execute("status", job), /session rejected/);
-        const renewed = new JackboyLink(config, async () => {});
+        const renewed = new JackboyLink(config, async () => {}, trusted);
         assert.equal((await renewed.execute("status", job)).status, "completed");
       },
     );
@@ -222,11 +260,15 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
       "post-commit audit failure reports an uncertain outcome without repeating work",
       async () => {
         const id = "66666666-6666-4666-8666-666666666666";
-        const uncertain = new JackboyLink(config, async (event) => {
-          if (event === "result_queued") throw Error("audit unavailable; reconcile");
-        });
+        const uncertain = new JackboyLink(
+          config,
+          async (event) => {
+            if (event === "result_queued") throw Error("audit unavailable; reconcile");
+          },
+          trusted,
+        );
         await assert.rejects(uncertain.execute("submit", id), /reconcile/);
-        const fresh = new JackboyLink(config, async () => {});
+        const fresh = new JackboyLink(config, async () => {}, trusted);
         assert.equal((await fresh.execute("status", id)).status, "queued");
         assert.equal(
           (await db.query("SELECT count(*)::int AS n FROM omni_inbound_jobs WHERE id=$1", [id]))
@@ -239,7 +281,7 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
       assert.throws(
         () => new JackboyLink({ ...config, approvalExpiresAt: Date.now() - 1 }, async () => {}),
       );
-      const other = new JackboyLink({ ...config, projectId: owner }, async () => {});
+      const other = new JackboyLink({ ...config, projectId: owner }, async () => {}, trusted);
       await assert.rejects(other.connect());
     });
   } finally {
