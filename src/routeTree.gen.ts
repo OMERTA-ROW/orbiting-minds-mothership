@@ -89,6 +89,7 @@ import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
 import { Route as GuardianIncidentsIdRouteImport } from './routes/guardian-incidents_.$id'
 import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archives_.$id'
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
+import { Route as ApiPublicJackboyDispatchRouteImport } from './routes/api/public/jackboy/dispatch'
 import { Route as ApiPublicJobsKnowledgeCollectRouteImport } from './routes/api/public/jobs/knowledge-collect'
 import { Route as ApiPublicJobsRazulObserveRouteImport } from './routes/api/public/jobs/razul-observe'
 import { Route as ApiPublicOmniHealthRouteImport } from './routes/api/public/omni/health'
@@ -497,6 +498,12 @@ const RoboticsIdRoute = RoboticsIdRouteImport.update({
   path: '/robotics/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicJackboyDispatchRoute =
+  ApiPublicJackboyDispatchRouteImport.update({
+    id: '/api/public/jackboy/dispatch',
+    path: '/api/public/jackboy/dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicJobsKnowledgeCollectRoute =
   ApiPublicJobsKnowledgeCollectRouteImport.update({
     id: '/api/public/jobs/knowledge-collect',
@@ -606,6 +613,7 @@ export interface FileRoutesByFullPath {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
@@ -692,6 +700,7 @@ export interface FileRoutesByTo {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
@@ -780,6 +789,7 @@ export interface FileRoutesById {
   '/guardian-incidents_/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives_/$id': typeof IncidentArchivesIdRoute
   '/robotics_/$id': typeof RoboticsIdRoute
+  '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
@@ -868,6 +878,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/public/jackboy/dispatch'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
     | '/api/public/omni/health'
@@ -954,6 +965,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/public/jackboy/dispatch'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
     | '/api/public/omni/health'
@@ -1041,6 +1053,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents_/$id'
     | '/incident-archives_/$id'
     | '/robotics_/$id'
+    | '/api/public/jackboy/dispatch'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
     | '/api/public/omni/health'
@@ -1122,6 +1135,7 @@ export interface RootRouteChildren {
   GuardianIncidentsIdRoute: typeof GuardianIncidentsIdRoute
   IncidentArchivesIdRoute: typeof IncidentArchivesIdRoute
   RoboticsIdRoute: typeof RoboticsIdRoute
+  ApiPublicJackboyDispatchRoute: typeof ApiPublicJackboyDispatchRoute
   ApiPublicJobsKnowledgeCollectRoute: typeof ApiPublicJobsKnowledgeCollectRoute
   ApiPublicJobsRazulObserveRoute: typeof ApiPublicJobsRazulObserveRoute
   ApiPublicOmniHealthRoute: typeof ApiPublicOmniHealthRoute
@@ -1691,6 +1705,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoboticsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jackboy/dispatch': {
+      id: '/api/public/jackboy/dispatch'
+      path: '/api/public/jackboy/dispatch'
+      fullPath: '/api/public/jackboy/dispatch'
+      preLoaderRoute: typeof ApiPublicJackboyDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/jobs/knowledge-collect': {
       id: '/api/public/jobs/knowledge-collect'
       path: '/api/public/jobs/knowledge-collect'
@@ -1826,6 +1847,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuardianIncidentsIdRoute: GuardianIncidentsIdRoute,
   IncidentArchivesIdRoute: IncidentArchivesIdRoute,
   RoboticsIdRoute: RoboticsIdRoute,
+  ApiPublicJackboyDispatchRoute: ApiPublicJackboyDispatchRoute,
   ApiPublicJobsKnowledgeCollectRoute: ApiPublicJobsKnowledgeCollectRoute,
   ApiPublicJobsRazulObserveRoute: ApiPublicJobsRazulObserveRoute,
   ApiPublicOmniHealthRoute: ApiPublicOmniHealthRoute,

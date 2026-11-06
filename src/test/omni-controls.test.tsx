@@ -28,6 +28,11 @@ vi.mock("@/lib/omni-api-keys.functions", () => ({
   revokeOmniApiKey: mocks.revoke,
 }));
 vi.mock("@/lib/jackboy-link.functions", () => ({ requestJackboyLink: vi.fn() }));
+vi.mock("@/lib/jackboy-dispatch.functions", () => ({
+  approveJackboyReceipt: vi.fn(),
+  revokeJackboyReceipt: vi.fn(),
+  sendJackboyCallback: vi.fn(),
+}));
 import { OmniAutonomy } from "@/components/omnibridge/OmniAutonomy";
 import { OmniApiKeys } from "@/components/omnibridge/OmniApiKeys";
 import { OmniRights } from "@/components/omnibridge/OmniRights";
