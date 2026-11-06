@@ -72,13 +72,20 @@ export interface SpendConfirmations {
 
 /** Fill missing rows as pending so the checklist always has 10 steps. */
 export function normalizeRows(
-  rows: Array<Partial<Omit<ApprovalRow, "spend_confirmations">> & { spend_confirmations?: unknown }>,
+  rows: Array<
+    Partial<Omit<ApprovalRow, "spend_confirmations" | "status">> & {
+      status?: string;
+      spend_confirmations?: unknown;
+    }
+  >,
 ): ApprovalRow[] {
   return ACTIVATION_STEPS.map(({ step }) => {
     const found = rows.find((r) => r.step === step);
     return {
       step,
-      status: (found?.status as ApprovalStatus) ?? "pending",
+      status: (["pending", "approved", "failed"] as const).includes(found?.status as ApprovalStatus)
+        ? (found!.status as ApprovalStatus)
+        : "pending",
       approver_id: found?.approver_id ?? null,
       decided_at: found?.decided_at ?? null,
       note: found?.note ?? "",
