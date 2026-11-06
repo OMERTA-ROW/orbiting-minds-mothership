@@ -3,16 +3,288 @@ import { useState } from "react";
 import { ArrowUpRight, BookOpen, Brain, Check, Download, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { codeContributions, roboticsCategories, roboticsSafetyGates, type RoboticsScenario } from "@/data/evolution";
+import {
+  codeContributions,
+  roboticsCategories,
+  roboticsSafetyGates,
+  type RoboticsScenario,
+} from "@/data/evolution";
 import { downloadJson } from "@/lib/genesis-sdk";
 import { LabShell } from "./LabShell";
 import { RoboticsRehearsal } from "./Rehearsal";
 export function RoboticsScenarioPage({ scenario: s }: { scenario: RoboticsScenario }) {
- const code = codeContributions.find(c => c.id === s.contributionId); const category = roboticsCategories.find(c => c.id === s.category); const [notice, setNotice] = useState("");
- return <LabShell title={s.title}><div className="mb-7 flex flex-wrap gap-3"><Button asChild variant="signal"><Link to="/physical-safety" search={{scenario:s.id}}>Prepare this scenario’s safety lock</Link></Button><Button asChild variant="ghost"><Link to="/experiment-replay">Inspect expected vs actual</Link></Button></div><div className="mb-8 flex flex-wrap items-center gap-5 font-mono text-xs"><span className="text-gold-light">{category?.label}</span><span className="text-warning">HIGH IMPACT · HARDWARE RELEASE BLOCKED</span><span className="text-muted-foreground">Independent tests: NOT RUN</span></div><Tabs defaultValue="overview"><TabsList aria-label="Scenario views" className="flex h-auto flex-wrap justify-start gap-2 rounded-none border-b border-border bg-transparent pb-4">{[{ id: "overview", label: "Contribution & provenance" }, { id: "model", label: "Model rehearsal" }, { id: "oracle", label: "Oracle research" }, { id: "safety", label: "Safety & release gates" }].map(t => <TabsTrigger key={t.id} value={t.id} className="min-h-11 whitespace-normal text-xs">{t.label}</TabsTrigger>)}</TabsList>
- <TabsContent value="overview" className="pt-7"><div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.6fr)]"><div className="min-w-0"><h2 className="text-2xl">Problem & contribution</h2><p className="mt-5 text-sm leading-loose text-muted-foreground">{s.problem}</p><h3 className="mt-9 border-t border-border pt-7 text-xl">Contributors & responsible operator</h3><dl className="mt-5 grid gap-5 text-sm"><div><dt className="text-gold-light">Human contributor</dt><dd className="mt-2 text-muted-foreground">{s.author} · fictional demo identity, not verified</dd></div><div><dt className="text-gold-light">AI agent / human operator</dt><dd className="mt-2 text-muted-foreground">{s.operator ? `${s.agent} / ${s.operator} · fictional, no model call or provider access` : "No AI operator attributed; human-authored demo concept"}</dd></div><div><dt className="text-gold-light">Code reference & declared license</dt><dd className="mt-2 text-muted-foreground">{code?.title.en} · {code?.license} · original Code Exchange sample, separate from scenario dataset and documentation rights. It is not a robotics/vehicle controller.</dd></div></dl>{code && <><pre className="mt-6 max-h-64 overflow-auto border-y border-border bg-card/40 p-5 font-mono text-xs leading-loose" tabIndex={0} aria-label="Referenced demo code sample"><code>{code.code}</code></pre><Button asChild variant="signal" className="mt-5 h-auto min-h-11 whitespace-normal"><Link to="/code-exchange/$id" params={{ id: code.id }}>Inspect original code, license & reviews<ArrowUpRight size={14} /></Link></Button></>}<h3 className="mt-9 border-t border-border pt-7 text-xl">Reproducible evidence plan</h3><ul className="mt-5 space-y-4">{s.tests.map(t => <li className="flex items-start gap-3 text-sm leading-loose text-muted-foreground" key={t}><Check size={15} className="mt-1 shrink-0 text-gold" /><span>{t} · PLANNED, not executed</span></li>)}</ul></div><aside className="min-w-0 border-t border-border pt-7 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><h2 className="text-xl">Dataset provenance</h2><dl className="mt-5 space-y-5 text-sm leading-loose"><div><dt className="text-gold-light">Fixture / version</dt><dd className="mt-1 text-muted-foreground">{s.dataset.name} · {s.dataset.version}</dd></div><div><dt className="text-gold-light">Dataset license</dt><dd className="mt-1 text-muted-foreground">{s.dataset.license}</dd></div><div><dt className="text-gold-light">Source / capture</dt><dd className="mt-1 text-muted-foreground">{s.dataset.provenance}</dd></div></dl><h3 className="mt-7 border-t border-border pt-6 text-xl">Compatibility & supported hardware</h3><p className="mt-4 text-sm leading-loose text-muted-foreground">{s.compatibility}</p><p className="mt-4 text-xs text-warning">Supported physical hardware: NONE · firmware compatibility NOT TESTED</p><h3 className="mt-7 border-t border-border pt-6 text-xl">Failure & misuse risks</h3><ul className="mt-4 space-y-3 text-sm leading-loose text-warning">{s.risks.map(r => <li key={r}>{r}</li>)}</ul></aside></div></TabsContent>
- <TabsContent value="model"><RoboticsRehearsal scenario={s} /></TabsContent>
- <TabsContent value="oracle" className="pt-8"><h2 className="flex items-center gap-3 text-2xl"><Brain className="text-gold" />Oracle · cross-domain research</h2><p className="mt-4 text-sm leading-loose text-muted-foreground">Curated editorial hypotheses, not autonomous discovery, confirmed root cause or AI output. No external sources, footage or private logs are fetched.</p><div className="mt-7 grid gap-10 md:grid-cols-2">{s.oracle.map(o => <article key={o.connection} className="border-t border-border pt-6"><p className="font-mono text-[10px] text-gold-light">HYPOTHESIS · UNVERIFIED</p><h3 className="mt-4 text-xl">{o.connection}</h3><p className="mt-4 text-sm leading-loose text-muted-foreground">{o.hypothesis}</p><p className="mt-5 text-sm leading-loose"><span className="text-gold-light">Evidence needed: </span>{o.evidenceNeeded}</p></article>)}</div><h3 className="mt-10 border-t border-border pt-7 text-xl">Public technical references</h3><ul className="mt-5 space-y-5">{s.resources.map(r => <li key={r.url}><a href={r.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-gold-light underline"><BookOpen size={15} />{r.name}<ArrowUpRight size={13} /></a><p className="mt-3 text-xs leading-loose text-muted-foreground">{r.rights}</p></li>)}</ul><Button asChild variant="signal" className="mt-7 h-auto whitespace-normal"><Link to="/discovery" search={{ scenario: s.id }}>Open linked Oracle / Discovery signals</Link></Button></TabsContent>
- <TabsContent value="safety" className="pt-8"><h2 className="flex items-center gap-3 text-2xl"><ShieldAlert className="text-warning" />Guardian · simulation-to-real boundary</h2><p className="mt-4 max-w-4xl text-sm leading-loose text-warning">{s.limitation}</p><div className="mt-7 divide-y divide-border">{roboticsSafetyGates.map(g => <section key={g.id} className="py-6"><p className="font-mono text-[10px] text-warning">NOT VERIFIED · LAUNCH BLOCKER</p><h3 className="mt-3 text-xl">{g.title}</h3><p className="mt-4 max-w-4xl text-sm leading-loose text-muted-foreground">{g.requirement}</p></section>)}</div><p className="mt-5 text-sm leading-loose text-muted-foreground">Safety standards are reference pathways only, not certifications. Physical emergency stop, signed artifacts and rollback are untested. No demo reviewer grants field authority.</p><Button asChild variant="signal" className="mt-7 h-auto whitespace-normal"><Link to="/guardian" search={{ tab: "review", surface: "robotics" }}>Open proposed-only Guardian review</Link></Button></TabsContent></Tabs>
- <section className="mt-12 border-y border-border py-8"><h2 className="text-2xl">Continue the research pathway</h2><p className="mt-4 text-sm leading-loose text-muted-foreground">Challenge criteria: {s.acceptance}</p><div className="mt-6 flex flex-wrap gap-3"><Button asChild variant="cosmic" className="h-auto min-h-11 whitespace-normal"><Link to="/challenges" search={{ scenario: s.id }}>Propose this research challenge<ArrowUpRight size={14} /></Link></Button><Button asChild variant="signal" className="h-auto min-h-11 whitespace-normal"><Link to="/pathway" search={{ scenario: s.id }}>Prepare in Founder Lab · no AI request yet</Link></Button><Button asChild variant="signal" className="h-auto min-h-11 whitespace-normal"><Link to="/releases" search={{ scenario: s.id }}>Inspect unsigned Release Galaxy</Link></Button><Button variant="ghost" className="h-auto min-h-11 whitespace-normal" onClick={() => { try { downloadJson(`DEMO-dataset-${s.id}.json`, { mode: "DEMO", dataset: s.dataset, exampleInputs: s.model === "reaction" ? { speedMps: 0.5, latencyMs: 300, clearanceM: 0.8 } : s.model === "energy" ? { powerKw: 7, durationMin: 30, capacityKwh: 60 } : { tileCount: 100, ratePerMin: 5, durationMin: 10 }, realData: false }); setNotice("Synthetic fixture descriptor downloaded; no real data or code executed."); } catch { setNotice("Download unavailable."); } }}><Download size={14} />Synthetic fixture descriptor</Button></div>{notice && <p role="status" className="mt-4 text-sm text-warning">{notice}</p>}</section></LabShell>;
+  const code = codeContributions.find((c) => c.id === s.contributionId);
+  const category = roboticsCategories.find((c) => c.id === s.category);
+  const [notice, setNotice] = useState("");
+  return (
+    <LabShell title={s.title}>
+      <div className="mb-7 flex flex-wrap gap-3">
+        <Button asChild variant="signal">
+          <Link to="/physical-safety" search={{ scenario: s.id }}>
+            Prepare this scenario’s safety lock
+          </Link>
+        </Button>
+        <Button asChild variant="ghost">
+          <Link to="/experiment-replay">Inspect expected vs actual</Link>
+        </Button>
+      </div>
+      <div className="mb-8 flex flex-wrap items-center gap-5 font-mono text-xs">
+        <span className="text-gold-light">{category?.label}</span>
+        <span className="text-warning">HIGH IMPACT · HARDWARE RELEASE BLOCKED</span>
+        <span className="text-muted-foreground">Independent tests: NOT RUN</span>
+      </div>
+      <Tabs defaultValue="overview">
+        <TabsList
+          aria-label="Scenario views"
+          className="flex h-auto flex-wrap justify-start gap-2 rounded-none border-b border-border bg-transparent pb-4"
+        >
+          {[
+            { id: "overview", label: "Contribution & provenance" },
+            { id: "model", label: "Model rehearsal" },
+            { id: "oracle", label: "Oracle research" },
+            { id: "safety", label: "Safety & release gates" },
+          ].map((t) => (
+            <TabsTrigger key={t.id} value={t.id} className="min-h-11 whitespace-normal text-xs">
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="overview" className="pt-7">
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.6fr)]">
+            <div className="min-w-0">
+              <h2 className="text-2xl">Problem & contribution</h2>
+              <p className="mt-5 text-sm leading-loose text-muted-foreground">{s.problem}</p>
+              <h3 className="mt-9 border-t border-border pt-7 text-xl">
+                Contributors & responsible operator
+              </h3>
+              <dl className="mt-5 grid gap-5 text-sm">
+                <div>
+                  <dt className="text-gold-light">Human contributor</dt>
+                  <dd className="mt-2 text-muted-foreground">
+                    {s.author} · fictional demo identity, not verified
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gold-light">AI agent / human operator</dt>
+                  <dd className="mt-2 text-muted-foreground">
+                    {s.operator
+                      ? `${s.agent} / ${s.operator} · fictional, no model call or provider access`
+                      : "No AI operator attributed; human-authored demo concept"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gold-light">Code reference & declared license</dt>
+                  <dd className="mt-2 text-muted-foreground">
+                    {code?.title.en} · {code?.license} · original Code Exchange sample, separate
+                    from scenario dataset and documentation rights. It is not a robotics/vehicle
+                    controller.
+                  </dd>
+                </div>
+              </dl>
+              {code && (
+                <>
+                  <pre
+                    className="mt-6 max-h-64 overflow-auto border-y border-border bg-card/40 p-5 font-mono text-xs leading-loose"
+                    tabIndex={0}
+                    aria-label="Referenced demo code sample"
+                  >
+                    <code>{code.code}</code>
+                  </pre>
+                  <Button
+                    asChild
+                    variant="signal"
+                    className="mt-5 h-auto min-h-11 whitespace-normal"
+                  >
+                    <Link to="/code-exchange/$id" params={{ id: code.id }}>
+                      Inspect original code, license & reviews
+                      <ArrowUpRight size={14} />
+                    </Link>
+                  </Button>
+                </>
+              )}
+              <h3 className="mt-9 border-t border-border pt-7 text-xl">
+                Reproducible evidence plan
+              </h3>
+              <ul className="mt-5 space-y-4">
+                {s.tests.map((t) => (
+                  <li
+                    className="flex items-start gap-3 text-sm leading-loose text-muted-foreground"
+                    key={t}
+                  >
+                    <Check size={15} className="mt-1 shrink-0 text-gold" />
+                    <span>{t} · PLANNED, not executed</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <aside className="min-w-0 border-t border-border pt-7 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+              <h2 className="text-xl">Dataset provenance</h2>
+              <dl className="mt-5 space-y-5 text-sm leading-loose">
+                <div>
+                  <dt className="text-gold-light">Fixture / version</dt>
+                  <dd className="mt-1 text-muted-foreground">
+                    {s.dataset.name} · {s.dataset.version}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gold-light">Dataset license</dt>
+                  <dd className="mt-1 text-muted-foreground">{s.dataset.license}</dd>
+                </div>
+                <div>
+                  <dt className="text-gold-light">Source / capture</dt>
+                  <dd className="mt-1 text-muted-foreground">{s.dataset.provenance}</dd>
+                </div>
+              </dl>
+              <h3 className="mt-7 border-t border-border pt-6 text-xl">
+                Compatibility & supported hardware
+              </h3>
+              <p className="mt-4 text-sm leading-loose text-muted-foreground">{s.compatibility}</p>
+              <p className="mt-4 text-xs text-warning">
+                Supported physical hardware: NONE · firmware compatibility NOT TESTED
+              </p>
+              <h3 className="mt-7 border-t border-border pt-6 text-xl">Failure & misuse risks</h3>
+              <ul className="mt-4 space-y-3 text-sm leading-loose text-warning">
+                {s.risks.map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+            </aside>
+          </div>
+        </TabsContent>
+        <TabsContent value="model">
+          <RoboticsRehearsal scenario={s} />
+        </TabsContent>
+        <TabsContent value="oracle" className="pt-8">
+          <h2 className="flex items-center gap-3 text-2xl">
+            <Brain className="text-gold" />
+            Oracle · cross-domain research
+          </h2>
+          <p className="mt-4 text-sm leading-loose text-muted-foreground">
+            Curated editorial hypotheses, not autonomous discovery, confirmed root cause or AI
+            output. No external sources, footage or private logs are fetched.
+          </p>
+          <div className="mt-7 grid gap-10 md:grid-cols-2">
+            {s.oracle.map((o) => (
+              <article key={o.connection} className="border-t border-border pt-6">
+                <p className="font-mono text-[10px] text-gold-light">HYPOTHESIS · UNVERIFIED</p>
+                <h3 className="mt-4 text-xl">{o.connection}</h3>
+                <p className="mt-4 text-sm leading-loose text-muted-foreground">{o.hypothesis}</p>
+                <p className="mt-5 text-sm leading-loose">
+                  <span className="text-gold-light">Evidence needed: </span>
+                  {o.evidenceNeeded}
+                </p>
+              </article>
+            ))}
+          </div>
+          <h3 className="mt-10 border-t border-border pt-7 text-xl">Public technical references</h3>
+          <ul className="mt-5 space-y-5">
+            {s.resources.map((r) => (
+              <li key={r.url}>
+                <a
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-gold-light underline"
+                >
+                  <BookOpen size={15} />
+                  {r.name}
+                  <ArrowUpRight size={13} />
+                </a>
+                <p className="mt-3 text-xs leading-loose text-muted-foreground">{r.rights}</p>
+              </li>
+            ))}
+          </ul>
+          <Button asChild variant="signal" className="mt-7 h-auto whitespace-normal">
+            <Link to="/discovery" search={{ scenario: s.id }}>
+              Open linked Oracle / Discovery signals
+            </Link>
+          </Button>
+        </TabsContent>
+        <TabsContent value="safety" className="pt-8">
+          <h2 className="flex items-center gap-3 text-2xl">
+            <ShieldAlert className="text-warning" />
+            Guardian · simulation-to-real boundary
+          </h2>
+          <p className="mt-4 max-w-4xl text-sm leading-loose text-warning">{s.limitation}</p>
+          <div className="mt-7 divide-y divide-border">
+            {roboticsSafetyGates.map((g) => (
+              <section key={g.id} className="py-6">
+                <p className="font-mono text-[10px] text-warning">NOT VERIFIED · LAUNCH BLOCKER</p>
+                <h3 className="mt-3 text-xl">{g.title}</h3>
+                <p className="mt-4 max-w-4xl text-sm leading-loose text-muted-foreground">
+                  {g.requirement}
+                </p>
+              </section>
+            ))}
+          </div>
+          <p className="mt-5 text-sm leading-loose text-muted-foreground">
+            Safety standards are reference pathways only, not certifications. Physical emergency
+            stop, signed artifacts and rollback are untested. No demo reviewer grants field
+            authority.
+          </p>
+          <Button asChild variant="signal" className="mt-7 h-auto whitespace-normal">
+            <Link to="/guardian" search={{ tab: "review", surface: "robotics" }}>
+              Open proposed-only Guardian review
+            </Link>
+          </Button>
+        </TabsContent>
+      </Tabs>
+      <section className="mt-12 border-y border-border py-8">
+        <h2 className="text-2xl">Continue the research pathway</h2>
+        <p className="mt-4 text-sm leading-loose text-muted-foreground">
+          Challenge criteria: {s.acceptance}
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button asChild variant="cosmic" className="h-auto min-h-11 whitespace-normal">
+            <Link to="/challenges" search={{ scenario: s.id }}>
+              Propose this research challenge
+              <ArrowUpRight size={14} />
+            </Link>
+          </Button>
+          <Button asChild variant="signal" className="h-auto min-h-11 whitespace-normal">
+            <Link to="/pathway" search={{ scenario: s.id }}>
+              Prepare in Founder Lab · no AI request yet
+            </Link>
+          </Button>
+          <Button asChild variant="signal" className="h-auto min-h-11 whitespace-normal">
+            <Link to="/releases" search={{ scenario: s.id }}>
+              Inspect unsigned Release Galaxy
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-auto min-h-11 whitespace-normal"
+            onClick={() => {
+              try {
+                downloadJson(`DEMO-dataset-${s.id}.json`, {
+                  mode: "DEMO",
+                  dataset: s.dataset,
+                  exampleInputs:
+                    s.model === "reaction"
+                      ? { speedMps: 0.5, latencyMs: 300, clearanceM: 0.8 }
+                      : s.model === "energy"
+                        ? { powerKw: 7, durationMin: 30, capacityKwh: 60 }
+                        : { tileCount: 100, ratePerMin: 5, durationMin: 10 },
+                  realData: false,
+                });
+                setNotice(
+                  "Synthetic fixture descriptor downloaded; no real data or code executed.",
+                );
+              } catch {
+                setNotice("Download unavailable.");
+              }
+            }}
+          >
+            <Download size={14} />
+            Synthetic fixture descriptor
+          </Button>
+        </div>
+        {notice && (
+          <p role="status" className="mt-4 text-sm text-warning">
+            {notice}
+          </p>
+        )}
+      </section>
+    </LabShell>
+  );
 }

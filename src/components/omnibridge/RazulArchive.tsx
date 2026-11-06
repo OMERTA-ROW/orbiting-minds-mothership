@@ -43,12 +43,21 @@ const errorText = (error: unknown) =>
  * discovery or private-data access is connected here.
  */
 export function RazulArchive() {
-  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<RazulStore>({ key: RAZUL_STORE_KEY, initial: emptyRazulStore, read: loadRazulStore, write: saveRazulStore, collections: ["enrollments", "events", "grants", "sources", "findings"] });
+  const {
+    records: store,
+    setRecords: setStore,
+    storageNotice,
+  } = useOmniLocalRecords<RazulStore>({
+    key: RAZUL_STORE_KEY,
+    initial: emptyRazulStore,
+    read: loadRazulStore,
+    write: saveRazulStore,
+    collections: ["enrollments", "events", "grants", "sources", "findings"],
+  });
   const [notice, setNotice] = useState("");
   const [consumer, setConsumer] = useState<RazulConsumer>("jackboy");
   const [searchText, setSearchText] = useState("");
   const [searchKind, setSearchKind] = useState<"" | EventKind>("");
-
 
   const firstProject = store.enrollments.find((e) => e.active);
   const chain = verifyChain(store.events);
@@ -69,8 +78,14 @@ export function RazulArchive() {
       const enrollment = enrollProject(
         {
           projectName: text(form, "projectName"),
-          tags: text(form, "tags").split(",").map((t) => t.trim()).filter(Boolean),
-          dependencies: text(form, "dependencies").split(",").map((d) => d.trim()).filter(Boolean),
+          tags: text(form, "tags")
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+          dependencies: text(form, "dependencies")
+            .split(",")
+            .map((d) => d.trim())
+            .filter(Boolean),
           retentionDays: Number(text(form, "retentionDays") || 90),
           ownerConsent: true,
         },
@@ -78,7 +93,9 @@ export function RazulArchive() {
         stamp(),
       );
       setStore((current) => ({ ...current, enrollments: [...current.enrollments, enrollment] }));
-      setNotice("Project enrolled with owner consent. RAZUL records only enrolled, opted-in projects.");
+      setNotice(
+        "Project enrolled with owner consent. RAZUL records only enrolled, opted-in projects.",
+      );
       event.currentTarget.reset();
     } catch (error) {
       setNotice(errorText(error));
@@ -103,7 +120,9 @@ export function RazulArchive() {
         stamp(),
       );
       setStore((current) => ({ ...current, events: [...current.events, entry] }));
-      setNotice("Event appended to the tamper-evident history. It cannot be edited; use redaction for privacy.");
+      setNotice(
+        "Event appended to the tamper-evident history. It cannot be edited; use redaction for privacy.",
+      );
       event.currentTarget.reset();
     } catch (error) {
       setNotice(errorText(error));
@@ -111,7 +130,12 @@ export function RazulArchive() {
   }
 
   function toggleGrant(target: RazulConsumer) {
-    if (!firstProject) { setNotice("Enroll a fictional project before changing local retrieval labels. No permission was granted."); return; }
+    if (!firstProject) {
+      setNotice(
+        "Enroll a fictional project before changing local retrieval labels. No permission was granted.",
+      );
+      return;
+    }
     setStore((current) => {
       const existing = current.grants.some(
         (g) => g.projectId === firstProject.id && g.consumer === target,
@@ -119,8 +143,13 @@ export function RazulArchive() {
       return {
         ...current,
         grants: existing
-          ? current.grants.filter((g) => !(g.projectId === firstProject.id && g.consumer === target))
-          : [...current.grants, { projectId: firstProject.id, consumer: target, grantedAt: stamp() }],
+          ? current.grants.filter(
+              (g) => !(g.projectId === firstProject.id && g.consumer === target),
+            )
+          : [
+              ...current.grants,
+              { projectId: firstProject.id, consumer: target, grantedAt: stamp() },
+            ],
       };
     });
     setNotice(`Access grant for ${target} toggled. Retrieval is denied without an explicit grant.`);
@@ -143,7 +172,9 @@ export function RazulArchive() {
         stamp(),
       );
       setStore((current) => ({ ...current, sources: [...current.sources, source] }));
-      setNotice("Source registered with robots/terms attestation. Scheduled fetching is not connected here.");
+      setNotice(
+        "Source registered with robots/terms attestation. Scheduled fetching is not connected here.",
+      );
       event.currentTarget.reset();
     } catch (error) {
       setNotice(errorText(error));
@@ -179,12 +210,17 @@ export function RazulArchive() {
       }
       const updated = result.updated;
       const finding = result.finding;
-      if (!updated && !finding) { setNotice("No finding was accepted. Existing records are unchanged."); return; }
+      if (!updated && !finding) {
+        setNotice("No finding was accepted. Existing records are unchanged.");
+        return;
+      }
       setStore((current) => ({
         ...current,
         findings: updated
           ? current.findings.map((f) => (f.id === updated.id ? updated : f))
-          : finding ? [...current.findings, finding] : current.findings,
+          : finding
+            ? [...current.findings, finding]
+            : current.findings,
       }));
       setNotice(
         result.updated
@@ -209,19 +245,20 @@ export function RazulArchive() {
         <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
           The Eternal Archivist — OMNI Mothership's central cross-project speaking intelligence,
           All-Seeing Eye observatory, authorized public-source research and historical records layer
-          for OMNI/Evolution. Scoped watcher coordination and dispatch to enrolled project agents remain proposed.
-          This local archive keeps timestamped, append-only, tamper-evident history for enrolled owner-controlled
-          projects: events, agent reports, test results, code-change metadata, approvals, incidents
-          and outcomes — with provenance, search, retention, redaction and per-consumer access
-          segregation for Jackboy, OMNI, Guardian, Sabrina and JAX.
+          for OMNI/Evolution. Scoped watcher coordination and dispatch to enrolled project agents
+          remain proposed. This local archive keeps timestamped, append-only, tamper-evident history
+          for enrolled owner-controlled projects: events, agent reports, test results, code-change
+          metadata, approvals, incidents and outcomes — with provenance, search, retention,
+          redaction and per-consumer access segregation for Jackboy, OMNI, Guardian, Sabrina and
+          JAX.
         </p>
         <p className="mt-4 max-w-3xl border-l border-warning pl-4 text-xs leading-6 text-warning">
-          This project-history archive is a local reference, not a private server audit.
-          The separate public-feed observatory uses existing authenticated research services and
-          stored source timestamps; specialized research workers, resident watchers and approved
-          task execution remain proposed. Guardian enforcement and owner activation are required
-          before rollout. Source policies, permissions and rate limits apply. RA'SUL never monitors
-          the entire internet or accesses private communications or secrets.
+          This project-history archive is a local reference, not a private server audit. The
+          separate public-feed observatory uses existing authenticated research services and stored
+          source timestamps; specialized research workers, resident watchers and approved task
+          execution remain proposed. Guardian enforcement and owner activation are required before
+          rollout. Source policies, permissions and rate limits apply. RA'SUL never monitors the
+          entire internet or accesses private communications or secrets.
         </p>
       </header>
 
@@ -230,7 +267,8 @@ export function RazulArchive() {
           <Archive className="text-gold" size={20} />
           <h2 className="mt-4 text-xl">Archive integrity</h2>
           <p className="mt-3 text-xs leading-6 text-muted-foreground">
-            {store.events.length} events · chain {chain.ok ? "verified" : `BROKEN at ${chain.brokenAt}`} ·{" "}
+            {store.events.length} events · chain{" "}
+            {chain.ok ? "verified" : `BROKEN at ${chain.brokenAt}`} ·{" "}
             {store.enrollments.filter((e) => e.active).length} enrolled projects.
           </p>
         </div>
@@ -273,15 +311,32 @@ export function RazulArchive() {
             </label>
             <label className="block text-xs">
               Relevance tags (comma-separated)
-              <input required name="tags" className="exchange-select mt-1 w-full" placeholder="mcp, agent, coding" />
+              <input
+                required
+                name="tags"
+                className="exchange-select mt-1 w-full"
+                placeholder="mcp, agent, coding"
+              />
             </label>
             <label className="block text-xs">
               Dependencies (comma-separated)
-              <input name="dependencies" className="exchange-select mt-1 w-full" placeholder="TanStack Start, Go" />
+              <input
+                name="dependencies"
+                className="exchange-select mt-1 w-full"
+                placeholder="TanStack Start, Go"
+              />
             </label>
             <label className="block text-xs">
               Retention (days, 7–365)
-              <input required name="retentionDays" type="number" min="7" max="365" defaultValue="90" className="exchange-select mt-1 w-full" />
+              <input
+                required
+                name="retentionDays"
+                type="number"
+                min="7"
+                max="365"
+                defaultValue="90"
+                className="exchange-select mt-1 w-full"
+              />
             </label>
             <label className="flex items-start gap-2 text-xs leading-5">
               <input required type="checkbox" /> I am the owner and consent to RAZUL recording this
@@ -295,8 +350,8 @@ export function RazulArchive() {
             <ul className="mt-5 space-y-2 text-xs leading-6 text-muted-foreground">
               {store.enrollments.map((e) => (
                 <li key={e.id} className="border border-border/70 p-3">
-                  <span className="text-gold-light">{e.projectName}</span> · tags: {e.tags.join(", ")} ·
-                  retention {e.retentionDays}d
+                  <span className="text-gold-light">{e.projectName}</span> · tags:{" "}
+                  {e.tags.join(", ")} · retention {e.retentionDays}d
                 </li>
               ))}
             </ul>
@@ -311,17 +366,24 @@ export function RazulArchive() {
             <label className="block text-xs">
               Project
               <select name="projectId" className="exchange-select mt-1 w-full">
-                {store.enrollments.filter((e) => e.active).map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.projectName}
-                  </option>
-                ))}
+                {store.enrollments
+                  .filter((e) => e.active)
+                  .map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.projectName}
+                    </option>
+                  ))}
               </select>
             </label>
             <div className="grid grid-cols-2 gap-4">
               <label className="block text-xs">
                 Actor (agent or human)
-                <input required name="actor" className="exchange-select mt-1 w-full" placeholder="Jackboy" />
+                <input
+                  required
+                  name="actor"
+                  className="exchange-select mt-1 w-full"
+                  placeholder="Jackboy"
+                />
               </label>
               <label className="block text-xs">
                 Kind
@@ -336,7 +398,12 @@ export function RazulArchive() {
             </div>
             <label className="block text-xs">
               Summary
-              <textarea required name="summary" minLength={5} className="exchange-select mt-1 min-h-20 w-full" />
+              <textarea
+                required
+                name="summary"
+                minLength={5}
+                className="exchange-select mt-1 min-h-20 w-full"
+              />
             </label>
             <label className="block text-xs">
               Provenance (where this record came from)
@@ -347,29 +414,35 @@ export function RazulArchive() {
             </Button>
           </form>
           <ul className="mt-5 space-y-2 text-xs leading-6 text-muted-foreground">
-            {store.events.slice(-6).reverse().map((event) => (
-              <li key={event.id} className="border border-border/70 p-3">
-                <span className="font-mono text-[10px] uppercase text-gold">{event.kind}</span> ·{" "}
-                {event.actor} · {event.at.slice(0, 19)}Z
-                <p className="mt-1">{event.summary}</p>
-                {!event.redacted && !event.tombstoned && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="mt-2"
-                    onClick={() => {
-                      setStore((current) => ({
-                        ...current,
-                        events: redactEvent(current.events, event.id, "Owner redaction via RAZUL panel"),
-                      }));
-                      setNotice("Event content redacted; the chain entry and reason remain.");
-                    }}
-                  >
-                    Redact
-                  </Button>
-                )}
-              </li>
-            ))}
+            {store.events
+              .slice(-6)
+              .reverse()
+              .map((event) => (
+                <li key={event.id} className="border border-border/70 p-3">
+                  <span className="font-mono text-[10px] uppercase text-gold">{event.kind}</span> ·{" "}
+                  {event.actor} · {event.at.slice(0, 19)}Z<p className="mt-1">{event.summary}</p>
+                  {!event.redacted && !event.tombstoned && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="mt-2"
+                      onClick={() => {
+                        setStore((current) => ({
+                          ...current,
+                          events: redactEvent(
+                            current.events,
+                            event.id,
+                            "Owner redaction via RAZUL panel",
+                          ),
+                        }));
+                        setNotice("Event content redacted; the chain entry and reason remain.");
+                      }}
+                    >
+                      Redact
+                    </Button>
+                  )}
+                </li>
+              ))}
           </ul>
           {store.events.length > 0 && (
             <Button
@@ -400,7 +473,12 @@ export function RazulArchive() {
               firstProject &&
               store.grants.some((g) => g.projectId === firstProject.id && g.consumer === name);
             return (
-              <Button key={name} size="sm" variant={granted ? "cosmic" : "ghost"} onClick={() => toggleGrant(name)}>
+              <Button
+                key={name}
+                size="sm"
+                variant={granted ? "cosmic" : "ghost"}
+                onClick={() => toggleGrant(name)}
+              >
                 {name} {granted ? "· granted" : "· denied"}
               </Button>
             );
@@ -465,9 +543,11 @@ export function RazulArchive() {
           )}
         </div>
         <p className="mt-5 text-xs leading-6 text-muted-foreground">
-          Knowledge graph: {graph.nodes.length} nodes ({graph.nodes.filter((n) => n.type === "project").length} projects,{" "}
+          Knowledge graph: {graph.nodes.length} nodes (
+          {graph.nodes.filter((n) => n.type === "project").length} projects,{" "}
           {graph.nodes.filter((n) => n.type === "agent").length} agents,{" "}
-          {graph.nodes.filter((n) => n.type === "dependency").length} dependencies) · {graph.edges.length} relations.
+          {graph.nodes.filter((n) => n.type === "dependency").length} dependencies) ·{" "}
+          {graph.edges.length} relations.
         </p>
       </section>
 
@@ -491,7 +571,13 @@ export function RazulArchive() {
             </label>
             <label className="block text-xs">
               HTTPS URL
-              <input required name="url" type="url" className="exchange-select mt-1 w-full" placeholder="https://example.com/feed.xml" />
+              <input
+                required
+                name="url"
+                type="url"
+                className="exchange-select mt-1 w-full"
+                placeholder="https://example.com/feed.xml"
+              />
             </label>
             <label className="block text-xs">
               Kind
@@ -503,7 +589,12 @@ export function RazulArchive() {
             </label>
             <label className="block text-xs">
               Terms / attribution note
-              <textarea required name="termsNote" minLength={10} className="exchange-select mt-1 min-h-16 w-full" />
+              <textarea
+                required
+                name="termsNote"
+                minLength={10}
+                className="exchange-select mt-1 min-h-16 w-full"
+              />
             </label>
             <label className="flex items-start gap-2 text-xs leading-5">
               <input required type="checkbox" /> This source is public, respects robots.txt and site
@@ -516,7 +607,8 @@ export function RazulArchive() {
           <ul className="mt-5 space-y-2 text-xs leading-6 text-muted-foreground">
             {store.sources.map((source) => (
               <li key={source.id} className="border border-border/70 p-3">
-                <span className="text-gold-light">{source.name}</span> · {source.kind} · {source.url}
+                <span className="text-gold-light">{source.name}</span> · {source.kind} ·{" "}
+                {source.url}
               </li>
             ))}
           </ul>
@@ -543,11 +635,21 @@ export function RazulArchive() {
             </label>
             <label className="block text-xs">
               URL
-              <input required name="findingUrl" type="url" className="exchange-select mt-1 w-full" />
+              <input
+                required
+                name="findingUrl"
+                type="url"
+                className="exchange-select mt-1 w-full"
+              />
             </label>
             <label className="block text-xs">
               Summary
-              <textarea required name="findingSummary" minLength={10} className="exchange-select mt-1 min-h-16 w-full" />
+              <textarea
+                required
+                name="findingSummary"
+                minLength={10}
+                className="exchange-select mt-1 min-h-16 w-full"
+              />
             </label>
             <label className="block text-xs">
               Category
@@ -566,17 +668,22 @@ export function RazulArchive() {
           <ul className="mt-5 space-y-2 text-xs leading-6 text-muted-foreground">
             {store.findings.map((finding) => (
               <li key={finding.id} className="border border-border/70 p-3">
-                <span className="text-gold-light">{finding.title}</span> · relevance {finding.relevance}/100 ·
-                corroborations {finding.corroborations}
+                <span className="text-gold-light">{finding.title}</span> · relevance{" "}
+                {finding.relevance}/100 · corroborations {finding.corroborations}
                 <p className="mt-1">
-                  Routed to: {finding.routedTo.length ? finding.routedTo.join(", ") : "no granted consumers"}
+                  Routed to:{" "}
+                  {finding.routedTo.length ? finding.routedTo.join(", ") : "no granted consumers"}
                 </p>
               </li>
             ))}
           </ul>
         </section>
       </div>
-      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
+      {storageNotice && (
+        <p role="status" className="mt-4 text-sm text-warning">
+          {storageNotice}
+        </p>
+      )}
       <div className="mx-auto mt-8 w-full max-w-6xl px-6 pb-16">
         <LiveObservatory />
       </div>

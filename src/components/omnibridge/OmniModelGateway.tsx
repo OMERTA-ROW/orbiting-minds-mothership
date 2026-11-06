@@ -24,7 +24,16 @@ import {
 const inputCls = "mt-1 w-full rounded border border-border bg-background p-2 text-sm";
 
 export function OmniModelGateway() {
-  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<ModelGatewayStore>({ key: OMNI_MODEL_GW_STORE_KEY, initial: loadModelGatewayStore(null), read: loadModelGatewayStore, collections: ["adapters", "passports", "routes", "dispatches"] });
+  const {
+    records: store,
+    setRecords: setStore,
+    storageNotice,
+  } = useOmniLocalRecords<ModelGatewayStore>({
+    key: OMNI_MODEL_GW_STORE_KEY,
+    initial: loadModelGatewayStore(null),
+    read: loadModelGatewayStore,
+    collections: ["adapters", "passports", "routes", "dispatches"],
+  });
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -169,7 +178,11 @@ export function OmniModelGateway() {
         agents. Adapters, passports and routing are declarations and plans only: no provider
         credential, model endpoint or runner is connected, and nothing here claims otherwise.
       </p>
-      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
+      {storageNotice && (
+        <p role="status" className="mt-4 text-sm text-warning">
+          {storageNotice}
+        </p>
+      )}
 
       <section aria-label="Real vs simulated" className="mt-8 rounded border border-gold/30 p-5">
         <h2 className="text-xl">Real vs simulated</h2>

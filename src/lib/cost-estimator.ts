@@ -19,8 +19,13 @@ export function estimateWorkflow(raw: WorkflowEstimateInput) {
   const outputCost = (outputTokens / 1_000_000) * v.outputRatePerMillion;
   const monthlyCost = inputCost + outputCost + v.fixedMonthlyCost;
   return {
-    name: v.name, inputTokens, outputTokens, inputCost, outputCost,
-    fixedMonthlyCost: v.fixedMonthlyCost, monthlyCost,
+    name: v.name,
+    inputTokens,
+    outputTokens,
+    inputCost,
+    outputCost,
+    fixedMonthlyCost: v.fixedMonthlyCost,
+    monthlyCost,
     perRequestCost: v.requestsPerMonth > 0 ? monthlyCost / v.requestsPerMonth : null,
   };
 }

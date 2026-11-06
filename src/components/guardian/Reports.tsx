@@ -8,9 +8,187 @@ import { guardianDeviceFixtures } from "@/data/evolution";
 import { guardianReport } from "@/lib/guardian";
 import { downloadJson } from "@/lib/genesis-sdk";
 import { GuardianShell, GuardianNotice, GuardianHistory, useGuardianAction } from "./GuardianShell";
-export function ReportsPage() { return <GuardianShell title="Daily Health & Security Report"><ReportPanel /><GuardianHistory /></GuardianShell>; }
+export function ReportsPage() {
+  return (
+    <GuardianShell title="Daily Health & Security Report">
+      <ReportPanel />
+      <GuardianHistory />
+    </GuardianShell>
+  );
+}
 export function ReportPanel() {
- const { store,now } = useGuardian(); const care = useCare(); const { run,message,setMessage } = useGuardianAction(); const [deviceId,setDeviceId] = useState("mac-demo"); const [daily,setDaily] = useState(store.reportPolicy.dailyPreview); const [time,setTime] = useState(store.reportPolicy.time);
- const latest = [...store.reports].reverse().find(r => r.deviceId === deviceId); const report = latest ? guardianReport(store,care.store,latest,now) : null;
- return <><div className="grid gap-8 border-b border-border pb-8 lg:grid-cols-2"><div><h2 className="flex items-center gap-3 text-2xl"><FileCheck2 className="text-gold" />Evidence, not an all-clear</h2><p className="mt-4 text-sm leading-loose text-muted-foreground">Generate a demo digest from fictional inventory and current local action records. No security score, fresh scan, trend, backup success, verified signature or threat detection is invented. Offline devices have no real last-seen evidence.</p><label className="mt-6 block text-xs">Report device<select aria-label="Report device" className="exchange-select mt-2 block w-full" value={deviceId} onChange={e => setDeviceId(e.target.value)}>{guardianDeviceFixtures.map(d => <option value={d.id} key={d.id}>{d.name}</option>)}</select></label><Button className="mt-5" variant="cosmic" onClick={() => run({ type:"report",deviceId })}>Generate demo health & security report</Button></div><div><h3 className="text-xl">Local-first delivery preference</h3><label className="mt-5 flex items-center justify-between gap-4 text-sm"><span>Daily report preference · no scheduler</span><Switch checked={daily} onCheckedChange={setDaily} aria-label="Daily report preference" /></label><label className="mt-5 block text-xs">Preferred device-local time<input type="time" aria-label="Daily report time" className="exchange-select mt-2 block w-full" value={time} onChange={e => setTime(e.target.value)} /></label><Button variant="signal" className="mt-5" disabled={!time} onClick={() => run({ type:"reportPolicy",policy:{ dailyPreview:daily,time,cloudSync:false,email:false,voice:false } })}>Save report preference</Button><p className="mt-4 text-xs leading-loose text-muted-foreground">Local preview only. Cloud sync OFF; no daily email, notification, voice readout or background monitoring. High-severity real notifications need an independently configured event service.</p><div className="mt-4 flex flex-wrap gap-2"><Button disabled variant="outline">Cloud sync · unavailable</Button><Button disabled variant="outline">Email / voice · unavailable</Button></div></div></div><GuardianNotice message={message} />{report && latest && <article aria-label="Generated demo report" className="mt-9 border-l border-gold/40 pl-5"><p className="font-mono text-xs text-gold-light">DEMO DIGEST · {report.reportDayUtc} UTC · UNSIGNED</p><h2 className="mt-5 text-2xl">{report.device?.name}</h2><p className="mt-4 text-xs leading-loose text-muted-foreground">Preview prepared {latest.at}. Values below read current local records, not an archived daily scan. Report date is not a successful device check.</p><dl className="mt-6 grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2"><dt className="text-muted-foreground">Actually checked / last successful scan</dt><dd>Nothing / Never</dd><dt className="text-muted-foreground">Applied / failed real updates</dt><dd>None recorded / None measured</dd><dt className="text-muted-foreground">Current sample inventory</dt><dd>{report.sampleCare ? "Fictional CARE inventory; historical release references" : "Unsupported sample device"}</dd><dt className="text-muted-foreground">Storage / system trends</dt><dd>Review-only sample candidates / No trends measured</dd><dt className="text-muted-foreground">Backup / signature / MFA</dt><dd className="text-warning">UNKNOWN / NOT VERIFIED / NOT VERIFIED</dd><dt className="text-muted-foreground">Real approved agent connections</dt><dd>0</dd><dt className="text-muted-foreground">Demo identity expiry</dt><dd className="break-words">{report.identity?.expiresAt ?? "No identity"}</dd><dt className="text-muted-foreground">Current local exercise incidents</dt><dd>{report.incidents.length} · manually created, not detected</dd><dt className="text-muted-foreground">Threats blocked / complete safety</dt><dd>Not measured / Cannot determine</dd></dl><h3 className="mt-8 text-xl">Unsupported checks</h3><ul className="mt-4 space-y-3 text-sm text-muted-foreground">{report.unsupportedChecks.map(v => <li key={v}>{v}</li>)}</ul><h3 className="mt-8 text-xl">Recommended next actions</h3><ul className="mt-4 space-y-3 text-sm text-muted-foreground">{report.recommendations.map(v => <li key={v}>{v}</li>)}</ul><Button variant="signal" className="mt-8" onClick={() => { try { downloadJson("DEMO-health-security-report.json",report); setMessage("Unsigned sample report downloaded. No actual scans or checks."); } catch { setMessage("Download unavailable."); } }}><Download size={15} />Download demo report</Button></article>}{store.reports.length > 0 && <section className="mt-10"><h3 className="text-xl">Report preparation history</h3><ul className="mt-4 space-y-3 text-xs text-muted-foreground">{[...store.reports].reverse().slice(0,10).map(r => <li key={r.id}>{r.at} · {guardianDeviceFixtures.find(d => d.id === r.deviceId)?.name} · DEMO preview, no scan</li>)}</ul></section>}</>;
+  const { store, now } = useGuardian();
+  const care = useCare();
+  const { run, message, setMessage } = useGuardianAction();
+  const [deviceId, setDeviceId] = useState("mac-demo");
+  const [daily, setDaily] = useState(store.reportPolicy.dailyPreview);
+  const [time, setTime] = useState(store.reportPolicy.time);
+  const latest = [...store.reports].reverse().find((r) => r.deviceId === deviceId);
+  const report = latest ? guardianReport(store, care.store, latest, now) : null;
+  return (
+    <>
+      <div className="grid gap-8 border-b border-border pb-8 lg:grid-cols-2">
+        <div>
+          <h2 className="flex items-center gap-3 text-2xl">
+            <FileCheck2 className="text-gold" />
+            Evidence, not an all-clear
+          </h2>
+          <p className="mt-4 text-sm leading-loose text-muted-foreground">
+            Generate a demo digest from fictional inventory and current local action records. No
+            security score, fresh scan, trend, backup success, verified signature or threat
+            detection is invented. Offline devices have no real last-seen evidence.
+          </p>
+          <label className="mt-6 block text-xs">
+            Report device
+            <select
+              aria-label="Report device"
+              className="exchange-select mt-2 block w-full"
+              value={deviceId}
+              onChange={(e) => setDeviceId(e.target.value)}
+            >
+              {guardianDeviceFixtures.map((d) => (
+                <option value={d.id} key={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            className="mt-5"
+            variant="cosmic"
+            onClick={() => run({ type: "report", deviceId })}
+          >
+            Generate demo health & security report
+          </Button>
+        </div>
+        <div>
+          <h3 className="text-xl">Local-first delivery preference</h3>
+          <label className="mt-5 flex items-center justify-between gap-4 text-sm">
+            <span>Daily report preference · no scheduler</span>
+            <Switch
+              checked={daily}
+              onCheckedChange={setDaily}
+              aria-label="Daily report preference"
+            />
+          </label>
+          <label className="mt-5 block text-xs">
+            Preferred device-local time
+            <input
+              type="time"
+              aria-label="Daily report time"
+              className="exchange-select mt-2 block w-full"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+            />
+          </label>
+          <Button
+            variant="signal"
+            className="mt-5"
+            disabled={!time}
+            onClick={() =>
+              run({
+                type: "reportPolicy",
+                policy: { dailyPreview: daily, time, cloudSync: false, email: false, voice: false },
+              })
+            }
+          >
+            Save report preference
+          </Button>
+          <p className="mt-4 text-xs leading-loose text-muted-foreground">
+            Local preview only. Cloud sync OFF; no daily email, notification, voice readout or
+            background monitoring. High-severity real notifications need an independently configured
+            event service.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button disabled variant="outline">
+              Cloud sync · unavailable
+            </Button>
+            <Button disabled variant="outline">
+              Email / voice · unavailable
+            </Button>
+          </div>
+        </div>
+      </div>
+      <GuardianNotice message={message} />
+      {report && latest && (
+        <article aria-label="Generated demo report" className="mt-9 border-l border-gold/40 pl-5">
+          <p className="font-mono text-xs text-gold-light">
+            DEMO DIGEST · {report.reportDayUtc} UTC · UNSIGNED
+          </p>
+          <h2 className="mt-5 text-2xl">{report.device?.name}</h2>
+          <p className="mt-4 text-xs leading-loose text-muted-foreground">
+            Preview prepared {latest.at}. Values below read current local records, not an archived
+            daily scan. Report date is not a successful device check.
+          </p>
+          <dl className="mt-6 grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
+            <dt className="text-muted-foreground">Actually checked / last successful scan</dt>
+            <dd>Nothing / Never</dd>
+            <dt className="text-muted-foreground">Applied / failed real updates</dt>
+            <dd>None recorded / None measured</dd>
+            <dt className="text-muted-foreground">Current sample inventory</dt>
+            <dd>
+              {report.sampleCare
+                ? "Fictional CARE inventory; historical release references"
+                : "Unsupported sample device"}
+            </dd>
+            <dt className="text-muted-foreground">Storage / system trends</dt>
+            <dd>Review-only sample candidates / No trends measured</dd>
+            <dt className="text-muted-foreground">Backup / signature / MFA</dt>
+            <dd className="text-warning">UNKNOWN / NOT VERIFIED / NOT VERIFIED</dd>
+            <dt className="text-muted-foreground">Real approved agent connections</dt>
+            <dd>0</dd>
+            <dt className="text-muted-foreground">Demo identity expiry</dt>
+            <dd className="break-words">{report.identity?.expiresAt ?? "No identity"}</dd>
+            <dt className="text-muted-foreground">Current local exercise incidents</dt>
+            <dd>{report.incidents.length} · manually created, not detected</dd>
+            <dt className="text-muted-foreground">Threats blocked / complete safety</dt>
+            <dd>Not measured / Cannot determine</dd>
+          </dl>
+          <h3 className="mt-8 text-xl">Unsupported checks</h3>
+          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+            {report.unsupportedChecks.map((v) => (
+              <li key={v}>{v}</li>
+            ))}
+          </ul>
+          <h3 className="mt-8 text-xl">Recommended next actions</h3>
+          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+            {report.recommendations.map((v) => (
+              <li key={v}>{v}</li>
+            ))}
+          </ul>
+          <Button
+            variant="signal"
+            className="mt-8"
+            onClick={() => {
+              try {
+                downloadJson("DEMO-health-security-report.json", report);
+                setMessage("Unsigned sample report downloaded. No actual scans or checks.");
+              } catch {
+                setMessage("Download unavailable.");
+              }
+            }}
+          >
+            <Download size={15} />
+            Download demo report
+          </Button>
+        </article>
+      )}
+      {store.reports.length > 0 && (
+        <section className="mt-10">
+          <h3 className="text-xl">Report preparation history</h3>
+          <ul className="mt-4 space-y-3 text-xs text-muted-foreground">
+            {[...store.reports]
+              .reverse()
+              .slice(0, 10)
+              .map((r) => (
+                <li key={r.id}>
+                  {r.at} · {guardianDeviceFixtures.find((d) => d.id === r.deviceId)?.name} · DEMO
+                  preview, no scan
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
+    </>
+  );
 }

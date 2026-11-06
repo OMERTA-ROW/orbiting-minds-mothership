@@ -25,11 +25,29 @@ export const submitAutonomyTask = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => autonomyTaskInput.parse(input))
   .handler(async ({ data, context }): Promise<AutonomyTask> => {
     const ready = readinessFor(await callerRole(context.supabase), true);
-    if (!ready.role) throw new Error("An assigned private membership is required. No task started.");
+    if (!ready.role)
+      throw new Error("An assigned private membership is required. No task started.");
     const now = new Date().toISOString();
     let state = transition("draft", "awaiting_executor");
-    const log = [{ at: now, state, note: `Policy accepted: ${data.allowlist.length} site(s), max ${data.maxSteps} steps.` }];
+    const log = [
+      {
+        at: now,
+        state,
+        note: `Policy accepted: ${data.allowlist.length} site(s), max ${data.maxSteps} steps.`,
+      },
+    ];
     state = transition(state, "blocked");
-    log.push({ at: now, state, note: "Blocked: executor/host companion not connected. No action was taken." });
-    return { id: data.requestId, goal: data.goal, state, log, hints: goalProtectedHints(data.goal), saved: false };
+    log.push({
+      at: now,
+      state,
+      note: "Blocked: executor/host companion not connected. No action was taken.",
+    });
+    return {
+      id: data.requestId,
+      goal: data.goal,
+      state,
+      log,
+      hints: goalProtectedHints(data.goal),
+      saved: false,
+    };
   });

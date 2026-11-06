@@ -1,5 +1,82 @@
-import {applyGenesisCommand,emptyGenesisStore} from "@/lib/genesis";
-import type {AccountabilityInput} from "@/lib/accountability";
-export const accountabilityAt="2026-10-21T00:00:00.000Z";
-export function accountabilityPeople(){let g=structuredClone(emptyGenesisStore);for(const [id,name,scopes] of [{id:"reporter",name:"Sample reporter",scopes:["submit_capsules"] as const},{id:"reviewer",name:"Sample reviewer",scopes:["review_proposals"] as const}].map(x=>[x.id,x.name,[...x.scopes]] as const))g=applyGenesisCommand(g,{type:"identity",input:{name,kind:"Human",agentName:"",role:"Critic",scopes:[...scopes],consent:true,spendCapUsd:0}},id,accountabilityAt);return g;}
-export function accountabilitySample(reporterId="reporter"):AccountabilityInput{return {title:"Fictional output mismatch",reporterId,severity:"High",occurredAt:accountabilityAt,detectedAt:accountabilityAt,project:"Authored sample project",device:"No connected device",physicalImpact:false,expected:"Preserve the original sample output.",observed:"Authored sample contains another label.",facts:"Static sample text differs in the fixture.",unknowns:"Production behavior and responsibility unknown.",hypotheses:"A human edit or model defect is possible; not confirmed.",causeDomain:"Unknown",rootCauseStatus:"Unknown",proposedBy:{actor:"Unknown proposer",basis:"No verified proposal evidence obtained."},approvedBy:{actor:"Unknown approver",basis:"No verified approval evidence obtained."},deployedBy:{actor:"Unknown deployer",basis:"No execution or deployment evidence obtained."},codeId:"dependency-ledger",releaseId:"",replayId:"",archiveId:"",baselineText:"const value = 1;",observedText:"const value = 2;",baselineHash:"",observedHash:"",hashBasis:"Supplied sample text only; execution provenance unavailable.",evidence:[{kind:"Observation",description:"Authored sample output only; not incident evidence.",source:"Original sample author",reference:"",permission:true,status:"DEMO"}],logs:"Fictional observation log only.",tests:"Independent tests proposed; not executed.",timeline:[{at:accountabilityAt,observation:"Original fictional observation recorded."}],correctivePlan:"Preserve evidence and request independent review.",safetyPlan:"Trained oversight and independent physical emergency-stop validation remain required; no physical actions.",privacyTerms:"Non-sensitive local demo, not confidential or externally published.",sampleOnly:true,operatorAuthorized:true,consent:true};}
+import { applyGenesisCommand, emptyGenesisStore } from "@/lib/genesis";
+import type { AccountabilityInput } from "@/lib/accountability";
+export const accountabilityAt = "2026-10-21T00:00:00.000Z";
+export function accountabilityPeople() {
+  let g = structuredClone(emptyGenesisStore);
+  for (const [id, name, scopes] of [
+    { id: "reporter", name: "Sample reporter", scopes: ["submit_capsules"] as const },
+    { id: "reviewer", name: "Sample reviewer", scopes: ["review_proposals"] as const },
+  ].map((x) => [x.id, x.name, [...x.scopes]] as const))
+    g = applyGenesisCommand(
+      g,
+      {
+        type: "identity",
+        input: {
+          name,
+          kind: "Human",
+          agentName: "",
+          role: "Critic",
+          scopes: [...scopes],
+          consent: true,
+          spendCapUsd: 0,
+        },
+      },
+      id,
+      accountabilityAt,
+    );
+  return g;
+}
+export function accountabilitySample(reporterId = "reporter"): AccountabilityInput {
+  return {
+    title: "Fictional output mismatch",
+    reporterId,
+    severity: "High",
+    occurredAt: accountabilityAt,
+    detectedAt: accountabilityAt,
+    project: "Authored sample project",
+    device: "No connected device",
+    physicalImpact: false,
+    expected: "Preserve the original sample output.",
+    observed: "Authored sample contains another label.",
+    facts: "Static sample text differs in the fixture.",
+    unknowns: "Production behavior and responsibility unknown.",
+    hypotheses: "A human edit or model defect is possible; not confirmed.",
+    causeDomain: "Unknown",
+    rootCauseStatus: "Unknown",
+    proposedBy: { actor: "Unknown proposer", basis: "No verified proposal evidence obtained." },
+    approvedBy: { actor: "Unknown approver", basis: "No verified approval evidence obtained." },
+    deployedBy: {
+      actor: "Unknown deployer",
+      basis: "No execution or deployment evidence obtained.",
+    },
+    codeId: "dependency-ledger",
+    releaseId: "",
+    replayId: "",
+    archiveId: "",
+    baselineText: "const value = 1;",
+    observedText: "const value = 2;",
+    baselineHash: "",
+    observedHash: "",
+    hashBasis: "Supplied sample text only; execution provenance unavailable.",
+    evidence: [
+      {
+        kind: "Observation",
+        description: "Authored sample output only; not incident evidence.",
+        source: "Original sample author",
+        reference: "",
+        permission: true,
+        status: "DEMO",
+      },
+    ],
+    logs: "Fictional observation log only.",
+    tests: "Independent tests proposed; not executed.",
+    timeline: [{ at: accountabilityAt, observation: "Original fictional observation recorded." }],
+    correctivePlan: "Preserve evidence and request independent review.",
+    safetyPlan:
+      "Trained oversight and independent physical emergency-stop validation remain required; no physical actions.",
+    privacyTerms: "Non-sensitive local demo, not confidential or externally published.",
+    sampleOnly: true,
+    operatorAuthorized: true,
+    consent: true,
+  };
+}

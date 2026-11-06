@@ -4,7 +4,8 @@ import { Route as HomeRoute } from "@/routes/index";
 import { Route as BetaRoute } from "@/routes/_authenticated/beta";
 
 type Head = { meta: Array<Record<string, string>>; links?: Array<Record<string, string>> };
-const headOf = (route: { options: { head?: unknown } }) => (route.options.head as (ctx: unknown) => Head)({});
+const headOf = (route: { options: { head?: unknown } }) =>
+  (route.options.head as (ctx: unknown) => Head)({});
 const metaValue = (head: Head, key: string) =>
   head.meta.find((m) => m["name"] === key || m["property"] === key)?.["content"];
 
@@ -46,13 +47,23 @@ import { Route as QuantumRoute } from "@/routes/_authenticated/quantum-studio";
 import { Route as KnowledgeRoute } from "@/routes/_authenticated/knowledge-brief";
 
 describe("Search status panel policy matches page tags", () => {
-  const heads: Record<string, Head> = { "/": headOf(HomeRoute), "/beta": headOf(BetaRoute), "/beta-omni": headOf(BetaOmniRoute), "/quantum-studio": headOf(QuantumRoute), "/knowledge-brief": headOf(KnowledgeRoute) };
+  const heads: Record<string, Head> = {
+    "/": headOf(HomeRoute),
+    "/beta": headOf(BetaRoute),
+    "/beta-omni": headOf(BetaOmniRoute),
+    "/quantum-studio": headOf(QuantumRoute),
+    "/knowledge-brief": headOf(KnowledgeRoute),
+  };
   for (const entry of searchPolicy) {
     it(`${entry.path} matches its listed search status`, () => {
-      expect(metaValue(heads[entry.path]!, "robots")).toBe(entry.indexable ? "index, follow" : "noindex");
+      expect(metaValue(heads[entry.path]!, "robots")).toBe(
+        entry.indexable ? "index, follow" : "noindex",
+      );
     });
   }
   it("only the homepage is indexable", () => {
-    expect(searchPolicy.filter((entry) => entry.indexable).map((entry) => entry.path)).toEqual(["/"]);
+    expect(searchPolicy.filter((entry) => entry.indexable).map((entry) => entry.path)).toEqual([
+      "/",
+    ]);
   });
 });

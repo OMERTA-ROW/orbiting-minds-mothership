@@ -47,9 +47,7 @@ export function omniKeyPrefix(key: string): string {
 }
 
 /** Generate a new key using Web Crypto (available in the worker runtime). */
-export function generateOmniKey(
-  getRandomValues?: (buf: Uint8Array<ArrayBuffer>) => void,
-): string {
+export function generateOmniKey(getRandomValues?: (buf: Uint8Array<ArrayBuffer>) => void): string {
   const bytes = new Uint8Array(24);
   (getRandomValues ?? ((b) => crypto.getRandomValues(b)))(bytes);
   return `omni_${[...bytes].map((b) => b.toString(16).padStart(2, "0")).join("")}`;

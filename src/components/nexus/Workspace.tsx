@@ -1,37 +1,673 @@
-import {useState} from "react";
-import {Link,useNavigate} from "@tanstack/react-router";
-import {Orbit,Send,Terminal,MessageSquare,Shield,Pause,Play,ChevronRight,GitBranch,Settings2,LockKeyhole,Layers,ArrowUpRight} from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Tabs,TabsList,TabsTrigger,TabsContent} from "@/components/ui/tabs";
-import {DemoBadge,CoreGeometry} from "@/components/evo";
-import {useNexus} from "@/hooks/use-nexus";
-import {useGenesis} from "@/hooks/use-genesis";
-import {useGuardian} from "@/hooks/use-guardian";
-import {nexusAgents,nexusProjects} from "@/data/evolution";
-import {type NexusAgentId,type NexusCommand} from "@/lib/nexus";
-import {NexusProviders} from "./Providers";
-import {NexusDraftReview} from "./DraftReview";
-import {NexusCompanion} from "./Companion";
-import {stageOmniHandoff} from "@/lib/omni-assistant";
-import {readCreativePause} from "@/hooks/use-cartoon";
-export function NexusWorkspace(){
- const navigate=useNavigate();
- const {store,ready,issue,dispatch}=useNexus();const {store:g}=useGenesis();const {store:guardian}=useGuardian();const [projectId,setProject]=useState("nexus-nebula"),[view,setView]=useState("workspace"),[channel,setChannel]=useState("shared"),[targets,setTargets]=useState<NexusAgentId[]>([]),[selectedTask,setTask]=useState(""),[notice,setNotice]=useState("");
- const savedProject=store.projects.find(v=>v.id===projectId);if(!savedProject)return null;const cyberace=nexusProjects.find(v=>v.id==="nexus-cyberace");const p=savedProject.id===cyberace?.id?{...savedProject,name:cyberace.name,context:cyberace.context}:savedProject;const tasks=store.tasks.filter(t=>t.projectId===p.id),messages=store.messages.filter(m=>m.projectId===p.id),task=tasks.find(t=>t.id===selectedTask)??tasks.find(t=>t.state!=="Merged locally"&&t.state!=="Cancelled")??tasks.at(-1);const blocked=store.paused||guardian.paused;
- const run=(c:NexusCommand,rethrow=false)=>{try{if(guardian.paused&&c.type!=="pause"&&c.type!=="policy"&&c.type!=="cancel")throw new Error("Guardian local emergency pause is active. Resume from Guardian before planning.");dispatch(c);setNotice("Saved in this browser only. No model called or tool executed.");return true;}catch(e){setNotice(e instanceof Error?e.message:"Local action blocked.");if(rethrow)throw e;return false;}};
- const switchProject=(id:string)=>{setProject(id);setTask("");setTargets([]);setChannel("shared");setNotice("");};
- const thread=(target:string)=>{const rows=messages.filter(m=>m.channel===target);return <div className="min-w-0"><div className="flex items-center justify-between border-b border-border px-5 py-3 font-mono text-[10px]"><span className="text-gold-light">{target==="shared"?"PROJECT NOTES":`${target.toUpperCase()} · INDEPENDENT THREAD`}</span><span className="text-muted-foreground">LOCAL ONLY</span></div><div className="h-[290px] overflow-y-auto px-5 py-5" aria-label={`${target} conversation`}>{!rows.length?<div className="flex h-full flex-col items-center justify-center text-center"><Orbit size={28} className="text-gold/60"/><p className="mt-5 text-sm text-foreground">{target==="shared"?"A clear brief. A deliberate next step.":"No conversation connected."}</p><p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">{target==="shared"?"No shared server or outside participants. Notes are local DEMO records.":"Explicitly routed planning notes appear here. No provider reply is fabricated."}</p></div>:rows.map(m=><article key={m.id} className="mb-5 border-l border-gold/35 pl-4"><div className="flex flex-wrap justify-between gap-2 text-[10px] text-muted-foreground"><span>{g.identities.find(v=>v.id===m.actorId)?.name??"Unknown declaration"} · DEMO</span><time>{new Date(m.at).toLocaleTimeString()}</time></div><p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{m.body}</p>{m.context&&<details className="mt-3 text-xs text-muted-foreground"><summary className="cursor-pointer text-gold-light">Sample context included in this draft</summary><p className="mt-2 break-words">{m.context}</p></details>}<p className="mt-3 font-mono text-[9px] text-warning">NOT SENT · NO MODEL RESPONSE</p></article>)}</div></div>;};
- return <main className="mx-auto max-w-[1760px] px-4 pb-16 pt-8 md:px-8"><header className="relative mb-7 overflow-hidden border-b border-gold/30 pb-7"><CoreGeometry className="pointer-events-none absolute -right-10 -top-36 w-96 opacity-25"/><div className="relative"><div className="flex flex-wrap items-center gap-4"><span className="eyebrow">EVOLUTION / DEVELOPER STUDIO</span><DemoBadge label="LOCAL DEMO · NO LIVE CONNECTIONS"/></div><div className="mt-5 flex flex-wrap items-end justify-between gap-5"><div><h1 className="text-3xl leading-tight md:text-5xl">Command Nexus</h1><p className="mt-3 text-sm text-muted-foreground">One workspace. Deliberate targets. Every change reviewed.</p></div><div className="flex gap-5 font-mono text-[10px] text-muted-foreground"><span><span className="block text-lg text-foreground">00</span>LIVE PROVIDERS</span><span><span className="block text-lg text-gold-light">{String(tasks.filter(t=>t.state!=="Cancelled").length).padStart(2,"0")}</span>LOCAL TASKS</span><span><span className="block text-lg text-foreground">USD 0</span>BILLED HERE</span></div></div></div></header>
- <div className="mb-6 flex flex-wrap items-center justify-between gap-4"><label className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground"><Layers size={16} className="text-gold"/>Project<select aria-label="Nexus project" className="exchange-select max-w-full" value={projectId} onChange={e=>switchProject(e.target.value)}>{nexusProjects.map(v=><option key={v.id} value={v.id}>{v.name} · DEMO</option>)}</select></label><div className="flex flex-wrap gap-2"><Button asChild variant="ghost" size="sm"><Link to="/guardian"><Shield size={14}/>Guardian<ArrowUpRight size={12}/></Link></Button><Button variant="signal" size="sm" onClick={()=>run({type:"pause",paused:!store.paused})}>{store.paused?<Play size={14}/>:<Pause size={14}/>} {store.paused?"Resume local plans":"Pause local plans"}</Button></div></div>
- <Tabs value={view} onValueChange={setView}><TabsList className="mb-6 h-auto max-w-full justify-start gap-1 rounded-sm border border-border bg-background p-1"><TabsTrigger value="workspace" className="text-xs"><MessageSquare size={14} className="mr-2"/>Workspace</TabsTrigger><TabsTrigger value="providers" className="text-xs"><Settings2 size={14} className="mr-2"/>Connections</TabsTrigger><TabsTrigger value="companion" className="text-xs"><Terminal size={14} className="mr-2"/>Desktop plans</TabsTrigger></TabsList>
- <p className="mb-5 flex items-start gap-2 text-xs leading-relaxed text-warning"><LockKeyhole size={14} className="mt-0.5 shrink-0"/>Not confidential or multiuser. Use fictional, non-sensitive samples; browser records are editable. Real accounts, provider credentials and execution remain blocked.</p>{(notice||issue||blocked)&&<p role="status" className="mb-5 break-words border-l border-warning px-4 py-3 text-xs text-warning">{blocked?"Local planning paused. No live endpoints contacted. ":""}{issue||notice}</p>}
- {!ready?<p role="status">Loading local workspace…</p>:<><TabsContent value="workspace"><div className="grid min-w-0 gap-0 border-y border-border xl:grid-cols-[190px_minmax(0,1fr)_250px]"><aside className="border-b border-border py-5 xl:border-b-0 xl:border-r xl:pr-4"><p className="font-mono text-[10px] text-muted-foreground">PROJECT WORLDS</p><div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3 xl:grid-cols-1">{nexusProjects.map(v=><Button key={v.id} variant="ghost" className={`h-auto min-h-16 justify-start whitespace-normal rounded-sm px-3 py-3 text-left ${p.id===v.id?"border-l-2 border-gold bg-accent/30":"text-muted-foreground"}`} aria-pressed={p.id===v.id} onClick={()=>switchProject(v.id)}><span><span className="block text-xs">{v.name}</span><span className="mt-2 block font-mono text-[9px] text-muted-foreground">{v.stack}</span></span></Button>)}</div><div className="mt-7 border-t border-border pt-5"><p className="font-mono text-[10px] text-gold-light">ORACLE / PROJECT BRIEF</p><p className="mt-3 text-xs leading-relaxed text-muted-foreground">{p.context}</p><p className="mt-5 font-mono text-[10px] text-muted-foreground">{p.file} · LOCAL v{p.version}</p></div></aside>
- <section className="min-w-0 xl:border-r xl:border-border"><Tabs value={channel} onValueChange={setChannel}><TabsList aria-label="Nexus conversations" className="h-auto w-full flex-wrap justify-start gap-1 rounded-none border-b border-border bg-background p-2"><TabsTrigger value="shared" className="text-xs">Project notes</TabsTrigger><TabsTrigger value="openai" className="text-xs">OpenAI draft</TabsTrigger><TabsTrigger value="anthropic" className="text-xs">Anthropic draft</TabsTrigger><TabsTrigger value="compare" className="text-xs">Side by side</TabsTrigger></TabsList>{["shared","openai","anthropic"].map(c=><TabsContent value={c} key={c} className="m-0">{thread(c)}</TabsContent>)}<TabsContent value="compare" className="m-0"><div className="grid divide-y divide-border lg:grid-cols-2 lg:divide-x lg:divide-y-0">{thread("openai")}{thread("anthropic")}</div></TabsContent></Tabs>
- <form key={p.id} className="border-t border-border bg-card/40 p-5" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);const body=String(f.get("body"));if(/^@omni\b/i.test(body.trim())){setNotice("Use the OMNI draft button: it transfers this text for your review, never sends a provider request.");return;}if(run({type:"message",projectId:p.id,actorId:String(f.get("actor")),body,targets,shared:f.has("shared"),consent:f.has("consent")})){e.currentTarget.reset();setChannel(targets.length===1?targets[0]??"shared":targets.length>1?"compare":"shared");}}}><div className="flex flex-wrap gap-2" role="group" aria-label="Explicit draft recipients"><span className="mr-2 self-center text-[10px] text-muted-foreground">TARGET</span><Button type="button" variant="signal" size="sm" disabled={blocked} onClick={e=>{try{const form=e.currentTarget.closest("form");if(!form)return;const f=new FormData(form);if(!f.has("consent"))throw new Error("Local sample consent is required before transferring a draft.");stageOmniHandoff(p.id,String(f.get("body")),blocked||readCreativePause());void navigate({to:"/omni",search:{world:p.id}});}catch(err){setNotice(err instanceof Error?err.message:"Draft transfer blocked.");}}}>@omni · review draft</Button>{nexusAgents.map(a=>{const policy=p.policies.find(v=>v.agentId===a.id);return <Button key={a.id} type="button" variant={targets.includes(a.id)?"signal":"ghost"} size="sm" disabled={!policy?.enabled||a.id==="adapter"||blocked} aria-pressed={targets.includes(a.id)} onClick={()=>setTargets(prev=>prev.includes(a.id)?prev.filter(v=>v!==a.id):[...prev,a.id])}>{a.name}</Button>;})}<Button type="button" variant="ghost" size="icon" aria-label="Configure target permissions" title="Configure target permissions" onClick={()=>setView("providers")}><Settings2 size={14}/></Button></div><p className="mt-3 text-[10px] text-muted-foreground">{targets.length?targets.map(a=>`${nexusAgents.find(v=>v.id===a)?.name}: ${p.policies.find(v=>v.agentId===a)?.includeContext?"sample brief included":"prompt only"}`).join(" · "):"No agent selected. Shared project note is separate."} · No private thread is forwarded.</p><textarea aria-label="Nexus message" name="body" required minLength={5} maxLength={4000} rows={3} placeholder="Describe a non-sensitive task or use @omni for a coordinator draft…" className="mt-4 w-full resize-y rounded-sm border border-input bg-background p-4 text-sm text-foreground placeholder:text-muted-foreground"/><div className="mt-3 flex flex-wrap items-center gap-4"><label className="flex items-center gap-2 text-xs"><input type="checkbox" name="shared" defaultChecked/>Save to shared DEMO notes</label><label className="flex items-center gap-2 text-xs"><input type="checkbox" name="consent" required/>Local sample storage consent</label></div><div className="mt-4 flex flex-wrap items-end justify-between gap-3"><label className="min-w-0 text-[10px] text-muted-foreground">Declared sender<select aria-label="Nexus sender" name="actor" required className="exchange-select mt-2 max-w-full"><option value="">Select local Embassy identity</option>{g.identities.filter(v=>v.state==="Active"&&v.scopes.includes("submit_capsules")).map(v=><option key={v.id} value={v.id}>{v.name} · DEMO</option>)}</select></label><Button variant="cosmic" type="submit" disabled={blocked}><Send size={14}/>Save routed draft</Button></div>{!g.identities.length&&<Link to="/embassy" className="mt-3 block text-xs text-gold-light underline">Declare an opted-in sample identity in Embassy</Link>}</form></section>
- <aside className="min-w-0 px-0 py-5 xl:px-5"><p className="font-mono text-[10px] text-muted-foreground">AGENT DECK</p>{nexusAgents.map(a=><div key={a.id} className="mt-5 border-b border-border pb-5"><div className="flex items-center gap-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-gold/30 font-mono text-gold-light">{a.mark}</span><span className="text-xs">{a.name}<span className="mt-1 block text-[9px] text-warning">{a.id==="adapter"?"UNIDENTIFIED":"NOT CONNECTED"}</span></span></div><p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{a.role}</p><Button variant="ghost" size="sm" className="mt-2 px-0 text-gold-light" onClick={()=>setView("providers")}>Planning permissions<ChevronRight size={12}/></Button></div>)}<p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">Independent contexts. No consumer chat sync. Zero model requests from Nexus.</p></aside></div>
- <section className="mt-7 grid gap-4 lg:grid-cols-3" aria-label="Demo terminal panes">{[{title:"PROJECT / LOCAL PLAN",lines:[`project: ${p.name}`,`sample version: ${p.version}`,"repository: NOT CONNECTED","writes: browser sample only"]},{title:"UNITY / BUILD CONCEPT",lines:["editor: NOT DETECTED","command-line adapter: PLANNED","tests: NOT RUN","native execution: BLOCKED"]},{title:"BLENDER / SCRIPT CONCEPT",lines:["scene: NOT ATTACHED","Python adapter: PLANNED","render: NOT RUN","native execution: BLOCKED"]}].map(t=><article key={t.title} className="min-w-0 rounded-sm border border-border bg-card/30"><div className="flex justify-between border-b border-border px-4 py-3 font-mono text-[9px]"><span className="flex items-center gap-2 text-gold-light"><Terminal size={13}/>{t.title}</span><span className="text-warning">DEMO</span></div><pre className="h-36 whitespace-pre-wrap break-words p-4 font-mono text-[11px] leading-6 text-muted-foreground">{t.lines.join("\n")}</pre></article>)}</section>
- <section className="mt-10 border-t border-border pt-6"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-xl"><GitBranch className="text-gold" size={20}/>Task branches</h2><p className="font-mono text-[10px] text-muted-foreground">TESTS: NOT RUN · MERGE: HUMAN GATED</p></div>{!tasks.length?<p className="mt-5 text-sm text-muted-foreground">No routed tasks recorded in this project.</p>:<div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tasks.map(t=><Button key={t.id} variant="ghost" aria-pressed={task?.id===t.id} className={`h-auto min-h-24 justify-start whitespace-normal border border-border px-4 py-3 text-left ${task?.id===t.id?"border-gold/50 bg-accent/20":""}`} onClick={()=>setTask(t.id)}><span className="min-w-0"><span className="block text-[10px] text-gold-light">{nexusAgents.find(a=>a.id===t.agentId)?.name} · {t.state}</span><span className="mt-2 line-clamp-2 block break-words text-xs text-muted-foreground">{t.prompt}</span><span className="mt-2 block font-mono text-[9px] text-muted-foreground">ISOLATED BASE v{t.baseVersion} · NO EXECUTION</span></span></Button>)}</div>}{task&&<NexusDraftReview key={`${p.id}-${task.id}`} task={task} version={p.version} dispatch={c=>{run(c,true);}} notice={setNotice}/>}</section>
- <section className="mt-10 grid gap-8 border-t border-border pt-6 lg:grid-cols-2"><div><h2 className="text-xl">Version preview</h2><p className="mt-3 text-xs text-muted-foreground">{p.file} · v{p.version} · {p.history.length} preserved prior sample versions · UNSIGNED DEMO</p><pre className="mt-4 max-h-64 overflow-auto border border-border bg-card/30 p-4 font-mono text-xs leading-6 text-muted-foreground">{p.source}</pre></div><div><h2 className="text-xl">Local project timeline</h2>{store.events.filter(e=>e.projectId===p.id).slice(-6).reverse().map(e=><p key={e.id} className="mt-4 border-l border-gold/30 pl-4 text-xs text-muted-foreground">{e.action}<time className="mt-2 block font-mono text-[10px]">{e.at}</time></p>)}{!store.events.some(e=>e.projectId===p.id)&&<p className="mt-4 text-xs text-muted-foreground">No local actions recorded.</p>}</div></section></TabsContent><TabsContent value="providers"><NexusProviders key={p.id} project={p} dispatch={c=>{run(c,true);}} notice={setNotice}/></TabsContent><TabsContent value="companion"><NexusCompanion/></TabsContent></>}
- </Tabs><nav aria-label="Nexus review destinations" className="mt-12 flex flex-wrap gap-3 border-t border-border pt-6">{([{to:"/entertainment",name:"Entertainment Galaxy / Creative Studios"},{to:"/omnibridge",name:"OmniBridge / Capability Graph"},{to:"/code-vault",name:"Code Vault / Conflict Detective"},{to:"/approval-ledger",name:"Approval Ledger"},{to:"/experiment-replay",name:"Oracle Replay"},{to:"/embassy",name:"Agent Embassy"},{to:"/code-exchange",name:"Code Exchange"},{to:"/care-agent",name:"Native reference"}] as const).map(l=><Button key={l.to} asChild variant="ghost" size="sm"><Link to={l.to}>{l.name}<ArrowUpRight size={12}/></Link></Button>)}</nav>
- </main>;
+import { useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  Orbit,
+  Send,
+  Terminal,
+  MessageSquare,
+  Shield,
+  Pause,
+  Play,
+  ChevronRight,
+  GitBranch,
+  Settings2,
+  LockKeyhole,
+  Layers,
+  ArrowUpRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { DemoBadge, CoreGeometry } from "@/components/evo";
+import { useNexus } from "@/hooks/use-nexus";
+import { useGenesis } from "@/hooks/use-genesis";
+import { useGuardian } from "@/hooks/use-guardian";
+import { nexusAgents, nexusProjects } from "@/data/evolution";
+import { type NexusAgentId, type NexusCommand } from "@/lib/nexus";
+import { NexusProviders } from "./Providers";
+import { NexusDraftReview } from "./DraftReview";
+import { NexusCompanion } from "./Companion";
+import { stageOmniHandoff } from "@/lib/omni-assistant";
+import { readCreativePause } from "@/hooks/use-cartoon";
+export function NexusWorkspace() {
+  const navigate = useNavigate();
+  const { store, ready, issue, dispatch } = useNexus();
+  const { store: g } = useGenesis();
+  const { store: guardian } = useGuardian();
+  const [projectId, setProject] = useState("nexus-nebula"),
+    [view, setView] = useState("workspace"),
+    [channel, setChannel] = useState("shared"),
+    [targets, setTargets] = useState<NexusAgentId[]>([]),
+    [selectedTask, setTask] = useState(""),
+    [notice, setNotice] = useState("");
+  const savedProject = store.projects.find((v) => v.id === projectId);
+  if (!savedProject) return null;
+  const cyberace = nexusProjects.find((v) => v.id === "nexus-cyberace");
+  const p =
+    savedProject.id === cyberace?.id
+      ? { ...savedProject, name: cyberace.name, context: cyberace.context }
+      : savedProject;
+  const tasks = store.tasks.filter((t) => t.projectId === p.id),
+    messages = store.messages.filter((m) => m.projectId === p.id),
+    task =
+      tasks.find((t) => t.id === selectedTask) ??
+      tasks.find((t) => t.state !== "Merged locally" && t.state !== "Cancelled") ??
+      tasks.at(-1);
+  const blocked = store.paused || guardian.paused;
+  const run = (c: NexusCommand, rethrow = false) => {
+    try {
+      if (guardian.paused && c.type !== "pause" && c.type !== "policy" && c.type !== "cancel")
+        throw new Error(
+          "Guardian local emergency pause is active. Resume from Guardian before planning.",
+        );
+      dispatch(c);
+      setNotice("Saved in this browser only. No model called or tool executed.");
+      return true;
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Local action blocked.");
+      if (rethrow) throw e;
+      return false;
+    }
+  };
+  const switchProject = (id: string) => {
+    setProject(id);
+    setTask("");
+    setTargets([]);
+    setChannel("shared");
+    setNotice("");
+  };
+  const thread = (target: string) => {
+    const rows = messages.filter((m) => m.channel === target);
+    return (
+      <div className="min-w-0">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3 font-mono text-[10px]">
+          <span className="text-gold-light">
+            {target === "shared" ? "PROJECT NOTES" : `${target.toUpperCase()} · INDEPENDENT THREAD`}
+          </span>
+          <span className="text-muted-foreground">LOCAL ONLY</span>
+        </div>
+        <div className="h-[290px] overflow-y-auto px-5 py-5" aria-label={`${target} conversation`}>
+          {!rows.length ? (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <Orbit size={28} className="text-gold/60" />
+              <p className="mt-5 text-sm text-foreground">
+                {target === "shared"
+                  ? "A clear brief. A deliberate next step."
+                  : "No conversation connected."}
+              </p>
+              <p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">
+                {target === "shared"
+                  ? "No shared server or outside participants. Notes are local DEMO records."
+                  : "Explicitly routed planning notes appear here. No provider reply is fabricated."}
+              </p>
+            </div>
+          ) : (
+            rows.map((m) => (
+              <article key={m.id} className="mb-5 border-l border-gold/35 pl-4">
+                <div className="flex flex-wrap justify-between gap-2 text-[10px] text-muted-foreground">
+                  <span>
+                    {g.identities.find((v) => v.id === m.actorId)?.name ?? "Unknown declaration"} ·
+                    DEMO
+                  </span>
+                  <time>{new Date(m.at).toLocaleTimeString()}</time>
+                </div>
+                <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                  {m.body}
+                </p>
+                {m.context && (
+                  <details className="mt-3 text-xs text-muted-foreground">
+                    <summary className="cursor-pointer text-gold-light">
+                      Sample context included in this draft
+                    </summary>
+                    <p className="mt-2 break-words">{m.context}</p>
+                  </details>
+                )}
+                <p className="mt-3 font-mono text-[9px] text-warning">
+                  NOT SENT · NO MODEL RESPONSE
+                </p>
+              </article>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <main className="mx-auto max-w-[1760px] px-4 pb-16 pt-8 md:px-8">
+      <header className="relative mb-7 overflow-hidden border-b border-gold/30 pb-7">
+        <CoreGeometry className="pointer-events-none absolute -right-10 -top-36 w-96 opacity-25" />
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="eyebrow">EVOLUTION / DEVELOPER STUDIO</span>
+            <DemoBadge label="LOCAL DEMO · NO LIVE CONNECTIONS" />
+          </div>
+          <div className="mt-5 flex flex-wrap items-end justify-between gap-5">
+            <div>
+              <h1 className="text-3xl leading-tight md:text-5xl">Command Nexus</h1>
+              <p className="mt-3 text-sm text-muted-foreground">
+                One workspace. Deliberate targets. Every change reviewed.
+              </p>
+            </div>
+            <div className="flex gap-5 font-mono text-[10px] text-muted-foreground">
+              <span>
+                <span className="block text-lg text-foreground">00</span>LIVE PROVIDERS
+              </span>
+              <span>
+                <span className="block text-lg text-gold-light">
+                  {String(tasks.filter((t) => t.state !== "Cancelled").length).padStart(2, "0")}
+                </span>
+                LOCAL TASKS
+              </span>
+              <span>
+                <span className="block text-lg text-foreground">USD 0</span>BILLED HERE
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <label className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <Layers size={16} className="text-gold" />
+          Project
+          <select
+            aria-label="Nexus project"
+            className="exchange-select max-w-full"
+            value={projectId}
+            onChange={(e) => switchProject(e.target.value)}
+          >
+            {nexusProjects.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name} · DEMO
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/guardian">
+              <Shield size={14} />
+              Guardian
+              <ArrowUpRight size={12} />
+            </Link>
+          </Button>
+          <Button
+            variant="signal"
+            size="sm"
+            onClick={() => run({ type: "pause", paused: !store.paused })}
+          >
+            {store.paused ? <Play size={14} /> : <Pause size={14} />}{" "}
+            {store.paused ? "Resume local plans" : "Pause local plans"}
+          </Button>
+        </div>
+      </div>
+      <Tabs value={view} onValueChange={setView}>
+        <TabsList className="mb-6 h-auto max-w-full justify-start gap-1 rounded-sm border border-border bg-background p-1">
+          <TabsTrigger value="workspace" className="text-xs">
+            <MessageSquare size={14} className="mr-2" />
+            Workspace
+          </TabsTrigger>
+          <TabsTrigger value="providers" className="text-xs">
+            <Settings2 size={14} className="mr-2" />
+            Connections
+          </TabsTrigger>
+          <TabsTrigger value="companion" className="text-xs">
+            <Terminal size={14} className="mr-2" />
+            Desktop plans
+          </TabsTrigger>
+        </TabsList>
+        <p className="mb-5 flex items-start gap-2 text-xs leading-relaxed text-warning">
+          <LockKeyhole size={14} className="mt-0.5 shrink-0" />
+          Not confidential or multiuser. Use fictional, non-sensitive samples; browser records are
+          editable. Real accounts, provider credentials and execution remain blocked.
+        </p>
+        {(notice || issue || blocked) && (
+          <p
+            role="status"
+            className="mb-5 break-words border-l border-warning px-4 py-3 text-xs text-warning"
+          >
+            {blocked ? "Local planning paused. No live endpoints contacted. " : ""}
+            {issue || notice}
+          </p>
+        )}
+        {!ready ? (
+          <p role="status">Loading local workspace…</p>
+        ) : (
+          <>
+            <TabsContent value="workspace">
+              <div className="grid min-w-0 gap-0 border-y border-border xl:grid-cols-[190px_minmax(0,1fr)_250px]">
+                <aside className="border-b border-border py-5 xl:border-b-0 xl:border-r xl:pr-4">
+                  <p className="font-mono text-[10px] text-muted-foreground">PROJECT WORLDS</p>
+                  <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3 xl:grid-cols-1">
+                    {nexusProjects.map((v) => (
+                      <Button
+                        key={v.id}
+                        variant="ghost"
+                        className={`h-auto min-h-16 justify-start whitespace-normal rounded-sm px-3 py-3 text-left ${p.id === v.id ? "border-l-2 border-gold bg-accent/30" : "text-muted-foreground"}`}
+                        aria-pressed={p.id === v.id}
+                        onClick={() => switchProject(v.id)}
+                      >
+                        <span>
+                          <span className="block text-xs">{v.name}</span>
+                          <span className="mt-2 block font-mono text-[9px] text-muted-foreground">
+                            {v.stack}
+                          </span>
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="mt-7 border-t border-border pt-5">
+                    <p className="font-mono text-[10px] text-gold-light">ORACLE / PROJECT BRIEF</p>
+                    <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                      {p.context}
+                    </p>
+                    <p className="mt-5 font-mono text-[10px] text-muted-foreground">
+                      {p.file} · LOCAL v{p.version}
+                    </p>
+                  </div>
+                </aside>
+                <section className="min-w-0 xl:border-r xl:border-border">
+                  <Tabs value={channel} onValueChange={setChannel}>
+                    <TabsList
+                      aria-label="Nexus conversations"
+                      className="h-auto w-full flex-wrap justify-start gap-1 rounded-none border-b border-border bg-background p-2"
+                    >
+                      <TabsTrigger value="shared" className="text-xs">
+                        Project notes
+                      </TabsTrigger>
+                      <TabsTrigger value="openai" className="text-xs">
+                        OpenAI draft
+                      </TabsTrigger>
+                      <TabsTrigger value="anthropic" className="text-xs">
+                        Anthropic draft
+                      </TabsTrigger>
+                      <TabsTrigger value="compare" className="text-xs">
+                        Side by side
+                      </TabsTrigger>
+                    </TabsList>
+                    {["shared", "openai", "anthropic"].map((c) => (
+                      <TabsContent value={c} key={c} className="m-0">
+                        {thread(c)}
+                      </TabsContent>
+                    ))}
+                    <TabsContent value="compare" className="m-0">
+                      <div className="grid divide-y divide-border lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+                        {thread("openai")}
+                        {thread("anthropic")}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                  <form
+                    key={p.id}
+                    className="border-t border-border bg-card/40 p-5"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const f = new FormData(e.currentTarget);
+                      const body = String(f.get("body"));
+                      if (/^@omni\b/i.test(body.trim())) {
+                        setNotice(
+                          "Use the OMNI draft button: it transfers this text for your review, never sends a provider request.",
+                        );
+                        return;
+                      }
+                      if (
+                        run({
+                          type: "message",
+                          projectId: p.id,
+                          actorId: String(f.get("actor")),
+                          body,
+                          targets,
+                          shared: f.has("shared"),
+                          consent: f.has("consent"),
+                        })
+                      ) {
+                        e.currentTarget.reset();
+                        setChannel(
+                          targets.length === 1
+                            ? (targets[0] ?? "shared")
+                            : targets.length > 1
+                              ? "compare"
+                              : "shared",
+                        );
+                      }
+                    }}
+                  >
+                    <div
+                      className="flex flex-wrap gap-2"
+                      role="group"
+                      aria-label="Explicit draft recipients"
+                    >
+                      <span className="mr-2 self-center text-[10px] text-muted-foreground">
+                        TARGET
+                      </span>
+                      <Button
+                        type="button"
+                        variant="signal"
+                        size="sm"
+                        disabled={blocked}
+                        onClick={(e) => {
+                          try {
+                            const form = e.currentTarget.closest("form");
+                            if (!form) return;
+                            const f = new FormData(form);
+                            if (!f.has("consent"))
+                              throw new Error(
+                                "Local sample consent is required before transferring a draft.",
+                              );
+                            stageOmniHandoff(
+                              p.id,
+                              String(f.get("body")),
+                              blocked || readCreativePause(),
+                            );
+                            void navigate({ to: "/omni", search: { world: p.id } });
+                          } catch (err) {
+                            setNotice(
+                              err instanceof Error ? err.message : "Draft transfer blocked.",
+                            );
+                          }
+                        }}
+                      >
+                        @omni · review draft
+                      </Button>
+                      {nexusAgents.map((a) => {
+                        const policy = p.policies.find((v) => v.agentId === a.id);
+                        return (
+                          <Button
+                            key={a.id}
+                            type="button"
+                            variant={targets.includes(a.id) ? "signal" : "ghost"}
+                            size="sm"
+                            disabled={!policy?.enabled || a.id === "adapter" || blocked}
+                            aria-pressed={targets.includes(a.id)}
+                            onClick={() =>
+                              setTargets((prev) =>
+                                prev.includes(a.id)
+                                  ? prev.filter((v) => v !== a.id)
+                                  : [...prev, a.id],
+                              )
+                            }
+                          >
+                            {a.name}
+                          </Button>
+                        );
+                      })}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Configure target permissions"
+                        title="Configure target permissions"
+                        onClick={() => setView("providers")}
+                      >
+                        <Settings2 size={14} />
+                      </Button>
+                    </div>
+                    <p className="mt-3 text-[10px] text-muted-foreground">
+                      {targets.length
+                        ? targets
+                            .map(
+                              (a) =>
+                                `${nexusAgents.find((v) => v.id === a)?.name}: ${p.policies.find((v) => v.agentId === a)?.includeContext ? "sample brief included" : "prompt only"}`,
+                            )
+                            .join(" · ")
+                        : "No agent selected. Shared project note is separate."}{" "}
+                      · No private thread is forwarded.
+                    </p>
+                    <textarea
+                      aria-label="Nexus message"
+                      name="body"
+                      required
+                      minLength={5}
+                      maxLength={4000}
+                      rows={3}
+                      placeholder="Describe a non-sensitive task or use @omni for a coordinator draft…"
+                      className="mt-4 w-full resize-y rounded-sm border border-input bg-background p-4 text-sm text-foreground placeholder:text-muted-foreground"
+                    />
+                    <div className="mt-3 flex flex-wrap items-center gap-4">
+                      <label className="flex items-center gap-2 text-xs">
+                        <input type="checkbox" name="shared" defaultChecked />
+                        Save to shared DEMO notes
+                      </label>
+                      <label className="flex items-center gap-2 text-xs">
+                        <input type="checkbox" name="consent" required />
+                        Local sample storage consent
+                      </label>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+                      <label className="min-w-0 text-[10px] text-muted-foreground">
+                        Declared sender
+                        <select
+                          aria-label="Nexus sender"
+                          name="actor"
+                          required
+                          className="exchange-select mt-2 max-w-full"
+                        >
+                          <option value="">Select local Embassy identity</option>
+                          {g.identities
+                            .filter(
+                              (v) => v.state === "Active" && v.scopes.includes("submit_capsules"),
+                            )
+                            .map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.name} · DEMO
+                              </option>
+                            ))}
+                        </select>
+                      </label>
+                      <Button variant="cosmic" type="submit" disabled={blocked}>
+                        <Send size={14} />
+                        Save routed draft
+                      </Button>
+                    </div>
+                    {!g.identities.length && (
+                      <Link to="/embassy" className="mt-3 block text-xs text-gold-light underline">
+                        Declare an opted-in sample identity in Embassy
+                      </Link>
+                    )}
+                  </form>
+                </section>
+                <aside className="min-w-0 px-0 py-5 xl:px-5">
+                  <p className="font-mono text-[10px] text-muted-foreground">AGENT DECK</p>
+                  {nexusAgents.map((a) => (
+                    <div key={a.id} className="mt-5 border-b border-border pb-5">
+                      <div className="flex items-center gap-3">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-gold/30 font-mono text-gold-light">
+                          {a.mark}
+                        </span>
+                        <span className="text-xs">
+                          {a.name}
+                          <span className="mt-1 block text-[9px] text-warning">
+                            {a.id === "adapter" ? "UNIDENTIFIED" : "NOT CONNECTED"}
+                          </span>
+                        </span>
+                      </div>
+                      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+                        {a.role}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 px-0 text-gold-light"
+                        onClick={() => setView("providers")}
+                      >
+                        Planning permissions
+                        <ChevronRight size={12} />
+                      </Button>
+                    </div>
+                  ))}
+                  <p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">
+                    Independent contexts. No consumer chat sync. Zero model requests from Nexus.
+                  </p>
+                </aside>
+              </div>
+              <section className="mt-7 grid gap-4 lg:grid-cols-3" aria-label="Demo terminal panes">
+                {[
+                  {
+                    title: "PROJECT / LOCAL PLAN",
+                    lines: [
+                      `project: ${p.name}`,
+                      `sample version: ${p.version}`,
+                      "repository: NOT CONNECTED",
+                      "writes: browser sample only",
+                    ],
+                  },
+                  {
+                    title: "UNITY / BUILD CONCEPT",
+                    lines: [
+                      "editor: NOT DETECTED",
+                      "command-line adapter: PLANNED",
+                      "tests: NOT RUN",
+                      "native execution: BLOCKED",
+                    ],
+                  },
+                  {
+                    title: "BLENDER / SCRIPT CONCEPT",
+                    lines: [
+                      "scene: NOT ATTACHED",
+                      "Python adapter: PLANNED",
+                      "render: NOT RUN",
+                      "native execution: BLOCKED",
+                    ],
+                  },
+                ].map((t) => (
+                  <article
+                    key={t.title}
+                    className="min-w-0 rounded-sm border border-border bg-card/30"
+                  >
+                    <div className="flex justify-between border-b border-border px-4 py-3 font-mono text-[9px]">
+                      <span className="flex items-center gap-2 text-gold-light">
+                        <Terminal size={13} />
+                        {t.title}
+                      </span>
+                      <span className="text-warning">DEMO</span>
+                    </div>
+                    <pre className="h-36 whitespace-pre-wrap break-words p-4 font-mono text-[11px] leading-6 text-muted-foreground">
+                      {t.lines.join("\n")}
+                    </pre>
+                  </article>
+                ))}
+              </section>
+              <section className="mt-10 border-t border-border pt-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="flex items-center gap-2 text-xl">
+                    <GitBranch className="text-gold" size={20} />
+                    Task branches
+                  </h2>
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    TESTS: NOT RUN · MERGE: HUMAN GATED
+                  </p>
+                </div>
+                {!tasks.length ? (
+                  <p className="mt-5 text-sm text-muted-foreground">
+                    No routed tasks recorded in this project.
+                  </p>
+                ) : (
+                  <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {tasks.map((t) => (
+                      <Button
+                        key={t.id}
+                        variant="ghost"
+                        aria-pressed={task?.id === t.id}
+                        className={`h-auto min-h-24 justify-start whitespace-normal border border-border px-4 py-3 text-left ${task?.id === t.id ? "border-gold/50 bg-accent/20" : ""}`}
+                        onClick={() => setTask(t.id)}
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-[10px] text-gold-light">
+                            {nexusAgents.find((a) => a.id === t.agentId)?.name} · {t.state}
+                          </span>
+                          <span className="mt-2 line-clamp-2 block break-words text-xs text-muted-foreground">
+                            {t.prompt}
+                          </span>
+                          <span className="mt-2 block font-mono text-[9px] text-muted-foreground">
+                            ISOLATED BASE v{t.baseVersion} · NO EXECUTION
+                          </span>
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                {task && (
+                  <NexusDraftReview
+                    key={`${p.id}-${task.id}`}
+                    task={task}
+                    version={p.version}
+                    dispatch={(c) => {
+                      run(c, true);
+                    }}
+                    notice={setNotice}
+                  />
+                )}
+              </section>
+              <section className="mt-10 grid gap-8 border-t border-border pt-6 lg:grid-cols-2">
+                <div>
+                  <h2 className="text-xl">Version preview</h2>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {p.file} · v{p.version} · {p.history.length} preserved prior sample versions ·
+                    UNSIGNED DEMO
+                  </p>
+                  <pre className="mt-4 max-h-64 overflow-auto border border-border bg-card/30 p-4 font-mono text-xs leading-6 text-muted-foreground">
+                    {p.source}
+                  </pre>
+                </div>
+                <div>
+                  <h2 className="text-xl">Local project timeline</h2>
+                  {store.events
+                    .filter((e) => e.projectId === p.id)
+                    .slice(-6)
+                    .reverse()
+                    .map((e) => (
+                      <p
+                        key={e.id}
+                        className="mt-4 border-l border-gold/30 pl-4 text-xs text-muted-foreground"
+                      >
+                        {e.action}
+                        <time className="mt-2 block font-mono text-[10px]">{e.at}</time>
+                      </p>
+                    ))}
+                  {!store.events.some((e) => e.projectId === p.id) && (
+                    <p className="mt-4 text-xs text-muted-foreground">No local actions recorded.</p>
+                  )}
+                </div>
+              </section>
+            </TabsContent>
+            <TabsContent value="providers">
+              <NexusProviders
+                key={p.id}
+                project={p}
+                dispatch={(c) => {
+                  run(c, true);
+                }}
+                notice={setNotice}
+              />
+            </TabsContent>
+            <TabsContent value="companion">
+              <NexusCompanion />
+            </TabsContent>
+          </>
+        )}
+      </Tabs>
+      <nav
+        aria-label="Nexus review destinations"
+        className="mt-12 flex flex-wrap gap-3 border-t border-border pt-6"
+      >
+        {(
+          [
+            { to: "/entertainment", name: "Entertainment Galaxy / Creative Studios" },
+            { to: "/omnibridge", name: "OmniBridge / Capability Graph" },
+            { to: "/code-vault", name: "Code Vault / Conflict Detective" },
+            { to: "/approval-ledger", name: "Approval Ledger" },
+            { to: "/experiment-replay", name: "Oracle Replay" },
+            { to: "/embassy", name: "Agent Embassy" },
+            { to: "/code-exchange", name: "Code Exchange" },
+            { to: "/care-agent", name: "Native reference" },
+          ] as const
+        ).map((l) => (
+          <Button key={l.to} asChild variant="ghost" size="sm">
+            <Link to={l.to}>
+              {l.name}
+              <ArrowUpRight size={12} />
+            </Link>
+          </Button>
+        ))}
+      </nav>
+    </main>
+  );
 }

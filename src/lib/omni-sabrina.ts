@@ -51,7 +51,8 @@ export type MatchResult = { score: number; sharedTerms: string[]; reasons: strin
 
 /** Keyword-overlap match between an intelligence note and a prospect. 0–100, explainable. */
 export function matchScore(insight: SabrinaInsight, prospect: Prospect): MatchResult {
-  if (prospect.status === "revoked") return { score: 0, sharedTerms: [], reasons: ["Revoked records are excluded."] };
+  if (prospect.status === "revoked")
+    return { score: 0, sharedTerms: [], reasons: ["Revoked records are excluded."] };
   const need = new Set([
     ...tokenize(insight.invention),
     ...tokenize(insight.trend),
@@ -67,11 +68,16 @@ export function matchScore(insight: SabrinaInsight, prospect: Prospect): MatchRe
   let score = 0;
   if (sharedTerms.length) {
     score += Math.min(60, sharedTerms.length * 12);
-    reasons.push(`${sharedTerms.length} shared focus term(s): ${sharedTerms.slice(0, 5).join(", ")}`);
+    reasons.push(
+      `${sharedTerms.length} shared focus term(s): ${sharedTerms.slice(0, 5).join(", ")}`,
+    );
   } else {
     reasons.push("No shared focus terms between the note and this prospect.");
   }
-  if (prospect.compatibility.includes("api-documented") || prospect.compatibility.includes("mcp-documented")) {
+  if (
+    prospect.compatibility.includes("api-documented") ||
+    prospect.compatibility.includes("mcp-documented")
+  ) {
     score += 15;
     reasons.push("Documented API/MCP compatibility evidence recorded.");
   }
@@ -198,7 +204,12 @@ export function weeklyBrief(
 
 /* ---------------- Structured feedback to Jackboy ---------------- */
 
-export const feedbackKinds = ["capability-gap", "quality", "defensive-security", "partnership"] as const;
+export const feedbackKinds = [
+  "capability-gap",
+  "quality",
+  "defensive-security",
+  "partnership",
+] as const;
 export type FeedbackKind = (typeof feedbackKinds)[number];
 
 export const feedbackInputSchema = z.object({
@@ -208,7 +219,11 @@ export const feedbackInputSchema = z.object({
 });
 export type FeedbackInput = z.infer<typeof feedbackInputSchema>;
 
-export type JackboyFeedback = FeedbackInput & { id: string; createdAt: string; delivery: "local-handoff" };
+export type JackboyFeedback = FeedbackInput & {
+  id: string;
+  createdAt: string;
+  delivery: "local-handoff";
+};
 
 export function createFeedback(input: unknown, id: string, now: string): JackboyFeedback {
   return { ...feedbackInputSchema.parse(input), id, createdAt: now, delivery: "local-handoff" };

@@ -1,56 +1,509 @@
-import {describe,it,expect} from "vitest";
-import {accountabilityInput,accountabilityState,accountabilityExport,accountabilityListing,openDisputes} from "@/lib/accountability";
-import {applyIncidentCommand,emptyIncidentStore,incidentStoreSchema} from "@/lib/incidents";
-import {applyGenesisCommand} from "@/lib/genesis";
-import {emptyTrustStore,type TrustStore} from "@/lib/trusted-release";
-import {validateAccountabilityLinks} from "@/lib/accountability-links";
-import {accountabilityAt as at,accountabilityPeople as people,accountabilitySample as sample} from "./accountability-fixtures";
-const report=()=>applyIncidentCommand(emptyIncidentStore,people(),{type:"accountabilityReport",input:sample()},"case",at);
-const privacy={type:"accountabilityPrivacy",caseId:"case",actorId:"reporter",consent:true} as const;
-const review={type:"accountabilityReview",caseId:"case",actorId:"reviewer",decision:"Reviewed DEMO",note:"Observed facts and unresolved evidence gaps were reviewed.",privacy:true,evidence:true,uncertainty:true,consent:true} as const;
-const reviewed=()=>applyIncidentCommand(applyIncidentCommand(report(),people(),privacy,"privacy",at),people(),review,"review",at);
-const record=(s=reviewed())=>{const r=s.accountability[0];if(!r)throw new Error("Fixture missing");return r;};
-describe("Incident accountability evidence and consent",()=>{
- it("records only explicitly consented sample reports",()=>{expect(accountabilityInput.safeParse({...sample(),sampleOnly:false}).success).toBe(false);expect(accountabilityInput.safeParse({...sample(),consent:false}).success).toBe(false);});
- it("requires responsible-operator authorization",()=>{expect(accountabilityInput.safeParse({...sample(),operatorAuthorized:false}).success).toBe(false);});
- it("requires an active scoped demo reporter",()=>{expect(()=>applyIncidentCommand(emptyIncidentStore,applyGenesisCommand(people(),{type:"revoke",identityId:"reporter"},"revoke",at),{type:"accountabilityReport",input:sample()},"case",at)).toThrow(/active/);});
- it("retains distinct proposal approval and deployment declarations",()=>{expect(record(report()).input).toMatchObject({proposedBy:{actor:"Unknown proposer"},approvedBy:{actor:"Unknown approver"},deployedBy:{actor:"Unknown deployer"}});});
- it("does not accept a verified root cause",()=>{expect(accountabilityInput.safeParse({...sample(),rootCauseStatus:"Verified"}).success).toBe(false);});
- it("does not accept verified real evidence",()=>{const s=sample();s.evidence[0]={...s.evidence[0],kind:"Observation",description:"Fictional sample only",source:"Author",reference:"",permission:true,status:"DEMO"};expect(accountabilityInput.safeParse({...s,evidence:s.evidence.map(e=>({...e,status:"VERIFIED"}))}).success).toBe(false);});
- it("requires rights for evidence metadata",()=>{expect(accountabilityInput.safeParse({...sample(),evidence:sample().evidence.map(e=>({...e,permission:false}))}).success).toBe(false);});
- it("rejects credential-bearing source URLs",()=>{expect(accountabilityInput.safeParse({...sample(),evidence:sample().evidence.map(e=>({...e,reference:"https://user:pass@example.com/clip"}))}).success).toBe(false);});
- it("blocks likely secrets and identifying metadata before persistence",()=>{expect(()=>applyIncidentCommand(emptyIncidentStore,people(),{type:"accountabilityReport",input:{...sample(),logs:"password=not-a-real-secret"}},"case",at)).toThrow(/sensitive/);});
- it("requires valid occurrence before detection",()=>{expect(accountabilityInput.safeParse({...sample(),occurredAt:"2026-10-22T00:00:00.000Z"}).success).toBe(false);});
- it("rejects reverse chronological timeline observations",()=>{expect(accountabilityInput.safeParse({...sample(),timeline:[{at:"2026-10-21T00:00:01.000Z",observation:"Fictional first observation"},{at,observation:"Fictional second observation"}]}).success).toBe(false);});
- it("rejects future report evidence",()=>{expect(()=>applyIncidentCommand(emptyIncidentStore,people(),{type:"accountabilityReport",input:{...sample(),detectedAt:"2026-10-22T00:00:00.000Z"}},"case",at)).toThrow(/recording time/);});
- it("requires physical safety evidence-gap notes for high impact",()=>{expect(accountabilityInput.safeParse({...sample(),physicalImpact:true,safetyPlan:"No plan yet."}).success).toBe(false);});
- it("requires privacy confirmation before distinct human review",()=>{expect(()=>applyIncidentCommand(report(),people(),review,"review",at)).toThrow(/privacy review/);});
- it("rejects reporter self review",()=>{expect(()=>applyIncidentCommand(applyIncidentCommand(report(),people(),privacy,"privacy",at),people(),{...review,actorId:"reporter"},"review",at)).toThrow();});
- it("requires evidence uncertainty and privacy confirmations",()=>{expect(()=>applyIncidentCommand(applyIncidentCommand(report(),people(),privacy,"privacy",at),people(),{...review,uncertainty:false},"review",at)).toThrow();});
- it("blocks reviewer declared as involved in the change",()=>{let s=report();const r=record(s);r.input.proposedBy.actor="Sample reviewer";s=applyIncidentCommand(s,people(),privacy,"privacy",at);expect(()=>applyIncidentCommand(s,people(),review,"review",at)).toThrow(/proposer/);});
- it("preserves prior revisions and clears approval on edits",()=>{const s=applyIncidentCommand(reviewed(),people(),{type:"accountabilityRevise",caseId:"case",actorId:"reporter",input:{...sample(),observed:"Corrected fictional observation."}},"revision",at);expect(record(s)).toMatchObject({revision:2,state:"Reported",privacyReviewed:false,review:null});expect(record(s).history[0]?.input.observed).toBe(sample().observed);});
- it("requires fresh revision consent",()=>{expect(()=>applyIncidentCommand(reviewed(),people(),{type:"accountabilityRevise",caseId:"case",actorId:"reporter",input:{...sample(),consent:false}},"revision",at)).toThrow();});
- it("retains the exact prior review declaration after revision invalidates it",()=>{const s=applyIncidentCommand(reviewed(),people(),{type:"accountabilityRevise",caseId:"case",actorId:"reporter",input:{...sample(),observed:"A revised fictional observation."}},"revision",at);expect(record(s).review).toBeNull();expect(record(s).reviews[0]).toMatchObject({actorId:"reviewer",decision:"Reviewed DEMO",revision:1,note:review.note});});
- it("prevents reporter changes and non-reporter revisions",()=>{expect(()=>applyIncidentCommand(report(),people(),{type:"accountabilityRevise",caseId:"case",actorId:"reviewer",input:sample()},"revision",at)).toThrow(/reporter/);});
- it("invalidates review and blocks unresolved disputes",()=>{let s=applyIncidentCommand(reviewed(),people(),{type:"accountabilityNotice",caseId:"case",actorId:"reviewer",kind:"Dispute",note:"The stated evidence does not establish this hypothesis.",resolves:"",consent:true},"dispute",at);expect(record(s).review).toBeNull();s=applyIncidentCommand(s,people(),privacy,"privacy2",at);expect(()=>applyIncidentCommand(s,people(),review,"review2",at)).toThrow(/Resolve/);});
- it("allows reporter resolution with preserved dispute history",()=>{let s=applyIncidentCommand(report(),people(),{type:"accountabilityNotice",caseId:"case",actorId:"reviewer",kind:"Dispute",note:"The hypothesis needs correction.",resolves:"",consent:true},"dispute",at);s=applyIncidentCommand(s,people(),{type:"accountabilityNotice",caseId:"case",actorId:"reporter",kind:"Resolution",note:"Claim corrected to unknown; evidence gap preserved.",resolves:"dispute",consent:true},"resolve",at);expect(openDisputes(record(s))).toHaveLength(0);expect(record(s).notices).toHaveLength(2);});
- it("prevents another declaration from correcting the reporter's case",()=>{expect(()=>applyIncidentCommand(report(),people(),{type:"accountabilityNotice",caseId:"case",actorId:"reviewer",kind:"Correction",note:"Another user's correction attempt.",resolves:"",consent:true},"correction",at)).toThrow(/reporter/);});
- it("records corrective proposals without verified remediation",()=>{const s=applyIncidentCommand(reviewed(),people(),{type:"accountabilityAction",caseId:"case",actorId:"reporter",plan:"Propose a bounded regression fixture.",result:"Independent testing not performed.",status:"Proposed",consent:true},"action",at);expect(record(s)).toMatchObject({state:"Changes requested",review:null});expect(record(s).actions[0]?.status).toBe("Proposed");});
- it("invalidates current review after reviewer consent revocation",()=>{const g=applyGenesisCommand(people(),{type:"revoke",identityId:"reviewer"},"revoked",at);expect(accountabilityState(record(),g)).toBe("Consent invalidated");expect(accountabilityExport(record(),g).summary).toBeNull();});
- it("withholds case observations from dashboard search after consent invalidation",()=>{const g=applyGenesisCommand(people(),{type:"revoke",identityId:"reporter"},"revoked",at);expect(accountabilityListing(record(),g)).toMatchObject({title:"Incident details withheld",project:"",device:"",observed:"",causeDomain:"Unknown",occurredAt:""});});
- it("allows withdrawal even after reporter identity revocation",()=>{const g=applyGenesisCommand(people(),{type:"revoke",identityId:"reporter"},"revoked",at);const s=applyIncidentCommand(reviewed(),g,{type:"accountabilityWithdraw",caseId:"case",actorId:"reporter",consent:true},"withdraw",at);expect(record(s).state).toBe("Withdrawn");expect(()=>applyIncidentCommand(s,g,privacy,"again",at)).toThrow(/withdrawn/);});
- it("excludes code logs and history from default export and never claims fault",()=>{const out=accountabilityExport(record(),people());expect(out).toMatchObject({logsIncluded:false,codeIncluded:false,rootCauseVerified:false,legalCulpabilityEstablished:false,signature:null,externalPublication:false,hardwareAllowed:false});expect(out.summary).not.toHaveProperty("logs");expect(out.summary).not.toHaveProperty("baselineText");});
- it("rejects stored approval missing a current review",()=>{const s=reviewed();record(s).review=null;expect(incidentStoreSchema.safeParse(s).success).toBe(false);});
- it("rejects duplicate event identifiers",()=>{const s=reviewed();record(s).events.push({...record(s).events[0],id:"case",actorId:"reporter",at,action:"Duplicated event"});expect(incidentStoreSchema.safeParse(s).success).toBe(false);});
- it("loads old incident stores without discarding debrief data",()=>{const {accountability:_a,...old}=emptyIncidentStore;expect(incidentStoreSchema.parse(old).accountability).toEqual([]);});
+import { describe, it, expect } from "vitest";
+import {
+  accountabilityInput,
+  accountabilityState,
+  accountabilityExport,
+  accountabilityListing,
+  openDisputes,
+} from "@/lib/accountability";
+import { applyIncidentCommand, emptyIncidentStore, incidentStoreSchema } from "@/lib/incidents";
+import { applyGenesisCommand } from "@/lib/genesis";
+import { emptyTrustStore, type TrustStore } from "@/lib/trusted-release";
+import { validateAccountabilityLinks } from "@/lib/accountability-links";
+import {
+  accountabilityAt as at,
+  accountabilityPeople as people,
+  accountabilitySample as sample,
+} from "./accountability-fixtures";
+const report = () =>
+  applyIncidentCommand(
+    emptyIncidentStore,
+    people(),
+    { type: "accountabilityReport", input: sample() },
+    "case",
+    at,
+  );
+const privacy = {
+  type: "accountabilityPrivacy",
+  caseId: "case",
+  actorId: "reporter",
+  consent: true,
+} as const;
+const review = {
+  type: "accountabilityReview",
+  caseId: "case",
+  actorId: "reviewer",
+  decision: "Reviewed DEMO",
+  note: "Observed facts and unresolved evidence gaps were reviewed.",
+  privacy: true,
+  evidence: true,
+  uncertainty: true,
+  consent: true,
+} as const;
+const reviewed = () =>
+  applyIncidentCommand(
+    applyIncidentCommand(report(), people(), privacy, "privacy", at),
+    people(),
+    review,
+    "review",
+    at,
+  );
+const record = (s = reviewed()) => {
+  const r = s.accountability[0];
+  if (!r) throw new Error("Fixture missing");
+  return r;
+};
+describe("Incident accountability evidence and consent", () => {
+  it("records only explicitly consented sample reports", () => {
+    expect(accountabilityInput.safeParse({ ...sample(), sampleOnly: false }).success).toBe(false);
+    expect(accountabilityInput.safeParse({ ...sample(), consent: false }).success).toBe(false);
+  });
+  it("requires responsible-operator authorization", () => {
+    expect(accountabilityInput.safeParse({ ...sample(), operatorAuthorized: false }).success).toBe(
+      false,
+    );
+  });
+  it("requires an active scoped demo reporter", () => {
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        applyGenesisCommand(people(), { type: "revoke", identityId: "reporter" }, "revoke", at),
+        { type: "accountabilityReport", input: sample() },
+        "case",
+        at,
+      ),
+    ).toThrow(/active/);
+  });
+  it("retains distinct proposal approval and deployment declarations", () => {
+    expect(record(report()).input).toMatchObject({
+      proposedBy: { actor: "Unknown proposer" },
+      approvedBy: { actor: "Unknown approver" },
+      deployedBy: { actor: "Unknown deployer" },
+    });
+  });
+  it("does not accept a verified root cause", () => {
+    expect(
+      accountabilityInput.safeParse({ ...sample(), rootCauseStatus: "Verified" }).success,
+    ).toBe(false);
+  });
+  it("does not accept verified real evidence", () => {
+    const s = sample();
+    s.evidence[0] = {
+      ...s.evidence[0],
+      kind: "Observation",
+      description: "Fictional sample only",
+      source: "Author",
+      reference: "",
+      permission: true,
+      status: "DEMO",
+    };
+    expect(
+      accountabilityInput.safeParse({
+        ...s,
+        evidence: s.evidence.map((e) => ({ ...e, status: "VERIFIED" })),
+      }).success,
+    ).toBe(false);
+  });
+  it("requires rights for evidence metadata", () => {
+    expect(
+      accountabilityInput.safeParse({
+        ...sample(),
+        evidence: sample().evidence.map((e) => ({ ...e, permission: false })),
+      }).success,
+    ).toBe(false);
+  });
+  it("rejects credential-bearing source URLs", () => {
+    expect(
+      accountabilityInput.safeParse({
+        ...sample(),
+        evidence: sample().evidence.map((e) => ({
+          ...e,
+          reference: "https://user:pass@example.com/clip",
+        })),
+      }).success,
+    ).toBe(false);
+  });
+  it("blocks likely secrets and identifying metadata before persistence", () => {
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        people(),
+        {
+          type: "accountabilityReport",
+          input: { ...sample(), logs: "password=not-a-real-secret" },
+        },
+        "case",
+        at,
+      ),
+    ).toThrow(/sensitive/);
+  });
+  it("requires valid occurrence before detection", () => {
+    expect(
+      accountabilityInput.safeParse({ ...sample(), occurredAt: "2026-10-22T00:00:00.000Z" })
+        .success,
+    ).toBe(false);
+  });
+  it("rejects reverse chronological timeline observations", () => {
+    expect(
+      accountabilityInput.safeParse({
+        ...sample(),
+        timeline: [
+          { at: "2026-10-21T00:00:01.000Z", observation: "Fictional first observation" },
+          { at, observation: "Fictional second observation" },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+  it("rejects future report evidence", () => {
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        people(),
+        {
+          type: "accountabilityReport",
+          input: { ...sample(), detectedAt: "2026-10-22T00:00:00.000Z" },
+        },
+        "case",
+        at,
+      ),
+    ).toThrow(/recording time/);
+  });
+  it("requires physical safety evidence-gap notes for high impact", () => {
+    expect(
+      accountabilityInput.safeParse({
+        ...sample(),
+        physicalImpact: true,
+        safetyPlan: "No plan yet.",
+      }).success,
+    ).toBe(false);
+  });
+  it("requires privacy confirmation before distinct human review", () => {
+    expect(() => applyIncidentCommand(report(), people(), review, "review", at)).toThrow(
+      /privacy review/,
+    );
+  });
+  it("rejects reporter self review", () => {
+    expect(() =>
+      applyIncidentCommand(
+        applyIncidentCommand(report(), people(), privacy, "privacy", at),
+        people(),
+        { ...review, actorId: "reporter" },
+        "review",
+        at,
+      ),
+    ).toThrow();
+  });
+  it("requires evidence uncertainty and privacy confirmations", () => {
+    expect(() =>
+      applyIncidentCommand(
+        applyIncidentCommand(report(), people(), privacy, "privacy", at),
+        people(),
+        { ...review, uncertainty: false },
+        "review",
+        at,
+      ),
+    ).toThrow();
+  });
+  it("blocks reviewer declared as involved in the change", () => {
+    let s = report();
+    const r = record(s);
+    r.input.proposedBy.actor = "Sample reviewer";
+    s = applyIncidentCommand(s, people(), privacy, "privacy", at);
+    expect(() => applyIncidentCommand(s, people(), review, "review", at)).toThrow(/proposer/);
+  });
+  it("preserves prior revisions and clears approval on edits", () => {
+    const s = applyIncidentCommand(
+      reviewed(),
+      people(),
+      {
+        type: "accountabilityRevise",
+        caseId: "case",
+        actorId: "reporter",
+        input: { ...sample(), observed: "Corrected fictional observation." },
+      },
+      "revision",
+      at,
+    );
+    expect(record(s)).toMatchObject({
+      revision: 2,
+      state: "Reported",
+      privacyReviewed: false,
+      review: null,
+    });
+    expect(record(s).history[0]?.input.observed).toBe(sample().observed);
+  });
+  it("requires fresh revision consent", () => {
+    expect(() =>
+      applyIncidentCommand(
+        reviewed(),
+        people(),
+        {
+          type: "accountabilityRevise",
+          caseId: "case",
+          actorId: "reporter",
+          input: { ...sample(), consent: false },
+        },
+        "revision",
+        at,
+      ),
+    ).toThrow();
+  });
+  it("retains the exact prior review declaration after revision invalidates it", () => {
+    const s = applyIncidentCommand(
+      reviewed(),
+      people(),
+      {
+        type: "accountabilityRevise",
+        caseId: "case",
+        actorId: "reporter",
+        input: { ...sample(), observed: "A revised fictional observation." },
+      },
+      "revision",
+      at,
+    );
+    expect(record(s).review).toBeNull();
+    expect(record(s).reviews[0]).toMatchObject({
+      actorId: "reviewer",
+      decision: "Reviewed DEMO",
+      revision: 1,
+      note: review.note,
+    });
+  });
+  it("prevents reporter changes and non-reporter revisions", () => {
+    expect(() =>
+      applyIncidentCommand(
+        report(),
+        people(),
+        { type: "accountabilityRevise", caseId: "case", actorId: "reviewer", input: sample() },
+        "revision",
+        at,
+      ),
+    ).toThrow(/reporter/);
+  });
+  it("invalidates review and blocks unresolved disputes", () => {
+    let s = applyIncidentCommand(
+      reviewed(),
+      people(),
+      {
+        type: "accountabilityNotice",
+        caseId: "case",
+        actorId: "reviewer",
+        kind: "Dispute",
+        note: "The stated evidence does not establish this hypothesis.",
+        resolves: "",
+        consent: true,
+      },
+      "dispute",
+      at,
+    );
+    expect(record(s).review).toBeNull();
+    s = applyIncidentCommand(s, people(), privacy, "privacy2", at);
+    expect(() => applyIncidentCommand(s, people(), review, "review2", at)).toThrow(/Resolve/);
+  });
+  it("allows reporter resolution with preserved dispute history", () => {
+    let s = applyIncidentCommand(
+      report(),
+      people(),
+      {
+        type: "accountabilityNotice",
+        caseId: "case",
+        actorId: "reviewer",
+        kind: "Dispute",
+        note: "The hypothesis needs correction.",
+        resolves: "",
+        consent: true,
+      },
+      "dispute",
+      at,
+    );
+    s = applyIncidentCommand(
+      s,
+      people(),
+      {
+        type: "accountabilityNotice",
+        caseId: "case",
+        actorId: "reporter",
+        kind: "Resolution",
+        note: "Claim corrected to unknown; evidence gap preserved.",
+        resolves: "dispute",
+        consent: true,
+      },
+      "resolve",
+      at,
+    );
+    expect(openDisputes(record(s))).toHaveLength(0);
+    expect(record(s).notices).toHaveLength(2);
+  });
+  it("prevents another declaration from correcting the reporter's case", () => {
+    expect(() =>
+      applyIncidentCommand(
+        report(),
+        people(),
+        {
+          type: "accountabilityNotice",
+          caseId: "case",
+          actorId: "reviewer",
+          kind: "Correction",
+          note: "Another user's correction attempt.",
+          resolves: "",
+          consent: true,
+        },
+        "correction",
+        at,
+      ),
+    ).toThrow(/reporter/);
+  });
+  it("records corrective proposals without verified remediation", () => {
+    const s = applyIncidentCommand(
+      reviewed(),
+      people(),
+      {
+        type: "accountabilityAction",
+        caseId: "case",
+        actorId: "reporter",
+        plan: "Propose a bounded regression fixture.",
+        result: "Independent testing not performed.",
+        status: "Proposed",
+        consent: true,
+      },
+      "action",
+      at,
+    );
+    expect(record(s)).toMatchObject({ state: "Changes requested", review: null });
+    expect(record(s).actions[0]?.status).toBe("Proposed");
+  });
+  it("invalidates current review after reviewer consent revocation", () => {
+    const g = applyGenesisCommand(
+      people(),
+      { type: "revoke", identityId: "reviewer" },
+      "revoked",
+      at,
+    );
+    expect(accountabilityState(record(), g)).toBe("Consent invalidated");
+    expect(accountabilityExport(record(), g).summary).toBeNull();
+  });
+  it("withholds case observations from dashboard search after consent invalidation", () => {
+    const g = applyGenesisCommand(
+      people(),
+      { type: "revoke", identityId: "reporter" },
+      "revoked",
+      at,
+    );
+    expect(accountabilityListing(record(), g)).toMatchObject({
+      title: "Incident details withheld",
+      project: "",
+      device: "",
+      observed: "",
+      causeDomain: "Unknown",
+      occurredAt: "",
+    });
+  });
+  it("allows withdrawal even after reporter identity revocation", () => {
+    const g = applyGenesisCommand(
+      people(),
+      { type: "revoke", identityId: "reporter" },
+      "revoked",
+      at,
+    );
+    const s = applyIncidentCommand(
+      reviewed(),
+      g,
+      { type: "accountabilityWithdraw", caseId: "case", actorId: "reporter", consent: true },
+      "withdraw",
+      at,
+    );
+    expect(record(s).state).toBe("Withdrawn");
+    expect(() => applyIncidentCommand(s, g, privacy, "again", at)).toThrow(/withdrawn/);
+  });
+  it("excludes code logs and history from default export and never claims fault", () => {
+    const out = accountabilityExport(record(), people());
+    expect(out).toMatchObject({
+      logsIncluded: false,
+      codeIncluded: false,
+      rootCauseVerified: false,
+      legalCulpabilityEstablished: false,
+      signature: null,
+      externalPublication: false,
+      hardwareAllowed: false,
+    });
+    expect(out.summary).not.toHaveProperty("logs");
+    expect(out.summary).not.toHaveProperty("baselineText");
+  });
+  it("rejects stored approval missing a current review", () => {
+    const s = reviewed();
+    record(s).review = null;
+    expect(incidentStoreSchema.safeParse(s).success).toBe(false);
+  });
+  it("rejects duplicate event identifiers", () => {
+    const s = reviewed();
+    record(s).events.push({
+      ...record(s).events[0],
+      id: "case",
+      actorId: "reporter",
+      at,
+      action: "Duplicated event",
+    });
+    expect(incidentStoreSchema.safeParse(s).success).toBe(false);
+  });
+  it("loads old incident stores without discarding debrief data", () => {
+    const { accountability: _a, ...old } = emptyIncidentStore;
+    expect(incidentStoreSchema.parse(old).accountability).toEqual([]);
+  });
 });
-describe("Accountability local reference validation",()=>{
- const trust=()=>({...structuredClone(emptyTrustStore),releases:[{id:"release",codeId:"dependency-ledger",version:"0.1.0",replayId:"replay"}],replays:[{id:"replay",codeId:"dependency-ledger",caseId:"unknown-is-an-answer",version:"0.1.0"}]} as TrustStore);
- const linked=()=>({...sample(),releaseId:"release",replayId:"replay",archiveId:"unknown-is-an-answer"});
- it("accepts matching local references without granting trust",()=>{expect(()=>validateAccountabilityLinks(linked(),trust())).not.toThrow();});
- it("rejects missing release or replay references",()=>{expect(()=>validateAccountabilityLinks(linked(),emptyTrustStore)).toThrow(/must exist/);});
- it("rejects a release for another code sample",()=>{expect(()=>validateAccountabilityLinks({...linked(),codeId:"image-contrast"},trust())).toThrow(/match the code/);});
- it("rejects replay code and version mismatches",()=>{const t=trust();const r=t.replays[0];if(!r)throw new Error("Fixture");r.version="9.9.9";expect(()=>validateAccountabilityLinks(linked(),t)).toThrow(/version/);});
- it("rejects incident replay differing from the recorded release replay",()=>{expect(()=>validateAccountabilityLinks({...linked(),replayId:""},trust())).toThrow(/recorded replay/);});
- it("validates references during the incident command, not just the form",()=>{expect(()=>applyIncidentCommand(emptyIncidentStore,people(),{type:"accountabilityReport",input:linked()},"case",at)).toThrow(/unavailable/);});
+describe("Accountability local reference validation", () => {
+  const trust = () =>
+    ({
+      ...structuredClone(emptyTrustStore),
+      releases: [
+        { id: "release", codeId: "dependency-ledger", version: "0.1.0", replayId: "replay" },
+      ],
+      replays: [
+        {
+          id: "replay",
+          codeId: "dependency-ledger",
+          caseId: "unknown-is-an-answer",
+          version: "0.1.0",
+        },
+      ],
+    }) as TrustStore;
+  const linked = () => ({
+    ...sample(),
+    releaseId: "release",
+    replayId: "replay",
+    archiveId: "unknown-is-an-answer",
+  });
+  it("accepts matching local references without granting trust", () => {
+    expect(() => validateAccountabilityLinks(linked(), trust())).not.toThrow();
+  });
+  it("rejects missing release or replay references", () => {
+    expect(() => validateAccountabilityLinks(linked(), emptyTrustStore)).toThrow(/must exist/);
+  });
+  it("rejects a release for another code sample", () => {
+    expect(() =>
+      validateAccountabilityLinks({ ...linked(), codeId: "image-contrast" }, trust()),
+    ).toThrow(/match the code/);
+  });
+  it("rejects replay code and version mismatches", () => {
+    const t = trust();
+    const r = t.replays[0];
+    if (!r) throw new Error("Fixture");
+    r.version = "9.9.9";
+    expect(() => validateAccountabilityLinks(linked(), t)).toThrow(/version/);
+  });
+  it("rejects incident replay differing from the recorded release replay", () => {
+    expect(() => validateAccountabilityLinks({ ...linked(), replayId: "" }, trust())).toThrow(
+      /recorded replay/,
+    );
+  });
+  it("validates references during the incident command, not just the form", () => {
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        people(),
+        { type: "accountabilityReport", input: linked() },
+        "case",
+        at,
+      ),
+    ).toThrow(/unavailable/);
+  });
 });

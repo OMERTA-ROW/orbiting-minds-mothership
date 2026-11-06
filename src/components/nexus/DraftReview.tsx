@@ -1,19 +1,292 @@
-import {useState} from "react";
-import {Button} from "@/components/ui/button";
-import {IdentitySelect} from "@/components/genesis/GenesisShell";
-import {useGenesis} from "@/hooks/use-genesis";
-import {inspectNexusDraft,type NexusTask,type NexusCommand} from "@/lib/nexus";
-import {syntaxReview} from "@/lib/code-vault";
-import {GitCompareArrows,Shield,GitMerge,RotateCcw} from "lucide-react";
-export function NexusDraftReview({task,version,dispatch,notice}:{task:NexusTask;version:number;dispatch:(c:NexusCommand)=>void;notice:(s:string)=>void}){
- const {store:g}=useGenesis();const [syntax,setSyntax]=useState<Awaited<ReturnType<typeof syntaxReview>>|null>(null),[busy,setBusy]=useState(false);const findings=inspectNexusDraft(task);const finalized=task.state==="Merged locally"||task.state==="Cancelled";
- const run=(c:NexusCommand)=>{try{dispatch(c);notice("Recorded locally. No repository changes, code execution or trusted approval.");}catch(e){notice(e instanceof Error?e.message:"Action blocked.");}};
- return <section className="mt-8 min-w-0 border-t border-gold/30 pt-6" aria-label="Isolated draft review"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-xl"><GitCompareArrows size={20} className="text-gold"/>Isolated draft & human review</h2><span className="font-mono text-xs text-gold-light">{task.state} · BASE v{task.baseVersion}</span></div><p className="mt-3 break-words text-xs leading-relaxed text-muted-foreground">{task.prompt} · No model response. Candidate text is a human-authored sample; test plan is not test evidence.</p>{task.baseVersion!==version&&<p className="mt-4 text-sm text-warning">Concurrent change conflict: current v{version}. Rebase preserves the candidate but clears approval; compare and review again.</p>}
- <form key={`${task.id}-${task.state}`} className="mt-5 grid gap-4" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);setSyntax(null);run({type:"edit",projectId:task.projectId,taskId:task.id,candidate:String(f.get("candidate")),testPlan:String(f.get("tests"))});}}><label className="text-xs text-muted-foreground">Candidate sample · TypeScript<textarea aria-label="Candidate sample" name="candidate" defaultValue={task.candidate} disabled={finalized} maxLength={20000} rows={7} className="mt-2 w-full rounded-sm border border-input bg-card p-4 font-mono text-xs leading-relaxed text-foreground" spellCheck={false}/></label><label className="text-xs text-muted-foreground">Proposed test plan · not executed<textarea name="tests" aria-label="Proposed test plan" defaultValue={task.testPlan} disabled={finalized} maxLength={4000} rows={2} className="mt-2 w-full rounded-sm border border-input bg-background p-3 text-xs text-foreground"/></label><Button type="submit" variant="signal" className="justify-self-start" disabled={finalized}>Save isolated draft</Button></form>
- <div className="mt-6 grid gap-4 lg:grid-cols-2"><div className="min-w-0"><p className="font-mono text-[10px] text-muted-foreground">ORIGIN ↔ CHANGED COPY · NOT A SIGNED RELEASE</p><pre className="mt-3 max-h-64 overflow-auto border border-border bg-card p-4 text-xs leading-6">{findings.diff.map((part,i)=><span key={i} className={`block whitespace-pre-wrap break-all ${part.added?"text-success":part.removed?"text-destructive":"text-muted-foreground"}`}>{part.added?"+ ":part.removed?"− ":"  "}{part.value}</span>)}</pre></div><div className="min-w-0 border-l border-border pl-4"><p className="flex items-center gap-2 text-sm text-gold-light"><Shield size={16}/>Guardian · proposed-only checks</p>{findings.flags.length?findings.flags.map(f=><p key={f} className="mt-3 text-xs text-warning">{f}</p>):<p className="mt-3 text-xs text-muted-foreground">No reference pattern warnings. Not a security clearance.</p>}<Button type="button" variant="ghost" className="mt-4" disabled={busy} onClick={async()=>{setBusy(true);try{setSyntax(await syntaxReview(task.candidate,"TypeScript"));}catch(e){notice(e instanceof Error?e.message:"Parser unavailable");}finally{setBusy(false);}}}>Check sample syntax</Button>{syntax&&<p className="mt-3 break-words text-xs text-warning">{syntax.issues.length?syntax.issues.join(" · "):"Parser found no grammar errors. No runtime, type, security or independent tests run."}</p>}</div></div>
- <div className="mt-5 flex flex-wrap gap-2"><Button variant="signal" disabled={finalized} onClick={()=>run({type:"requestReview",projectId:task.projectId,taskId:task.id})}>Request human review</Button><Button variant="ghost" disabled={finalized||task.baseVersion===version} onClick={()=>{setSyntax(null);run({type:"rebase",projectId:task.projectId,taskId:task.id});}}><RotateCcw size={14}/>Rebase sample</Button><Button variant="ghost" disabled={finalized} onClick={()=>run({type:"cancel",projectId:task.projectId,taskId:task.id})}>Cancel task</Button></div>
- {task.state==="Review requested"&&<form className="mt-6 grid gap-4 border-y border-border py-6" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);run({type:"review",projectId:task.projectId,taskId:task.id,reviewerId:String(f.get("reviewer")),note:String(f.get("note")),approve:f.get("decision")==="approve",consent:f.has("consent")});}}><label className="text-xs text-muted-foreground">Independent human reviewer<select name="reviewer" aria-label="Independent human reviewer" required className="exchange-select mt-2 w-full"><option value="">Select a distinct opted-in human</option>{g.identities.filter(p=>p.state==="Active"&&p.kind!=="Agent operator"&&p.id!==task.ownerId&&p.scopes.includes("review_proposals")).map(p=><option key={p.id} value={p.id}>{p.name} · DEMO declaration</option>)}</select></label><label className="text-xs text-muted-foreground">Review decision<select name="decision" className="exchange-select mt-2 w-full"><option value="changes">Request changes</option><option value="approve">Approve local merge rehearsal</option></select></label><label className="text-xs text-muted-foreground">Review note<textarea required name="note" aria-label="Review note" minLength={5} maxLength={4000} className="mt-2 w-full border border-input bg-background p-3 text-foreground"/></label><label className="flex gap-2 text-xs"><input type="checkbox" name="consent" required/>I review this exact sample only; no production safety or identity verification.</label><Button type="submit" variant="signal" className="justify-self-start">Record review declaration</Button></form>}
- {task.review&&<p className="mt-5 break-words text-xs text-muted-foreground">Declared reviewer: {g.identities.find(p=>p.id===task.review?.actorId)?.name??"Unknown"} · {task.review.note}</p>}
- {task.state==="Approved DEMO"&&<form className="mt-6 grid gap-4" onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);run({type:"merge",projectId:task.projectId,taskId:task.id,actorId:String(f.get("owner")),consent:f.has("consent")});}}><IdentitySelect name="owner" label="Confirm local draft owner" scope="submit_capsules"/><label className="flex gap-2 text-xs"><input type="checkbox" name="consent" required/>Merge only the sample in this browser; no files, repositories, tests or hardware affected.</label><Button type="submit" variant="signal" className="justify-self-start"><GitMerge size={16}/>Merge sample locally</Button></form>}
- </section>;
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { IdentitySelect } from "@/components/genesis/GenesisShell";
+import { useGenesis } from "@/hooks/use-genesis";
+import { inspectNexusDraft, type NexusTask, type NexusCommand } from "@/lib/nexus";
+import { syntaxReview } from "@/lib/code-vault";
+import { GitCompareArrows, Shield, GitMerge, RotateCcw } from "lucide-react";
+export function NexusDraftReview({
+  task,
+  version,
+  dispatch,
+  notice,
+}: {
+  task: NexusTask;
+  version: number;
+  dispatch: (c: NexusCommand) => void;
+  notice: (s: string) => void;
+}) {
+  const { store: g } = useGenesis();
+  const [syntax, setSyntax] = useState<Awaited<ReturnType<typeof syntaxReview>> | null>(null),
+    [busy, setBusy] = useState(false);
+  const findings = inspectNexusDraft(task);
+  const finalized = task.state === "Merged locally" || task.state === "Cancelled";
+  const run = (c: NexusCommand) => {
+    try {
+      dispatch(c);
+      notice("Recorded locally. No repository changes, code execution or trusted approval.");
+    } catch (e) {
+      notice(e instanceof Error ? e.message : "Action blocked.");
+    }
+  };
+  return (
+    <section
+      className="mt-8 min-w-0 border-t border-gold/30 pt-6"
+      aria-label="Isolated draft review"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-xl">
+          <GitCompareArrows size={20} className="text-gold" />
+          Isolated draft & human review
+        </h2>
+        <span className="font-mono text-xs text-gold-light">
+          {task.state} · BASE v{task.baseVersion}
+        </span>
+      </div>
+      <p className="mt-3 break-words text-xs leading-relaxed text-muted-foreground">
+        {task.prompt} · No model response. Candidate text is a human-authored sample; test plan is
+        not test evidence.
+      </p>
+      {task.baseVersion !== version && (
+        <p className="mt-4 text-sm text-warning">
+          Concurrent change conflict: current v{version}. Rebase preserves the candidate but clears
+          approval; compare and review again.
+        </p>
+      )}
+      <form
+        key={`${task.id}-${task.state}`}
+        className="mt-5 grid gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const f = new FormData(e.currentTarget);
+          setSyntax(null);
+          run({
+            type: "edit",
+            projectId: task.projectId,
+            taskId: task.id,
+            candidate: String(f.get("candidate")),
+            testPlan: String(f.get("tests")),
+          });
+        }}
+      >
+        <label className="text-xs text-muted-foreground">
+          Candidate sample · TypeScript
+          <textarea
+            aria-label="Candidate sample"
+            name="candidate"
+            defaultValue={task.candidate}
+            disabled={finalized}
+            maxLength={20000}
+            rows={7}
+            className="mt-2 w-full rounded-sm border border-input bg-card p-4 font-mono text-xs leading-relaxed text-foreground"
+            spellCheck={false}
+          />
+        </label>
+        <label className="text-xs text-muted-foreground">
+          Proposed test plan · not executed
+          <textarea
+            name="tests"
+            aria-label="Proposed test plan"
+            defaultValue={task.testPlan}
+            disabled={finalized}
+            maxLength={4000}
+            rows={2}
+            className="mt-2 w-full rounded-sm border border-input bg-background p-3 text-xs text-foreground"
+          />
+        </label>
+        <Button type="submit" variant="signal" className="justify-self-start" disabled={finalized}>
+          Save isolated draft
+        </Button>
+      </form>
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] text-muted-foreground">
+            ORIGIN ↔ CHANGED COPY · NOT A SIGNED RELEASE
+          </p>
+          <pre className="mt-3 max-h-64 overflow-auto border border-border bg-card p-4 text-xs leading-6">
+            {findings.diff.map((part, i) => (
+              <span
+                key={i}
+                className={`block whitespace-pre-wrap break-all ${part.added ? "text-success" : part.removed ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                {part.added ? "+ " : part.removed ? "− " : "  "}
+                {part.value}
+              </span>
+            ))}
+          </pre>
+        </div>
+        <div className="min-w-0 border-l border-border pl-4">
+          <p className="flex items-center gap-2 text-sm text-gold-light">
+            <Shield size={16} />
+            Guardian · proposed-only checks
+          </p>
+          {findings.flags.length ? (
+            findings.flags.map((f) => (
+              <p key={f} className="mt-3 text-xs text-warning">
+                {f}
+              </p>
+            ))
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              No reference pattern warnings. Not a security clearance.
+            </p>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            className="mt-4"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                setSyntax(await syntaxReview(task.candidate, "TypeScript"));
+              } catch (e) {
+                notice(e instanceof Error ? e.message : "Parser unavailable");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Check sample syntax
+          </Button>
+          {syntax && (
+            <p className="mt-3 break-words text-xs text-warning">
+              {syntax.issues.length
+                ? syntax.issues.join(" · ")
+                : "Parser found no grammar errors. No runtime, type, security or independent tests run."}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Button
+          variant="signal"
+          disabled={finalized}
+          onClick={() => run({ type: "requestReview", projectId: task.projectId, taskId: task.id })}
+        >
+          Request human review
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={finalized || task.baseVersion === version}
+          onClick={() => {
+            setSyntax(null);
+            run({ type: "rebase", projectId: task.projectId, taskId: task.id });
+          }}
+        >
+          <RotateCcw size={14} />
+          Rebase sample
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={finalized}
+          onClick={() => run({ type: "cancel", projectId: task.projectId, taskId: task.id })}
+        >
+          Cancel task
+        </Button>
+      </div>
+      {task.state === "Review requested" && (
+        <form
+          className="mt-6 grid gap-4 border-y border-border py-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            run({
+              type: "review",
+              projectId: task.projectId,
+              taskId: task.id,
+              reviewerId: String(f.get("reviewer")),
+              note: String(f.get("note")),
+              approve: f.get("decision") === "approve",
+              consent: f.has("consent"),
+            });
+          }}
+        >
+          <label className="text-xs text-muted-foreground">
+            Independent human reviewer
+            <select
+              name="reviewer"
+              aria-label="Independent human reviewer"
+              required
+              className="exchange-select mt-2 w-full"
+            >
+              <option value="">Select a distinct opted-in human</option>
+              {g.identities
+                .filter(
+                  (p) =>
+                    p.state === "Active" &&
+                    p.kind !== "Agent operator" &&
+                    p.id !== task.ownerId &&
+                    p.scopes.includes("review_proposals"),
+                )
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} · DEMO declaration
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Review decision
+            <select name="decision" className="exchange-select mt-2 w-full">
+              <option value="changes">Request changes</option>
+              <option value="approve">Approve local merge rehearsal</option>
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Review note
+            <textarea
+              required
+              name="note"
+              aria-label="Review note"
+              minLength={5}
+              maxLength={4000}
+              className="mt-2 w-full border border-input bg-background p-3 text-foreground"
+            />
+          </label>
+          <label className="flex gap-2 text-xs">
+            <input type="checkbox" name="consent" required />I review this exact sample only; no
+            production safety or identity verification.
+          </label>
+          <Button type="submit" variant="signal" className="justify-self-start">
+            Record review declaration
+          </Button>
+        </form>
+      )}
+      {task.review && (
+        <p className="mt-5 break-words text-xs text-muted-foreground">
+          Declared reviewer:{" "}
+          {g.identities.find((p) => p.id === task.review?.actorId)?.name ?? "Unknown"} ·{" "}
+          {task.review.note}
+        </p>
+      )}
+      {task.state === "Approved DEMO" && (
+        <form
+          className="mt-6 grid gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            run({
+              type: "merge",
+              projectId: task.projectId,
+              taskId: task.id,
+              actorId: String(f.get("owner")),
+              consent: f.has("consent"),
+            });
+          }}
+        >
+          <IdentitySelect name="owner" label="Confirm local draft owner" scope="submit_capsules" />
+          <label className="flex gap-2 text-xs">
+            <input type="checkbox" name="consent" required />
+            Merge only the sample in this browser; no files, repositories, tests or hardware
+            affected.
+          </label>
+          <Button type="submit" variant="signal" className="justify-self-start">
+            <GitMerge size={16} />
+            Merge sample locally
+          </Button>
+        </form>
+      )}
+    </section>
+  );
 }

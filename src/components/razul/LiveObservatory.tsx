@@ -50,8 +50,18 @@ export function LiveObservatory() {
   >(null);
   const [feedbackSent, setFeedbackSent] = useState<Record<string, string>>({});
   const feedbackRevision = useRef(0);
-  useEffect(() => { feedbackRevision.current++; setState({ kind: "gated" }); setAgent(null); setAgentFeed(null); setFeedbackSent({}); }, [user?.id]);
-  useEffect(() => { feedbackRevision.current++; setAgentFeed(null); setFeedbackSent({}); }, [agent]);
+  useEffect(() => {
+    feedbackRevision.current++;
+    setState({ kind: "gated" });
+    setAgent(null);
+    setAgentFeed(null);
+    setFeedbackSent({});
+  }, [user?.id]);
+  useEffect(() => {
+    feedbackRevision.current++;
+    setAgentFeed(null);
+    setFeedbackSent({});
+  }, [agent]);
 
   useEffect(() => {
     if (!agent || state.kind !== "ready") {
@@ -82,9 +92,11 @@ export function LiveObservatory() {
     setFeedbackSent((prev) => ({ ...prev, [findingId]: "saving" }));
     try {
       await feedback({ data: { findingId, agent, verdict, note: "" } });
-      if (feedbackRevision.current === current) setFeedbackSent((prev) => ({ ...prev, [findingId]: verdict }));
+      if (feedbackRevision.current === current)
+        setFeedbackSent((prev) => ({ ...prev, [findingId]: verdict }));
     } catch {
-      if (feedbackRevision.current === current) setFeedbackSent((prev) => ({ ...prev, [findingId]: "failed" }));
+      if (feedbackRevision.current === current)
+        setFeedbackSent((prev) => ({ ...prev, [findingId]: "failed" }));
     }
   }
 
@@ -127,7 +139,9 @@ export function LiveObservatory() {
         run: (run.data as RunRow | null) ?? null,
         sources: sourceCount.count ?? 0,
       });
-    })().catch(() => { if (!cancelled) setState({ kind: "gated" }); });
+    })().catch(() => {
+      if (!cancelled) setState({ kind: "gated" });
+    });
     return () => {
       cancelled = true;
     };
@@ -219,7 +233,11 @@ export function LiveObservatory() {
                           </span>
                         ) : (
                           <>
-                            {feedbackSent[f.id] === "failed" && <span role="status">Feedback failed. Retry; no confirmation was received.</span>}
+                            {feedbackSent[f.id] === "failed" && (
+                              <span role="status">
+                                Feedback failed. Retry; no confirmation was received.
+                              </span>
+                            )}
                             <Button
                               type="button"
                               onClick={() => sendFeedback(f.id, "useful")}

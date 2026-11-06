@@ -1,70 +1,560 @@
 import { z } from "zod";
-import { careDevices, carePilotScopes, careStorage, careUpdates, careVoices, careUpdateChannels, careScanScopes, careScheduleDays } from "@/data/evolution";
-const updateId = z.string().refine((v) => careUpdates.some((item) => item.id === v), "Unknown update");
+import {
+  careDevices,
+  carePilotScopes,
+  careStorage,
+  careUpdates,
+  careVoices,
+  careUpdateChannels,
+  careScanScopes,
+  careScheduleDays,
+} from "@/data/evolution";
+const updateId = z
+  .string()
+  .refine((v) => careUpdates.some((item) => item.id === v), "Unknown update");
 const channelSchema = z.enum(["homebrew", "winget", "apt", "dnf"]);
-const scanSchema = z.object({ id: z.string(), deviceId: z.string(), scopes: z.array(z.enum(careScanScopes)).min(1).max(3), state: z.enum(["Prepared", "Demo approved", "Cancelled"]), createdAt: z.string().datetime() });
-const modules = z.object({ care: z.boolean(), updates: z.boolean(), guardian: z.boolean(), pilot: z.boolean(), voice: z.boolean(), developer: z.boolean() });
-export const policySchema = z.object({ mode: z.enum(["OFF", "Notify", "Approved patches"]), preDownload: z.boolean(), rebootReview: z.boolean(), maintenance: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), allowlist: z.array(updateId).max(3), assumedChecks: z.array(updateId).max(3), days: z.array(z.enum(careScheduleDays)).max(7).default(["Sat"]) });
-const planSchema = z.object({ id: z.string(), deviceId: z.string(), items: z.array(updateId).min(1).max(3), state: z.enum(["Dry run", "Demo approved", "Cancelled"]), createdAt: z.string().datetime(), channel: channelSchema.optional() });
-const pilotSchema = z.object({ scopes: z.array(z.enum(carePilotScopes)).max(3), durationMinutes: z.number().int().min(1).max(15), state: z.enum(["Idle", "Preview active", "Paused"]), expiresAt: z.string().datetime().nullable(), action: z.enum(["Inspect sample dashboard", "Preview pointer target", "Inspect sample browser tab"]).nullable(), actionApproved: z.boolean(), spendCapUsd: z.literal(0) });
-const voiceSchema = z.object({ persona: z.string().refine((v) => careVoices.some((item) => item.id === v)), style: z.enum(["Calm", "Concise", "Detailed"]), language: z.enum(["English", "Spanish", "French"]), speed: z.number().min(0.75).max(1.25), ptt: z.boolean(), localOnly: z.literal(true), retainAudio: z.literal(false), retainTranscripts: z.literal(false) });
-export const careStoreSchema = z.object({ version: z.literal(1), onboarded: z.boolean(), modules, channel: channelSchema.default("homebrew"), scanPlans: z.array(scanSchema).max(100).default([]), deviceId: z.string().refine((v) => careDevices.some((item) => item.id === v)), storageSelection: z.array(z.string().refine((v) => careStorage.some((item) => item.id === v && !item.protected && !item.locked))).max(4), policy: policySchema, plans: z.array(planSchema).max(100), pilot: pilotSchema, voice: voiceSchema, history: z.array(z.object({ id: z.string(), at: z.string().datetime(), action: z.string().max(180), kind: z.string().max(40).optional(), deviceId: z.string().optional(), target: z.string().max(160).optional() })).max(500) });
+const scanSchema = z.object({
+  id: z.string(),
+  deviceId: z.string(),
+  scopes: z.array(z.enum(careScanScopes)).min(1).max(3),
+  state: z.enum(["Prepared", "Demo approved", "Cancelled"]),
+  createdAt: z.string().datetime(),
+});
+const modules = z.object({
+  care: z.boolean(),
+  updates: z.boolean(),
+  guardian: z.boolean(),
+  pilot: z.boolean(),
+  voice: z.boolean(),
+  developer: z.boolean(),
+});
+export const policySchema = z.object({
+  mode: z.enum(["OFF", "Notify", "Approved patches"]),
+  preDownload: z.boolean(),
+  rebootReview: z.boolean(),
+  maintenance: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  allowlist: z.array(updateId).max(3),
+  assumedChecks: z.array(updateId).max(3),
+  days: z.array(z.enum(careScheduleDays)).max(7).default(["Sat"]),
+});
+const planSchema = z.object({
+  id: z.string(),
+  deviceId: z.string(),
+  items: z.array(updateId).min(1).max(3),
+  state: z.enum(["Dry run", "Demo approved", "Cancelled"]),
+  createdAt: z.string().datetime(),
+  channel: channelSchema.optional(),
+});
+const pilotSchema = z.object({
+  scopes: z.array(z.enum(carePilotScopes)).max(3),
+  durationMinutes: z.number().int().min(1).max(15),
+  state: z.enum(["Idle", "Preview active", "Paused"]),
+  expiresAt: z.string().datetime().nullable(),
+  action: z
+    .enum(["Inspect sample dashboard", "Preview pointer target", "Inspect sample browser tab"])
+    .nullable(),
+  actionApproved: z.boolean(),
+  spendCapUsd: z.literal(0),
+});
+const voiceSchema = z.object({
+  persona: z.string().refine((v) => careVoices.some((item) => item.id === v)),
+  style: z.enum(["Calm", "Concise", "Detailed"]),
+  language: z.enum(["English", "Spanish", "French"]),
+  speed: z.number().min(0.75).max(1.25),
+  ptt: z.boolean(),
+  localOnly: z.literal(true),
+  retainAudio: z.literal(false),
+  retainTranscripts: z.literal(false),
+});
+export const careStoreSchema = z.object({
+  version: z.literal(1),
+  onboarded: z.boolean(),
+  modules,
+  channel: channelSchema.default("homebrew"),
+  scanPlans: z.array(scanSchema).max(100).default([]),
+  deviceId: z.string().refine((v) => careDevices.some((item) => item.id === v)),
+  storageSelection: z
+    .array(
+      z
+        .string()
+        .refine((v) =>
+          careStorage.some((item) => item.id === v && !item.protected && !item.locked),
+        ),
+    )
+    .max(4),
+  policy: policySchema,
+  plans: z.array(planSchema).max(100),
+  pilot: pilotSchema,
+  voice: voiceSchema,
+  history: z
+    .array(
+      z.object({
+        id: z.string(),
+        at: z.string().datetime(),
+        action: z.string().max(180),
+        kind: z.string().max(40).optional(),
+        deviceId: z.string().optional(),
+        target: z.string().max(160).optional(),
+      }),
+    )
+    .max(500),
+});
 export type CareStore = z.infer<typeof careStoreSchema>;
 export type CarePolicy = CareStore["policy"];
-export const initialCareStore: CareStore = { version: 1, onboarded: false, channel: "homebrew", scanPlans: [], modules: { care: false, updates: false, guardian: false, pilot: false, voice: false, developer: false }, deviceId: "mac-demo", storageSelection: [], policy: { mode: "OFF", preDownload: false, rebootReview: false, maintenance: "02:00", days: ["Sat"], allowlist: [], assumedChecks: [] }, plans: [], pilot: { scopes: [], durationMinutes: 5, state: "Idle", expiresAt: null, action: null, actionApproved: false, spendCapUsd: 0 }, voice: { persona: "navigator", style: "Calm", language: "English", speed: 1, ptt: false, localOnly: true, retainAudio: false, retainTranscripts: false }, history: [] };
+export const initialCareStore: CareStore = {
+  version: 1,
+  onboarded: false,
+  channel: "homebrew",
+  scanPlans: [],
+  modules: {
+    care: false,
+    updates: false,
+    guardian: false,
+    pilot: false,
+    voice: false,
+    developer: false,
+  },
+  deviceId: "mac-demo",
+  storageSelection: [],
+  policy: {
+    mode: "OFF",
+    preDownload: false,
+    rebootReview: false,
+    maintenance: "02:00",
+    days: ["Sat"],
+    allowlist: [],
+    assumedChecks: [],
+  },
+  plans: [],
+  pilot: {
+    scopes: [],
+    durationMinutes: 5,
+    state: "Idle",
+    expiresAt: null,
+    action: null,
+    actionApproved: false,
+    spendCapUsd: 0,
+  },
+  voice: {
+    persona: "navigator",
+    style: "Calm",
+    language: "English",
+    speed: 1,
+    ptt: false,
+    localOnly: true,
+    retainAudio: false,
+    retainTranscripts: false,
+  },
+  history: [],
+};
 export type CareCommand =
- | { type: "modules"; modules: CareStore["modules"] }
- | { type: "device"; id: string }
- | { type: "channel"; channel: CareStore["channel"] }
- | { type: "check"; target: "packages" | "self" }
- | { type: "scanPlan"; scopes: CareStore["scanPlans"][number]["scopes"]; consent: boolean }
- | { type: "scanApprove"; id: string; consent: boolean }
- | { type: "scanCancel"; id: string }
- | { type: "storage"; ids: string[] }
- | { type: "policy"; policy: CarePolicy }
- | { type: "plan"; items: string[] }
- | { type: "approve"; id: string; consent: boolean }
- | { type: "cancel"; id: string }
- | { type: "pilot"; scopes: CareStore["pilot"]["scopes"]; durationMinutes: number }
- | { type: "startPilot" }
- | { type: "pilotAction"; action: NonNullable<CareStore["pilot"]["action"]>; approve: boolean }
- | { type: "voice"; voice: CareStore["voice"] }
- | { type: "pause" };
-export function isPatch(installed: string, available: string) { const parse = (s: string) => /^\d+\.\d+\.\d+$/.test(s) ? s.split(".").map(Number) : []; const a = parse(installed), b = parse(available); return a.length === 3 && b.length === 3 && a[0] === b[0] && a[1] === b[1] && Number.isSafeInteger(b[2]) && (b[2] ?? 0) > (a[2] ?? 0); }
+  | { type: "modules"; modules: CareStore["modules"] }
+  | { type: "device"; id: string }
+  | { type: "channel"; channel: CareStore["channel"] }
+  | { type: "check"; target: "packages" | "self" }
+  | { type: "scanPlan"; scopes: CareStore["scanPlans"][number]["scopes"]; consent: boolean }
+  | { type: "scanApprove"; id: string; consent: boolean }
+  | { type: "scanCancel"; id: string }
+  | { type: "storage"; ids: string[] }
+  | { type: "policy"; policy: CarePolicy }
+  | { type: "plan"; items: string[] }
+  | { type: "approve"; id: string; consent: boolean }
+  | { type: "cancel"; id: string }
+  | { type: "pilot"; scopes: CareStore["pilot"]["scopes"]; durationMinutes: number }
+  | { type: "startPilot" }
+  | { type: "pilotAction"; action: NonNullable<CareStore["pilot"]["action"]>; approve: boolean }
+  | { type: "voice"; voice: CareStore["voice"] }
+  | { type: "pause" };
+export function isPatch(installed: string, available: string) {
+  const parse = (s: string) => (/^\d+\.\d+\.\d+$/.test(s) ? s.split(".").map(Number) : []);
+  const a = parse(installed),
+    b = parse(available);
+  return (
+    a.length === 3 &&
+    b.length === 3 &&
+    a[0] === b[0] &&
+    a[1] === b[1] &&
+    Number.isSafeInteger(b[2]) &&
+    (b[2] ?? 0) > (a[2] ?? 0)
+  );
+}
 export function updateGate(store: CareStore, id: string) {
- const item = careUpdates.find((u) => u.id === id); const assumed = store.policy.assumedChecks.includes(id);
- const reasons = !item ? ["Unknown catalog identity"] : [...(!store.modules.updates ? ["Update module off"] : []), ...(store.policy.mode === "OFF" ? ["Policy OFF"] : []), ...(!assumed ? ["Signature, compatibility and tests unverified"] : [])];
- const autoDemoEligible = Boolean(item && !reasons.length && item.risk === "Low" && isPatch(item.installed, item.available) && store.policy.mode === "Approved patches" && store.policy.days.length > 0 && store.policy.allowlist.includes(id));
- return { reasons, manualDemoEligible: reasons.length === 0, autoDemoEligible, actualInstallAllowed: false as const, actualVerification: "NOT_PERFORMED" as const };
+  const item = careUpdates.find((u) => u.id === id);
+  const assumed = store.policy.assumedChecks.includes(id);
+  const reasons = !item
+    ? ["Unknown catalog identity"]
+    : [
+        ...(!store.modules.updates ? ["Update module off"] : []),
+        ...(store.policy.mode === "OFF" ? ["Policy OFF"] : []),
+        ...(!assumed ? ["Signature, compatibility and tests unverified"] : []),
+      ];
+  const autoDemoEligible = Boolean(
+    item &&
+    !reasons.length &&
+    item.risk === "Low" &&
+    isPatch(item.installed, item.available) &&
+    store.policy.mode === "Approved patches" &&
+    store.policy.days.length > 0 &&
+    store.policy.allowlist.includes(id),
+  );
+  return {
+    reasons,
+    manualDemoEligible: reasons.length === 0,
+    autoDemoEligible,
+    actualInstallAllowed: false as const,
+    actualVerification: "NOT_PERFORMED" as const,
+  };
 }
-function clearApprovals(store: CareStore) { store.plans.forEach((p) => { if (p.state === "Demo approved") p.state = "Dry run"; }); }
-export function applyCareCommand(current: CareStore, command: CareCommand, id: string, at: string): CareStore {
- const store = structuredClone(careStoreSchema.parse(current)); let action = "";
- switch (command.type) {
-  case "modules": store.modules = modules.parse(command.modules); store.onboarded = true; clearApprovals(store); if (!store.modules.updates) { store.policy.mode = "OFF"; store.policy.preDownload = false; store.policy.rebootReview = false; store.policy.allowlist = []; store.policy.assumedChecks = []; } if (!store.modules.care) { store.storageSelection = []; store.scanPlans.forEach(p => { if (p.state === "Demo approved") p.state = "Prepared"; }); } if (!store.modules.pilot) store.pilot = { ...store.pilot, scopes: [], state: "Idle", action: null, actionApproved: false, expiresAt: null }; if (!store.modules.voice) store.voice.ptt = false; action = "Saved optional modules · no installation"; break;
-  case "device": if (!careDevices.some((d) => d.id === command.id)) throw new Error("Unknown sample device"); store.deviceId = command.id; store.policy = { ...store.policy, mode: "OFF", allowlist: [], assumedChecks: [], preDownload: false, rebootReview: false }; clearApprovals(store); store.channel = command.id === "win-demo" ? "winget" : command.id === "linux-demo" ? "apt" : "homebrew"; action = "Selected fictional device · no inventory scan"; break;
-  case "channel": { store.channel = channelSchema.parse(command.channel); store.policy = { ...store.policy, mode: "OFF", allowlist: [], assumedChecks: [], preDownload: false, rebootReview: false }; clearApprovals(store); const channel = careUpdateChannels.find(c => c.id === store.channel); store.deviceId = channel?.os === "Windows" ? "win-demo" : channel?.os === "Linux" ? "linux-demo" : "mac-demo"; action = `Selected ${channel?.name} fictional adapter · no connection`; break; }
-  case "check": if (!store.modules.updates) throw new Error("Enable Updates demo first"); if (command.target !== "self" && command.target !== "packages") throw new Error("Unknown check target"); action = command.target === "self" ? "Rehearsed Evolution self-update check · release channel unconfigured, no binary fetched" : `Rehearsed ${store.channel} metadata check · historical references only, no network or inventory access`; break;
-  case "scanPlan": { if (!store.modules.care) throw new Error("Enable CARE demo first"); if (!command.consent) throw new Error("Explicit read-only demo scan-plan consent required"); if (store.scanPlans.length >= 100) { const cancelled = store.scanPlans.findIndex(p => p.state === "Cancelled"); if (cancelled < 0) throw new Error("Cancel an old scan plan before preparing another"); store.scanPlans.splice(cancelled, 1); } store.scanPlans.push(scanSchema.parse({ id, deviceId: store.deviceId, scopes: [...new Set(command.scopes)], state: "Prepared", createdAt: at })); action = "Prepared read-only DEMO scan plan · no scan, file access or upload"; break; }
-  case "scanApprove": { const plan = store.scanPlans.find(p => p.id === command.id); if (!store.modules.care || !plan || plan.state !== "Prepared") throw new Error("Select an active CARE scan plan"); if (!command.consent) throw new Error("Explicit per-plan demo approval required"); if (plan.deviceId !== store.deviceId) throw new Error("Select the original demo device before scan-plan approval"); plan.state = "Demo approved"; action = "Approved read-only DEMO scan plan · execution unavailable"; break; }
-  case "scanCancel": { const plan = store.scanPlans.find(p => p.id === command.id); if (!plan || plan.state === "Cancelled") throw new Error("Active scan plan not found"); plan.state = "Cancelled"; action = "Cancelled DEMO scan plan · nothing scanned"; break; }
-  case "storage": if (!store.modules.care) throw new Error("Enable CARE demo first"); store.storageSelection = careStoreSchema.shape.storageSelection.parse(command.ids); action = "Saved virtual storage review · no files moved or deleted"; break;
-  case "policy": if (!store.modules.updates) throw new Error("Enable Updates demo first"); store.policy = policySchema.parse(command.policy); if (store.policy.mode === "OFF") { store.policy.preDownload = false; store.policy.rebootReview = false; } clearApprovals(store); action = `Saved demo update policy ${store.policy.mode} · no updater active`; break;
-  case "plan": { if (!store.modules.updates) throw new Error("Enable Updates demo first"); if (store.plans.length >= 100) { const cancelled = store.plans.findIndex((p) => p.state === "Cancelled"); if (cancelled < 0) throw new Error("100 active demo plans: cancel an old plan before staging another"); store.plans.splice(cancelled, 1); } store.plans.push({ id, deviceId: store.deviceId, items: z.array(updateId).min(1).max(3).parse([...new Set(command.items)]), state: "Dry run", createdAt: at, channel: store.channel }); action = "Created dry-run update plan · nothing downloaded"; break; }
-  case "approve": { const plan = store.plans.find((p) => p.id === command.id); if (!plan || plan.state !== "Dry run") throw new Error("Select an active dry-run plan"); if (!command.consent) throw new Error("Explicit per-plan demo approval required"); if (!plan.channel || plan.deviceId !== store.deviceId || plan.channel !== store.channel) throw new Error("Select the original demo device and package-manager context before approval"); if (plan.items.some((u) => !updateGate(store, u).manualDemoEligible)) throw new Error("Demo plan blocked: enable Notify / Approved policy and explicitly assume verification for every selected update"); plan.state = "Demo approved"; action = "Recorded DEMO approval · no installation or reboot"; break; }
-  case "cancel": { const plan = store.plans.find((p) => p.id === command.id); if (!plan || plan.state === "Cancelled") throw new Error("Active plan not found"); plan.state = "Cancelled"; action = "Cancelled demo update plan"; break; }
-  case "pilot": if (!store.modules.pilot) throw new Error("Enable Pilot demo first"); store.pilot = pilotSchema.parse({ ...store.pilot, scopes: command.scopes, durationMinutes: command.durationMinutes, state: "Idle", action: null, actionApproved: false, expiresAt: null }); action = "Saved Pilot scope preferences · no OS permissions granted"; break;
-  case "startPilot": if (!store.modules.pilot || !store.pilot.scopes.length) throw new Error("Choose at least one opted-in Pilot rehearsal scope"); store.pilot.state = "Preview active"; store.pilot.action = null; store.pilot.actionApproved = false; store.pilot.expiresAt = new Date(Date.parse(at) + store.pilot.durationMinutes * 60000).toISOString(); action = "Started bounded Pilot preview · no screen or browser access"; break;
-  case "pilotAction": { const scope = command.action === "Preview pointer target" ? "Mouse actions" : command.action === "Inspect sample browser tab" ? "Browser inspection" : "Screen inspection"; if (!store.modules.pilot || store.pilot.state !== "Preview active" || !store.pilot.expiresAt || Date.parse(store.pilot.expiresAt) <= Date.parse(at)) throw new Error("Pilot preview inactive or expired"); if (!store.pilot.scopes.includes(scope)) throw new Error("Required Pilot scope not opted in"); if (command.approve && store.pilot.action !== command.action) throw new Error("Preview the specific action before approval"); store.pilot.action = command.action; store.pilot.actionApproved = command.approve; action = command.approve ? "Approved sample Pilot action · no external action" : "Prepared sample Pilot action for review"; break; }
-  case "voice": if (!store.modules.voice) throw new Error("Enable Voice demo first"); store.voice = voiceSchema.parse(command.voice); action = "Saved original Voice preferences · no microphone or synthesis"; break;
-  case "pause": store.policy.mode = "OFF"; store.policy.preDownload = false; store.policy.rebootReview = false; store.policy.allowlist = []; clearApprovals(store); store.pilot = { ...store.pilot, scopes: [], state: "Paused", action: null, actionApproved: false, expiresAt: null }; store.voice.ptt = false; store.scanPlans.forEach(p => { if (p.state === "Demo approved") p.state = "Prepared"; }); action = "Paused demo policies / Pilot / Voice · no devices controlled"; break;
- }
- const recordTarget = "id" in command ? command.id : command.type === "check" ? command.target : command.type === "channel" ? command.channel : command.type === "plan" ? command.items.join(",") : command.type === "scanPlan" ? command.scopes.join(",") : undefined;
- const referencedPlan = "id" in command ? store.plans.find(p => p.id === command.id) ?? store.scanPlans.find(p => p.id === command.id) : undefined;
- store.history = [...store.history.slice(-499), { id, at, action, kind: command.type, deviceId: referencedPlan?.deviceId ?? store.deviceId, target: recordTarget }]; return careStoreSchema.parse(store);
+function clearApprovals(store: CareStore) {
+  store.plans.forEach((p) => {
+    if (p.state === "Demo approved") p.state = "Dry run";
+  });
 }
-export function careManifest(store: CareStore) { const items = careStorage.filter((s) => store.storageSelection.includes(s.id)); return { mode: "DEMO", deviceId: store.deviceId, entries: items.map((item) => ({ ...item, hash: "DEMO_NOT_COMPUTED", action: "REVIEW_ONLY" })), sampleSizeMb: items.reduce((sum, item) => sum + item.sizeMb, 0), recoverableStorage: "UNKNOWN", filesScanned: false, filesChanged: false }; }
-export function careReport(store: CareStore) { return { mode: "DEMO", sample: careDevices.find((d) => d.id === store.deviceId), lastRealScan: null, actualChecks: [], backup: "UNKNOWN", healthScore: null, benefitEstimate: null, inventoryUploaded: false, policies: store.policy, history: store.history, realChanges: [] }; }
+export function applyCareCommand(
+  current: CareStore,
+  command: CareCommand,
+  id: string,
+  at: string,
+): CareStore {
+  const store = structuredClone(careStoreSchema.parse(current));
+  let action = "";
+  switch (command.type) {
+    case "modules":
+      store.modules = modules.parse(command.modules);
+      store.onboarded = true;
+      clearApprovals(store);
+      if (!store.modules.updates) {
+        store.policy.mode = "OFF";
+        store.policy.preDownload = false;
+        store.policy.rebootReview = false;
+        store.policy.allowlist = [];
+        store.policy.assumedChecks = [];
+      }
+      if (!store.modules.care) {
+        store.storageSelection = [];
+        store.scanPlans.forEach((p) => {
+          if (p.state === "Demo approved") p.state = "Prepared";
+        });
+      }
+      if (!store.modules.pilot)
+        store.pilot = {
+          ...store.pilot,
+          scopes: [],
+          state: "Idle",
+          action: null,
+          actionApproved: false,
+          expiresAt: null,
+        };
+      if (!store.modules.voice) store.voice.ptt = false;
+      action = "Saved optional modules · no installation";
+      break;
+    case "device":
+      if (!careDevices.some((d) => d.id === command.id)) throw new Error("Unknown sample device");
+      store.deviceId = command.id;
+      store.policy = {
+        ...store.policy,
+        mode: "OFF",
+        allowlist: [],
+        assumedChecks: [],
+        preDownload: false,
+        rebootReview: false,
+      };
+      clearApprovals(store);
+      store.channel =
+        command.id === "win-demo" ? "winget" : command.id === "linux-demo" ? "apt" : "homebrew";
+      action = "Selected fictional device · no inventory scan";
+      break;
+    case "channel": {
+      store.channel = channelSchema.parse(command.channel);
+      store.policy = {
+        ...store.policy,
+        mode: "OFF",
+        allowlist: [],
+        assumedChecks: [],
+        preDownload: false,
+        rebootReview: false,
+      };
+      clearApprovals(store);
+      const channel = careUpdateChannels.find((c) => c.id === store.channel);
+      store.deviceId =
+        channel?.os === "Windows"
+          ? "win-demo"
+          : channel?.os === "Linux"
+            ? "linux-demo"
+            : "mac-demo";
+      action = `Selected ${channel?.name} fictional adapter · no connection`;
+      break;
+    }
+    case "check":
+      if (!store.modules.updates) throw new Error("Enable Updates demo first");
+      if (command.target !== "self" && command.target !== "packages")
+        throw new Error("Unknown check target");
+      action =
+        command.target === "self"
+          ? "Rehearsed Evolution self-update check · release channel unconfigured, no binary fetched"
+          : `Rehearsed ${store.channel} metadata check · historical references only, no network or inventory access`;
+      break;
+    case "scanPlan": {
+      if (!store.modules.care) throw new Error("Enable CARE demo first");
+      if (!command.consent) throw new Error("Explicit read-only demo scan-plan consent required");
+      if (store.scanPlans.length >= 100) {
+        const cancelled = store.scanPlans.findIndex((p) => p.state === "Cancelled");
+        if (cancelled < 0) throw new Error("Cancel an old scan plan before preparing another");
+        store.scanPlans.splice(cancelled, 1);
+      }
+      store.scanPlans.push(
+        scanSchema.parse({
+          id,
+          deviceId: store.deviceId,
+          scopes: [...new Set(command.scopes)],
+          state: "Prepared",
+          createdAt: at,
+        }),
+      );
+      action = "Prepared read-only DEMO scan plan · no scan, file access or upload";
+      break;
+    }
+    case "scanApprove": {
+      const plan = store.scanPlans.find((p) => p.id === command.id);
+      if (!store.modules.care || !plan || plan.state !== "Prepared")
+        throw new Error("Select an active CARE scan plan");
+      if (!command.consent) throw new Error("Explicit per-plan demo approval required");
+      if (plan.deviceId !== store.deviceId)
+        throw new Error("Select the original demo device before scan-plan approval");
+      plan.state = "Demo approved";
+      action = "Approved read-only DEMO scan plan · execution unavailable";
+      break;
+    }
+    case "scanCancel": {
+      const plan = store.scanPlans.find((p) => p.id === command.id);
+      if (!plan || plan.state === "Cancelled") throw new Error("Active scan plan not found");
+      plan.state = "Cancelled";
+      action = "Cancelled DEMO scan plan · nothing scanned";
+      break;
+    }
+    case "storage":
+      if (!store.modules.care) throw new Error("Enable CARE demo first");
+      store.storageSelection = careStoreSchema.shape.storageSelection.parse(command.ids);
+      action = "Saved virtual storage review · no files moved or deleted";
+      break;
+    case "policy":
+      if (!store.modules.updates) throw new Error("Enable Updates demo first");
+      store.policy = policySchema.parse(command.policy);
+      if (store.policy.mode === "OFF") {
+        store.policy.preDownload = false;
+        store.policy.rebootReview = false;
+      }
+      clearApprovals(store);
+      action = `Saved demo update policy ${store.policy.mode} · no updater active`;
+      break;
+    case "plan": {
+      if (!store.modules.updates) throw new Error("Enable Updates demo first");
+      if (store.plans.length >= 100) {
+        const cancelled = store.plans.findIndex((p) => p.state === "Cancelled");
+        if (cancelled < 0)
+          throw new Error("100 active demo plans: cancel an old plan before staging another");
+        store.plans.splice(cancelled, 1);
+      }
+      store.plans.push({
+        id,
+        deviceId: store.deviceId,
+        items: z
+          .array(updateId)
+          .min(1)
+          .max(3)
+          .parse([...new Set(command.items)]),
+        state: "Dry run",
+        createdAt: at,
+        channel: store.channel,
+      });
+      action = "Created dry-run update plan · nothing downloaded";
+      break;
+    }
+    case "approve": {
+      const plan = store.plans.find((p) => p.id === command.id);
+      if (!plan || plan.state !== "Dry run") throw new Error("Select an active dry-run plan");
+      if (!command.consent) throw new Error("Explicit per-plan demo approval required");
+      if (!plan.channel || plan.deviceId !== store.deviceId || plan.channel !== store.channel)
+        throw new Error(
+          "Select the original demo device and package-manager context before approval",
+        );
+      if (plan.items.some((u) => !updateGate(store, u).manualDemoEligible))
+        throw new Error(
+          "Demo plan blocked: enable Notify / Approved policy and explicitly assume verification for every selected update",
+        );
+      plan.state = "Demo approved";
+      action = "Recorded DEMO approval · no installation or reboot";
+      break;
+    }
+    case "cancel": {
+      const plan = store.plans.find((p) => p.id === command.id);
+      if (!plan || plan.state === "Cancelled") throw new Error("Active plan not found");
+      plan.state = "Cancelled";
+      action = "Cancelled demo update plan";
+      break;
+    }
+    case "pilot":
+      if (!store.modules.pilot) throw new Error("Enable Pilot demo first");
+      store.pilot = pilotSchema.parse({
+        ...store.pilot,
+        scopes: command.scopes,
+        durationMinutes: command.durationMinutes,
+        state: "Idle",
+        action: null,
+        actionApproved: false,
+        expiresAt: null,
+      });
+      action = "Saved Pilot scope preferences · no OS permissions granted";
+      break;
+    case "startPilot":
+      if (!store.modules.pilot || !store.pilot.scopes.length)
+        throw new Error("Choose at least one opted-in Pilot rehearsal scope");
+      store.pilot.state = "Preview active";
+      store.pilot.action = null;
+      store.pilot.actionApproved = false;
+      store.pilot.expiresAt = new Date(
+        Date.parse(at) + store.pilot.durationMinutes * 60000,
+      ).toISOString();
+      action = "Started bounded Pilot preview · no screen or browser access";
+      break;
+    case "pilotAction": {
+      const scope =
+        command.action === "Preview pointer target"
+          ? "Mouse actions"
+          : command.action === "Inspect sample browser tab"
+            ? "Browser inspection"
+            : "Screen inspection";
+      if (
+        !store.modules.pilot ||
+        store.pilot.state !== "Preview active" ||
+        !store.pilot.expiresAt ||
+        Date.parse(store.pilot.expiresAt) <= Date.parse(at)
+      )
+        throw new Error("Pilot preview inactive or expired");
+      if (!store.pilot.scopes.includes(scope)) throw new Error("Required Pilot scope not opted in");
+      if (command.approve && store.pilot.action !== command.action)
+        throw new Error("Preview the specific action before approval");
+      store.pilot.action = command.action;
+      store.pilot.actionApproved = command.approve;
+      action = command.approve
+        ? "Approved sample Pilot action · no external action"
+        : "Prepared sample Pilot action for review";
+      break;
+    }
+    case "voice":
+      if (!store.modules.voice) throw new Error("Enable Voice demo first");
+      store.voice = voiceSchema.parse(command.voice);
+      action = "Saved original Voice preferences · no microphone or synthesis";
+      break;
+    case "pause":
+      store.policy.mode = "OFF";
+      store.policy.preDownload = false;
+      store.policy.rebootReview = false;
+      store.policy.allowlist = [];
+      clearApprovals(store);
+      store.pilot = {
+        ...store.pilot,
+        scopes: [],
+        state: "Paused",
+        action: null,
+        actionApproved: false,
+        expiresAt: null,
+      };
+      store.voice.ptt = false;
+      store.scanPlans.forEach((p) => {
+        if (p.state === "Demo approved") p.state = "Prepared";
+      });
+      action = "Paused demo policies / Pilot / Voice · no devices controlled";
+      break;
+  }
+  const recordTarget =
+    "id" in command
+      ? command.id
+      : command.type === "check"
+        ? command.target
+        : command.type === "channel"
+          ? command.channel
+          : command.type === "plan"
+            ? command.items.join(",")
+            : command.type === "scanPlan"
+              ? command.scopes.join(",")
+              : undefined;
+  const referencedPlan =
+    "id" in command
+      ? (store.plans.find((p) => p.id === command.id) ??
+        store.scanPlans.find((p) => p.id === command.id))
+      : undefined;
+  store.history = [
+    ...store.history.slice(-499),
+    {
+      id,
+      at,
+      action,
+      kind: command.type,
+      deviceId: referencedPlan?.deviceId ?? store.deviceId,
+      target: recordTarget,
+    },
+  ];
+  return careStoreSchema.parse(store);
+}
+export function careManifest(store: CareStore) {
+  const items = careStorage.filter((s) => store.storageSelection.includes(s.id));
+  return {
+    mode: "DEMO",
+    deviceId: store.deviceId,
+    entries: items.map((item) => ({ ...item, hash: "DEMO_NOT_COMPUTED", action: "REVIEW_ONLY" })),
+    sampleSizeMb: items.reduce((sum, item) => sum + item.sizeMb, 0),
+    recoverableStorage: "UNKNOWN",
+    filesScanned: false,
+    filesChanged: false,
+  };
+}
+export function careReport(store: CareStore) {
+  return {
+    mode: "DEMO",
+    sample: careDevices.find((d) => d.id === store.deviceId),
+    lastRealScan: null,
+    actualChecks: [],
+    backup: "UNKNOWN",
+    healthScore: null,
+    benefitEstimate: null,
+    inventoryUploaded: false,
+    policies: store.policy,
+    history: store.history,
+    realChanges: [],
+  };
+}
 
-export function careAudit(store: CareStore) { return { schemaVersion: "1.0.0", mode: "DEMO", storage: "BROWSER_LOCAL", authenticated: false, tamperEvident: false, realActions: [], events: store.history.map(event => ({ ...event, kind: event.kind ?? "legacy", target: event.target ?? null, deviceId: event.deviceId ?? null, actor: "Local browser participant · unverified", result: "DEMO_RECORD_ONLY", actualExecution: false })) }; }
-export function careScanManifest(plan: CareStore["scanPlans"][number]) { return { mode: "DEMO", plan, access: "READ_ONLY_PROPOSAL", scanned: false, executed: false, inventoryUpload: false, personalFileContents: false, filesystemChanges: [], restore: "UNAVAILABLE_NOT_TESTED", signature: null }; }
+export function careAudit(store: CareStore) {
+  return {
+    schemaVersion: "1.0.0",
+    mode: "DEMO",
+    storage: "BROWSER_LOCAL",
+    authenticated: false,
+    tamperEvident: false,
+    realActions: [],
+    events: store.history.map((event) => ({
+      ...event,
+      kind: event.kind ?? "legacy",
+      target: event.target ?? null,
+      deviceId: event.deviceId ?? null,
+      actor: "Local browser participant · unverified",
+      result: "DEMO_RECORD_ONLY",
+      actualExecution: false,
+    })),
+  };
+}
+export function careScanManifest(plan: CareStore["scanPlans"][number]) {
+  return {
+    mode: "DEMO",
+    plan,
+    access: "READ_ONLY_PROPOSAL",
+    scanned: false,
+    executed: false,
+    inventoryUpload: false,
+    personalFileContents: false,
+    filesystemChanges: [],
+    restore: "UNAVAILABLE_NOT_TESTED",
+    signature: null,
+  };
+}

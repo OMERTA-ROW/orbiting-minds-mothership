@@ -39,7 +39,17 @@ const errorText = (error: unknown) =>
       : "Invalid record.";
 
 export function AngelTechWorkspace() {
-  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<AngelTechStore>({ key: ANGEL_TECH_STORE_KEY, initial: emptyStore, read: loadAngelTechStore, write: saveAngelTechStore, collections: ["insights", "prospects", "drafts"] });
+  const {
+    records: store,
+    setRecords: setStore,
+    storageNotice,
+  } = useOmniLocalRecords<AngelTechStore>({
+    key: ANGEL_TECH_STORE_KEY,
+    initial: emptyStore,
+    read: loadAngelTechStore,
+    write: saveAngelTechStore,
+    collections: ["insights", "prospects", "drafts"],
+  });
   const [selectedInsightId, setSelectedInsightId] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -123,15 +133,17 @@ export function AngelTechWorkspace() {
 
   function exportRecords() {
     try {
-    const blob = new Blob([saveAngelTechStore(store)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `angel-tech-sabrina-local-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setNotice("Local records download prepared. Nothing was sent to a partner.");
-    } catch { setNotice("Export failed. Local records are unchanged; retry the download."); }
+      const blob = new Blob([saveAngelTechStore(store)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `angel-tech-sabrina-local-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setNotice("Local records download prepared. Nothing was sent to a partner.");
+    } catch {
+      setNotice("Export failed. Local records are unchanged; retry the download.");
+    }
   }
 
   return (
@@ -564,8 +576,16 @@ export function AngelTechWorkspace() {
         </div>
       </section>
 
-      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
-      <SabrinaDirector insights={store.insights} prospects={store.prospects} drafts={store.drafts} />
+      {storageNotice && (
+        <p role="status" className="mt-4 text-sm text-warning">
+          {storageNotice}
+        </p>
+      )}
+      <SabrinaDirector
+        insights={store.insights}
+        prospects={store.prospects}
+        drafts={store.drafts}
+      />
 
       <section className="mt-8 border border-border p-5" aria-labelledby="coordination">
         <h2 id="coordination" className="text-2xl">

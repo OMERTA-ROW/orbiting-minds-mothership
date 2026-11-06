@@ -8,18 +8,216 @@ import { useCare } from "@/hooks/use-care";
 import { careAudit } from "@/lib/care";
 import { downloadJson } from "@/lib/genesis-sdk";
 import type { CareCommand } from "@/lib/care";
-export const careLinks = [{ to: "/care", label: "CARE" }, { to: "/updates", label: "Updates" }, { to: "/pilot", label: "Pilot" }, { to: "/voice", label: "Voice" }, { to: "/care-agent", label: "Native agent reference" }, { to: "/guardian", label: "Guardian" }, { to: "/devices", label: "My Devices" }] as const;
-export function CareShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
- const { ready, issue } = useCare(); const { run, message } = useCareAction();
- return <><div className="mx-auto max-w-[1440px] px-6 pt-8 md:px-12"><DemoBadge label="DEMO · NO DEVICE CONNECTED" /></div><PageHeader title={title} eyebrow="Your technology. Your consent.">{subtitle}</PageHeader><Section><div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4"><nav aria-label="CARE sections" className="flex flex-wrap gap-2">{careLinks.map((link) => <Button key={link.to} asChild variant="ghost" className="h-auto min-h-11 whitespace-normal text-xs"><Link to={link.to} activeOptions={{ exact: true }} activeProps={{ className: "bg-accent/30 text-gold-light" }}>{link.label}</Link></Button>)}</nav><Button variant="outline" className="h-auto min-h-11 whitespace-normal text-warning" onClick={() => run({ type: "pause" })}><OctagonPause size={16} />Pause demo capabilities</Button></div><div className="mb-10 border-l-2 border-gold/50 pl-5"><p className="text-sm leading-loose text-muted-foreground">Fictional inventory and historical update references. Nothing is scanned, downloaded, installed, moved or deleted. No screen, mouse, browser or microphone access; no speech synthesis. Preferences and history stay in this browser, not a secure multiuser account.</p><p className="mt-3 flex gap-2 text-xs leading-loose text-warning"><LockKeyhole size={14} className="mt-1 shrink-0" />Real capabilities require security review, owner approval, a signed installed agent, OS grants and tested official adapters.</p></div><Notice message={issue} /><Notice message={message} />{ready ? children : <p role="status">Loading demo preferences…</p>}</Section></>;
+export const careLinks = [
+  { to: "/care", label: "CARE" },
+  { to: "/updates", label: "Updates" },
+  { to: "/pilot", label: "Pilot" },
+  { to: "/voice", label: "Voice" },
+  { to: "/care-agent", label: "Native agent reference" },
+  { to: "/guardian", label: "Guardian" },
+  { to: "/devices", label: "My Devices" },
+] as const;
+export function CareShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}) {
+  const { ready, issue } = useCare();
+  const { run, message } = useCareAction();
+  return (
+    <>
+      <div className="mx-auto max-w-[1440px] px-6 pt-8 md:px-12">
+        <DemoBadge label="DEMO · NO DEVICE CONNECTED" />
+      </div>
+      <PageHeader title={title} eyebrow="Your technology. Your consent.">
+        {subtitle}
+      </PageHeader>
+      <Section>
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4">
+          <nav aria-label="CARE sections" className="flex flex-wrap gap-2">
+            {careLinks.map((link) => (
+              <Button
+                key={link.to}
+                asChild
+                variant="ghost"
+                className="h-auto min-h-11 whitespace-normal text-xs"
+              >
+                <Link
+                  to={link.to}
+                  activeOptions={{ exact: true }}
+                  activeProps={{ className: "bg-accent/30 text-gold-light" }}
+                >
+                  {link.label}
+                </Link>
+              </Button>
+            ))}
+          </nav>
+          <Button
+            variant="outline"
+            className="h-auto min-h-11 whitespace-normal text-warning"
+            onClick={() => run({ type: "pause" })}
+          >
+            <OctagonPause size={16} />
+            Pause demo capabilities
+          </Button>
+        </div>
+        <div className="mb-10 border-l-2 border-gold/50 pl-5">
+          <p className="text-sm leading-loose text-muted-foreground">
+            Fictional inventory and historical update references. Nothing is scanned, downloaded,
+            installed, moved or deleted. No screen, mouse, browser or microphone access; no speech
+            synthesis. Preferences and history stay in this browser, not a secure multiuser account.
+          </p>
+          <p className="mt-3 flex gap-2 text-xs leading-loose text-warning">
+            <LockKeyhole size={14} className="mt-1 shrink-0" />
+            Real capabilities require security review, owner approval, a signed installed agent, OS
+            grants and tested official adapters.
+          </p>
+        </div>
+        <Notice message={issue} />
+        <Notice message={message} />
+        {ready ? children : <p role="status">Loading demo preferences…</p>}
+      </Section>
+    </>
+  );
 }
-export function Notice({ message }: { message: string }) { return message ? <p role="status" className="my-5 break-words text-sm leading-relaxed text-warning">{message}</p> : null; }
-export function useCareAction() { const { dispatch } = useCare(); const [message, setMessage] = useState(""); return { message, setMessage, run: (command: CareCommand, success = "Demo preference saved. No external action.") => { try { dispatch(command); setMessage(success); return true; } catch (error) { setMessage(error instanceof Error ? error.message : "Demo action unavailable"); return false; } } }; }
-export function Choice({ label, note, checked, onChange, disabled = false }: { label: string; note?: string; checked: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
- return <div className="flex min-w-0 items-start justify-between gap-5 border-b border-border py-5"><label className="min-w-0 flex-1 cursor-pointer" htmlFor={label}><span className="block break-words text-sm">{label}</span>{note && <span className="mt-2 block text-xs leading-loose text-muted-foreground">{note}</span>}</label><Switch id={label} aria-label={label} checked={checked} disabled={disabled} onCheckedChange={onChange} className="mt-1" /></div>;
+export function Notice({ message }: { message: string }) {
+  return message ? (
+    <p role="status" className="my-5 break-words text-sm leading-relaxed text-warning">
+      {message}
+    </p>
+  ) : null;
+}
+export function useCareAction() {
+  const { dispatch } = useCare();
+  const [message, setMessage] = useState("");
+  return {
+    message,
+    setMessage,
+    run: (command: CareCommand, success = "Demo preference saved. No external action.") => {
+      try {
+        dispatch(command);
+        setMessage(success);
+        return true;
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Demo action unavailable");
+        return false;
+      }
+    },
+  };
+}
+export function Choice({
+  label,
+  note,
+  checked,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  note?: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 items-start justify-between gap-5 border-b border-border py-5">
+      <label className="min-w-0 flex-1 cursor-pointer" htmlFor={label}>
+        <span className="block break-words text-sm">{label}</span>
+        {note && (
+          <span className="mt-2 block text-xs leading-loose text-muted-foreground">{note}</span>
+        )}
+      </label>
+      <Switch
+        id={label}
+        aria-label={label}
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={onChange}
+        className="mt-1"
+      />
+    </div>
+  );
 }
 export function HistoryList() {
- const { store } = useCare(); const [kind, setKind] = useState(""); const [message, setMessage] = useState("");
- const events = [...store.history].reverse().filter(event => !kind || event.kind === kind); const kinds = [...new Set(store.history.map(e => e.kind ?? "legacy"))];
- return <section className="mt-14 border-t border-border pt-8"><div className="flex flex-wrap items-center justify-between gap-5"><div><h2 className="text-2xl">Recorded demo history</h2><p className="mt-4 text-xs leading-loose text-muted-foreground">Local audit events from your actions only. No seeded events, signed receipts or executed updates. Browser participant unverified; records are editable, not tamper-evident.</p></div><Button variant="signal" className="h-auto min-h-11 whitespace-normal" disabled={!store.history.length} onClick={() => { try { downloadJson("DEMO-care-audit.json", careAudit(store)); setMessage("Local audit example downloaded. Unsigned, unverified and no executed actions."); } catch { setMessage("Download unavailable."); } }}><Download size={14} />Download local audit events</Button></div><label className="mt-6 block text-xs text-muted-foreground">Audit event type<select aria-label="Audit event type" className="exchange-select mt-2 block w-full sm:w-64" value={kind} onChange={e => setKind(e.target.value)}><option value="">All recorded actions</option>{kinds.map(k => <option key={k} value={k}>{k}</option>)}</select></label><Notice message={message} />{!events.length && <p className="mt-6 text-sm text-muted-foreground">No matching local actions recorded.</p>}<ol className="mt-6 max-w-4xl border-l border-gold/30 pl-5">{events.slice(0, 30).map(event => <li key={event.id} className="border-b border-border py-5"><p className="text-sm text-gold-light">{event.action}</p><p className="mt-3 break-words font-mono text-[10px] leading-loose text-muted-foreground">{event.kind ?? "legacy"} · {event.deviceId ?? "Device not recorded"}{event.target ? ` · ${event.target}` : ""} · DEMO ONLY / NOT EXECUTED</p><time className="mt-3 block font-mono text-[10px] text-muted-foreground" dateTime={event.at}>{new Date(event.at).toLocaleString()}</time></li>)}</ol>{events.length > 30 && <p className="mt-4 text-xs text-muted-foreground">Showing latest 30 matching events; download includes all retained records.</p>}</section>;
+  const { store } = useCare();
+  const [kind, setKind] = useState("");
+  const [message, setMessage] = useState("");
+  const events = [...store.history].reverse().filter((event) => !kind || event.kind === kind);
+  const kinds = [...new Set(store.history.map((e) => e.kind ?? "legacy"))];
+  return (
+    <section className="mt-14 border-t border-border pt-8">
+      <div className="flex flex-wrap items-center justify-between gap-5">
+        <div>
+          <h2 className="text-2xl">Recorded demo history</h2>
+          <p className="mt-4 text-xs leading-loose text-muted-foreground">
+            Local audit events from your actions only. No seeded events, signed receipts or executed
+            updates. Browser participant unverified; records are editable, not tamper-evident.
+          </p>
+        </div>
+        <Button
+          variant="signal"
+          className="h-auto min-h-11 whitespace-normal"
+          disabled={!store.history.length}
+          onClick={() => {
+            try {
+              downloadJson("DEMO-care-audit.json", careAudit(store));
+              setMessage(
+                "Local audit example downloaded. Unsigned, unverified and no executed actions.",
+              );
+            } catch {
+              setMessage("Download unavailable.");
+            }
+          }}
+        >
+          <Download size={14} />
+          Download local audit events
+        </Button>
+      </div>
+      <label className="mt-6 block text-xs text-muted-foreground">
+        Audit event type
+        <select
+          aria-label="Audit event type"
+          className="exchange-select mt-2 block w-full sm:w-64"
+          value={kind}
+          onChange={(e) => setKind(e.target.value)}
+        >
+          <option value="">All recorded actions</option>
+          {kinds.map((k) => (
+            <option key={k} value={k}>
+              {k}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Notice message={message} />
+      {!events.length && (
+        <p className="mt-6 text-sm text-muted-foreground">No matching local actions recorded.</p>
+      )}
+      <ol className="mt-6 max-w-4xl border-l border-gold/30 pl-5">
+        {events.slice(0, 30).map((event) => (
+          <li key={event.id} className="border-b border-border py-5">
+            <p className="text-sm text-gold-light">{event.action}</p>
+            <p className="mt-3 break-words font-mono text-[10px] leading-loose text-muted-foreground">
+              {event.kind ?? "legacy"} · {event.deviceId ?? "Device not recorded"}
+              {event.target ? ` · ${event.target}` : ""} · DEMO ONLY / NOT EXECUTED
+            </p>
+            <time
+              className="mt-3 block font-mono text-[10px] text-muted-foreground"
+              dateTime={event.at}
+            >
+              {new Date(event.at).toLocaleString()}
+            </time>
+          </li>
+        ))}
+      </ol>
+      {events.length > 30 && (
+        <p className="mt-4 text-xs text-muted-foreground">
+          Showing latest 30 matching events; download includes all retained records.
+        </p>
+      )}
+    </section>
+  );
 }

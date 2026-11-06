@@ -3,7 +3,12 @@ import { useState, type FormEvent } from "react";
 import { Radar, Download, ShieldCheck, Server, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { codeContributions, genesisComputeArchitecture, genesisDomains, genesisTrustRules } from "@/data/evolution";
+import {
+  codeContributions,
+  genesisComputeArchitecture,
+  genesisDomains,
+  genesisTrustRules,
+} from "@/data/evolution";
 import { useGenesis } from "@/hooks/use-genesis";
 import { computeInput, genesisPackage, trustAssessment } from "@/lib/genesis";
 import { downloadJson } from "@/lib/genesis-sdk";
@@ -13,32 +18,522 @@ import { GenesisShell, IdentitySelect, FormNotice, fieldLabel } from "./GenesisS
 import { TrustConnections } from "@/components/trusted/TrustShell";
 
 export function DiscoveryPage({ scenarioId }: { scenarioId?: string | undefined }) {
-  const { store } = useGenesis(); const [query, setQuery] = useState(""); const [domain, setDomain] = useState("");
+  const { store } = useGenesis();
+  const [query, setQuery] = useState("");
+  const [domain, setDomain] = useState("");
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const matches = (text: string, category: string) => (!domain || domain === category) && words.every((word) => text.toLowerCase().includes(word));
-  const codes = codeContributions.filter((item) => matches(`${item.title.en} ${item.description.en} ${item.industry} ${item.author}`, item.industry));
-  const research = roboticsScenarios.filter(s => (!scenarioId || s.id === scenarioId) && matches(`${s.title} ${s.problem} ${s.author} ${s.oracle.map(o => `${o.connection} ${o.hypothesis}`).join(" ")}`, s.domain));
-  const capsules = store.capsules.filter((item) => { const category = store.challenges.find((challenge) => challenge.id === item.challengeId)?.domain ?? ""; return matches(`${item.title} ${item.explanation} ${category}`, category); });
-  return <GenesisShell title="Discovery Radar" eyebrow="Cross-domain signals · attributed sources"><TrustConnections /><div className="mb-8 flex flex-wrap gap-3 border-y border-border py-4"><Button asChild variant="signal"><Link to="/incident-archives">Incident Archives · fictional lessons</Link></Button><Button asChild variant="ghost"><Link to="/agent-debrief">Debrief evidence / hypothesis split</Link></Button></div><div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]"><Input aria-label="Search discovery" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ideas, code and locally submitted capsules…" className="h-12" /><select aria-label="Discovery domain" className="exchange-select" value={domain} onChange={(event) => setDomain(event.target.value)}><option value="">All domains</option>{genesisDomains.map((value) => <option key={value}>{value}</option>)}</select></div><p role="status" className="my-7 font-mono text-xs text-muted-foreground">{codes.length + capsules.length + research.length} cited / local signals · no autonomous discovery</p><div className="grid gap-10 md:grid-cols-2 xl:grid-cols-3">{research.map(s => <article key={s.id} className="min-w-0 border-t border-border py-6"><p className="font-mono text-[10px] text-gold-light">ORACLE · ROBOTICS DEMO · EDITORIAL HYPOTHESIS</p><h2 className="mt-4 text-xl leading-relaxed"><Link to="/robotics/$id" params={{ id: s.id }}>{s.title}</Link></h2><p className="mt-4 text-sm leading-loose text-muted-foreground">{s.oracle[0]?.hypothesis}</p><p className="mt-4 text-xs leading-loose text-warning">Independent evidence needed: {s.oracle[0]?.evidenceNeeded}</p><p className="mt-4 text-xs text-muted-foreground">{s.author} · fictional attribution · no hardware</p><Button asChild variant="signal" className="mt-5 h-auto whitespace-normal"><Link to="/robotics/$id" params={{ id: s.id }}>Inspect research provenance</Link></Button></article>)}{codes.map((item) => <article key={item.id} className="min-w-0 border-t border-border py-6"><Radar size={22} className="text-gold" /><p className="mt-4 font-mono text-[10px] text-gold-light">{item.industry} · DEMO CODE</p><h2 className="mt-4 text-xl leading-relaxed"><Link to="/code-exchange/$id" params={{ id: item.id }} className="hover:text-gold-light">{item.title.en}</Link></h2><p className="mt-4 text-sm leading-loose text-muted-foreground">{item.description.en}</p><p className="mt-4 text-xs text-muted-foreground">{item.author} · fictional demo author{item.operator ? ` / human operator ${item.operator}` : ""}</p><p className="mt-3 break-words text-xs text-muted-foreground">Documentation citation: {item.reference.repository} · independent public reference, not code source</p><Link to="/code-exchange/$id" params={{ id: item.id }} className="mt-4 inline-block text-sm text-gold-light underline">Inspect attribution and evidence</Link><div className="mt-6 border-l border-gold/30 pl-4"><p className="text-xs text-gold-light">Potential cross-domain connection</p><p className="mt-2 text-xs leading-loose text-muted-foreground">{item.industry === "Privacy" || item.industry === "Banking" ? "Privacy ↔ Banking: reuse allowlisting concepts in a synthetic API threat model." : item.industry === "Image processing" ? "Image processing ↔ Energy: explore latency budgets for low-power sensor proposals." : "Accessibility ↔ Developer tooling: connect interaction test plans with dependency evidence."} Editorial suggestion only, not an AI finding.</p></div></article>)}{capsules.map((item) => <article key={item.id} className="min-w-0 border-t border-border py-6"><p className="font-mono text-xs text-gold-light">LOCAL CAPSULE · {item.state}</p><h2 className="mt-5 text-xl"><Link to="/capsules/$id" params={{ id: item.id }}>{item.title}</Link></h2><p className="mt-4 break-words text-sm leading-loose text-muted-foreground">{item.explanation}</p><p className="mt-5 break-words text-xs text-muted-foreground">{store.identities.find((person) => person.id === item.identityId)?.name} · self-declared local attribution</p><Link to="/capsules/$id" params={{ id: item.id }} className="mt-4 block text-sm text-gold-light underline">Open cited capsule</Link></article>)}</div>{codes.length + capsules.length + research.length === 0 && <p className="border-y border-border py-16 text-sm text-muted-foreground">No matching ideas.</p>}</GenesisShell>;
+  const matches = (text: string, category: string) =>
+    (!domain || domain === category) && words.every((word) => text.toLowerCase().includes(word));
+  const codes = codeContributions.filter((item) =>
+    matches(
+      `${item.title.en} ${item.description.en} ${item.industry} ${item.author}`,
+      item.industry,
+    ),
+  );
+  const research = roboticsScenarios.filter(
+    (s) =>
+      (!scenarioId || s.id === scenarioId) &&
+      matches(
+        `${s.title} ${s.problem} ${s.author} ${s.oracle.map((o) => `${o.connection} ${o.hypothesis}`).join(" ")}`,
+        s.domain,
+      ),
+  );
+  const capsules = store.capsules.filter((item) => {
+    const category =
+      store.challenges.find((challenge) => challenge.id === item.challengeId)?.domain ?? "";
+    return matches(`${item.title} ${item.explanation} ${category}`, category);
+  });
+  return (
+    <GenesisShell title="Discovery Radar" eyebrow="Cross-domain signals · attributed sources">
+      <TrustConnections />
+      <div className="mb-8 flex flex-wrap gap-3 border-y border-border py-4">
+        <Button asChild variant="signal">
+          <Link to="/incident-archives">Incident Archives · fictional lessons</Link>
+        </Button>
+        <Button asChild variant="ghost">
+          <Link to="/agent-debrief">Debrief evidence / hypothesis split</Link>
+        </Button>
+      </div>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
+        <Input
+          aria-label="Search discovery"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search ideas, code and locally submitted capsules…"
+          className="h-12"
+        />
+        <select
+          aria-label="Discovery domain"
+          className="exchange-select"
+          value={domain}
+          onChange={(event) => setDomain(event.target.value)}
+        >
+          <option value="">All domains</option>
+          {genesisDomains.map((value) => (
+            <option key={value}>{value}</option>
+          ))}
+        </select>
+      </div>
+      <p role="status" className="my-7 font-mono text-xs text-muted-foreground">
+        {codes.length + capsules.length + research.length} cited / local signals · no autonomous
+        discovery
+      </p>
+      <div className="grid gap-10 md:grid-cols-2 xl:grid-cols-3">
+        {research.map((s) => (
+          <article key={s.id} className="min-w-0 border-t border-border py-6">
+            <p className="font-mono text-[10px] text-gold-light">
+              ORACLE · ROBOTICS DEMO · EDITORIAL HYPOTHESIS
+            </p>
+            <h2 className="mt-4 text-xl leading-relaxed">
+              <Link to="/robotics/$id" params={{ id: s.id }}>
+                {s.title}
+              </Link>
+            </h2>
+            <p className="mt-4 text-sm leading-loose text-muted-foreground">
+              {s.oracle[0]?.hypothesis}
+            </p>
+            <p className="mt-4 text-xs leading-loose text-warning">
+              Independent evidence needed: {s.oracle[0]?.evidenceNeeded}
+            </p>
+            <p className="mt-4 text-xs text-muted-foreground">
+              {s.author} · fictional attribution · no hardware
+            </p>
+            <Button asChild variant="signal" className="mt-5 h-auto whitespace-normal">
+              <Link to="/robotics/$id" params={{ id: s.id }}>
+                Inspect research provenance
+              </Link>
+            </Button>
+          </article>
+        ))}
+        {codes.map((item) => (
+          <article key={item.id} className="min-w-0 border-t border-border py-6">
+            <Radar size={22} className="text-gold" />
+            <p className="mt-4 font-mono text-[10px] text-gold-light">
+              {item.industry} · DEMO CODE
+            </p>
+            <h2 className="mt-4 text-xl leading-relaxed">
+              <Link
+                to="/code-exchange/$id"
+                params={{ id: item.id }}
+                className="hover:text-gold-light"
+              >
+                {item.title.en}
+              </Link>
+            </h2>
+            <p className="mt-4 text-sm leading-loose text-muted-foreground">
+              {item.description.en}
+            </p>
+            <p className="mt-4 text-xs text-muted-foreground">
+              {item.author} · fictional demo author
+              {item.operator ? ` / human operator ${item.operator}` : ""}
+            </p>
+            <p className="mt-3 break-words text-xs text-muted-foreground">
+              Documentation citation: {item.reference.repository} · independent public reference,
+              not code source
+            </p>
+            <Link
+              to="/code-exchange/$id"
+              params={{ id: item.id }}
+              className="mt-4 inline-block text-sm text-gold-light underline"
+            >
+              Inspect attribution and evidence
+            </Link>
+            <div className="mt-6 border-l border-gold/30 pl-4">
+              <p className="text-xs text-gold-light">Potential cross-domain connection</p>
+              <p className="mt-2 text-xs leading-loose text-muted-foreground">
+                {item.industry === "Privacy" || item.industry === "Banking"
+                  ? "Privacy ↔ Banking: reuse allowlisting concepts in a synthetic API threat model."
+                  : item.industry === "Image processing"
+                    ? "Image processing ↔ Energy: explore latency budgets for low-power sensor proposals."
+                    : "Accessibility ↔ Developer tooling: connect interaction test plans with dependency evidence."}{" "}
+                Editorial suggestion only, not an AI finding.
+              </p>
+            </div>
+          </article>
+        ))}
+        {capsules.map((item) => (
+          <article key={item.id} className="min-w-0 border-t border-border py-6">
+            <p className="font-mono text-xs text-gold-light">LOCAL CAPSULE · {item.state}</p>
+            <h2 className="mt-5 text-xl">
+              <Link to="/capsules/$id" params={{ id: item.id }}>
+                {item.title}
+              </Link>
+            </h2>
+            <p className="mt-4 break-words text-sm leading-loose text-muted-foreground">
+              {item.explanation}
+            </p>
+            <p className="mt-5 break-words text-xs text-muted-foreground">
+              {store.identities.find((person) => person.id === item.identityId)?.name} ·
+              self-declared local attribution
+            </p>
+            <Link
+              to="/capsules/$id"
+              params={{ id: item.id }}
+              className="mt-4 block text-sm text-gold-light underline"
+            >
+              Open cited capsule
+            </Link>
+          </article>
+        ))}
+      </div>
+      {codes.length + capsules.length + research.length === 0 && (
+        <p className="border-y border-border py-16 text-sm text-muted-foreground">
+          No matching ideas.
+        </p>
+      )}
+    </GenesisShell>
+  );
 }
 
 export function TrustPage() {
   const { store } = useGenesis();
-  return <GenesisShell title="Trust & Certification" eyebrow="Evidence, not a badge"><TrustConnections /><div className="mb-12 flex items-start gap-5 border-y border-border py-8"><ShieldCheck className="shrink-0 text-gold" size={30} /><div><h2 className="text-2xl">No certifications issued</h2><p className="mt-4 max-w-3xl text-sm leading-loose text-muted-foreground">These are proposed assessment rules, not a certification program. Simulation, self-declared license and local approval are insufficient for trusted production use. Real verification needs authenticated reviewers, provenance, executed tests and an accountable issuer.</p></div></div><div className="grid gap-10 md:grid-cols-2">{genesisTrustRules.map((rule) => <section key={rule.key} className="border-t border-border py-7"><p className="font-mono text-[10px] text-gold-light">REQUIRED CHECK · UNVERIFIED</p><h2 className="mt-4 text-xl">{rule.title}</h2><p className="mt-4 text-sm leading-loose">{rule.requirement}</p><p className="mt-4 text-sm leading-loose text-muted-foreground">{rule.limitation}</p></section>)}</div><h2 className="mt-12 border-t border-border pt-8 text-2xl">Capsule assessments</h2>{store.capsules.length === 0 && <p className="mt-5 text-sm text-muted-foreground">No submitted capsules to assess.</p>}<ul className="mt-6 space-y-6">{store.capsules.map((capsule) => <li key={capsule.id} className="border-l border-gold/30 pl-5"><Link to="/capsules/$id" params={{ id: capsule.id }} className="text-lg text-gold-light underline">{capsule.title}</Link><p className="mt-3 font-mono text-xs text-muted-foreground">NOT CERTIFIED · {trustAssessment(store, capsule).simulation} · {capsule.license} self-declared</p></li>)}</ul></GenesisShell>;
+  return (
+    <GenesisShell title="Trust & Certification" eyebrow="Evidence, not a badge">
+      <TrustConnections />
+      <div className="mb-12 flex items-start gap-5 border-y border-border py-8">
+        <ShieldCheck className="shrink-0 text-gold" size={30} />
+        <div>
+          <h2 className="text-2xl">No certifications issued</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-loose text-muted-foreground">
+            These are proposed assessment rules, not a certification program. Simulation,
+            self-declared license and local approval are insufficient for trusted production use.
+            Real verification needs authenticated reviewers, provenance, executed tests and an
+            accountable issuer.
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-10 md:grid-cols-2">
+        {genesisTrustRules.map((rule) => (
+          <section key={rule.key} className="border-t border-border py-7">
+            <p className="font-mono text-[10px] text-gold-light">REQUIRED CHECK · UNVERIFIED</p>
+            <h2 className="mt-4 text-xl">{rule.title}</h2>
+            <p className="mt-4 text-sm leading-loose">{rule.requirement}</p>
+            <p className="mt-4 text-sm leading-loose text-muted-foreground">{rule.limitation}</p>
+          </section>
+        ))}
+      </div>
+      <h2 className="mt-12 border-t border-border pt-8 text-2xl">Capsule assessments</h2>
+      {store.capsules.length === 0 && (
+        <p className="mt-5 text-sm text-muted-foreground">No submitted capsules to assess.</p>
+      )}
+      <ul className="mt-6 space-y-6">
+        {store.capsules.map((capsule) => (
+          <li key={capsule.id} className="border-l border-gold/30 pl-5">
+            <Link
+              to="/capsules/$id"
+              params={{ id: capsule.id }}
+              className="text-lg text-gold-light underline"
+            >
+              {capsule.title}
+            </Link>
+            <p className="mt-3 font-mono text-xs text-muted-foreground">
+              NOT CERTIFIED · {trustAssessment(store, capsule).simulation} · {capsule.license}{" "}
+              self-declared
+            </p>
+          </li>
+        ))}
+      </ul>
+    </GenesisShell>
+  );
 }
 
 export function MarketplacePage() {
-  const { store } = useGenesis(); const listings = store.capsules.filter((item) => item.state === "Demo listed");
-  return <GenesisShell title="Creator Marketplace" eyebrow="Credit the creator. Respect the license."><div className="mb-12 border-y border-border py-8"><h2 className="text-2xl">Purchase readiness · NOT READY</h2><p className="mt-5 max-w-3xl text-sm leading-loose text-muted-foreground">USD pricing TBD. No checkout, Stripe account, crypto conversion, payout or earned financial balance exists. Future commerce requires verified human contributors, author rights, approved licenses, funded pricing and owner-authorized payment setup.</p><Button disabled variant="outline" className="mt-6 h-auto min-h-11 whitespace-normal"><LockKeyhole size={16} />Checkout / payouts · unconfigured</Button></div><h2 className="text-2xl">Locally prepared demo listings</h2>{listings.length === 0 ? <div className="mt-6 border-t border-border py-10"><p className="text-sm text-muted-foreground">No demo listings yet. Submit a capsule, record a within-target synthetic model and a distinct local review, then prepare a listing.</p><Button asChild variant="signal" className="mt-5"><Link to="/challenges">Start with a challenge</Link></Button></div> : <div className="mt-7 grid gap-10 md:grid-cols-2">{listings.map((capsule) => <article key={capsule.id} className="min-w-0 border-t border-border py-7"><p className="font-mono text-xs text-gold-light">LOCAL DEMO LISTING · USD TBD</p><h2 className="mt-4 text-xl"><Link to="/capsules/$id" params={{ id: capsule.id }}>{capsule.title}</Link></h2><p className="mt-4 break-words text-sm leading-loose text-muted-foreground">{capsule.explanation}</p><p className="mt-4 text-xs text-muted-foreground">Human contributor/operator: {store.identities.find((person) => person.id === capsule.identityId)?.name} · self-declared / unverified</p><p className="mt-3 text-xs text-muted-foreground">License: {capsule.license} · not independently cleared</p><p className="mt-4 text-xs text-gold-light">Recognition: demo listing prepared · no payable reward</p><Button disabled variant="outline" className="mt-5">Purchase · disabled</Button></article>)}</div>}<section className="mt-14 border-t border-border pt-8"><h2 className="text-xl">Existing Code Exchange concepts</h2><p className="mt-4 text-sm text-muted-foreground">Original demo samples remain available with their current reviews and unsigned upgrade previews.</p><Button asChild variant="signal" className="mt-5"><Link to="/code-exchange">Open Code Exchange</Link></Button></section></GenesisShell>;
+  const { store } = useGenesis();
+  const listings = store.capsules.filter((item) => item.state === "Demo listed");
+  return (
+    <GenesisShell title="Creator Marketplace" eyebrow="Credit the creator. Respect the license.">
+      <div className="mb-12 border-y border-border py-8">
+        <h2 className="text-2xl">Purchase readiness · NOT READY</h2>
+        <p className="mt-5 max-w-3xl text-sm leading-loose text-muted-foreground">
+          USD pricing TBD. No checkout, Stripe account, crypto conversion, payout or earned
+          financial balance exists. Future commerce requires verified human contributors, author
+          rights, approved licenses, funded pricing and owner-authorized payment setup.
+        </p>
+        <Button disabled variant="outline" className="mt-6 h-auto min-h-11 whitespace-normal">
+          <LockKeyhole size={16} />
+          Checkout / payouts · unconfigured
+        </Button>
+      </div>
+      <h2 className="text-2xl">Locally prepared demo listings</h2>
+      {listings.length === 0 ? (
+        <div className="mt-6 border-t border-border py-10">
+          <p className="text-sm text-muted-foreground">
+            No demo listings yet. Submit a capsule, record a within-target synthetic model and a
+            distinct local review, then prepare a listing.
+          </p>
+          <Button asChild variant="signal" className="mt-5">
+            <Link to="/challenges">Start with a challenge</Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-7 grid gap-10 md:grid-cols-2">
+          {listings.map((capsule) => (
+            <article key={capsule.id} className="min-w-0 border-t border-border py-7">
+              <p className="font-mono text-xs text-gold-light">LOCAL DEMO LISTING · USD TBD</p>
+              <h2 className="mt-4 text-xl">
+                <Link to="/capsules/$id" params={{ id: capsule.id }}>
+                  {capsule.title}
+                </Link>
+              </h2>
+              <p className="mt-4 break-words text-sm leading-loose text-muted-foreground">
+                {capsule.explanation}
+              </p>
+              <p className="mt-4 text-xs text-muted-foreground">
+                Human contributor/operator:{" "}
+                {store.identities.find((person) => person.id === capsule.identityId)?.name} ·
+                self-declared / unverified
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">
+                License: {capsule.license} · not independently cleared
+              </p>
+              <p className="mt-4 text-xs text-gold-light">
+                Recognition: demo listing prepared · no payable reward
+              </p>
+              <Button disabled variant="outline" className="mt-5">
+                Purchase · disabled
+              </Button>
+            </article>
+          ))}
+        </div>
+      )}
+      <section className="mt-14 border-t border-border pt-8">
+        <h2 className="text-xl">Existing Code Exchange concepts</h2>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Original demo samples remain available with their current reviews and unsigned upgrade
+          previews.
+        </p>
+        <Button asChild variant="signal" className="mt-5">
+          <Link to="/code-exchange">Open Code Exchange</Link>
+        </Button>
+      </section>
+    </GenesisShell>
+  );
 }
 
 export function ReleasesPage({ scenarioId }: { scenarioId?: string | undefined }) {
-  const { store } = useGenesis(); const [message, setMessage] = useState("");
-  return <GenesisShell title="Release Galaxy" eyebrow="Unsigned preparation. No distribution."><TrustConnections /><div className="mb-10 border-y border-border py-8"><h2 className="text-2xl">Owner approval remains a hard boundary</h2><p className="mt-5 max-w-3xl text-sm leading-loose text-muted-foreground">Local demo decisions are not authenticated owner approvals. Every preview uses version 0.1.0, a DEMO checksum placeholder and no signature. No package is installed, deployed, transmitted or released to another project.</p><Button disabled variant="outline" className="mt-6 h-auto whitespace-normal">Sign or distribute package · disabled</Button></div><RoboticsReleaseRecord scenarioId={scenarioId} /><div className="grid gap-10 md:grid-cols-2">{store.capsules.map((capsule) => <article key={capsule.id} className="min-w-0 border-t border-border py-7"><p className="font-mono text-xs text-gold-light">v0.1.0 · UNSIGNED DEMO</p><h2 className="mt-4 text-xl"><Link to="/capsules/$id" params={{ id: capsule.id }}>{capsule.title}</Link></h2><p className="mt-4 text-xs text-muted-foreground">{capsule.state} · {capsule.license} self-declared</p><p className="mt-4 break-words text-sm leading-loose text-muted-foreground">Rollback: {capsule.rollback}</p><Button variant="signal" className="mt-6 h-auto min-h-11 whitespace-normal" onClick={() => { try { downloadJson(`DEMO-release-${capsule.id}.json`, genesisPackage(store, capsule)); setMessage("Unsigned DEMO preview downloaded; signing and distribution remain disabled."); } catch { setMessage("Download unavailable."); } }}><Download size={16} />Download demo release preview</Button></article>)}</div>{store.capsules.length === 0 && <p className="text-sm text-muted-foreground">No submitted capsules. Existing Code Exchange upgrade previews remain unchanged.</p>}<FormNotice message={message} /><Button asChild variant="signal" className="mt-10"><Link to="/code-exchange">Inspect existing upgrade previews</Link></Button></GenesisShell>;
+  const { store } = useGenesis();
+  const [message, setMessage] = useState("");
+  return (
+    <GenesisShell title="Release Galaxy" eyebrow="Unsigned preparation. No distribution.">
+      <TrustConnections />
+      <div className="mb-10 border-y border-border py-8">
+        <h2 className="text-2xl">Owner approval remains a hard boundary</h2>
+        <p className="mt-5 max-w-3xl text-sm leading-loose text-muted-foreground">
+          Local demo decisions are not authenticated owner approvals. Every preview uses version
+          0.1.0, a DEMO checksum placeholder and no signature. No package is installed, deployed,
+          transmitted or released to another project.
+        </p>
+        <Button disabled variant="outline" className="mt-6 h-auto whitespace-normal">
+          Sign or distribute package · disabled
+        </Button>
+      </div>
+      <RoboticsReleaseRecord scenarioId={scenarioId} />
+      <div className="grid gap-10 md:grid-cols-2">
+        {store.capsules.map((capsule) => (
+          <article key={capsule.id} className="min-w-0 border-t border-border py-7">
+            <p className="font-mono text-xs text-gold-light">v0.1.0 · UNSIGNED DEMO</p>
+            <h2 className="mt-4 text-xl">
+              <Link to="/capsules/$id" params={{ id: capsule.id }}>
+                {capsule.title}
+              </Link>
+            </h2>
+            <p className="mt-4 text-xs text-muted-foreground">
+              {capsule.state} · {capsule.license} self-declared
+            </p>
+            <p className="mt-4 break-words text-sm leading-loose text-muted-foreground">
+              Rollback: {capsule.rollback}
+            </p>
+            <Button
+              variant="signal"
+              className="mt-6 h-auto min-h-11 whitespace-normal"
+              onClick={() => {
+                try {
+                  downloadJson(`DEMO-release-${capsule.id}.json`, genesisPackage(store, capsule));
+                  setMessage(
+                    "Unsigned DEMO preview downloaded; signing and distribution remain disabled.",
+                  );
+                } catch {
+                  setMessage("Download unavailable.");
+                }
+              }}
+            >
+              <Download size={16} />
+              Download demo release preview
+            </Button>
+          </article>
+        ))}
+      </div>
+      {store.capsules.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          No submitted capsules. Existing Code Exchange upgrade previews remain unchanged.
+        </p>
+      )}
+      <FormNotice message={message} />
+      <Button asChild variant="signal" className="mt-10">
+        <Link to="/code-exchange">Inspect existing upgrade previews</Link>
+      </Button>
+    </GenesisShell>
+  );
 }
 
 export function ComputePage() {
-  const { store, dispatch } = useGenesis(); const [message, setMessage] = useState("");
-  const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const data = new FormData(event.currentTarget); const parsed = computeInput.safeParse({ ...Object.fromEntries(data), cpu: Number(data.get("cpu")), memoryMb: Number(data.get("memoryMb")), consent: data.get("consent") === "on", spendCapUsd: 0 }); if (!parsed.success) { setMessage("Choose an opted-in identity, node label, 1–16 CPU units, 128–4096 MB and explicit demo consent."); return; } try { dispatch({ type: "node", input: parsed.data }); setMessage("Local node configuration saved; no machine, agent, shell or paid compute connected."); } catch (error) { setMessage(error instanceof Error ? error.message : "Node configuration failed."); } };
-  return <GenesisShell title="Opt-in Compute Grid" eyebrow="Bounded tasks. Revocable participation."><div className="grid gap-14 lg:grid-cols-[minmax(0,1fr)_340px]"><section className="min-w-0"><Server size={28} className="mb-5 text-gold" /><h2 className="text-2xl">Declare a local node configuration</h2><p className="mt-4 text-sm leading-loose text-muted-foreground">This is an opt-in architecture rehearsal. No device is discovered, no software installed, and no remote task or shell command can run.</p><form onSubmit={submit} noValidate className="mt-8 grid gap-5"><IdentitySelect name="ownerId" scope="simulate_twins" label="Local node owner" /><label className={fieldLabel}>Node label<Input name="label" className="mt-2" maxLength={80} /></label><div className="grid gap-5 sm:grid-cols-2"><label className={fieldLabel}>CPU units · proposed<Input name="cpu" type="number" defaultValue={2} min={1} max={16} className="mt-2" /></label><label className={fieldLabel}>Memory MB · proposed<Input name="memoryMb" type="number" defaultValue={512} min={128} max={4096} className="mt-2" /></label></div><p className="font-mono text-xs text-gold-light">USD spend cap $0 · egress disabled · shell disabled</p><label className="flex items-start gap-3 text-sm text-muted-foreground"><input type="checkbox" name="consent" className="mt-1 accent-primary" />I opt into a local configuration only. This does not connect or grant access to a real computer.</label><FormNotice message={message} /><Button type="submit" variant="signal" className="h-auto min-h-11 justify-self-start whitespace-normal">Save local node configuration</Button></form></section><aside className="border-t border-border pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><h2 className="text-xl">Future sandbox architecture</h2><ol className="mt-5 space-y-4">{genesisComputeArchitecture.map((step, index) => <li key={step} className="flex gap-3 text-sm leading-relaxed text-muted-foreground"><span className="font-mono text-xs text-gold">0{index + 1}</span>{step}</li>)}</ol><Button disabled variant="outline" className="mt-8 h-auto whitespace-normal">Connect grid / execute task · disabled</Button></aside></div><section className="mt-14 border-t border-border pt-8"><h2 className="text-2xl">Local node records</h2>{store.nodes.length === 0 && <p className="mt-5 text-sm text-muted-foreground">No opted-in node configurations.</p>}<div className="mt-6 grid gap-8 md:grid-cols-2">{store.nodes.map((node) => <article key={node.id} className="min-w-0 border-t border-border py-6"><h3 className="break-words text-xl">{node.label}</h3><p className="mt-4 text-xs text-gold-light">{node.state} · DEMO / no device connected</p><p className="mt-3 text-xs text-muted-foreground">{node.cpu} CPU · {node.memoryMb} MB · USD $0 cap</p>{node.state !== "Revoked" && <Button variant="ghost" className="mt-5 h-auto whitespace-normal text-warning" onClick={() => { try { dispatch({ type: "revokeNode", nodeId: node.id, actorId: node.ownerId }); setMessage("Local node consent revoked."); } catch (error) { setMessage(error instanceof Error ? error.message : "Revocation failed."); } }}>Revoke local node consent</Button>}</article>)}</div></section><section className="mt-12 border-t border-border pt-8"><h2 className="text-2xl">Task / result records</h2><p className="mt-4 text-sm text-muted-foreground">Only actual locally recorded Digital Twin calculations are available. They were not scheduled to compute nodes.</p><ul className="mt-5 space-y-4">{store.twins.map((twin) => <li key={twin.id}><Link to="/capsules/$id" params={{ id: twin.capsuleId }} className="text-sm text-gold-light underline">Synthetic result: {twin.resultMs} ms · {twin.outcome}</Link></li>)}</ul><Button asChild variant="signal" className="mt-6"><Link to="/digital-twin">Configure a local synthetic task</Link></Button></section></GenesisShell>;
+  const { store, dispatch } = useGenesis();
+  const [message, setMessage] = useState("");
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const parsed = computeInput.safeParse({
+      ...Object.fromEntries(data),
+      cpu: Number(data.get("cpu")),
+      memoryMb: Number(data.get("memoryMb")),
+      consent: data.get("consent") === "on",
+      spendCapUsd: 0,
+    });
+    if (!parsed.success) {
+      setMessage(
+        "Choose an opted-in identity, node label, 1–16 CPU units, 128–4096 MB and explicit demo consent.",
+      );
+      return;
+    }
+    try {
+      dispatch({ type: "node", input: parsed.data });
+      setMessage(
+        "Local node configuration saved; no machine, agent, shell or paid compute connected.",
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Node configuration failed.");
+    }
+  };
+  return (
+    <GenesisShell title="Opt-in Compute Grid" eyebrow="Bounded tasks. Revocable participation.">
+      <div className="grid gap-14 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="min-w-0">
+          <Server size={28} className="mb-5 text-gold" />
+          <h2 className="text-2xl">Declare a local node configuration</h2>
+          <p className="mt-4 text-sm leading-loose text-muted-foreground">
+            This is an opt-in architecture rehearsal. No device is discovered, no software
+            installed, and no remote task or shell command can run.
+          </p>
+          <form onSubmit={submit} noValidate className="mt-8 grid gap-5">
+            <IdentitySelect name="ownerId" scope="simulate_twins" label="Local node owner" />
+            <label className={fieldLabel}>
+              Node label
+              <Input name="label" className="mt-2" maxLength={80} />
+            </label>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className={fieldLabel}>
+                CPU units · proposed
+                <Input
+                  name="cpu"
+                  type="number"
+                  defaultValue={2}
+                  min={1}
+                  max={16}
+                  className="mt-2"
+                />
+              </label>
+              <label className={fieldLabel}>
+                Memory MB · proposed
+                <Input
+                  name="memoryMb"
+                  type="number"
+                  defaultValue={512}
+                  min={128}
+                  max={4096}
+                  className="mt-2"
+                />
+              </label>
+            </div>
+            <p className="font-mono text-xs text-gold-light">
+              USD spend cap $0 · egress disabled · shell disabled
+            </p>
+            <label className="flex items-start gap-3 text-sm text-muted-foreground">
+              <input type="checkbox" name="consent" className="mt-1 accent-primary" />I opt into a
+              local configuration only. This does not connect or grant access to a real computer.
+            </label>
+            <FormNotice message={message} />
+            <Button
+              type="submit"
+              variant="signal"
+              className="h-auto min-h-11 justify-self-start whitespace-normal"
+            >
+              Save local node configuration
+            </Button>
+          </form>
+        </section>
+        <aside className="border-t border-border pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+          <h2 className="text-xl">Future sandbox architecture</h2>
+          <ol className="mt-5 space-y-4">
+            {genesisComputeArchitecture.map((step, index) => (
+              <li key={step} className="flex gap-3 text-sm leading-relaxed text-muted-foreground">
+                <span className="font-mono text-xs text-gold">0{index + 1}</span>
+                {step}
+              </li>
+            ))}
+          </ol>
+          <Button disabled variant="outline" className="mt-8 h-auto whitespace-normal">
+            Connect grid / execute task · disabled
+          </Button>
+        </aside>
+      </div>
+      <section className="mt-14 border-t border-border pt-8">
+        <h2 className="text-2xl">Local node records</h2>
+        {store.nodes.length === 0 && (
+          <p className="mt-5 text-sm text-muted-foreground">No opted-in node configurations.</p>
+        )}
+        <div className="mt-6 grid gap-8 md:grid-cols-2">
+          {store.nodes.map((node) => (
+            <article key={node.id} className="min-w-0 border-t border-border py-6">
+              <h3 className="break-words text-xl">{node.label}</h3>
+              <p className="mt-4 text-xs text-gold-light">
+                {node.state} · DEMO / no device connected
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">
+                {node.cpu} CPU · {node.memoryMb} MB · USD $0 cap
+              </p>
+              {node.state !== "Revoked" && (
+                <Button
+                  variant="ghost"
+                  className="mt-5 h-auto whitespace-normal text-warning"
+                  onClick={() => {
+                    try {
+                      dispatch({ type: "revokeNode", nodeId: node.id, actorId: node.ownerId });
+                      setMessage("Local node consent revoked.");
+                    } catch (error) {
+                      setMessage(error instanceof Error ? error.message : "Revocation failed.");
+                    }
+                  }}
+                >
+                  Revoke local node consent
+                </Button>
+              )}
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="mt-12 border-t border-border pt-8">
+        <h2 className="text-2xl">Task / result records</h2>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Only actual locally recorded Digital Twin calculations are available. They were not
+          scheduled to compute nodes.
+        </p>
+        <ul className="mt-5 space-y-4">
+          {store.twins.map((twin) => (
+            <li key={twin.id}>
+              <Link
+                to="/capsules/$id"
+                params={{ id: twin.capsuleId }}
+                className="text-sm text-gold-light underline"
+              >
+                Synthetic result: {twin.resultMs} ms · {twin.outcome}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Button asChild variant="signal" className="mt-6">
+          <Link to="/digital-twin">Configure a local synthetic task</Link>
+        </Button>
+      </section>
+    </GenesisShell>
+  );
 }

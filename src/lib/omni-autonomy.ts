@@ -104,7 +104,10 @@ export type AutonomyReadiness = {
   signedIn: boolean;
   role: "owner" | "admin" | "tester" | null;
   executor: "not_connected";
-  state: "Blocked: sign in" | "Blocked: private membership" | "Blocked: executor/host companion not connected";
+  state:
+    | "Blocked: sign in"
+    | "Blocked: private membership"
+    | "Blocked: executor/host companion not connected";
 };
 export function readinessFor(role: unknown, signedIn: boolean): AutonomyReadiness {
   const r = role === "owner" || role === "admin" || role === "tester" ? role : null;

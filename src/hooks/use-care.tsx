@@ -1,12 +1,96 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { applyCareCommand, careStoreSchema, initialCareStore, type CareCommand, type CareStore } from "@/lib/care";
+import {
+  applyCareCommand,
+  careStoreSchema,
+  initialCareStore,
+  type CareCommand,
+  type CareStore,
+} from "@/lib/care";
 export const careStorageKey = "evolution-care-demo-v1";
-const Context = createContext<{ store: CareStore; ready: boolean; issue: string; dispatch: (command: CareCommand) => void } | null>(null);
-const read = (raw: string | null) => { if (raw === null) return structuredClone(initialCareStore); const input: unknown = JSON.parse(raw); const store = careStoreSchema.parse(input); if (input && typeof input === "object" && !("channel" in input)) store.channel = store.deviceId === "win-demo" ? "winget" : store.deviceId === "linux-demo" ? "apt" : "homebrew"; return store; };
+const Context = createContext<{
+  store: CareStore;
+  ready: boolean;
+  issue: string;
+  dispatch: (command: CareCommand) => void;
+} | null>(null);
+const read = (raw: string | null) => {
+  if (raw === null) return structuredClone(initialCareStore);
+  const input: unknown = JSON.parse(raw);
+  const store = careStoreSchema.parse(input);
+  if (input && typeof input === "object" && !("channel" in input))
+    store.channel =
+      store.deviceId === "win-demo"
+        ? "winget"
+        : store.deviceId === "linux-demo"
+          ? "apt"
+          : "homebrew";
+  return store;
+};
 export function CareProvider({ children }: { children: ReactNode }) {
- const [store, setStore] = useState(initialCareStore); const [ready, setReady] = useState(false); const [issue, setIssue] = useState(""); const current = useRef(store); const persistence = useRef(true); const preserve = useRef(false);
- useEffect(() => { try { current.current = read(localStorage.getItem(careStorageKey)); setStore(current.current); } catch { persistence.current = false; preserve.current = true; setIssue("Saved CARE demo data is unreadable and preserved. New actions are temporary."); } setReady(true); const sync = (event: StorageEvent) => { if (event.key !== careStorageKey || !persistence.current) return; try { current.current = read(event.newValue); setStore(current.current); } catch { persistence.current = false; preserve.current = true; setIssue("Changed demo storage is unreadable; original preserved. Actions are temporary."); } }; window.addEventListener("storage", sync); return () => window.removeEventListener("storage", sync); }, []);
- const dispatch = (command: CareCommand) => { if (!ready) throw new Error("Demo preferences loading"); if (persistence.current) { try { current.current = read(localStorage.getItem(careStorageKey)); } catch { persistence.current = false; preserve.current = true; setIssue("Original saved demo data preserved; actions are temporary."); } } const next = applyCareCommand(current.current, command, crypto.randomUUID(), new Date().toISOString()); current.current = next; setStore(next); if (!preserve.current) { try { localStorage.setItem(careStorageKey, JSON.stringify(next)); persistence.current = true; setIssue(""); } catch { persistence.current = false; setIssue("Browser cannot save preferences; new actions are temporary until reload."); } } };
- return <Context.Provider value={{ store, ready, issue, dispatch }}>{children}</Context.Provider>;
+  const [store, setStore] = useState(initialCareStore);
+  const [ready, setReady] = useState(false);
+  const [issue, setIssue] = useState("");
+  const current = useRef(store);
+  const persistence = useRef(true);
+  const preserve = useRef(false);
+  useEffect(() => {
+    try {
+      current.current = read(localStorage.getItem(careStorageKey));
+      setStore(current.current);
+    } catch {
+      persistence.current = false;
+      preserve.current = true;
+      setIssue("Saved CARE demo data is unreadable and preserved. New actions are temporary.");
+    }
+    setReady(true);
+    const sync = (event: StorageEvent) => {
+      if (event.key !== careStorageKey || !persistence.current) return;
+      try {
+        current.current = read(event.newValue);
+        setStore(current.current);
+      } catch {
+        persistence.current = false;
+        preserve.current = true;
+        setIssue("Changed demo storage is unreadable; original preserved. Actions are temporary.");
+      }
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+  const dispatch = (command: CareCommand) => {
+    if (!ready) throw new Error("Demo preferences loading");
+    if (persistence.current) {
+      try {
+        current.current = read(localStorage.getItem(careStorageKey));
+      } catch {
+        persistence.current = false;
+        preserve.current = true;
+        setIssue("Original saved demo data preserved; actions are temporary.");
+      }
+    }
+    const next = applyCareCommand(
+      current.current,
+      command,
+      crypto.randomUUID(),
+      new Date().toISOString(),
+    );
+    current.current = next;
+    setStore(next);
+    if (!preserve.current) {
+      try {
+        localStorage.setItem(careStorageKey, JSON.stringify(next));
+        persistence.current = true;
+        setIssue("");
+      } catch {
+        persistence.current = false;
+        setIssue("Browser cannot save preferences; new actions are temporary until reload.");
+      }
+    }
+  };
+  return <Context.Provider value={{ store, ready, issue, dispatch }}>{children}</Context.Provider>;
 }
-export function useCare() { const value = useContext(Context); if (!value) throw new Error("CARE context missing"); return value; }
+export function useCare() {
+  const value = useContext(Context);
+  if (!value) throw new Error("CARE context missing");
+  return value;
+}

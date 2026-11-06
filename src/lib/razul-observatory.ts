@@ -5,12 +5,7 @@
  * communications ever enter this pipeline, and no exhaustive-coverage claim.
  */
 
-export type EvidenceClass =
-  | "established"
-  | "preliminary"
-  | "hypothesis"
-  | "speculation"
-  | "belief";
+export type EvidenceClass = "established" | "preliminary" | "hypothesis" | "speculation" | "belief";
 
 export interface ObservatorySource {
   id: string;
@@ -29,88 +24,246 @@ export interface ObservatoryControls {
 
 const CATEGORY_KEYWORDS: Record<string, readonly string[]> = {
   "ai-model": [
-    "model", "gpt", "claude", "gemini", "llm", "release", "launch", "benchmark",
-    "reasoning", "multimodal", "frontier", "open-weight", "fine-tun",
+    "model",
+    "gpt",
+    "claude",
+    "gemini",
+    "llm",
+    "release",
+    "launch",
+    "benchmark",
+    "reasoning",
+    "multimodal",
+    "frontier",
+    "open-weight",
+    "fine-tun",
   ],
   vulnerability: [
-    "cve", "vulnerab", "exploit", "advisory", "patch", "rce", "zero-day",
-    "remote code execution", "privilege escalation", "mitigat", "severity",
+    "cve",
+    "vulnerab",
+    "exploit",
+    "advisory",
+    "patch",
+    "rce",
+    "zero-day",
+    "remote code execution",
+    "privilege escalation",
+    "mitigat",
+    "severity",
   ],
   development: [
-    "api", "sdk", "release", "deprecat", "breaking", "changelog", "version",
-    "runtime", "framework", "tooling",
+    "api",
+    "sdk",
+    "release",
+    "deprecat",
+    "breaking",
+    "changelog",
+    "version",
+    "runtime",
+    "framework",
+    "tooling",
   ],
   research: [
-    "paper", "benchmark", "study", "arxiv", "preprint", "evaluation",
-    "dataset", "alignment", "survey",
+    "paper",
+    "benchmark",
+    "study",
+    "arxiv",
+    "preprint",
+    "evaluation",
+    "dataset",
+    "alignment",
+    "survey",
   ],
   space: [
-    "nasa", "spacex", "rocket", "launch", "orbit", "satellite", "mission",
-    "spacecraft", "iss", "lunar", "starship",
+    "nasa",
+    "spacex",
+    "rocket",
+    "launch",
+    "orbit",
+    "satellite",
+    "mission",
+    "spacecraft",
+    "iss",
+    "lunar",
+    "starship",
   ],
   astronomy: [
-    "exoplanet", "black hole", "galaxy", "telescope", "webb", "hubble",
-    "supernova", "nebula", "star", "cosmic", "dark matter", "asteroid",
+    "exoplanet",
+    "black hole",
+    "galaxy",
+    "telescope",
+    "webb",
+    "hubble",
+    "supernova",
+    "nebula",
+    "star",
+    "cosmic",
+    "dark matter",
+    "asteroid",
   ],
   "earth-science": [
-    "earthquake", "volcano", "geology", "seismic", "tsunami", "magnitude",
-    "tectonic", "ocean", "glacier",
+    "earthquake",
+    "volcano",
+    "geology",
+    "seismic",
+    "tsunami",
+    "magnitude",
+    "tectonic",
+    "ocean",
+    "glacier",
   ],
   climate: [
-    "climate", "warming", "emission", "carbon", "temperature record",
-    "wildfire", "hurricane", "drought", "sea level", "renewable",
+    "climate",
+    "warming",
+    "emission",
+    "carbon",
+    "temperature record",
+    "wildfire",
+    "hurricane",
+    "drought",
+    "sea level",
+    "renewable",
   ],
   biology: [
-    "gene", "crispr", "protein", "cell", "species", "evolution", "genome",
-    "bacteria", "virus", "brain", "neuron",
+    "gene",
+    "crispr",
+    "protein",
+    "cell",
+    "species",
+    "evolution",
+    "genome",
+    "bacteria",
+    "virus",
+    "brain",
+    "neuron",
   ],
   physics: [
-    "quantum", "particle", "fusion", "photon", "superconduct", "neutrino",
-    "laser", "plasma", "relativity",
+    "quantum",
+    "particle",
+    "fusion",
+    "photon",
+    "superconduct",
+    "neutrino",
+    "laser",
+    "plasma",
+    "relativity",
   ],
   papers: [
-    "preprint", "study", "paper", "arxiv", "authors", "abstract", "we show",
-    "we present", "we propose",
+    "preprint",
+    "study",
+    "paper",
+    "arxiv",
+    "authors",
+    "abstract",
+    "we show",
+    "we present",
+    "we propose",
   ],
   "government-data": [
-    "magnitude", "earthquake", "dataset", "census", "survey", "official",
-    "agency", "report",
+    "magnitude",
+    "earthquake",
+    "dataset",
+    "census",
+    "survey",
+    "official",
+    "agency",
+    "report",
   ],
   news: ["breaking", "report", "announced", "says", "according"],
   linguistics: [
-    "language", "grammar", "dialect", "phonet", "syntax", "linguist",
-    "word", "translation", "endangered language", "etymolog",
+    "language",
+    "grammar",
+    "dialect",
+    "phonet",
+    "syntax",
+    "linguist",
+    "word",
+    "translation",
+    "endangered language",
+    "etymolog",
   ],
   archaeology: [
-    "archaeolog", "ancient", "civilization", "excavat", "artifact", "tomb",
-    "ruins", "bronze age", "roman", "egypt", "mayan", "fossil",
+    "archaeolog",
+    "ancient",
+    "civilization",
+    "excavat",
+    "artifact",
+    "tomb",
+    "ruins",
+    "bronze age",
+    "roman",
+    "egypt",
+    "mayan",
+    "fossil",
   ],
   architecture: [
-    "architect", "building", "structure", "bridge", "design", "construction",
-    "monument", "cathedral",
+    "architect",
+    "building",
+    "structure",
+    "bridge",
+    "design",
+    "construction",
+    "monument",
+    "cathedral",
   ],
   religion: [
-    "religion", "church", "temple", "faith", "belief", "spiritual",
-    "scientology", "buddhis", "hindu", "islam", "christian", "ritual",
+    "religion",
+    "church",
+    "temple",
+    "faith",
+    "belief",
+    "spiritual",
+    "scientology",
+    "buddhis",
+    "hindu",
+    "islam",
+    "christian",
+    "ritual",
   ],
-  astrology: [
-    "astrolog", "horoscope", "zodiac", "natal chart", "mercury retrograde",
-  ],
+  astrology: ["astrolog", "horoscope", "zodiac", "natal chart", "mercury retrograde"],
   culture: [
-    "culture", "art", "museum", "film", "music", "literature", "festival",
-    "heritage", "tradition",
+    "culture",
+    "art",
+    "museum",
+    "film",
+    "music",
+    "literature",
+    "festival",
+    "heritage",
+    "tradition",
   ],
   geography: [
-    "geograph", "map", "border", "territory", "region", "island", "river",
-    "mountain", "country",
+    "geograph",
+    "map",
+    "border",
+    "territory",
+    "region",
+    "island",
+    "river",
+    "mountain",
+    "country",
   ],
   engineering: [
-    "engineer", "robot", "battery", "semiconductor", "chip", "material",
-    "manufactur", "sensor", "drone",
+    "engineer",
+    "robot",
+    "battery",
+    "semiconductor",
+    "chip",
+    "material",
+    "manufactur",
+    "sensor",
+    "drone",
   ],
   "emerging-tech": [
-    "quantum comput", "biotech", "nanotech", "6g", "fusion", "neural interface",
-    "autonomous", "humanoid", "synthetic",
+    "quantum comput",
+    "biotech",
+    "nanotech",
+    "6g",
+    "fusion",
+    "neural interface",
+    "autonomous",
+    "humanoid",
+    "synthetic",
   ],
 };
 
@@ -157,8 +310,21 @@ export function assignTopic(entry: { title: string; summary: string }, category:
 }
 
 const ENTITY_STOP = new Set([
-  "The", "New", "How", "Why", "What", "This", "That", "After", "Before",
-  "Could", "Would", "Study", "Scientists", "Researchers", "According",
+  "The",
+  "New",
+  "How",
+  "Why",
+  "What",
+  "This",
+  "That",
+  "After",
+  "Before",
+  "Could",
+  "Would",
+  "Study",
+  "Scientists",
+  "Researchers",
+  "According",
 ]);
 
 /**
@@ -196,8 +362,7 @@ export function classifyEvidence(
 ): { evidenceClass: EvidenceClass; strength: number } {
   const text = `${entry.title} ${entry.summary}`.toLowerCase();
   const official = ["cisa", "usgs", "nasa", "esa"].some((k) => source.id.startsWith(k));
-  if (BELIEF_CATEGORIES.has(source.category))
-    return { evidenceClass: "belief", strength: 15 };
+  if (BELIEF_CATEGORIES.has(source.category)) return { evidenceClass: "belief", strength: 15 };
   if (/speculat|hypothesi|might one day|could one day/.test(text))
     return { evidenceClass: "speculation", strength: 20 };
   if (/preliminary|early results|suggests|may indicate|propose/.test(text))
@@ -238,11 +403,7 @@ const CATEGORY_ROUTES: Record<string, readonly string[]> = {
  * meets the owner's alert threshold. Below threshold it stays in searchable
  * history without alerting anyone.
  */
-export function routeFinding(
-  category: string,
-  relevance: number,
-  threshold: number,
-): string[] {
+export function routeFinding(category: string, relevance: number, threshold: number): string[] {
   if (relevance < threshold) return [];
   return [...(CATEGORY_ROUTES[category] ?? ["omni"])];
 }
@@ -253,9 +414,31 @@ export function questionHashInput(question: string): string {
 }
 
 const STOP_TOKENS = new Set([
-  "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "is", "are",
-  "what", "which", "how", "why", "when", "who", "with", "about", "latest",
-  "new", "news", "tell", "me",
+  "the",
+  "a",
+  "an",
+  "and",
+  "or",
+  "of",
+  "to",
+  "in",
+  "on",
+  "for",
+  "is",
+  "are",
+  "what",
+  "which",
+  "how",
+  "why",
+  "when",
+  "who",
+  "with",
+  "about",
+  "latest",
+  "new",
+  "news",
+  "tell",
+  "me",
 ]);
 
 export function tokenize(text: string): string[] {
@@ -270,13 +453,15 @@ export function tokenize(text: string): string[] {
  * Lexical semantic retrieval: token-overlap scoring of a question against a
  * finding's title, summary, topic and entities. Deterministic, no AI calls.
  */
-export function rankForQuestion<T extends {
-  title: string;
-  summary: string;
-  topic: string;
-  entities: string[];
-  relevance: number;
-}>(question: string, findings: readonly T[], limit = 5): T[] {
+export function rankForQuestion<
+  T extends {
+    title: string;
+    summary: string;
+    topic: string;
+    entities: string[];
+    relevance: number;
+  },
+>(question: string, findings: readonly T[], limit = 5): T[] {
   const tokens = new Set(tokenize(question));
   if (!tokens.size) return [];
   return findings
@@ -285,7 +470,13 @@ export function rankForQuestion<T extends {
       const hits = hay.filter((t) => tokens.has(t)).length;
       return { f, score: hits * 10 + Math.min(f.relevance, 100) / 10 };
     })
-    .filter((r) => r.score > 1 && tokenize(`${r.f.title} ${r.f.summary} ${r.f.topic} ${r.f.entities.join(" ")}`).some((token) => tokens.has(token)))
+    .filter(
+      (r) =>
+        r.score > 1 &&
+        tokenize(`${r.f.title} ${r.f.summary} ${r.f.topic} ${r.f.entities.join(" ")}`).some(
+          (token) => tokens.has(token),
+        ),
+    )
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((r) => r.f);
@@ -297,7 +488,13 @@ export function confidenceFor(input: {
   relevance: number;
   corroborations: number;
 }): number {
-  const base = ({ established: 60, preliminary: 40, hypothesis: 25, speculation: 10, belief: 5 } as Record<string, number>)[input.evidenceClass] ?? 0;
+  const base =
+    (
+      { established: 60, preliminary: 40, hypothesis: 25, speculation: 10, belief: 5 } as Record<
+        string,
+        number
+      >
+    )[input.evidenceClass] ?? 0;
   const corroboration = Math.min(input.corroborations - 1, 3) * 8;
   return Math.min(100, base + Math.round(input.relevance / 5) + corroboration);
 }

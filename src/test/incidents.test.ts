@@ -1,45 +1,480 @@
 import { describe, expect, it } from "vitest";
 import { applyGenesisCommand, emptyGenesisStore, type GenesisStore } from "@/lib/genesis";
-import { applyIncidentCommand, canPreviewDebrief, debriefExport, debriefInput, emptyIncidentStore, externalPublicationGate, incidentMatches, incidentStoreSchema, oracleEvidenceSplit, screenDebrief, type DebriefInput } from "@/lib/incidents";
+import {
+  applyIncidentCommand,
+  canPreviewDebrief,
+  debriefExport,
+  debriefInput,
+  emptyIncidentStore,
+  externalPublicationGate,
+  incidentMatches,
+  incidentStoreSchema,
+  oracleEvidenceSplit,
+  screenDebrief,
+  type DebriefInput,
+} from "@/lib/incidents";
 import { incidentCategories, incidentExamples } from "@/data/evolution";
 const at = "2026-10-21T00:00:00.000Z";
 function people() {
- let g: GenesisStore = structuredClone(emptyGenesisStore);
- g = applyGenesisCommand(g, { type: "identity", input: { name: "Sample operator", kind: "Human", agentName: "", role: "Explorer", scopes: ["submit_capsules"], consent: true, spendCapUsd: 0 } }, "operator", at);
- g = applyGenesisCommand(g, { type: "identity", input: { name: "Sample moderator", kind: "Human", agentName: "", role: "Critic", scopes: ["review_proposals"], consent: true, spendCapUsd: 0 } }, "moderator", at);
- return g;
+  let g: GenesisStore = structuredClone(emptyGenesisStore);
+  g = applyGenesisCommand(
+    g,
+    {
+      type: "identity",
+      input: {
+        name: "Sample operator",
+        kind: "Human",
+        agentName: "",
+        role: "Explorer",
+        scopes: ["submit_capsules"],
+        consent: true,
+        spendCapUsd: 0,
+      },
+    },
+    "operator",
+    at,
+  );
+  g = applyGenesisCommand(
+    g,
+    {
+      type: "identity",
+      input: {
+        name: "Sample moderator",
+        kind: "Human",
+        agentName: "",
+        role: "Critic",
+        scopes: ["review_proposals"],
+        consent: true,
+        spendCapUsd: 0,
+      },
+    },
+    "moderator",
+    at,
+  );
+  return g;
 }
-const input: DebriefInput = { identityId: "operator", title: "Fictional label sorting lesson", category: "Code Postmortems", system: "Fictional sorter", incidentDate: "2026-10-21", environment: "Browser-only fictional fixture.", intended: "Keep a declared dependency order.", observed: "Labels were sorted alphabetically in the authored sample.", logs: "Authored fixture output only.", timeline: "T+0 sample authored; T+1 reviewed.", facts: "The sample uses fictional labels.", unknowns: "Real system behavior is unknown.", hypotheses: "A sort may have replaced ordering; unconfirmed.", reproduction: "Inspect the fixture without execution.", tests: "Ordering test proposed, not run.", lessons: "Clean output can still be wrong.", mitigation: "Declare dependencies explicitly.", sourceUrl: "", sourceCredit: "Original sample author", sourceLicense: "CC0 sample", sourcePermission: true, clipUrl: "", clipCreator: "", clipLicense: "", clipPermission: false, clipPrivacy: false, captions: "", attribution: "Sample operator", privacyPolicy: "Non-sensitive local sample only.", operatorAuthorized: true, sampleOnly: true, scopes: ["record", "quote", "publication"], status: "DEMO" };
-const approved = (g = people()) => { let s = applyIncidentCommand(emptyIncidentStore, g, { type: "draft", input }, "case", at); s = applyIncidentCommand(s, g, { type: "privacy", recordId: "case", actorId: "operator", confirmed: true }, "privacy", at); return applyIncidentCommand(s, g, { type: "review", recordId: "case", actorId: "moderator", decision: "Preview approved", note: "Facts and hypotheses are clearly separated.", privacyConfirmed: true, rightsConfirmed: true, attributionConfirmed: true }, "review", at); };
+const input: DebriefInput = {
+  identityId: "operator",
+  title: "Fictional label sorting lesson",
+  category: "Code Postmortems",
+  system: "Fictional sorter",
+  incidentDate: "2026-10-21",
+  environment: "Browser-only fictional fixture.",
+  intended: "Keep a declared dependency order.",
+  observed: "Labels were sorted alphabetically in the authored sample.",
+  logs: "Authored fixture output only.",
+  timeline: "T+0 sample authored; T+1 reviewed.",
+  facts: "The sample uses fictional labels.",
+  unknowns: "Real system behavior is unknown.",
+  hypotheses: "A sort may have replaced ordering; unconfirmed.",
+  reproduction: "Inspect the fixture without execution.",
+  tests: "Ordering test proposed, not run.",
+  lessons: "Clean output can still be wrong.",
+  mitigation: "Declare dependencies explicitly.",
+  sourceUrl: "",
+  sourceCredit: "Original sample author",
+  sourceLicense: "CC0 sample",
+  sourcePermission: true,
+  clipUrl: "",
+  clipCreator: "",
+  clipLicense: "",
+  clipPermission: false,
+  clipPrivacy: false,
+  captions: "",
+  attribution: "Sample operator",
+  privacyPolicy: "Non-sensitive local sample only.",
+  operatorAuthorized: true,
+  sampleOnly: true,
+  scopes: ["record", "quote", "publication"],
+  status: "DEMO",
+};
+const approved = (g = people()) => {
+  let s = applyIncidentCommand(emptyIncidentStore, g, { type: "draft", input }, "case", at);
+  s = applyIncidentCommand(
+    s,
+    g,
+    { type: "privacy", recordId: "case", actorId: "operator", confirmed: true },
+    "privacy",
+    at,
+  );
+  return applyIncidentCommand(
+    s,
+    g,
+    {
+      type: "review",
+      recordId: "case",
+      actorId: "moderator",
+      decision: "Preview approved",
+      note: "Facts and hypotheses are clearly separated.",
+      privacyConfirmed: true,
+      rightsConfirmed: true,
+      attributionConfirmed: true,
+    },
+    "review",
+    at,
+  );
+};
 describe("Agent Debrief gates", () => {
- it("requires sample-only content even with operator consent", () => { expect(debriefInput.safeParse({ ...input, sampleOnly: false }).success).toBe(false); });
- it("requires the record consent scope", () => { expect(debriefInput.safeParse({ ...input, scopes: ["quote", "publication"] }).success).toBe(false); });
- it("rejects verified and unverified real incidents in demo intake", () => { expect(debriefInput.safeParse({ ...input, status: "VERIFIED" }).success).toBe(false); expect(debriefInput.safeParse({ ...input, status: "UNVERIFIED" }).success).toBe(false); });
- it("requires source permission", () => { expect(debriefInput.safeParse({ ...input, sourcePermission: false }).success).toBe(false); });
- it("rejects credential-bearing and non-HTTPS clip URLs", () => { expect(debriefInput.safeParse({ ...input, clipUrl: "https://user:pass@example.com/clip" }).success).toBe(false); expect(debriefInput.safeParse({ ...input, sourceUrl: "javascript:alert(1)" }).success).toBe(false); });
- it("rejects invalid calendar dates", () => { expect(debriefInput.safeParse({ ...input, incidentDate: "2026-02-30" }).success).toBe(false); });
- it("requires an active Embassy submitter scope", () => { expect(() => applyIncidentCommand(emptyIncidentStore, emptyGenesisStore, { type: "draft", input }, "x", at)).toThrow(/active/); });
- it("flags sample PII without returning the matched value", () => { const results = screenDebrief({ observed: "test.person@example.com", logs: "555-123-4567" }); expect(results).toEqual([{ field: "observed", kind: "Possible email / PII" }, { field: "logs", kind: "Possible phone / PII" }]); expect(JSON.stringify(results)).not.toContain("example.com"); });
- it("blocks explicit unsafe commands without executing them", () => { expect(() => applyIncidentCommand(emptyIncidentStore, people(), { type: "draft", input: { ...input, reproduction: "disable the emergency stop" } }, "x", at)).toThrow(/Unsafe instruction/); });
- it("requires operator authorization and sample-only consent", () => { expect(() => applyIncidentCommand(emptyIncidentStore, people(), { type: "draft", input: { ...input, operatorAuthorized: false as true } }, "x", at)).toThrow(); });
- it("blocks a credential before saving", () => { expect(screenDebrief({ logs: "api_key=abc12345" })).toEqual([{ field: "logs", kind: "Possible credential" }]); expect(() => applyIncidentCommand(emptyIncidentStore, people(), { type: "draft", input: { ...input, logs: "api_key=abc12345" } }, "x", at)).toThrow(/Guardian pattern check/); });
- it("requires clip permission, privacy and captions before saving clip metadata", () => { expect(() => applyIncidentCommand(emptyIncidentStore, people(), { type: "draft", input: { ...input, clipUrl: "https://example.com/clip" } }, "x", at)).toThrow(/Clip metadata/); });
- it("requires privacy review before moderation", () => { const g = people(); const s = applyIncidentCommand(emptyIncidentStore, g, { type: "draft", input }, "case", at); expect(() => applyIncidentCommand(s, g, { type: "review", recordId: "case", actorId: "moderator", decision: "Preview approved", note: "Ready for a local preview.", privacyConfirmed: true, rightsConfirmed: true, attributionConfirmed: true }, "r", at)).toThrow(/Privacy review/); });
- it("rejects the submitter as moderator", () => { const g = people(); let s = applyIncidentCommand(emptyIncidentStore, g, { type: "draft", input }, "case", at); s = applyIncidentCommand(s, g, { type: "privacy", recordId: "case", actorId: "operator", confirmed: true }, "p", at); expect(() => applyIncidentCommand(s, g, { type: "review", recordId: "case", actorId: "operator", decision: "Preview approved", note: "Self approval attempt.", privacyConfirmed: true, rightsConfirmed: true, attributionConfirmed: true }, "r", at)).toThrow(); });
- it("requires separate quote and publication consent", () => { const g = people(); let s = applyIncidentCommand(emptyIncidentStore, g, { type: "draft", input: { ...input, scopes: ["record"] } }, "case", at); s = applyIncidentCommand(s, g, { type: "privacy", recordId: "case", actorId: "operator", confirmed: true }, "p", at); expect(() => applyIncidentCommand(s, g, { type: "review", recordId: "case", actorId: "moderator", decision: "Preview approved", note: "Ready for a local preview.", privacyConfirmed: true, rightsConfirmed: true, attributionConfirmed: true }, "r", at)).toThrow(/quote and publication/); });
- it("removes previews when Embassy consent is revoked", () => { const g = people(); const s = approved(g); const record = s.debriefs[0]; if (!record) throw new Error("Fixture missing"); expect(canPreviewDebrief(record, g)).toBe(true); const revoked = applyGenesisCommand(g, { type: "revoke", identityId: "operator" }, "revoke", at); expect(canPreviewDebrief(record, revoked)).toBe(false); });
- it("takes down a local preview through the submitter", () => { const g = people(); const s = applyIncidentCommand(approved(g), g, { type: "notice", caseId: "case", actorId: "operator", kind: "Takedown", note: "Withdraw this sample from the preview." }, "n", at); expect(s.debriefs[0]?.state).toBe("Withdrawn"); });
- it("keeps external publication, verification and clips disabled", () => { expect(externalPublicationGate()).toMatchObject({ allowed: false, identityVerified: false, authenticatedModerator: false, clipsPlayable: false }); const record = approved().debriefs[0]; if (!record) throw new Error("Fixture missing"); expect(debriefExport(record, people())).toMatchObject({ technicalLogsIncluded: false, externalPublication: false, playableClip: false, identityVerified: false }); });
- it("rejects stored approvals missing a distinct review", () => { const s = approved(); const r = s.debriefs[0]?.review; if (!r) throw new Error("Fixture missing"); r.reviewerId = "operator"; expect(incidentStoreSchema.safeParse(s).success).toBe(false); });
- it("invalidates local approvals when the reviewer revokes", () => { const g = people(); const s = approved(g); const record = s.debriefs[0]; if (!record) throw new Error("Missing fixture"); const revoked = applyGenesisCommand(g, { type: "revoke", identityId: "moderator" }, "revoke", at); expect(canPreviewDebrief(record, revoked)).toBe(false); });
- it("invalidates a preview when a required local scope is missing", () => { const g = people(); const record = approved(g).debriefs[0]; if (!record) throw new Error("Missing fixture"); const moderator = g.identities.find(p => p.id === "moderator"); if (!moderator) throw new Error("Missing moderator"); moderator.scopes = []; expect(canPreviewDebrief(record, g)).toBe(false); });
- it("requires all privacy, source and attribution moderator checks", () => { const g = people(); let s = applyIncidentCommand(emptyIncidentStore, g, { type: "draft", input }, "case", at); s = applyIncidentCommand(s, g, { type: "privacy", recordId: "case", actorId: "operator", confirmed: true }, "p", at); expect(() => applyIncidentCommand(s, g, { type: "review", recordId: "case", actorId: "moderator", decision: "Preview approved", note: "Missing source rights check.", privacyConfirmed: true, rightsConfirmed: false, attributionConfirmed: true }, "r", at)).toThrow(); });
- it("invalidates privacy and moderation when a draft is revised", () => { const g = people(); const s = applyIncidentCommand(approved(g), g, { type: "revise", recordId: "case", input: { ...input, observed: "A corrected sample observation." } }, "edit", at); expect(s.debriefs[0]).toMatchObject({ state: "Draft", revision: 2, review: null, privacyReviewerId: null }); });
- it("corrections pull the local case back into review", () => { const g = people(); const s = applyIncidentCommand(approved(g), g, { type: "notice", caseId: "case", actorId: "operator", kind: "Correction", note: "The worksheet needs an observation correction." }, "n", at); expect(s.debriefs[0]?.state).toBe("Changes requested"); });
- it("requires a human reviewer to take down an authored teaching sample", () => { expect(() => applyIncidentCommand(emptyIncidentStore, people(), { type: "notice", caseId: "empty-list-encore", actorId: "operator", kind: "Takedown", note: "Hide this local teaching case." }, "n", at)).toThrow(/human reviewer/); });
- it("Oracle organizes only supplied facts and hypotheses without model calls", () => { expect(oracleEvidenceSplit(input)).toMatchObject({ facts: input.facts, hypotheses: input.hypotheses, unknowns: input.unknowns, modelCalled: false, rootCauseConfirmed: false }); });
+  it("requires sample-only content even with operator consent", () => {
+    expect(debriefInput.safeParse({ ...input, sampleOnly: false }).success).toBe(false);
+  });
+  it("requires the record consent scope", () => {
+    expect(debriefInput.safeParse({ ...input, scopes: ["quote", "publication"] }).success).toBe(
+      false,
+    );
+  });
+  it("rejects verified and unverified real incidents in demo intake", () => {
+    expect(debriefInput.safeParse({ ...input, status: "VERIFIED" }).success).toBe(false);
+    expect(debriefInput.safeParse({ ...input, status: "UNVERIFIED" }).success).toBe(false);
+  });
+  it("requires source permission", () => {
+    expect(debriefInput.safeParse({ ...input, sourcePermission: false }).success).toBe(false);
+  });
+  it("rejects credential-bearing and non-HTTPS clip URLs", () => {
+    expect(
+      debriefInput.safeParse({ ...input, clipUrl: "https://user:pass@example.com/clip" }).success,
+    ).toBe(false);
+    expect(debriefInput.safeParse({ ...input, sourceUrl: "javascript:alert(1)" }).success).toBe(
+      false,
+    );
+  });
+  it("rejects invalid calendar dates", () => {
+    expect(debriefInput.safeParse({ ...input, incidentDate: "2026-02-30" }).success).toBe(false);
+  });
+  it("requires an active Embassy submitter scope", () => {
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        emptyGenesisStore,
+        { type: "draft", input },
+        "x",
+        at,
+      ),
+    ).toThrow(/active/);
+  });
+  it("flags sample PII without returning the matched value", () => {
+    const results = screenDebrief({ observed: "test.person@example.com", logs: "555-123-4567" });
+    expect(results).toEqual([
+      { field: "observed", kind: "Possible email / PII" },
+      { field: "logs", kind: "Possible phone / PII" },
+    ]);
+    expect(JSON.stringify(results)).not.toContain("example.com");
+  });
+  it("blocks explicit unsafe commands without executing them", () => {
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        people(),
+        { type: "draft", input: { ...input, reproduction: "disable the emergency stop" } },
+        "x",
+        at,
+      ),
+    ).toThrow(/Unsafe instruction/);
+  });
+  it("requires operator authorization and sample-only consent", () => {
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        people(),
+        { type: "draft", input: { ...input, operatorAuthorized: false as true } },
+        "x",
+        at,
+      ),
+    ).toThrow();
+  });
+  it("blocks a credential before saving", () => {
+    expect(screenDebrief({ logs: "api_key=abc12345" })).toEqual([
+      { field: "logs", kind: "Possible credential" },
+    ]);
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        people(),
+        { type: "draft", input: { ...input, logs: "api_key=abc12345" } },
+        "x",
+        at,
+      ),
+    ).toThrow(/Guardian pattern check/);
+  });
+  it("requires clip permission, privacy and captions before saving clip metadata", () => {
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        people(),
+        { type: "draft", input: { ...input, clipUrl: "https://example.com/clip" } },
+        "x",
+        at,
+      ),
+    ).toThrow(/Clip metadata/);
+  });
+  it("requires privacy review before moderation", () => {
+    const g = people();
+    const s = applyIncidentCommand(emptyIncidentStore, g, { type: "draft", input }, "case", at);
+    expect(() =>
+      applyIncidentCommand(
+        s,
+        g,
+        {
+          type: "review",
+          recordId: "case",
+          actorId: "moderator",
+          decision: "Preview approved",
+          note: "Ready for a local preview.",
+          privacyConfirmed: true,
+          rightsConfirmed: true,
+          attributionConfirmed: true,
+        },
+        "r",
+        at,
+      ),
+    ).toThrow(/Privacy review/);
+  });
+  it("rejects the submitter as moderator", () => {
+    const g = people();
+    let s = applyIncidentCommand(emptyIncidentStore, g, { type: "draft", input }, "case", at);
+    s = applyIncidentCommand(
+      s,
+      g,
+      { type: "privacy", recordId: "case", actorId: "operator", confirmed: true },
+      "p",
+      at,
+    );
+    expect(() =>
+      applyIncidentCommand(
+        s,
+        g,
+        {
+          type: "review",
+          recordId: "case",
+          actorId: "operator",
+          decision: "Preview approved",
+          note: "Self approval attempt.",
+          privacyConfirmed: true,
+          rightsConfirmed: true,
+          attributionConfirmed: true,
+        },
+        "r",
+        at,
+      ),
+    ).toThrow();
+  });
+  it("requires separate quote and publication consent", () => {
+    const g = people();
+    let s = applyIncidentCommand(
+      emptyIncidentStore,
+      g,
+      { type: "draft", input: { ...input, scopes: ["record"] } },
+      "case",
+      at,
+    );
+    s = applyIncidentCommand(
+      s,
+      g,
+      { type: "privacy", recordId: "case", actorId: "operator", confirmed: true },
+      "p",
+      at,
+    );
+    expect(() =>
+      applyIncidentCommand(
+        s,
+        g,
+        {
+          type: "review",
+          recordId: "case",
+          actorId: "moderator",
+          decision: "Preview approved",
+          note: "Ready for a local preview.",
+          privacyConfirmed: true,
+          rightsConfirmed: true,
+          attributionConfirmed: true,
+        },
+        "r",
+        at,
+      ),
+    ).toThrow(/quote and publication/);
+  });
+  it("removes previews when Embassy consent is revoked", () => {
+    const g = people();
+    const s = approved(g);
+    const record = s.debriefs[0];
+    if (!record) throw new Error("Fixture missing");
+    expect(canPreviewDebrief(record, g)).toBe(true);
+    const revoked = applyGenesisCommand(
+      g,
+      { type: "revoke", identityId: "operator" },
+      "revoke",
+      at,
+    );
+    expect(canPreviewDebrief(record, revoked)).toBe(false);
+  });
+  it("takes down a local preview through the submitter", () => {
+    const g = people();
+    const s = applyIncidentCommand(
+      approved(g),
+      g,
+      {
+        type: "notice",
+        caseId: "case",
+        actorId: "operator",
+        kind: "Takedown",
+        note: "Withdraw this sample from the preview.",
+      },
+      "n",
+      at,
+    );
+    expect(s.debriefs[0]?.state).toBe("Withdrawn");
+  });
+  it("keeps external publication, verification and clips disabled", () => {
+    expect(externalPublicationGate()).toMatchObject({
+      allowed: false,
+      identityVerified: false,
+      authenticatedModerator: false,
+      clipsPlayable: false,
+    });
+    const record = approved().debriefs[0];
+    if (!record) throw new Error("Fixture missing");
+    expect(debriefExport(record, people())).toMatchObject({
+      technicalLogsIncluded: false,
+      externalPublication: false,
+      playableClip: false,
+      identityVerified: false,
+    });
+  });
+  it("rejects stored approvals missing a distinct review", () => {
+    const s = approved();
+    const r = s.debriefs[0]?.review;
+    if (!r) throw new Error("Fixture missing");
+    r.reviewerId = "operator";
+    expect(incidentStoreSchema.safeParse(s).success).toBe(false);
+  });
+  it("invalidates local approvals when the reviewer revokes", () => {
+    const g = people();
+    const s = approved(g);
+    const record = s.debriefs[0];
+    if (!record) throw new Error("Missing fixture");
+    const revoked = applyGenesisCommand(
+      g,
+      { type: "revoke", identityId: "moderator" },
+      "revoke",
+      at,
+    );
+    expect(canPreviewDebrief(record, revoked)).toBe(false);
+  });
+  it("invalidates a preview when a required local scope is missing", () => {
+    const g = people();
+    const record = approved(g).debriefs[0];
+    if (!record) throw new Error("Missing fixture");
+    const moderator = g.identities.find((p) => p.id === "moderator");
+    if (!moderator) throw new Error("Missing moderator");
+    moderator.scopes = [];
+    expect(canPreviewDebrief(record, g)).toBe(false);
+  });
+  it("requires all privacy, source and attribution moderator checks", () => {
+    const g = people();
+    let s = applyIncidentCommand(emptyIncidentStore, g, { type: "draft", input }, "case", at);
+    s = applyIncidentCommand(
+      s,
+      g,
+      { type: "privacy", recordId: "case", actorId: "operator", confirmed: true },
+      "p",
+      at,
+    );
+    expect(() =>
+      applyIncidentCommand(
+        s,
+        g,
+        {
+          type: "review",
+          recordId: "case",
+          actorId: "moderator",
+          decision: "Preview approved",
+          note: "Missing source rights check.",
+          privacyConfirmed: true,
+          rightsConfirmed: false,
+          attributionConfirmed: true,
+        },
+        "r",
+        at,
+      ),
+    ).toThrow();
+  });
+  it("invalidates privacy and moderation when a draft is revised", () => {
+    const g = people();
+    const s = applyIncidentCommand(
+      approved(g),
+      g,
+      {
+        type: "revise",
+        recordId: "case",
+        input: { ...input, observed: "A corrected sample observation." },
+      },
+      "edit",
+      at,
+    );
+    expect(s.debriefs[0]).toMatchObject({
+      state: "Draft",
+      revision: 2,
+      review: null,
+      privacyReviewerId: null,
+    });
+  });
+  it("corrections pull the local case back into review", () => {
+    const g = people();
+    const s = applyIncidentCommand(
+      approved(g),
+      g,
+      {
+        type: "notice",
+        caseId: "case",
+        actorId: "operator",
+        kind: "Correction",
+        note: "The worksheet needs an observation correction.",
+      },
+      "n",
+      at,
+    );
+    expect(s.debriefs[0]?.state).toBe("Changes requested");
+  });
+  it("requires a human reviewer to take down an authored teaching sample", () => {
+    expect(() =>
+      applyIncidentCommand(
+        emptyIncidentStore,
+        people(),
+        {
+          type: "notice",
+          caseId: "empty-list-encore",
+          actorId: "operator",
+          kind: "Takedown",
+          note: "Hide this local teaching case.",
+        },
+        "n",
+        at,
+      ),
+    ).toThrow(/human reviewer/);
+  });
+  it("Oracle organizes only supplied facts and hypotheses without model calls", () => {
+    expect(oracleEvidenceSplit(input)).toMatchObject({
+      facts: input.facts,
+      hypotheses: input.hypotheses,
+      unknowns: input.unknowns,
+      modelCalled: false,
+      rootCauseConfirmed: false,
+    });
+  });
 });
 describe("Incident Archives samples", () => {
- it("covers all six requested categories without verified status", () => { expect(new Set(incidentExamples.map(c => c.category))).toEqual(new Set(incidentCategories)); expect(incidentExamples.every(c => c.status === "DEMO" || c.status === "REENACTMENT")).toBe(true); });
- it("searches system and safety lesson text with exact category/status filters", () => { const example = incidentExamples.find(c => c.id === "two-commands-one-rover"); if (!example) throw new Error("Fixture missing"); expect(incidentMatches(example, "command virtual", "Robot Malfunctions", "REENACTMENT")).toBe(true); expect(incidentMatches(example, "command virtual", "Lab Lessons", "DEMO")).toBe(false); });
+  it("covers all six requested categories without verified status", () => {
+    expect(new Set(incidentExamples.map((c) => c.category))).toEqual(new Set(incidentCategories));
+    expect(incidentExamples.every((c) => c.status === "DEMO" || c.status === "REENACTMENT")).toBe(
+      true,
+    );
+  });
+  it("searches system and safety lesson text with exact category/status filters", () => {
+    const example = incidentExamples.find((c) => c.id === "two-commands-one-rover");
+    if (!example) throw new Error("Fixture missing");
+    expect(incidentMatches(example, "command virtual", "Robot Malfunctions", "REENACTMENT")).toBe(
+      true,
+    );
+    expect(incidentMatches(example, "command virtual", "Lab Lessons", "DEMO")).toBe(false);
+  });
 });

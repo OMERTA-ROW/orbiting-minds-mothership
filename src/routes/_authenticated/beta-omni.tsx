@@ -364,7 +364,11 @@ function LiveOmni() {
                 await pauseAccount({ data: { paused: !data.access?.paused } });
                 if (!data.access?.paused) await stop();
                 await qc.invalidateQueries({ queryKey: ["beta-private"] });
-                setNotice(data.access?.paused ? "Account AI resumed; every request still requires fresh permission checks." : "Account AI paused. Saved results remain unchanged.");
+                setNotice(
+                  data.access?.paused
+                    ? "Account AI resumed; every request still requires fresh permission checks."
+                    : "Account AI paused. Saved results remain unchanged.",
+                );
               } catch (e) {
                 setNotice(e instanceof Error ? e.message : "Pause was not confirmed.");
               }

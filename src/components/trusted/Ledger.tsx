@@ -12,11 +12,508 @@ import { downloadJson } from "@/lib/genesis-sdk";
 import { releasePassport, releaseState, type ReleaseRecord } from "@/lib/trusted-release";
 import { TrustShell, useTrustAction } from "./TrustShell";
 export function ApprovalLedgerPage() {
- const {store}=useTrustedRelease(),{store:g}=useGenesis(),{run,message,busy}=useTrustAction();const [codeId,setCodeId]=useState("image-contrast"),[query,setQuery]=useState("");const code=codeContributions.find(c=>c.id===codeId);
- const releases=store.releases.filter(r=>`${codeContributions.find(c=>c.id===r.codeId)?.title.en} ${r.version} ${g.identities.find(p=>p.id===r.ownerId)?.name} ${r.state}`.toLowerCase().includes(query.trim().toLowerCase()));
- return <TrustShell title="Evolution Approval Ledger" eyebrow="Who approved this code? / declared trace"><div className="flex items-start gap-4 border-b border-border pb-8"><ShieldX className="shrink-0 text-warning" size={30}/><div><h2 className="text-2xl">No trusted releases issued</h2><p className="mt-4 max-w-3xl text-sm leading-loose text-muted-foreground">Exact sample-text SHA-256, declared owner/operator, digest-bound local signoff and preserved versions. A hash is not a signature, identity proof or safety test. Local signoff never authorizes release, installation or hardware.</p></div></div><form key={codeId} noValidate className="mt-8 grid gap-5" onSubmit={async e=>{e.preventDefault();const d=new FormData(e.currentTarget);await run({type:"release",input:{codeId,version:d.get("version"),ownerId:d.get("ownerId"),agentOperatorId:d.get("agentOperatorId"),artifact:d.get("artifact"),license:d.get("license"),dependencies:d.get("dependencies"),testEvidence:d.get("testEvidence"),rollback:d.get("rollback"),previousVersion:d.get("previousVersion"),scenarioId:d.get("scenarioId"),safetyId:d.get("safetyId"),replayId:d.get("replayId"),impactId:d.get("impactId"),consent:d.get("consent")==="on"}},"Unsigned local release draft recorded; test declarations are not executed evidence.");}}><div className="grid gap-5 md:grid-cols-2"><label className={fieldLabel}>Code Exchange sample<select aria-label="Code Exchange sample" className="exchange-select mt-2 w-full" value={codeId} onChange={e=>setCodeId(e.target.value)}>{codeContributions.map(c=><option key={c.id} value={c.id}>{c.title.en}</option>)}</select></label><label className={fieldLabel}>Artifact version<Input name="version" defaultValue={code?.version??"0.1.0"} className="mt-2"/></label><IdentitySelect name="ownerId" scope="submit_capsules" label="Declared human owner"/><label className={fieldLabel}>Optional agent operator · declaration only<select name="agentOperatorId" aria-label="Optional agent operator" defaultValue="" className="exchange-select mt-2 w-full"><option value="">No agent involved</option>{g.identities.filter(p=>p.kind==="Agent operator"&&p.state==="Active"&&p.scopes.includes("submit_capsules")).map(p=><option key={p.id} value={p.id}>{p.agentName} / {p.name} · unverified</option>)}</select></label><label className={fieldLabel}>Declared license<select name="license" aria-label="Declared release license" defaultValue={code?.license} className="exchange-select mt-2 w-full"><option>MIT</option><option>Apache-2.0</option><option>Unknown / permission required</option></select></label><label className={fieldLabel}>Previous version · optional rollback target<Input name="previousVersion" placeholder="0.1.0" className="mt-2"/></label></div><label className={fieldLabel}>Exact sample artifact text · hashed, never executed<Textarea name="artifact" defaultValue={code?.code} maxLength={20000} className="mt-2 min-h-48 font-mono text-xs"/></label><label className={fieldLabel}>Dependencies / license provenance<Textarea name="dependencies" defaultValue={`${code?.dependencies.join("; ")} · declared only, independent rights review missing.`} maxLength={2000} className="mt-2"/></label><label className={fieldLabel}>Declared test procedure / results / gaps<Textarea name="testEvidence" defaultValue={`${code?.tests.map(t=>t.procedure.en).join(" ")} PLANNED / NOT EXECUTED by this workflow; independent evidence missing.`} maxLength={2000} className="mt-2"/></label><label className={fieldLabel}>Rollback plan · not execution<Textarea name="rollback" defaultValue={code?.rollback.en} maxLength={2000} className="mt-2"/></label><label className={fieldLabel}>Physical-use scenario · optional, still locked<select name="scenarioId" aria-label="Physical-use scenario" defaultValue="" className="exchange-select mt-2 w-full"><option value="">No physical use declared</option>{roboticsScenarios.filter(s=>s.contributionId===codeId).map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select></label><fieldset className="grid gap-5 border-t border-border pt-6 md:grid-cols-3"><legend className="text-lg">Link local evidence · references, not verification</legend><label className={fieldLabel}>Physical-safety plan<select name="safetyId" aria-label="Linked safety plan" className="exchange-select mt-2 w-full" defaultValue=""><option value="">No physical use / no plan linked</option>{store.safety.map(s=><option key={s.id} value={s.id}>{roboticsScenarios.find(v=>v.id===s.scenarioId)?.title} · {s.at}</option>)}</select></label><label className={fieldLabel}>Replay · matching code/version<select name="replayId" aria-label="Linked replay" className="exchange-select mt-2 w-full" defaultValue=""><option value="">No replay linked</option>{store.replays.filter(r=>r.codeId===codeId).map(r=><option key={r.id} value={r.id}>{r.title} · v{r.version}</option>)}</select></label><label className={fieldLabel}>Impact comparison<select name="impactId" aria-label="Linked impact comparison" className="exchange-select mt-2 w-full" defaultValue=""><option value="">No comparison linked</option>{store.impacts.map(i=><option key={i.id} value={i.id}>{i.title} · {i.fixtureVersion}</option>)}</select></label></fieldset><p className="text-xs leading-loose text-warning">Supported devices: NONE · signatures: NONE · independent tests: NOT RUN · Guardian clearance: NOT VERIFIED</p><label className="flex gap-3 text-sm text-muted-foreground"><input name="consent" type="checkbox" className="accent-primary"/>I have rights to share this non-sensitive sample and consent to a local unsigned draft</label><FormNotice message={message}/><Button type="submit" variant="signal" disabled={busy} className="justify-self-start">Record unsigned release draft</Button></form><section className="mt-12 border-t border-border pt-8"><h2 className="text-2xl">Who approved this code?</h2><Input aria-label="Search approval ledger" placeholder="Search code, version or declared owner…" value={query} onChange={e=>setQuery(e.target.value)} className="mt-6"/><p role="status" className="mt-4 font-mono text-xs text-muted-foreground">{releases.length} local draft records · no trusted audit service</p>{releases.slice().reverse().map(r=><ReleaseTrace key={r.id} release={r}/>)}{!releases.length&&<p className="mt-6 text-sm text-muted-foreground">No matching local release drafts.</p>}</section></TrustShell>;
+  const { store } = useTrustedRelease(),
+    { store: g } = useGenesis(),
+    { run, message, busy } = useTrustAction();
+  const [codeId, setCodeId] = useState("image-contrast"),
+    [query, setQuery] = useState("");
+  const code = codeContributions.find((c) => c.id === codeId);
+  const releases = store.releases.filter((r) =>
+    `${codeContributions.find((c) => c.id === r.codeId)?.title.en} ${r.version} ${g.identities.find((p) => p.id === r.ownerId)?.name} ${r.state}`
+      .toLowerCase()
+      .includes(query.trim().toLowerCase()),
+  );
+  return (
+    <TrustShell
+      title="Evolution Approval Ledger"
+      eyebrow="Who approved this code? / declared trace"
+    >
+      <div className="flex items-start gap-4 border-b border-border pb-8">
+        <ShieldX className="shrink-0 text-warning" size={30} />
+        <div>
+          <h2 className="text-2xl">No trusted releases issued</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-loose text-muted-foreground">
+            Exact sample-text SHA-256, declared owner/operator, digest-bound local signoff and
+            preserved versions. A hash is not a signature, identity proof or safety test. Local
+            signoff never authorizes release, installation or hardware.
+          </p>
+        </div>
+      </div>
+      <form
+        key={codeId}
+        noValidate
+        className="mt-8 grid gap-5"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const d = new FormData(e.currentTarget);
+          await run(
+            {
+              type: "release",
+              input: {
+                codeId,
+                version: d.get("version"),
+                ownerId: d.get("ownerId"),
+                agentOperatorId: d.get("agentOperatorId"),
+                artifact: d.get("artifact"),
+                license: d.get("license"),
+                dependencies: d.get("dependencies"),
+                testEvidence: d.get("testEvidence"),
+                rollback: d.get("rollback"),
+                previousVersion: d.get("previousVersion"),
+                scenarioId: d.get("scenarioId"),
+                safetyId: d.get("safetyId"),
+                replayId: d.get("replayId"),
+                impactId: d.get("impactId"),
+                consent: d.get("consent") === "on",
+              },
+            },
+            "Unsigned local release draft recorded; test declarations are not executed evidence.",
+          );
+        }}
+      >
+        <div className="grid gap-5 md:grid-cols-2">
+          <label className={fieldLabel}>
+            Code Exchange sample
+            <select
+              aria-label="Code Exchange sample"
+              className="exchange-select mt-2 w-full"
+              value={codeId}
+              onChange={(e) => setCodeId(e.target.value)}
+            >
+              {codeContributions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title.en}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Artifact version
+            <Input name="version" defaultValue={code?.version ?? "0.1.0"} className="mt-2" />
+          </label>
+          <IdentitySelect name="ownerId" scope="submit_capsules" label="Declared human owner" />
+          <label className={fieldLabel}>
+            Optional agent operator · declaration only
+            <select
+              name="agentOperatorId"
+              aria-label="Optional agent operator"
+              defaultValue=""
+              className="exchange-select mt-2 w-full"
+            >
+              <option value="">No agent involved</option>
+              {g.identities
+                .filter(
+                  (p) =>
+                    p.kind === "Agent operator" &&
+                    p.state === "Active" &&
+                    p.scopes.includes("submit_capsules"),
+                )
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.agentName} / {p.name} · unverified
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Declared license
+            <select
+              name="license"
+              aria-label="Declared release license"
+              defaultValue={code?.license}
+              className="exchange-select mt-2 w-full"
+            >
+              <option>MIT</option>
+              <option>Apache-2.0</option>
+              <option>Unknown / permission required</option>
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Previous version · optional rollback target
+            <Input name="previousVersion" placeholder="0.1.0" className="mt-2" />
+          </label>
+        </div>
+        <label className={fieldLabel}>
+          Exact sample artifact text · hashed, never executed
+          <Textarea
+            name="artifact"
+            defaultValue={code?.code}
+            maxLength={20000}
+            className="mt-2 min-h-48 font-mono text-xs"
+          />
+        </label>
+        <label className={fieldLabel}>
+          Dependencies / license provenance
+          <Textarea
+            name="dependencies"
+            defaultValue={`${code?.dependencies.join("; ")} · declared only, independent rights review missing.`}
+            maxLength={2000}
+            className="mt-2"
+          />
+        </label>
+        <label className={fieldLabel}>
+          Declared test procedure / results / gaps
+          <Textarea
+            name="testEvidence"
+            defaultValue={`${code?.tests.map((t) => t.procedure.en).join(" ")} PLANNED / NOT EXECUTED by this workflow; independent evidence missing.`}
+            maxLength={2000}
+            className="mt-2"
+          />
+        </label>
+        <label className={fieldLabel}>
+          Rollback plan · not execution
+          <Textarea
+            name="rollback"
+            defaultValue={code?.rollback.en}
+            maxLength={2000}
+            className="mt-2"
+          />
+        </label>
+        <label className={fieldLabel}>
+          Physical-use scenario · optional, still locked
+          <select
+            name="scenarioId"
+            aria-label="Physical-use scenario"
+            defaultValue=""
+            className="exchange-select mt-2 w-full"
+          >
+            <option value="">No physical use declared</option>
+            {roboticsScenarios
+              .filter((s) => s.contributionId === codeId)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+          </select>
+        </label>
+        <fieldset className="grid gap-5 border-t border-border pt-6 md:grid-cols-3">
+          <legend className="text-lg">Link local evidence · references, not verification</legend>
+          <label className={fieldLabel}>
+            Physical-safety plan
+            <select
+              name="safetyId"
+              aria-label="Linked safety plan"
+              className="exchange-select mt-2 w-full"
+              defaultValue=""
+            >
+              <option value="">No physical use / no plan linked</option>
+              {store.safety.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {roboticsScenarios.find((v) => v.id === s.scenarioId)?.title} · {s.at}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Replay · matching code/version
+            <select
+              name="replayId"
+              aria-label="Linked replay"
+              className="exchange-select mt-2 w-full"
+              defaultValue=""
+            >
+              <option value="">No replay linked</option>
+              {store.replays
+                .filter((r) => r.codeId === codeId)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.title} · v{r.version}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Impact comparison
+            <select
+              name="impactId"
+              aria-label="Linked impact comparison"
+              className="exchange-select mt-2 w-full"
+              defaultValue=""
+            >
+              <option value="">No comparison linked</option>
+              {store.impacts.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.title} · {i.fixtureVersion}
+                </option>
+              ))}
+            </select>
+          </label>
+        </fieldset>
+        <p className="text-xs leading-loose text-warning">
+          Supported devices: NONE · signatures: NONE · independent tests: NOT RUN · Guardian
+          clearance: NOT VERIFIED
+        </p>
+        <label className="flex gap-3 text-sm text-muted-foreground">
+          <input name="consent" type="checkbox" className="accent-primary" />I have rights to share
+          this non-sensitive sample and consent to a local unsigned draft
+        </label>
+        <FormNotice message={message} />
+        <Button type="submit" variant="signal" disabled={busy} className="justify-self-start">
+          Record unsigned release draft
+        </Button>
+      </form>
+      <section className="mt-12 border-t border-border pt-8">
+        <h2 className="text-2xl">Who approved this code?</h2>
+        <Input
+          aria-label="Search approval ledger"
+          placeholder="Search code, version or declared owner…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="mt-6"
+        />
+        <p role="status" className="mt-4 font-mono text-xs text-muted-foreground">
+          {releases.length} local draft records · no trusted audit service
+        </p>
+        {releases
+          .slice()
+          .reverse()
+          .map((r) => (
+            <ReleaseTrace key={r.id} release={r} />
+          ))}
+        {!releases.length && (
+          <p className="mt-6 text-sm text-muted-foreground">No matching local release drafts.</p>
+        )}
+      </section>
+    </TrustShell>
+  );
 }
-function ReleaseTrace({release:r}:{release:ReleaseRecord}) {
- const {store}=useTrustedRelease(),{store:g}=useGenesis(),{run,message,busy,setMessage}=useTrustAction();const name=(id:string)=>g.identities.find(p=>p.id===id)?.name??"Missing declaration",state=releaseState(r,store,g);const code=codeContributions.find(c=>c.id===r.codeId);
- return <article id={`release-${r.id}`} className="mt-8 min-w-0 scroll-mt-28 border-t border-border py-7"><p className="font-mono text-xs text-warning">LOCAL DEMO · {state} · UNSIGNED</p><h3 className="mt-4 text-xl">{code?.title.en} / v{r.version}</h3><dl className="mt-6 grid gap-6 md:grid-cols-2">{[{label:"Human owner · declared",value:name(r.ownerId)},{label:"Agent / operator · declared",value:r.agentOperatorId?`${g.identities.find(p=>p.id===r.agentOperatorId)?.agentName} / ${name(r.agentOperatorId)}`:"None declared"},{label:"License",value:`${r.license} · not independently cleared`},{label:"Human reviewer",value:r.signoff?`${name(r.signoff.reviewerId)} · ${r.signoff.at} · local signoff only`:"Pending · no local signoff"}].map(v=><div key={v.label} className="min-w-0"><dt className="text-xs text-gold-light">{v.label}</dt><dd className="mt-3 break-words text-sm text-muted-foreground">{v.value}</dd></div>)}</dl><p className="mt-5 text-sm text-warning">Owner confirmation · {state==="Demo signed off"&&r.ownerSignoff?"Declared locally / DEMO":r.ownerSignoff?"Historical / no current approval":"Pending / no declaration"}</p><Button asChild variant="ghost" className="mt-3"><Link to="/code-vault" search={{record:r.id,code:r.codeId}}>Inspect origin / owner confirmation</Link></Button><p className="mt-5 text-xs text-gold-light">SHA-256 · exact sample text only</p><p className="mt-3 break-all font-mono text-xs text-muted-foreground">{r.digest}</p><details className="mt-5 border-l border-gold/30 pl-5"><summary className="cursor-pointer text-sm text-gold-light">Inspect artifact, evidence and review trace</summary><pre tabIndex={0} className="mt-5 max-h-60 overflow-auto font-mono text-xs leading-loose">{r.artifact}</pre><p className="mt-4 break-words text-sm leading-loose text-muted-foreground">Dependencies: {r.dependencies}</p><p className="mt-4 break-words text-sm leading-loose text-muted-foreground">Tests · DECLARED / NOT EXECUTED: {r.testEvidence}</p><p className="mt-4 break-words text-sm leading-loose text-muted-foreground">Rollback · not run: {r.rollback} · prior version {r.previousVersion||"not supplied"}</p><p className="mt-4 text-xs text-warning">Independent tests: NOT RUN · device compatibility: NOT TESTED · signature: NONE · release authorization: BLOCKED</p>{r.signoff&&<p className="mt-4 break-words text-sm text-muted-foreground">Preserved local reviewer note: {r.signoff.note}</p>}<p className="mt-4 text-xs text-muted-foreground">Linked safety / replay / impact: {r.safetyId?"Plan declared":"Missing"} / {r.replayId?"Sample declared":"Missing"} / {r.impactId?"Comparison declared":"Missing"}</p><ul className="mt-5 space-y-3 text-xs text-muted-foreground">{store.events.filter(e=>e.target===r.id).map(e=><li key={e.id}>{e.at} · {name(e.actorId)} · {e.action} · editable local event</li>)}</ul></details>{r.state==="Draft"&&<form className="mt-7 grid gap-5" noValidate onSubmit={async e=>{e.preventDefault();const d=new FormData(e.currentTarget);await run({type:"signoff",releaseId:r.id,reviewerId:String(d.get("reviewerId")??""),note:String(d.get("note")??""),consent:d.get("consent")==="on"},"Digest-bound DEMO signoff recorded; no signature or release authority.");}}><IdentitySelect name="reviewerId" scope="review_proposals" label={`Distinct human reviewer for v${r.version}`}/><label className={fieldLabel}>Review note · local declaration<Textarea name="note" maxLength={2000} className="mt-2"/></label><label className="flex gap-3 text-sm text-muted-foreground"><input name="consent" type="checkbox" className="accent-primary"/>I consent to a local signoff rehearsal for this exact sample and evidence</label><Button type="submit" variant="signal" disabled={busy} className="justify-self-start">Record DEMO signoff</Button></form>}<form className="mt-7 flex flex-wrap items-end gap-4" noValidate onSubmit={e=>e.preventDefault()}><label className={fieldLabel}>Owner declaration for revoke / rollback<select aria-label={`Owner action for v${r.version}`} name="actorId" defaultValue="" className="exchange-select mt-2 w-full"><option value="">Choose declared owner</option>{g.identities.filter(p=>p.state==="Active"&&p.scopes.includes("submit_capsules")).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label className="flex gap-3 text-xs leading-loose"><input name="consent" type="checkbox" className="accent-primary"/>Explicit local action consent</label><Button variant="outline" disabled={busy||r.state==="Revoked"||r.state==="Rollback rehearsed"} onClick={e=>{const f=e.currentTarget.form;if(!f)return;const d=new FormData(f);void run({type:"revoke",releaseId:r.id,actorId:String(d.get("actorId")??""),consent:d.get("consent")==="on"},"Local release draft revoked; no remote revocation or device receipt.");}}>Revoke local draft</Button><Button variant="outline" disabled={busy||!r.previousVersion||!r.signoff||r.state==="Draft"||r.state==="Rollback rehearsed"} onClick={e=>{const f=e.currentTarget.form;if(!f)return;const d=new FormData(f);void run({type:"rollback",releaseId:r.id,actorId:String(d.get("actorId")??""),consent:d.get("consent")==="on"},"Rollback rehearsed only; nothing restored or installed.");}}>Rehearse rollback</Button></form><div className="mt-6 flex flex-wrap gap-3"><Button variant="signal" className="h-auto min-h-11 whitespace-normal" onClick={async()=>{try{downloadJson(`DEMO-passport-${r.codeId}-${r.version}.json`,await releasePassport(r,store,g));setMessage("Unsigned DEMO passport downloaded; browser-local audit is not tamper-evident.");}catch{setMessage("Passport unavailable; sample digest could not be calculated.");}}}><Download size={15}/>Download unsigned passport</Button><Button asChild variant="ghost"><Link to="/releases">Release Galaxy</Link></Button><Button disabled variant="outline">Sign / deploy / install · blocked</Button></div><div className="mt-4"><FormNotice message={message}/></div></article>;
+function ReleaseTrace({ release: r }: { release: ReleaseRecord }) {
+  const { store } = useTrustedRelease(),
+    { store: g } = useGenesis(),
+    { run, message, busy, setMessage } = useTrustAction();
+  const name = (id: string) => g.identities.find((p) => p.id === id)?.name ?? "Missing declaration",
+    state = releaseState(r, store, g);
+  const code = codeContributions.find((c) => c.id === r.codeId);
+  return (
+    <article
+      id={`release-${r.id}`}
+      className="mt-8 min-w-0 scroll-mt-28 border-t border-border py-7"
+    >
+      <p className="font-mono text-xs text-warning">LOCAL DEMO · {state} · UNSIGNED</p>
+      <h3 className="mt-4 text-xl">
+        {code?.title.en} / v{r.version}
+      </h3>
+      <dl className="mt-6 grid gap-6 md:grid-cols-2">
+        {[
+          { label: "Human owner · declared", value: name(r.ownerId) },
+          {
+            label: "Agent / operator · declared",
+            value: r.agentOperatorId
+              ? `${g.identities.find((p) => p.id === r.agentOperatorId)?.agentName} / ${name(r.agentOperatorId)}`
+              : "None declared",
+          },
+          { label: "License", value: `${r.license} · not independently cleared` },
+          {
+            label: "Human reviewer",
+            value: r.signoff
+              ? `${name(r.signoff.reviewerId)} · ${r.signoff.at} · local signoff only`
+              : "Pending · no local signoff",
+          },
+        ].map((v) => (
+          <div key={v.label} className="min-w-0">
+            <dt className="text-xs text-gold-light">{v.label}</dt>
+            <dd className="mt-3 break-words text-sm text-muted-foreground">{v.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-5 text-sm text-warning">
+        Owner confirmation ·{" "}
+        {state === "Demo signed off" && r.ownerSignoff
+          ? "Declared locally / DEMO"
+          : r.ownerSignoff
+            ? "Historical / no current approval"
+            : "Pending / no declaration"}
+      </p>
+      <Button asChild variant="ghost" className="mt-3">
+        <Link to="/code-vault" search={{ record: r.id, code: r.codeId }}>
+          Inspect origin / owner confirmation
+        </Link>
+      </Button>
+      <p className="mt-5 text-xs text-gold-light">SHA-256 · exact sample text only</p>
+      <p className="mt-3 break-all font-mono text-xs text-muted-foreground">{r.digest}</p>
+      <details className="mt-5 border-l border-gold/30 pl-5">
+        <summary className="cursor-pointer text-sm text-gold-light">
+          Inspect artifact, evidence and review trace
+        </summary>
+        <pre tabIndex={0} className="mt-5 max-h-60 overflow-auto font-mono text-xs leading-loose">
+          {r.artifact}
+        </pre>
+        <p className="mt-4 break-words text-sm leading-loose text-muted-foreground">
+          Dependencies: {r.dependencies}
+        </p>
+        <p className="mt-4 break-words text-sm leading-loose text-muted-foreground">
+          Tests · DECLARED / NOT EXECUTED: {r.testEvidence}
+        </p>
+        <p className="mt-4 break-words text-sm leading-loose text-muted-foreground">
+          Rollback · not run: {r.rollback} · prior version {r.previousVersion || "not supplied"}
+        </p>
+        <p className="mt-4 text-xs text-warning">
+          Independent tests: NOT RUN · device compatibility: NOT TESTED · signature: NONE · release
+          authorization: BLOCKED
+        </p>
+        {r.signoff && (
+          <p className="mt-4 break-words text-sm text-muted-foreground">
+            Preserved local reviewer note: {r.signoff.note}
+          </p>
+        )}
+        <p className="mt-4 text-xs text-muted-foreground">
+          Linked safety / replay / impact: {r.safetyId ? "Plan declared" : "Missing"} /{" "}
+          {r.replayId ? "Sample declared" : "Missing"} /{" "}
+          {r.impactId ? "Comparison declared" : "Missing"}
+        </p>
+        <ul className="mt-5 space-y-3 text-xs text-muted-foreground">
+          {store.events
+            .filter((e) => e.target === r.id)
+            .map((e) => (
+              <li key={e.id}>
+                {e.at} · {name(e.actorId)} · {e.action} · editable local event
+              </li>
+            ))}
+        </ul>
+      </details>
+      {r.state === "Draft" && (
+        <form
+          className="mt-7 grid gap-5"
+          noValidate
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const d = new FormData(e.currentTarget);
+            await run(
+              {
+                type: "signoff",
+                releaseId: r.id,
+                reviewerId: String(d.get("reviewerId") ?? ""),
+                note: String(d.get("note") ?? ""),
+                consent: d.get("consent") === "on",
+              },
+              "Digest-bound DEMO signoff recorded; no signature or release authority.",
+            );
+          }}
+        >
+          <IdentitySelect
+            name="reviewerId"
+            scope="review_proposals"
+            label={`Distinct human reviewer for v${r.version}`}
+          />
+          <label className={fieldLabel}>
+            Review note · local declaration
+            <Textarea name="note" maxLength={2000} className="mt-2" />
+          </label>
+          <label className="flex gap-3 text-sm text-muted-foreground">
+            <input name="consent" type="checkbox" className="accent-primary" />I consent to a local
+            signoff rehearsal for this exact sample and evidence
+          </label>
+          <Button type="submit" variant="signal" disabled={busy} className="justify-self-start">
+            Record DEMO signoff
+          </Button>
+        </form>
+      )}
+      <form
+        className="mt-7 flex flex-wrap items-end gap-4"
+        noValidate
+        onSubmit={(e) => e.preventDefault()}
+      >
+        <label className={fieldLabel}>
+          Owner declaration for revoke / rollback
+          <select
+            aria-label={`Owner action for v${r.version}`}
+            name="actorId"
+            defaultValue=""
+            className="exchange-select mt-2 w-full"
+          >
+            <option value="">Choose declared owner</option>
+            {g.identities
+              .filter((p) => p.state === "Active" && p.scopes.includes("submit_capsules"))
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label className="flex gap-3 text-xs leading-loose">
+          <input name="consent" type="checkbox" className="accent-primary" />
+          Explicit local action consent
+        </label>
+        <Button
+          variant="outline"
+          disabled={busy || r.state === "Revoked" || r.state === "Rollback rehearsed"}
+          onClick={(e) => {
+            const f = e.currentTarget.form;
+            if (!f) return;
+            const d = new FormData(f);
+            void run(
+              {
+                type: "revoke",
+                releaseId: r.id,
+                actorId: String(d.get("actorId") ?? ""),
+                consent: d.get("consent") === "on",
+              },
+              "Local release draft revoked; no remote revocation or device receipt.",
+            );
+          }}
+        >
+          Revoke local draft
+        </Button>
+        <Button
+          variant="outline"
+          disabled={
+            busy ||
+            !r.previousVersion ||
+            !r.signoff ||
+            r.state === "Draft" ||
+            r.state === "Rollback rehearsed"
+          }
+          onClick={(e) => {
+            const f = e.currentTarget.form;
+            if (!f) return;
+            const d = new FormData(f);
+            void run(
+              {
+                type: "rollback",
+                releaseId: r.id,
+                actorId: String(d.get("actorId") ?? ""),
+                consent: d.get("consent") === "on",
+              },
+              "Rollback rehearsed only; nothing restored or installed.",
+            );
+          }}
+        >
+          Rehearse rollback
+        </Button>
+      </form>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Button
+          variant="signal"
+          className="h-auto min-h-11 whitespace-normal"
+          onClick={async () => {
+            try {
+              downloadJson(
+                `DEMO-passport-${r.codeId}-${r.version}.json`,
+                await releasePassport(r, store, g),
+              );
+              setMessage(
+                "Unsigned DEMO passport downloaded; browser-local audit is not tamper-evident.",
+              );
+            } catch {
+              setMessage("Passport unavailable; sample digest could not be calculated.");
+            }
+          }}
+        >
+          <Download size={15} />
+          Download unsigned passport
+        </Button>
+        <Button asChild variant="ghost">
+          <Link to="/releases">Release Galaxy</Link>
+        </Button>
+        <Button disabled variant="outline">
+          Sign / deploy / install · blocked
+        </Button>
+      </div>
+      <div className="mt-4">
+        <FormNotice message={message} />
+      </div>
+    </article>
+  );
 }

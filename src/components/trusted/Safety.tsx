@@ -9,10 +9,193 @@ import { useTrustedRelease } from "@/hooks/use-trusted-release";
 import { useGenesis } from "@/hooks/use-genesis";
 import { safetyAssessment, safetyChecks, type SafetyInput } from "@/lib/trusted-release";
 import { TrustShell, useTrustAction } from "./TrustShell";
-const emptyChecks=() => ({stability:{planned:false,evidence:""},collision:{planned:false,evidence:""},estop:{planned:false,evidence:""},area:{planned:false,evidence:""},payload:{planned:false,evidence:""}});
-export function PhysicalSafetyPage({scenarioId}:{scenarioId?:string|undefined}) {
- const {store}=useTrustedRelease(),{store:g}=useGenesis(),{run,message,busy}=useTrustAction();
- const [scenario,setScenario]=useState(scenarioId ?? "rover-safe-stop"),[checks,setChecks]=useState<SafetyInput["checks"]>(emptyChecks),[hazard,setHazard]=useState<SafetyInput["hazard"]>("Unknown / escalate");
- const records=store.safety.filter(r=>r.scenarioId===scenario);
- return <TrustShell title="Physical Safety Lock" eyebrow="Guardian / evidence before movement"><div className="flex items-start gap-5 border-b border-border pb-8"><ShieldX size={32} className="shrink-0 text-warning"/><div><h2 className="text-2xl">Hardware stays locked. Always.</h2><p className="mt-4 max-w-3xl text-sm leading-loose text-muted-foreground">A complete checklist only prepares a fictional plan for expert review. No stability, speed, collision, force or physical emergency-stop test has been performed. Software and signatures cannot substitute for protective hardware.</p></div></div><form className="mt-8 grid gap-6" noValidate onSubmit={async e=>{e.preventDefault();const f=e.currentTarget,d=new FormData(f);const id=await run({type:"safety",input:{scenarioId:scenario,operatorId:String(d.get("operatorId")??""),checks,hazard,operatorApproval:d.get("operatorApproval")==="on",consent:d.get("consent")==="on"}},"Local safety plan recorded; hardware and release remain blocked.");if(id){setChecks(emptyChecks());f.reset();}}}><div className="grid gap-5 md:grid-cols-2"><label className="text-xs">Research scenario<select aria-label="Research scenario" className="exchange-select mt-2 w-full" value={scenario} onChange={e=>{setScenario(e.target.value);setChecks(emptyChecks());setHazard("Unknown / escalate");}}>{roboticsScenarios.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select></label><IdentitySelect name="operatorId" scope="simulate_twins" label="Declared human test operator"/></div><div className="divide-y divide-border">{safetyChecks.map(c=><fieldset key={c.id} className="py-6"><label className="flex items-center gap-3 text-sm text-gold-light"><input type="checkbox" checked={checks[c.id].planned} onChange={e=>setChecks(v=>({...v,[c.id]:{...v[c.id],planned:e.target.checked}}))} className="accent-primary"/>{c.title} · plan reviewed, not test passed</label><p className="my-4 max-w-3xl text-xs leading-loose text-muted-foreground">{c.requirement}</p><Textarea aria-label={`${c.title} evidence plan`} value={checks[c.id].evidence} onChange={e=>setChecks(v=>({...v,[c.id]:{...v[c.id],evidence:e.target.value}}))} maxLength={1200} placeholder="Non-sensitive sample plan; list missing independent evidence."/></fieldset>)}</div><label className="text-xs">Hazard assessment<select aria-label="Hazard assessment" className="exchange-select mt-2 w-full" value={hazard} onChange={e=>{if(e.target.value==="Unknown / escalate"||e.target.value==="Conflict / unsafe"||e.target.value==="No hazard in fictional fixture")setHazard(e.target.value);}}><option>Unknown / escalate</option><option>Conflict / unsafe</option><option>No hazard in fictional fixture</option></select></label><label className="flex gap-3 text-sm"><input name="operatorApproval" type="checkbox" className="accent-primary"/>Human operator approves this fictional plan only</label><label className="flex gap-3 text-sm text-muted-foreground"><input name="consent" type="checkbox" className="accent-primary"/>I consent to a non-sensitive local rehearsal; no physical test or action</label><FormNotice message={message}/><Button type="submit" variant="signal" disabled={busy} className="justify-self-start">Record safety plan</Button></form><section className="mt-12 border-t border-border pt-8"><h2 className="text-2xl">Scenario safety history</h2>{!records.length&&<p className="mt-5 text-sm text-muted-foreground">No safety plans recorded for this scenario.</p>}{records.slice().reverse().map(r=>{const a=safetyAssessment(r);return <article key={r.id} className="mt-6 border-l border-warning/50 pl-5"><h3 className="text-lg">{a.status}</h3><p className="mt-3 text-xs text-muted-foreground">{r.at} · {g.identities.find(p=>p.id===r.operatorId)?.name ?? "Missing declaration"} · {r.hazard}</p><p className="mt-3 text-xs text-warning">Physical E-stop: NOT TESTED · hardware: BLOCKED · independent tests: NOT RUN</p><p className="mt-3 text-xs text-muted-foreground">Missing plan evidence: {a.missing.join(", ")||"None; independent validation still missing"}</p></article>;})}<div className="mt-8 flex flex-wrap gap-3"><Button asChild variant="ghost"><Link to="/robotics/$id" params={{id:scenario}}>Inspect research limitations</Link></Button><Button asChild variant="signal"><Link to="/approval-ledger">Approval evidence trace</Link></Button><Button disabled variant="outline">Unlock hardware · unavailable</Button></div></section></TrustShell>;
+const emptyChecks = () => ({
+  stability: { planned: false, evidence: "" },
+  collision: { planned: false, evidence: "" },
+  estop: { planned: false, evidence: "" },
+  area: { planned: false, evidence: "" },
+  payload: { planned: false, evidence: "" },
+});
+export function PhysicalSafetyPage({ scenarioId }: { scenarioId?: string | undefined }) {
+  const { store } = useTrustedRelease(),
+    { store: g } = useGenesis(),
+    { run, message, busy } = useTrustAction();
+  const [scenario, setScenario] = useState(scenarioId ?? "rover-safe-stop"),
+    [checks, setChecks] = useState<SafetyInput["checks"]>(emptyChecks),
+    [hazard, setHazard] = useState<SafetyInput["hazard"]>("Unknown / escalate");
+  const records = store.safety.filter((r) => r.scenarioId === scenario);
+  return (
+    <TrustShell title="Physical Safety Lock" eyebrow="Guardian / evidence before movement">
+      <div className="flex items-start gap-5 border-b border-border pb-8">
+        <ShieldX size={32} className="shrink-0 text-warning" />
+        <div>
+          <h2 className="text-2xl">Hardware stays locked. Always.</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-loose text-muted-foreground">
+            A complete checklist only prepares a fictional plan for expert review. No stability,
+            speed, collision, force or physical emergency-stop test has been performed. Software and
+            signatures cannot substitute for protective hardware.
+          </p>
+        </div>
+      </div>
+      <form
+        className="mt-8 grid gap-6"
+        noValidate
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const f = e.currentTarget,
+            d = new FormData(f);
+          const id = await run(
+            {
+              type: "safety",
+              input: {
+                scenarioId: scenario,
+                operatorId: String(d.get("operatorId") ?? ""),
+                checks,
+                hazard,
+                operatorApproval: d.get("operatorApproval") === "on",
+                consent: d.get("consent") === "on",
+              },
+            },
+            "Local safety plan recorded; hardware and release remain blocked.",
+          );
+          if (id) {
+            setChecks(emptyChecks());
+            f.reset();
+          }
+        }}
+      >
+        <div className="grid gap-5 md:grid-cols-2">
+          <label className="text-xs">
+            Research scenario
+            <select
+              aria-label="Research scenario"
+              className="exchange-select mt-2 w-full"
+              value={scenario}
+              onChange={(e) => {
+                setScenario(e.target.value);
+                setChecks(emptyChecks());
+                setHazard("Unknown / escalate");
+              }}
+            >
+              {roboticsScenarios.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <IdentitySelect
+            name="operatorId"
+            scope="simulate_twins"
+            label="Declared human test operator"
+          />
+        </div>
+        <div className="divide-y divide-border">
+          {safetyChecks.map((c) => (
+            <fieldset key={c.id} className="py-6">
+              <label className="flex items-center gap-3 text-sm text-gold-light">
+                <input
+                  type="checkbox"
+                  checked={checks[c.id].planned}
+                  onChange={(e) =>
+                    setChecks((v) => ({ ...v, [c.id]: { ...v[c.id], planned: e.target.checked } }))
+                  }
+                  className="accent-primary"
+                />
+                {c.title} · plan reviewed, not test passed
+              </label>
+              <p className="my-4 max-w-3xl text-xs leading-loose text-muted-foreground">
+                {c.requirement}
+              </p>
+              <Textarea
+                aria-label={`${c.title} evidence plan`}
+                value={checks[c.id].evidence}
+                onChange={(e) =>
+                  setChecks((v) => ({ ...v, [c.id]: { ...v[c.id], evidence: e.target.value } }))
+                }
+                maxLength={1200}
+                placeholder="Non-sensitive sample plan; list missing independent evidence."
+              />
+            </fieldset>
+          ))}
+        </div>
+        <label className="text-xs">
+          Hazard assessment
+          <select
+            aria-label="Hazard assessment"
+            className="exchange-select mt-2 w-full"
+            value={hazard}
+            onChange={(e) => {
+              if (
+                e.target.value === "Unknown / escalate" ||
+                e.target.value === "Conflict / unsafe" ||
+                e.target.value === "No hazard in fictional fixture"
+              )
+                setHazard(e.target.value);
+            }}
+          >
+            <option>Unknown / escalate</option>
+            <option>Conflict / unsafe</option>
+            <option>No hazard in fictional fixture</option>
+          </select>
+        </label>
+        <label className="flex gap-3 text-sm">
+          <input name="operatorApproval" type="checkbox" className="accent-primary" />
+          Human operator approves this fictional plan only
+        </label>
+        <label className="flex gap-3 text-sm text-muted-foreground">
+          <input name="consent" type="checkbox" className="accent-primary" />I consent to a
+          non-sensitive local rehearsal; no physical test or action
+        </label>
+        <FormNotice message={message} />
+        <Button type="submit" variant="signal" disabled={busy} className="justify-self-start">
+          Record safety plan
+        </Button>
+      </form>
+      <section className="mt-12 border-t border-border pt-8">
+        <h2 className="text-2xl">Scenario safety history</h2>
+        {!records.length && (
+          <p className="mt-5 text-sm text-muted-foreground">
+            No safety plans recorded for this scenario.
+          </p>
+        )}
+        {records
+          .slice()
+          .reverse()
+          .map((r) => {
+            const a = safetyAssessment(r);
+            return (
+              <article key={r.id} className="mt-6 border-l border-warning/50 pl-5">
+                <h3 className="text-lg">{a.status}</h3>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {r.at} ·{" "}
+                  {g.identities.find((p) => p.id === r.operatorId)?.name ?? "Missing declaration"} ·{" "}
+                  {r.hazard}
+                </p>
+                <p className="mt-3 text-xs text-warning">
+                  Physical E-stop: NOT TESTED · hardware: BLOCKED · independent tests: NOT RUN
+                </p>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Missing plan evidence:{" "}
+                  {a.missing.join(", ") || "None; independent validation still missing"}
+                </p>
+              </article>
+            );
+          })}
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Button asChild variant="ghost">
+            <Link to="/robotics/$id" params={{ id: scenario }}>
+              Inspect research limitations
+            </Link>
+          </Button>
+          <Button asChild variant="signal">
+            <Link to="/approval-ledger">Approval evidence trace</Link>
+          </Button>
+          <Button disabled variant="outline">
+            Unlock hardware · unavailable
+          </Button>
+        </div>
+      </section>
+    </TrustShell>
+  );
 }
