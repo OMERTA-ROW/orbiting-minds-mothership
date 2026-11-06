@@ -195,7 +195,7 @@ export const decisionInput = z
       .max(STEP_COUNT),
     action: z.enum(["approve", "fail", "revoke"]),
     note: z.string().max(NOTE_MAX).default(""),
-    expiresAt: z.string().datetime({ offset: true }).nullable().default(null),
+    expiresAt: z.iso.datetime({ offset: true }).nullable().default(null),
     capConfirmed: z.boolean().default(false),
     dailyConfirmed: z.boolean().default(false),
   })
