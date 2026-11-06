@@ -24,6 +24,7 @@ export const navItems = [
   { to: "/omni-gateway", label: "OMNI Coding Gateway · Blocked" },
   { to: "/omni-agents", label: "OMNI Agent Registry · Concept" },
   { to: "/omni-models", label: "OMNI Model Gateway · Declarations" },
+  { to: "/omni-api-keys", label: "API Keys · Owner" },
   { to: "/omni-razul", label: "Razul Central Intelligence · Local" },
   { to: "/angel-tech", label: "Angel Tech · Sabrina Concept" },
   { to: "/omni-rights", label: "OMNI Rights · Local" },
