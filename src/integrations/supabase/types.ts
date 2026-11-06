@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_approvals: {
+        Row: {
+          approval_expires_at: string | null
+          approver_id: string | null
+          decided_at: string | null
+          note: string
+          revision: number
+          spend_confirmations: Json | null
+          status: string
+          step: number
+        }
+        Insert: {
+          approval_expires_at?: string | null
+          approver_id?: string | null
+          decided_at?: string | null
+          note?: string
+          revision?: number
+          spend_confirmations?: Json | null
+          status?: string
+          step: number
+        }
+        Update: {
+          approval_expires_at?: string | null
+          approver_id?: string | null
+          decided_at?: string | null
+          note?: string
+          revision?: number
+          spend_confirmations?: Json | null
+          status?: string
+          step?: number
+        }
+        Relationships: []
+      }
       ai_gateway_state: {
         Row: {
           blocked_at: string
@@ -377,6 +410,98 @@ export type Database = {
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           token_hash?: string
+        }
+        Relationships: []
+      }
+      jackboy_dispatch_grants: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          jackboy_owner_id: string
+          job_id: string
+          kind: string
+          owner_id: string
+          payload_digest: string
+          project_id: string
+          repo: string
+          revoked_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id: string
+          jackboy_owner_id: string
+          job_id: string
+          kind: string
+          owner_id: string
+          payload_digest: string
+          project_id: string
+          repo: string
+          revoked_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          jackboy_owner_id?: string
+          job_id?: string
+          kind?: string
+          owner_id?: string
+          payload_digest?: string
+          project_id?: string
+          repo?: string
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
+      jackboy_dispatch_jobs: {
+        Row: {
+          created_at: string
+          grant_id: string
+          id: string
+          payload_digest: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grant_id: string
+          id: string
+          payload_digest: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grant_id?: string
+          id?: string
+          payload_digest?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jackboy_dispatch_jobs_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "jackboy_dispatch_grants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jackboy_dispatch_nonces: {
+        Row: {
+          created_at: string
+          nonce: string
+        }
+        Insert: {
+          created_at?: string
+          nonce: string
+        }
+        Update: {
+          created_at?: string
+          nonce?: string
         }
         Relationships: []
       }
@@ -1360,6 +1485,36 @@ export type Database = {
         Args: { _token_hash: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      activation_approval_decide: {
+        Args: {
+          _action: string
+          _cap_confirmed: boolean
+          _daily_confirmed: boolean
+          _expires_at: string
+          _note: string
+          _step: number
+        }
+        Returns: {
+          approval_expires_at: string | null
+          approver_id: string | null
+          decided_at: string | null
+          note: string
+          revision: number
+          spend_confirmations: Json | null
+          status: string
+          step: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "activation_approvals"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      assert_fresh_mfa: {
+        Args: { _max_age_seconds?: number }
+        Returns: undefined
+      }
       assert_razul_owner: { Args: never; Returns: undefined }
       caller_role: {
         Args: never
@@ -1452,6 +1607,37 @@ export type Database = {
       }
       is_knowledge_reader: { Args: never; Returns: boolean }
       is_razul_owner: { Args: never; Returns: boolean }
+      jackboy_dispatch_callback_snapshot: {
+        Args: { _expected_status?: string; _job: string; _op: string }
+        Returns: Json
+      }
+      jackboy_dispatch_owner_grant: {
+        Args: {
+          _digest: string
+          _expires: string
+          _id: string
+          _jackboy_owner: string
+          _job: string
+          _op: string
+          _project: string
+          _repo: string
+        }
+        Returns: Json
+      }
+      jackboy_dispatch_quarantine: {
+        Args: {
+          _digest: string
+          _grant: string
+          _job: string
+          _kind: string
+          _nonce: string
+          _op: string
+          _owner: string
+          _project: string
+          _repo: string
+        }
+        Returns: Json
+      }
       list_invitations: {
         Args: never
         Returns: {
