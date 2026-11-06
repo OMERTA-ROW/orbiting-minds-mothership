@@ -2,7 +2,7 @@
 
 ## Status: not connected
 
-At Jackboy source commit `c9d65ea82ffb5532878981a14089300947df2ead`, this
+At Jackboy source commit `ae373d5cccc1964d51e8dbda26c5bfbaea7e045b`, this
 review branch adds a disabled-by-default Mothership client for the reverse link
 and scoped quarantine dispatch.
 Mothership's
