@@ -243,7 +243,7 @@ describe("Jackboy link settings", () => {
   });
 
   it("has no custom certificate, insecure TLS or Node-only HTTPS path", () => {
-    const source = readFileSync(new URL("./jackboy-link.server.ts", import.meta.url), "utf8");
+    const source = readFileSync("src/lib/jackboy-link.server.ts", "utf8");
     expect(source).not.toMatch(/node:https|node:fs|rejectUnauthorized|JACKBOY_LINK_CA_FILE|\bca:/);
   });
 });
