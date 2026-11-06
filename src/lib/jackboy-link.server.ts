@@ -1,22 +1,28 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { request as httpsRequest } from "node:https";
-import { readFile } from "node:fs/promises";
+
+// Uses the hosting platform's standard fetch: the server certificate is checked
+// against public trust automatically. There is deliberately no option to supply a
+// custom CA or to disable certificate verification. Redirects are refused.
 
 const CONTRACT = "omni.link/v2";
 const PATH = "/api/public/omni/link";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const SCOPES = ["jobs.cancel", "jobs.read", "protocol.self-test"];
+const MAX_REPLY_BYTES = 32768;
+const TIMEOUT_MS = 5000;
 type Action = "handshake" | "submit" | "run" | "status" | "cancel";
 type JobAction = Exclude<Action, "handshake">;
-type Config = {
+export type JackboyLinkConfig = {
   origin: string;
-  ca: string | Buffer;
   clientId: string;
   projectId: string;
   bootstrap: string;
   secret: string;
   approvalExpiresAt: number;
 };
+type Fetch = (input: string, init: RequestInit) => Promise<Response>;
+/** Test seam only; never populated from environment settings. */
+export type JackboyLinkOptions = { fetch?: Fetch; timeoutMs?: number };
 type Audit = (event: string, jobId?: string) => Promise<void>;
 type Reply = {
   contract: string;
@@ -34,7 +40,7 @@ type Reply = {
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
 const hmac = (key: string, text: string) => createHmac("sha256", key).update(text).digest("hex");
 
-function assertConfig(c: Config) {
+function assertConfig(c: JackboyLinkConfig) {
   const u = new URL(c.origin);
   if (
     u.protocol !== "https:" ||
@@ -48,7 +54,6 @@ function assertConfig(c: Config) {
     !/^[-_a-zA-Z0-9]{32,256}$/.test(c.bootstrap) ||
     c.secret.length < 32 ||
     c.secret === c.bootstrap ||
-    !c.ca.length ||
     !Number.isFinite(c.approvalExpiresAt) ||
     c.approvalExpiresAt <= Date.now() ||
     c.approvalExpiresAt > Date.now() + 86400_000
@@ -56,61 +61,126 @@ function assertConfig(c: Config) {
     throw new Error("Jackboy scoped link configuration is invalid or expired.");
 }
 
-export async function configuredJackboyLink(): Promise<Config> {
+const PRIVATE_SUFFIXES = [".localhost", ".internal", ".local", ".lan", ".home.arpa"];
+
+/** Configured origins must be public HTTPS DNS names on the default port. */
+export function assertPublicLinkOrigin(origin: string) {
+  let u: URL;
+  try {
+    u = new URL(origin);
+  } catch {
+    throw new Error("Jackboy link address must be a public HTTPS address.");
+  }
+  const host = u.hostname.toLowerCase();
+  if (
+    u.protocol !== "https:" ||
+    u.port !== "" ||
+    u.username ||
+    u.password ||
+    u.pathname !== "/" ||
+    u.search ||
+    u.hash ||
+    !host.includes(".") ||
+    host === "localhost" ||
+    PRIVATE_SUFFIXES.some((suffix) => host.endsWith(suffix)) ||
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(host) ||
+    host.startsWith("[") ||
+    host.includes(":")
+  )
+    throw new Error("Jackboy link address must be a public HTTPS address.");
+}
+
+export async function configuredJackboyLink(): Promise<JackboyLinkConfig> {
   if (process.env["JACKBOY_LINK_ENABLED"] !== "true") throw new Error("Jackboy link is disabled.");
-  const caPath = process.env["JACKBOY_LINK_CA_FILE"];
-  if (!caPath) throw new Error("Jackboy link CA is not configured.");
-  const c: Config = {
+  const c: JackboyLinkConfig = {
     origin: process.env["JACKBOY_LINK_ORIGIN"] || "",
-    ca: await readFile(caPath),
     clientId: process.env["OMNI_LINK_CLIENT_ID"] || "",
     projectId: process.env["OMNI_LINK_PROJECT_ID"] || "",
     bootstrap: process.env["OMNI_LINK_BOOTSTRAP_KEY"] || "",
     secret: process.env["OMNI_LINK_HMAC_SECRET"] || "",
     approvalExpiresAt: Date.parse(process.env["OMNI_LINK_APPROVAL_EXPIRES_AT"] || ""),
   };
+  assertPublicLinkOrigin(c.origin);
   assertConfig(c);
   return c;
 }
 
-function post(c: Config, headers: Record<string, string>, body: string) {
-  return new Promise<{ status: number; body: string; proof: string }>((resolve, reject) => {
-    const req = httpsRequest(
-      new URL(PATH, c.origin),
-      { method: "POST", ca: c.ca, headers, timeout: 5000 },
-      (res) => {
-        const chunks: Buffer[] = [];
-        let length = 0;
-        res.on("data", (chunk: Buffer) => {
-          length += chunk.length;
-          if (length > 32768) req.destroy(new Error("response too large"));
-          else chunks.push(chunk);
-        });
-        res.on("error", reject);
-        res.on("end", () =>
-          resolve({
-            status: res.statusCode || 0,
-            body: Buffer.concat(chunks).toString("utf8"),
-            proof:
-              typeof res.headers["x-omni-proof"] === "string" ? res.headers["x-omni-proof"] : "",
-          }),
-        );
-      },
-    );
-    req.on("timeout", () => req.destroy(new Error("link timeout")));
-    req.on("error", reject);
-    req.end(body);
-  });
+async function readCapped(response: Response): Promise<string> {
+  const declared = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_REPLY_BYTES) {
+    await response.body?.cancel().catch(() => {});
+    throw new Error("Jackboy response too large.");
+  }
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    length += value.byteLength;
+    if (length > MAX_REPLY_BYTES) {
+      await reader.cancel().catch(() => {});
+      throw new Error("Jackboy response too large.");
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    all.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(all);
+}
+
+async function post(
+  c: JackboyLinkConfig,
+  options: JackboyLinkOptions,
+  headers: Record<string, string>,
+  body: string,
+) {
+  const send: Fetch = options.fetch ?? ((input, init) => fetch(input, init));
+  let response: Response;
+  try {
+    response = await send(new URL(PATH, c.origin).href, {
+      method: "POST",
+      headers,
+      body,
+      redirect: "manual",
+      signal: AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
+      throw new Error("Jackboy link timeout.");
+    throw new Error("Jackboy link connection failed.");
+  }
+  if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
+    await response.body?.cancel().catch(() => {});
+    throw new Error("Jackboy link refused a redirect.");
+  }
+  let text: string;
+  try {
+    text = await readCapped(response);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Jackboy response too large.") throw error;
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
+      throw new Error("Jackboy link timeout.");
+    throw new Error("Jackboy link connection failed.");
+  }
+  return { status: response.status, body: text, proof: response.headers.get("x-omni-proof") || "" };
 }
 
 export class JackboyLink {
   private session = "";
   private expiresAt = 0;
-  private readonly config: Config;
+  private readonly config: JackboyLinkConfig;
   private readonly audit: Audit;
-  constructor(config: Config, audit: Audit) {
+  private readonly options: JackboyLinkOptions;
+  constructor(config: JackboyLinkConfig, audit: Audit, options: JackboyLinkOptions = {}) {
     this.config = config;
     this.audit = audit;
+    this.options = options;
     assertConfig(config);
   }
 
@@ -127,6 +197,7 @@ export class JackboyLink {
     const message = `${CONTRACT}\nPOST\n${PATH}\n${ts}\n${nonce}\n${sha256(token)}\n${body}`;
     const result = await post(
       this.config,
+      this.options,
       {
         "content-type": "application/json",
         authorization: `Bearer ${token}`,
