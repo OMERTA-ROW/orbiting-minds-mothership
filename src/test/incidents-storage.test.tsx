@@ -5,18 +5,230 @@ import { IncidentProvider, useIncidents } from "@/hooks/use-incidents";
 import { incidentStorageKey, type DebriefInput } from "@/lib/incidents";
 import { type ReactNode } from "react";
 import { accountabilitySample } from "./accountability-fixtures";
-afterEach(() => { cleanup(); vi.restoreAllMocks(); localStorage.clear(); });
-const wrapper = ({ children }: { children: ReactNode }) => <GenesisProvider><IncidentProvider>{children}</IncidentProvider></GenesisProvider>;
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  localStorage.clear();
+});
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <GenesisProvider>
+    <IncidentProvider>{children}</IncidentProvider>
+  </GenesisProvider>
+);
 const useBoth = () => ({ genesis: useGenesis(), archive: useIncidents() });
-const identity = { name: "Sample recorder", kind: "Human" as const, agentName: "", role: "Explorer" as const, scopes: ["submit_capsules" as const], consent: true as const, spendCapUsd: 0 as const };
-function sample(identityId: string): DebriefInput { return { identityId, title: "Sample sorting observation", category: "Lab Lessons", system: "Sample labels", incidentDate: "2026-10-21", environment: "Local fictional fixture only.", intended: "Preserve the original label order.", observed: "The fictional labels changed order.", logs: "An authored sample transcript.", timeline: "T+0 authored; T+1 examined.", facts: "No production system was attached.", unknowns: "The true software cause is unknown.", hypotheses: "Sorting is a possible explanation.", reproduction: "Review static sample labels only.", tests: "Independent tests proposed, not executed.", lessons: "Keep assumptions explicit for review.", mitigation: "Review expected ordering first.", sourceUrl: "", sourceCredit: "Original sample", sourceLicense: "CC0 sample", sourcePermission: true, clipUrl: "", clipCreator: "", clipLicense: "", clipPermission: false, clipPrivacy: false, captions: "", attribution: "Sample recorder", privacyPolicy: "Fictional local sample only, not confidential.", operatorAuthorized: true, sampleOnly: true, scopes: ["record"], status: "DEMO" }; }
+const identity = {
+  name: "Sample recorder",
+  kind: "Human" as const,
+  agentName: "",
+  role: "Explorer" as const,
+  scopes: ["submit_capsules" as const],
+  consent: true as const,
+  spendCapUsd: 0 as const,
+};
+function sample(identityId: string): DebriefInput {
+  return {
+    identityId,
+    title: "Sample sorting observation",
+    category: "Lab Lessons",
+    system: "Sample labels",
+    incidentDate: "2026-10-21",
+    environment: "Local fictional fixture only.",
+    intended: "Preserve the original label order.",
+    observed: "The fictional labels changed order.",
+    logs: "An authored sample transcript.",
+    timeline: "T+0 authored; T+1 examined.",
+    facts: "No production system was attached.",
+    unknowns: "The true software cause is unknown.",
+    hypotheses: "Sorting is a possible explanation.",
+    reproduction: "Review static sample labels only.",
+    tests: "Independent tests proposed, not executed.",
+    lessons: "Keep assumptions explicit for review.",
+    mitigation: "Review expected ordering first.",
+    sourceUrl: "",
+    sourceCredit: "Original sample",
+    sourceLicense: "CC0 sample",
+    sourcePermission: true,
+    clipUrl: "",
+    clipCreator: "",
+    clipLicense: "",
+    clipPermission: false,
+    clipPrivacy: false,
+    captions: "",
+    attribution: "Sample recorder",
+    privacyPolicy: "Fictional local sample only, not confidential.",
+    operatorAuthorized: true,
+    sampleOnly: true,
+    scopes: ["record"],
+    status: "DEMO",
+  };
+}
 describe("Debrief local persistence", () => {
- it("does not block an unlinked incident report on malformed sibling release data",async()=>{localStorage.setItem("evolution-trusted-release-demo-v1","preserve unreadable release data");const h=renderHook(useBoth,{wrapper});await waitFor(()=>expect(h.result.current.archive.ready).toBe(true));let reporter="";act(()=>{reporter=h.result.current.genesis.dispatch({type:"identity",input:identity});});act(()=>h.result.current.archive.dispatch({type:"accountabilityReport",input:accountabilitySample(reporter)}));expect(h.result.current.archive.store.accountability).toHaveLength(1);expect(localStorage.getItem("evolution-trusted-release-demo-v1")).toBe("preserve unreadable release data");});
- it("reads accountability reports and retained revisions after remount", async()=>{const h=renderHook(useBoth,{wrapper});await waitFor(()=>expect(h.result.current.archive.ready&&h.result.current.genesis.ready).toBe(true));let reporter="",caseId="";act(()=>{reporter=h.result.current.genesis.dispatch({type:"identity",input:identity});});act(()=>{caseId=h.result.current.archive.dispatch({type:"accountabilityReport",input:accountabilitySample(reporter)});});act(()=>h.result.current.archive.dispatch({type:"accountabilityRevise",caseId,actorId:reporter,input:{...accountabilitySample(reporter),observed:"Corrected fictional observation."}}));h.unmount();const next=renderHook(useBoth,{wrapper});await waitFor(()=>expect(next.result.current.archive.store.accountability).toHaveLength(1));expect(next.result.current.archive.store.accountability[0]?.revision).toBe(2);expect(next.result.current.archive.store.accountability[0]?.history[0]?.input.observed).toBe("Authored sample contains another label.");});
- it("keeps existing debriefs and sibling stores while adding accountability",async()=>{localStorage.setItem("evolution-guardian-demo-v1","original guardian");localStorage.setItem("evolution-trusted-release-demo-v1",JSON.stringify({version:1,safety:[],replays:[],impacts:[],releases:[],events:[]}));const h=renderHook(useBoth,{wrapper});await waitFor(()=>expect(h.result.current.archive.ready).toBe(true));let reporter="";act(()=>{reporter=h.result.current.genesis.dispatch({type:"identity",input:identity});});act(()=>h.result.current.archive.dispatch({type:"draft",input:sample(reporter)}));const g=localStorage.getItem(genesisStorageKey),t=localStorage.getItem("evolution-trusted-release-demo-v1");act(()=>h.result.current.archive.dispatch({type:"accountabilityReport",input:accountabilitySample(reporter)}));expect(h.result.current.archive.store.debriefs).toHaveLength(1);expect(localStorage.getItem("evolution-guardian-demo-v1")).toBe("original guardian");expect(localStorage.getItem(genesisStorageKey)).toBe(g);expect(localStorage.getItem("evolution-trusted-release-demo-v1")).toBe(t);});
- it("preserves malformed incident data when new accountability is temporary",async()=>{const raw='{"version":99,"original":"keep"}';localStorage.setItem(incidentStorageKey,raw);const h=renderHook(useBoth,{wrapper});await waitFor(()=>expect(h.result.current.archive.ready).toBe(true));let reporter="";act(()=>{reporter=h.result.current.genesis.dispatch({type:"identity",input:identity});});act(()=>h.result.current.archive.dispatch({type:"accountabilityReport",input:accountabilitySample(reporter)}));expect(localStorage.getItem(incidentStorageKey)).toBe(raw);expect(h.result.current.archive.store.accountability).toHaveLength(1);expect(h.result.current.archive.issue).toContain("preserved");});
- it("reads a recorded draft after remount", async () => { const h = renderHook(useBoth, { wrapper }); await waitFor(() => expect(h.result.current.archive.ready && h.result.current.genesis.ready).toBe(true)); let id=""; act(() => { id=h.result.current.genesis.dispatch({ type: "identity", input: identity }); }); act(() => h.result.current.archive.dispatch({ type: "draft", input: sample(id) })); h.unmount(); const next=renderHook(useBoth, { wrapper }); await waitFor(() => expect(next.result.current.archive.store.debriefs).toHaveLength(1)); expect(next.result.current.archive.store.debriefs[0]?.input.observed).toBe("The fictional labels changed order."); });
- it("preserves malformed existing records rather than overwriting them", async () => { const raw='{"version":99,"keep":"original"}'; localStorage.setItem(incidentStorageKey,raw); const h=renderHook(useBoth,{wrapper}); await waitFor(() => expect(h.result.current.archive.ready).toBe(true)); let id=""; act(() => { id=h.result.current.genesis.dispatch({ type:"identity", input:identity }); }); act(() => h.result.current.archive.dispatch({type:"draft",input:sample(id)})); expect(localStorage.getItem(incidentStorageKey)).toBe(raw); expect(h.result.current.archive.issue).toContain("preserved"); });
- it("keeps multiple temporary actions when storage writes fail", async () => { vi.spyOn(Storage.prototype,"setItem").mockImplementation(() => { throw new Error("blocked"); }); const h=renderHook(useBoth,{wrapper}); await waitFor(() => expect(h.result.current.archive.ready).toBe(true)); let id=""; act(() => { id=h.result.current.genesis.dispatch({type:"identity", input:identity}); }); act(() => { h.result.current.archive.dispatch({type:"draft",input:sample(id)}); h.result.current.archive.dispatch({type:"draft",input:{...sample(id),title:"Second temporary sample"}}); }); expect(h.result.current.archive.store.debriefs).toHaveLength(2); expect(h.result.current.archive.issue).toContain("temporary"); });
- it("never writes to Guardian, CARE or Genesis while recording a debrief", async () => { localStorage.setItem("evolution-guardian-demo-v1","unchanged guardian"); localStorage.setItem("evolution-care-demo-v1","unchanged care"); const h=renderHook(useBoth,{wrapper}); await waitFor(() => expect(h.result.current.archive.ready).toBe(true)); let id=""; act(() => { id=h.result.current.genesis.dispatch({type:"identity",input:identity}); }); const raw=localStorage.getItem(genesisStorageKey); act(() => h.result.current.archive.dispatch({type:"draft",input:sample(id)})); expect(localStorage.getItem(genesisStorageKey)).toBe(raw); expect(localStorage.getItem("evolution-guardian-demo-v1")).toBe("unchanged guardian"); expect(localStorage.getItem("evolution-care-demo-v1")).toBe("unchanged care"); });
+  it("does not block an unlinked incident report on malformed sibling release data", async () => {
+    localStorage.setItem("evolution-trusted-release-demo-v1", "preserve unreadable release data");
+    const h = renderHook(useBoth, { wrapper });
+    await waitFor(() => expect(h.result.current.archive.ready).toBe(true));
+    let reporter = "";
+    act(() => {
+      reporter = h.result.current.genesis.dispatch({ type: "identity", input: identity });
+    });
+    act(() =>
+      h.result.current.archive.dispatch({
+        type: "accountabilityReport",
+        input: accountabilitySample(reporter),
+      }),
+    );
+    expect(h.result.current.archive.store.accountability).toHaveLength(1);
+    expect(localStorage.getItem("evolution-trusted-release-demo-v1")).toBe(
+      "preserve unreadable release data",
+    );
+  });
+  it("reads accountability reports and retained revisions after remount", async () => {
+    const h = renderHook(useBoth, { wrapper });
+    await waitFor(() =>
+      expect(h.result.current.archive.ready && h.result.current.genesis.ready).toBe(true),
+    );
+    let reporter = "",
+      caseId = "";
+    act(() => {
+      reporter = h.result.current.genesis.dispatch({ type: "identity", input: identity });
+    });
+    act(() => {
+      caseId = h.result.current.archive.dispatch({
+        type: "accountabilityReport",
+        input: accountabilitySample(reporter),
+      });
+    });
+    act(() =>
+      h.result.current.archive.dispatch({
+        type: "accountabilityRevise",
+        caseId,
+        actorId: reporter,
+        input: { ...accountabilitySample(reporter), observed: "Corrected fictional observation." },
+      }),
+    );
+    h.unmount();
+    const next = renderHook(useBoth, { wrapper });
+    await waitFor(() => expect(next.result.current.archive.store.accountability).toHaveLength(1));
+    expect(next.result.current.archive.store.accountability[0]?.revision).toBe(2);
+    expect(next.result.current.archive.store.accountability[0]?.history[0]?.input.observed).toBe(
+      "Authored sample contains another label.",
+    );
+  });
+  it("keeps existing debriefs and sibling stores while adding accountability", async () => {
+    localStorage.setItem("evolution-guardian-demo-v1", "original guardian");
+    localStorage.setItem(
+      "evolution-trusted-release-demo-v1",
+      JSON.stringify({
+        version: 1,
+        safety: [],
+        replays: [],
+        impacts: [],
+        releases: [],
+        events: [],
+      }),
+    );
+    const h = renderHook(useBoth, { wrapper });
+    await waitFor(() => expect(h.result.current.archive.ready).toBe(true));
+    let reporter = "";
+    act(() => {
+      reporter = h.result.current.genesis.dispatch({ type: "identity", input: identity });
+    });
+    act(() => h.result.current.archive.dispatch({ type: "draft", input: sample(reporter) }));
+    const g = localStorage.getItem(genesisStorageKey),
+      t = localStorage.getItem("evolution-trusted-release-demo-v1");
+    act(() =>
+      h.result.current.archive.dispatch({
+        type: "accountabilityReport",
+        input: accountabilitySample(reporter),
+      }),
+    );
+    expect(h.result.current.archive.store.debriefs).toHaveLength(1);
+    expect(localStorage.getItem("evolution-guardian-demo-v1")).toBe("original guardian");
+    expect(localStorage.getItem(genesisStorageKey)).toBe(g);
+    expect(localStorage.getItem("evolution-trusted-release-demo-v1")).toBe(t);
+  });
+  it("preserves malformed incident data when new accountability is temporary", async () => {
+    const raw = '{"version":99,"original":"keep"}';
+    localStorage.setItem(incidentStorageKey, raw);
+    const h = renderHook(useBoth, { wrapper });
+    await waitFor(() => expect(h.result.current.archive.ready).toBe(true));
+    let reporter = "";
+    act(() => {
+      reporter = h.result.current.genesis.dispatch({ type: "identity", input: identity });
+    });
+    act(() =>
+      h.result.current.archive.dispatch({
+        type: "accountabilityReport",
+        input: accountabilitySample(reporter),
+      }),
+    );
+    expect(localStorage.getItem(incidentStorageKey)).toBe(raw);
+    expect(h.result.current.archive.store.accountability).toHaveLength(1);
+    expect(h.result.current.archive.issue).toContain("preserved");
+  });
+  it("reads a recorded draft after remount", async () => {
+    const h = renderHook(useBoth, { wrapper });
+    await waitFor(() =>
+      expect(h.result.current.archive.ready && h.result.current.genesis.ready).toBe(true),
+    );
+    let id = "";
+    act(() => {
+      id = h.result.current.genesis.dispatch({ type: "identity", input: identity });
+    });
+    act(() => h.result.current.archive.dispatch({ type: "draft", input: sample(id) }));
+    h.unmount();
+    const next = renderHook(useBoth, { wrapper });
+    await waitFor(() => expect(next.result.current.archive.store.debriefs).toHaveLength(1));
+    expect(next.result.current.archive.store.debriefs[0]?.input.observed).toBe(
+      "The fictional labels changed order.",
+    );
+  });
+  it("preserves malformed existing records rather than overwriting them", async () => {
+    const raw = '{"version":99,"keep":"original"}';
+    localStorage.setItem(incidentStorageKey, raw);
+    const h = renderHook(useBoth, { wrapper });
+    await waitFor(() => expect(h.result.current.archive.ready).toBe(true));
+    let id = "";
+    act(() => {
+      id = h.result.current.genesis.dispatch({ type: "identity", input: identity });
+    });
+    act(() => h.result.current.archive.dispatch({ type: "draft", input: sample(id) }));
+    expect(localStorage.getItem(incidentStorageKey)).toBe(raw);
+    expect(h.result.current.archive.issue).toContain("preserved");
+  });
+  it("keeps multiple temporary actions when storage writes fail", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    const h = renderHook(useBoth, { wrapper });
+    await waitFor(() => expect(h.result.current.archive.ready).toBe(true));
+    let id = "";
+    act(() => {
+      id = h.result.current.genesis.dispatch({ type: "identity", input: identity });
+    });
+    act(() => {
+      h.result.current.archive.dispatch({ type: "draft", input: sample(id) });
+      h.result.current.archive.dispatch({
+        type: "draft",
+        input: { ...sample(id), title: "Second temporary sample" },
+      });
+    });
+    expect(h.result.current.archive.store.debriefs).toHaveLength(2);
+    expect(h.result.current.archive.issue).toContain("temporary");
+  });
+  it("never writes to Guardian, CARE or Genesis while recording a debrief", async () => {
+    localStorage.setItem("evolution-guardian-demo-v1", "unchanged guardian");
+    localStorage.setItem("evolution-care-demo-v1", "unchanged care");
+    const h = renderHook(useBoth, { wrapper });
+    await waitFor(() => expect(h.result.current.archive.ready).toBe(true));
+    let id = "";
+    act(() => {
+      id = h.result.current.genesis.dispatch({ type: "identity", input: identity });
+    });
+    const raw = localStorage.getItem(genesisStorageKey);
+    act(() => h.result.current.archive.dispatch({ type: "draft", input: sample(id) }));
+    expect(localStorage.getItem(genesisStorageKey)).toBe(raw);
+    expect(localStorage.getItem("evolution-guardian-demo-v1")).toBe("unchanged guardian");
+    expect(localStorage.getItem("evolution-care-demo-v1")).toBe("unchanged care");
+  });
 });

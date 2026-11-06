@@ -76,7 +76,9 @@ describe("capabilities and fallbacks", () => {
   });
   it("fallbacks never claim completed work", () => {
     for (const intent of ["research", "status", "agents", "dispatch"] as const) {
-      expect(rasulFallbackAnswer(intent, true)).not.toMatch(/completed|done|executed successfully/i);
+      expect(rasulFallbackAnswer(intent, true)).not.toMatch(
+        /completed|done|executed successfully/i,
+      );
     }
     expect(rasulFallbackAnswer("research", false)).toMatch(/sign in/i);
   });

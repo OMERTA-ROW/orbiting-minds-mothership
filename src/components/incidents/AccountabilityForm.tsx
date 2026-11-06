@@ -1,33 +1,542 @@
-import {useState,type FormEvent} from "react";
-import {useNavigate} from "@tanstack/react-router";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Textarea} from "@/components/ui/textarea";
-import {FormNotice,IdentitySelect,fieldLabel} from "@/components/genesis/GenesisShell";
-import {useIncidents} from "@/hooks/use-incidents";
-import {useTrustedRelease} from "@/hooks/use-trusted-release";
-import {codeContributions,incidentExamples} from "@/data/evolution";
-import {accountabilityInput,incidentSeverities,causeDomains,type AccountabilityRecord} from "@/lib/accountability";
-import {AccountabilityShell} from "./AccountabilityShell";
-const fields=[['expected','Expected behavior'],['observed','Observed behavior'],['facts','Supported facts / evidence basis'],['unknowns','Unknowns / missing evidence'],['hypotheses','Hypotheses · not findings'],['tests','Test procedure, declared results and gaps'],['logs','Scrubbed fictional log excerpt · optional'],['hashBasis','Hash provenance / unavailable execution evidence'],['correctivePlan','Corrective action proposal'],['safetyPlan','Physical safety / trained oversight / independent stop validation gaps'],['privacyTerms','Privacy, access and retention preferences · not enforcement']] as const;
-export function IncidentReportPage(){return <AccountabilityShell title="Report Incident"><IncidentReportForm/></AccountabilityShell>;}
-export function IncidentReportForm({record,onDone}:{record?:AccountabilityRecord;onDone?:()=>void}){
- const {dispatch}=useIncidents(),{store:trust}=useTrustedRelease(),navigate=useNavigate();const [message,setMessage]=useState("");
- const [sample,setSample]=useState(false),[codeId,setCode]=useState(record?.input.codeId??""),[physical,setPhysical]=useState(record?.input.physicalImpact??false);
- const c=incidentExamples.find(c=>c.id==="two-commands-one-rover");const preset=record?.input;
- const defaults:Record<string,string>={title:c?.title??"Fictional incident",project:"Authored virtual rover exercise",device:"No real device connected",expected:c?.intended??"Unknown expected behavior",observed:c?.observed??"No live observations",facts:c?.facts??"Fictional sample only",unknowns:c?.unknowns??"Independent evidence unavailable",hypotheses:c?.hypotheses??"Cause remains unknown",tests:c?.tests??"Independent tests not run",logs:c?.logs??"",hashBasis:"Only supplied sample metadata; no executed artifact obtained or trusted signature available.",correctivePlan:c?.mitigation??"Request independent review",safetyPlan:"Physical emergency stop, trained human oversight, stability, collision limits and independent physical validation required; none performed by this browser.",privacyTerms:"Non-sensitive fictional data only; retained in this editable browser store. No confidential storage or external publication.",proposedBy:"Unknown proposer",approvedBy:"Unknown approver",deployedBy:"Unknown deployer",proposedBasis:"No authenticated proposal evidence available.",approvedBasis:"No authenticated approval evidence available.",deployedBasis:"No deployment or executed artifact observed.",evidenceDescription:"Original fictional teaching case; no actual incident evidence.",evidenceSource:"Authored Evolution demo",timelineNote:"Fictional observation recorded for local review only."};
- const value=(name:string)=>sample?defaults[name]??"":name in (preset??{})?String(preset?.[name as keyof typeof preset]??""):"";
- const submit=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const d=new FormData(e.currentTarget),s=(n:string)=>String(d.get(n)??""),b=(n:string)=>d.get(n)==="on";try{
-  const utc=(v:string)=>new Date(v.endsWith("Z")?v:`${v}Z`).toISOString();
-  const occurredAt=utc(s("occurredAt")),detectedAt=utc(s("detectedAt"));
-  const input=accountabilityInput.parse({title:s("title"),reporterId:record?.input.reporterId??s("reporterId"),severity:s("severity"),occurredAt,detectedAt,project:s("project"),device:s("device"),physicalImpact:physical,...Object.fromEntries(fields.map(([name])=>[name,s(name)])),causeDomain:s("causeDomain"),rootCauseStatus:s("rootCauseStatus"),proposedBy:{actor:s("proposedBy"),basis:s("proposedBasis")},approvedBy:{actor:s("approvedBy"),basis:s("approvedBasis")},deployedBy:{actor:s("deployedBy"),basis:s("deployedBasis")},codeId,releaseId:s("releaseId"),replayId:s("replayId"),archiveId:s("archiveId"),baselineText:s("baselineText"),observedText:s("observedText"),baselineHash:s("baselineHash").toLowerCase(),observedHash:s("observedHash").toLowerCase(),evidence:[{kind:s("evidenceKind"),description:s("evidenceDescription"),source:s("evidenceSource"),reference:s("evidenceReference"),permission:b("evidencePermission"),status:s("evidenceStatus")},...(preset?.evidence.slice(1)??[])],timeline:s("timelineRows").split("\n").map(row=>{const [time,...rest]=row.split(" | ");return {at:utc(time??""),observation:rest.join(" | ")};}),consent:b("consent"),operatorAuthorized:b("operatorAuthorized"),sampleOnly:b("sampleOnly")});
-  const r=input.releaseId?trust.releases.find(r=>r.id===input.releaseId):undefined;const replay=input.replayId?trust.replays.find(r=>r.id===input.replayId):undefined;
-  if(input.releaseId&&(!r||r.codeId!==input.codeId))throw new Error("Selected local release must match the code reference.");
-  if(input.replayId&&(!replay||replay.codeId!==input.codeId||input.archiveId&&replay.caseId!==input.archiveId||r&&replay.version!==r.version))throw new Error("Selected local replay must match code, linked archive and release version.");
-  const id=dispatch(record?{type:"accountabilityRevise",caseId:record.id,actorId:record.input.reporterId,input}:{type:"accountabilityReport",input});if(record)onDone?.();else void navigate({to:"/guardian-incidents/$id",params:{id}});
- }catch(err){setMessage(err instanceof RangeError?"Enter valid UTC occurrence, observation and timeline times.":err instanceof Error?err.message:"Complete the sample report.");}};
- return <><div className="flex flex-wrap items-start justify-between gap-5"><h2 className="text-2xl">{record?"Revise the evidence; renew review.":"What happened—and what remains unknown?"}</h2>{!record&&<Button variant="outline" onClick={()=>{setSample(true);setCode(c?.contributionId??"");setPhysical(true);setMessage("Fictional teaching sample loaded; identity and every consent remain yours to declare.");}}>Load fictional teaching sample</Button>}</div><form key={`${record?.revision??0}-${sample}`} noValidate className="mt-8 grid gap-6" onSubmit={submit}>{!record&&<IdentitySelect name="reporterId" scope="submit_capsules" label="Declared reporter / operator"/>}<div className="grid gap-5 md:grid-cols-2">{[['title','Incident title'],['project','Project / environment'],['device','Device declaration · no live connection']] .map(([n,l])=><label className={fieldLabel} key={n}>{l}<Input name={n} defaultValue={value(n??"")} maxLength={140} className="mt-2"/></label>)}<label className={fieldLabel}>Severity<select name="severity" className="exchange-select mt-2 w-full" defaultValue={preset?.severity??"Moderate"}>{incidentSeverities.map(x=><option key={x}>{x}</option>)}</select></label>{[['occurredAt','Occurrence time · UTC'],['detectedAt','Observation time · UTC']].map(([n,l])=><label className={fieldLabel} key={n}>{l}<Input name={n} type="datetime-local" defaultValue={preset?.[n as "occurredAt"|"detectedAt"]?.slice(0,16)??(sample?`${c?.date??"2026-10-21"}T00:00`:"")} className="mt-2"/></label>)}</div><label className="flex gap-3 text-sm text-muted-foreground"><input type="checkbox" checked={physical} onChange={e=>setPhysical(e.target.checked)} className="accent-primary"/>Physical impact or high-impact robotics scenario</label>{physical&&<p className="border-l border-warning pl-4 text-sm leading-loose text-warning">Real danger requires trained on-site humans and independently validated physical emergency stops. This web report cannot stop hardware or validate physical safety.</p>}<div className="grid gap-5 md:grid-cols-2">{fields.map(([n,l])=><label key={n} className={fieldLabel}>{l}<Textarea name={n} defaultValue={value(n)} maxLength={2000} className="mt-2 min-h-24"/></label>)}<label className={fieldLabel}>Possible contributing factor · unverified<select name="causeDomain" defaultValue={preset?.causeDomain??"Unknown"} className="exchange-select mt-2 w-full">{causeDomains.map(x=><option key={x}>{x}</option>)}</select></label><label className={fieldLabel}>Root-cause status<select name="rootCauseStatus" defaultValue={preset?.rootCauseStatus??"Unknown"} className="exchange-select mt-2 w-full"><option>Unknown</option><option>Hypothesis only</option></select></label></div><p className="text-xs text-warning">Verified root cause: unavailable. Independent local review never establishes identity, fault or legal responsibility.</p>
- <fieldset className="border-y border-border py-6"><legend className="text-lg text-gold-light">Who proposed, approved and deployed? · declarations</legend><div className="mt-4 grid gap-5 md:grid-cols-3">{(['proposed','approved','deployed'] as const).map(n=><div key={n}><label className={fieldLabel}>{n} by · unknown allowed<Input name={`${n}By`} defaultValue={sample?defaults[`${n}By`]:preset?.[`${n}By`].actor??""} maxLength={140} className="mt-2"/></label><label className={`${fieldLabel} mt-4`}>Evidence basis / missing proof<Textarea name={`${n}Basis`} defaultValue={sample?defaults[`${n}Basis`]:preset?.[`${n}By`].basis??""} maxLength={2000} className="mt-2"/></label></div>)}</div></fieldset>
- <fieldset className="grid gap-5 md:grid-cols-2"><legend className="mb-4 text-lg text-gold-light">Version and evidence references · no verification</legend><label className={fieldLabel}>Code Exchange reference<select aria-label="Incident code reference" value={codeId} onChange={e=>setCode(e.target.value)} className="exchange-select mt-2 w-full"><option value="">Unknown / unavailable</option>{codeContributions.map(c=><option value={c.id} key={c.id}>{c.title.en}</option>)}</select></label><label className={fieldLabel}>Local Code Vault release<select name="releaseId" defaultValue={preset?.releaseId??""} className="exchange-select mt-2 w-full"><option value="">No release obtained</option>{trust.releases.filter(r=>r.codeId===codeId).map(r=><option key={r.id} value={r.id}>v{r.version} · {r.state} · unsigned DEMO</option>)}</select></label><label className={fieldLabel}>Local experiment replay<select name="replayId" defaultValue={preset?.replayId??""} className="exchange-select mt-2 w-full"><option value="">No replay obtained</option>{trust.replays.filter(r=>r.codeId===codeId).map(r=><option key={r.id} value={r.id}>{r.title} · DEMO</option>)}</select></label><label className={fieldLabel}>Related authored archive<select name="archiveId" defaultValue={preset?.archiveId??(sample?c?.id:"")} className="exchange-select mt-2 w-full"><option value="">No case linked</option>{incidentExamples.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></label>{[['baselineHash','Declared approved-baseline SHA-256 · optional'],['observedHash','Declared executed/observed SHA-256 · optional']].map(([n,l])=><label className={fieldLabel} key={n}>{l}<Input name={n} defaultValue={value(n??"")} maxLength={64} className="mt-2 font-mono text-xs"/></label>)}{[['baselineText','Supplied baseline sample text · optional'],['observedText','Supplied observed sample text · optional']].map(([n,l])=><label className={fieldLabel} key={n}>{l}<Textarea name={n} defaultValue={value(n??"")} maxLength={20000} className="mt-2 min-h-40 font-mono text-xs"/></label>)}</fieldset>
- <fieldset className="grid gap-5 border-t border-border pt-6 md:grid-cols-2"><legend className="mb-4 text-lg text-gold-light">Permissioned evidence metadata · never fetched</legend><label className={fieldLabel}>Evidence kind<select name="evidenceKind" defaultValue={preset?.evidence[0]?.kind??"Observation"} className="exchange-select mt-2 w-full">{["Observation","Log metadata","Test declaration","Clip metadata"].map(x=><option key={x}>{x}</option>)}</select></label><label className={fieldLabel}>Evidence label<select name="evidenceStatus" defaultValue={preset?.evidence[0]?.status??"DEMO"} className="exchange-select mt-2 w-full"><option>DEMO</option><option>REENACTMENT</option></select></label><label className={fieldLabel}>Evidence description / limits<Textarea name="evidenceDescription" defaultValue={sample?defaults["evidenceDescription"]:preset?.evidence[0]?.description??""} maxLength={2000} className="mt-2"/></label><label className={fieldLabel}>Source credit / rights<Input name="evidenceSource" defaultValue={sample?defaults["evidenceSource"]:preset?.evidence[0]?.source??""} maxLength={140} className="mt-2"/></label><label className={fieldLabel}>Public HTTPS reference · optional<Input name="evidenceReference" defaultValue={preset?.evidence[0]?.reference??""} maxLength={1000} className="mt-2"/></label><label className="flex gap-3 text-sm text-muted-foreground"><input type="checkbox" name="evidencePermission" className="accent-primary"/>I have permission to record this non-sensitive sample metadata; no private or scraped footage</label></fieldset><label className={fieldLabel}>Chronological timeline · one UTC time | observation per line<Textarea name="timelineRows" aria-label="Incident timeline" defaultValue={preset?.timeline.map(x=>`${x.at} | ${x.observation}`).join("\n")??(sample?`${c?.date??"2026-10-21"}T00:00:00.000Z | ${defaults["timelineNote"]}`:"")} maxLength={42000} className="mt-2 font-mono text-xs"/></label>{[['operatorAuthorized','I am the responsible human or have the operator’s voluntary authorization'],['sampleOnly','Only fictional non-sensitive content; browser records are editable and not confidential'],['consent','I consent to storing this local DEMO report; no public sharing or outside contact']].map(([n,l])=><label key={n} className="flex gap-3 text-sm leading-relaxed text-muted-foreground"><input type="checkbox" name={n} className="mt-1 accent-primary"/>{l}</label>)}<FormNotice message={message}/><Button variant="signal" type="submit" className="justify-self-start">{record?"Record revision · invalidate review":"Record local DEMO incident"}</Button></form></>;
+import { useState, type FormEvent } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { FormNotice, IdentitySelect, fieldLabel } from "@/components/genesis/GenesisShell";
+import { useIncidents } from "@/hooks/use-incidents";
+import { useTrustedRelease } from "@/hooks/use-trusted-release";
+import { codeContributions, incidentExamples } from "@/data/evolution";
+import {
+  accountabilityInput,
+  incidentSeverities,
+  causeDomains,
+  type AccountabilityRecord,
+} from "@/lib/accountability";
+import { AccountabilityShell } from "./AccountabilityShell";
+const fields = [
+  ["expected", "Expected behavior"],
+  ["observed", "Observed behavior"],
+  ["facts", "Supported facts / evidence basis"],
+  ["unknowns", "Unknowns / missing evidence"],
+  ["hypotheses", "Hypotheses · not findings"],
+  ["tests", "Test procedure, declared results and gaps"],
+  ["logs", "Scrubbed fictional log excerpt · optional"],
+  ["hashBasis", "Hash provenance / unavailable execution evidence"],
+  ["correctivePlan", "Corrective action proposal"],
+  ["safetyPlan", "Physical safety / trained oversight / independent stop validation gaps"],
+  ["privacyTerms", "Privacy, access and retention preferences · not enforcement"],
+] as const;
+export function IncidentReportPage() {
+  return (
+    <AccountabilityShell title="Report Incident">
+      <IncidentReportForm />
+    </AccountabilityShell>
+  );
+}
+export function IncidentReportForm({
+  record,
+  onDone,
+}: {
+  record?: AccountabilityRecord;
+  onDone?: () => void;
+}) {
+  const { dispatch } = useIncidents(),
+    { store: trust } = useTrustedRelease(),
+    navigate = useNavigate();
+  const [message, setMessage] = useState("");
+  const [sample, setSample] = useState(false),
+    [codeId, setCode] = useState(record?.input.codeId ?? ""),
+    [physical, setPhysical] = useState(record?.input.physicalImpact ?? false);
+  const c = incidentExamples.find((c) => c.id === "two-commands-one-rover");
+  const preset = record?.input;
+  const defaults: Record<string, string> = {
+    title: c?.title ?? "Fictional incident",
+    project: "Authored virtual rover exercise",
+    device: "No real device connected",
+    expected: c?.intended ?? "Unknown expected behavior",
+    observed: c?.observed ?? "No live observations",
+    facts: c?.facts ?? "Fictional sample only",
+    unknowns: c?.unknowns ?? "Independent evidence unavailable",
+    hypotheses: c?.hypotheses ?? "Cause remains unknown",
+    tests: c?.tests ?? "Independent tests not run",
+    logs: c?.logs ?? "",
+    hashBasis:
+      "Only supplied sample metadata; no executed artifact obtained or trusted signature available.",
+    correctivePlan: c?.mitigation ?? "Request independent review",
+    safetyPlan:
+      "Physical emergency stop, trained human oversight, stability, collision limits and independent physical validation required; none performed by this browser.",
+    privacyTerms:
+      "Non-sensitive fictional data only; retained in this editable browser store. No confidential storage or external publication.",
+    proposedBy: "Unknown proposer",
+    approvedBy: "Unknown approver",
+    deployedBy: "Unknown deployer",
+    proposedBasis: "No authenticated proposal evidence available.",
+    approvedBasis: "No authenticated approval evidence available.",
+    deployedBasis: "No deployment or executed artifact observed.",
+    evidenceDescription: "Original fictional teaching case; no actual incident evidence.",
+    evidenceSource: "Authored Evolution demo",
+    timelineNote: "Fictional observation recorded for local review only.",
+  };
+  const value = (name: string) =>
+    sample
+      ? (defaults[name] ?? "")
+      : name in (preset ?? {})
+        ? String(preset?.[name as keyof typeof preset] ?? "")
+        : "";
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const d = new FormData(e.currentTarget),
+      s = (n: string) => String(d.get(n) ?? ""),
+      b = (n: string) => d.get(n) === "on";
+    try {
+      const utc = (v: string) => new Date(v.endsWith("Z") ? v : `${v}Z`).toISOString();
+      const occurredAt = utc(s("occurredAt")),
+        detectedAt = utc(s("detectedAt"));
+      const input = accountabilityInput.parse({
+        title: s("title"),
+        reporterId: record?.input.reporterId ?? s("reporterId"),
+        severity: s("severity"),
+        occurredAt,
+        detectedAt,
+        project: s("project"),
+        device: s("device"),
+        physicalImpact: physical,
+        ...Object.fromEntries(fields.map(([name]) => [name, s(name)])),
+        causeDomain: s("causeDomain"),
+        rootCauseStatus: s("rootCauseStatus"),
+        proposedBy: { actor: s("proposedBy"), basis: s("proposedBasis") },
+        approvedBy: { actor: s("approvedBy"), basis: s("approvedBasis") },
+        deployedBy: { actor: s("deployedBy"), basis: s("deployedBasis") },
+        codeId,
+        releaseId: s("releaseId"),
+        replayId: s("replayId"),
+        archiveId: s("archiveId"),
+        baselineText: s("baselineText"),
+        observedText: s("observedText"),
+        baselineHash: s("baselineHash").toLowerCase(),
+        observedHash: s("observedHash").toLowerCase(),
+        evidence: [
+          {
+            kind: s("evidenceKind"),
+            description: s("evidenceDescription"),
+            source: s("evidenceSource"),
+            reference: s("evidenceReference"),
+            permission: b("evidencePermission"),
+            status: s("evidenceStatus"),
+          },
+          ...(preset?.evidence.slice(1) ?? []),
+        ],
+        timeline: s("timelineRows")
+          .split("\n")
+          .map((row) => {
+            const [time, ...rest] = row.split(" | ");
+            return { at: utc(time ?? ""), observation: rest.join(" | ") };
+          }),
+        consent: b("consent"),
+        operatorAuthorized: b("operatorAuthorized"),
+        sampleOnly: b("sampleOnly"),
+      });
+      const r = input.releaseId ? trust.releases.find((r) => r.id === input.releaseId) : undefined;
+      const replay = input.replayId
+        ? trust.replays.find((r) => r.id === input.replayId)
+        : undefined;
+      if (input.releaseId && (!r || r.codeId !== input.codeId))
+        throw new Error("Selected local release must match the code reference.");
+      if (
+        input.replayId &&
+        (!replay ||
+          replay.codeId !== input.codeId ||
+          (input.archiveId && replay.caseId !== input.archiveId) ||
+          (r && replay.version !== r.version))
+      )
+        throw new Error(
+          "Selected local replay must match code, linked archive and release version.",
+        );
+      const id = dispatch(
+        record
+          ? {
+              type: "accountabilityRevise",
+              caseId: record.id,
+              actorId: record.input.reporterId,
+              input,
+            }
+          : { type: "accountabilityReport", input },
+      );
+      if (record) onDone?.();
+      else void navigate({ to: "/guardian-incidents/$id", params: { id } });
+    } catch (err) {
+      setMessage(
+        err instanceof RangeError
+          ? "Enter valid UTC occurrence, observation and timeline times."
+          : err instanceof Error
+            ? err.message
+            : "Complete the sample report.",
+      );
+    }
+  };
+  return (
+    <>
+      <div className="flex flex-wrap items-start justify-between gap-5">
+        <h2 className="text-2xl">
+          {record
+            ? "Revise the evidence; renew review."
+            : "What happened—and what remains unknown?"}
+        </h2>
+        {!record && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSample(true);
+              setCode(c?.contributionId ?? "");
+              setPhysical(true);
+              setMessage(
+                "Fictional teaching sample loaded; identity and every consent remain yours to declare.",
+              );
+            }}
+          >
+            Load fictional teaching sample
+          </Button>
+        )}
+      </div>
+      <form
+        key={`${record?.revision ?? 0}-${sample}`}
+        noValidate
+        className="mt-8 grid gap-6"
+        onSubmit={submit}
+      >
+        {!record && (
+          <IdentitySelect
+            name="reporterId"
+            scope="submit_capsules"
+            label="Declared reporter / operator"
+          />
+        )}
+        <div className="grid gap-5 md:grid-cols-2">
+          {[
+            ["title", "Incident title"],
+            ["project", "Project / environment"],
+            ["device", "Device declaration · no live connection"],
+          ].map(([n, l]) => (
+            <label className={fieldLabel} key={n}>
+              {l}
+              <Input name={n} defaultValue={value(n ?? "")} maxLength={140} className="mt-2" />
+            </label>
+          ))}
+          <label className={fieldLabel}>
+            Severity
+            <select
+              name="severity"
+              className="exchange-select mt-2 w-full"
+              defaultValue={preset?.severity ?? "Moderate"}
+            >
+              {incidentSeverities.map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+          </label>
+          {[
+            ["occurredAt", "Occurrence time · UTC"],
+            ["detectedAt", "Observation time · UTC"],
+          ].map(([n, l]) => (
+            <label className={fieldLabel} key={n}>
+              {l}
+              <Input
+                name={n}
+                type="datetime-local"
+                defaultValue={
+                  preset?.[n as "occurredAt" | "detectedAt"]?.slice(0, 16) ??
+                  (sample ? `${c?.date ?? "2026-10-21"}T00:00` : "")
+                }
+                className="mt-2"
+              />
+            </label>
+          ))}
+        </div>
+        <label className="flex gap-3 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={physical}
+            onChange={(e) => setPhysical(e.target.checked)}
+            className="accent-primary"
+          />
+          Physical impact or high-impact robotics scenario
+        </label>
+        {physical && (
+          <p className="border-l border-warning pl-4 text-sm leading-loose text-warning">
+            Real danger requires trained on-site humans and independently validated physical
+            emergency stops. This web report cannot stop hardware or validate physical safety.
+          </p>
+        )}
+        <div className="grid gap-5 md:grid-cols-2">
+          {fields.map(([n, l]) => (
+            <label key={n} className={fieldLabel}>
+              {l}
+              <Textarea
+                name={n}
+                defaultValue={value(n)}
+                maxLength={2000}
+                className="mt-2 min-h-24"
+              />
+            </label>
+          ))}
+          <label className={fieldLabel}>
+            Possible contributing factor · unverified
+            <select
+              name="causeDomain"
+              defaultValue={preset?.causeDomain ?? "Unknown"}
+              className="exchange-select mt-2 w-full"
+            >
+              {causeDomains.map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Root-cause status
+            <select
+              name="rootCauseStatus"
+              defaultValue={preset?.rootCauseStatus ?? "Unknown"}
+              className="exchange-select mt-2 w-full"
+            >
+              <option>Unknown</option>
+              <option>Hypothesis only</option>
+            </select>
+          </label>
+        </div>
+        <p className="text-xs text-warning">
+          Verified root cause: unavailable. Independent local review never establishes identity,
+          fault or legal responsibility.
+        </p>
+        <fieldset className="border-y border-border py-6">
+          <legend className="text-lg text-gold-light">
+            Who proposed, approved and deployed? · declarations
+          </legend>
+          <div className="mt-4 grid gap-5 md:grid-cols-3">
+            {(["proposed", "approved", "deployed"] as const).map((n) => (
+              <div key={n}>
+                <label className={fieldLabel}>
+                  {n} by · unknown allowed
+                  <Input
+                    name={`${n}By`}
+                    defaultValue={sample ? defaults[`${n}By`] : (preset?.[`${n}By`].actor ?? "")}
+                    maxLength={140}
+                    className="mt-2"
+                  />
+                </label>
+                <label className={`${fieldLabel} mt-4`}>
+                  Evidence basis / missing proof
+                  <Textarea
+                    name={`${n}Basis`}
+                    defaultValue={sample ? defaults[`${n}Basis`] : (preset?.[`${n}By`].basis ?? "")}
+                    maxLength={2000}
+                    className="mt-2"
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="grid gap-5 md:grid-cols-2">
+          <legend className="mb-4 text-lg text-gold-light">
+            Version and evidence references · no verification
+          </legend>
+          <label className={fieldLabel}>
+            Code Exchange reference
+            <select
+              aria-label="Incident code reference"
+              value={codeId}
+              onChange={(e) => setCode(e.target.value)}
+              className="exchange-select mt-2 w-full"
+            >
+              <option value="">Unknown / unavailable</option>
+              {codeContributions.map((c) => (
+                <option value={c.id} key={c.id}>
+                  {c.title.en}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Local Code Vault release
+            <select
+              name="releaseId"
+              defaultValue={preset?.releaseId ?? ""}
+              className="exchange-select mt-2 w-full"
+            >
+              <option value="">No release obtained</option>
+              {trust.releases
+                .filter((r) => r.codeId === codeId)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    v{r.version} · {r.state} · unsigned DEMO
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Local experiment replay
+            <select
+              name="replayId"
+              defaultValue={preset?.replayId ?? ""}
+              className="exchange-select mt-2 w-full"
+            >
+              <option value="">No replay obtained</option>
+              {trust.replays
+                .filter((r) => r.codeId === codeId)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.title} · DEMO
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Related authored archive
+            <select
+              name="archiveId"
+              defaultValue={preset?.archiveId ?? (sample ? c?.id : "")}
+              className="exchange-select mt-2 w-full"
+            >
+              <option value="">No case linked</option>
+              {incidentExamples.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          {[
+            ["baselineHash", "Declared approved-baseline SHA-256 · optional"],
+            ["observedHash", "Declared executed/observed SHA-256 · optional"],
+          ].map(([n, l]) => (
+            <label className={fieldLabel} key={n}>
+              {l}
+              <Input
+                name={n}
+                defaultValue={value(n ?? "")}
+                maxLength={64}
+                className="mt-2 font-mono text-xs"
+              />
+            </label>
+          ))}
+          {[
+            ["baselineText", "Supplied baseline sample text · optional"],
+            ["observedText", "Supplied observed sample text · optional"],
+          ].map(([n, l]) => (
+            <label className={fieldLabel} key={n}>
+              {l}
+              <Textarea
+                name={n}
+                defaultValue={value(n ?? "")}
+                maxLength={20000}
+                className="mt-2 min-h-40 font-mono text-xs"
+              />
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="grid gap-5 border-t border-border pt-6 md:grid-cols-2">
+          <legend className="mb-4 text-lg text-gold-light">
+            Permissioned evidence metadata · never fetched
+          </legend>
+          <label className={fieldLabel}>
+            Evidence kind
+            <select
+              name="evidenceKind"
+              defaultValue={preset?.evidence[0]?.kind ?? "Observation"}
+              className="exchange-select mt-2 w-full"
+            >
+              {["Observation", "Log metadata", "Test declaration", "Clip metadata"].map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Evidence label
+            <select
+              name="evidenceStatus"
+              defaultValue={preset?.evidence[0]?.status ?? "DEMO"}
+              className="exchange-select mt-2 w-full"
+            >
+              <option>DEMO</option>
+              <option>REENACTMENT</option>
+            </select>
+          </label>
+          <label className={fieldLabel}>
+            Evidence description / limits
+            <Textarea
+              name="evidenceDescription"
+              defaultValue={
+                sample ? defaults["evidenceDescription"] : (preset?.evidence[0]?.description ?? "")
+              }
+              maxLength={2000}
+              className="mt-2"
+            />
+          </label>
+          <label className={fieldLabel}>
+            Source credit / rights
+            <Input
+              name="evidenceSource"
+              defaultValue={
+                sample ? defaults["evidenceSource"] : (preset?.evidence[0]?.source ?? "")
+              }
+              maxLength={140}
+              className="mt-2"
+            />
+          </label>
+          <label className={fieldLabel}>
+            Public HTTPS reference · optional
+            <Input
+              name="evidenceReference"
+              defaultValue={preset?.evidence[0]?.reference ?? ""}
+              maxLength={1000}
+              className="mt-2"
+            />
+          </label>
+          <label className="flex gap-3 text-sm text-muted-foreground">
+            <input type="checkbox" name="evidencePermission" className="accent-primary" />I have
+            permission to record this non-sensitive sample metadata; no private or scraped footage
+          </label>
+        </fieldset>
+        <label className={fieldLabel}>
+          Chronological timeline · one UTC time | observation per line
+          <Textarea
+            name="timelineRows"
+            aria-label="Incident timeline"
+            defaultValue={
+              preset?.timeline.map((x) => `${x.at} | ${x.observation}`).join("\n") ??
+              (sample
+                ? `${c?.date ?? "2026-10-21"}T00:00:00.000Z | ${defaults["timelineNote"]}`
+                : "")
+            }
+            maxLength={42000}
+            className="mt-2 font-mono text-xs"
+          />
+        </label>
+        {[
+          [
+            "operatorAuthorized",
+            "I am the responsible human or have the operator’s voluntary authorization",
+          ],
+          [
+            "sampleOnly",
+            "Only fictional non-sensitive content; browser records are editable and not confidential",
+          ],
+          [
+            "consent",
+            "I consent to storing this local DEMO report; no public sharing or outside contact",
+          ],
+        ].map(([n, l]) => (
+          <label key={n} className="flex gap-3 text-sm leading-relaxed text-muted-foreground">
+            <input type="checkbox" name={n} className="mt-1 accent-primary" />
+            {l}
+          </label>
+        ))}
+        <FormNotice message={message} />
+        <Button variant="signal" type="submit" className="justify-self-start">
+          {record ? "Record revision · invalidate review" : "Record local DEMO incident"}
+        </Button>
+      </form>
+    </>
+  );
 }

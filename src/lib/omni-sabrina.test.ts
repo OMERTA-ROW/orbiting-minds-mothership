@@ -78,8 +78,16 @@ describe("matchScore", () => {
 
   it("returns zero shared terms when nothing overlaps", () => {
     const match = matchScore(
-      makeInsight({ invention: "Underwater basket weaving", trend: "Tidal patterns shift", audience: "Weavers" }),
-      makeProspect({ focus: "Quantum compiler verification", name: "QVerify", organization: "QLabs" }),
+      makeInsight({
+        invention: "Underwater basket weaving",
+        trend: "Tidal patterns shift",
+        audience: "Weavers",
+      }),
+      makeProspect({
+        focus: "Quantum compiler verification",
+        name: "QVerify",
+        organization: "QLabs",
+      }),
     );
     expect(match.sharedTerms).toEqual([]);
   });
@@ -109,7 +117,12 @@ describe("strategic memory", () => {
     ).toThrow();
     expect(() =>
       createMemory(
-        { lesson: "A sufficiently long lesson text", source: "ok", confidence: 50, expiresInDays: 400 },
+        {
+          lesson: "A sufficiently long lesson text",
+          source: "ok",
+          confidence: 50,
+          expiresInDays: 400,
+        },
         "m1",
         NOW,
       ),
@@ -118,7 +131,12 @@ describe("strategic memory", () => {
 
   it("expires memories and recall never returns expired or deleted entries", () => {
     const memory = createMemory(
-      { lesson: "Research groups respond to consent-first framing", source: "Owner note", confidence: 70, expiresInDays: 7 },
+      {
+        lesson: "Research groups respond to consent-first framing",
+        source: "Owner note",
+        confidence: 70,
+        expiresInDays: 7,
+      },
       "m1",
       NOW,
     );
@@ -149,7 +167,11 @@ describe("weeklyBrief", () => {
 describe("Jackboy feedback", () => {
   it("creates local-handoff feedback records only", () => {
     const feedback = createFeedback(
-      { kind: "capability-gap", summary: "Prospects need a documented webhook channel", relatedName: "Atlas Labs" },
+      {
+        kind: "capability-gap",
+        summary: "Prospects need a documented webhook channel",
+        relatedName: "Atlas Labs",
+      },
       "f1",
       STAMP,
     );
@@ -158,14 +180,26 @@ describe("Jackboy feedback", () => {
   });
 
   it("rejects invalid kinds and short summaries", () => {
-    expect(() => createFeedback({ kind: "spam", summary: "long enough summary text" }, "f1", STAMP)).toThrow();
+    expect(() =>
+      createFeedback({ kind: "spam", summary: "long enough summary text" }, "f1", STAMP),
+    ).toThrow();
     expect(() => createFeedback({ kind: "quality", summary: "short" }, "f1", STAMP)).toThrow();
   });
 });
 
 describe("sabrina store", () => {
   it("round-trips and tolerates corrupt data", () => {
-    const store = { memories: [], briefs: [], feedback: [createFeedback({ kind: "quality", summary: "Draft quality needs a second pass" }, "f1", STAMP)] };
+    const store = {
+      memories: [],
+      briefs: [],
+      feedback: [
+        createFeedback(
+          { kind: "quality", summary: "Draft quality needs a second pass" },
+          "f1",
+          STAMP,
+        ),
+      ],
+    };
     const loaded = loadSabrinaStore(saveSabrinaStore(store));
     expect(loaded.feedback).toHaveLength(1);
     expect(loadSabrinaStore("not json")).toEqual({ memories: [], briefs: [], feedback: [] });

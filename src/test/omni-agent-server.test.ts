@@ -215,6 +215,7 @@ describe("Persisted OMNI agent request", () => {
           await new Promise<void>((resolve) =>
             signal.addEventListener("abort", () => resolve(), { once: true }),
           );
+          yield* [];
         })(),
       );
     });
@@ -235,6 +236,7 @@ describe("Persisted OMNI agent request", () => {
       signal = s;
       return call(
         (async function* () {
+          yield* [];
           await new Promise<void>((resolve) =>
             s.addEventListener("abort", () => resolve(), { once: true }),
           );
@@ -252,6 +254,7 @@ describe("Persisted OMNI agent request", () => {
     m.call.mockImplementation((_r, _k, _c, _m, s: AbortSignal) =>
       call(
         (async function* () {
+          yield* [];
           await new Promise<void>((resolve) =>
             s.addEventListener("abort", () => resolve(), { once: true }),
           );

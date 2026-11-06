@@ -43,7 +43,14 @@ describe("freshness and summary", () => {
   });
   it("summarizes project, agent, version, tasks and freshness", () => {
     const s = passportSummary(
-      { project: "OMNI", residentAgent: "omni", status: "active", version: 3, pendingTasks: ["a", "b"], updatedAt: new Date("2026-10-31T13:00:00Z") },
+      {
+        project: "OMNI",
+        residentAgent: "omni",
+        status: "active",
+        version: 3,
+        pendingTasks: ["a", "b"],
+        updatedAt: new Date("2026-10-31T13:00:00Z"),
+      },
       now,
     );
     expect(s).toBe("OMNI (agent omni) — active, v3, 2 pending task(s), fresh");

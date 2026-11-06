@@ -1,71 +1,479 @@
 import { z } from "zod";
-import { guardianDeviceFixtures, guardianDeviceScopes, guardianFleetTasks, guardianReviewSurfaces } from "@/data/evolution";
+import {
+  guardianDeviceFixtures,
+  guardianDeviceScopes,
+  guardianFleetTasks,
+  guardianReviewSurfaces,
+} from "@/data/evolution";
 import { careReport, type CareStore } from "@/lib/care";
-const deviceId = z.string().refine(v => guardianDeviceFixtures.some(d => d.id === v), "Unknown fictional device");
+const deviceId = z
+  .string()
+  .refine((v) => guardianDeviceFixtures.some((d) => d.id === v), "Unknown fictional device");
 const scope = z.enum(guardianDeviceScopes);
-const device = z.object({ id: deviceId, state: z.enum(["Unpaired", "Demo paired", "Paused", "Revoked"]), scopes: z.array(scope).max(3), expiresAt: z.string().datetime().nullable(), group: z.enum(["Home", "Work", "Lab"]), consentAt: z.string().datetime().nullable() });
-const pairing = z.object({ code: z.string().regex(/^DEMO-[A-F0-9]{8}$/), deviceId, expiresAt: z.string().datetime(), state: z.enum(["Pending", "Used", "Cancelled"]) });
+const device = z.object({
+  id: deviceId,
+  state: z.enum(["Unpaired", "Demo paired", "Paused", "Revoked"]),
+  scopes: z.array(scope).max(3),
+  expiresAt: z.string().datetime().nullable(),
+  group: z.enum(["Home", "Work", "Lab"]),
+  consentAt: z.string().datetime().nullable(),
+});
+const pairing = z.object({
+  code: z.string().regex(/^DEMO-[A-F0-9]{8}$/),
+  deviceId,
+  expiresAt: z.string().datetime(),
+  state: z.enum(["Pending", "Used", "Cancelled"]),
+});
 const taskId = z.enum(["inventory", "updates-check", "report"]);
-const plan = z.object({ id: z.string(), deviceIds: z.array(deviceId).min(1).max(5), task: taskId, createdAt: z.string().datetime(), expiresAt: z.string().datetime(), state: z.enum(["Dry run", "Demo approved", "Paused", "Cancelled"]) });
+const plan = z.object({
+  id: z.string(),
+  deviceIds: z.array(deviceId).min(1).max(5),
+  task: taskId,
+  createdAt: z.string().datetime(),
+  expiresAt: z.string().datetime(),
+  state: z.enum(["Dry run", "Demo approved", "Paused", "Cancelled"]),
+});
 const report = z.object({ id: z.string(), at: z.string().datetime(), deviceId });
-const incident = z.object({ id: z.string(), deviceId, severity: z.enum(["Info", "Warning", "Critical"]), title: z.string().min(5).max(140), stage: z.enum(["New", "Investigating", "Containment proposed", "Closed demo"]), note: z.string().max(1200), at: z.string().datetime() });
-const review = z.object({ id: z.string(), surface: z.string().refine(v => guardianReviewSurfaces.some(s => s.id === v)), operator: z.string().trim().min(2).max(80), role: z.enum(["Explorer", "Critic", "Architect"]), state: z.enum(["Proposed", "Human-reviewed proposal", "Rejected"]), reviewer: z.string().max(80).nullable(), at: z.string().datetime() });
-export const guardianStoreSchema = z.object({ version: z.literal(1), paused: z.boolean(), devices: z.array(device).length(5).refine(ds => new Set(ds.map(d => d.id)).size === 5, "Duplicate device"), pairings: z.array(pairing).max(100), plans: z.array(plan).max(100), incidents: z.array(incident).max(100), reviews: z.array(review).max(100), reports: z.array(report).max(100), reportPolicy: z.object({ dailyPreview: z.boolean(), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), cloudSync: z.literal(false), email: z.literal(false), voice: z.literal(false) }), audit: z.array(z.object({ id: z.string(), at: z.string().datetime(), kind: z.string(), target: z.string(), action: z.string() })).max(500) });
+const incident = z.object({
+  id: z.string(),
+  deviceId,
+  severity: z.enum(["Info", "Warning", "Critical"]),
+  title: z.string().min(5).max(140),
+  stage: z.enum(["New", "Investigating", "Containment proposed", "Closed demo"]),
+  note: z.string().max(1200),
+  at: z.string().datetime(),
+});
+const review = z.object({
+  id: z.string(),
+  surface: z.string().refine((v) => guardianReviewSurfaces.some((s) => s.id === v)),
+  operator: z.string().trim().min(2).max(80),
+  role: z.enum(["Explorer", "Critic", "Architect"]),
+  state: z.enum(["Proposed", "Human-reviewed proposal", "Rejected"]),
+  reviewer: z.string().max(80).nullable(),
+  at: z.string().datetime(),
+});
+export const guardianStoreSchema = z.object({
+  version: z.literal(1),
+  paused: z.boolean(),
+  devices: z
+    .array(device)
+    .length(5)
+    .refine((ds) => new Set(ds.map((d) => d.id)).size === 5, "Duplicate device"),
+  pairings: z.array(pairing).max(100),
+  plans: z.array(plan).max(100),
+  incidents: z.array(incident).max(100),
+  reviews: z.array(review).max(100),
+  reports: z.array(report).max(100),
+  reportPolicy: z.object({
+    dailyPreview: z.boolean(),
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    cloudSync: z.literal(false),
+    email: z.literal(false),
+    voice: z.literal(false),
+  }),
+  audit: z
+    .array(
+      z.object({
+        id: z.string(),
+        at: z.string().datetime(),
+        kind: z.string(),
+        target: z.string(),
+        action: z.string(),
+      }),
+    )
+    .max(500),
+});
 export type GuardianStore = z.infer<typeof guardianStoreSchema>;
 export type DeviceScope = z.infer<typeof scope>;
-export const initialGuardianStore: GuardianStore = { version: 1, paused: false, devices: guardianDeviceFixtures.map(d => ({ id: d.id, state: "Unpaired", scopes: [], expiresAt: null, group: d.group, consentAt: null })), pairings: [], plans: [], incidents: [], reviews: [], reports: [], reportPolicy: { dailyPreview: false, time: "08:00", cloudSync: false, email: false, voice: false }, audit: [] };
+export const initialGuardianStore: GuardianStore = {
+  version: 1,
+  paused: false,
+  devices: guardianDeviceFixtures.map((d) => ({
+    id: d.id,
+    state: "Unpaired",
+    scopes: [],
+    expiresAt: null,
+    group: d.group,
+    consentAt: null,
+  })),
+  pairings: [],
+  plans: [],
+  incidents: [],
+  reviews: [],
+  reports: [],
+  reportPolicy: {
+    dailyPreview: false,
+    time: "08:00",
+    cloudSync: false,
+    email: false,
+    voice: false,
+  },
+  audit: [],
+};
 export type GuardianCommand =
- | { type: "pairCode"; deviceId: string }
- | { type: "pairConfirm"; code: string; deviceId: string; consent: boolean }
- | { type: "scopes"; deviceId: string; scopes: DeviceScope[]; consent: boolean }
- | { type: "group"; deviceId: string; group: "Home" | "Work" | "Lab" }
- | { type: "revoke"; deviceId: string }
- | { type: "resume"; consent: boolean }
- | { type: "pause" }
- | { type: "plan"; deviceIds: string[]; task: "inventory" | "updates-check" | "report" }
- | { type: "approvePlan"; id: string; consent: boolean }
- | { type: "cancelPlan"; id: string }
- | { type: "incident"; deviceId: string }
- | { type: "triage"; id: string; stage: GuardianStore["incidents"][number]["stage"]; note: string }
- | { type: "review"; surface: string; operator: string; role: GuardianStore["reviews"][number]["role"]; consent: boolean }
- | { type: "reviewDecision"; id: string; reviewer: string; approve: boolean }
- | { type: "report"; deviceId: string }
- | { type: "reportPolicy"; policy: GuardianStore["reportPolicy"] };
+  | { type: "pairCode"; deviceId: string }
+  | { type: "pairConfirm"; code: string; deviceId: string; consent: boolean }
+  | { type: "scopes"; deviceId: string; scopes: DeviceScope[]; consent: boolean }
+  | { type: "group"; deviceId: string; group: "Home" | "Work" | "Lab" }
+  | { type: "revoke"; deviceId: string }
+  | { type: "resume"; consent: boolean }
+  | { type: "pause" }
+  | { type: "plan"; deviceIds: string[]; task: "inventory" | "updates-check" | "report" }
+  | { type: "approvePlan"; id: string; consent: boolean }
+  | { type: "cancelPlan"; id: string }
+  | { type: "incident"; deviceId: string }
+  | { type: "triage"; id: string; stage: GuardianStore["incidents"][number]["stage"]; note: string }
+  | {
+      type: "review";
+      surface: string;
+      operator: string;
+      role: GuardianStore["reviews"][number]["role"];
+      consent: boolean;
+    }
+  | { type: "reviewDecision"; id: string; reviewer: string; approve: boolean }
+  | { type: "report"; deviceId: string }
+  | { type: "reportPolicy"; policy: GuardianStore["reportPolicy"] };
 export function deviceGate(store: GuardianStore, id: string, required: DeviceScope, at: string) {
- const d = store.devices.find(d => d.id === id);
- const reasons = [...(store.paused ? ["Fleet rehearsal paused"] : []), ...(!d || d.state !== "Demo paired" ? ["Pair this fictional device first"] : []), ...(!d?.expiresAt || Date.parse(d.expiresAt) <= Date.parse(at) ? ["Demo identity expired or missing; re-pair"] : []), ...(!d?.scopes.includes(required) ? [`Explicit per-device ${required} scope required`] : [])];
- return { reasons, demoAllowed: reasons.length === 0, actualExecutionAllowed: false as const };
+  const d = store.devices.find((d) => d.id === id);
+  const reasons = [
+    ...(store.paused ? ["Fleet rehearsal paused"] : []),
+    ...(!d || d.state !== "Demo paired" ? ["Pair this fictional device first"] : []),
+    ...(!d?.expiresAt || Date.parse(d.expiresAt) <= Date.parse(at)
+      ? ["Demo identity expired or missing; re-pair"]
+      : []),
+    ...(!d?.scopes.includes(required) ? [`Explicit per-device ${required} scope required`] : []),
+  ];
+  return { reasons, demoAllowed: reasons.length === 0, actualExecutionAllowed: false as const };
 }
-function requireConsent(value: boolean) { if (value !== true) throw new Error("Explicit demo consent required"); }
-function invalidatePlans(store: GuardianStore, deviceId: string) { store.plans.forEach(p => { if (p.deviceIds.includes(deviceId) && p.state !== "Cancelled") p.state = "Cancelled"; }); }
-export function applyGuardianCommand(current: GuardianStore, command: GuardianCommand, id: string, at: string): GuardianStore {
- const store = structuredClone(guardianStoreSchema.parse(current)); z.string().datetime().parse(at);
- const until = (minutes: number) => new Date(Date.parse(at) + minutes * 60000).toISOString();
- const getDevice = (v: string) => { const d = store.devices.find(d => d.id === v); if (!d) throw new Error("Unknown fictional device"); return d; };
- let action = ""; let target = "fleet";
- switch (command.type) {
-  case "pairCode": { const d = getDevice(command.deviceId); if (store.paused) throw new Error("Resume the local rehearsal first"); if (store.pairings.length >= 100) throw new Error("Pairing history limit reached"); store.pairings.forEach(p => { if (p.deviceId === d.id && p.state === "Pending") p.state = "Cancelled"; }); const code = `DEMO-${id.replace(/-/g, "").slice(0,8).toUpperCase()}`; if (store.pairings.some(p => p.code === code)) throw new Error("Generate a fresh demo code"); store.pairings.push(pairing.parse({ code, deviceId: d.id, expiresAt: until(5), state: "Pending" })); target = d.id; action = "Prepared single-use 5-minute demo pairing code · no endpoint enrollment"; break; }
-  case "pairConfirm": { requireConsent(command.consent); const d = getDevice(command.deviceId); const p = store.pairings.find(p => p.code === command.code.trim().toUpperCase()); if (store.paused || !p || p.deviceId !== d.id || p.state !== "Pending" || Date.parse(p.expiresAt) <= Date.parse(at)) throw new Error("Demo code invalid, expired, used or bound to another device"); p.state = "Used"; d.state = "Demo paired"; d.scopes = []; d.expiresAt = until(15); d.consentAt = at; invalidatePlans(store,d.id); target = d.id; action = "Confirmed fictional pairing · 15-minute local identity, scopes OFF; no OS grant"; break; }
-  case "scopes": { requireConsent(command.consent); const d = getDevice(command.deviceId); if (store.paused || d.state !== "Demo paired" || !d.expiresAt || Date.parse(d.expiresAt) <= Date.parse(at)) throw new Error("Active demo identity required; re-pair after expiry"); d.scopes = z.array(scope).max(3).parse([...new Set(command.scopes)]); d.consentAt = at; invalidatePlans(store,d.id); target = d.id; action = "Changed explicit device rehearsal scopes · not real permissions"; break; }
-  case "group": { const d = getDevice(command.deviceId); d.group = device.shape.group.parse(command.group); target = d.id; action = "Changed fictional device group · no inherited grants"; break; }
-  case "revoke": { const d = getDevice(command.deviceId); d.state = "Revoked"; d.scopes = []; d.expiresAt = null; d.consentAt = null; store.pairings.forEach(p => { if (p.deviceId === d.id && p.state === "Pending") p.state = "Cancelled"; }); store.plans.forEach(p => { if (p.deviceIds.includes(d.id) && p.state !== "Cancelled") p.state = "Cancelled"; }); target = d.id; action = "Revoked local demo identity / plans · no live credentials or endpoint contacted"; break; }
-  case "pause": store.paused = true; store.devices.forEach(d => { if (d.state === "Demo paired") d.state = "Paused"; d.scopes = []; d.expiresAt = null; d.consentAt = null; }); store.pairings.forEach(p => { if (p.state === "Pending") p.state = "Cancelled"; }); store.plans.forEach(p => { if (p.state !== "Cancelled") p.state = "Paused"; }); store.reportPolicy.dailyPreview = false; action = "Paused local fleet rehearsal, invalidated scopes/pairing/plans · 0 endpoint acknowledgments"; break;
-  case "resume": requireConsent(command.consent); store.paused = false; action = "Resumed planning only · devices need fresh pairing, scopes and approval"; break;
-  case "plan": { const ids = z.array(deviceId).min(1).max(5).parse([...new Set(command.deviceIds)]); const task = guardianFleetTasks.find(t => t.id === command.task); if (!task) throw new Error("Only typed read-only templates allowed; no arbitrary shell"); for (const d of ids) { const gate = deviceGate(store,d,task.scope,at); if (!gate.demoAllowed) throw new Error(`${getDevice(d).id}: ${gate.reasons.join("; ")}`); } if (store.plans.length >= 100) throw new Error("Demo plan limit reached"); store.plans.push(plan.parse({ id, deviceIds: ids, task: command.task, createdAt: at, expiresAt: until(10), state: "Dry run" })); target = ids.join(","); action = "Prepared device-bound 10-minute dry run · no queue, job or shell execution"; break; }
-  case "approvePlan": { requireConsent(command.consent); const p = store.plans.find(p => p.id === command.id); const t = guardianFleetTasks.find(t => t.id === p?.task); if (!p || !t || p.state !== "Dry run" || Date.parse(p.expiresAt) <= Date.parse(at)) throw new Error("Active unexpired dry run required"); for (const d of p.deviceIds) { const gate = deviceGate(store,d,t.scope,at); if (!gate.demoAllowed) throw new Error(gate.reasons.join("; ")); } p.state = "Demo approved"; target = p.id; action = "Approved demo plan only · no native queue, outputs, installation or reboot"; break; }
-  case "cancelPlan": { const p = store.plans.find(p => p.id === command.id); if (!p || p.state === "Cancelled") throw new Error("Active plan required"); p.state = "Cancelled"; target = p.id; action = "Cancelled local demo plan · no remote task stopped"; break; }
-  case "incident": getDevice(command.deviceId); if (store.incidents.length >= 100) throw new Error("Demo incident limit reached"); store.incidents.push({ id, deviceId: command.deviceId, severity: "Critical", title: "DEMO exercise: unsigned artifact / instruction injection", stage: "New", note: "Scenario opened manually, not detected. Preserve evidence; propose isolation and independent review. Nothing quarantined.", at }); target = command.deviceId; action = "Opened a fictional incident exercise · no threat detected"; break;
-  case "triage": { const i = store.incidents.find(i => i.id === command.id); if (!i) throw new Error("Demo incident not found"); i.stage = incident.shape.stage.parse(command.stage); i.note = z.string().trim().min(5).max(1200).parse(command.note); target = i.id; action = `Recorded demo incident triage: ${i.stage} · no remediation`; break; }
-  case "review": requireConsent(command.consent); if (store.reviews.length >= 100) throw new Error("Review limit reached"); store.reviews.push(review.parse({ id, surface: command.surface, operator: command.operator, role: command.role, state: "Proposed", reviewer: null, at })); target = command.surface; action = "Prepared rule-based DEMO agent-role critique · no AI call, source scan or proposed fix applied"; break;
-  case "reviewDecision": { const r = store.reviews.find(r => r.id === command.id); if (!r || r.state !== "Proposed") throw new Error("Active proposal required"); const reviewer = z.string().trim().min(2).max(80).parse(command.reviewer); if (reviewer.toLowerCase() === r.operator.toLowerCase()) throw new Error("Use a distinct declared human reviewer; local names are not verified identity"); r.reviewer = reviewer; r.state = command.approve ? "Human-reviewed proposal" : "Rejected"; target = r.id; action = "Recorded declared human review · proposal only, no certification or release"; break; }
-  case "report": getDevice(command.deviceId); if (store.reports.length >= 100) throw new Error("Report limit reached"); store.reports.push({ id, at, deviceId: command.deviceId }); target = command.deviceId; action = "Prepared sample Health & Security Report · no scan or all-clear"; break;
-  case "reportPolicy": store.reportPolicy = guardianStoreSchema.shape.reportPolicy.parse(command.policy); if (store.paused && store.reportPolicy.dailyPreview) throw new Error("Resume before daily rehearsal preferences"); action = "Saved local daily report preference · no scheduler, sync, email or voice delivery"; break;
- }
- store.audit = [...store.audit.slice(-499), { id, at, kind: command.type, target, action }]; return guardianStoreSchema.parse(store);
+function requireConsent(value: boolean) {
+  if (value !== true) throw new Error("Explicit demo consent required");
 }
-export function guardianReport(store: GuardianStore, care: CareStore, record: GuardianStore["reports"][number], at: string) {
- const fixture = guardianDeviceFixtures.find(d => d.id === record.deviceId); const identity = store.devices.find(d => d.id === record.deviceId);
- return { mode: "DEMO", reportDayUtc: record.at.slice(0,10), generatedAt: record.at, renderedAt: at, evidence: "CURRENT_LOCAL_DEMO_RECORDS_NOT_HISTORICAL_SCAN", device: fixture, actualChecks: [], lastSuccessfulScan: null, lastRealCheckIn: null, unsupportedChecks: ["Endpoint malware detection", "Terminal monitoring", "OS patch verification", "Backup verification", "Account MFA/passkey status"], healthScore: null, backupStatus: "UNKNOWN", actualAppliedUpdates: [], actualFailedUpdates: [], realConnections: [], identity: identity ? { state: identity.state, expiresAt: identity.expiresAt, scopes: identity.scopes } : null, incidents: store.incidents.filter(i => i.deviceId === record.deviceId), sampleCare: care.deviceId === record.deviceId ? careReport(care) : null, recommendations: ["Configure authenticated owner-scoped access and independent security tests", "Install only a future verified signed agent after owner approval", "Review unknown signatures / backup evidence; do not assume safety"], signed: false, delivery: "LOCAL_PREVIEW_ONLY" };
+function invalidatePlans(store: GuardianStore, deviceId: string) {
+  store.plans.forEach((p) => {
+    if (p.deviceIds.includes(deviceId) && p.state !== "Cancelled") p.state = "Cancelled";
+  });
 }
-export function guardianAudit(store: GuardianStore) { return { mode: "DEMO", authenticated: false, tamperEvident: false, storage: "BROWSER_LOCAL", events: store.audit, endpointAcknowledgments: [], realActions: [] }; }
-export function fleetManifest(p: GuardianStore["plans"][number], at: string) { return { mode: "DEMO", ...p, state: p.state !== "Cancelled" && Date.parse(p.expiresAt) <= Date.parse(at) ? "Expired" : p.state, recordedState: p.state, exportedAt: at, perDevice: p.deviceIds.map(id => ({ deviceId: id, execution: "UNAVAILABLE", output: null, receipt: null })), ownerId: null, signature: null, nonce: "DEMO_NOT_AN_AUTH_TOKEN", actualQueued: false, actualExecuted: false, rollback: "UNAVAILABLE_NOT_TESTED", offlineScheduling: "NO_REAL_QUEUE", spendCapUsd: 0 }; }
+export function applyGuardianCommand(
+  current: GuardianStore,
+  command: GuardianCommand,
+  id: string,
+  at: string,
+): GuardianStore {
+  const store = structuredClone(guardianStoreSchema.parse(current));
+  z.string().datetime().parse(at);
+  const until = (minutes: number) => new Date(Date.parse(at) + minutes * 60000).toISOString();
+  const getDevice = (v: string) => {
+    const d = store.devices.find((d) => d.id === v);
+    if (!d) throw new Error("Unknown fictional device");
+    return d;
+  };
+  let action = "";
+  let target = "fleet";
+  switch (command.type) {
+    case "pairCode": {
+      const d = getDevice(command.deviceId);
+      if (store.paused) throw new Error("Resume the local rehearsal first");
+      if (store.pairings.length >= 100) throw new Error("Pairing history limit reached");
+      store.pairings.forEach((p) => {
+        if (p.deviceId === d.id && p.state === "Pending") p.state = "Cancelled";
+      });
+      const code = `DEMO-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+      if (store.pairings.some((p) => p.code === code))
+        throw new Error("Generate a fresh demo code");
+      store.pairings.push(
+        pairing.parse({ code, deviceId: d.id, expiresAt: until(5), state: "Pending" }),
+      );
+      target = d.id;
+      action = "Prepared single-use 5-minute demo pairing code · no endpoint enrollment";
+      break;
+    }
+    case "pairConfirm": {
+      requireConsent(command.consent);
+      const d = getDevice(command.deviceId);
+      const p = store.pairings.find((p) => p.code === command.code.trim().toUpperCase());
+      if (
+        store.paused ||
+        !p ||
+        p.deviceId !== d.id ||
+        p.state !== "Pending" ||
+        Date.parse(p.expiresAt) <= Date.parse(at)
+      )
+        throw new Error("Demo code invalid, expired, used or bound to another device");
+      p.state = "Used";
+      d.state = "Demo paired";
+      d.scopes = [];
+      d.expiresAt = until(15);
+      d.consentAt = at;
+      invalidatePlans(store, d.id);
+      target = d.id;
+      action = "Confirmed fictional pairing · 15-minute local identity, scopes OFF; no OS grant";
+      break;
+    }
+    case "scopes": {
+      requireConsent(command.consent);
+      const d = getDevice(command.deviceId);
+      if (
+        store.paused ||
+        d.state !== "Demo paired" ||
+        !d.expiresAt ||
+        Date.parse(d.expiresAt) <= Date.parse(at)
+      )
+        throw new Error("Active demo identity required; re-pair after expiry");
+      d.scopes = z
+        .array(scope)
+        .max(3)
+        .parse([...new Set(command.scopes)]);
+      d.consentAt = at;
+      invalidatePlans(store, d.id);
+      target = d.id;
+      action = "Changed explicit device rehearsal scopes · not real permissions";
+      break;
+    }
+    case "group": {
+      const d = getDevice(command.deviceId);
+      d.group = device.shape.group.parse(command.group);
+      target = d.id;
+      action = "Changed fictional device group · no inherited grants";
+      break;
+    }
+    case "revoke": {
+      const d = getDevice(command.deviceId);
+      d.state = "Revoked";
+      d.scopes = [];
+      d.expiresAt = null;
+      d.consentAt = null;
+      store.pairings.forEach((p) => {
+        if (p.deviceId === d.id && p.state === "Pending") p.state = "Cancelled";
+      });
+      store.plans.forEach((p) => {
+        if (p.deviceIds.includes(d.id) && p.state !== "Cancelled") p.state = "Cancelled";
+      });
+      target = d.id;
+      action = "Revoked local demo identity / plans · no live credentials or endpoint contacted";
+      break;
+    }
+    case "pause":
+      store.paused = true;
+      store.devices.forEach((d) => {
+        if (d.state === "Demo paired") d.state = "Paused";
+        d.scopes = [];
+        d.expiresAt = null;
+        d.consentAt = null;
+      });
+      store.pairings.forEach((p) => {
+        if (p.state === "Pending") p.state = "Cancelled";
+      });
+      store.plans.forEach((p) => {
+        if (p.state !== "Cancelled") p.state = "Paused";
+      });
+      store.reportPolicy.dailyPreview = false;
+      action =
+        "Paused local fleet rehearsal, invalidated scopes/pairing/plans · 0 endpoint acknowledgments";
+      break;
+    case "resume":
+      requireConsent(command.consent);
+      store.paused = false;
+      action = "Resumed planning only · devices need fresh pairing, scopes and approval";
+      break;
+    case "plan": {
+      const ids = z
+        .array(deviceId)
+        .min(1)
+        .max(5)
+        .parse([...new Set(command.deviceIds)]);
+      const task = guardianFleetTasks.find((t) => t.id === command.task);
+      if (!task) throw new Error("Only typed read-only templates allowed; no arbitrary shell");
+      for (const d of ids) {
+        const gate = deviceGate(store, d, task.scope, at);
+        if (!gate.demoAllowed) throw new Error(`${getDevice(d).id}: ${gate.reasons.join("; ")}`);
+      }
+      if (store.plans.length >= 100) throw new Error("Demo plan limit reached");
+      store.plans.push(
+        plan.parse({
+          id,
+          deviceIds: ids,
+          task: command.task,
+          createdAt: at,
+          expiresAt: until(10),
+          state: "Dry run",
+        }),
+      );
+      target = ids.join(",");
+      action = "Prepared device-bound 10-minute dry run · no queue, job or shell execution";
+      break;
+    }
+    case "approvePlan": {
+      requireConsent(command.consent);
+      const p = store.plans.find((p) => p.id === command.id);
+      const t = guardianFleetTasks.find((t) => t.id === p?.task);
+      if (!p || !t || p.state !== "Dry run" || Date.parse(p.expiresAt) <= Date.parse(at))
+        throw new Error("Active unexpired dry run required");
+      for (const d of p.deviceIds) {
+        const gate = deviceGate(store, d, t.scope, at);
+        if (!gate.demoAllowed) throw new Error(gate.reasons.join("; "));
+      }
+      p.state = "Demo approved";
+      target = p.id;
+      action = "Approved demo plan only · no native queue, outputs, installation or reboot";
+      break;
+    }
+    case "cancelPlan": {
+      const p = store.plans.find((p) => p.id === command.id);
+      if (!p || p.state === "Cancelled") throw new Error("Active plan required");
+      p.state = "Cancelled";
+      target = p.id;
+      action = "Cancelled local demo plan · no remote task stopped";
+      break;
+    }
+    case "incident":
+      getDevice(command.deviceId);
+      if (store.incidents.length >= 100) throw new Error("Demo incident limit reached");
+      store.incidents.push({
+        id,
+        deviceId: command.deviceId,
+        severity: "Critical",
+        title: "DEMO exercise: unsigned artifact / instruction injection",
+        stage: "New",
+        note: "Scenario opened manually, not detected. Preserve evidence; propose isolation and independent review. Nothing quarantined.",
+        at,
+      });
+      target = command.deviceId;
+      action = "Opened a fictional incident exercise · no threat detected";
+      break;
+    case "triage": {
+      const i = store.incidents.find((i) => i.id === command.id);
+      if (!i) throw new Error("Demo incident not found");
+      i.stage = incident.shape.stage.parse(command.stage);
+      i.note = z.string().trim().min(5).max(1200).parse(command.note);
+      target = i.id;
+      action = `Recorded demo incident triage: ${i.stage} · no remediation`;
+      break;
+    }
+    case "review":
+      requireConsent(command.consent);
+      if (store.reviews.length >= 100) throw new Error("Review limit reached");
+      store.reviews.push(
+        review.parse({
+          id,
+          surface: command.surface,
+          operator: command.operator,
+          role: command.role,
+          state: "Proposed",
+          reviewer: null,
+          at,
+        }),
+      );
+      target = command.surface;
+      action =
+        "Prepared rule-based DEMO agent-role critique · no AI call, source scan or proposed fix applied";
+      break;
+    case "reviewDecision": {
+      const r = store.reviews.find((r) => r.id === command.id);
+      if (!r || r.state !== "Proposed") throw new Error("Active proposal required");
+      const reviewer = z.string().trim().min(2).max(80).parse(command.reviewer);
+      if (reviewer.toLowerCase() === r.operator.toLowerCase())
+        throw new Error(
+          "Use a distinct declared human reviewer; local names are not verified identity",
+        );
+      r.reviewer = reviewer;
+      r.state = command.approve ? "Human-reviewed proposal" : "Rejected";
+      target = r.id;
+      action = "Recorded declared human review · proposal only, no certification or release";
+      break;
+    }
+    case "report":
+      getDevice(command.deviceId);
+      if (store.reports.length >= 100) throw new Error("Report limit reached");
+      store.reports.push({ id, at, deviceId: command.deviceId });
+      target = command.deviceId;
+      action = "Prepared sample Health & Security Report · no scan or all-clear";
+      break;
+    case "reportPolicy":
+      store.reportPolicy = guardianStoreSchema.shape.reportPolicy.parse(command.policy);
+      if (store.paused && store.reportPolicy.dailyPreview)
+        throw new Error("Resume before daily rehearsal preferences");
+      action = "Saved local daily report preference · no scheduler, sync, email or voice delivery";
+      break;
+  }
+  store.audit = [...store.audit.slice(-499), { id, at, kind: command.type, target, action }];
+  return guardianStoreSchema.parse(store);
+}
+export function guardianReport(
+  store: GuardianStore,
+  care: CareStore,
+  record: GuardianStore["reports"][number],
+  at: string,
+) {
+  const fixture = guardianDeviceFixtures.find((d) => d.id === record.deviceId);
+  const identity = store.devices.find((d) => d.id === record.deviceId);
+  return {
+    mode: "DEMO",
+    reportDayUtc: record.at.slice(0, 10),
+    generatedAt: record.at,
+    renderedAt: at,
+    evidence: "CURRENT_LOCAL_DEMO_RECORDS_NOT_HISTORICAL_SCAN",
+    device: fixture,
+    actualChecks: [],
+    lastSuccessfulScan: null,
+    lastRealCheckIn: null,
+    unsupportedChecks: [
+      "Endpoint malware detection",
+      "Terminal monitoring",
+      "OS patch verification",
+      "Backup verification",
+      "Account MFA/passkey status",
+    ],
+    healthScore: null,
+    backupStatus: "UNKNOWN",
+    actualAppliedUpdates: [],
+    actualFailedUpdates: [],
+    realConnections: [],
+    identity: identity
+      ? { state: identity.state, expiresAt: identity.expiresAt, scopes: identity.scopes }
+      : null,
+    incidents: store.incidents.filter((i) => i.deviceId === record.deviceId),
+    sampleCare: care.deviceId === record.deviceId ? careReport(care) : null,
+    recommendations: [
+      "Configure authenticated owner-scoped access and independent security tests",
+      "Install only a future verified signed agent after owner approval",
+      "Review unknown signatures / backup evidence; do not assume safety",
+    ],
+    signed: false,
+    delivery: "LOCAL_PREVIEW_ONLY",
+  };
+}
+export function guardianAudit(store: GuardianStore) {
+  return {
+    mode: "DEMO",
+    authenticated: false,
+    tamperEvident: false,
+    storage: "BROWSER_LOCAL",
+    events: store.audit,
+    endpointAcknowledgments: [],
+    realActions: [],
+  };
+}
+export function fleetManifest(p: GuardianStore["plans"][number], at: string) {
+  return {
+    mode: "DEMO",
+    ...p,
+    state:
+      p.state !== "Cancelled" && Date.parse(p.expiresAt) <= Date.parse(at) ? "Expired" : p.state,
+    recordedState: p.state,
+    exportedAt: at,
+    perDevice: p.deviceIds.map((id) => ({
+      deviceId: id,
+      execution: "UNAVAILABLE",
+      output: null,
+      receipt: null,
+    })),
+    ownerId: null,
+    signature: null,
+    nonce: "DEMO_NOT_AN_AUTH_TOKEN",
+    actualQueued: false,
+    actualExecuted: false,
+    rollback: "UNAVAILABLE_NOT_TESTED",
+    offlineScheduling: "NO_REAL_QUEUE",
+    spendCapUsd: 0,
+  };
+}

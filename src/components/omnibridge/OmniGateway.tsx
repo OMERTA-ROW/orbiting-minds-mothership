@@ -27,7 +27,16 @@ import {
 const inputCls = "mt-1 w-full rounded border border-border bg-background p-2 text-sm";
 
 export function OmniGateway() {
-  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<GatewayStore>({ key: OMNI_GATEWAY_STORE_KEY, initial: loadGatewayStore(null), read: loadGatewayStore, collections: ["projects", "jobs", "feedback"] });
+  const {
+    records: store,
+    setRecords: setStore,
+    storageNotice,
+  } = useOmniLocalRecords<GatewayStore>({
+    key: OMNI_GATEWAY_STORE_KEY,
+    initial: loadGatewayStore(null),
+    read: loadGatewayStore,
+    collections: ["projects", "jobs", "feedback"],
+  });
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -183,7 +192,11 @@ export function OmniGateway() {
         pipeline is connected yet, so every task stops as <strong>Blocked</strong> before any code
         is generated or executed. Records below are browser-local planning data only.
       </p>
-      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
+      {storageNotice && (
+        <p role="status" className="mt-4 text-sm text-warning">
+          {storageNotice}
+        </p>
+      )}
 
       <section
         aria-label="Activation prerequisites"

@@ -49,9 +49,9 @@ export function OmniBridge() {
           <p className="eyebrow">Default conversation / permissioned intelligence</p>
           <h2 className="mt-3 text-3xl">Razul Central Intelligence</h2>
           <p className="mt-3 text-xs leading-6 text-muted-foreground">
-            RA'SUL is OMNI Mothership's central cross-project intelligence. OMNI remains the
-            scoped job coordinator; Oracle and specialists retain their roles. Guardian protects.
-            Resident watcher and research-worker coordination remains proposed, not live execution.
+            RA'SUL is OMNI Mothership's central cross-project intelligence. OMNI remains the scoped
+            job coordinator; Oracle and specialists retain their roles. Guardian protects. Resident
+            watcher and research-worker coordination remains proposed, not live execution.
           </p>
         </div>
         <Button asChild variant="cosmic">

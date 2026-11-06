@@ -9,18 +9,406 @@ import { CliHelp } from "./CliHelp";
 import { downloadJson } from "@/lib/genesis-sdk";
 import { CareShell, Choice, HistoryList, Notice, useCareAction } from "./CareShell";
 export function UpdatesPage() {
- const { store } = useCare(); const { run, message, setMessage } = useCareAction(); const [selected, setSelected] = useState<string[]>([]); const [query, setQuery] = useState(""); const [risk, setRisk] = useState("");
- const setPolicy = (patch: Partial<CarePolicy>) => run({ type: "policy", policy: { ...store.policy, ...patch } });
- const updates = careUpdates.filter((u) => `${u.name} ${u.vendor} ${u.changelog}`.toLowerCase().includes(query.toLowerCase()) && (!risk || u.risk === risk));
- return <CareShell title="Auto-Update Engine" subtitle="Trust the source. Review the change. Keep the final decision.">
- <section className="mb-10 border-y border-border py-8"><div className="flex items-start gap-5"><ShieldCheck className="mt-1 shrink-0 text-gold" size={28} /><div><h2 className="text-2xl">Historical catalog · not a live global service</h2><p className="mt-4 text-sm leading-loose text-muted-foreground">Genuine upstream release references from 2024, paired with fictional installed versions. Trusted-vendor candidates are not verified artifacts. No signature, compatibility or executable tests performed; no latest-version or health-benefit claims.</p></div></div>{!store.modules.updates && <Choice label="Enable Updates demo" note="Opt-in preview only. Real checking would require voluntary native enrollment." checked={false} onChange={(checked) => run({ type: "modules", modules: { ...store.modules, updates: checked } })} />}</section>
- <UpdateNotices /><Notice message={message} />
- <div className="grid gap-14 lg:grid-cols-[minmax(0,1fr)_340px]"><section className="min-w-0"><div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px]"><input className="exchange-select w-full" aria-label="Search updates" placeholder="Search package, vendor or change…" value={query} onChange={(e) => setQuery(e.target.value)} /><select className="exchange-select" aria-label="Update risk" value={risk} onChange={(e) => setRisk(e.target.value)}><option value="">All planning risks</option><option>Low</option><option>Medium</option></select></div><p role="status" className="my-5 font-mono text-xs text-muted-foreground">{updates.length} historical reference packages</p>{updates.map((u) => { const gate = updateGate(store, u.id); return <article key={u.id} className="border-t border-border py-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-2xl">{u.name}</h2><p className="mt-3 text-xs text-muted-foreground">{u.vendor} · official reference, not connected</p></div><label className="flex items-center gap-3 text-xs"><input type="checkbox" className="accent-primary" aria-label={`Include ${u.name} in dry run`} disabled={!store.modules.updates} checked={selected.includes(u.id)} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, u.id] : ids.filter((id) => id !== u.id))} />Include in dry run</label></div><p className="mt-6 flex flex-wrap items-center gap-3 font-mono text-sm text-gold-light">{u.installed}<ChevronRight size={16} />{u.available}<span className="text-xs text-muted-foreground">Historical {u.released}</span></p><p className="mt-4 text-sm leading-loose text-muted-foreground">{u.changelog}</p><dl className="mt-5 space-y-4 text-xs leading-loose"><div><dt className="text-gold-light">Compatibility · UNVERIFIED</dt><dd className="text-muted-foreground">{u.compatibility}</dd></div><div><dt className="text-gold-light">Signing · NOT VERIFIED</dt><dd className="text-muted-foreground">{u.signatures}</dd></div><div><dt className="text-gold-light">Tests · NOT RUN</dt><dd className="text-muted-foreground">{u.tests}</dd></div><div><dt className="text-gold-light">Risk · {u.risk} planning estimate</dt><dd className="text-muted-foreground">{u.dependency}</dd></div><div><dt className="text-gold-light">Size / downtime / rollback</dt><dd className="text-muted-foreground">{u.size}. {u.downtime}. {u.rollback}</dd></div></dl><a href={u.source} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-sm text-gold-light underline">Official historical release notes for {u.name}</a><Choice label={`Assume verified checks for ${u.name} · DEMO ONLY`} note="Hypothetical signing, compatibility and test outcome for rehearsing approval; no actual verification occurs." checked={store.policy.assumedChecks.includes(u.id)} disabled={!store.modules.updates} onChange={(checked) => setPolicy({ assumedChecks: checked ? [...store.policy.assumedChecks, u.id] : store.policy.assumedChecks.filter((id) => id !== u.id) })} /><p className="mt-4 font-mono text-xs leading-loose text-warning">{gate.reasons.join(" · ") || "Hypothetical checks assumed · real installation STILL BLOCKED"}</p>{gate.autoDemoEligible && <p className="mt-3 text-xs text-gold-light">Eligible only in demo auto-policy rehearsal. No updater is running.</p>}</article>; })}{!updates.length && <p className="border-y border-border py-12 text-muted-foreground">No matching update references.</p>}
- <Button variant="signal" className="mt-6 h-auto min-h-11 whitespace-normal" disabled={!store.modules.updates || !selected.length} onClick={() => { if (run({ type: "plan", items: selected }, "Dry-run plan created. No download, installation or reboot.")) setSelected([]); }}>Stage dry-run update plan</Button></section>
- <aside className="min-w-0 border-t border-border pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0"><h2 className="text-xl">This browser’s policy</h2><p className="mt-4 text-xs leading-loose text-muted-foreground">Not a per-account permission or active background service. OFF by default in this web demo. Future native enrollment can offer Notify before separate auto-install consent.</p><fieldset disabled={!store.modules.updates} className="mt-6"><legend className="text-xs text-muted-foreground">Demo update mode</legend><div className="mt-3 flex flex-wrap gap-2">{(["OFF", "Notify", "Approved patches"] as const).map((mode) => <Button key={mode} variant={store.policy.mode === mode ? "signal" : "ghost"} aria-pressed={store.policy.mode === mode} className="h-auto min-h-11 whitespace-normal text-xs" onClick={() => setPolicy({ mode })}>{mode === "Approved patches" ? "Auto · approved patches only" : mode}</Button>)}</div><p className="mt-4 text-xs leading-loose text-warning">Major OS upgrades, drivers, firmware, paid actions and privileges always need fresh human approval. No automatic reboot.</p><label className="mt-6 block text-xs text-muted-foreground">Proposed maintenance window<input type="time" aria-label="Proposed maintenance window" className="exchange-select mt-2 block w-full" value={store.policy.maintenance} onChange={(e) => setPolicy({ maintenance: e.target.value })} /></label><p className="mt-3 text-xs text-muted-foreground">Future enrolled device-local time; no active scheduler or background service.</p><div role="group" aria-label="Proposed maintenance days" className="mt-4 flex flex-wrap gap-2">{careScheduleDays.map(day => <Button key={day} variant={store.policy.days.includes(day) ? "signal" : "ghost"} aria-pressed={store.policy.days.includes(day)} aria-label={`Maintenance day ${day}`} className="h-11 px-3 text-xs" onClick={() => setPolicy({ days: store.policy.days.includes(day) ? store.policy.days.filter(d => d !== day) : [...store.policy.days, day] })}>{day}</Button>)}</div><Choice label="Advanced · allow pre-download proposal" note="Separate demo consent, not a download or network permission" checked={store.policy.preDownload} disabled={store.policy.mode === "OFF"} onChange={(checked) => setPolicy({ preDownload: checked })} /><Choice label="Advanced · allow reboot review prompt" note="Only proposes a fresh per-action prompt. Never automatically reboots." checked={store.policy.rebootReview} disabled={store.policy.mode === "OFF"} onChange={(checked) => setPolicy({ rebootReview: checked })} /><h3 className="mt-7 text-lg">Exact patch allowlist</h3>{careUpdates.map((u) => <Choice key={u.id} label={`Allow ${u.name} ${u.available} in demo auto-policy`} note={u.risk === "Low" ? "Needs patch-only version, explicit checks and Approved patches mode" : "Medium risk: never eligible for demo auto-install"} checked={store.policy.allowlist.includes(u.id)} disabled={u.risk !== "Low" || store.policy.mode !== "Approved patches"} onChange={(checked) => setPolicy({ allowlist: checked ? [...store.policy.allowlist, u.id] : store.policy.allowlist.filter((id) => id !== u.id) })} />)}</fieldset><Button disabled variant="outline" className="mt-6 h-auto min-h-11 whitespace-normal"><LockKeyhole size={14} />Install / enable service · disabled</Button></aside></div>
- <section className="mt-14 border-t border-border pt-8"><h2 className="text-2xl">Staged demonstration plans</h2>{!store.plans.length && <p className="mt-5 text-sm text-muted-foreground">No dry-run plans recorded.</p>}<div className="mt-6 grid gap-10 md:grid-cols-2">{[...store.plans].reverse().map((plan) => <Plan key={plan.id} plan={plan} />)}</div></section><HistoryList /><CliHelp /></CareShell>;
+  const { store } = useCare();
+  const { run, message, setMessage } = useCareAction();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
+  const [risk, setRisk] = useState("");
+  const setPolicy = (patch: Partial<CarePolicy>) =>
+    run({ type: "policy", policy: { ...store.policy, ...patch } });
+  const updates = careUpdates.filter(
+    (u) =>
+      `${u.name} ${u.vendor} ${u.changelog}`.toLowerCase().includes(query.toLowerCase()) &&
+      (!risk || u.risk === risk),
+  );
+  return (
+    <CareShell
+      title="Auto-Update Engine"
+      subtitle="Trust the source. Review the change. Keep the final decision."
+    >
+      <section className="mb-10 border-y border-border py-8">
+        <div className="flex items-start gap-5">
+          <ShieldCheck className="mt-1 shrink-0 text-gold" size={28} />
+          <div>
+            <h2 className="text-2xl">Historical catalog · not a live global service</h2>
+            <p className="mt-4 text-sm leading-loose text-muted-foreground">
+              Genuine upstream release references from 2024, paired with fictional installed
+              versions. Trusted-vendor candidates are not verified artifacts. No signature,
+              compatibility or executable tests performed; no latest-version or health-benefit
+              claims.
+            </p>
+          </div>
+        </div>
+        {!store.modules.updates && (
+          <Choice
+            label="Enable Updates demo"
+            note="Opt-in preview only. Real checking would require voluntary native enrollment."
+            checked={false}
+            onChange={(checked) =>
+              run({ type: "modules", modules: { ...store.modules, updates: checked } })
+            }
+          />
+        )}
+      </section>
+      <UpdateNotices />
+      <Notice message={message} />
+      <div className="grid gap-14 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="min-w-0">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px]">
+            <input
+              className="exchange-select w-full"
+              aria-label="Search updates"
+              placeholder="Search package, vendor or change…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <select
+              className="exchange-select"
+              aria-label="Update risk"
+              value={risk}
+              onChange={(e) => setRisk(e.target.value)}
+            >
+              <option value="">All planning risks</option>
+              <option>Low</option>
+              <option>Medium</option>
+            </select>
+          </div>
+          <p role="status" className="my-5 font-mono text-xs text-muted-foreground">
+            {updates.length} historical reference packages
+          </p>
+          {updates.map((u) => {
+            const gate = updateGate(store, u.id);
+            return (
+              <article key={u.id} className="border-t border-border py-8">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl">{u.name}</h2>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      {u.vendor} · official reference, not connected
+                    </p>
+                  </div>
+                  <label className="flex items-center gap-3 text-xs">
+                    <input
+                      type="checkbox"
+                      className="accent-primary"
+                      aria-label={`Include ${u.name} in dry run`}
+                      disabled={!store.modules.updates}
+                      checked={selected.includes(u.id)}
+                      onChange={(e) =>
+                        setSelected((ids) =>
+                          e.target.checked ? [...ids, u.id] : ids.filter((id) => id !== u.id),
+                        )
+                      }
+                    />
+                    Include in dry run
+                  </label>
+                </div>
+                <p className="mt-6 flex flex-wrap items-center gap-3 font-mono text-sm text-gold-light">
+                  {u.installed}
+                  <ChevronRight size={16} />
+                  {u.available}
+                  <span className="text-xs text-muted-foreground">Historical {u.released}</span>
+                </p>
+                <p className="mt-4 text-sm leading-loose text-muted-foreground">{u.changelog}</p>
+                <dl className="mt-5 space-y-4 text-xs leading-loose">
+                  <div>
+                    <dt className="text-gold-light">Compatibility · UNVERIFIED</dt>
+                    <dd className="text-muted-foreground">{u.compatibility}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-gold-light">Signing · NOT VERIFIED</dt>
+                    <dd className="text-muted-foreground">{u.signatures}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-gold-light">Tests · NOT RUN</dt>
+                    <dd className="text-muted-foreground">{u.tests}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-gold-light">Risk · {u.risk} planning estimate</dt>
+                    <dd className="text-muted-foreground">{u.dependency}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-gold-light">Size / downtime / rollback</dt>
+                    <dd className="text-muted-foreground">
+                      {u.size}. {u.downtime}. {u.rollback}
+                    </dd>
+                  </div>
+                </dl>
+                <a
+                  href={u.source}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-block text-sm text-gold-light underline"
+                >
+                  Official historical release notes for {u.name}
+                </a>
+                <Choice
+                  label={`Assume verified checks for ${u.name} · DEMO ONLY`}
+                  note="Hypothetical signing, compatibility and test outcome for rehearsing approval; no actual verification occurs."
+                  checked={store.policy.assumedChecks.includes(u.id)}
+                  disabled={!store.modules.updates}
+                  onChange={(checked) =>
+                    setPolicy({
+                      assumedChecks: checked
+                        ? [...store.policy.assumedChecks, u.id]
+                        : store.policy.assumedChecks.filter((id) => id !== u.id),
+                    })
+                  }
+                />
+                <p className="mt-4 font-mono text-xs leading-loose text-warning">
+                  {gate.reasons.join(" · ") ||
+                    "Hypothetical checks assumed · real installation STILL BLOCKED"}
+                </p>
+                {gate.autoDemoEligible && (
+                  <p className="mt-3 text-xs text-gold-light">
+                    Eligible only in demo auto-policy rehearsal. No updater is running.
+                  </p>
+                )}
+              </article>
+            );
+          })}
+          {!updates.length && (
+            <p className="border-y border-border py-12 text-muted-foreground">
+              No matching update references.
+            </p>
+          )}
+          <Button
+            variant="signal"
+            className="mt-6 h-auto min-h-11 whitespace-normal"
+            disabled={!store.modules.updates || !selected.length}
+            onClick={() => {
+              if (
+                run(
+                  { type: "plan", items: selected },
+                  "Dry-run plan created. No download, installation or reboot.",
+                )
+              )
+                setSelected([]);
+            }}
+          >
+            Stage dry-run update plan
+          </Button>
+        </section>
+        <aside className="min-w-0 border-t border-border pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+          <h2 className="text-xl">This browser’s policy</h2>
+          <p className="mt-4 text-xs leading-loose text-muted-foreground">
+            Not a per-account permission or active background service. OFF by default in this web
+            demo. Future native enrollment can offer Notify before separate auto-install consent.
+          </p>
+          <fieldset disabled={!store.modules.updates} className="mt-6">
+            <legend className="text-xs text-muted-foreground">Demo update mode</legend>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(["OFF", "Notify", "Approved patches"] as const).map((mode) => (
+                <Button
+                  key={mode}
+                  variant={store.policy.mode === mode ? "signal" : "ghost"}
+                  aria-pressed={store.policy.mode === mode}
+                  className="h-auto min-h-11 whitespace-normal text-xs"
+                  onClick={() => setPolicy({ mode })}
+                >
+                  {mode === "Approved patches" ? "Auto · approved patches only" : mode}
+                </Button>
+              ))}
+            </div>
+            <p className="mt-4 text-xs leading-loose text-warning">
+              Major OS upgrades, drivers, firmware, paid actions and privileges always need fresh
+              human approval. No automatic reboot.
+            </p>
+            <label className="mt-6 block text-xs text-muted-foreground">
+              Proposed maintenance window
+              <input
+                type="time"
+                aria-label="Proposed maintenance window"
+                className="exchange-select mt-2 block w-full"
+                value={store.policy.maintenance}
+                onChange={(e) => setPolicy({ maintenance: e.target.value })}
+              />
+            </label>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Future enrolled device-local time; no active scheduler or background service.
+            </p>
+            <div
+              role="group"
+              aria-label="Proposed maintenance days"
+              className="mt-4 flex flex-wrap gap-2"
+            >
+              {careScheduleDays.map((day) => (
+                <Button
+                  key={day}
+                  variant={store.policy.days.includes(day) ? "signal" : "ghost"}
+                  aria-pressed={store.policy.days.includes(day)}
+                  aria-label={`Maintenance day ${day}`}
+                  className="h-11 px-3 text-xs"
+                  onClick={() =>
+                    setPolicy({
+                      days: store.policy.days.includes(day)
+                        ? store.policy.days.filter((d) => d !== day)
+                        : [...store.policy.days, day],
+                    })
+                  }
+                >
+                  {day}
+                </Button>
+              ))}
+            </div>
+            <Choice
+              label="Advanced · allow pre-download proposal"
+              note="Separate demo consent, not a download or network permission"
+              checked={store.policy.preDownload}
+              disabled={store.policy.mode === "OFF"}
+              onChange={(checked) => setPolicy({ preDownload: checked })}
+            />
+            <Choice
+              label="Advanced · allow reboot review prompt"
+              note="Only proposes a fresh per-action prompt. Never automatically reboots."
+              checked={store.policy.rebootReview}
+              disabled={store.policy.mode === "OFF"}
+              onChange={(checked) => setPolicy({ rebootReview: checked })}
+            />
+            <h3 className="mt-7 text-lg">Exact patch allowlist</h3>
+            {careUpdates.map((u) => (
+              <Choice
+                key={u.id}
+                label={`Allow ${u.name} ${u.available} in demo auto-policy`}
+                note={
+                  u.risk === "Low"
+                    ? "Needs patch-only version, explicit checks and Approved patches mode"
+                    : "Medium risk: never eligible for demo auto-install"
+                }
+                checked={store.policy.allowlist.includes(u.id)}
+                disabled={u.risk !== "Low" || store.policy.mode !== "Approved patches"}
+                onChange={(checked) =>
+                  setPolicy({
+                    allowlist: checked
+                      ? [...store.policy.allowlist, u.id]
+                      : store.policy.allowlist.filter((id) => id !== u.id),
+                  })
+                }
+              />
+            ))}
+          </fieldset>
+          <Button disabled variant="outline" className="mt-6 h-auto min-h-11 whitespace-normal">
+            <LockKeyhole size={14} />
+            Install / enable service · disabled
+          </Button>
+        </aside>
+      </div>
+      <section className="mt-14 border-t border-border pt-8">
+        <h2 className="text-2xl">Staged demonstration plans</h2>
+        {!store.plans.length && (
+          <p className="mt-5 text-sm text-muted-foreground">No dry-run plans recorded.</p>
+        )}
+        <div className="mt-6 grid gap-10 md:grid-cols-2">
+          {[...store.plans].reverse().map((plan) => (
+            <Plan key={plan.id} plan={plan} />
+          ))}
+        </div>
+      </section>
+      <HistoryList />
+      <CliHelp />
+    </CareShell>
+  );
 }
 function Plan({ plan }: { plan: CareStore["plans"][number] }) {
- const { store } = useCare(); const { run, message, setMessage } = useCareAction(); const [consent, setConsent] = useState(false); const contextMatches = plan.deviceId === store.deviceId && Boolean(plan.channel && plan.channel === store.channel);
- return <article className="min-w-0 border-t border-border py-6"><p className="font-mono text-xs text-gold-light">{plan.state} · NO REAL UPDATE</p><h3 className="mt-4 text-xl">{careDevices.find((d) => d.id === plan.deviceId)?.name}</h3><p className="mt-3 text-xs text-muted-foreground">Adapter: {plan.channel ?? "Unrecorded · legacy demo plan"}. Prior artifacts, backups and restore tests absent; rollback UNAVAILABLE / NOT TESTED.</p><ol className="mt-5 space-y-3 text-xs leading-loose text-muted-foreground"><li>1. Match identity, OS, architecture and approved source · not performed</li><li>2. Verify signatures, dependencies, backup and tests · assumed only if selected</li><li>3. Review exact packages: {plan.items.map((id) => careUpdates.find((u) => u.id === id)?.name).join(", ")}</li><li>4. Supported rollback check, local approval and bounded transaction · unavailable</li><li>5. Record actual post-update checks · none executed</li></ol>{plan.state === "Dry run" && <><label className="mt-6 flex items-start gap-3 text-xs leading-loose text-muted-foreground"><input type="checkbox" className="mt-1 accent-primary" aria-label="Approve this plan as a demonstration only" checked={consent} onChange={(e) => setConsent(e.target.checked)} />I approve this plan as a demonstration only, not installation or a reboot.</label><Button variant="signal" className="mt-4 h-auto min-h-11 whitespace-normal" disabled={!consent || !contextMatches || plan.items.some((id) => !updateGate(store, id).manualDemoEligible)} onClick={() => run({ type: "approve", id: plan.id, consent }, "Demo approval recorded. Native installation is blocked.")}>Record demo plan approval</Button>{(!contextMatches || plan.items.some((id) => !updateGate(store, id).manualDemoEligible)) && <p className="mt-3 text-xs text-warning">Blocked: device/adapter mismatch, policy OFF or hypothetical checks missing. Real verification remains absent.</p>}</>}<div className="mt-5 flex flex-wrap gap-3">{plan.state !== "Cancelled" && <Button variant="ghost" onClick={() => run({ type: "cancel", id: plan.id })}>Cancel demo plan</Button>}<Button variant="ghost" className="h-auto min-h-11 whitespace-normal" onClick={() => { try { downloadJson(`DEMO-update-plan-${plan.id}.json`, { mode: "DEMO", plan, checks: "NOT_PERFORMED", execution: "DISABLED", signature: null, checksum: "DEMO_NOT_COMPUTED", actualChanges: [], automaticReboot: false }); setMessage("Unsigned plan preview downloaded; no commands executed."); } catch { setMessage("Download unavailable."); } }}><Download size={14} />Download plan preview</Button><Button disabled variant="outline">Apply · disabled</Button><Button disabled variant="outline" className="h-auto min-h-11 whitespace-normal">Rollback · unavailable</Button></div><Notice message={message} /></article>;
+  const { store } = useCare();
+  const { run, message, setMessage } = useCareAction();
+  const [consent, setConsent] = useState(false);
+  const contextMatches =
+    plan.deviceId === store.deviceId && Boolean(plan.channel && plan.channel === store.channel);
+  return (
+    <article className="min-w-0 border-t border-border py-6">
+      <p className="font-mono text-xs text-gold-light">{plan.state} · NO REAL UPDATE</p>
+      <h3 className="mt-4 text-xl">{careDevices.find((d) => d.id === plan.deviceId)?.name}</h3>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Adapter: {plan.channel ?? "Unrecorded · legacy demo plan"}. Prior artifacts, backups and
+        restore tests absent; rollback UNAVAILABLE / NOT TESTED.
+      </p>
+      <ol className="mt-5 space-y-3 text-xs leading-loose text-muted-foreground">
+        <li>1. Match identity, OS, architecture and approved source · not performed</li>
+        <li>2. Verify signatures, dependencies, backup and tests · assumed only if selected</li>
+        <li>
+          3. Review exact packages:{" "}
+          {plan.items.map((id) => careUpdates.find((u) => u.id === id)?.name).join(", ")}
+        </li>
+        <li>4. Supported rollback check, local approval and bounded transaction · unavailable</li>
+        <li>5. Record actual post-update checks · none executed</li>
+      </ol>
+      {plan.state === "Dry run" && (
+        <>
+          <label className="mt-6 flex items-start gap-3 text-xs leading-loose text-muted-foreground">
+            <input
+              type="checkbox"
+              className="mt-1 accent-primary"
+              aria-label="Approve this plan as a demonstration only"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+            />
+            I approve this plan as a demonstration only, not installation or a reboot.
+          </label>
+          <Button
+            variant="signal"
+            className="mt-4 h-auto min-h-11 whitespace-normal"
+            disabled={
+              !consent ||
+              !contextMatches ||
+              plan.items.some((id) => !updateGate(store, id).manualDemoEligible)
+            }
+            onClick={() =>
+              run(
+                { type: "approve", id: plan.id, consent },
+                "Demo approval recorded. Native installation is blocked.",
+              )
+            }
+          >
+            Record demo plan approval
+          </Button>
+          {(!contextMatches ||
+            plan.items.some((id) => !updateGate(store, id).manualDemoEligible)) && (
+            <p className="mt-3 text-xs text-warning">
+              Blocked: device/adapter mismatch, policy OFF or hypothetical checks missing. Real
+              verification remains absent.
+            </p>
+          )}
+        </>
+      )}
+      <div className="mt-5 flex flex-wrap gap-3">
+        {plan.state !== "Cancelled" && (
+          <Button variant="ghost" onClick={() => run({ type: "cancel", id: plan.id })}>
+            Cancel demo plan
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          className="h-auto min-h-11 whitespace-normal"
+          onClick={() => {
+            try {
+              downloadJson(`DEMO-update-plan-${plan.id}.json`, {
+                mode: "DEMO",
+                plan,
+                checks: "NOT_PERFORMED",
+                execution: "DISABLED",
+                signature: null,
+                checksum: "DEMO_NOT_COMPUTED",
+                actualChanges: [],
+                automaticReboot: false,
+              });
+              setMessage("Unsigned plan preview downloaded; no commands executed.");
+            } catch {
+              setMessage("Download unavailable.");
+            }
+          }}
+        >
+          <Download size={14} />
+          Download plan preview
+        </Button>
+        <Button disabled variant="outline">
+          Apply · disabled
+        </Button>
+        <Button disabled variant="outline" className="h-auto min-h-11 whitespace-normal">
+          Rollback · unavailable
+        </Button>
+      </div>
+      <Notice message={message} />
+    </article>
+  );
 }

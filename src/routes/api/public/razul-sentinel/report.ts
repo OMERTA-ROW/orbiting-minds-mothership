@@ -96,7 +96,8 @@ export const Route = createFileRoute("/api/public/razul-sentinel/report")({
               source_id: `sentinel:${sentinelId}`,
               source_name: sourceName,
               title,
-              url: typeof rawUrl === "string" && rawUrl.trim() ? rawUrl : `sentinel://${sentinelId}`,
+              url:
+                typeof rawUrl === "string" && rawUrl.trim() ? rawUrl : `sentinel://${sentinelId}`,
               summary: typeof rawSummary === "string" ? rawSummary.slice(0, 2000) : "",
               category: "sentinel",
               relevance: 50,
@@ -115,7 +116,11 @@ export const Route = createFileRoute("/api/public/razul-sentinel/report")({
               .eq("alerts_enabled", true);
             if (!feeds.error && feeds.data.length) {
               await supabaseAdmin.from("razul_alert_events").insert(
-                feeds.data.map((f) => ({ finding_id: finding.data.id, agent: f.agent, relevance: 50 })) as never,
+                feeds.data.map((f) => ({
+                  finding_id: finding.data.id,
+                  agent: f.agent,
+                  relevance: 50,
+                })) as never,
               );
             }
           }

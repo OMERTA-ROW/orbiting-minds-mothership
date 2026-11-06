@@ -105,7 +105,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -137,33 +140,37 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AccountProvider>
-      <GuardianProvider>
-      <CareProvider>
-      <GenesisProvider>
-      <TrustedReleaseProvider>
-      <IncidentProvider>
-      <DemoExchangeProvider>
-      <ExchangeLocaleProvider>
-      <CommandPaletteProvider pages={navItems}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <div className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}`}>
-        <OrbitalBackground />
-        <div className="site-cosmos" aria-hidden><Starfield count={150} /></div>
-        <SiteNav />
-        <main className="flex-1">
-          {omniArea && <OmniAreaHeader />}
-          <Outlet />
-        </main>
-        <SiteFooter />
-      </div>
-      </CommandPaletteProvider>
-      </ExchangeLocaleProvider>
-      </DemoExchangeProvider>
-      </IncidentProvider>
-      </TrustedReleaseProvider>
-      </GenesisProvider>
-      </CareProvider>
-      </GuardianProvider>
+        <GuardianProvider>
+          <CareProvider>
+            <GenesisProvider>
+              <TrustedReleaseProvider>
+                <IncidentProvider>
+                  <DemoExchangeProvider>
+                    <ExchangeLocaleProvider>
+                      <CommandPaletteProvider pages={navItems}>
+                        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+                        <div
+                          className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}`}
+                        >
+                          <OrbitalBackground />
+                          <div className="site-cosmos" aria-hidden>
+                            <Starfield count={150} />
+                          </div>
+                          <SiteNav />
+                          <main className="flex-1">
+                            {omniArea && <OmniAreaHeader />}
+                            <Outlet />
+                          </main>
+                          <SiteFooter />
+                        </div>
+                      </CommandPaletteProvider>
+                    </ExchangeLocaleProvider>
+                  </DemoExchangeProvider>
+                </IncidentProvider>
+              </TrustedReleaseProvider>
+            </GenesisProvider>
+          </CareProvider>
+        </GuardianProvider>
       </AccountProvider>
     </QueryClientProvider>
   );

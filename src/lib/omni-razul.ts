@@ -33,7 +33,8 @@ export const eventKinds = [
 ] as const;
 export type EventKind = (typeof eventKinds)[number];
 
-const SECRET_PATTERN = /-----BEGIN [A-Z ]*PRIVATE KEY|sk-[a-z0-9_-]{12,}|\b(api[_-]?key|password|secret|token)\s*[:=]\s*\S+/i;
+const SECRET_PATTERN =
+  /-----BEGIN [A-Z ]*PRIVATE KEY|sk-[a-z0-9_-]{12,}|\b(api[_-]?key|password|secret|token)\s*[:=]\s*\S+/i;
 
 /* ---------------- Project enrollment (opt-in) ---------------- */
 
@@ -46,7 +47,11 @@ export const enrollmentSchema = z.object({
 });
 export type EnrollmentInput = z.infer<typeof enrollmentSchema>;
 
-export type ProjectEnrollment = EnrollmentInput & { id: string; enrolledAt: string; active: boolean };
+export type ProjectEnrollment = EnrollmentInput & {
+  id: string;
+  enrolledAt: string;
+  active: boolean;
+};
 
 export function enrollProject(input: unknown, id: string, now: string): ProjectEnrollment {
   return { ...enrollmentSchema.parse(input), id, enrolledAt: now, active: true };
@@ -115,7 +120,9 @@ export function appendEvent(
   const parsed = eventInputSchema.parse(input);
   const project = enrollments.find((e) => e.id === parsed.projectId);
   if (!project || !project.active)
-    throw new RazulRejection("Project is not enrolled or has been opted out; RAZUL cannot record it.");
+    throw new RazulRejection(
+      "Project is not enrolled or has been opted out; RAZUL cannot record it.",
+    );
   if (SECRET_PATTERN.test(parsed.summary) || SECRET_PATTERN.test(parsed.provenance))
     throw new RazulRejection("Secret-looking content is rejected; RAZUL never logs credentials.");
   const prev = events[events.length - 1];
@@ -145,16 +152,27 @@ export function verifyChain(events: ArchiveEvent[]): { ok: boolean; brokenAt?: s
 
 /** Redaction clears content but preserves the chain entry and records why. */
 export function redactEvent(events: ArchiveEvent[], id: string, reason: string): ArchiveEvent[] {
-  if (reason.trim().length < 5) throw new RazulRejection("A redaction reason of at least 5 characters is required.");
+  if (reason.trim().length < 5)
+    throw new RazulRejection("A redaction reason of at least 5 characters is required.");
   return events.map((event) =>
     event.id === id && !event.redacted
-      ? { ...event, summary: "[redacted]", provenance: "[redacted]", redacted: true, redactionReason: reason.trim() }
+      ? {
+          ...event,
+          summary: "[redacted]",
+          provenance: "[redacted]",
+          redacted: true,
+          redactionReason: reason.trim(),
+        }
       : event,
   );
 }
 
 /** Retention tombstones expired content per the project's retention window; the chain entry remains. */
-export function applyRetention(events: ArchiveEvent[], enrollments: ProjectEnrollment[], now: Date): ArchiveEvent[] {
+export function applyRetention(
+  events: ArchiveEvent[],
+  enrollments: ProjectEnrollment[],
+  now: Date,
+): ArchiveEvent[] {
   return events.map((event) => {
     const project = enrollments.find((e) => e.id === event.projectId);
     if (!project || event.tombstoned) return event;
@@ -186,7 +204,9 @@ export function retrieveEvents(
   grants: AccessGrant[],
   query: RetrievalQuery,
 ): { allowed: boolean; events: ArchiveEvent[]; denial?: string } {
-  const granted = grants.some((g) => g.projectId === query.projectId && g.consumer === query.consumer);
+  const granted = grants.some(
+    (g) => g.projectId === query.projectId && g.consumer === query.consumer,
+  );
   if (!granted)
     return {
       allowed: false,
@@ -197,7 +217,11 @@ export function retrieveEvents(
   const matches = events
     .filter((event) => event.projectId === query.projectId)
     .filter((event) => !query.kind || event.kind === query.kind)
-    .filter((event) => !needle || `${event.summary} ${event.actor} ${event.provenance}`.toLowerCase().includes(needle))
+    .filter(
+      (event) =>
+        !needle ||
+        `${event.summary} ${event.actor} ${event.provenance}`.toLowerCase().includes(needle),
+    )
     .slice(0, Math.min(query.limit ?? 50, 200));
   return { allowed: true, events: matches };
 }
@@ -208,7 +232,10 @@ export type GraphNode = { id: string; type: "project" | "agent" | "dependency"; 
 export type GraphEdge = { from: string; to: string; relation: string };
 export type KnowledgeGraph = { nodes: GraphNode[]; edges: GraphEdge[] };
 
-export function buildGraph(enrollments: ProjectEnrollment[], events: ArchiveEvent[]): KnowledgeGraph {
+export function buildGraph(
+  enrollments: ProjectEnrollment[],
+  events: ArchiveEvent[],
+): KnowledgeGraph {
   const nodes = new Map<string, GraphNode>();
   const edges = new Map<string, GraphEdge>();
   const addNode = (node: GraphNode) => nodes.set(node.id, node);
@@ -300,7 +327,8 @@ export function ingestFinding(
 ): { finding?: IntelFinding; updated?: IntelFinding; duplicate: boolean; error?: string } {
   const parsed = findingSchema.parse(input);
   const source = sources.find((s) => s.id === parsed.sourceId);
-  if (!source) return { duplicate: false, error: "Unknown source; register an approved source first." };
+  if (!source)
+    return { duplicate: false, error: "Unknown source; register an approved source first." };
   if (SECRET_PATTERN.test(parsed.summary) || SECRET_PATTERN.test(parsed.title))
     return { duplicate: false, error: "Secret-looking content is rejected." };
   const existing = findings.find((f) => f.url === parsed.url);
@@ -315,7 +343,11 @@ export function ingestFinding(
   }
   const relevance = relevanceScore(parsed, enrollments);
   const matchedProjects = enrollments.filter(
-    (e) => e.active && e.tags.some((tag) => `${parsed.title} ${parsed.summary}`.toLowerCase().includes(tag.toLowerCase())),
+    (e) =>
+      e.active &&
+      e.tags.some((tag) =>
+        `${parsed.title} ${parsed.summary}`.toLowerCase().includes(tag.toLowerCase()),
+      ),
   );
   const routedTo = CATEGORY_ROUTES[parsed.category].filter((consumer) =>
     matchedProjects.some((project) =>

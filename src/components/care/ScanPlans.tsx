@@ -7,10 +7,154 @@ import { careScanManifest, type CareStore } from "@/lib/care";
 import { downloadJson } from "@/lib/genesis-sdk";
 import { Notice, useCareAction } from "./CareShell";
 export function ScanPlans() {
- const { store } = useCare(); const { run, message } = useCareAction(); const [scopes, setScopes] = useState<CareStore["scanPlans"][number]["scopes"]>([]); const [consent, setConsent] = useState(false);
- return <section className="border-t border-border py-8"><h2 className="text-2xl">Read-only scan plans</h2><p className="mt-4 text-sm leading-loose text-muted-foreground">Prepare scope for the selected fictional device. Personal-file contents, credentials, startup changes, cleanup and inventory upload are excluded. This does not request OS access or perform a scan.</p><fieldset className="mt-6" disabled={!store.modules.care}><legend className="text-xs text-gold-light">Proposed read-only scope · select explicitly</legend><div className="mt-4 flex flex-wrap gap-x-8 gap-y-4">{careScanScopes.map(scope => <label key={scope} className="flex items-start gap-3 text-sm"><input type="checkbox" className="mt-1 accent-primary" aria-label={`Scan scope: ${scope}`} checked={scopes.includes(scope)} onChange={e => setScopes(current => e.target.checked ? [...current, scope] : current.filter(s => s !== scope))} />{scope}</label>)}</div><label className="mt-6 flex items-start gap-3 text-sm leading-loose"><input type="checkbox" className="mt-2 accent-primary" aria-label="Consent to prepare a read-only demo scan plan" checked={consent} onChange={e => setConsent(e.target.checked)} />I consent to prepare this read-only demo plan; no scanning or computer permission is granted.</label><Button variant="signal" className="mt-5 h-auto min-h-11 whitespace-normal" disabled={!consent || !scopes.length} onClick={() => { if (run({ type: "scanPlan", scopes, consent }, "Read-only demo scan plan recorded. Nothing scanned or uploaded.")) { setScopes([]); setConsent(false); } }}>Prepare read-only scan plan</Button></fieldset><Notice message={message} /><div className="mt-8 grid gap-8 md:grid-cols-2">{[...store.scanPlans].reverse().map(plan => <ScanPlan key={plan.id} plan={plan} />)}</div>{!store.scanPlans.length && <p className="mt-6 text-xs text-muted-foreground">No scan plans recorded. Last real scan: NEVER.</p>}</section>;
+  const { store } = useCare();
+  const { run, message } = useCareAction();
+  const [scopes, setScopes] = useState<CareStore["scanPlans"][number]["scopes"]>([]);
+  const [consent, setConsent] = useState(false);
+  return (
+    <section className="border-t border-border py-8">
+      <h2 className="text-2xl">Read-only scan plans</h2>
+      <p className="mt-4 text-sm leading-loose text-muted-foreground">
+        Prepare scope for the selected fictional device. Personal-file contents, credentials,
+        startup changes, cleanup and inventory upload are excluded. This does not request OS access
+        or perform a scan.
+      </p>
+      <fieldset className="mt-6" disabled={!store.modules.care}>
+        <legend className="text-xs text-gold-light">
+          Proposed read-only scope · select explicitly
+        </legend>
+        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-4">
+          {careScanScopes.map((scope) => (
+            <label key={scope} className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 accent-primary"
+                aria-label={`Scan scope: ${scope}`}
+                checked={scopes.includes(scope)}
+                onChange={(e) =>
+                  setScopes((current) =>
+                    e.target.checked ? [...current, scope] : current.filter((s) => s !== scope),
+                  )
+                }
+              />
+              {scope}
+            </label>
+          ))}
+        </div>
+        <label className="mt-6 flex items-start gap-3 text-sm leading-loose">
+          <input
+            type="checkbox"
+            className="mt-2 accent-primary"
+            aria-label="Consent to prepare a read-only demo scan plan"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+          />
+          I consent to prepare this read-only demo plan; no scanning or computer permission is
+          granted.
+        </label>
+        <Button
+          variant="signal"
+          className="mt-5 h-auto min-h-11 whitespace-normal"
+          disabled={!consent || !scopes.length}
+          onClick={() => {
+            if (
+              run(
+                { type: "scanPlan", scopes, consent },
+                "Read-only demo scan plan recorded. Nothing scanned or uploaded.",
+              )
+            ) {
+              setScopes([]);
+              setConsent(false);
+            }
+          }}
+        >
+          Prepare read-only scan plan
+        </Button>
+      </fieldset>
+      <Notice message={message} />
+      <div className="mt-8 grid gap-8 md:grid-cols-2">
+        {[...store.scanPlans].reverse().map((plan) => (
+          <ScanPlan key={plan.id} plan={plan} />
+        ))}
+      </div>
+      {!store.scanPlans.length && (
+        <p className="mt-6 text-xs text-muted-foreground">
+          No scan plans recorded. Last real scan: NEVER.
+        </p>
+      )}
+    </section>
+  );
 }
 function ScanPlan({ plan }: { plan: CareStore["scanPlans"][number] }) {
- const { store } = useCare(); const { run, message, setMessage } = useCareAction(); const [consent, setConsent] = useState(false);
- return <article className="min-w-0 border-t border-border py-6"><p className="font-mono text-xs text-gold-light">{plan.state} · NOT SCANNED</p><h3 className="mt-4 text-xl">{careDevices.find(d => d.id === plan.deviceId)?.name}</h3><p className="mt-4 text-sm text-muted-foreground">{plan.scopes.join(" · ")}</p><p className="mt-4 text-xs leading-loose text-warning">OS grants, signed native binary and inventory adapter: unavailable. Execution, file changes and uploads: NONE. Select this plan’s original fictional device for approval.</p>{plan.state === "Prepared" && <><label className="mt-5 flex items-start gap-3 text-xs leading-loose"><input type="checkbox" className="mt-1 accent-primary" aria-label="Approve read-only scan plan as demo only" checked={consent} onChange={e => setConsent(e.target.checked)} />I approve only this demo plan, not a real scan.</label><Button variant="signal" className="mt-4 h-auto min-h-11 whitespace-normal" disabled={!consent || !store.modules.care || plan.deviceId !== store.deviceId} onClick={() => { if (run({ type: "scanApprove", id: plan.id, consent }, "Demo scan-plan approval recorded. Execution still blocked.")) setConsent(false); }}>Record demo scan approval</Button></>}<div className="mt-5 flex flex-wrap gap-3">{plan.state !== "Cancelled" && <Button variant="ghost" onClick={() => run({ type: "scanCancel", id: plan.id })}>Cancel scan plan</Button>}<Button variant="ghost" className="h-auto min-h-11 whitespace-normal" onClick={() => { try { downloadJson(`DEMO-scan-plan-${plan.id}.json`, careScanManifest(plan)); setMessage("Unsigned scan-plan example downloaded. No commands or file access."); } catch { setMessage("Download unavailable."); } }}><Download size={14} />Download scan-plan preview</Button><Button disabled variant="outline"><LockKeyhole size={14} />Run scan · unavailable</Button></div><Notice message={message} /></article>;
+  const { store } = useCare();
+  const { run, message, setMessage } = useCareAction();
+  const [consent, setConsent] = useState(false);
+  return (
+    <article className="min-w-0 border-t border-border py-6">
+      <p className="font-mono text-xs text-gold-light">{plan.state} · NOT SCANNED</p>
+      <h3 className="mt-4 text-xl">{careDevices.find((d) => d.id === plan.deviceId)?.name}</h3>
+      <p className="mt-4 text-sm text-muted-foreground">{plan.scopes.join(" · ")}</p>
+      <p className="mt-4 text-xs leading-loose text-warning">
+        OS grants, signed native binary and inventory adapter: unavailable. Execution, file changes
+        and uploads: NONE. Select this plan’s original fictional device for approval.
+      </p>
+      {plan.state === "Prepared" && (
+        <>
+          <label className="mt-5 flex items-start gap-3 text-xs leading-loose">
+            <input
+              type="checkbox"
+              className="mt-1 accent-primary"
+              aria-label="Approve read-only scan plan as demo only"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+            />
+            I approve only this demo plan, not a real scan.
+          </label>
+          <Button
+            variant="signal"
+            className="mt-4 h-auto min-h-11 whitespace-normal"
+            disabled={!consent || !store.modules.care || plan.deviceId !== store.deviceId}
+            onClick={() => {
+              if (
+                run(
+                  { type: "scanApprove", id: plan.id, consent },
+                  "Demo scan-plan approval recorded. Execution still blocked.",
+                )
+              )
+                setConsent(false);
+            }}
+          >
+            Record demo scan approval
+          </Button>
+        </>
+      )}
+      <div className="mt-5 flex flex-wrap gap-3">
+        {plan.state !== "Cancelled" && (
+          <Button variant="ghost" onClick={() => run({ type: "scanCancel", id: plan.id })}>
+            Cancel scan plan
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          className="h-auto min-h-11 whitespace-normal"
+          onClick={() => {
+            try {
+              downloadJson(`DEMO-scan-plan-${plan.id}.json`, careScanManifest(plan));
+              setMessage("Unsigned scan-plan example downloaded. No commands or file access.");
+            } catch {
+              setMessage("Download unavailable.");
+            }
+          }}
+        >
+          <Download size={14} />
+          Download scan-plan preview
+        </Button>
+        <Button disabled variant="outline">
+          <LockKeyhole size={14} />
+          Run scan · unavailable
+        </Button>
+      </div>
+      <Notice message={message} />
+    </article>
+  );
 }

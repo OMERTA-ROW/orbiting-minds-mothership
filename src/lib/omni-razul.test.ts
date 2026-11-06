@@ -54,7 +54,13 @@ describe("enrollment", () => {
   it("requires explicit owner consent", () => {
     expect(() =>
       enrollProject(
-        { projectName: "X Project", tags: ["ai"], dependencies: [], retentionDays: 30, ownerConsent: false },
+        {
+          projectName: "X Project",
+          tags: ["ai"],
+          dependencies: [],
+          retentionDays: 30,
+          ownerConsent: false,
+        },
         "p",
         NOW,
       ),
@@ -69,13 +75,25 @@ describe("append-only archive", () => {
 
   it("rejects secret-looking content", () => {
     expect(() =>
-      appendEvent([], [project()], eventInput({ summary: "token: sk-abcdef1234567890" }), "e1", NOW),
+      appendEvent(
+        [],
+        [project()],
+        eventInput({ summary: "token: sk-abcdef1234567890" }),
+        "e1",
+        NOW,
+      ),
     ).toThrow(/Secret-looking/);
   });
 
   it("chains events and detects tampering", () => {
     const e1 = appendEvent([], [project()], eventInput(), "e1", NOW);
-    const e2 = appendEvent([e1], [project()], eventInput({ summary: "Second event recorded" }), "e2", NOW);
+    const e2 = appendEvent(
+      [e1],
+      [project()],
+      eventInput({ summary: "Second event recorded" }),
+      "e2",
+      NOW,
+    );
     expect(e2.prevHash).toBe(e1.hash);
     expect(verifyChain([e1, e2]).ok).toBe(true);
     const tampered: ArchiveEvent = { ...e1, summary: "altered after the fact" };
@@ -86,7 +104,13 @@ describe("append-only archive", () => {
 
   it("redaction clears content with a recorded reason and keeps the chain linked", () => {
     const e1 = appendEvent([], [project()], eventInput(), "e1", NOW);
-    const e2 = appendEvent([e1], [project()], eventInput({ summary: "Second event recorded" }), "e2", NOW);
+    const e2 = appendEvent(
+      [e1],
+      [project()],
+      eventInput({ summary: "Second event recorded" }),
+      "e2",
+      NOW,
+    );
     const redacted = redactEvent([e1, e2], "e1", "Owner privacy request");
     const first = redacted[0]!;
     expect(first.redacted).toBe(true);
@@ -117,8 +141,17 @@ describe("access segregation and retrieval", () => {
 
   it("retrieves with kind and text filters for granted consumers", () => {
     const e1 = appendEvent([], [project()], eventInput(), "e1", NOW);
-    const e2 = appendEvent([e1], [project()], eventInput({ kind: "incident", summary: "Gateway timeout observed" }), "e2", NOW);
-    const all = retrieveEvents([e1, e2], [grant("jackboy")], { consumer: "jackboy", projectId: "proj-1" });
+    const e2 = appendEvent(
+      [e1],
+      [project()],
+      eventInput({ kind: "incident", summary: "Gateway timeout observed" }),
+      "e2",
+      NOW,
+    );
+    const all = retrieveEvents([e1, e2], [grant("jackboy")], {
+      consumer: "jackboy",
+      projectId: "proj-1",
+    });
     expect(all.events).toHaveLength(2);
     const incidents = retrieveEvents([e1, e2], [grant("jackboy")], {
       consumer: "jackboy",
@@ -139,9 +172,13 @@ describe("knowledge graph", () => {
   it("builds project, agent and dependency nodes with relations", () => {
     const e1 = appendEvent([], [project()], eventInput(), "e1", NOW);
     const graph = buildGraph([project()], [e1]);
-    expect(graph.nodes.some((n) => n.type === "project" && n.label === "Honeycomb Terminal")).toBe(true);
+    expect(graph.nodes.some((n) => n.type === "project" && n.label === "Honeycomb Terminal")).toBe(
+      true,
+    );
     expect(graph.nodes.some((n) => n.type === "agent" && n.label === "Jackboy")).toBe(true);
-    expect(graph.nodes.some((n) => n.type === "dependency" && n.label === "TanStack Start")).toBe(true);
+    expect(graph.nodes.some((n) => n.type === "dependency" && n.label === "TanStack Start")).toBe(
+      true,
+    );
     expect(graph.edges.some((e) => e.relation === "depends-on")).toBe(true);
     expect(graph.edges.some((e) => e.relation === "test-result")).toBe(true);
   });
@@ -167,16 +204,30 @@ describe("public intelligence", () => {
   it("requires robots/terms attestation and owner approval for sources", () => {
     expect(() => registerSource({ ...sourceInput, respectsRobots: false }, "s", NOW)).toThrow();
     expect(() => registerSource({ ...sourceInput, ownerApproved: false }, "s", NOW)).toThrow();
-    expect(() => registerSource({ ...sourceInput, url: "http://insecure.example.com/f" }, "s", NOW)).toThrow();
+    expect(() =>
+      registerSource({ ...sourceInput, url: "http://insecure.example.com/f" }, "s", NOW),
+    ).toThrow();
   });
 
   it("ingests, dedupes by URL and corroborates across distinct sources", () => {
     const source = registerSource(sourceInput, "src-1", NOW);
     const first = ingestFinding([], [source], [project()], [], findingInput, "f1", NOW);
     expect(first.finding?.corroborations).toBe(0);
-    const sameSource = ingestFinding([first.finding!], [source], [project()], [], findingInput, "f2", NOW);
+    const sameSource = ingestFinding(
+      [first.finding!],
+      [source],
+      [project()],
+      [],
+      findingInput,
+      "f2",
+      NOW,
+    );
     expect(sameSource.duplicate).toBe(true);
-    const source2 = registerSource({ ...sourceInput, name: "Second Source", url: "https://other.example.com/feed" }, "src-2", NOW);
+    const source2 = registerSource(
+      { ...sourceInput, name: "Second Source", url: "https://other.example.com/feed" },
+      "src-2",
+      NOW,
+    );
     const corroborated = ingestFinding(
       [first.finding!],
       [source, source2],
@@ -195,15 +246,33 @@ describe("public intelligence", () => {
     const noGrants = ingestFinding([], [source], [project()], [], findingInput, "f1", NOW);
     expect(noGrants.finding?.routedTo).toEqual([]);
     expect(noGrants.finding?.relevance).toBeGreaterThan(0);
-    const withGrant = ingestFinding([], [source], [project()], [grant("jackboy")], findingInput, "f1", NOW);
+    const withGrant = ingestFinding(
+      [],
+      [source],
+      [project()],
+      [grant("jackboy")],
+      findingInput,
+      "f1",
+      NOW,
+    );
     expect(withGrant.finding?.routedTo).toContain("jackboy");
     expect(withGrant.finding?.routedTo).not.toContain("omni");
   });
 
   it("rejects findings from unknown sources and secret-looking content", () => {
-    expect(ingestFinding([], [], [project()], [], findingInput, "f1", NOW).error).toMatch(/Unknown source/);
+    expect(ingestFinding([], [], [project()], [], findingInput, "f1", NOW).error).toMatch(
+      /Unknown source/,
+    );
     const source = registerSource(sourceInput, "src-1", NOW);
-    const bad = ingestFinding([], [source], [project()], [], { ...findingInput, summary: "leaked api_key: abcdef123456" }, "f1", NOW);
+    const bad = ingestFinding(
+      [],
+      [source],
+      [project()],
+      [],
+      { ...findingInput, summary: "leaked api_key: abcdef123456" },
+      "f1",
+      NOW,
+    );
     expect(bad.error).toMatch(/Secret-looking/);
   });
 });

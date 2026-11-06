@@ -14,13 +14,7 @@
 /** Conversation selection only; does not activate an agent or confer permissions. */
 export const DEFAULT_OMNI_CONVERSATION = "rasul" as const;
 
-export const RASUL_SPECIALISTS = [
-  "jackboy",
-  "omni",
-  "sabrina",
-  "jax",
-  "guardian",
-] as const;
+export const RASUL_SPECIALISTS = ["jackboy", "omni", "sabrina", "jax", "guardian"] as const;
 export type RasulSpecialist = (typeof RASUL_SPECIALISTS)[number];
 
 export type CapabilityStatus = "verified" | "simulated" | "blocked";

@@ -29,14 +29,22 @@ export function AllSeeingEye() {
     },
     [],
   );
-  useEffect(() => { revision.current++; setSnapshot(null); setBusy(false); setNotice(""); }, [user?.id]);
+  useEffect(() => {
+    revision.current++;
+    setSnapshot(null);
+    setBusy(false);
+    setNotice("");
+  }, [user?.id]);
   async function refresh() {
     const current = ++revision.current;
     setBusy(true);
     setNotice("");
     try {
       const result = await read();
-      if (revision.current === current) { setSnapshot(result); setNotice("Owner records refreshed. No jobs were started."); }
+      if (revision.current === current) {
+        setSnapshot(result);
+        setNotice("Owner records refreshed. No jobs were started.");
+      }
     } catch (e) {
       if (revision.current === current) {
         setSnapshot(null);

@@ -5,12 +5,120 @@ import { useCare } from "@/hooks/use-care";
 import { updateGate } from "@/lib/care";
 import { Notice, useCareAction } from "./CareShell";
 export function UpdateNotices() {
- const { store } = useCare(); const { run, message } = useCareAction();
- const channel = careUpdateChannels.find(c => c.id === store.channel);
- const eligible = careUpdates.filter(u => updateGate(store, u.id).autoDemoEligible).length;
- const checks = store.history.filter(e => e.kind === "check");
- return <section className="mb-10 border-y border-border py-8"><div className="flex flex-wrap items-start justify-between gap-5"><div><div className="flex items-center gap-3"><Terminal size={24} className="text-gold" /><h2 className="text-2xl">Updates Center · terminal notices</h2></div><p className="mt-4 text-xs text-warning">DEMO · no vendor query, device scan, background task or signed updater</p></div><label className="text-xs text-muted-foreground">Package-manager rehearsal<select aria-label="Package-manager rehearsal" className="exchange-select mt-2 block w-full" value={store.channel} onChange={e => { const value = careUpdateChannels.find(c => c.id === e.target.value); if (value) run({ type: "channel", channel: value.id }, "Changed demo device/adapter. Update consent reset; no connection established."); }}>{careUpdateChannels.map(c => <option key={c.id} value={c.id}>{c.name} · {c.os}</option>)}</select></label></div>
- <div className="mt-6 border border-border bg-card p-5 font-mono text-xs leading-loose" role="region" aria-label="Demo terminal notices" tabIndex={0}><p className="text-gold-light">[EVOLUTION DEMO] {careUpdates.length} historical references · {eligible} eligible under hypothetical auto-policy · no installed updates</p><p className="mt-3 text-warning">[EVOLUTION CORE] installed / candidate version UNKNOWN · release feed UNCONFIGURED · signature NOT VERIFIED · changelog UNAVAILABLE</p>{careUpdates.map(u => <p key={u.id} className="mt-3 break-words text-muted-foreground">[{channel?.name.toUpperCase()} DEMO] {u.name} {u.installed} → {u.available} · upstream history, not manager match · compatibility UNVERIFIED · signing NOT VERIFIED</p>)}<p className="mt-3 text-warning">[GUARDIAN] real installation BLOCKED · {store.policy.mode === "OFF" ? "policy OFF" : "hypothetical policy only"} · rollback UNAVAILABLE / NOT TESTED · automatic reboot NEVER</p><p className="mt-3 text-muted-foreground">[SCHEDULE DEMO] {store.policy.days.join(", ") || "No days selected"} · {store.policy.maintenance} · future device-local time · no timer or job running</p><p className="mt-3 text-muted-foreground">[AUDIT] {checks.length ? `${checks.length} local check rehearsal(s) recorded` : "No check rehearsals recorded"} · last real check NEVER</p></div>
- <p className="mt-5 text-xs leading-loose text-muted-foreground">{channel?.notice} SDKs, plugins, browser extensions, OS upgrades, drivers and firmware are not in this catalog; vendor-approved adapters and fresh human approval would be required.</p>
- <div className="mt-6 flex flex-wrap gap-3"><Button variant="signal" className="h-auto min-h-11 whitespace-normal" disabled={!store.modules.updates} onClick={() => run({ type: "check", target: "packages" }, "Metadata-check rehearsal recorded. No network query or local command.")}>Rehearse package update check</Button><Button variant="outline" className="h-auto min-h-11 whitespace-normal" disabled={!store.modules.updates} onClick={() => run({ type: "check", target: "self" }, "Self-update check rehearsal recorded. Evolution release channel remains unconfigured.")}>Rehearse Evolution self-update check</Button><Button disabled variant="outline" className="h-auto min-h-11 whitespace-normal"><LockKeyhole size={14} />Self-update install · unavailable</Button></div><Notice message={message} /></section>;
+  const { store } = useCare();
+  const { run, message } = useCareAction();
+  const channel = careUpdateChannels.find((c) => c.id === store.channel);
+  const eligible = careUpdates.filter((u) => updateGate(store, u.id).autoDemoEligible).length;
+  const checks = store.history.filter((e) => e.kind === "check");
+  return (
+    <section className="mb-10 border-y border-border py-8">
+      <div className="flex flex-wrap items-start justify-between gap-5">
+        <div>
+          <div className="flex items-center gap-3">
+            <Terminal size={24} className="text-gold" />
+            <h2 className="text-2xl">Updates Center · terminal notices</h2>
+          </div>
+          <p className="mt-4 text-xs text-warning">
+            DEMO · no vendor query, device scan, background task or signed updater
+          </p>
+        </div>
+        <label className="text-xs text-muted-foreground">
+          Package-manager rehearsal
+          <select
+            aria-label="Package-manager rehearsal"
+            className="exchange-select mt-2 block w-full"
+            value={store.channel}
+            onChange={(e) => {
+              const value = careUpdateChannels.find((c) => c.id === e.target.value);
+              if (value)
+                run(
+                  { type: "channel", channel: value.id },
+                  "Changed demo device/adapter. Update consent reset; no connection established.",
+                );
+            }}
+          >
+            {careUpdateChannels.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} · {c.os}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div
+        className="mt-6 border border-border bg-card p-5 font-mono text-xs leading-loose"
+        role="region"
+        aria-label="Demo terminal notices"
+        tabIndex={0}
+      >
+        <p className="text-gold-light">
+          [EVOLUTION DEMO] {careUpdates.length} historical references · {eligible} eligible under
+          hypothetical auto-policy · no installed updates
+        </p>
+        <p className="mt-3 text-warning">
+          [EVOLUTION CORE] installed / candidate version UNKNOWN · release feed UNCONFIGURED ·
+          signature NOT VERIFIED · changelog UNAVAILABLE
+        </p>
+        {careUpdates.map((u) => (
+          <p key={u.id} className="mt-3 break-words text-muted-foreground">
+            [{channel?.name.toUpperCase()} DEMO] {u.name} {u.installed} → {u.available} · upstream
+            history, not manager match · compatibility UNVERIFIED · signing NOT VERIFIED
+          </p>
+        ))}
+        <p className="mt-3 text-warning">
+          [GUARDIAN] real installation BLOCKED ·{" "}
+          {store.policy.mode === "OFF" ? "policy OFF" : "hypothetical policy only"} · rollback
+          UNAVAILABLE / NOT TESTED · automatic reboot NEVER
+        </p>
+        <p className="mt-3 text-muted-foreground">
+          [SCHEDULE DEMO] {store.policy.days.join(", ") || "No days selected"} ·{" "}
+          {store.policy.maintenance} · future device-local time · no timer or job running
+        </p>
+        <p className="mt-3 text-muted-foreground">
+          [AUDIT]{" "}
+          {checks.length
+            ? `${checks.length} local check rehearsal(s) recorded`
+            : "No check rehearsals recorded"}{" "}
+          · last real check NEVER
+        </p>
+      </div>
+      <p className="mt-5 text-xs leading-loose text-muted-foreground">
+        {channel?.notice} SDKs, plugins, browser extensions, OS upgrades, drivers and firmware are
+        not in this catalog; vendor-approved adapters and fresh human approval would be required.
+      </p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Button
+          variant="signal"
+          className="h-auto min-h-11 whitespace-normal"
+          disabled={!store.modules.updates}
+          onClick={() =>
+            run(
+              { type: "check", target: "packages" },
+              "Metadata-check rehearsal recorded. No network query or local command.",
+            )
+          }
+        >
+          Rehearse package update check
+        </Button>
+        <Button
+          variant="outline"
+          className="h-auto min-h-11 whitespace-normal"
+          disabled={!store.modules.updates}
+          onClick={() =>
+            run(
+              { type: "check", target: "self" },
+              "Self-update check rehearsal recorded. Evolution release channel remains unconfigured.",
+            )
+          }
+        >
+          Rehearse Evolution self-update check
+        </Button>
+        <Button disabled variant="outline" className="h-auto min-h-11 whitespace-normal">
+          <LockKeyhole size={14} />
+          Self-update install · unavailable
+        </Button>
+      </div>
+      <Notice message={message} />
+    </section>
+  );
 }

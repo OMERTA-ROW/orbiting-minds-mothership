@@ -11,7 +11,11 @@ type SpeechRecognitionLike = {
   lang: string;
   interimResults: boolean;
   continuous: boolean;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
+  onresult:
+    | ((event: {
+        results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>;
+      }) => void)
+    | null;
   onerror: ((event: { error?: string }) => void) | null;
   onend: (() => void) | null;
   start: () => void;
@@ -23,7 +27,10 @@ type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 
 export function speechRecognitionCtor(): SpeechRecognitionCtor | null {
   if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor };
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
@@ -56,7 +63,11 @@ export function useSpeechInput(onTranscript: (text: string) => void) {
     };
     rec.onerror = (event) => {
       setState("error");
-      setError(event.error === "not-allowed" ? "Microphone permission was declined. Typed input still works." : "Dictation stopped. Typed input still works.");
+      setError(
+        event.error === "not-allowed"
+          ? "Microphone permission was declined. Typed input still works."
+          : "Dictation stopped. Typed input still works.",
+      );
       recognition.current = null;
     };
     rec.onend = () => {

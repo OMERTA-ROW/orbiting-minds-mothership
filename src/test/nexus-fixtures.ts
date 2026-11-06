@@ -1,9 +1,86 @@
-import {applyGenesisCommand,emptyGenesisStore} from "@/lib/genesis";
-import {initialNexusStore,applyNexusCommand,type NexusCommand,type NexusStore,type NexusAgentId} from "@/lib/nexus";
-export const at="2026-10-21T01:45:00.000Z",projectId="nexus-nebula";
-export function nexusPeople(){let g=structuredClone(emptyGenesisStore);for(const name of ["author","reviewer"]){g=applyGenesisCommand(g,{type:"identity",input:{name,kind:"Human",agentName:"",role:"Builder",scopes:["submit_capsules","review_proposals"],consent:true,spendCapUsd:0}},name,at);}return g;}
-export function nexusStep(s:NexusStore,c:NexusCommand,id="event"){return applyNexusCommand(s,nexusPeople(),c,id,at);}
-export function planned(){let s=structuredClone(initialNexusStore);for(const agentId of ["openai","anthropic"] as NexusAgentId[]){const p=s.projects[0]?.policies.find(v=>v.agentId===agentId);if(p)s=nexusStep(s,{type:"policy",projectId,policy:{...p,enabled:true,consent:true}});}return s;}
-export function routed(targets:NexusAgentId[]=["openai"]){return nexusStep(planned(),{type:"message",projectId,actorId:"author",body:"Review the sample selection mode",shared:true,targets,consent:true},"task");}
-export function reviewRequested(){let s=routed();s=nexusStep(s,{type:"edit",projectId,taskId:"task-openai",candidate:'export const selectionMode = "new-manual";\n',testPlan:"Compare boundary fixtures independently."});return nexusStep(s,{type:"requestReview",projectId,taskId:"task-openai"});}
-export function approved(){return nexusStep(reviewRequested(),{type:"review",projectId,taskId:"task-openai",reviewerId:"reviewer",note:"Local demo review only; tests still not executed.",approve:true,consent:true});}
+import { applyGenesisCommand, emptyGenesisStore } from "@/lib/genesis";
+import {
+  initialNexusStore,
+  applyNexusCommand,
+  type NexusCommand,
+  type NexusStore,
+  type NexusAgentId,
+} from "@/lib/nexus";
+export const at = "2026-10-21T01:45:00.000Z",
+  projectId = "nexus-nebula";
+export function nexusPeople() {
+  let g = structuredClone(emptyGenesisStore);
+  for (const name of ["author", "reviewer"]) {
+    g = applyGenesisCommand(
+      g,
+      {
+        type: "identity",
+        input: {
+          name,
+          kind: "Human",
+          agentName: "",
+          role: "Builder",
+          scopes: ["submit_capsules", "review_proposals"],
+          consent: true,
+          spendCapUsd: 0,
+        },
+      },
+      name,
+      at,
+    );
+  }
+  return g;
+}
+export function nexusStep(s: NexusStore, c: NexusCommand, id = "event") {
+  return applyNexusCommand(s, nexusPeople(), c, id, at);
+}
+export function planned() {
+  let s = structuredClone(initialNexusStore);
+  for (const agentId of ["openai", "anthropic"] as NexusAgentId[]) {
+    const p = s.projects[0]?.policies.find((v) => v.agentId === agentId);
+    if (p)
+      s = nexusStep(s, {
+        type: "policy",
+        projectId,
+        policy: { ...p, enabled: true, consent: true },
+      });
+  }
+  return s;
+}
+export function routed(targets: NexusAgentId[] = ["openai"]) {
+  return nexusStep(
+    planned(),
+    {
+      type: "message",
+      projectId,
+      actorId: "author",
+      body: "Review the sample selection mode",
+      shared: true,
+      targets,
+      consent: true,
+    },
+    "task",
+  );
+}
+export function reviewRequested() {
+  let s = routed();
+  s = nexusStep(s, {
+    type: "edit",
+    projectId,
+    taskId: "task-openai",
+    candidate: 'export const selectionMode = "new-manual";\n',
+    testPlan: "Compare boundary fixtures independently.",
+  });
+  return nexusStep(s, { type: "requestReview", projectId, taskId: "task-openai" });
+}
+export function approved() {
+  return nexusStep(reviewRequested(), {
+    type: "review",
+    projectId,
+    taskId: "task-openai",
+    reviewerId: "reviewer",
+    note: "Local demo review only; tests still not executed.",
+    approve: true,
+    consent: true,
+  });
+}

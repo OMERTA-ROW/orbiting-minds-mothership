@@ -8,8 +8,14 @@ function RazulPage() {
   return (
     <div className="mx-auto max-w-[1440px] px-5 pb-12 md:px-10">
       <AllSeeingEye />
-      <details className="omni-support"><summary>Conversation</summary><RasulChat /></details>
-      <details className="omni-support"><summary>Local archive · Demo</summary><RazulArchive /></details>
+      <details className="omni-support">
+        <summary>Conversation</summary>
+        <RasulChat />
+      </details>
+      <details className="omni-support">
+        <summary>Local archive · Demo</summary>
+        <RazulArchive />
+      </details>
     </div>
   );
 }

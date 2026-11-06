@@ -90,12 +90,10 @@ describe("omniKeyIdInput", () => {
       omniKeyIdInput.safeParse({ id: "11111111-1111-4111-8111-111111111111", confirm: true })
         .success,
     ).toBe(true);
-    expect(
-      omniKeyIdInput.safeParse({ id: "not-a-uuid", confirm: true }).success,
-    ).toBe(false);
-    expect(
-      omniKeyIdInput.safeParse({ id: "11111111-1111-4111-8111-111111111111" }).success,
-    ).toBe(false);
+    expect(omniKeyIdInput.safeParse({ id: "not-a-uuid", confirm: true }).success).toBe(false);
+    expect(omniKeyIdInput.safeParse({ id: "11111111-1111-4111-8111-111111111111" }).success).toBe(
+      false,
+    );
   });
 });
 

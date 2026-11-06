@@ -61,8 +61,16 @@ export function validatePassport(body: unknown): string | null {
     const u = b["documentationUrl"];
     if (typeof u !== "string" || !/^https:\/\//.test(u)) return "documentationUrl must be HTTPS";
   }
-  for (const list of ["features", "permissions", "tools", "pendingTasks", "verifiedTests", "lessons"] as const) {
-    if (cleanList(b[list]) === null) return `${list} must be a bounded list of short non-secret strings`;
+  for (const list of [
+    "features",
+    "permissions",
+    "tools",
+    "pendingTasks",
+    "verifiedTests",
+    "lessons",
+  ] as const) {
+    if (cleanList(b[list]) === null)
+      return `${list} must be a bounded list of short non-secret strings`;
   }
   return null;
 }
@@ -75,14 +83,17 @@ export function passportFreshness(updatedAt: Date, now: Date): "fresh" | "stale"
 }
 
 /** One-line status summary for the front door and routing decisions. */
-export function passportSummary(p: {
-  project: string;
-  residentAgent: string;
-  status: string;
-  version: number;
-  pendingTasks: string[];
-  updatedAt: Date;
-}, now: Date): string {
+export function passportSummary(
+  p: {
+    project: string;
+    residentAgent: string;
+    status: string;
+    version: number;
+    pendingTasks: string[];
+    updatedAt: Date;
+  },
+  now: Date,
+): string {
   const freshness = passportFreshness(p.updatedAt, now);
   return `${p.project} (agent ${p.residentAgent}) — ${p.status}, v${p.version}, ${p.pendingTasks.length} pending task(s), ${freshness}`;
 }

@@ -11,10 +11,38 @@ import {
 } from "./razul-observatory";
 
 const sources: ObservatorySource[] = [
-  { id: "cisa", name: "CISA", url: "https://a.example/feed", kind: "rss", category: "vulnerability", active: true },
-  { id: "openai", name: "OpenAI", url: "https://b.example/feed", kind: "rss", category: "ai-model", active: true },
-  { id: "arxiv", name: "arXiv", url: "https://c.example/feed", kind: "rss", category: "research", active: false },
-  { id: "dev", name: "Dev", url: "https://d.example/feed", kind: "rss", category: "development", active: true },
+  {
+    id: "cisa",
+    name: "CISA",
+    url: "https://a.example/feed",
+    kind: "rss",
+    category: "vulnerability",
+    active: true,
+  },
+  {
+    id: "openai",
+    name: "OpenAI",
+    url: "https://b.example/feed",
+    kind: "rss",
+    category: "ai-model",
+    active: true,
+  },
+  {
+    id: "arxiv",
+    name: "arXiv",
+    url: "https://c.example/feed",
+    kind: "rss",
+    category: "research",
+    active: false,
+  },
+  {
+    id: "dev",
+    name: "Dev",
+    url: "https://d.example/feed",
+    kind: "rss",
+    category: "development",
+    active: true,
+  },
 ];
 
 describe("scoreRelevance", () => {
@@ -58,22 +86,34 @@ describe("filterSources", () => {
   });
 
   it("honors the coverage allowlist", () => {
-    const only = filterSources(sources, { ...controls, coverage: ["research"], blockedSources: [] });
+    const only = filterSources(sources, {
+      ...controls,
+      coverage: ["research"],
+      blockedSources: [],
+    });
     expect(only).toEqual([]);
   });
 
   it("bounds the source count", () => {
     const many = Array.from({ length: 8 }, (_, i) => ({
-      id: `s${i}`, name: `S${i}`, url: `https://x.example/${i}`, kind: "rss",
-      category: "ai-model", active: true,
+      id: `s${i}`,
+      name: `S${i}`,
+      url: `https://x.example/${i}`,
+      kind: "rss",
+      category: "ai-model",
+      active: true,
     }));
     expect(filterSources(many, { ...controls, blockedSources: [] })).toHaveLength(5);
   });
 
   it("rotates the window so every source is covered across runs", () => {
     const many = Array.from({ length: 8 }, (_, i) => ({
-      id: `s${i}`, name: `S${i}`, url: `https://x.example/${i}`, kind: "rss",
-      category: "ai-model", active: true,
+      id: `s${i}`,
+      name: `S${i}`,
+      url: `https://x.example/${i}`,
+      kind: "rss",
+      category: "ai-model",
+      active: true,
     }));
     const seen = new Set<string>();
     for (let rotation = 0; rotation < 8; rotation++) {
@@ -109,7 +149,10 @@ describe("extractEntities", () => {
 describe("classifyEvidence", () => {
   it("marks arXiv preprints as preliminary", () => {
     expect(
-      classifyEvidence({ title: "We present a result", summary: "" }, { category: "papers", id: "arxiv-astro-ph" }),
+      classifyEvidence(
+        { title: "We present a result", summary: "" },
+        { category: "papers", id: "arxiv-astro-ph" },
+      ),
     ).toEqual({ evidenceClass: "preliminary", strength: 40 });
   });
 
@@ -153,13 +196,19 @@ describe("classifyEvidence", () => {
 describe("expanded disciplines", () => {
   it("scores linguistics content", () => {
     expect(
-      scoreRelevance({ title: "Endangered language grammar documented", summary: "" }, "linguistics"),
+      scoreRelevance(
+        { title: "Endangered language grammar documented", summary: "" },
+        "linguistics",
+      ),
     ).toBeGreaterThan(0);
   });
 
   it("scores archaeology content", () => {
     expect(
-      scoreRelevance({ title: "Ancient Roman tomb excavated in Egypt", summary: "" }, "archaeology"),
+      scoreRelevance(
+        { title: "Ancient Roman tomb excavated in Egypt", summary: "" },
+        "archaeology",
+      ),
     ).toBeGreaterThan(0);
   });
 
@@ -201,7 +250,9 @@ describe("planAlertEvents", () => {
 
   it("bounds events per run", () => {
     const findings = Array.from({ length: 30 }, (_, i) => ({
-      id: `f${i}`, relevance: 90, routed_to: ["guardian", "omni"],
+      id: `f${i}`,
+      relevance: 90,
+      routed_to: ["guardian", "omni"],
     }));
     expect(planAlertEvents(findings, subs)).toHaveLength(50);
   });

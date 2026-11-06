@@ -26,7 +26,10 @@ export function createResponsesCall(
       const response = await runIdFetch.fetch(input, init);
       responseHeaders = response.headers;
       if (!response.ok) {
-        const body = await response.clone().json().catch(() => ({}));
+        const body = await response
+          .clone()
+          .json()
+          .catch(() => ({}));
         failure = safeGatewayFailure(response.status, body);
       }
       return response;
@@ -61,6 +64,9 @@ export function createResponsesCall(
     getFailure: () => failure,
     getResponseHeaders: () => responseHeaders,
     response: () =>
-      withLovableAiGatewayRunIdHeader(result.toUIMessageStreamResponse({ sendReasoning: true }), runIdFetch),
+      withLovableAiGatewayRunIdHeader(
+        result.toUIMessageStreamResponse({ sendReasoning: true }),
+        runIdFetch,
+      ),
   };
 }

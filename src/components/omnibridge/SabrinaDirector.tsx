@@ -37,7 +37,17 @@ type Props = { insights: SabrinaInsight[]; prospects: Prospect[]; drafts: Campai
  * over owner-entered records; nothing is crawled, inferred, sent or connected.
  */
 export function SabrinaDirector({ insights, prospects, drafts }: Props) {
-  const { records: store, setRecords: setStore, storageNotice } = useOmniLocalRecords<SabrinaStore>({ key: SABRINA_STORE_KEY, initial: emptyStore, read: loadSabrinaStore, write: saveSabrinaStore, collections: ["memories", "briefs", "feedback"] });
+  const {
+    records: store,
+    setRecords: setStore,
+    storageNotice,
+  } = useOmniLocalRecords<SabrinaStore>({
+    key: SABRINA_STORE_KEY,
+    initial: emptyStore,
+    read: loadSabrinaStore,
+    write: saveSabrinaStore,
+    collections: ["memories", "briefs", "feedback"],
+  });
   const [radar, setRadar] = useState<Opportunity[] | null>(null);
   const [notice, setNotice] = useState("");
 
@@ -69,7 +79,9 @@ export function SabrinaDirector({ insights, prospects, drafts }: Props) {
         new Date(),
       );
       setStore((current) => ({ ...current, memories: [memory, ...current.memories] }));
-      setNotice("Strategic memory saved locally with provenance and expiry. No model was retrained.");
+      setNotice(
+        "Strategic memory saved locally with provenance and expiry. No model was retrained.",
+      );
       event.currentTarget.reset();
     } catch (error) {
       setNotice(errorText(error));
@@ -104,7 +116,9 @@ export function SabrinaDirector({ insights, prospects, drafts }: Props) {
         new Date().toISOString(),
       );
       setStore((current) => ({ ...current, feedback: [feedback, ...current.feedback] }));
-      setNotice("Feedback recorded for Jackboy as a local handoff. No message was sent or queued externally.");
+      setNotice(
+        "Feedback recorded for Jackboy as a local handoff. No message was sent or queued externally.",
+      );
       event.currentTarget.reset();
     } catch (error) {
       setNotice(errorText(error));
@@ -113,7 +127,11 @@ export function SabrinaDirector({ insights, prospects, drafts }: Props) {
 
   return (
     <>
-      {storageNotice && <p role="status" className="mt-4 text-sm text-warning">{storageNotice}</p>}
+      {storageNotice && (
+        <p role="status" className="mt-4 text-sm text-warning">
+          {storageNotice}
+        </p>
+      )}
       {notice && (
         <p
           role="status"
@@ -131,8 +149,8 @@ export function SabrinaDirector({ insights, prospects, drafts }: Props) {
             </h2>
             <p className="mt-2 max-w-3xl text-xs leading-6 text-muted-foreground">
               Ranks intelligence notes against recorded prospects by shared focus terms,
-              compatibility evidence and approval state. Gated matches are shown with their
-              blockers and are never auto-advanced.
+              compatibility evidence and approval state. Gated matches are shown with their blockers
+              and are never auto-advanced.
             </p>
           </div>
           <Button variant="cosmic" size="sm" onClick={runRadar}>
@@ -157,9 +175,7 @@ export function SabrinaDirector({ insights, prospects, drafts }: Props) {
                       label={opportunity.gate === "gated" ? "GATED" : "READY FOR REVIEW"}
                     />
                   </div>
-                  <p className="mt-2 font-mono text-xs text-gold">
-                    Match {opportunity.score}/100
-                  </p>
+                  <p className="mt-2 font-mono text-xs text-gold">Match {opportunity.score}/100</p>
                   <ul className="mt-3 space-y-1 text-xs leading-5 text-muted-foreground">
                     {opportunity.reasons.map((reason) => (
                       <li key={reason}>· {reason}</li>
@@ -302,7 +318,11 @@ export function SabrinaDirector({ insights, prospects, drafts }: Props) {
         <form className="mt-5 grid gap-4 lg:grid-cols-2" onSubmit={saveFeedback}>
           <label className="block text-xs">
             Kind
-            <select name="kind" className="exchange-select mt-1 w-full" defaultValue="capability-gap">
+            <select
+              name="kind"
+              className="exchange-select mt-1 w-full"
+              defaultValue="capability-gap"
+            >
               {feedbackKinds.map((kind) => (
                 <option key={kind} value={kind}>
                   {kind.replaceAll("-", " ")}

@@ -23,16 +23,26 @@ describe("autonomous task rules", () => {
     expect(decideStep(task, { host: "example.com", action: "type" }, 0).allowed).toBe(false);
   });
   it("never auto-allows spending, deletion, credentials, publishing or messages, even when granted", () => {
-    for (const action of ["spend", "delete", "credential_change", "public_publish", "external_message"] as const) {
+    for (const action of [
+      "spend",
+      "delete",
+      "credential_change",
+      "public_publish",
+      "external_message",
+    ] as const) {
       expect(decideStep(task, { host: "example.com", action }, 0).allowed).toBe(false);
-      expect(decideStep({ ...task, grants: [action] }, { host: "example.com", action }, 0).allowed).toBe(false);
+      expect(
+        decideStep({ ...task, grants: [action] }, { host: "example.com", action }, 0).allowed,
+      ).toBe(false);
     }
   });
   it("stops at the step limit", () => {
     expect(decideStep(task, { host: "example.com", action: "read" }, 2).allowed).toBe(false);
   });
   it("blocks every account until an executor exists; non-members blocked earlier", () => {
-    expect(readinessFor("owner", true).state).toBe("Blocked: executor/host companion not connected");
+    expect(readinessFor("owner", true).state).toBe(
+      "Blocked: executor/host companion not connected",
+    );
     expect(readinessFor("hacker", true).state).toBe("Blocked: private membership");
     expect(readinessFor(null, false).state).toBe("Blocked: sign in");
   });
@@ -44,10 +54,24 @@ describe("autonomous task rules", () => {
   });
   it("rejects URLs/paths as hosts and over-long step budgets", () => {
     const base = { requestId: crypto.randomUUID(), goal: "Read the pricing page", grants: [] };
-    expect(() => autonomyTaskInput.parse({ ...base, allowlist: [{ host: "https://a.com/x", actions: ["read"] }] })).toThrow();
-    expect(() => autonomyTaskInput.parse({ ...base, allowlist: [{ host: "a.com", actions: ["read"] }], maxSteps: 99 })).toThrow();
+    expect(() =>
+      autonomyTaskInput.parse({
+        ...base,
+        allowlist: [{ host: "https://a.com/x", actions: ["read"] }],
+      }),
+    ).toThrow();
+    expect(() =>
+      autonomyTaskInput.parse({
+        ...base,
+        allowlist: [{ host: "a.com", actions: ["read"] }],
+        maxSteps: 99,
+      }),
+    ).toThrow();
   });
   it("flags protected intent in goals without granting it", () => {
-    expect(goalProtectedHints("Buy the plan and email the receipt")).toEqual(["spend", "external_message"]);
+    expect(goalProtectedHints("Buy the plan and email the receipt")).toEqual([
+      "spend",
+      "external_message",
+    ]);
   });
 });

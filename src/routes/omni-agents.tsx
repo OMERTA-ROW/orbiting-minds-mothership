@@ -6,7 +6,9 @@ import { RasulChat } from "@/components/omnibridge/RasulChat";
 function AgentDirectory() {
   return (
     <>
-      <div className="mx-auto max-w-[1600px] px-5 pt-8 md:px-10"><RasulChat /></div>
+      <div className="mx-auto max-w-[1600px] px-5 pt-8 md:px-10">
+        <RasulChat />
+      </div>
       <OmniAgentRegistry />
     </>
   );

@@ -63,10 +63,18 @@ export function OmniApiKeys() {
     setNotice("");
     try {
       const result = await action();
-      if (result.secret) { setShownSecret({ id: result.id, secret: result.secret }); setCopyNotice(""); }
+      if (result.secret) {
+        setShownSecret({ id: result.id, secret: result.secret });
+        setCopyNotice("");
+      }
       setNotice(done);
-      try { await refresh(); }
-      catch { setNotice(`${done} The list could not be refreshed; do not repeat the change. Refresh owner records to confirm.`); }
+      try {
+        await refresh();
+      } catch {
+        setNotice(
+          `${done} The list could not be refreshed; do not repeat the change. Refresh owner records to confirm.`,
+        );
+      }
     } catch {
       setNotice("The request was not confirmed. Check owner access and refresh before retrying.");
     } finally {
@@ -83,10 +91,25 @@ export function OmniApiKeys() {
             ? "Checking owner access…"
             : "This workspace is private to the verified owner with strong MFA. Sign in through the owner flow to manage API keys; no keys are visible or usable here without that verified session."}
         </p>
-        {access === "denied" && <div className="mt-6 flex flex-wrap gap-2">
-          <Button asChild variant="outline"><Link to="/auth">Owner sign in</Link></Button>
-          <Button variant="ghost" onClick={() => { setAccess("checking"); void refresh().then(() => setAccess("ok"), () => setAccess("denied")); }}>Retry access check</Button>
-        </div>}
+        {access === "denied" && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link to="/auth">Owner sign in</Link>
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setAccess("checking");
+                void refresh().then(
+                  () => setAccess("ok"),
+                  () => setAccess("denied"),
+                );
+              }}
+            >
+              Retry access check
+            </Button>
+          </div>
+        )}
       </main>
     );
   }
@@ -122,14 +145,24 @@ export function OmniApiKeys() {
               size="sm"
               onClick={async () => {
                 setCopyNotice("");
-                try { await navigator.clipboard.writeText(shownSecret.secret); setCopyNotice("Key copied. Save it securely before hiding it."); }
-                catch { setCopyNotice("Copy failed. Select and copy the visible key manually; it remains here until you hide it."); }
+                try {
+                  await navigator.clipboard.writeText(shownSecret.secret);
+                  setCopyNotice("Key copied. Save it securely before hiding it.");
+                } catch {
+                  setCopyNotice(
+                    "Copy failed. Select and copy the visible key manually; it remains here until you hide it.",
+                  );
+                }
               }}
             >
               <Copy size={14} /> Copy
             </Button>
           </div>
-          {copyNotice && <p role="status" className="text-sm text-muted-foreground">{copyNotice}</p>}
+          {copyNotice && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {copyNotice}
+            </p>
+          )}
           <Button variant="ghost" size="sm" onClick={() => setShownSecret(null)}>
             I have saved it — hide
           </Button>
@@ -206,10 +239,24 @@ export function OmniApiKeys() {
         <h2 id="key-list" className="text-lg">
           Your keys
         </h2>
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => {
-          setBusy(true); setNotice("Reading owner records…");
-          void refresh().then(() => setNotice("Owner records refreshed."), () => setNotice("Refresh failed. Check owner access; no key was changed.")).finally(() => setBusy(false));
-        }}><RefreshCw size={14} />Refresh records</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            setNotice("Reading owner records…");
+            void refresh()
+              .then(
+                () => setNotice("Owner records refreshed."),
+                () => setNotice("Refresh failed. Check owner access; no key was changed."),
+              )
+              .finally(() => setBusy(false));
+          }}
+        >
+          <RefreshCw size={14} />
+          Refresh records
+        </Button>
         {keys === null ? (
           <p className="text-sm text-muted-foreground">Reading owner records…</p>
         ) : keys.length === 0 ? (
@@ -231,8 +278,7 @@ export function OmniApiKeys() {
                     Scopes: {key.scopes.join(", ")} · Expires{" "}
                     {new Date(key.expires_at).toLocaleString()} · Last used{" "}
                     {key.last_used_at ? new Date(key.last_used_at).toLocaleString() : "never"}
-                    {key.rotated_at &&
-                      ` · Rotated ${new Date(key.rotated_at).toLocaleString()}`}
+                    {key.rotated_at && ` · Rotated ${new Date(key.rotated_at).toLocaleString()}`}
                   </p>
                   {state === "active" && (
                     <div className="flex gap-2">

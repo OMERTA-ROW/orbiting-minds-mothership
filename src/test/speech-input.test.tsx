@@ -7,7 +7,11 @@ class FakeRecognition {
   lang = "";
   interimResults = true;
   continuous = true;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null = null;
+  onresult:
+    | ((e: {
+        results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>;
+      }) => void)
+    | null = null;
   onerror: ((e: { error?: string }) => void) | null = null;
   onend: (() => void) | null = null;
   started = false;
