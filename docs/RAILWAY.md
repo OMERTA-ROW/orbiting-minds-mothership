@@ -108,9 +108,10 @@ Expect a sustained listener, asset/homepage **200**, and unauthenticated API
   assessment and patched versions are documented in
   [DEPENDENCY-SECURITY.md](DEPENDENCY-SECURITY.md). No advisory is suppressed.
 - Full repository lint remains **FAIL** at **5,902 errors and 35 warnings**.
-  All remaining errors are Prettier findings; all warnings are
-  `react-refresh/only-export-components`. The baseline was 6,196 errors and 35
-  warnings. Touched files are formatted and their targeted lint passes; the
+  All remaining errors are Prettier findings; warnings are 32
+  `react-refresh/only-export-components` and 3 `react-hooks/exhaustive-deps`.
+  The baseline was 6,196 errors and 35 warnings, including ten substantive
+  lint errors. Those ten have been fixed; touched-file lint passes. The
   unrelated formatting baseline is not hidden or disabled.
 - The new read-only PR workflow runs app/types/build/startup checks, full lint
   and dependency audit as separate jobs. The app/type/build/startup and
