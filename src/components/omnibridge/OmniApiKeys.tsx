@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { KeyRound, Copy, RefreshCw, Ban, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
+import { JackboyLinkPanel } from "./JackboyLinkPanel";
 import {
   createOmniApiKey,
   listOmniApiKeyAudit,
@@ -126,6 +127,8 @@ export function OmniApiKeys() {
           the scoped endpoints listed below.
         </p>
       </header>
+
+      <JackboyLinkPanel />
 
       {shownSecret && (
         <section
