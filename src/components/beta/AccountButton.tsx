@@ -13,6 +13,7 @@ export function AccountButton() {
     <Button asChild variant="ghost" size="icon" aria-label={user ? "My beta projects" : "Sign in"} title={user ? "My beta projects" : "Sign in"}><Link to={user ? "/beta" : "/auth"}><UserRound size={18} /></Link></Button>
     {ready && user && <Button asChild variant="ghost" size="sm" title="Members and owner claim"><Link to="/members">Members · claim owner</Link></Button>}
     {ready && user && <Button asChild variant="ghost" size="sm" title="Two-factor authentication"><Link to="/account-security">Two-factor</Link></Button>}
+    {ready && user && <Button asChild variant="ghost" size="sm" title="OMNI API keys (owner + two-factor required)"><Link to="/omni-api-keys">API Keys</Link></Button>}
     {ready && user && <Button variant="ghost" size="icon" disabled={busy} aria-label="Sign out" title="Sign out" onClick={async () => {
       setBusy(true); setError("");
       try {
