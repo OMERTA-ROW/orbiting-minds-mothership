@@ -19,6 +19,7 @@ const tools = [
   { to: "/omni-rights", label: "Rights" },
   { to: "/omni-legal", label: "Legal forms & drafts" },
   { to: "/omni-api-keys", label: "API credentials · owner only" },
+  { to: "/activation-approvals", label: "Activation approvals · owner only" },
   { to: "/members", label: "Members · owner only" },
   { to: "/platform", label: "Offline companion" },
 ] as const;

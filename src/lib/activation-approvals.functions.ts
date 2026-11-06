@@ -66,7 +66,8 @@ export const decideActivationApproval = createServerFn({ method: "POST" })
       _step: data.step,
       _action: data.action,
       _note: data.note,
-      _expires_at: data.expiresAt ?? undefined,
+      // NULL is valid for every step except 7; the generated type omits nullability.
+      _expires_at: (data.expiresAt ?? null) as unknown as string,
       _cap_confirmed: data.capConfirmed,
       _daily_confirmed: data.dailyConfirmed,
     });
