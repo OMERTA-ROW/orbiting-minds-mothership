@@ -37,32 +37,31 @@ const scene = z.object({
   role: z.enum(cartoonRoles),
   status: z.enum(["Proposed", "Reviewed DEMO", "Skipped DEMO"]),
 });
-export const cartoonDraftSchema = z
-  .object({
-    title: text(3, 150),
-    audience: z.enum(["3–5 + caregiver", "6–9 + family", "10–12 + family"]),
-    format: z.enum(["2D cutout", "3D concept"]),
-    logline: text(10, 600),
-    world: text(),
-    rules: text(),
-    learning: text(),
-    credit: text(2, 120),
-    license: text(10, 1000),
-    voices: text(),
-    music: text(),
-    characters: z.array(character).length(2),
-    episodeTitle: text(3, 150),
-    premise: text(10, 600),
-    fps: z.union([z.literal(24), z.literal(30)]),
-    scenes: z.array(scene).length(3),
-  })
-  .superRefine((v, c) => {
-    if (
-      new Set(v.characters.map((x) => x.id)).size !== 2 ||
-      v.scenes.some((s, i) => s.id !== `scene-${i + 1}`)
-    )
-      c.addIssue({ code: "custom", message: "Invalid character or scene identity" });
-  });
+const cartoonDraftBaseSchema = z.object({
+  title: text(3, 150),
+  audience: z.enum(["3–5 + caregiver", "6–9 + family", "10–12 + family"]),
+  format: z.enum(["2D cutout", "3D concept"]),
+  logline: text(10, 600),
+  world: text(),
+  rules: text(),
+  learning: text(),
+  credit: text(2, 120),
+  license: text(10, 1000),
+  voices: text(),
+  music: text(),
+  characters: z.array(character).length(2),
+  episodeTitle: text(3, 150),
+  premise: text(10, 600),
+  fps: z.union([z.literal(24), z.literal(30)]),
+  scenes: z.array(scene).length(3),
+});
+export const cartoonDraftSchema = cartoonDraftBaseSchema.superRefine((v, c) => {
+  if (
+    new Set(v.characters.map((x) => x.id)).size !== 2 ||
+    v.scenes.some((s, i) => s.id !== `scene-${i + 1}`)
+  )
+    c.addIssue({ code: "custom", message: "Invalid character or scene identity" });
+});
 export type CartoonDraft = z.infer<typeof cartoonDraftSchema>;
 const checks = z
   .array(z.string())
@@ -80,8 +79,7 @@ const review = z.object({
   at: z.string().datetime(),
   publicationIntent: z.literal(true),
 });
-const plan = cartoonDraftSchema
-  .innerType()
+const plan = cartoonDraftBaseSchema
   .extend({
     id: z.string(),
     worldId: omniWorld,
@@ -101,7 +99,9 @@ const plan = cartoonDraftSchema
   .superRefine((p, c) => {
     const validDraft = cartoonDraftSchema.safeParse(p);
     if (!validDraft.success) {
-      validDraft.error.issues.forEach((issue) => c.addIssue(issue));
+      validDraft.error.issues.forEach((issue) =>
+        c.addIssue({ code: "custom", message: issue.message, path: issue.path }),
+      );
       return;
     }
     if (

@@ -102,18 +102,22 @@ Expect a sustained listener, asset/homepage **200**, and unauthenticated API
 
 ## Security and release blockers
 
-- Full repository lint was already failing: **6,196 errors, 35 warnings**.
-  Focused startup test lint passes; this PR does not reformat unrelated code.
-- The unchanged lockfile's `bun audit` reports **27 advisory entries across 11
-  packages**: 1 critical, 11 high, 13 moderate, 2 low. These are dependency
-  advisories, not verified exploit paths. In particular, `shell-quote@1.10.0`
-  is pulled through the Lovable development tools; `zod`, `seroval` and `katex`
-  also require production-reachability review. See the hosted dependency job
-  for current advisory URLs. No advisory is suppressed or marked fixed.
+- Dependency remediation updates the affected packages and migrates the
+  application schemas to Zod 4. `bun audit` now reports **zero vulnerabilities
+  across 851 packages**. The pre-fix advisory paths, their production exposure
+  assessment and patched versions are documented in
+  [DEPENDENCY-SECURITY.md](DEPENDENCY-SECURITY.md). No advisory is suppressed.
+- Full repository lint remains **FAIL** at **5,902 errors and 35 warnings**.
+  All remaining errors are Prettier findings; all warnings are
+  `react-refresh/only-export-components`. The baseline was 6,196 errors and 35
+  warnings. Touched files are formatted and their targeted lint passes; the
+  unrelated formatting baseline is not hidden or disabled.
 - The new read-only PR workflow runs app/types/build/startup checks, full lint
-  and dependency audit as separate jobs. Existing lint/security failures remain
-  **failures**, not passing or skipped gates. Actions are SHA-pinned; no
-  production secrets, write permissions, dispatch or deployment steps.
+  and dependency audit as separate jobs. The app/type/build/startup and
+  dependency checks pass locally; the repository-lint job will remain red on
+  the documented formatting baseline until that baseline is remediated.
+  Actions are SHA-pinned; no production secrets, write permissions, dispatch
+  or deployment steps.
 - [Tracked environment audit](ENVIRONMENT-AUDIT.md): only public Supabase
   configuration was found; no credential rotation or history rewrite was
   performed. Removal from tracking is a separate owner decision.
@@ -125,7 +129,8 @@ Expect a sustained listener, asset/homepage **200**, and unauthenticated API
   part of this startup repair. Database migrations and production rollback
   verification remain outside this PR.
 
-Production readiness remains **BLOCKED** pending hosted results, review of
-existing lint/dependency findings and authorized live Railway verification.
+Production readiness remains **BLOCKED** pending updated hosted CI, review of
+the remaining repository formatting baseline and authorized live Railway
+verification.
 References: [Railway start command](https://docs.railway.com/deployments/start-command)
 and [Nitro Node deployment](https://nitro.build/deploy/runtimes/node).
