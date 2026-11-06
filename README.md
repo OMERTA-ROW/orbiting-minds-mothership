@@ -47,3 +47,10 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Railway startup
+
+Use `bun run build:railway` and then `bun run start`; the default Lovable build
+is a Cloudflare Worker, not a Node listener. See [Railway startup](docs/RAILWAY.md)
+for host/port requirements, test evidence and live-verification blockers, and
+[the environment audit](docs/ENVIRONMENT-AUDIT.md) for tracked `.env` findings.
