@@ -22,8 +22,10 @@ scoped configuration, a fresh signed nonce, database-backed owner/project
 approval and audit. Only `protocol.self-test` is executable, and only with the
 separately enabled restricted Node 26 runner. The existing merged
 `OMERTA-ROW/Omni` Go client implements the same reverse protocol independently.
-The Mothership client is Node-only, verifies the server certificate and response
-HMAC, and writes pre-request and result audit records to the existing
+The Mothership client uses the hosting platform's standard `fetch`, which
+verifies the server certificate against public trust; it has no custom-CA or
+insecure option, refuses redirects, caps replies at 32 KB and times out after
+5 seconds. It verifies the response HMAC, and writes pre-request and result audit records to the existing
 `razul_control_audit` table using the service role. Audit failures fail closed.
 It has no access to CODE, repository writes or deployments.
 
@@ -102,20 +104,43 @@ For that proposed service only, the reviewed settings are:
 | `OMNI_LINK_BOOTSTRAP_KEY`, `OMNI_LINK_HMAC_SECRET` | Independent dedicated secrets in managed server-side storage; do not reuse metadata API keys or CODE/provider credentials |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Existing Jackboy backend access, only on the approved bridge service |
 
-The Mothership client reads its CA from `JACKBOY_LINK_CA_FILE` and supplies it
-only to the link's Node HTTPS request. Normal hostname and certificate
-validation remain enabled; redirects are not followed. Configure these
-Mothership-only managed settings after separate staging authorization:
+## Owner decision 2026-11-06: option A (public Railway route)
+
+The owner chose to serve the link from Jackboy's existing public Railway web
+route (`/api/public/omni/link`) using Railway's managed public certificate.
+The separate `scripts/omni-link-server.mjs` listener, `OMNI_LINK_BIND_ADDRESS`
+and `OMNI_LINK_TLS_CERT_FILE`/`OMNI_LINK_TLS_KEY_FILE` are **not used** for this
+path. The private-network design above remains a reference only; nothing outside
+Railway can reach `.railway.internal` names.
+
+The Mothership client loads `JACKBOY_LINK_ORIGIN` only if it is a public HTTPS
+DNS name on the default port (no IP literal, `localhost`, `.internal`, `.local`,
+path, query or credentials). No CA file is read. Configure these
+Mothership-only managed settings only at the separately approved activation:
 
 | Setting | Purpose |
 | --- | --- |
 | `JACKBOY_LINK_ENABLED` | Exact `true` enables the owner-gated client; absent is disabled |
 | `JACKBOY_LINK_SELF_TEST_ENABLED` | Exact `true` separately permits submit/run of the fixed test; absent blocks them |
-| `JACKBOY_LINK_ORIGIN`, `JACKBOY_LINK_CA_FILE` | HTTPS bridge origin and protected issuing-CA file |
+| `JACKBOY_LINK_ORIGIN` | Public HTTPS origin of Jackboy's Railway web service |
 | `JACKBOY_LINK_MOTHERSHIP_OWNER_ID` | Verified MFA Mothership owner's UUID |
 | `OMNI_LINK_CLIENT_ID`, `OMNI_LINK_PROJECT_ID`, `OMNI_LINK_APPROVAL_ID`, `OMNI_LINK_APPROVAL_EXPIRES_AT` | Exact approved Jackboy scope; approval expiry at most 24 hours |
-| `OMNI_LINK_BOOTSTRAP_KEY`, `OMNI_LINK_HMAC_SECRET` | Dedicated credentials matching the bridge, server-only |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Existing Mothership backend access for the audit table, not a client key |
+| `OMNI_LINK_BOOTSTRAP_KEY`, `OMNI_LINK_HMAC_SECRET` | Dedicated credentials matching Jackboy, server-only |
+
+Open on Jackboy's side (not changed by Mothership work):
+- The handler requires `new URL(request.url).protocol === "https:"`. Behind
+  Railway's edge the app may see plain HTTP and return `https_post_required`;
+  a reviewed Jackboy change must trust only Railway's forwarded protocol.
+- Pin Node 26+ on the Railway service; the fixed runner refuses older Node.
+- Confirm `drizzle/migrations/0030_omni_sessions.sql` and `SUPABASE_URL` /
+  `SUPABASE_SERVICE_ROLE_KEY` on that service.
+
+Local evidence (2026-11-06): the cross-repository suite
+(`JACKBOY_TEST_ROOT=<jackboy checkout> node --test tests/jackboy-link-integration.test.mjs`
+on Node 26.13.0) passed 9/9 against Jackboy's real handler, migration and
+runner over loopback TLS with a test-only transport; the default platform
+transport rejected the self-signed test certificate. This proves neither
+Railway routing nor production connectivity.
 
 Each explicit request obtains a fresh session in memory. An invalid or expired
 session fails the request; an owner may make a new explicit request with the

@@ -52,13 +52,22 @@ function fakeJackboy(
             capabilities: SCOPES,
             ready: true,
           }
-        : { job: { id: request.jobId, status: request.action === "submit" ? "queued" : "completed", result: null } };
-    const text = JSON.stringify(tweak({ contract: "omni.link/v2", requestNonce: nonce, ...base }, nonce));
+        : {
+            job: {
+              id: request.jobId,
+              status: request.action === "submit" ? "queued" : "completed",
+              result: null,
+            },
+          };
+    const text = JSON.stringify(
+      tweak({ contract: "omni.link/v2", requestNonce: nonce, ...base }, nonce),
+    );
     const status = request.action === "submit" ? 202 : 200;
     return new Response(text, {
       status,
       headers: {
-        "x-omni-proof": proofOverride ?? hmac(`omni.link/v2\nresponse\n${nonce}\n${status}\n${text}`),
+        "x-omni-proof":
+          proofOverride ?? hmac(`omni.link/v2\nresponse\n${nonce}\n${status}\n${text}`),
       },
     });
   };
@@ -120,7 +129,8 @@ describe("Jackboy link transport (public certificate, no CA file)", () => {
 
   it("refuses a reply larger than 32 KB, declared or streamed", async () => {
     const declared = new JackboyLink(config(), async () => {}, {
-      fetch: async () => new Response("{}", { status: 200, headers: { "content-length": "32769" } }),
+      fetch: async () =>
+        new Response("{}", { status: 200, headers: { "content-length": "32769" } }),
     });
     await expect(declared.connect()).rejects.toThrow("Jackboy response too large.");
     const streamed = new JackboyLink(config(), async () => {}, {
@@ -198,7 +208,10 @@ describe("Jackboy link settings", () => {
 
   it("loads valid settings without any certificate file", async () => {
     stubValid();
-    await expect(configuredJackboyLink()).resolves.toMatchObject({ origin: ORIGIN, projectId: PROJECT });
+    await expect(configuredJackboyLink()).resolves.toMatchObject({
+      origin: ORIGIN,
+      projectId: PROJECT,
+    });
   });
 
   it("stays disabled unless the switch is exactly true", async () => {

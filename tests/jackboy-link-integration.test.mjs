@@ -208,7 +208,11 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
       } finally {
         await new Promise((done) => wrongNameServer.close(done));
       }
-      const badKey = new JackboyLink({ ...config, bootstrap: "x".repeat(64) }, async () => {}, trusted);
+      const badKey = new JackboyLink(
+        { ...config, bootstrap: "x".repeat(64) },
+        async () => {},
+        trusted,
+      );
       await assert.rejects(badKey.connect());
     });
     await t.test("rejects a response with an invalid HMAC proof", async () => {
