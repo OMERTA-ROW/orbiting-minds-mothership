@@ -46,6 +46,16 @@ export function AccountButton() {
       )}
       {ready && user && (
         <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          title="Activation approvals (owner + two-factor required)"
+        >
+          <Link to="/activation-approvals">Approvals</Link>
+        </Button>
+      )}
+      {ready && user && (
+        <Button
           variant="ghost"
           size="icon"
           disabled={busy}

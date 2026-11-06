@@ -225,6 +225,13 @@
       "when": 1793945000000,
       "tag": "0031_jackboy_dispatch_quarantine",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793992509807,
+      "tag": "0032_activation_approvals",
+      "breakpoints": true
     }
   ]
 }

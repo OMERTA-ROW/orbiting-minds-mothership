@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as ActivationApprovalsRouteImport } from './routes/activation-approvals'
 import { Route as AgentDebriefRouteImport } from './routes/agent-debrief'
 import { Route as AgentLoungeRouteImport } from './routes/agent-lounge'
 import { Route as AgentsRouteImport } from './routes/agents'
@@ -103,6 +104,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivationApprovalsRoute = ActivationApprovalsRouteImport.update({
+  id: '/activation-approvals',
+  path: '/activation-approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentDebriefRoute = AgentDebriefRouteImport.update({
@@ -535,6 +541,7 @@ const ApiPublicRazulSentinelReportRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activation-approvals': typeof ActivationApprovalsRoute
   '/agent-debrief': typeof AgentDebriefRoute
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
@@ -622,6 +629,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activation-approvals': typeof ActivationApprovalsRoute
   '/agent-debrief': typeof AgentDebriefRoute
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
@@ -711,6 +719,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/activation-approvals': typeof ActivationApprovalsRoute
   '/agent-debrief': typeof AgentDebriefRoute
   '/agent-lounge': typeof AgentLoungeRoute
   '/agents': typeof AgentsRoute
@@ -800,6 +809,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activation-approvals'
     | '/agent-debrief'
     | '/agent-lounge'
     | '/agents'
@@ -887,6 +897,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activation-approvals'
     | '/agent-debrief'
     | '/agent-lounge'
     | '/agents'
@@ -975,6 +986,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/activation-approvals'
     | '/agent-debrief'
     | '/agent-lounge'
     | '/agents'
@@ -1064,6 +1076,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ActivationApprovalsRoute: typeof ActivationApprovalsRoute
   AgentDebriefRoute: typeof AgentDebriefRoute
   AgentLoungeRoute: typeof AgentLoungeRoute
   AgentsRoute: typeof AgentsRoute
@@ -1157,6 +1170,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activation-approvals': {
+      id: '/activation-approvals'
+      path: '/activation-approvals'
+      fullPath: '/activation-approvals'
+      preLoaderRoute: typeof ActivationApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agent-debrief': {
@@ -1776,6 +1796,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ActivationApprovalsRoute: ActivationApprovalsRoute,
   AgentDebriefRoute: AgentDebriefRoute,
   AgentLoungeRoute: AgentLoungeRoute,
   AgentsRoute: AgentsRoute,
