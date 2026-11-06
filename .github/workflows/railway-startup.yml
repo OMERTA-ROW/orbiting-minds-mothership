@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: OMERTA-ROW/jackboy-dev-control
-          ref: f30f17903ac60380bb2485c9a34f02dbc1ea3e67
+          ref: c9d65ea82ffb5532878981a14089300947df2ead
           path: jackboy-interop
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -27,9 +27,14 @@ jobs:
         with:
           bun-version: "1.4.4"
       - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
         working-directory: jackboy-interop
       - name: Test real Jackboy handler using isolated database and verified TLS
         run: node --test tests/jackboy-link-integration.test.mjs
+        env:
+          JACKBOY_TEST_ROOT: ${{ github.workspace }}/jackboy-interop
+      - name: Test scoped dispatch and callbacks across isolated databases
+        run: node --test tests/jackboy-dispatch-quarantine.test.mjs tests/jackboy-dispatch-integration.test.mjs
         env:
           JACKBOY_TEST_ROOT: ${{ github.workspace }}/jackboy-interop
   application:

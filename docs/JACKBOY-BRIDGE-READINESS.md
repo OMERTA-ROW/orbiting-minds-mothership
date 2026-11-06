@@ -2,8 +2,9 @@
 
 ## Status: not connected
 
-At Jackboy source commit `f30f17903ac60380bb2485c9a34f02dbc1ea3e67`, this
-review branch adds a disabled-by-default Mothership client for the reverse link.
+At Jackboy source commit `c9d65ea82ffb5532878981a14089300947df2ead`, this
+review branch adds a disabled-by-default Mothership client for the reverse link
+and scoped quarantine dispatch.
 Mothership's
 `GET /api/public/omni/health` and `GET /api/public/omni/jobs` use its own
 owner-issued, scoped API keys; they are **not** Jackboy's `omni.link/v2` or
@@ -30,6 +31,34 @@ Legacy Jackboy outbound dispatch must remain unverified and disabled: its
 handshake expects `/jackboy/handshake` and signed callback credentials that
 Mothership does not implement. A successful reverse handshake must not set
 `omni_connection.verified` or authorize outbound work.
+
+The local `0031_jackboy_dispatch_quarantine.sql` migration and disabled-by-default
+`POST /api/public/jackboy/dispatch` route are a receive-only foundation. The
+route requires HTTPS, a dedicated HMAC identity, a fresh nonce and a scoped
+pre-provisioned grant. The storage binds a grant to owner, project, repository,
+job and payload digest; it stores only quarantined/cancelled states and commits
+nonce consumption, job state and audit together. Owner-authenticated grant
+functions require verified MFA and record approval and revocation atomically.
+The isolated two-database TLS test simulates those identity claims; both
+repositories compute the same canonical digest over scope and instructions.
+Both apps provide explicit owner review controls. Mothership can send a signed
+callback for its stored quarantine/cancellation state; a local test exercises
+it over verified TLS and isolated databases with simulated owner claims.
+Cross-service revocation and hosted verification remain unbuilt.
+Independent database grants cannot provide atomic distributed revocation:
+revoking on one side does not automatically revoke the other, and a request
+can race a revocation. Quarantine must remain non-executing.
+Do not configure `JACKBOY_DISPATCH_ENABLED`, `JACKBOY_DISPATCH_CLIENT_ID` or
+`JACKBOY_DISPATCH_HMAC_SECRET` until those pieces and their deployment
+safeguards have been reviewed. No migration has been applied to a hosted database.
+
+For an independently approved staging setup only, Mothership callback transport
+uses `JACKBOY_CALLBACK_ENABLED`, `JACKBOY_CALLBACK_ORIGIN`,
+`JACKBOY_CALLBACK_CA_FILE`, `JACKBOY_CALLBACK_CLIENT_ID` and
+`JACKBOY_CALLBACK_HMAC_SECRET`. The corresponding Jackboy receiver uses the
+separate `OMNI_DISPATCH_CALLBACK_*` identity and secret. Both TLS endpoints
+must use verified certificates with matching DNS SANs. These variables are not
+configured by this change; the supplied private HTTP endpoints are not TLS.
 
 The cross-repository protocol suite exercises the actual Mothership client,
 Jackboy migration and handler over certificate-verified loopback TLS and an
