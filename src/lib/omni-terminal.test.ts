@@ -85,7 +85,7 @@ describe("readiness is separate from authorization", () => {
     expect(capabilities(released).find((c) => c.id === "link")!.authorized).toBe(true);
   });
   it("an owner ID that does not match keeps the link not ready", () => {
-    expect(capabilities(snap({ ownerIdMatches: "mismatch" })).find((c) => c.id === "link")!.readiness).toBe("ready" === "ready" ? "partial" : "partial");
+    expect(capabilities(snap({ ownerIdMatches: "mismatch" })).find((c) => c.id === "link")!.readiness).toBe("partial");
   });
   it("never shows a verified connection without a recorded handshake", () => {
     const link = capabilities(snap()).find((c) => c.id === "link")!;
