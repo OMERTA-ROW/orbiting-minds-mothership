@@ -655,6 +655,63 @@ export type Database = {
         }
         Relationships: []
       }
+      omni_agent_jobs: {
+        Row: {
+          agent_id: string
+          cost_cents: number
+          created_at: string
+          cursor: string | null
+          ended_at: string | null
+          id: string
+          input: string
+          kind: string
+          origin: string
+          session_id: string
+          status: string
+        }
+        Insert: {
+          agent_id: string
+          cost_cents?: number
+          created_at?: string
+          cursor?: string | null
+          ended_at?: string | null
+          id?: string
+          input: string
+          kind: string
+          origin: string
+          session_id: string
+          status?: string
+        }
+        Update: {
+          agent_id?: string
+          cost_cents?: number
+          created_at?: string
+          cursor?: string | null
+          ended_at?: string | null
+          id?: string
+          input?: string
+          kind?: string
+          origin?: string
+          session_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_agent_jobs_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "omni_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "omni_agent_jobs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "omni_workspace_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       omni_agent_runs: {
         Row: {
           consent: boolean
@@ -720,6 +777,120 @@ export type Database = {
           },
         ]
       }
+      omni_agent_steps: {
+        Row: {
+          agent_id: string
+          body: string
+          body_sha256: string | null
+          cost_cents: number
+          created_at: string
+          decided_at: string | null
+          exit_code: number | null
+          id: string
+          job_id: string
+          kind: string
+          model: string | null
+          remote_id: string
+          session_id: string
+          status: string
+          stream: string | null
+          title: string
+        }
+        Insert: {
+          agent_id: string
+          body?: string
+          body_sha256?: string | null
+          cost_cents?: number
+          created_at?: string
+          decided_at?: string | null
+          exit_code?: number | null
+          id?: string
+          job_id: string
+          kind: string
+          model?: string | null
+          remote_id: string
+          session_id: string
+          status: string
+          stream?: string | null
+          title?: string
+        }
+        Update: {
+          agent_id?: string
+          body?: string
+          body_sha256?: string | null
+          cost_cents?: number
+          created_at?: string
+          decided_at?: string | null
+          exit_code?: number | null
+          id?: string
+          job_id?: string
+          kind?: string
+          model?: string | null
+          remote_id?: string
+          session_id?: string
+          status?: string
+          stream?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_agent_steps_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "omni_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "omni_agent_steps_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "omni_agent_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      omni_agents: {
+        Row: {
+          allowed_actions: string[]
+          budget_day_cents: number
+          budget_task_cents: number
+          budget_total_cents: number
+          display_name: string
+          id: string
+          link_kind: string
+          model: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_actions?: string[]
+          budget_day_cents?: number
+          budget_task_cents?: number
+          budget_total_cents?: number
+          display_name: string
+          id: string
+          link_kind: string
+          model?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_actions?: string[]
+          budget_day_cents?: number
+          budget_task_cents?: number
+          budget_total_cents?: number
+          display_name?: string
+          id?: string
+          link_kind?: string
+          model?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       omni_api_keys: {
         Row: {
           created_at: string
@@ -761,6 +932,44 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      omni_autonomy_windows: {
+        Row: {
+          agent_id: string
+          end_reason: string | null
+          ended_at: string | null
+          expires_at: string
+          id: string
+          owner_id: string
+          started_at: string
+        }
+        Insert: {
+          agent_id: string
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at: string
+          id?: string
+          owner_id: string
+          started_at?: string
+        }
+        Update: {
+          agent_id?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          owner_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_autonomy_windows_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "omni_agents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       omni_dock_devices: {
         Row: {
@@ -931,6 +1140,84 @@ export type Database = {
           },
         ]
       }
+      omni_passkey_checks: {
+        Row: {
+          challenge: string
+          confirmed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          kind: string
+          owner_id: string
+          purpose: string
+          rp_id: string
+          used_at: string | null
+        }
+        Insert: {
+          challenge: string
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          kind: string
+          owner_id: string
+          purpose: string
+          rp_id: string
+          used_at?: string | null
+        }
+        Update: {
+          challenge?: string
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          kind?: string
+          owner_id?: string
+          purpose?: string
+          rp_id?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
+      omni_passkeys: {
+        Row: {
+          counter: number
+          created_at: string
+          credential_id: string
+          id: string
+          last_used_at: string | null
+          name: string
+          owner_id: string
+          public_key: string
+          rp_id: string
+          transports: string[]
+        }
+        Insert: {
+          counter?: number
+          created_at?: string
+          credential_id: string
+          id?: string
+          last_used_at?: string | null
+          name: string
+          owner_id: string
+          public_key: string
+          rp_id: string
+          transports?: string[]
+        }
+        Update: {
+          counter?: number
+          created_at?: string
+          credential_id?: string
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          owner_id?: string
+          public_key?: string
+          rp_id?: string
+          transports?: string[]
+        }
+        Relationships: []
+      }
       omni_social_drafts: {
         Row: {
           content: Json
@@ -972,6 +1259,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "beta_projects"
             referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
+      omni_spend_ledger: {
+        Row: {
+          agent_id: string
+          cents: number
+          created_at: string
+          id: number
+          job_id: string | null
+          note: string | null
+          session_id: string | null
+        }
+        Insert: {
+          agent_id: string
+          cents: number
+          created_at?: string
+          id?: never
+          job_id?: string | null
+          note?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          agent_id?: string
+          cents?: number
+          created_at?: string
+          id?: never
+          job_id?: string | null
+          note?: string | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_spend_ledger_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "omni_agents"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1081,6 +1406,173 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      omni_workspace_approvals: {
+        Row: {
+          action_kind: string
+          agent_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          description: string
+          id: string
+          job_id: string
+          remote_id: string
+          session_id: string
+          status: string
+        }
+        Insert: {
+          action_kind: string
+          agent_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description: string
+          id?: string
+          job_id: string
+          remote_id: string
+          session_id: string
+          status?: string
+        }
+        Update: {
+          action_kind?: string
+          agent_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description?: string
+          id?: string
+          job_id?: string
+          remote_id?: string
+          session_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_workspace_approvals_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "omni_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "omni_workspace_approvals_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "omni_agent_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      omni_workspace_audit: {
+        Row: {
+          actor: string
+          agent_id: string | null
+          at: string
+          detail: Json
+          event: string
+          id: number
+          job_id: string | null
+          output_head: string | null
+          output_sha256: string | null
+          session_id: string | null
+        }
+        Insert: {
+          actor: string
+          agent_id?: string | null
+          at?: string
+          detail?: Json
+          event: string
+          id?: never
+          job_id?: string | null
+          output_head?: string | null
+          output_sha256?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          actor?: string
+          agent_id?: string | null
+          at?: string
+          detail?: Json
+          event?: string
+          id?: never
+          job_id?: string | null
+          output_head?: string | null
+          output_sha256?: string | null
+          session_id?: string | null
+        }
+        Relationships: []
+      }
+      omni_workspace_sessions: {
+        Row: {
+          agent_id: string
+          end_reason: string | null
+          ended_at: string | null
+          id: string
+          last_activity_at: string
+          model: string | null
+          owner_id: string
+          sandbox_id: string | null
+          sandbox_name: string | null
+          started_at: string
+        }
+        Insert: {
+          agent_id: string
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          last_activity_at?: string
+          model?: string | null
+          owner_id: string
+          sandbox_id?: string | null
+          sandbox_name?: string | null
+          started_at?: string
+        }
+        Update: {
+          agent_id?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          last_activity_at?: string
+          model?: string | null
+          owner_id?: string
+          sandbox_id?: string | null
+          sandbox_name?: string | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_workspace_sessions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "omni_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      omni_workspace_settings: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: number
+          reason: string | null
+          terminal_enabled: boolean
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id: number
+          reason?: string | null
+          terminal_enabled?: boolean
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: number
+          reason?: string | null
+          terminal_enabled?: boolean
+        }
+        Relationships: []
       }
       owner_config: {
         Row: {

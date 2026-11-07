@@ -253,6 +253,13 @@
       "when": 1794069859221,
       "tag": "0035_omni_docking_bay",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794078401135,
+      "tag": "0036_omni_agent_workspace",
+      "breakpoints": true
     }
   ]
 }
