@@ -39,3 +39,6 @@ Set only at approved activation: `JACKBOY_LINK_MOTHERSHIP_OWNER_ID`, `OMNI_LINK_
 
 ## Owner MFA (OMNI)
 Sign in with the confirmed account → claim owner → enroll authenticator (TOTP) → sign in again to reach aal2.
+
+## Emergency Stop (added 2026-11-07)
+OMNI Terminal holds a server-side Emergency Stop that is engaged by default. While engaged (or if it cannot be read), the handshake/self-test, receipt grants and callbacks are refused. Before the step-8 self-test the owner releases it in OMNI Terminal with fresh two-factor and a reason; releasing turns nothing on. Engage it again afterwards.
