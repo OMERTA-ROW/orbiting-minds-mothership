@@ -239,6 +239,13 @@
       "when": 1794068841262,
       "tag": "0033_omni_terminal",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794069194665,
+      "tag": "0034_omni_terminal_revoke_anon",
+      "breakpoints": true
     }
   ]
 }
