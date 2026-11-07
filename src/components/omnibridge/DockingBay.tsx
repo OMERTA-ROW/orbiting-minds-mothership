@@ -55,7 +55,9 @@ export function DockingBay() {
   const [bay, setBay] = useState<Bay | null>(null);
   const [access, setAccess] = useState<"checking" | "ok" | "denied">("checking");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<{ area: string; text: string; lines?: string[] } | null>(null);
+  const [notice, setNotice] = useState<{ area: string; text: string; lines?: string[] } | null>(
+    null,
+  );
   const [code, setCode] = useState("");
   const [kind, setKind] = useState<BranchKind>("honeycomb_mobile");
   const [requested, setRequested] = useState<DockPermission[]>(DEFAULT_MOBILE_PERMISSIONS);
@@ -74,9 +76,15 @@ export function DockingBay() {
     );
   }, [refresh]);
 
-  const mfaFresh = bay?.mfaAgeSeconds !== null && (bay?.mfaAgeSeconds ?? Infinity) <= FRESH_MFA_SECONDS;
+  const mfaFresh =
+    bay?.mfaAgeSeconds !== null && (bay?.mfaAgeSeconds ?? Infinity) <= FRESH_MFA_SECONDS;
 
-  async function act(area: string, pending: string, fn: () => Promise<{ ok: boolean; message?: string }>, done: string) {
+  async function act(
+    area: string,
+    pending: string,
+    fn: () => Promise<{ ok: boolean; message?: string }>,
+    done: string,
+  ) {
     if (busy) return;
     setBusy(true);
     setNotice({ area, text: pending });
@@ -98,9 +106,17 @@ export function DockingBay() {
     try {
       const factors = await supabase.auth.mfa.listFactors();
       const factor = factors.data?.totp.find((f) => f.status === "verified");
-      if (!factor) return setNotice({ area: "mfa", text: "No verified authenticator. Set one up on Two-factor." });
+      if (!factor)
+        return setNotice({
+          area: "mfa",
+          text: "No verified authenticator. Set one up on Two-factor.",
+        });
       const r = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
-      if (r.error) return setNotice({ area: "mfa", text: "That code was not accepted. Try the current code." });
+      if (r.error)
+        return setNotice({
+          area: "mfa",
+          text: "That code was not accepted. Try the current code.",
+        });
       setCode("");
       await refresh();
       setNotice({ area: "mfa", text: "Two-factor re-verified for 15 minutes." });
@@ -190,9 +206,9 @@ export function DockingBay() {
             <Anchor size={22} aria-hidden /> OMNI Docking Bay
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Where OMNI branches attach: Honeycomb Terminal on phone or tablet, OMNI desktop and the command-line
-            companion. Docking lets a device show status, propose tasks for you to hold and engage the Emergency
-            Stop. It never runs commands on the device or here.
+            Where OMNI branches attach: Honeycomb Terminal on phone or tablet, OMNI desktop and the
+            command-line companion. Docking lets a device show status, propose tasks for you to hold
+            and engage the Emergency Stop. It never runs commands on the device or here.
           </p>
         </div>
         <Button
@@ -213,9 +229,12 @@ export function DockingBay() {
           <h2 className="flex items-center gap-2 text-sm font-medium">
             <OctagonX size={16} aria-hidden /> Emergency Stop
           </h2>
-          <p className="text-lg font-semibold">{bay.emergencyStopEngaged ? "Engaged" : "Released"}</p>
+          <p className="text-lg font-semibold">
+            {bay.emergencyStopEngaged ? "Engaged" : "Released"}
+          </p>
           <p className="text-xs text-muted-foreground">
-            Shared with OMNI Terminal. Docked devices with permission can engage it, never release it.{" "}
+            Shared with OMNI Terminal. Docked devices with permission can engage it, never release
+            it.{" "}
             <Link to="/omni-terminal" className="underline">
               Change in Terminal
             </Link>
@@ -227,7 +246,9 @@ export function DockingBay() {
               <Power size={16} aria-hidden /> {s.label}
             </h2>
             <p className="text-lg font-semibold">Off</p>
-            <p className="text-xs text-muted-foreground">Separate switch · {s.where}. Cannot be turned on yet.</p>
+            <p className="text-xs text-muted-foreground">
+              Separate switch · {s.where}. Cannot be turned on yet.
+            </p>
           </div>
         ))}
       </section>
@@ -242,7 +263,8 @@ export function DockingBay() {
         >
           <p className="w-full text-sm">
             <ShieldCheck size={14} className="mr-1 inline" aria-hidden />
-            Creating codes, approving devices and changing permissions need two-factor from the last 15 minutes.
+            Creating codes, approving devices and changing permissions need two-factor from the last
+            15 minutes.
           </p>
           <Input
             className="max-w-40"
@@ -298,7 +320,9 @@ export function DockingBay() {
           </label>
         </div>
         <fieldset className="space-y-2">
-          <legend className="text-sm">Permissions it may ask for (you confirm them again when approving)</legend>
+          <legend className="text-sm">
+            Permissions it may ask for (you confirm them again when approving)
+          </legend>
           {DOCK_PERMISSIONS.map((p) => (
             <label key={p} className="flex items-start gap-2 text-sm">
               <input
@@ -312,7 +336,9 @@ export function DockingBay() {
               />
               <span>
                 {PERMISSION_INFO[p].label}
-                <span className="block text-xs text-muted-foreground">{PERMISSION_INFO[p].detail}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {PERMISSION_INFO[p].detail}
+                </span>
               </span>
             </label>
           ))}
@@ -320,7 +346,9 @@ export function DockingBay() {
         <Button onClick={() => void issue()} disabled={busy || !mfaFresh}>
           Create pairing code
         </Button>
-        {!mfaFresh && <p className="text-xs text-muted-foreground">Re-verify two-factor above first.</p>}
+        {!mfaFresh && (
+          <p className="text-xs text-muted-foreground">Re-verify two-factor above first.</p>
+        )}
         {msg("pair")}
         {issued && (
           <div className="space-y-2 rounded-md border border-primary/40 p-4">
@@ -329,10 +357,10 @@ export function DockingBay() {
               {issued.code}
             </p>
             <p className="text-xs text-muted-foreground">
-              Expires {when(issued.expiresAt)}. On the device, enter this code and the Mothership address{" "}
-              <span className="font-mono">{origin}</span>. The device then shows a six-digit safety code — check it
-              matches the one listed below before you approve. Honeycomb's own dock screen still has to be built in
-              the Honeycomb project.
+              Expires {when(issued.expiresAt)}. On the device, enter this code and the Mothership
+              address <span className="font-mono">{origin}</span>. The device then shows a six-digit
+              safety code — check it matches the one listed below before you approve. Honeycomb's
+              own dock screen still has to be built in the Honeycomb project.
             </p>
             <Button size="sm" variant="ghost" onClick={() => setIssued(null)}>
               Hide code
@@ -345,14 +373,20 @@ export function DockingBay() {
             {openInvites.map((i) => (
               <div key={i.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span>
-                  {BRANCH_LABEL[i.branchKind as BranchKind] ?? i.branchKind} · expires {when(i.expiresAt)}
+                  {BRANCH_LABEL[i.branchKind as BranchKind] ?? i.branchKind} · expires{" "}
+                  {when(i.expiresAt)}
                 </span>
                 <Button
                   size="sm"
                   variant="outline"
                   disabled={busy}
                   onClick={() =>
-                    void act("pair", "Cancelling…", () => cancel({ data: { id: i.id } }), "Code cancelled.")
+                    void act(
+                      "pair",
+                      "Cancelling…",
+                      () => cancel({ data: { id: i.id } }),
+                      "Code cancelled.",
+                    )
                   }
                 >
                   Cancel code
@@ -373,7 +407,8 @@ export function DockingBay() {
           </p>
         )}
         {live.map((d) => {
-          const draft = edits[d.id] ?? (d.status === "awaiting_approval" ? d.requested : d.permissions);
+          const draft =
+            edits[d.id] ?? (d.status === "awaiting_approval" ? d.requested : d.permissions);
           const choices = d.status === "awaiting_approval" ? d.requested : DOCK_PERMISSIONS;
           const changed = draft.slice().sort().join() !== d.permissions.slice().sort().join();
           return (
@@ -439,7 +474,8 @@ export function DockingBay() {
                       void act(
                         d.id,
                         "Approving…",
-                        () => approve({ data: { id: d.id, permissions: draft as DockPermission[] } }),
+                        () =>
+                          approve({ data: { id: d.id, permissions: draft as DockPermission[] } }),
                         "Approved. The device is paired with only the permissions you ticked.",
                       )
                     }
@@ -457,7 +493,11 @@ export function DockingBay() {
                         "Saving…",
                         () =>
                           setPerms({
-                            data: { id: d.id, permissions: draft as DockPermission[], revision: d.revision },
+                            data: {
+                              id: d.id,
+                              permissions: draft as DockPermission[],
+                              revision: d.revision,
+                            },
                           }),
                         "Permissions saved.",
                       )
@@ -472,18 +512,27 @@ export function DockingBay() {
                   <span className="text-sm">
                     Mobile autonomy for this device: <strong>Off</strong>
                   </span>
-                  <div className="flex gap-1" role="group" aria-label={`Mobile autonomy for ${d.label}`}>
+                  <div
+                    className="flex gap-1"
+                    role="group"
+                    aria-label={`Mobile autonomy for ${d.label}`}
+                  >
                     <Button size="sm" variant="secondary" aria-pressed="true" disabled>
                       Off
                     </Button>
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => void tryAutonomy(d)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => void tryAutonomy(d)}
+                    >
                       On
                     </Button>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  When enabled in future, this would let the device send scoped jobs to OMNI without you confirming
-                  each one. It never allows commands to run on the device itself.
+                  When enabled in future, this would let the device send scoped jobs to OMNI without
+                  you confirming each one. It never allows commands to run on the device itself.
                 </p>
               </div>
               <form
@@ -492,7 +541,10 @@ export function DockingBay() {
                   e.preventDefault();
                   const reason = reasons[d.id] ?? "";
                   if (noteProblem(reason))
-                    return setNotice({ area: d.id, text: "Remove anything that looks like a key or token." });
+                    return setNotice({
+                      area: d.id,
+                      text: "Remove anything that looks like a key or token.",
+                    });
                   void act(
                     d.id,
                     "Revoking…",
@@ -557,10 +609,13 @@ export function DockingBay() {
       <details className="rounded-lg border bg-card p-4 text-sm">
         <summary>How docking works ({DOCK_PROTOCOL})</summary>
         <ol className="mt-3 list-decimal space-y-1 pl-5 text-muted-foreground">
-          <li>You create a one-time code here (two-factor, 2–15 minutes). Only its fingerprint is stored.</li>
           <li>
-            The device makes its own key, which never leaves it, and sends the code signed with that key to{" "}
-            <span className="font-mono">{DOCK_PATHS.pair}</span>.
+            You create a one-time code here (two-factor, 2–15 minutes). Only its fingerprint is
+            stored.
+          </li>
+          <li>
+            The device makes its own key, which never leaves it, and sends the code signed with that
+            key to <span className="font-mono">{DOCK_PATHS.pair}</span>.
           </li>
           <li>Both screens show a six-digit safety code. You approve here only if they match.</li>
           <li>
@@ -570,8 +625,8 @@ export function DockingBay() {
             <span className="font-mono">{DOCK_PATHS.stop}</span>.
           </li>
           <li>
-            Connected means a signed contact in the last two minutes. Revoking refuses the key immediately and
-            cancels its held tasks.
+            Connected means a signed contact in the last two minutes. Revoking refuses the key
+            immediately and cancels its held tasks.
           </li>
         </ol>
       </details>

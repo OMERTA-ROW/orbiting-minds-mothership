@@ -50,7 +50,12 @@ export interface DockStore {
     capabilities?: string[];
     appVersion?: string;
   }): Promise<Reply>;
-  log(device: string | null, event: string, outcome: "ok" | "refused" | "denied" | "error", detail: string): Promise<void>;
+  log(
+    device: string | null,
+    event: string,
+    outcome: "ok" | "refused" | "denied" | "error",
+    detail: string,
+  ): Promise<void>;
   /** Must return true when the state cannot be read (fail closed). */
   stopEngaged(): Promise<boolean>;
   engageStop(device: string): Promise<boolean>;
@@ -61,7 +66,13 @@ export type DockResult = { status: number; body: Record<string, unknown> };
 
 const fail = (status: number, reason: string, extra: Record<string, unknown> = {}): DockResult => ({
   status,
-  body: { ok: false, protocol: DOCK_PROTOCOL, reason, message: REASON_MESSAGE[reason] ?? reason, ...extra },
+  body: {
+    ok: false,
+    protocol: DOCK_PROTOCOL,
+    reason,
+    message: REASON_MESSAGE[reason] ?? reason,
+    ...extra,
+  },
 });
 
 export function dockResponse(request: Request, result: DockResult): Response {
@@ -89,13 +100,22 @@ function signedHeaders(request: Request, now: number) {
   const timestamp = h(DOCK_HEADERS.timestamp);
   const nonce = h(DOCK_HEADERS.nonce);
   const signature = base64UrlDecode(h(DOCK_HEADERS.signature));
-  if (!device || !/^\d{13}$/.test(timestamp) || !nonceSchema.safeParse(nonce).success || signature?.length !== 64)
+  if (
+    !device ||
+    !/^\d{13}$/.test(timestamp) ||
+    !nonceSchema.safeParse(nonce).success ||
+    signature?.length !== 64
+  )
     return fail(401, "bad_signature_headers");
   if (Math.abs(now - Number(timestamp)) > DOCK_MAX_SKEW_MS) return fail(401, "stale_request");
   return { device, timestamp, nonce, signature };
 }
 
-export async function verifyDockSignature(jwk: DockPublicJwk, message: string, signature: Uint8Array) {
+export async function verifyDockSignature(
+  jwk: DockPublicJwk,
+  message: string,
+  signature: Uint8Array,
+) {
   try {
     const key = await crypto.subtle.importKey(
       "jwk",
@@ -123,7 +143,11 @@ function parseJson(text: string): unknown {
   }
 }
 
-export async function handlePair(request: Request, store: DockStore, now: number): Promise<DockResult> {
+export async function handlePair(
+  request: Request,
+  store: DockStore,
+  now: number,
+): Promise<DockResult> {
   const text = await readBody(request);
   if (typeof text !== "string") return text;
   const parsed = pairBodySchema.safeParse(parseJson(text));
@@ -163,13 +187,18 @@ export async function handlePair(request: Request, store: DockStore, now: number
       branchKind: r["branch_kind"],
       status: "awaiting_approval",
       safetyCode: safetyCode(fingerprint),
-      message: "Compare this safety code with the Docking Bay. The owner must approve before anything else works.",
+      message:
+        "Compare this safety code with the Docking Bay. The owner must approve before anything else works.",
     },
   };
 }
 
 type SignedKind = "heartbeat" | "jobs" | "stop";
-const EVENT: Record<SignedKind, string> = { heartbeat: "heartbeat", jobs: "job_request", stop: "stop_request" };
+const EVENT: Record<SignedKind, string> = {
+  heartbeat: "heartbeat",
+  jobs: "job_request",
+  stop: "stop_request",
+};
 const SCHEMA = { heartbeat: heartbeatBodySchema, jobs: jobBodySchema, stop: stopBodySchema };
 
 export async function handleSigned(
@@ -200,7 +229,8 @@ export async function handleSigned(
   }
   const body = SCHEMA[kind].safeParse(parseJson(text));
   if (!body.success) return fail(400, "invalid_body");
-  const hb = kind === "heartbeat" ? (body.data as { appVersion?: string; capabilities?: string[] }) : {};
+  const hb =
+    kind === "heartbeat" ? (body.data as { appVersion?: string; capabilities?: string[] }) : {};
   const touched = await store.touch({
     device: headers.device,
     nonce: headers.nonce,
@@ -212,7 +242,9 @@ export async function handleSigned(
     const reason = String(touched.reason ?? "unknown_device");
     return fail(reason === "replay" ? 409 : 403, reason);
   }
-  const permissions = Array.isArray(touched["permissions"]) ? (touched["permissions"] as string[]) : [];
+  const permissions = Array.isArray(touched["permissions"])
+    ? (touched["permissions"] as string[])
+    : [];
   const paired = touched["status"] === "paired";
   const engaged = await store.stopEngaged();
   const state = {
@@ -239,22 +271,34 @@ export async function handleSigned(
       return fail(403, "not_permitted");
     }
     if (!(await store.engageStop(headers.device))) return fail(403, "not_permitted");
-    return { status: 200, body: { ...state, emergencyStop: "engaged", message: "Emergency Stop engaged." } };
+    return {
+      status: 200,
+      body: { ...state, emergencyStop: "engaged", message: "Emergency Stop engaged." },
+    };
   }
 
   const job = body.data as import("zod").infer<typeof jobBodySchema>;
   if (job.autonomous) {
     const blockers = mobileAutonomyBlockers({
-      deviceStatus: paired ? deviceStatus({ status: "paired", last_seen_at: state.serverTime }, now) : "awaiting_approval",
+      deviceStatus: paired
+        ? deviceStatus({ status: "paired", last_seen_at: state.serverTime }, now)
+        : "awaiting_approval",
       permissions,
       emergencyStopEngaged: engaged,
     });
     await store.log(headers.device, "autonomy_refused", "refused", "Autonomous dispatch is off");
-    return fail(409, "autonomy_off", { blockers, message: "Autonomous dispatch is off. Nothing was queued or run." });
+    return fail(409, "autonomy_off", {
+      blockers,
+      message: "Autonomous dispatch is off. Nothing was queued or run.",
+    });
   }
   if (!paired) return fail(403, "not_permitted");
   const held = await store.holdTask(headers.device, job);
-  if (!held.ok) return fail(held.reason === "daily_limit" ? 429 : held.reason === "id_conflict" ? 409 : 403, String(held.reason));
+  if (!held.ok)
+    return fail(
+      held.reason === "daily_limit" ? 429 : held.reason === "id_conflict" ? 409 : 403,
+      String(held.reason),
+    );
   return {
     status: 202,
     body: {

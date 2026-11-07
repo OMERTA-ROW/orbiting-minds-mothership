@@ -26,7 +26,11 @@ export async function adminDockStore(): Promise<DockStore> {
       return asReply(data, error);
     },
     async loadDevice(id) {
-      const { data, error } = await db.from("omni_dock_devices").select("public_key").eq("id", id).maybeSingle();
+      const { data, error } = await db
+        .from("omni_dock_devices")
+        .select("public_key")
+        .eq("id", id)
+        .maybeSingle();
       return error ? null : data;
     },
     async touch(a) {

@@ -14,7 +14,10 @@ import {
   type DockPublicJwk,
 } from "./omni-dock";
 
-export async function generateDockKey(): Promise<{ privateKey: CryptoKey; publicJwk: DockPublicJwk }> {
+export async function generateDockKey(): Promise<{
+  privateKey: CryptoKey;
+  publicJwk: DockPublicJwk;
+}> {
   const pair = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, false, [
     "sign",
     "verify",

@@ -16,7 +16,10 @@ export const Route = createFileRoute("/api/public/omni/dock/jobs")({
       POST: async ({ request }) => {
         const { dockResponse, handleSigned } = await import("@/lib/omni-dock.server");
         const { adminDockStore } = await import("@/lib/omni-dock-store.server");
-        return dockResponse(request, await handleSigned(request, "jobs", await adminDockStore(), Date.now()));
+        return dockResponse(
+          request,
+          await handleSigned(request, "jobs", await adminDockStore(), Date.now()),
+        );
       },
     },
   },

@@ -79,7 +79,9 @@ export const readDockingBay = createServerFn({ method: "GET" })
         .limit(50),
       db
         .from("omni_dock_invites")
-        .select("id,branch_kind,requested_permissions,created_at,expires_at,consumed_at,cancelled_at")
+        .select(
+          "id,branch_kind,requested_permissions,created_at,expires_at,consumed_at,cancelled_at",
+        )
         .order("created_at", { ascending: false })
         .limit(20),
       db
@@ -87,7 +89,11 @@ export const readDockingBay = createServerFn({ method: "GET" })
         .select("id,device_id,invite_id,event,outcome,detail,created_at")
         .order("created_at", { ascending: false })
         .limit(100),
-      db.from("omni_terminal_tasks").select("source_device").eq("state", "held").not("source_device", "is", null),
+      db
+        .from("omni_terminal_tasks")
+        .select("source_device")
+        .eq("state", "held")
+        .not("source_device", "is", null),
       db.from("omni_terminal_controls").select("emergency_stop").eq("id", 1).maybeSingle(),
     ]);
     if (devices.error || invites.error || events.error || tasks.error)
@@ -95,7 +101,8 @@ export const readDockingBay = createServerFn({ method: "GET" })
     const now = Date.now();
     const engaged = Boolean(controls.error) || controls.data?.emergency_stop !== false;
     const held = new Map<string, number>();
-    for (const t of tasks.data) if (t.source_device) held.set(t.source_device, (held.get(t.source_device) ?? 0) + 1);
+    for (const t of tasks.data)
+      if (t.source_device) held.set(t.source_device, (held.get(t.source_device) ?? 0) + 1);
     const view: DockDeviceView[] = devices.data.map((d) => {
       const status = deviceStatus(d, now);
       return {
@@ -198,7 +205,10 @@ export const approveDockDevice = createServerFn({ method: "POST" })
     if (message) return { ok: false as const, message };
     const row = Array.isArray(rows) ? rows[0] : undefined;
     if (row?.status !== "paired")
-      return { ok: false as const, message: "The 30-minute approval window passed. Pair the device again." };
+      return {
+        ok: false as const,
+        message: "The 30-minute approval window passed. Pair the device again.",
+      };
     return { ok: true as const };
   });
 
@@ -250,6 +260,7 @@ export const setDockAutonomy = createServerFn({ method: "POST" })
     });
     return {
       ok: false as const,
-      message: "Refused. Mobile autonomy stays off: no executor or dispatcher exists for docked devices yet.",
+      message:
+        "Refused. Mobile autonomy stays off: no executor or dispatcher exists for docked devices yet.",
     };
   });

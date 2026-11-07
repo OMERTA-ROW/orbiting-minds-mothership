@@ -37,7 +37,16 @@ export const BRANCH_LABEL: Record<BranchKind, string> = {
   omni_cli: "OMNI command-line companion",
 };
 
-export const PLATFORMS = ["ios", "ipados", "android", "web", "macos", "windows", "linux", "unknown"] as const;
+export const PLATFORMS = [
+  "ios",
+  "ipados",
+  "android",
+  "web",
+  "macos",
+  "windows",
+  "linux",
+  "unknown",
+] as const;
 
 export const DOCK_PERMISSIONS = [
   "status.read",
@@ -66,7 +75,11 @@ export const PERMISSION_INFO: Record<DockPermission, { label: string; detail: st
     detail: "Reserved for Honeycomb's own transfer feature; no effect here.",
   },
 };
-export const DEFAULT_MOBILE_PERMISSIONS: DockPermission[] = ["status.read", "jobs.propose", "stop.engage"];
+export const DEFAULT_MOBILE_PERMISSIONS: DockPermission[] = [
+  "status.read",
+  "jobs.propose",
+  "stop.engage",
+];
 
 /* ---------------- Pairing code ---------------- */
 
@@ -80,11 +93,7 @@ export function formatPairingCode(random: Uint8Array): string {
 }
 
 export function normalizePairingCode(input: string): string | null {
-  const clean = input
-    .toUpperCase()
-    .replace(/[\s-]/g, "")
-    .replace(/[IL]/g, "1")
-    .replace(/O/g, "0");
+  const clean = input.toUpperCase().replace(/[\s-]/g, "").replace(/[IL]/g, "1").replace(/O/g, "0");
   return /^[0-9A-HJKMNP-TV-Z]{10}$/.test(clean) ? clean : null;
 }
 
@@ -142,9 +151,15 @@ export function signingString(p: {
   nonce: string;
   bodySha256: string;
 }): string {
-  return [DOCK_SIGNING_PREFIX, p.method.toUpperCase(), p.path, p.device, p.timestamp, p.nonce, p.bodySha256].join(
-    "\n",
-  );
+  return [
+    DOCK_SIGNING_PREFIX,
+    p.method.toUpperCase(),
+    p.path,
+    p.device,
+    p.timestamp,
+    p.nonce,
+    p.bodySha256,
+  ].join("\n");
 }
 
 export function base64UrlEncode(bytes: Uint8Array): string {
@@ -183,7 +198,13 @@ export const pairBodySchema = z.object({
 
 export const heartbeatBodySchema = z.object({ appVersion, capabilities }).strict();
 
-const TASK_KINDS = ["code.generate", "code.edit", "code.test", "code.debug", "agent.handoff"] as const;
+const TASK_KINDS = [
+  "code.generate",
+  "code.edit",
+  "code.test",
+  "code.debug",
+  "agent.handoff",
+] as const;
 const TASK_AGENTS = ["jackboy", "jax", "razul", "sabrina", "guardian", "hercules"] as const;
 export const jobBodySchema = z
   .object({
@@ -209,7 +230,8 @@ export const stopBodySchema = z.object({}).strict();
 
 /* ---------------- Status and switches ---------------- */
 
-export type DockDeviceStatus = "awaiting_approval" | "connected" | "disconnected" | "never_connected" | "revoked";
+export type DockDeviceStatus =
+  "awaiting_approval" | "connected" | "disconnected" | "never_connected" | "revoked";
 
 export function deviceStatus(
   row: { status: string; last_seen_at: string | null },
@@ -219,7 +241,9 @@ export function deviceStatus(
   if (row.status !== "paired") return "awaiting_approval";
   if (!row.last_seen_at) return "never_connected";
   const seen = Date.parse(row.last_seen_at);
-  return Number.isFinite(seen) && now - seen <= DOCK_CONNECTED_WINDOW_MS ? "connected" : "disconnected";
+  return Number.isFinite(seen) && now - seen <= DOCK_CONNECTED_WINDOW_MS
+    ? "connected"
+    : "disconnected";
 }
 
 export const STATUS_LABEL: Record<DockDeviceStatus, string> = {
@@ -259,7 +283,9 @@ export function corsHeaders(origin: string | null): Record<string, string> {
   if (origin && (DOCK_BROWSER_ORIGINS as readonly string[]).includes(origin)) {
     base["Access-Control-Allow-Origin"] = origin;
     base["Access-Control-Allow-Methods"] = "POST, OPTIONS";
-    base["Access-Control-Allow-Headers"] = ["content-type", ...Object.values(DOCK_HEADERS)].join(", ");
+    base["Access-Control-Allow-Headers"] = ["content-type", ...Object.values(DOCK_HEADERS)].join(
+      ", ",
+    );
     base["Access-Control-Max-Age"] = "600";
   }
   return base;
