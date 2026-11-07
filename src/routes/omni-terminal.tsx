@@ -6,7 +6,7 @@ export const Route = createFileRoute("/omni-terminal")({
   head: () =>
     seo(
       "OMNI Terminal · Owner Only",
-      "Private owner-only OMNI terminal: status, history, held CODE and agent tasks, Emergency Stop and autonomous-mode controls. Nothing runs code or turns anything on.",
+      "Private owner-only OMNI agent workspace: chat and live terminal over the secure link, passkey checks, per-agent budgets, Stop, kill switch and audit. Locked until the link self-test passes.",
     ),
   component: OmniTerminal,
 });
