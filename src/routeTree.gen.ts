@@ -97,6 +97,10 @@ import { Route as ApiPublicJobsRazulObserveRouteImport } from './routes/api/publ
 import { Route as ApiPublicOmniHealthRouteImport } from './routes/api/public/omni/health'
 import { Route as ApiPublicOmniJobsRouteImport } from './routes/api/public/omni/jobs'
 import { Route as ApiPublicRazulSentinelReportRouteImport } from './routes/api/public/razul-sentinel/report'
+import { Route as ApiPublicOmniDockHeartbeatRouteImport } from './routes/api/public/omni/dock/heartbeat'
+import { Route as ApiPublicOmniDockJobsRouteImport } from './routes/api/public/omni/dock/jobs'
+import { Route as ApiPublicOmniDockPairRouteImport } from './routes/api/public/omni/dock/pair'
+import { Route as ApiPublicOmniDockStopRouteImport } from './routes/api/public/omni/dock/stop'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -544,6 +548,27 @@ const ApiPublicRazulSentinelReportRoute =
     path: '/api/public/razul-sentinel/report',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOmniDockHeartbeatRoute =
+  ApiPublicOmniDockHeartbeatRouteImport.update({
+    id: '/api/public/omni/dock/heartbeat',
+    path: '/api/public/omni/dock/heartbeat',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicOmniDockJobsRoute = ApiPublicOmniDockJobsRouteImport.update({
+  id: '/api/public/omni/dock/jobs',
+  path: '/api/public/omni/dock/jobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOmniDockPairRoute = ApiPublicOmniDockPairRouteImport.update({
+  id: '/api/public/omni/dock/pair',
+  path: '/api/public/omni/dock/pair',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOmniDockStopRoute = ApiPublicOmniDockStopRouteImport.update({
+  id: '/api/public/omni/dock/stop',
+  path: '/api/public/omni/dock/stop',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -633,6 +658,10 @@ export interface FileRoutesByFullPath {
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
+  '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
+  '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
+  '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
+  '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -722,6 +751,10 @@ export interface FileRoutesByTo {
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
+  '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
+  '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
+  '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
+  '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -813,6 +846,10 @@ export interface FileRoutesById {
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
+  '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
+  '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
+  '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
+  '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -904,6 +941,10 @@ export interface FileRouteTypes {
     | '/api/public/omni/health'
     | '/api/public/omni/jobs'
     | '/api/public/razul-sentinel/report'
+    | '/api/public/omni/dock/heartbeat'
+    | '/api/public/omni/dock/jobs'
+    | '/api/public/omni/dock/pair'
+    | '/api/public/omni/dock/stop'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -993,6 +1034,10 @@ export interface FileRouteTypes {
     | '/api/public/omni/health'
     | '/api/public/omni/jobs'
     | '/api/public/razul-sentinel/report'
+    | '/api/public/omni/dock/heartbeat'
+    | '/api/public/omni/dock/jobs'
+    | '/api/public/omni/dock/pair'
+    | '/api/public/omni/dock/stop'
   id:
     | '__root__'
     | '/'
@@ -1083,6 +1128,10 @@ export interface FileRouteTypes {
     | '/api/public/omni/health'
     | '/api/public/omni/jobs'
     | '/api/public/razul-sentinel/report'
+    | '/api/public/omni/dock/heartbeat'
+    | '/api/public/omni/dock/jobs'
+    | '/api/public/omni/dock/pair'
+    | '/api/public/omni/dock/stop'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1167,6 +1216,10 @@ export interface RootRouteChildren {
   ApiPublicOmniHealthRoute: typeof ApiPublicOmniHealthRoute
   ApiPublicOmniJobsRoute: typeof ApiPublicOmniJobsRoute
   ApiPublicRazulSentinelReportRoute: typeof ApiPublicRazulSentinelReportRoute
+  ApiPublicOmniDockHeartbeatRoute: typeof ApiPublicOmniDockHeartbeatRoute
+  ApiPublicOmniDockJobsRoute: typeof ApiPublicOmniDockJobsRoute
+  ApiPublicOmniDockPairRoute: typeof ApiPublicOmniDockPairRoute
+  ApiPublicOmniDockStopRoute: typeof ApiPublicOmniDockStopRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1787,6 +1840,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicRazulSentinelReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/omni/dock/heartbeat': {
+      id: '/api/public/omni/dock/heartbeat'
+      path: '/api/public/omni/dock/heartbeat'
+      fullPath: '/api/public/omni/dock/heartbeat'
+      preLoaderRoute: typeof ApiPublicOmniDockHeartbeatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/dock/jobs': {
+      id: '/api/public/omni/dock/jobs'
+      path: '/api/public/omni/dock/jobs'
+      fullPath: '/api/public/omni/dock/jobs'
+      preLoaderRoute: typeof ApiPublicOmniDockJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/dock/pair': {
+      id: '/api/public/omni/dock/pair'
+      path: '/api/public/omni/dock/pair'
+      fullPath: '/api/public/omni/dock/pair'
+      preLoaderRoute: typeof ApiPublicOmniDockPairRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/dock/stop': {
+      id: '/api/public/omni/dock/stop'
+      path: '/api/public/omni/dock/stop'
+      fullPath: '/api/public/omni/dock/stop'
+      preLoaderRoute: typeof ApiPublicOmniDockStopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1895,6 +1976,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOmniHealthRoute: ApiPublicOmniHealthRoute,
   ApiPublicOmniJobsRoute: ApiPublicOmniJobsRoute,
   ApiPublicRazulSentinelReportRoute: ApiPublicRazulSentinelReportRoute,
+  ApiPublicOmniDockHeartbeatRoute: ApiPublicOmniDockHeartbeatRoute,
+  ApiPublicOmniDockJobsRoute: ApiPublicOmniDockJobsRoute,
+  ApiPublicOmniDockPairRoute: ApiPublicOmniDockPairRoute,
+  ApiPublicOmniDockStopRoute: ApiPublicOmniDockStopRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

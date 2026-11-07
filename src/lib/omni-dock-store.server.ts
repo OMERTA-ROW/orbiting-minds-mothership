@@ -1,4 +1,5 @@
-/** Service-role dock storage. Only called after the request handler verified the device signature. */
+/** Service-role dock storage. Optional SQL arguments are sent as explicit nulls (PostgREST needs every key).
+ * Service-role dock storage. Only called after the request handler verified the device signature. */
 import type { DockStore, StoreReply } from "./omni-dock.server";
 
 function asReply(data: unknown, error: unknown): StoreReply {
@@ -30,14 +31,14 @@ export async function adminDockStore(): Promise<DockStore> {
         _device: a.device,
         _nonce: a.nonce,
         _event: a.event,
-        _capabilities: a.capabilities as string[],
-        _app_version: a.appVersion as string,
+        _capabilities: (a.capabilities ?? null) as unknown as string[],
+        _app_version: (a.appVersion ?? null) as unknown as string,
       });
       return asReply(data, error);
     },
     async log(device, event, outcome, detail) {
       await db.rpc("omni_dock_log", {
-        _device: device as string,
+        _device: device as unknown as string,
         _event: event,
         _outcome: outcome,
         _detail: detail,
@@ -62,7 +63,7 @@ export async function adminDockStore(): Promise<DockStore> {
         _kind: job.kind,
         _agent: job.agent,
         _project: job.project,
-        _repository: job.repository as string,
+        _repository: (job.repository ?? null) as unknown as string,
         _instructions: job.instructions,
       });
       return asReply(data, error);
