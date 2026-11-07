@@ -35,5 +35,15 @@ export const requestJackboyLink = createServerFn({ method: "POST" })
       return { state: "authenticated" as const };
     }
     if (!data.jobId) throw new Error("Job ID is required.");
-    return client.execute(data.action, data.jobId);
+    const job = await client.execute(data.action, data.jobId);
+    // Evidence for the OMNI workspace gate: only a verified, passed self-test result counts.
+    if (job.status === "completed" && job.result?.passed === true) {
+      await supabaseAdmin.from("razul_control_audit").insert({
+        actor_id: context.userId,
+        action: "self_test_passed",
+        record_type: "jackboy_link",
+        record_id: data.jobId,
+      });
+    }
+    return job;
   });
