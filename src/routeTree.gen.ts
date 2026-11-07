@@ -54,6 +54,7 @@ import { Route as OmniMarketingRouteImport } from './routes/omni-marketing'
 import { Route as OmniModelsRouteImport } from './routes/omni-models'
 import { Route as OmniRazulRouteImport } from './routes/omni-razul'
 import { Route as OmniRightsRouteImport } from './routes/omni-rights'
+import { Route as OmniTerminalRouteImport } from './routes/omni-terminal'
 import { Route as OmnibridgeRouteImport } from './routes/omnibridge'
 import { Route as OpenCallRouteImport } from './routes/open-call'
 import { Route as PartnershipsRouteImport } from './routes/partnerships'
@@ -321,6 +322,11 @@ const OmniRightsRoute = OmniRightsRouteImport.update({
   path: '/omni-rights',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OmniTerminalRoute = OmniTerminalRouteImport.update({
+  id: '/omni-terminal',
+  path: '/omni-terminal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OmnibridgeRoute = OmnibridgeRouteImport.update({
   id: '/omnibridge',
   path: '/omnibridge',
@@ -584,6 +590,7 @@ export interface FileRoutesByFullPath {
   '/omni-models': typeof OmniModelsRoute
   '/omni-razul': typeof OmniRazulRoute
   '/omni-rights': typeof OmniRightsRoute
+  '/omni-terminal': typeof OmniTerminalRoute
   '/omnibridge': typeof OmnibridgeRoute
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
@@ -672,6 +679,7 @@ export interface FileRoutesByTo {
   '/omni-models': typeof OmniModelsRoute
   '/omni-razul': typeof OmniRazulRoute
   '/omni-rights': typeof OmniRightsRoute
+  '/omni-terminal': typeof OmniTerminalRoute
   '/omnibridge': typeof OmnibridgeRoute
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
@@ -762,6 +770,7 @@ export interface FileRoutesById {
   '/omni-models': typeof OmniModelsRoute
   '/omni-razul': typeof OmniRazulRoute
   '/omni-rights': typeof OmniRightsRoute
+  '/omni-terminal': typeof OmniTerminalRoute
   '/omnibridge': typeof OmnibridgeRoute
   '/open-call': typeof OpenCallRoute
   '/partnerships': typeof PartnershipsRoute
@@ -852,6 +861,7 @@ export interface FileRouteTypes {
     | '/omni-models'
     | '/omni-razul'
     | '/omni-rights'
+    | '/omni-terminal'
     | '/omnibridge'
     | '/open-call'
     | '/partnerships'
@@ -940,6 +950,7 @@ export interface FileRouteTypes {
     | '/omni-models'
     | '/omni-razul'
     | '/omni-rights'
+    | '/omni-terminal'
     | '/omnibridge'
     | '/open-call'
     | '/partnerships'
@@ -1029,6 +1040,7 @@ export interface FileRouteTypes {
     | '/omni-models'
     | '/omni-razul'
     | '/omni-rights'
+    | '/omni-terminal'
     | '/omnibridge'
     | '/open-call'
     | '/partnerships'
@@ -1119,6 +1131,7 @@ export interface RootRouteChildren {
   OmniModelsRoute: typeof OmniModelsRoute
   OmniRazulRoute: typeof OmniRazulRoute
   OmniRightsRoute: typeof OmniRightsRoute
+  OmniTerminalRoute: typeof OmniTerminalRoute
   OmnibridgeRoute: typeof OmnibridgeRoute
   OpenCallRoute: typeof OpenCallRoute
   PartnershipsRoute: typeof PartnershipsRoute
@@ -1471,6 +1484,13 @@ declare module '@tanstack/react-router' {
       path: '/omni-rights'
       fullPath: '/omni-rights'
       preLoaderRoute: typeof OmniRightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/omni-terminal': {
+      id: '/omni-terminal'
+      path: '/omni-terminal'
+      fullPath: '/omni-terminal'
+      preLoaderRoute: typeof OmniTerminalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/omnibridge': {
@@ -1839,6 +1859,7 @@ const rootRouteChildren: RootRouteChildren = {
   OmniModelsRoute: OmniModelsRoute,
   OmniRazulRoute: OmniRazulRoute,
   OmniRightsRoute: OmniRightsRoute,
+  OmniTerminalRoute: OmniTerminalRoute,
   OmnibridgeRoute: OmnibridgeRoute,
   OpenCallRoute: OpenCallRoute,
   PartnershipsRoute: PartnershipsRoute,

@@ -95,13 +95,13 @@ export function OmniTerminal() {
     setLines((prev) => [...prev.slice(-300), { id: lineId.current++, kind, text }]);
   }
 
-  async function exec(raw: string) {
+  async function exec(raw: string): Promise<string[]> {
     const text = raw.trim();
-    if (!text || busy) return;
+    if (!text || busy) return [];
     if (text.toLowerCase() === "clear") {
       setLines([]);
       setCommand("");
-      return;
+      return [];
     }
     setBusy(true);
     setCommand("");
@@ -111,8 +111,11 @@ export function OmniTerminal() {
       const kind = result.outcome === "ok" ? "out" : result.outcome;
       result.lines.forEach((l) => push(kind, l));
       await refresh().catch(() => {});
+      return result.lines;
     } catch {
-      push("error", "The command could not be confirmed. Check owner access and retry.");
+      const text = "The command could not be confirmed. Check owner access and retry.";
+      push("error", text);
+      return [text];
     } finally {
       setBusy(false);
     }
@@ -346,10 +349,25 @@ export function OmniTerminal() {
             <Button size="sm" variant="secondary" aria-pressed="true" disabled={busy}>
               Off
             </Button>
-            <Button size="sm" variant="ghost" aria-pressed="false" disabled={busy} onClick={() => exec("autonomy on")}>
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-pressed="false"
+              disabled={busy}
+              onClick={() =>
+                void exec("autonomy on").then((out) =>
+                  setNotice({ area: "autonomy", text: out[0] ?? "Refused." }),
+                )
+              }
+            >
               On
             </Button>
           </div>
+          {notice?.area === "autonomy" && (
+            <p role="status" className="text-xs font-medium">
+              Refused — {notice.text}
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">
             Stays off. Turning it on is refused until: {cap("autonomy")?.authorizationNote}
           </p>
@@ -369,9 +387,21 @@ export function OmniTerminal() {
           <p className="text-xs text-muted-foreground">
             {READY_LABEL[link.readiness]}. {link.evidence}
           </p>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => exec("ping")}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() =>
+              void exec("ping").then((out) => setNotice({ area: "link", text: out[0] ?? "No result." }))
+            }
+          >
             Check Railway reachability
           </Button>
+          {notice?.area === "link" && (
+            <p role="status" className="text-xs">
+              {notice.text}
+            </p>
+          )}
         </div>
       </section>
 
