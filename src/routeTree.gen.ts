@@ -48,6 +48,7 @@ import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as OmniRouteImport } from './routes/omni'
 import { Route as OmniAgentsRouteImport } from './routes/omni-agents'
 import { Route as OmniApiKeysRouteImport } from './routes/omni-api-keys'
+import { Route as OmniDockRouteImport } from './routes/omni-dock'
 import { Route as OmniGatewayRouteImport } from './routes/omni-gateway'
 import { Route as OmniLegalRouteImport } from './routes/omni-legal'
 import { Route as OmniMarketingRouteImport } from './routes/omni-marketing'
@@ -294,6 +295,11 @@ const OmniAgentsRoute = OmniAgentsRouteImport.update({
 const OmniApiKeysRoute = OmniApiKeysRouteImport.update({
   id: '/omni-api-keys',
   path: '/omni-api-keys',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OmniDockRoute = OmniDockRouteImport.update({
+  id: '/omni-dock',
+  path: '/omni-dock',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OmniGatewayRoute = OmniGatewayRouteImport.update({
@@ -609,6 +615,7 @@ export interface FileRoutesByFullPath {
   '/omni': typeof OmniRoute
   '/omni-agents': typeof OmniAgentsRoute
   '/omni-api-keys': typeof OmniApiKeysRoute
+  '/omni-dock': typeof OmniDockRoute
   '/omni-gateway': typeof OmniGatewayRoute
   '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
@@ -702,6 +709,7 @@ export interface FileRoutesByTo {
   '/omni': typeof OmniRoute
   '/omni-agents': typeof OmniAgentsRoute
   '/omni-api-keys': typeof OmniApiKeysRoute
+  '/omni-dock': typeof OmniDockRoute
   '/omni-gateway': typeof OmniGatewayRoute
   '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
@@ -797,6 +805,7 @@ export interface FileRoutesById {
   '/omni': typeof OmniRoute
   '/omni-agents': typeof OmniAgentsRoute
   '/omni-api-keys': typeof OmniApiKeysRoute
+  '/omni-dock': typeof OmniDockRoute
   '/omni-gateway': typeof OmniGatewayRoute
   '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
@@ -892,6 +901,7 @@ export interface FileRouteTypes {
     | '/omni'
     | '/omni-agents'
     | '/omni-api-keys'
+    | '/omni-dock'
     | '/omni-gateway'
     | '/omni-legal'
     | '/omni-marketing'
@@ -985,6 +995,7 @@ export interface FileRouteTypes {
     | '/omni'
     | '/omni-agents'
     | '/omni-api-keys'
+    | '/omni-dock'
     | '/omni-gateway'
     | '/omni-legal'
     | '/omni-marketing'
@@ -1079,6 +1090,7 @@ export interface FileRouteTypes {
     | '/omni'
     | '/omni-agents'
     | '/omni-api-keys'
+    | '/omni-dock'
     | '/omni-gateway'
     | '/omni-legal'
     | '/omni-marketing'
@@ -1174,6 +1186,7 @@ export interface RootRouteChildren {
   OmniRoute: typeof OmniRoute
   OmniAgentsRoute: typeof OmniAgentsRoute
   OmniApiKeysRoute: typeof OmniApiKeysRoute
+  OmniDockRoute: typeof OmniDockRoute
   OmniGatewayRoute: typeof OmniGatewayRoute
   OmniLegalRoute: typeof OmniLegalRoute
   OmniMarketingRoute: typeof OmniMarketingRoute
@@ -1495,6 +1508,13 @@ declare module '@tanstack/react-router' {
       path: '/omni-api-keys'
       fullPath: '/omni-api-keys'
       preLoaderRoute: typeof OmniApiKeysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/omni-dock': {
+      id: '/omni-dock'
+      path: '/omni-dock'
+      fullPath: '/omni-dock'
+      preLoaderRoute: typeof OmniDockRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/omni-gateway': {
@@ -1934,6 +1954,7 @@ const rootRouteChildren: RootRouteChildren = {
   OmniRoute: OmniRoute,
   OmniAgentsRoute: OmniAgentsRoute,
   OmniApiKeysRoute: OmniApiKeysRoute,
+  OmniDockRoute: OmniDockRoute,
   OmniGatewayRoute: OmniGatewayRoute,
   OmniLegalRoute: OmniLegalRoute,
   OmniMarketingRoute: OmniMarketingRoute,
