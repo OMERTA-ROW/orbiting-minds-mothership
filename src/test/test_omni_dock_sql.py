@@ -58,7 +58,7 @@ def main():
     def service(text, ok=True):
         nonlocal checks
         checks += 1
-        return sql(f"SET ROLE service_role; {text}", ok)
+        return sql(f"SET ROLE service_role; {text}", ok).splitlines()[-1] if ok else sql(f"SET ROLE service_role; {text}", ok)
     def owner(text, ok=True, amr=FRESH):
         return caller(OWNER, 'aal2', amr, text, ok)
     def claim(code=H1, fp=FP1, label="Goochi iPhone"):
