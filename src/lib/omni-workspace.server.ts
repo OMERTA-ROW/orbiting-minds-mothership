@@ -182,7 +182,8 @@ export async function ingest(admin: Db, db: Db, agent: Agent, sessionId: string,
   const autonomous = autonomyActive(windowRow ? { expiresAt: Date.parse(windowRow.expires_at), endedAt: null } : null, Date.now());
   for (const s of reply.steps) {
     const gate = needsOwnerDecision({ kind: s.kind, gated: s.gated }, autonomous);
-    const status = s.status === "pending_approval" || gate && s.status !== "failed" ? (gate ? "pending_approval" : "done") : s.status;
+    const status =
+      s.status === "failed" ? "failed" : gate || s.status === "pending_approval" ? "pending_approval" : "done";
     const { data: row, error } = await admin
       .from("omni_agent_steps")
       .upsert(
