@@ -25,11 +25,11 @@ export async function audit(
   e: {
     actor: string;
     event: string;
-    agentId?: string | null;
-    sessionId?: string | null;
-    jobId?: string | null;
-    detail?: Record<string, unknown>;
-    output?: string;
+    agentId?: string | null | undefined;
+    sessionId?: string | null | undefined;
+    jobId?: string | null | undefined;
+    detail?: Record<string, unknown> | undefined;
+    output?: string | undefined;
   },
 ) {
   const { error } = await admin.from("omni_workspace_audit").insert({
