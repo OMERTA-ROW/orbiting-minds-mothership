@@ -55,6 +55,9 @@ export function OmniAreaHeader() {
         <Button asChild variant={path === "/omni-razul" ? "secondary" : "ghost"} size="sm">
           <Link to="/omni-razul">Observatory & history</Link>
         </Button>
+        <Button asChild variant={path === "/omni-terminal" ? "secondary" : "ghost"} size="sm">
+          <Link to="/omni-terminal">Terminal · owner</Link>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">

@@ -31,6 +31,8 @@ export const approveJackboyReceipt = createServerFn({ method: "POST" })
     setResponseHeader("Cache-Control", "private, no-store");
     const { requireRazulOwner } = await import("./razul-owner.server");
     await requireRazulOwner(context.supabase, context.userId, context.claims);
+    const { assertEmergencyStopReleased } = await import("./omni-terminal.server");
+    await assertEmergencyStopReleased(context.supabase);
     const { dispatchPayloadDigest } = await import("./jackboy-dispatch-digest");
     const payloadDigest = await dispatchPayloadDigest({
       ownerId: data.jackboyOwnerId,
@@ -100,6 +102,8 @@ export const sendJackboyCallback = createServerFn({ method: "POST" })
     setResponseHeader("Cache-Control", "private, no-store");
     const { requireRazulOwner } = await import("./razul-owner.server");
     await requireRazulOwner(context.supabase, context.userId, context.claims);
+    const { assertEmergencyStopReleased } = await import("./omni-terminal.server");
+    await assertEmergencyStopReleased(context.supabase);
     if (process.env["JACKBOY_CALLBACK_ENABLED"] !== "true")
       throw new Error("Dispatch callback is disabled.");
     const origin = process.env["JACKBOY_CALLBACK_ORIGIN"];

@@ -10,6 +10,9 @@ export const requestJackboyLink = createServerFn({ method: "POST" })
     setResponseHeader("Cache-Control", "private, no-store");
     const { requireRazulOwner } = await import("./razul-owner.server");
     await requireRazulOwner(context.supabase, context.userId, context.claims);
+    // Fail closed: an engaged, missing or unreadable Emergency Stop refuses every link action.
+    const { assertEmergencyStopReleased } = await import("./omni-terminal.server");
+    await assertEmergencyStopReleased(context.supabase);
     assertJackboyLinkScope(data, context.userId, {
       owner: process.env["JACKBOY_LINK_MOTHERSHIP_OWNER_ID"],
       project: process.env["OMNI_LINK_PROJECT_ID"],
