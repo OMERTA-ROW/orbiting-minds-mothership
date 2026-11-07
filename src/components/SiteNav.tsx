@@ -26,6 +26,7 @@ export const navItems = [
   { to: "/omni-models", label: "OMNI Model Gateway · Declarations" },
   { to: "/omni-api-keys", label: "API Keys · Owner" },
   { to: "/omni-terminal", label: "OMNI Terminal · Owner" },
+  { to: "/omni-dock", label: "OMNI Docking Bay · Owner" },
   { to: "/activation-approvals", label: "Activation Approvals · Owner" },
   { to: "/omni-razul", label: "Razul Central Intelligence · Local" },
   { to: "/angel-tech", label: "Angel Tech · Sabrina Concept" },

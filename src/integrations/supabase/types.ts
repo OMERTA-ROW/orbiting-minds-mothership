@@ -762,6 +762,175 @@ export type Database = {
         }
         Relationships: []
       }
+      omni_dock_devices: {
+        Row: {
+          app_version: string
+          approved_at: string | null
+          approved_by: string | null
+          branch_kind: string
+          claimed_at: string
+          id: string
+          invite_id: string
+          key_fingerprint: string
+          label: string
+          last_seen_at: string | null
+          permissions: string[]
+          platform: string
+          public_key: Json
+          reported_capabilities: string[]
+          requested_permissions: string[]
+          revision: number
+          revoke_reason: string
+          revoked_at: string | null
+          status: string
+        }
+        Insert: {
+          app_version?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          branch_kind: string
+          claimed_at?: string
+          id?: string
+          invite_id: string
+          key_fingerprint: string
+          label: string
+          last_seen_at?: string | null
+          permissions?: string[]
+          platform: string
+          public_key: Json
+          reported_capabilities?: string[]
+          requested_permissions?: string[]
+          revision?: number
+          revoke_reason?: string
+          revoked_at?: string | null
+          status?: string
+        }
+        Update: {
+          app_version?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          branch_kind?: string
+          claimed_at?: string
+          id?: string
+          invite_id?: string
+          key_fingerprint?: string
+          label?: string
+          last_seen_at?: string | null
+          permissions?: string[]
+          platform?: string
+          public_key?: Json
+          reported_capabilities?: string[]
+          requested_permissions?: string[]
+          revision?: number
+          revoke_reason?: string
+          revoked_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_dock_devices_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "omni_dock_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      omni_dock_events: {
+        Row: {
+          created_at: string
+          detail: string
+          device_id: string | null
+          event: string
+          id: string
+          invite_id: string | null
+          outcome: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string
+          device_id?: string | null
+          event: string
+          id?: string
+          invite_id?: string | null
+          outcome: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string
+          device_id?: string | null
+          event?: string
+          id?: string
+          invite_id?: string | null
+          outcome?: string
+        }
+        Relationships: []
+      }
+      omni_dock_invites: {
+        Row: {
+          branch_kind: string
+          cancelled_at: string | null
+          code_hash: string
+          consumed_at: string | null
+          consumed_device: string | null
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          requested_permissions: string[]
+        }
+        Insert: {
+          branch_kind: string
+          cancelled_at?: string | null
+          code_hash: string
+          consumed_at?: string | null
+          consumed_device?: string | null
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          requested_permissions?: string[]
+        }
+        Update: {
+          branch_kind?: string
+          cancelled_at?: string | null
+          code_hash?: string
+          consumed_at?: string | null
+          consumed_device?: string | null
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          requested_permissions?: string[]
+        }
+        Relationships: []
+      }
+      omni_dock_nonces: {
+        Row: {
+          device_id: string
+          nonce: string
+          seen_at: string
+        }
+        Insert: {
+          device_id: string
+          nonce: string
+          seen_at?: string
+        }
+        Update: {
+          device_id?: string
+          nonce?: string
+          seen_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_dock_nonces_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "omni_dock_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       omni_social_drafts: {
         Row: {
           content: Json
@@ -874,6 +1043,7 @@ export type Database = {
           kind: string
           project_label: string
           repository: string | null
+          source_device: string | null
           state: string
         }
         Insert: {
@@ -886,6 +1056,7 @@ export type Database = {
           kind: string
           project_label: string
           repository?: string | null
+          source_device?: string | null
           state?: string
         }
         Update: {
@@ -898,9 +1069,18 @@ export type Database = {
           kind?: string
           project_label?: string
           repository?: string | null
+          source_device?: string | null
           state?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "omni_terminal_tasks_source_device_fkey"
+            columns: ["source_device"]
+            isOneToOne: false
+            referencedRelation: "omni_dock_devices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       owner_config: {
         Row: {
@@ -1809,6 +1989,168 @@ export type Database = {
         Args: { _key_hash: string; _scope: string }
         Returns: string
       }
+      omni_dock_approve: {
+        Args: { _device: string; _permissions: string[] }
+        Returns: {
+          app_version: string
+          approved_at: string | null
+          approved_by: string | null
+          branch_kind: string
+          claimed_at: string
+          id: string
+          invite_id: string
+          key_fingerprint: string
+          label: string
+          last_seen_at: string | null
+          permissions: string[]
+          platform: string
+          public_key: Json
+          reported_capabilities: string[]
+          requested_permissions: string[]
+          revision: number
+          revoke_reason: string
+          revoked_at: string | null
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_dock_devices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_dock_cancel_invite: { Args: { _id: string }; Returns: undefined }
+      omni_dock_claim: {
+        Args: {
+          _app_version: string
+          _capabilities: string[]
+          _code_hash: string
+          _fingerprint: string
+          _label: string
+          _platform: string
+          _public_key: Json
+        }
+        Returns: Json
+      }
+      omni_dock_create_invite: {
+        Args: {
+          _code_hash: string
+          _kind: string
+          _minutes: number
+          _requested: string[]
+        }
+        Returns: {
+          branch_kind: string
+          cancelled_at: string | null
+          code_hash: string
+          consumed_at: string | null
+          consumed_device: string | null
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          requested_permissions: string[]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_dock_invites"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_dock_engage_stop: { Args: { _device: string }; Returns: boolean }
+      omni_dock_hold_task: {
+        Args: {
+          _agent: string
+          _device: string
+          _id: string
+          _instructions: string
+          _kind: string
+          _project: string
+          _repository: string
+        }
+        Returns: Json
+      }
+      omni_dock_log: {
+        Args: {
+          _detail: string
+          _device: string
+          _event: string
+          _outcome: string
+        }
+        Returns: undefined
+      }
+      omni_dock_revoke: {
+        Args: { _device: string; _reason: string }
+        Returns: {
+          app_version: string
+          approved_at: string | null
+          approved_by: string | null
+          branch_kind: string
+          claimed_at: string
+          id: string
+          invite_id: string
+          key_fingerprint: string
+          label: string
+          last_seen_at: string | null
+          permissions: string[]
+          platform: string
+          public_key: Json
+          reported_capabilities: string[]
+          requested_permissions: string[]
+          revision: number
+          revoke_reason: string
+          revoked_at: string | null
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_dock_devices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_dock_set_permissions: {
+        Args: { _device: string; _permissions: string[]; _revision: number }
+        Returns: {
+          app_version: string
+          approved_at: string | null
+          approved_by: string | null
+          branch_kind: string
+          claimed_at: string
+          id: string
+          invite_id: string
+          key_fingerprint: string
+          label: string
+          last_seen_at: string | null
+          permissions: string[]
+          platform: string
+          public_key: Json
+          reported_capabilities: string[]
+          requested_permissions: string[]
+          revision: number
+          revoke_reason: string
+          revoked_at: string | null
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_dock_devices"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_dock_touch: {
+        Args: {
+          _app_version: string
+          _capabilities: string[]
+          _device: string
+          _event: string
+          _nonce: string
+        }
+        Returns: Json
+      }
+      omni_dock_valid_permissions: { Args: { _p: string[] }; Returns: boolean }
       omni_social_transition: {
         Args: {
           _action: string
@@ -1848,6 +2190,7 @@ export type Database = {
           kind: string
           project_label: string
           repository: string | null
+          source_device: string | null
           state: string
         }[]
         SetofOptions: {
@@ -1893,6 +2236,7 @@ export type Database = {
           kind: string
           project_label: string
           repository: string | null
+          source_device: string | null
           state: string
         }[]
         SetofOptions: {
