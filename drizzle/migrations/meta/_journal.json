@@ -232,6 +232,13 @@
       "when": 1793992509807,
       "tag": "0032_activation_approvals",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794068841262,
+      "tag": "0033_omni_terminal",
+      "breakpoints": true
     }
   ]
 }

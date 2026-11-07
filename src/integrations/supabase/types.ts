@@ -806,6 +806,102 @@ export type Database = {
           },
         ]
       }
+      omni_terminal_controls: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          emergency_stop: boolean
+          id: number
+          reason: string
+          revision: number
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          emergency_stop?: boolean
+          id?: number
+          reason?: string
+          revision?: number
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          emergency_stop?: boolean
+          id?: number
+          reason?: string
+          revision?: number
+        }
+        Relationships: []
+      }
+      omni_terminal_log: {
+        Row: {
+          actor_id: string
+          command: string
+          created_at: string
+          id: string
+          outcome: string
+          session_id: string
+          summary: string
+        }
+        Insert: {
+          actor_id: string
+          command: string
+          created_at?: string
+          id?: string
+          outcome: string
+          session_id: string
+          summary?: string
+        }
+        Update: {
+          actor_id?: string
+          command?: string
+          created_at?: string
+          id?: string
+          outcome?: string
+          session_id?: string
+          summary?: string
+        }
+        Relationships: []
+      }
+      omni_terminal_tasks: {
+        Row: {
+          agent: string
+          cancelled_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          instructions: string
+          kind: string
+          project_label: string
+          repository: string | null
+          state: string
+        }
+        Insert: {
+          agent: string
+          cancelled_at?: string | null
+          created_at?: string
+          created_by: string
+          id: string
+          instructions: string
+          kind: string
+          project_label: string
+          repository?: string | null
+          state?: string
+        }
+        Update: {
+          agent?: string
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          instructions?: string
+          kind?: string
+          project_label?: string
+          repository?: string | null
+          state?: string
+        }
+        Relationships: []
+      }
       owner_config: {
         Row: {
           id: number
@@ -1740,6 +1836,99 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      omni_terminal_cancel_task: {
+        Args: { _id: string }
+        Returns: {
+          agent: string
+          cancelled_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          instructions: string
+          kind: string
+          project_label: string
+          repository: string | null
+          state: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_terminal_tasks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_terminal_engage_stop: {
+        Args: { _reason: string }
+        Returns: {
+          changed_at: string
+          changed_by: string | null
+          emergency_stop: boolean
+          id: number
+          reason: string
+          revision: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_terminal_controls"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_terminal_queue_task: {
+        Args: {
+          _agent: string
+          _id: string
+          _instructions: string
+          _kind: string
+          _project: string
+          _repository: string
+        }
+        Returns: {
+          agent: string
+          cancelled_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          instructions: string
+          kind: string
+          project_label: string
+          repository: string | null
+          state: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_terminal_tasks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_terminal_record: {
+        Args: {
+          _command: string
+          _outcome: string
+          _session: string
+          _summary: string
+        }
+        Returns: string
+      }
+      omni_terminal_release_stop: {
+        Args: { _reason: string }
+        Returns: {
+          changed_at: string
+          changed_by: string | null
+          emergency_stop: boolean
+          id: number
+          reason: string
+          revision: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_terminal_controls"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_terminal_secret_like: { Args: { _text: string }; Returns: boolean }
       razul_configure: {
         Args: {
           _blocked_sources: string[]
