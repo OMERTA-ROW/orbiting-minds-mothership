@@ -83,6 +83,8 @@ export const commandInput = z
   .object({ sessionId: z.string().uuid(), command: z.string().trim().min(1).max(200) })
   .strict();
 
+export const cancelInput = z.object({ id: z.string().uuid() }).strict();
+
 export const stopInput = z
   .object({ engaged: z.boolean(), reason: z.string().trim().max(280) })
   .strict()

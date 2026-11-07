@@ -9,6 +9,7 @@ import { setResponseHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { noteProblem } from "./activation-approvals";
 import {
+  cancelInput,
   commandInput,
   describeProbe,
   respond,
@@ -121,10 +122,10 @@ export const queueTerminalTask = createServerFn({ method: "POST" })
 
 export const cancelTerminalTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => commandInput.pick({ sessionId: true }).parse(input))
+  .inputValidator((input: unknown) => cancelInput.parse(input))
   .handler(async ({ context, data }) => {
     await ownerContext(context);
-    const { error } = await context.supabase.rpc("omni_terminal_cancel_task", { _id: data.sessionId });
+    const { error } = await context.supabase.rpc("omni_terminal_cancel_task", { _id: data.id });
     const message = ruleMessage(error, "The task was not cancelled. Refresh and retry.");
     if (message) return { ok: false as const, message };
     return { ok: true as const };
