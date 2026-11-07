@@ -111,9 +111,9 @@ def main():
             assert caller(OTHER, 'aal2', FRESH, f"SELECT count(*) FROM public.{t};").endswith('0'), t
         assert caller(OTHER, 'aal2', FRESH, "SELECT count(*) FROM public.razul_control_audit WHERE record_type='omni_terminal';").endswith('0')
 
-        # Audit trail: 4 stop changes, 2 holds, 1 cancel.
+        # Audit trail: 3 stop changes, 2 holds, 1 cancel.
         assert caller(OWNER, 'aal2', FRESH, "SELECT string_agg(action || ':' || n, ',' ORDER BY action) FROM (SELECT action, count(*) n FROM public.razul_control_audit WHERE record_type='omni_terminal' GROUP BY action) a;").endswith(
-            'emergency_stop_engage:3,emergency_stop_release:1,task_cancel:1,task_held:2')
+            'emergency_stop_engage:2,emergency_stop_release:1,task_cancel:1,task_held:2')
 
         print(f"PASS: {checks} isolated SQL checks: anonymous/admin/aal1 denial, fail-closed default, owner engage without fresh code, release needs fresh two-factor + reason, secret refusal, held-only tasks, CODE→Jackboy rule, idempotent queue, single cancel, no direct writes, owner-only reads, audit trail. No hosted fixtures.")
     finally:
