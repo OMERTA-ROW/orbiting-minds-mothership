@@ -37,8 +37,8 @@ export async function signDockRequest(p: {
   path: string;
   device: string;
   body: string;
-  now?: number;
-  nonce?: string;
+  now?: number | undefined;
+  nonce?: string | undefined;
 }): Promise<Record<string, string>> {
   const timestamp = String(p.now ?? Date.now());
   const nonce = p.nonce ?? newNonce();

@@ -47,8 +47,8 @@ export interface DockStore {
     device: string;
     nonce: string;
     event: string;
-    capabilities?: string[];
-    appVersion?: string;
+    capabilities?: string[] | undefined;
+    appVersion?: string | undefined;
   }): Promise<Reply>;
   log(
     device: string | null,
