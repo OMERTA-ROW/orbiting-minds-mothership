@@ -60,10 +60,15 @@ export const runTerminalCommand = createServerFn({ method: "POST" })
         _reason: "Engaged from terminal",
       });
       result = error
-        ? { outcome: "error", lines: ["Emergency Stop could not be confirmed. Use the button and refresh."] }
+        ? {
+            outcome: "error",
+            lines: ["Emergency Stop could not be confirmed. Use the button and refresh."],
+          }
         : {
             outcome: "ok",
-            lines: ["Emergency Stop ENGAGED. Jackboy link, receipt grants and callbacks are refused."],
+            lines: [
+              "Emergency Stop ENGAGED. Jackboy link, receipt grants and callbacks are refused.",
+            ],
           };
     }
     if (result.effect === "probe") {
@@ -83,7 +88,9 @@ export const runTerminalCommand = createServerFn({ method: "POST" })
     });
     return {
       outcome: result.outcome,
-      lines: logError ? [...result.lines, "(This entry could not be saved to history.)"] : result.lines,
+      lines: logError
+        ? [...result.lines, "(This entry could not be saved to history.)"]
+        : result.lines,
       recorded: !logError,
     };
   });
@@ -96,7 +103,10 @@ export const setTerminalEmergencyStop = createServerFn({ method: "POST" })
     const { error } = data.engaged
       ? await context.supabase.rpc("omni_terminal_engage_stop", { _reason: data.reason })
       : await context.supabase.rpc("omni_terminal_release_stop", { _reason: data.reason });
-    const message = ruleMessage(error, "The Emergency Stop change was not recorded. Refresh and retry.");
+    const message = ruleMessage(
+      error,
+      "The Emergency Stop change was not recorded. Refresh and retry.",
+    );
     if (message) return { ok: false as const, message };
     return { ok: true as const };
   });

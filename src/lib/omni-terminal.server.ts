@@ -41,7 +41,11 @@ export async function loadTerminalSnapshot(
 ): Promise<Snapshot> {
   const [controls, tasks, log, approvals, audit, access, runs, razulRun, razulState] =
     await Promise.all([
-      db.from("omni_terminal_controls").select("emergency_stop,changed_at,reason").eq("id", 1).maybeSingle(),
+      db
+        .from("omni_terminal_controls")
+        .select("emergency_stop,changed_at,reason")
+        .eq("id", 1)
+        .maybeSingle(),
       db
         .from("omni_terminal_tasks")
         .select("id,kind,agent,project_label,repository,instructions,state,created_at,cancelled_at")
@@ -54,7 +58,9 @@ export async function loadTerminalSnapshot(
         .limit(100),
       db
         .from("activation_approvals")
-        .select("step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision")
+        .select(
+          "step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision",
+        )
         .order("step"),
       db
         .from("razul_control_audit")
@@ -69,7 +75,12 @@ export async function loadTerminalSnapshot(
         .eq("owner_id", userId)
         .order("created_at", { ascending: false })
         .limit(100),
-      db.from("razul_runs").select("status,started_at,finished_at").order("started_at", { ascending: false }).limit(1).maybeSingle(),
+      db
+        .from("razul_runs")
+        .select("status,started_at,finished_at")
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
       db.from("razul_job_state").select("paused_at").limit(1).maybeSingle(),
     ]);
   if (tasks.error || log.error || approvals.error || audit.error)

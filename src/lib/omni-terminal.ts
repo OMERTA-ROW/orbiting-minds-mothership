@@ -32,7 +32,13 @@ export const LINK_REQUIRED_SETTINGS = [
 /** Set only at approval step 7. */
 export const LINK_DEFERRED_SETTING = "OMNI_LINK_APPROVAL_EXPIRES_AT";
 
-export const TASK_KINDS = ["code.generate", "code.edit", "code.test", "code.debug", "agent.handoff"] as const;
+export const TASK_KINDS = [
+  "code.generate",
+  "code.edit",
+  "code.test",
+  "code.debug",
+  "agent.handoff",
+] as const;
 export type TaskKind = (typeof TASK_KINDS)[number];
 export const TASK_AGENTS = ["jackboy", "jax", "razul", "sabrina", "guardian", "hercules"] as const;
 export type TaskAgent = (typeof TASK_AGENTS)[number];
@@ -215,7 +221,9 @@ export function autonomyBlockers(s: Snapshot): string[] {
   const out: string[] = [];
   if (!EXECUTOR_AVAILABLE) out.push("No executor or host companion is connected.");
   if (!approvedThrough(s.approvals, ACTIVATION_STEPS.length, s.now))
-    out.push(`Activation steps are not all approved (next: step ${nextApprovalStep(s.approvals, s.now)}).`);
+    out.push(
+      `Activation steps are not all approved (next: step ${nextApprovalStep(s.approvals, s.now)}).`,
+    );
   if (s.emergencyStop.engaged) out.push("Emergency Stop is engaged.");
   if (!s.switches.linkEnabled) out.push("The Jackboy link switch is off.");
   return out;
@@ -249,7 +257,11 @@ export function capabilities(s: Snapshot): Capability[] {
     {
       id: "link",
       label: "Jackboy link (existing Railway service)",
-      readiness: linkReady ? "ready" : missing.length < LINK_REQUIRED_SETTINGS.length ? "partial" : "not_ready",
+      readiness: linkReady
+        ? "ready"
+        : missing.length < LINK_REQUIRED_SETTINGS.length
+          ? "partial"
+          : "not_ready",
       readinessNote: linkReadinessNote,
       authorized: linkAuthorized,
       authorizationNote: linkAuthorized
@@ -300,7 +312,9 @@ export function capabilities(s: Snapshot): Capability[] {
       id: "text_agent",
       label: "OMNI text agent (Lovable AI)",
       readiness: s.textAgent.providerConfigured ? "ready" : "not_ready",
-      readinessNote: s.textAgent.providerConfigured ? "AI service connected." : "AI service key missing.",
+      readinessNote: s.textAgent.providerConfigured
+        ? "AI service connected."
+        : "AI service key missing.",
       authorized: s.textAgent.aiApproved && !s.textAgent.paused,
       authorizationNote: s.textAgent.paused
         ? "Your account is paused."
@@ -312,7 +326,11 @@ export function capabilities(s: Snapshot): Capability[] {
         : s.textAgent.lastRunAt
           ? `No completed run. Last attempt ${when(s.textAgent.lastRunAt)} ended ${s.textAgent.lastRunStatus}.`
           : "No run recorded yet.",
-      state: s.textAgent.paused ? "Paused" : s.textAgent.providerConfigured && s.textAgent.aiApproved ? "Available" : "Blocked",
+      state: s.textAgent.paused
+        ? "Paused"
+        : s.textAgent.providerConfigured && s.textAgent.aiApproved
+          ? "Available"
+          : "Blocked",
     },
     {
       id: "observatory",
@@ -320,7 +338,9 @@ export function capabilities(s: Snapshot): Capability[] {
       readiness: "ready",
       readinessNote: "Scheduled feed collection is set up.",
       authorized: !s.razul.paused,
-      authorizationNote: s.razul.paused ? "Paused by you." : "Running on its schedule (public feeds only).",
+      authorizationNote: s.razul.paused
+        ? "Paused by you."
+        : "Running on its schedule (public feeds only).",
       evidence: s.razul.lastRunAt
         ? `Last run ${when(s.razul.lastRunAt)}: ${s.razul.lastRunStatus}.`
         : "No run recorded.",
@@ -343,11 +363,36 @@ export function agentRegistry(s: Snapshot): AgentStatus[] {
       status: link.authorized ? "Link available" : "Link off",
       note: `${link.evidence} Readiness: ${link.readinessNote}`,
     },
-    { id: "jax", name: AGENT_LABEL.jax, status: "Not enrolled", note: "No passport or link. Stays isolated from Honeycomb Vault." },
-    { id: "sabrina", name: AGENT_LABEL.sabrina, status: "Concept", note: "Browser-only workspace. Sends nothing." },
-    { id: "guardian", name: AGENT_LABEL.guardian, status: "Partial", note: "Owner/MFA and default-deny checks run on the server; no live Guardian service." },
-    { id: "hercules", name: AGENT_LABEL.hercules, status: "Not connected", note: "No project node or health address registered." },
-    { id: "omerta", name: "Other OMERTA-ROW agents", status: "Not enrolled", note: "Each needs a passport and a scoped, revocable identity first." },
+    {
+      id: "jax",
+      name: AGENT_LABEL.jax,
+      status: "Not enrolled",
+      note: "No passport or link. Stays isolated from Honeycomb Vault.",
+    },
+    {
+      id: "sabrina",
+      name: AGENT_LABEL.sabrina,
+      status: "Concept",
+      note: "Browser-only workspace. Sends nothing.",
+    },
+    {
+      id: "guardian",
+      name: AGENT_LABEL.guardian,
+      status: "Partial",
+      note: "Owner/MFA and default-deny checks run on the server; no live Guardian service.",
+    },
+    {
+      id: "hercules",
+      name: AGENT_LABEL.hercules,
+      status: "Not connected",
+      note: "No project node or health address registered.",
+    },
+    {
+      id: "omerta",
+      name: "Other OMERTA-ROW agents",
+      status: "Not enrolled",
+      note: "Each needs a passport and a scoped, revocable identity first.",
+    },
   ];
 }
 
@@ -375,7 +420,8 @@ export const HELP_LINES = [
 
 const SHELL_LIKE =
   /^(sudo|rm|mv|cp|curl|wget|bash|sh|zsh|ssh|scp|git|npm|npx|bun|node|python|pip|chmod|chown|kill|docker|kubectl|railway|eval|exec|cat|ls|cd)\b|[;&|`$<>]/i;
-const EXECUTE_LIKE = /^(run|start|deploy|publish|release|send|execute|merge|push|enable|activate|unlock|code)\b/i;
+const EXECUTE_LIKE =
+  /^(run|start|deploy|publish|release|send|execute|merge|push|enable|activate|unlock|code)\b/i;
 
 export function normalizeCommand(raw: string) {
   return raw.trim().replace(/\s+/g, " ").toLowerCase();
@@ -384,7 +430,10 @@ export function normalizeCommand(raw: string) {
 export function respond(raw: string, s: Snapshot): CommandResult {
   const cmd = normalizeCommand(raw);
   if (noteProblem(raw))
-    return { outcome: "denied", lines: ["That looks like a key or token. It was not recorded. Never paste secrets here."] };
+    return {
+      outcome: "denied",
+      lines: ["That looks like a key or token. It was not recorded. Never paste secrets here."],
+    };
   if (cmd === "help" || cmd === "?") return { outcome: "ok", lines: HELP_LINES };
   if (cmd === "status")
     return {
@@ -434,7 +483,12 @@ export function respond(raw: string, s: Snapshot): CommandResult {
       outcome: "ok",
       lines: [
         `${held.length} held task(s). Held tasks are never sent; no dispatcher exists.`,
-        ...held.slice(0, 5).map((t) => `${t.id.slice(0, 8)} ${KIND_LABEL[t.kind as TaskKind] ?? t.kind} → ${AGENT_LABEL[t.agent as TaskAgent] ?? t.agent} · ${t.project_label}`),
+        ...held
+          .slice(0, 5)
+          .map(
+            (t) =>
+              `${t.id.slice(0, 8)} ${KIND_LABEL[t.kind as TaskKind] ?? t.kind} → ${AGENT_LABEL[t.agent as TaskAgent] ?? t.agent} · ${t.project_label}`,
+          ),
       ],
     };
   }
@@ -461,7 +515,9 @@ export function respond(raw: string, s: Snapshot): CommandResult {
   if (cmd === "release" || cmd === "release stop")
     return {
       outcome: "blocked",
-      lines: ["Release the Emergency Stop with the button above. It needs fresh two-factor and a reason."],
+      lines: [
+        "Release the Emergency Stop with the button above. It needs fresh two-factor and a reason.",
+      ],
     };
   if (SHELL_LIKE.test(cmd))
     return {
@@ -485,7 +541,14 @@ export function summarize(result: CommandResult) {
 }
 
 export type ProbeResult = {
-  state: "not_configured" | "invalid_origin" | "reachable" | "redirect" | "server_error" | "timeout" | "unreachable";
+  state:
+    | "not_configured"
+    | "invalid_origin"
+    | "reachable"
+    | "redirect"
+    | "server_error"
+    | "timeout"
+    | "unreachable";
   status: number | null;
   ms: number | null;
 };

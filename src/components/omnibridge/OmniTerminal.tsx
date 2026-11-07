@@ -58,7 +58,11 @@ export function OmniTerminal() {
   const [notice, setNotice] = useState<{ area: string; text: string } | null>(null);
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const [lines, setLines] = useState<Line[]>([
-    { id: 0, kind: "out", text: "OMNI Terminal. Type help. Commands are read-only; nothing runs code." },
+    {
+      id: 0,
+      kind: "out",
+      text: "OMNI Terminal. Type help. Commands are read-only; nothing runs code.",
+    },
   ]);
   const [command, setCommand] = useState("");
   const [releaseReason, setReleaseReason] = useState("");
@@ -88,7 +92,8 @@ export function OmniTerminal() {
 
   const caps = useMemo(() => (snap ? capabilities(snap) : []), [snap]);
   const agents = useMemo(() => (snap ? agentRegistry(snap) : []), [snap]);
-  const mfaFresh = snap?.mfaAgeSeconds !== null && (snap?.mfaAgeSeconds ?? Infinity) <= FRESH_MFA_SECONDS;
+  const mfaFresh =
+    snap?.mfaAgeSeconds !== null && (snap?.mfaAgeSeconds ?? Infinity) <= FRESH_MFA_SECONDS;
   const cap = (id: Capability["id"]) => caps.find((c) => c.id === id);
 
   function push(kind: Line["kind"], text: string) {
@@ -127,9 +132,17 @@ export function OmniTerminal() {
     try {
       const factors = await supabase.auth.mfa.listFactors();
       const factor = factors.data?.totp.find((f) => f.status === "verified");
-      if (!factor) return setNotice({ area: "stop", text: "No verified authenticator. Set one up on Two-factor." });
+      if (!factor)
+        return setNotice({
+          area: "stop",
+          text: "No verified authenticator. Set one up on Two-factor.",
+        });
       const r = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
-      if (r.error) return setNotice({ area: "stop", text: "That code was not accepted. Try the current code." });
+      if (r.error)
+        return setNotice({
+          area: "stop",
+          text: "That code was not accepted. Try the current code.",
+        });
       setCode("");
       await refresh();
       setNotice({ area: "stop", text: "Two-factor re-verified for 15 minutes." });
@@ -143,7 +156,10 @@ export function OmniTerminal() {
   async function changeStop(engaged: boolean) {
     if (busy) return;
     if (!engaged && releaseReason.trim().length < 3)
-      return setNotice({ area: "stop", text: "Give a short reason to release the Emergency Stop." });
+      return setNotice({
+        area: "stop",
+        text: "Give a short reason to release the Emergency Stop.",
+      });
     if (!engaged && noteProblem(releaseReason))
       return setNotice({ area: "stop", text: "Remove anything that looks like a key or token." });
     setBusy(true);
@@ -172,7 +188,10 @@ export function OmniTerminal() {
     if (busy) return;
     const parsed = taskInput.safeParse({ id: crypto.randomUUID(), ...task });
     if (!parsed.success)
-      return setNotice({ area: "task", text: parsed.error.issues[0]?.message ?? "Check the task." });
+      return setNotice({
+        area: "task",
+        text: parsed.error.issues[0]?.message ?? "Check the task.",
+      });
     setBusy(true);
     setNotice({ area: "task", text: "Saving…" });
     try {
@@ -180,7 +199,10 @@ export function OmniTerminal() {
       if (!r.ok) return setNotice({ area: "task", text: r.message });
       setTask((t) => ({ ...t, instructions: "" }));
       await refresh();
-      setNotice({ area: "task", text: "Held. Saved to the queue but not sent — CODE is off and no dispatcher exists." });
+      setNotice({
+        area: "task",
+        text: "Held. Saved to the queue but not sent — CODE is off and no dispatcher exists.",
+      });
     } catch {
       setNotice({ area: "task", text: "Not confirmed. Refresh before retrying." });
     } finally {
@@ -252,8 +274,8 @@ export function OmniTerminal() {
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Status, history, held tasks and controls for OMNI and its agents. “Configured” and
-            “Authorized” are shown separately: a setting being present never means it is approved
-            or switched on.
+            “Authorized” are shown separately: a setting being present never means it is approved or
+            switched on.
           </p>
         </div>
         <Button
@@ -310,7 +332,12 @@ export function OmniTerminal() {
                     aria-label="6-digit authenticator code to release"
                     placeholder="Code to release"
                   />
-                  <Button type="submit" size="sm" variant="outline" disabled={busy || code.length !== 6}>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    variant="outline"
+                    disabled={busy || code.length !== 6}
+                  >
                     Verify
                   </Button>
                 </form>
@@ -323,14 +350,24 @@ export function OmniTerminal() {
                     value={releaseReason}
                     onChange={(e) => setReleaseReason(e.target.value)}
                   />
-                  <Button size="sm" variant="outline" disabled={busy} onClick={() => changeStop(false)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => changeStop(false)}
+                  >
                     Release
                   </Button>
                 </>
               )}
             </div>
           ) : (
-            <Button size="sm" variant="destructive" disabled={busy} onClick={() => changeStop(true)}>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={busy}
+              onClick={() => changeStop(true)}
+            >
               Engage Emergency Stop
             </Button>
           )}
@@ -392,7 +429,9 @@ export function OmniTerminal() {
             variant="outline"
             disabled={busy}
             onClick={() =>
-              void exec("ping").then((out) => setNotice({ area: "link", text: out[0] ?? "No result." }))
+              void exec("ping").then((out) =>
+                setNotice({ area: "link", text: out[0] ?? "No result." }),
+              )
             }
           >
             Check Railway reachability
@@ -509,7 +548,11 @@ export function OmniTerminal() {
                 value={task.kind}
                 onChange={(e) => {
                   const kind = e.target.value as TaskKind;
-                  setTask((t) => ({ ...t, kind, agent: kind === "agent.handoff" ? t.agent : "jackboy" }));
+                  setTask((t) => ({
+                    ...t,
+                    kind,
+                    agent: kind === "agent.handoff" ? t.agent : "jackboy",
+                  }));
                 }}
               >
                 {TASK_KINDS.map((k) => (
@@ -574,12 +617,15 @@ export function OmniTerminal() {
             </div>
           </form>
           <ul className="space-y-2">
-            {snap.tasks.length === 0 && <li className="text-sm text-muted-foreground">No tasks yet.</li>}
+            {snap.tasks.length === 0 && (
+              <li className="text-sm text-muted-foreground">No tasks yet.</li>
+            )}
             {snap.tasks.map((t) => (
               <li key={t.id} className="space-y-1 rounded-lg border bg-card p-3 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">
-                    {KIND_LABEL[t.kind as TaskKind] ?? t.kind} → {AGENT_LABEL[t.agent as TaskAgent] ?? t.agent}
+                    {KIND_LABEL[t.kind as TaskKind] ?? t.kind} →{" "}
+                    {AGENT_LABEL[t.agent as TaskAgent] ?? t.agent}
                   </span>
                   <span className="text-xs uppercase tracking-wide text-muted-foreground">
                     {t.state === "held" ? "Held · not sent" : "Cancelled"}
@@ -591,7 +637,12 @@ export function OmniTerminal() {
                 </p>
                 <p className="whitespace-pre-wrap break-words">{t.instructions}</p>
                 {t.state === "held" && (
-                  <Button size="sm" variant="ghost" disabled={busy} onClick={() => cancelTask(t.id)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={() => cancelTask(t.id)}
+                  >
                     Cancel
                   </Button>
                 )}
@@ -609,7 +660,9 @@ export function OmniTerminal() {
               <li key={a.id} className="space-y-1 rounded-lg border bg-card p-3">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">{a.name}</span>
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">{a.status}</span>
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {a.status}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground">{a.note}</p>
               </li>
@@ -662,20 +715,30 @@ export function OmniTerminal() {
               ))}
               <li className="flex justify-between gap-2 rounded border px-2 py-1">
                 <code>OMNI_LINK_APPROVAL_EXPIRES_AT</code>
-                <span className="text-muted-foreground">{snap.expirySet ? "present" : "unset · step 7"}</span>
+                <span className="text-muted-foreground">
+                  {snap.expirySet ? "present" : "unset · step 7"}
+                </span>
               </li>
               <li className="flex justify-between gap-2 rounded border px-2 py-1">
                 <code>JACKBOY_LINK_ENABLED</code>
-                <span className="text-muted-foreground">{snap.switches.linkEnabled ? "ON" : "off"}</span>
+                <span className="text-muted-foreground">
+                  {snap.switches.linkEnabled ? "ON" : "off"}
+                </span>
               </li>
               <li className="flex justify-between gap-2 rounded border px-2 py-1">
                 <code>JACKBOY_LINK_SELF_TEST_ENABLED</code>
-                <span className="text-muted-foreground">{snap.switches.selfTestEnabled ? "ON" : "off"}</span>
+                <span className="text-muted-foreground">
+                  {snap.switches.selfTestEnabled ? "ON" : "off"}
+                </span>
               </li>
             </ul>
             <p className="text-xs text-muted-foreground">
-              Owner ID setting: {snap.ownerIdMatches === "match" ? "matches you" : snap.ownerIdMatches}. Two-factor:{" "}
-              {snap.mfaAgeSeconds === null ? "no recent check" : `verified ${Math.round(snap.mfaAgeSeconds / 60)} min ago`}.
+              Owner ID setting:{" "}
+              {snap.ownerIdMatches === "match" ? "matches you" : snap.ownerIdMatches}. Two-factor:{" "}
+              {snap.mfaAgeSeconds === null
+                ? "no recent check"
+                : `verified ${Math.round(snap.mfaAgeSeconds / 60)} min ago`}
+              .
             </p>
           </section>
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -691,12 +754,14 @@ export function OmniTerminal() {
             <h2 id="sessions" className="text-sm font-medium">
               Terminal sessions
             </h2>
-            {sessions.length === 0 && <p className="text-sm text-muted-foreground">No entries yet.</p>}
+            {sessions.length === 0 && (
+              <p className="text-sm text-muted-foreground">No entries yet.</p>
+            )}
             {sessions.map((s) => (
               <details key={s.id} className="rounded-lg border bg-card p-3 text-sm">
                 <summary className="cursor-pointer">
-                  Session {s.id.slice(0, 8)} · {s.entries.length} entr{s.entries.length === 1 ? "y" : "ies"} ·{" "}
-                  {when(s.last)}
+                  Session {s.id.slice(0, 8)} · {s.entries.length} entr
+                  {s.entries.length === 1 ? "y" : "ies"} · {when(s.last)}
                 </summary>
                 <ul className="mt-2 space-y-1 font-mono text-xs">
                   {s.entries.map((e) => (
@@ -717,7 +782,10 @@ export function OmniTerminal() {
             ) : (
               <ul className="space-y-1 text-xs">
                 {snap.audit.map((a) => (
-                  <li key={a.id} className="flex flex-wrap justify-between gap-2 rounded border px-2 py-1">
+                  <li
+                    key={a.id}
+                    className="flex flex-wrap justify-between gap-2 rounded border px-2 py-1"
+                  >
                     <span>
                       {a.record_type} · {a.action}
                     </span>
@@ -736,7 +804,11 @@ export function OmniTerminal() {
 function groupSessions(log: Snapshot["log"]) {
   const map = new Map<string, { id: string; last: string; entries: Snapshot["log"] }>();
   for (const entry of log) {
-    const s = map.get(entry.session_id) ?? { id: entry.session_id, last: entry.created_at, entries: [] };
+    const s = map.get(entry.session_id) ?? {
+      id: entry.session_id,
+      last: entry.created_at,
+      entries: [],
+    };
     s.entries.push(entry);
     if (entry.created_at > s.last) s.last = entry.created_at;
     map.set(entry.session_id, s);

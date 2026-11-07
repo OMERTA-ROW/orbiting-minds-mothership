@@ -37,7 +37,14 @@ function snap(over: Partial<Snapshot> = {}): Snapshot {
     originValid: true,
     approvals: normalizeRows([]),
     audit: [],
-    textAgent: { providerConfigured: true, aiApproved: false, paused: false, completedRuns: 0, lastRunAt: null, lastRunStatus: null },
+    textAgent: {
+      providerConfigured: true,
+      aiApproved: false,
+      paused: false,
+      completedRuns: 0,
+      lastRunAt: null,
+      lastRunStatus: null,
+    },
     razul: { lastRunStatus: "partial", lastRunAt: "2026-11-07T12:00:00Z", paused: false },
     tasks: [],
     log: [],
@@ -58,7 +65,9 @@ describe("Emergency Stop fails closed", () => {
     expect(stopReleased(null, false)).toBe(false);
   });
   it("treats an unreadable row as engaged", () => {
-    expect(stopState({ emergency_stop: false, changed_at: "x", reason: "" }, true).engaged).toBe(true);
+    expect(stopState({ emergency_stop: false, changed_at: "x", reason: "" }, true).engaged).toBe(
+      true,
+    );
     expect(stopReleased({ emergency_stop: false }, true)).toBe(false);
   });
   it("is released only when the stored value is false", () => {
@@ -75,7 +84,10 @@ describe("readiness is separate from authorization", () => {
     expect(link.state).toBe("Off");
   });
   it("approvals and switch still need the Emergency Stop released", () => {
-    const engaged = snap({ approvals: allApproved, switches: { linkEnabled: true, selfTestEnabled: false } });
+    const engaged = snap({
+      approvals: allApproved,
+      switches: { linkEnabled: true, selfTestEnabled: false },
+    });
     expect(capabilities(engaged).find((c) => c.id === "link")!.authorized).toBe(false);
     const released = snap({
       approvals: allApproved,
@@ -85,13 +97,21 @@ describe("readiness is separate from authorization", () => {
     expect(capabilities(released).find((c) => c.id === "link")!.authorized).toBe(true);
   });
   it("an owner ID that does not match keeps the link not ready", () => {
-    expect(capabilities(snap({ ownerIdMatches: "mismatch" })).find((c) => c.id === "link")!.readiness).toBe("partial");
+    expect(
+      capabilities(snap({ ownerIdMatches: "mismatch" })).find((c) => c.id === "link")!.readiness,
+    ).toBe("partial");
   });
   it("never shows a verified connection without a recorded handshake", () => {
     const link = capabilities(snap()).find((c) => c.id === "link")!;
     expect(link.evidence).toMatch(/not verified/i);
     const failed = linkEvidence([
-      { id: "1", action: "connecting", record_type: "jackboy_link", record_id: "a", occurred_at: "2026-11-07T10:00:00Z" },
+      {
+        id: "1",
+        action: "connecting",
+        record_type: "jackboy_link",
+        record_id: "a",
+        occurred_at: "2026-11-07T10:00:00Z",
+      },
     ]);
     expect(failed.lastConnectedAt).toBeNull();
     expect(failed.lastAttemptFailed).toBe(true);
@@ -142,14 +162,32 @@ describe("held tasks", () => {
   const base = { id: crypto.randomUUID(), project: "Mothership", instructions: "Add a unit test" };
   it("CODE tasks must go to Jackboy", () => {
     expect(taskInput.safeParse({ ...base, kind: "code.test", agent: "jax" }).success).toBe(false);
-    expect(taskInput.safeParse({ ...base, kind: "code.test", agent: "jackboy" }).success).toBe(true);
+    expect(taskInput.safeParse({ ...base, kind: "code.test", agent: "jackboy" }).success).toBe(
+      true,
+    );
   });
   it("handoffs can go to other agents", () => {
-    expect(taskInput.safeParse({ ...base, kind: "agent.handoff", agent: "razul" }).success).toBe(true);
+    expect(taskInput.safeParse({ ...base, kind: "agent.handoff", agent: "razul" }).success).toBe(
+      true,
+    );
   });
   it("rejects secret-looking instructions and bad repositories", () => {
-    expect(taskInput.safeParse({ ...base, kind: "code.edit", agent: "jackboy", instructions: "use eyJhbGciOiJIUzI1NiJ9abc" }).success).toBe(false);
-    expect(taskInput.safeParse({ ...base, kind: "code.edit", agent: "jackboy", repository: "https://github.com/a/b" }).success).toBe(false);
+    expect(
+      taskInput.safeParse({
+        ...base,
+        kind: "code.edit",
+        agent: "jackboy",
+        instructions: "use eyJhbGciOiJIUzI1NiJ9abc",
+      }).success,
+    ).toBe(false);
+    expect(
+      taskInput.safeParse({
+        ...base,
+        kind: "code.edit",
+        agent: "jackboy",
+        repository: "https://github.com/a/b",
+      }).success,
+    ).toBe(false);
   });
 });
 
@@ -165,7 +203,11 @@ describe("Railway reachability check", () => {
   it("sends no credentials and refuses redirects", async () => {
     let init: RequestInit | undefined;
     let url = "";
-    const fetch = async (u: string, i: RequestInit) => ((url = u), (init = i), new Response("ok", { status: 200 }));
+    const fetch = async (u: string, i: RequestInit) => (
+      (url = u),
+      (init = i),
+      new Response("ok", { status: 200 })
+    );
     const r = await probeRailway("https://jackboy.example.com", { fetch });
     expect(r.state).toBe("reachable");
     expect(url).toBe("https://jackboy.example.com/");
@@ -180,7 +222,11 @@ describe("Railway reachability check", () => {
   });
   it("reports a timeout", async () => {
     const fetch = (_u: string, i: RequestInit) =>
-      new Promise<Response>((_, reject) => i.signal?.addEventListener("abort", () => reject(new Error("abort"))));
-    expect((await probeRailway("https://jackboy.example.com", { fetch, timeoutMs: 10 })).state).toBe("timeout");
+      new Promise<Response>((_, reject) =>
+        i.signal?.addEventListener("abort", () => reject(new Error("abort"))),
+      );
+    expect(
+      (await probeRailway("https://jackboy.example.com", { fetch, timeoutMs: 10 })).state,
+    ).toBe("timeout");
   });
 });
