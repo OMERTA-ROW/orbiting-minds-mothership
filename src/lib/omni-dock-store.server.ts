@@ -1,5 +1,8 @@
-/** Service-role dock storage. Optional SQL arguments are sent as explicit nulls (PostgREST needs every key).
- * Service-role dock storage. Only called after the request handler verified the device signature. */
+/**
+ * Service-role dock storage. Only called after the request handler verified
+ * the device signature. Optional SQL arguments are sent as explicit nulls
+ * (PostgREST needs every key).
+ */
 import type { DockStore, StoreReply } from "./omni-dock.server";
 
 function asReply(data: unknown, error: unknown): StoreReply {
