@@ -48,7 +48,7 @@ def main():
         CREATE FUNCTION public.is_knowledge_reader() RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
         """)
         sql((ROOT / ".lovable/pending/owner-invitations.sql").read_text())
-        for number in range(20, 34):
+        for number in range(20, 35):
             paths = list((ROOT / "drizzle/migrations").glob(f"{number:04d}_*.sql"))
             assert len(paths) == 1, number
             sql(paths[0].read_text())
