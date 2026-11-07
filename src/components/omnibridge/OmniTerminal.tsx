@@ -83,7 +83,7 @@ export function OmniTerminal() {
   }, [refresh]);
 
   useEffect(() => {
-    logEnd.current?.scrollIntoView({ block: "nearest" });
+    logEnd.current?.scrollIntoView?.({ block: "nearest" });
   }, [lines]);
 
   const caps = useMemo(() => (snap ? capabilities(snap) : []), [snap]);
