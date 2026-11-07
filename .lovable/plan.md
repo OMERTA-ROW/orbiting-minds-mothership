@@ -55,7 +55,21 @@ On phone the two panels stack, with a Chat / Terminal toggle.
 - **Stop** (large, always visible) cancels the current model call and the running command, and turns Autonomous Mode off.
 - **Kill switch** (passkey to change) disables the whole workspace and ends every session. If the Emergency Stop or the kill switch is engaged, everything is blocked. If either one can't be read, it counts as engaged.
 
-**7. Audit log tab.** Read-only and append-only: every chat message, OMNI step, diff fingerprint, command, exit code, cost, approval decision, Autonomous Mode on/off, Stop and kill-switch change. You can filter and export it.
+**7. Audit log tab.** Read-only and append-only: every chat message, OMNI step, diff fingerprint, command, exit code, cost, approval decision, Autonomous Mode on/off, Stop and kill-switch change. You can filter it by **agent**, session, type and date, and export it.
+
+**8. Agents view (OMNI as the shared execution engine)**
+- OMNI runs code for all of your agents: OMNI itself, Jackboy, and future ones. The view has one card per agent.
+- Each card shows:
+  - **Identity:** name, ID, model, and how it's linked.
+  - **Allowed actions:** for example chat, edit files, run commands. These are separate from what the agent says it can do.
+  - **Live jobs:** counts for queued, running, done and failed, with a list you can open.
+  - **Budget:** the agent's own spend budget and usage.
+  - **Autonomous Mode:** on or off, with its expiry.
+  - A **Stop** button for that agent.
+- The agent's own Stop cancels that agent's running and queued jobs and turns its Autonomous Mode off. It leaves the other agents alone.
+- The global kill switch and the Emergency Stop are still shown on this view and still stop everything.
+- An agent's own budget sits inside your overall limits ($1 per task, $5 per day, $10 total). Whichever limit is hit first stops the job.
+- Agents start with no permissions. You add an agent and grant its permissions with a passkey check. Jackboy reuses its existing link identity. Future agents stay listed as "not enrolled" until you add them.
 
 ## How it works
 
@@ -81,6 +95,9 @@ Step events and terminal output stream back the same way
 - **Spend ledger:** append-only cost entries per task, per day and in total, compared against the $1, $5 and $10 limits before every model call.
 - **Agent steps:** one row per step card (plan, diff fingerprint and summary, command, result, cost, status).
 - **Approvals:** pending, approved or rejected decisions for gated actions such as merges, deploys and secrets. Each decision needs a fresh passkey check.
+- **Agents:** identity, status (enrolled, paused, revoked), allowed actions, and its own budget limits.
+- **Agent jobs:** agent, session, status (queued, running, done, failed, stopped), cost, start and end times.
+- Agent ID is also recorded on sessions, autonomy windows, spend ledger entries, steps, approvals and audit log rows, so each agent has its own limits, Stop button and audit filter.
 - **Audit log:** append-only. Owner can read it; only the server can add to it. Rows can't be edited or deleted.
 
 All tables are owner-only. Signed-out visitors get no access, and the browser can't write to them directly.
@@ -92,7 +109,8 @@ I'm listing these for you; I won't do them from here:
 2. Build the agent loop on the OMNI server using its model key, which you said already lives on Railway.
 3. Run everything in a separate sandbox container with no production settings or database, with CPU, memory, time and network limits.
 4. Report the cost of each model call back, so the spend meter is accurate.
-5. Pass the existing link self-test.
+5. Accept jobs for each agent identity, and support stopping a single agent's jobs.
+6. Pass the existing link self-test.
 
 ## Build order (after approval)
 
@@ -100,7 +118,7 @@ I'm listing these for you; I won't do them from here:
 2. Add the tables and server rules, with tests on a throwaway database.
 3. Add the server relay: signing, streaming, Stop, timeouts, kill switch and Emergency Stop checks, spend limits, autonomy expiry and approval gates.
 4. Build the chat, terminal and tab screens on the existing page. They stay locked until OMNI answers the self-test.
-5. Tests: refused before the self-test, kill switch, a stale passkey check, a repeated request, autonomy expiry, each spend limit, gated actions stopping even in Autonomous Mode, Stop, and the audit log not being changeable. Then a signed-out browser check.
+5. Tests: refused before the self-test, kill switch, a stale passkey check, a repeated request, autonomy expiry, each spend limit, gated actions stopping even in Autonomous Mode, Stop, one agent's Stop and budget not affecting other agents, and the audit log not being changeable. Then a signed-out browser check.
 
 ## Still blocked after the build
 
