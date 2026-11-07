@@ -58,6 +58,9 @@ export function OmniAreaHeader() {
         <Button asChild variant={path === "/omni-terminal" ? "secondary" : "ghost"} size="sm">
           <Link to="/omni-terminal">Terminal · owner</Link>
         </Button>
+        <Button asChild variant={path === "/omni-dock" ? "secondary" : "ghost"} size="sm">
+          <Link to="/omni-dock">Docking Bay · owner</Link>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">

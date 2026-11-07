@@ -349,7 +349,12 @@ export function capabilities(s: Snapshot): Capability[] {
   ];
 }
 
-export type AgentStatus = { id: TaskAgent | "omerta"; name: string; status: string; note: string };
+export type AgentStatus = {
+  id: TaskAgent | "omerta" | "honeycomb";
+  name: string;
+  status: string;
+  note: string;
+};
 
 export function agentRegistry(s: Snapshot): AgentStatus[] {
   const caps = capabilities(s);
@@ -386,6 +391,12 @@ export function agentRegistry(s: Snapshot): AgentStatus[] {
       name: AGENT_LABEL.hercules,
       status: "Not connected",
       note: "No project node or health address registered.",
+    },
+    {
+      id: "honeycomb",
+      name: "Honeycomb Terminal (OMNI mobile branch)",
+      status: "Docks via Docking Bay",
+      note: "Pairs with a one-time code and its own device key; live state is on the Docking Bay page. Its dock screen is not built yet.",
     },
     {
       id: "omerta",
