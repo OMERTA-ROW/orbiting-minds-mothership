@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { OmniWorkspace } from "./OmniWorkspace";
 import { FRESH_MFA_SECONDS, noteProblem } from "@/lib/activation-approvals";
 import {
   cancelTerminalTask,
@@ -295,6 +296,7 @@ export function OmniTerminal() {
           <RefreshCw size={14} /> Refresh
         </Button>
       </header>
+      <OmniWorkspace />
       {notice?.area === "top" && (
         <p role="status" className="text-sm text-muted-foreground">
           {notice.text}

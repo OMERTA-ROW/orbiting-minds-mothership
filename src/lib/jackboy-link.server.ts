@@ -105,7 +105,7 @@ export async function configuredJackboyLink(): Promise<JackboyLinkConfig> {
   return c;
 }
 
-async function readCapped(response: Response): Promise<string> {
+export async function readCapped(response: Response): Promise<string> {
   const declared = Number(response.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > MAX_REPLY_BYTES) {
     await response.body?.cancel().catch(() => {});
