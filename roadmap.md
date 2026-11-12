@@ -330,7 +330,7 @@ First staged pilot (one project only; owner selection pending):
 - [x] OMNI Agent Workspace (chat + live terminal, passkeys, Autonomous Mode, per-agent view) — Mothership side built; blocked on Railway workspace endpoint, sandbox and self-test.
 
 ## OMNI Bridge landing spot (2026-11-12)
-- [x] Held task → Jackboy handoff (signed `omni.handoff/v1`), status badges, device status list, Stop on every step.
-- [ ] Jackboy builds `/api/public/omni-handoff/v1` — blocked on Jackboy project.
+- [x] Held task → Jackboy handoff (signed `jackboy.omni-handoff/v1`, matched to Jackboy's published contract), status badges, device status list, Stop on every step.
+- [ ] Jackboy endpoint exists on branch `jackboy/omni-handoff-v1`; live call blocked on Jackboy deploy + the four handoff settings.
 - [ ] Owner adds four `JACKBOY_HANDOFF_*` settings — blocked on Jackboy-issued secret.
 - [ ] First staging dock with desktop CLI — blocked on the CLI implementing omni.dock/v1 signing.
