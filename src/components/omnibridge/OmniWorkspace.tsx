@@ -14,8 +14,10 @@ import {
   passkeyRegisterOptions,
   passkeyRegisterVerify,
   pollSession,
+  proposePullRequest,
   readWorkspace,
   runCommand,
+  runSandboxSelfTest,
   sendChat,
   setAutonomy,
   setKillSwitch,
@@ -29,8 +31,12 @@ import {
   FUTURE_AGENTS,
   GLOBAL_LIMITS,
   IDLE_LIMIT_MS,
+  PROVIDERS,
+  PROVIDER_LABEL,
+  REPOSITORY,
   fmtCents,
   type AgentAction,
+  type Provider,
 } from "@/lib/omni-workspace";
 
 type Snap = Awaited<ReturnType<typeof readWorkspace>>;
@@ -69,6 +75,8 @@ export function OmniWorkspace() {
     auto: useServerFn(setAutonomy),
     decide: useServerFn(decideStep),
     agent: useServerFn(updateAgent),
+    selfTest: useServerFn(runSandboxSelfTest),
+    pr: useServerFn(proposePullRequest),
   };
   const [snap, setSnap] = useState<Snap | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +92,10 @@ export function OmniWorkspace() {
   const [histIdx, setHistIdx] = useState(-1);
   const [histFilter, setHistFilter] = useState("");
   const [minutes, setMinutes] = useState<(typeof AUTONOMY_MINUTES)[number]>(15);
+  const [provider, setProvider] = useState<Provider>("none");
+  const [repo, setRepo] = useState("");
+  const [ref, setRef] = useState("");
+  const [prTitle, setPrTitle] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const termRef = useRef<HTMLDivElement>(null);
 
@@ -183,13 +195,22 @@ export function OmniWorkspace() {
   const mmss = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
   const enrolled = snap.agents.filter((a) => a.status === "enrolled");
   const checklist: [string, boolean][] = [
-    ["Secure link configured and switched on", snap.link.configured],
-    [`Self-test passed${snap.link.selfTestPassedAt ? ` (${new Date(snap.link.selfTestPassedAt).toLocaleString()})` : ""}`, !snap.gate.blockers.some((b) => b.includes("self-test"))],
+    [`Cloud sandbox settings present${snap.link.problem ? ` — ${snap.link.problem}` : ""}`, snap.link.configured],
+    ["Cloud sandbox switch on (OMNI_SANDBOX_ENABLED)", snap.link.enabled],
+    [`Sandbox self-test passed in the last 24 h${snap.link.selfTestPassedAt ? ` (${new Date(snap.link.selfTestPassedAt).toLocaleString()})` : ""}`, !snap.gate.blockers.some((b) => b.includes("self-test"))],
     ["Kill switch: terminal enabled", snap.killSwitchEnabled === true],
     ["Emergency Stop released", snap.emergencyStopReleased],
-    ["Your link approval recorded", snap.link.approvalValid],
     ["Passkey confirmed in the last 5 minutes", snap.passkeyFreshAt !== null],
   ];
+  const health = snap.link.lastCheck?.health ?? null;
+  const providerStatus = (id: "openai" | "anthropic") => {
+    const p = health?.providers.find((x) => x.id === id);
+    if (!snap.link.lastCheck) return "Not reported — run the sandbox self-test";
+    if (!p || !p.configured) return "Not set up on the sandbox service";
+    if (!p.verified) return `Key set (${p.model ?? "no model"}) but not accepted by the provider`;
+    return `Connected · ${p.model}${p.pricing ? "" : " · prices not set, chat refused"} · checked ${when(p.checkedAt)}`;
+  };
+  const repoOk = !repo || REPOSITORY.test(repo);
 
   return (
     <section aria-label="OMNI agent workspace" className="space-y-4 rounded-lg border border-border bg-card p-4 md:p-5">
@@ -256,6 +277,40 @@ export function OmniWorkspace() {
         </Button>
       </div>
 
+      <div className="space-y-2 rounded border border-border p-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="font-medium">Cloud sandbox (OMNI on Railway)</p>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy || !snap.link.configured || !snap.passkeys.length}
+            onClick={() => withPasskey("open", "Sandbox self-test", (checkId) => fns.selfTest({ data: { checkId } }))}
+          >
+            Run sandbox self-test
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {snap.link.lastCheck
+            ? `Last self-test ${when(snap.link.lastCheck.at)}: ${snap.link.lastCheck.passed ? "passed" : `failed — ${snap.link.lastCheck.failures[0] ?? "see audit"}`}.`
+            : "No self-test recorded. Commands stay off until one passes."}
+          {health && ` Network: ${health.isolation.network}. User: uid ${health.isolation.uid}. Limits: ${health.limits.commandTimeoutSec}s per command, ${health.limits.memoryMb} MB, ${Math.round(health.limits.outputCapBytes / 1024)} KB output.`}
+        </p>
+        <ul className="grid gap-1 text-xs sm:grid-cols-3">
+          <li>OpenAI (Codex): {providerStatus("openai")}</li>
+          <li>Claude: {providerStatus("anthropic")}</li>
+          <li>
+            GitHub:{" "}
+            {!health
+              ? "Not reported"
+              : !health.github.configured
+                ? "No token on the sandbox service"
+                : health.github.repositories.length
+                  ? health.github.repositories.map((r) => `${r.fullName} (${r.access ? "can push" : "no push access"})`).join(", ")
+                  : "Token set, no repositories allowed"}
+          </li>
+        </ul>
+      </div>
+
       {!gateOpen && (
         <div className="rounded border border-border p-4">
           <p className="font-medium">Not connected — commands and chat stay off until every item is green.</p>
@@ -279,14 +334,28 @@ export function OmniWorkspace() {
             <option key={a.id} value={a.id}>{a.display_name} ({a.status})</option>
           ))}
         </select>
+        {!sessionId && (
+          <>
+            <select aria-label="Model provider" className="rounded border border-border bg-background px-2 py-1" value={provider} onChange={(e) => setProvider(e.target.value as Provider)}>
+              {PROVIDERS.map((p) => <option key={p} value={p}>{PROVIDER_LABEL[p]}</option>)}
+            </select>
+            <Input aria-label="Repository (owner/name, optional)" className="h-8 w-48" placeholder="owner/repository" value={repo} onChange={(e) => setRepo(e.target.value.trim())} />
+            <Input aria-label="Branch" className="h-8 w-28" placeholder="main" value={ref} onChange={(e) => setRef(e.target.value.trim())} disabled={!repo} />
+          </>
+        )}
         {!sessionId ? (
           <Button
             size="sm"
-            disabled={busy || !gateOpen || !enrolled.some((a) => a.id === agentId)}
+            disabled={busy || !gateOpen || !repoOk || !enrolled.some((a) => a.id === agentId)}
             onClick={() =>
               withPasskey("session", "Start session", async (checkId) => {
-                const r = await fns.start({ data: { checkId, agentId } });
-                if (r.ok) setSessionId(r.sessionId);
+                const r = await fns.start({
+                  data: { checkId, agentId, provider, ...(repo ? { repository: repo, ref: ref || "main" } : {}) },
+                });
+                if (r.ok) {
+                  setSessionId(r.sessionId);
+                  if ("warning" in r && r.warning) setError(r.warning);
+                }
                 return r;
               })
             }
@@ -307,17 +376,34 @@ export function OmniWorkspace() {
             <select aria-label="Autonomous duration" className="rounded border border-border bg-background px-2 py-1" value={minutes} onChange={(e) => setMinutes(Number(e.target.value) as 15 | 30 | 60)}>
               {AUTONOMY_MINUTES.map((m) => <option key={m} value={m}>{m} min</option>)}
             </select>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy || !gateOpen}
-              onClick={() => withPasskey("autonomy", "Autonomous Mode on", (checkId) => fns.auto({ data: { agentId, on: true, minutes, checkId } }))}
-            >
-              Autonomous: OFF — turn on
+            <Button size="sm" variant="outline" disabled title="Autonomous Mode stays off in this release; every command needs your approval.">
+              Autonomous: OFF (locked)
             </Button>
           </>
         )}
       </div>
+
+      {session?.repository && (
+        <form
+          className="flex flex-wrap items-center gap-2 text-sm"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!sessionId || prTitle.trim().length < 3) return;
+            const title = prTitle;
+            setPrTitle("");
+            void act("Pull request proposal", () => fns.pr({ data: { sessionId, title } }));
+          }}
+        >
+          <span className="text-muted-foreground">
+            Repository {session.repository}@{session.repo_ref ?? "main"} ·
+          </span>
+          <Input aria-label="Pull request title" className="h-8 w-64" placeholder="Pull request title" value={prTitle} onChange={(e) => setPrTitle(e.target.value)} maxLength={120} />
+          <Button size="sm" type="submit" variant="outline" disabled={busy || !gateOpen || prTitle.trim().length < 3}>
+            Propose draft pull request
+          </Button>
+          <span className="text-xs text-muted-foreground">Opening it needs your passkey in Approvals waiting. OMNI never merges.</span>
+        </form>
+      )}
 
       {/* Chat + terminal */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -368,6 +454,13 @@ export function OmniWorkspace() {
               <div key={s.id} className={s.stream === "stderr" || s.status === "failed" ? "text-destructive" : s.stream === "system" ? "text-muted-foreground" : ""}>
                 {s.kind === "command" ? `$ ${s.title || s.body}` : s.body}
                 {s.exit_code !== null && <span className="text-muted-foreground"> [exit {s.exit_code}]</span>}
+                {s.kind === "command" && s.status === "pending_approval" && (
+                  <span className="ml-2 inline-flex gap-1 font-sans">
+                    <Button size="sm" className="h-6 px-2 text-xs" disabled={busy} onClick={() => act("Approve command", () => fns.decide({ data: { stepId: s.id, approve: true } }))}>Approve &amp; run</Button>
+                    <Button size="sm" variant="outline" className="h-6 px-2 text-xs" disabled={busy} onClick={() => act("Reject command", () => fns.decide({ data: { stepId: s.id, approve: false } }))}>Reject</Button>
+                  </span>
+                )}
+                {s.kind === "command" && s.status === "rejected" && <span className="text-muted-foreground"> [rejected]</span>}
               </div>
             ))}
           </div>
@@ -388,7 +481,7 @@ export function OmniWorkspace() {
               className="font-mono"
               disabled={!sessionId || !gateOpen}
               value={cmdText}
-              placeholder={gateOpen ? "> type a command" : "Locked"}
+              placeholder={gateOpen ? "> type a command — you approve it before it runs" : "Locked"}
               onChange={(e) => setCmdText(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "ArrowUp" && history.length) {
