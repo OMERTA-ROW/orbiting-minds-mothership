@@ -294,6 +294,65 @@ describe("signed device requests", () => {
     expect(wrongAgent.status).toBe(400);
   });
 
+  it("Emergency Stop refuses proposals and the status list", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const job = {
+      id: "6b1f1c2a-8a43-4b1e-9d2c-3f6a7b8c9d0f",
+      kind: "code.test",
+      agent: "jackboy",
+      project: "Mothership",
+      instructions: "Add a test",
+    };
+    const { store, calls } = fakeStore({
+      jwk: publicJwk,
+      permissions: ["jobs.propose", "status.read"],
+      stopEngaged: async () => true,
+    });
+    const held = await handleSigned(
+      await signed(DOCK_PATHS.jobs, DEVICE, JSON.stringify(job), privateKey),
+      "jobs",
+      store,
+      NOW,
+    );
+    expect(held.status).toBe(423);
+    expect(calls.some((c) => c.startsWith("hold:"))).toBe(false);
+    const list = await handleSigned(
+      await signed(DOCK_PATHS.jobsStatus, DEVICE, "{}", privateKey),
+      "jobsStatus",
+      store,
+      NOW,
+    );
+    expect(list.status).toBe(423);
+  });
+
+  it("status list needs status.read and only returns the signing device's tasks", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const asked: string[] = [];
+    const rows = [{ taskId: "t1", state: "held", handoff: "queued" }];
+    const denied = fakeStore({ jwk: publicJwk, permissions: ["jobs.propose"] });
+    const r1 = await handleSigned(
+      await signed(DOCK_PATHS.jobsStatus, DEVICE, "{}", privateKey),
+      "jobsStatus",
+      denied.store,
+      NOW,
+    );
+    expect(r1.status).toBe(403);
+    const ok = fakeStore({
+      jwk: publicJwk,
+      permissions: ["status.read"],
+      handoffStatus: async (d: string) => (asked.push(d), rows),
+    });
+    const r2 = await handleSigned(
+      await signed(DOCK_PATHS.jobsStatus, DEVICE, "{}", privateKey),
+      "jobsStatus",
+      ok.store,
+      NOW,
+    );
+    expect(r2.status).toBe(200);
+    expect(r2.body["jobs"]).toEqual(rows);
+    expect(asked).toEqual([DEVICE]);
+  });
+
   it("oversized bodies are refused", async () => {
     const { privateKey, publicJwk } = await generateDockKey();
     const { store } = fakeStore({ jwk: publicJwk });
