@@ -544,6 +544,7 @@ export const runStopDrill = createServerFn({ method: "POST" })
       try {
         await ws.ingest(admin, db, agent, sessionId, job.id, await ws.relay(link, "command.run", { ...base, command: STOP_DRILL_COMMAND }));
         await ws.ingest(admin, db, agent, sessionId, job.id, await ws.relay(link, "step.decide", { ...base, stepId: "cmd", approve: true }));
+        await admin.from("omni_agent_steps").update({ status: "approved", decided_at: new Date().toISOString() }).eq("job_id", job.id).eq("remote_id", "cmd");
         await wait(800);
         const running = await ws.relay(link, "events.poll", base);
         await ws.ingest(admin, db, agent, sessionId, job.id, running);
