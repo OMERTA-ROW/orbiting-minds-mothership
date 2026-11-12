@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAccount } from "@/hooks/use-account";
@@ -29,7 +29,11 @@ function AuthPage() {
   useEffect(() => setHydrated(true), []);
 
   /** Go to the remembered page: a pending invitation first, then an owner page, else projects. */
+  const leaving = useRef(false);
   const goOn = async () => {
+    // Session events can fire more than once; only the first one picks the destination.
+    if (leaving.current) return;
+    leaving.current = true;
     const invite = takePendingInvite(window.sessionStorage);
     if (invite) return navigate({ to: "/invite", search: { token: invite }, replace: true });
     return navigate({ to: takeSignInReturn() ?? "/beta", replace: true });
