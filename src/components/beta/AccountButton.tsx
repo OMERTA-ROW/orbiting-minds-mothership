@@ -16,7 +16,7 @@ import {
 
 const ACCOUNT_LINKS = [
   { to: "/beta", label: "My projects" },
-  { to: "/account-security", label: "Two-factor & recovery" },
+  { to: "/account-security", label: "Security (two-step sign-in)" },
   { to: "/sign-in-help", label: "How to sign in" },
   { to: "/members", label: "Members & invitations (owner)" },
   { to: "/omni-api-keys", label: "API keys (owner)" },

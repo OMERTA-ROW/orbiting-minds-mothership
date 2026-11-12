@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  CLIENT_COOLDOWN_MS,
-  CLIENT_MAX_ATTEMPTS,
   LEGACY_TOTP_ISSUER,
+  afterFailedCode,
   TOTP_ISSUER,
   isSixDigitCode,
   mfaErrorMessage,
@@ -21,10 +20,12 @@ export function OwnerCodeForm({
   intro,
   onVerified,
   disabled,
+  successText = "Verified. Unlocked for 15 minutes.",
 }: {
   intro: string;
   onVerified: () => Promise<void> | void;
   disabled?: boolean;
+  successText?: string;
 }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -53,18 +54,17 @@ export function OwnerCodeForm({
       if (factors.error || !factor) {
         setMsg({
           ok: false,
-          text: "No verified authenticator is on this account. Set one up on the Two-factor page.",
+          text: "No verified authenticator is on this account. Set one up in Account security.",
         });
         return;
       }
       const r = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
       setCode("");
       if (r.error) {
-        const next = fails + 1;
-        setFails(next);
-        if (next >= CLIENT_MAX_ATTEMPTS) {
-          setFails(0);
-          setPausedUntil(Date.now() + CLIENT_COOLDOWN_MS);
+        const next = afterFailedCode(fails, Date.now());
+        setFails(next.fails);
+        if (next.pausedUntil) {
+          setPausedUntil(next.pausedUntil);
           setMsg({
             ok: false,
             text: "Several codes didn't match. Wait 30 seconds, check your phone's time is set automatically, then try the newest code.",
@@ -73,7 +73,7 @@ export function OwnerCodeForm({
         return;
       }
       setFails(0);
-      setMsg({ ok: true, text: "Verified. Unlocked for 15 minutes." });
+      setMsg({ ok: true, text: successText });
       await onVerified();
     } catch {
       setMsg({ ok: false, text: "The code could not be checked. Check your connection and try again." });
