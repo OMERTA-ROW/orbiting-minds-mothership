@@ -1631,6 +1631,9 @@ export type Database = {
           last_activity_at: string
           model: string | null
           owner_id: string
+          provider: string
+          repo_ref: string | null
+          repository: string | null
           sandbox_id: string | null
           sandbox_name: string | null
           started_at: string
@@ -1643,6 +1646,9 @@ export type Database = {
           last_activity_at?: string
           model?: string | null
           owner_id: string
+          provider?: string
+          repo_ref?: string | null
+          repository?: string | null
           sandbox_id?: string | null
           sandbox_name?: string | null
           started_at?: string
@@ -1655,6 +1661,9 @@ export type Database = {
           last_activity_at?: string
           model?: string | null
           owner_id?: string
+          provider?: string
+          repo_ref?: string | null
+          repository?: string | null
           sandbox_id?: string | null
           sandbox_name?: string | null
           started_at?: string

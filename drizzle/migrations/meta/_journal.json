@@ -323,6 +323,13 @@
       "when": 1794508470035,
       "tag": "0045_omni_agent_memories",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1794509241583,
+      "tag": "0046_omni_cloud_shell_sessions",
+      "breakpoints": true
     }
   ]
 }
