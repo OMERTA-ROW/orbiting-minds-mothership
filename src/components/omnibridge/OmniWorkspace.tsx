@@ -394,7 +394,7 @@ export function OmniWorkspace() {
         )}
       </div>
 
-      <details className="rounded border border-border p-3 text-sm" open={false}>
+      <details className="rounded border border-border p-3 text-sm">
         <summary className="cursor-pointer font-medium">
           Autonomous Mode readiness · {snap.agents.find((a) => a.id === agentId)?.display_name ?? agentId}: {missing.length ? `${missing.length} gate(s) missing — stays OFF` : "all recorded gates met"}
         </summary>
