@@ -39,16 +39,20 @@ All use HTTPS POST, platform certificate checks, refused redirects, a 5-second t
 - Body: `{ action: "handshake"|"submit"|"run"|"status"|"cancel", projectId, jobId?, kind?: "protocol.self-test" }`.
 - Reply must carry `x-omni-proof` and echo the nonce. Only a completed job whose runner is `restricted-protocol-self-test` with `result.passed === true` records `self_test_passed`.
 
-### `omni.workspace/v1` — agent chat/terminal relay (`POST {origin}/api/public/omni/workspace`) — **Railway endpoint not confirmed to exist**
+### `omni.workspace/v1` — cloud shell relay (`POST {OMNI_SANDBOX_ORIGIN}/api/public/omni/workspace`) — **reference service in `services/omni-sandbox/`, not deployed**
+- Goes to a **separate** sandbox service with its own `OMNI_SANDBOX_*` settings. Mothership refuses a sandbox address equal to the Jackboy host or a secret reused from the Jackboy link.
 - Headers: `x-omni-client`, `x-omni-timestamp`, `x-omni-nonce`, `x-omni-signature`, `content-type: application/json`.
 - Signature: HMAC-SHA256(secret, `omni.workspace/v1\nPOST\n/api/public/omni/workspace\n<ts>\n<nonce>\n<sha256(body)>`).
-- Body: `{ action, projectId, ...payload }` with actions `session.start {sessionId, agentId, allowedActions}`, `chat.send {sessionId, jobId, agentId, autonomous, text}`, `command.run {… command}`, `events.poll {sessionId, jobId, cursor}`, `job.stop`, `agent.stop`, `session.end`, `step.decide {sessionId, jobId, stepId, approve}`.
-- Reply: HTTP 200/202, `x-omni-proof` = HMAC(secret, `omni.workspace/v1\nresponse\n<nonce>\n<status>\n<raw body>`), JSON `{ contract, requestNonce, session?: {sandboxId, sandboxName, model}, job?: {status, cursor}, steps[] }` (schema `remoteReply` in `src/lib/omni-workspace.ts`). 404 is reported as "OMNI has no workspace endpoint yet".
+- Body: `{ action, projectId, ...payload }` with actions `health.check {}` (live isolation probe, limits, provider and GitHub status), `repo.checkout {sessionId, jobId, repository, ref}`, `pr.propose {sessionId, jobId, title}` (returns a `pull_request`-gated diff step), `session.start {sessionId, agentId, allowedActions, provider}`, `chat.send {sessionId, jobId, agentId, autonomous, text}`, `command.run {… command}`, `events.poll {sessionId, jobId, cursor}`, `job.stop`, `agent.stop`, `session.end`, `step.decide {sessionId, jobId, stepId, approve}`.
+- Reply: HTTP 200/202, `x-omni-proof` = HMAC(secret, `omni.workspace/v1\nresponse\n<nonce>\n<status>\n<raw body>`), JSON `{ contract, requestNonce, session?: {sandboxId, sandboxName, model}, job?: {status, cursor}, steps[] }` (schema `remoteReply` in `src/lib/omni-workspace.ts`). 404 is reported as "OMNI has no workspace endpoint yet". HTTP 409 is a signed refusal whose `error` text is shown; nothing ran.
+- `command.run` never executes on arrival: it returns a `command` step with `pending_approval`; only `step.decide {stepId:"cmd", approve:true}` runs it. Output comes back through `events.poll` as `output` steps (`stdout`/`stderr`/`system`) and a final `result` step with `exitCode`.
 
 ### `omni.dock/v1` and `jackboy.omni-handoff/v1`
 See `docs/OMNI-DOCK-PROTOCOL.md`. Docked devices get status, held proposals and stop-engage only.
 
 ## 4. Isolated sandbox prerequisites (Railway side, before any command can run)
+
+The reference service (`services/omni-sandbox/`, deploy steps in its README) implements items 1–9 and was tested end to end **on Lovable's build machine only** (`src/test/omni-sandbox-interop.test.ts`, 11 checks). Whether Railway's container allows the no-network namespace is **unverified**: the service logs `network isolated` or `network open` at startup, and Mothership's self-test fails on `open`. If Railway reports `open`, the options are a host that allows user namespaces, or a sandbox provider with per-sandbox network off; Mothership's contract stays the same.
 
 Mothership will not relay a command until **all** of these are true and evidenced:
 
@@ -62,7 +66,9 @@ Mothership will not relay a command until **all** of these are true and evidence
 8. Merge, deploy, publish, secrets, GitHub-permission and network actions come back as `gated` steps for the owner, never auto-run.
 9. The `omni.workspace/v1` endpoint above, with proofs, plus the `omni.link/v2` self-test passing within 24 hours.
 
-Mothership side, in order: Activation Approvals 1–10 → owner turns on `JACKBOY_LINK_ENABLED` / `JACKBOY_LINK_SELF_TEST_ENABLED` in Lovable project settings → handshake → self-test passes → kill switch enabled → fresh passkey → session. Emergency Stop engaged at any time blocks every step.
+Mothership side for the cloud shell, in order: deploy sandbox → add `OMNI_SANDBOX_ORIGIN`, `OMNI_SANDBOX_CLIENT_ID`, `OMNI_SANDBOX_HMAC_SECRET` → `OMNI_SANDBOX_ENABLED=true` → kill switch enabled (passkey) → **Run sandbox self-test** (passkey; must pass within 24 h) → start session (passkey) → each command approved by you. Emergency Stop engaged at any time blocks every step. Activation Approvals 1–10 and the Jackboy link switches remain the gate for Jackboy CODE only.
+
+Mothership's self-test passes only when the live probe shows: network isolated, non-root per-session user, no environment names beyond `HOME, LANG, OLDPWD, PATH, TERM`, clean probe exit, and limits within ceilings (≤300 s per command, ≤8 GB memory, ≤1 MB output, ≤5 sessions, 10 min idle, 60 min session). Providers show "Connected" only when the sandbox reports the key was accepted by the provider's model list.
 
 ## 5. Per-agent memory (built in Mothership; no outside backend)
 
