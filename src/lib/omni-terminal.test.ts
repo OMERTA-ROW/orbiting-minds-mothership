@@ -312,7 +312,7 @@ describe("Readiness display reflects recorded evidence only", () => {
     expect(capabilities(snap()).find((c) => c.id === "self_test")!.evidence).toContain("No Jackboy link self-test recorded");
   });
   it("distinguishes a never-attempted handshake from a failed attempt", () => {
-    expect(item(snap(), "jackboy_link").detail).toContain("never been attempted");
+    expect(item(snap(), "jackboy_link").detail).toContain("no handshake has ever been attempted");
     const audit = [
       { id: "a", action: "connecting", record_type: "jackboy_link", record_id: "x", occurred_at: "2026-11-07T15:00:00Z" },
     ];
