@@ -1,8 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { OwnerCodeForm } from "@/components/account/OwnerCodeForm";
@@ -12,27 +11,32 @@ import {
   RECOVERY_FRESH_SIGNIN_SECONDS,
   SETUP_WINDOW_MS,
   TOTP_ISSUER,
+  afterFailedCode,
+  formatSetupKey,
+  isQrImage,
   isSixDigitCode,
+  isStandardTotpUri,
   mfaErrorMessage,
   ownerMfaState,
   rememberSignInReturn,
   totpFriendlyName,
 } from "@/lib/owner-mfa";
 import {
-  createOwnerRecoveryCodes,
-  readOwnerRecovery,
-  recoverOwnerAuthenticator,
-} from "@/lib/owner-mfa.functions";
+  createRecoveryCodes,
+  disableTwoStep,
+  readAccountMfa,
+  recoverAuthenticator,
+} from "@/lib/account-mfa.functions";
 
 export const Route = createFileRoute("/_authenticated/account-security")({
   head: () => ({
     meta: [
-      { title: "Two-Factor Authentication · OMNI Account Security" },
+      { title: "Account Security · Two-Step Sign-In" },
       {
         name: "description",
-        content: "Set up, verify or recover the authenticator app for your OMNI account.",
+        content: "Turn on optional two-step sign-in with an authenticator app, save recovery codes, or recover access.",
       },
-      { property: "og:title", content: "Two-Factor Authentication · OMNI" },
+      { property: "og:title", content: "Account Security · Two-Step Sign-In" },
       { property: "og:description", content: "Private account security settings." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -44,7 +48,7 @@ export const Route = createFileRoute("/_authenticated/account-security")({
 
 type Factor = { id: string; friendly_name?: string; status: string };
 type Pending = { id: string; qr: string; secret: string; startedAt: number };
-type Recovery = Awaited<ReturnType<typeof readOwnerRecovery>>;
+type Account = Awaited<ReturnType<typeof readAccountMfa>>;
 type Event = { id: string; event: string; detail: string; created_at: string };
 type Msg = { ok: boolean; text: string } | null;
 
@@ -54,34 +58,39 @@ const EVENT_LABEL: Record<string, string> = {
   recovery_locked: "Recovery paused",
   recovery_completed: "Authenticator recovered",
   recovery_failed: "Recovery did not finish",
+  mfa_disabled: "Two-step sign-in turned off",
+  mfa_disable_failed: "Turning off did not finish",
 };
 
 function Notice({ msg }: { msg: Msg }) {
   if (!msg) return null;
   return (
-    <p
-      role={msg.ok ? "status" : "alert"}
-      className={msg.ok ? "text-sm text-primary" : "text-sm text-destructive"}
-    >
+    <p role={msg.ok ? "status" : "alert"} className={msg.ok ? "text-sm text-primary" : "text-sm text-destructive"}>
       {msg.text}
     </p>
   );
 }
 
 function AccountSecurity() {
-  const readRecovery = useServerFn(readOwnerRecovery);
-  const makeCodes = useServerFn(createOwnerRecoveryCodes);
-  const recover = useServerFn(recoverOwnerAuthenticator);
+  const navigate = useNavigate();
+  const readAccount = useServerFn(readAccountMfa);
+  const makeCodes = useServerFn(createRecoveryCodes);
+  const recover = useServerFn(recoverAuthenticator);
+  const disable = useServerFn(disableTwoStep);
 
   const [factors, setFactors] = useState<Factor[]>([]);
   const [level, setLevel] = useState<string>("");
   const [mfaAge, setMfaAge] = useState<number | null>(null);
+  const [email, setEmail] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [unavailable, setUnavailable] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [setupCode, setSetupCode] = useState("");
+  const [setupFails, setSetupFails] = useState(0);
+  const [pausedUntil, setPausedUntil] = useState(0);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
-  const [recovery, setRecovery] = useState<Recovery | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [codes, setCodes] = useState<string[] | null>(null);
   const [codesMsg, setCodesMsg] = useState<Msg>(null);
@@ -90,45 +99,46 @@ function AccountSecurity() {
   const [now, setNow] = useState(0);
 
   const refresh = useCallback(async () => {
-    const [f, a, c] = await Promise.all([
+    const [f, a, c, u] = await Promise.all([
       supabase.auth.mfa.listFactors(),
       supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
       supabase.auth.getClaims(),
+      supabase.auth.getUser(),
     ]);
     if (f.error) setMsg({ ok: false, text: "Could not load your security settings. Try again." });
     else setFactors((f.data.all ?? []).filter((x) => x.factor_type === "totp") as Factor[]);
     const lvl = a.error ? "" : (a.data.currentLevel ?? "");
     setLevel(lvl);
+    setEmail(u.data.user?.email ?? "");
     const amr = c.error ? null : (c.data?.claims as Record<string, unknown> | undefined)?.["amr"];
     setMfaAge(mfaAgeSeconds(amr, Math.floor(Date.now() / 1000)));
     try {
-      setRecovery(await readRecovery());
+      setAccount(await readAccount());
     } catch {
-      setRecovery(null);
+      setAccount(null);
     }
-    if (lvl === "aal2") {
-      const e = await supabase
-        .from("owner_mfa_recovery_events")
-        .select("id,event,detail,created_at")
-        .order("created_at", { ascending: false })
-        .limit(5);
-      setEvents(e.error ? [] : (e.data as Event[]));
-    } else setEvents([]);
+    const e = await supabase
+      .from("owner_mfa_recovery_events")
+      .select("id,event,detail,created_at")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setEvents(e.error ? [] : (e.data as Event[]));
     setLoaded(true);
-  }, [readRecovery]);
+  }, [readAccount]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  // Hide an unfinished setup QR/key after 10 minutes.
+  // Ticks for the 10-minute setup window and the wrong-code pause.
   useEffect(() => {
-    if (!pending) return;
+    if (!pending && pausedUntil <= Date.now()) return;
     setNow(Date.now());
-    const t = window.setInterval(() => setNow(Date.now()), 5000);
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(t);
-  }, [pending]);
+  }, [pending, pausedUntil]);
   const setupExpired = Boolean(pending && now && now - pending.startedAt > SETUP_WINDOW_MS);
+  const waitSeconds = pausedUntil > now ? Math.ceil((pausedUntil - now) / 1000) : 0;
 
   const verified = factors.filter((f) => f.status === "verified");
   const state = ownerMfaState({ signedIn: true, verifiedFactors: verified.length, aal: level });
@@ -158,15 +168,19 @@ function AccountSecurity() {
         friendlyName: totpFriendlyName(new Date()),
       });
       if (r.error) {
-        setMsg({ ok: false, text: mfaErrorMessage(r.error) ?? "Setup could not start." });
+        const text = mfaErrorMessage(r.error) ?? "Setup could not start.";
+        if (r.error.code === "mfa_totp_enroll_not_enabled") setUnavailable(text);
+        setMsg({ ok: false, text });
         return;
       }
-      setPending({
-        id: r.data.id,
-        qr: r.data.totp.qr_code,
-        secret: r.data.totp.secret,
-        startedAt: Date.now(),
-      });
+      // Only show what the sign-in provider really issued: a standard otpauth:// TOTP URI and its QR image.
+      if (!isStandardTotpUri(r.data.totp.uri) || !isQrImage(r.data.totp.qr_code)) {
+        await supabase.auth.mfa.unenroll({ factorId: r.data.id });
+        setUnavailable("The sign-in service did not return a usable setup code, so nothing was shown.");
+        return;
+      }
+      setSetupFails(0);
+      setPending({ id: r.data.id, qr: r.data.totp.qr_code, secret: r.data.totp.secret, startedAt: Date.now() });
       setMsg({ ok: true, text: "Scan the code, then enter the 6-digit code to finish." });
     });
 
@@ -179,6 +193,7 @@ function AccountSecurity() {
 
   const confirmSetup = (factorId: string) =>
     run(async () => {
+      if (waitSeconds > 0) return;
       if (!isSixDigitCode(setupCode)) {
         setMsg({ ok: false, text: "Enter the 6-digit code from your authenticator app." });
         return;
@@ -186,39 +201,46 @@ function AccountSecurity() {
       const r = await supabase.auth.mfa.challengeAndVerify({ factorId, code: setupCode });
       setSetupCode("");
       if (r.error) {
-        setMsg({ ok: false, text: mfaErrorMessage(r.error) ?? "Try again." });
+        const next = afterFailedCode(setupFails, Date.now());
+        setSetupFails(next.fails);
+        if (next.pausedUntil) setPausedUntil(next.pausedUntil);
+        setMsg({
+          ok: false,
+          text: next.pausedUntil
+            ? "Several codes didn't match. Wait 30 seconds, check your phone sets its time automatically, then try the newest code."
+            : (mfaErrorMessage(r.error) ?? "Try again."),
+        });
         return;
       }
       setPending(null);
       setMsg({
         ok: true,
-        text: "Authenticator set up and verified. Now create recovery codes below in case you lose your phone.",
+        text: "Two-step sign-in is on. Next, create recovery codes below in case you lose your phone.",
       });
     });
 
-  const remove = (id: string) =>
+  const turnOff = () =>
     run(async () => {
       if (!fresh) {
         setMsg({ ok: false, text: "Enter a fresh authenticator code first (last 15 minutes)." });
         return;
       }
-      if (!window.confirm("Remove this authenticator? Owner-only pages will lock until you add one again."))
+      const ownerNote = account?.isOwner ? " Owner-only pages will lock until you set it up again." : "";
+      if (!window.confirm(`Turn off two-step sign-in? Your authenticator and recovery codes stop working.${ownerNote}`))
         return;
-      const r = await supabase.auth.mfa.unenroll({ factorId: id });
-      setMsg(
-        r.error
-          ? { ok: false, text: mfaErrorMessage(r.error) ?? "Could not remove it." }
-          : { ok: true, text: "Authenticator removed. Delete its entry from your app too." },
-      );
-      if (!r.error) await supabase.auth.refreshSession();
+      const r = await disable();
+      if (!r.ok) {
+        setMsg({ ok: false, text: r.message });
+        return;
+      }
+      await supabase.auth.refreshSession();
+      setCodes(null);
+      setMsg({ ok: true, text: "Two-step sign-in is off. Delete its entry from your authenticator app too." });
     });
 
   async function newCodes() {
     if (busy) return;
-    if (
-      recovery?.codesRemaining &&
-      !window.confirm("Create new recovery codes? Your earlier codes will stop working.")
-    )
+    if (account?.codesRemaining && !window.confirm("Create new recovery codes? Your earlier codes will stop working."))
       return;
     setBusy(true);
     setCodesMsg({ ok: true, text: "Creating recovery codes…" });
@@ -226,10 +248,7 @@ function AccountSecurity() {
       const r = await makeCodes();
       if (!r.ok) return setCodesMsg({ ok: false, text: r.message });
       setCodes(r.codes);
-      setCodesMsg({
-        ok: true,
-        text: "Save these now. They are shown only once; each works one time.",
-      });
+      setCodesMsg({ ok: true, text: "Save these now. They are shown only once; each works one time." });
     } catch {
       setCodesMsg({ ok: false, text: "Not confirmed. Refresh before retrying." });
     } finally {
@@ -249,21 +268,11 @@ function AccountSecurity() {
     URL.revokeObjectURL(url);
   }
 
-  async function freshSignIn() {
-    setRecoveryMsg({ ok: true, text: "Opening Google sign-in…" });
+  async function signInAgain() {
+    setRecoveryMsg({ ok: true, text: "Signing out so you can sign in again…" });
     rememberSignInReturn("/account-security");
-    try {
-      const r = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth`,
-      });
-      if (r.error) throw r.error;
-      if (!r.redirected) {
-        setRecoveryMsg({ ok: true, text: "Signed in again. You have 10 minutes to enter a recovery code." });
-        await refresh();
-      }
-    } catch {
-      setRecoveryMsg({ ok: false, text: "Sign-in did not complete. Try again." });
-    }
+    await supabase.auth.signOut();
+    await navigate({ to: "/auth" });
   }
 
   async function submitRecoveryCode() {
@@ -288,47 +297,54 @@ function AccountSecurity() {
   }
 
   const signInFresh =
-    recovery?.signInAgeSeconds !== null &&
-    recovery?.signInAgeSeconds !== undefined &&
-    recovery.signInAgeSeconds <= RECOVERY_FRESH_SIGNIN_SECONDS;
+    typeof account?.signInAgeSeconds === "number" && account.signInAgeSeconds <= RECOVERY_FRESH_SIGNIN_SECONDS;
+
+  const statusText = !loaded
+    ? "Checking…"
+    : state === "verified"
+      ? fresh
+        ? "On · code confirmed in the last 15 minutes"
+        : "On · code confirmed this session"
+      : state === "needs_code"
+        ? "On · enter a code to confirm it's you"
+        : "Off";
 
   return (
     <main className="mx-auto max-w-xl space-y-6 px-4 py-10">
       <div>
-        <p className="text-sm text-muted-foreground">Account Security</p>
-        <h1 className="text-2xl font-semibold">Two-Factor Authentication</h1>
+        <p className="text-sm text-muted-foreground">Account · Security</p>
+        <h1 className="text-2xl font-semibold">Two-step sign-in</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Only the owner needs this: owner-only pages ask for a 6-digit authenticator app code.
-          Members can skip it.{" "}
+          Optional: adds a 6-digit code from an authenticator app after you sign in. Nothing changes until
+          you turn it on. The owner needs it to open owner-only pages.{" "}
           <Link to="/sign-in-help" className="underline underline-offset-4">
             How this works
           </Link>
-          . Status:{" "}
-          <strong>
-            {!loaded
-              ? "Checking…"
-              : state === "verified"
-                ? fresh
-                  ? "On and verified in the last 15 minutes"
-                  : "On and verified this session"
-                : state === "needs_code"
-                  ? "On — enter a code to unlock owner pages"
-                  : "Not set up"}
-          </strong>
+        </p>
+        <p className="mt-2 text-sm">
+          Status: <strong role="status">{statusText}</strong>
         </p>
       </div>
 
       <Notice msg={msg} />
 
-      {loaded && verified.length === 0 && !pending && (
+      {loaded && unavailable && (
+        <section className="rounded-lg border border-border p-4 text-sm" role="alert">
+          <p className="font-medium">Two-step sign-in is unavailable right now</p>
+          <p className="mt-1 text-muted-foreground">{unavailable} Your sign-in is unchanged.</p>
+        </section>
+      )}
+
+      {loaded && verified.length === 0 && !pending && !unavailable && (
         <section className="space-y-3 rounded-lg border border-border p-4">
-          <p className="text-sm">
-            Set up an authenticator app (Google Authenticator, 1Password, Authy or similar). It will
-            appear in the app as <strong>{TOTP_ISSUER}</strong>. Two-factor only turns on after you
-            enter a working code.
-          </p>
+          <h2 className="font-medium">Set up an authenticator</h2>
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+            <li>Install any authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, Authy…).</li>
+            <li>Press the button and scan the QR code, or type the setup key.</li>
+            <li>Enter the 6-digit code the app shows. Only then is two-step sign-in turned on.</li>
+          </ol>
           <Button disabled={busy} onClick={start}>
-            Set up authenticator app
+            Set up authenticator
           </Button>
         </section>
       )}
@@ -336,17 +352,18 @@ function AccountSecurity() {
       {pending && !setupExpired && (
         <section className="space-y-3 rounded-lg border border-border p-4">
           <p className="text-sm">1. Scan this code with your authenticator app.</p>
-          <img
-            src={pending.qr}
-            alt="Authenticator setup QR code"
-            className="h-48 w-48 rounded bg-foreground p-2"
-          />
+          <img src={pending.qr} alt="Authenticator setup QR code" className="h-48 w-48 rounded bg-foreground p-2" />
+          <p className="text-xs text-muted-foreground">
+            It appears in the app as <strong>{TOTP_ISSUER}</strong>
+            {email ? ` (${email})` : ""}.
+          </p>
           <details className="text-sm">
-            <summary className="cursor-pointer">Can't scan? Show setup key</summary>
-            <code className="mt-2 block break-all">{pending.secret}</code>
+            <summary className="cursor-pointer">Can't scan? Type the setup key instead</summary>
+            <code className="mt-2 block break-all font-mono text-base tracking-wider">{formatSetupKey(pending.secret)}</code>
             <p className="mt-1 text-xs text-muted-foreground">
-              Keep this private. It is shown only now and disappears after 10 minutes or when you
-              leave this page. Choose “time-based” if your app asks.
+              In your app choose “Enter a setup key”, type it exactly (spaces don't matter) and pick
+              “time-based” if asked. Keep it private: it's shown only now and disappears after 10 minutes
+              or when you leave this page.
             </p>
           </details>
           <p className="text-sm">
@@ -364,11 +381,12 @@ function AccountSecurity() {
               autoComplete="one-time-code"
               maxLength={6}
               value={setupCode}
+              disabled={waitSeconds > 0}
               onChange={(e) => setSetupCode(e.target.value.replace(/\D/g, ""))}
               aria-label="6-digit code"
             />
-            <Button type="submit" disabled={busy || setupCode.length !== 6}>
-              Verify and turn on
+            <Button type="submit" disabled={busy || setupCode.length !== 6 || waitSeconds > 0}>
+              {waitSeconds > 0 ? `Wait ${waitSeconds}s` : "Verify and turn on"}
             </Button>
           </form>
           <Button variant="ghost" size="sm" disabled={busy} onClick={() => cancelSetup(pending.id)}>
@@ -380,8 +398,8 @@ function AccountSecurity() {
       {pending && setupExpired && (
         <section className="space-y-3 rounded-lg border border-border p-4">
           <p className="text-sm">
-            This setup code expired. Delete the unfinished {TOTP_ISSUER} entry from your app if you
-            added one, then start again.
+            This setup code expired. Delete the unfinished {TOTP_ISSUER} entry from your app if you added
+            one, then start again.
           </p>
           <Button disabled={busy} onClick={() => cancelSetup(pending.id)}>
             Start again
@@ -391,7 +409,8 @@ function AccountSecurity() {
 
       {state === "needs_code" && (
         <OwnerCodeForm
-          intro="Enter the current code from your authenticator app to unlock owner pages."
+          intro="Enter the current code from your authenticator app to confirm it's you."
+          successText="Code accepted."
           onVerified={refresh}
         />
       )}
@@ -401,26 +420,27 @@ function AccountSecurity() {
           <p className="text-sm font-medium">{f.friendly_name || "Authenticator app"} · verified</p>
           {state === "verified" && !fresh && (
             <OwnerCodeForm
-              intro="Changing two-factor settings needs a code from the last 15 minutes."
+              intro="Changing these settings needs a code from the last 15 minutes."
+              successText="Code accepted. You can change settings for 15 minutes."
               onVerified={refresh}
             />
           )}
           {state === "verified" && (
-            <Button variant="outline" size="sm" disabled={busy || !fresh} onClick={() => remove(f.id)}>
-              Remove authenticator
+            <Button variant="outline" size="sm" disabled={busy || !fresh} onClick={turnOff}>
+              Turn off two-step sign-in
             </Button>
           )}
         </section>
       ))}
 
-      {state === "verified" && recovery?.isOwner && (
+      {state === "verified" && account && (
         <section className="space-y-3 rounded-lg border border-border p-4">
           <h2 className="font-medium">Recovery codes</h2>
           <p className="text-sm text-muted-foreground">
-            {recovery.codesRemaining
-              ? `${recovery.codesRemaining} unused code${recovery.codesRemaining === 1 ? "" : "s"} saved${recovery.codesCreatedAt ? ` (created ${new Date(recovery.codesCreatedAt).toLocaleDateString()})` : ""}.`
-              : "No recovery codes yet. Without them, a lost phone locks owner pages."}{" "}
-            Keep them offline, away from your phone.
+            {account.codesRemaining
+              ? `${account.codesRemaining} unused code${account.codesRemaining === 1 ? "" : "s"} saved${account.codesCreatedAt ? ` (created ${new Date(account.codesCreatedAt).toLocaleDateString()})` : ""}.`
+              : "No recovery codes yet. Without them, a lost phone can lock you out."}{" "}
+            Keep them offline, away from your phone. We only keep a scrambled fingerprint of each code.
           </p>
           {codes ? (
             <div className="space-y-2">
@@ -452,22 +472,24 @@ function AccountSecurity() {
             </div>
           ) : (
             <Button size="sm" disabled={busy || !fresh} onClick={() => void newCodes()}>
-              {recovery.codesRemaining ? "Replace recovery codes" : "Create recovery codes"}
+              {account.codesRemaining ? "Replace recovery codes" : "Create recovery codes"}
             </Button>
           )}
-          {!fresh && !codes && (
-            <p className="text-xs text-muted-foreground">Enter a fresh code above first.</p>
-          )}
+          {!fresh && !codes && <p className="text-xs text-muted-foreground">Enter a fresh code above first.</p>}
           <Notice msg={codesMsg} />
-          {events.length > 0 && (
-            <ul className="space-y-0.5 text-xs text-muted-foreground">
-              {events.map((e) => (
-                <li key={e.id}>
-                  {new Date(e.created_at).toLocaleString()} · {EVENT_LABEL[e.event] ?? e.event}
-                </li>
-              ))}
-            </ul>
-          )}
+        </section>
+      )}
+
+      {events.length > 0 && (
+        <section className="space-y-1">
+          <h2 className="text-sm font-medium">Recent security activity</h2>
+          <ul className="space-y-0.5 text-xs text-muted-foreground">
+            {events.map((e) => (
+              <li key={e.id}>
+                {new Date(e.created_at).toLocaleString()} · {EVENT_LABEL[e.event] ?? e.event}
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
@@ -475,19 +497,19 @@ function AccountSecurity() {
         <h2 className="font-medium text-foreground">Can't find your authenticator?</h2>
         <p className="text-muted-foreground">
           First check your app for an entry named <strong>{TOTP_ISSUER}</strong> or{" "}
-          <strong>{LEGACY_TOTP_ISSUER}</strong> (older setups) next to your email. Also check other
-          phones and your app's cloud backup.
+          <strong>{LEGACY_TOTP_ISSUER}</strong> (older setups) next to your email. Also check other phones
+          and your app's cloud backup.
         </p>
-        {state === "needs_code" && recovery?.isOwner && (
+        {state === "needs_code" && account && (
           <div className="space-y-3 rounded-lg border border-border p-4">
             <p>
-              Lost it for good? Use one of your recovery codes. You need two things: a sign-in from
-              the last 10 minutes and an unused recovery code. The old authenticator is then
-              removed, your other sign-ins end, and you set up a new one.
+              Lost it for good? Use one of your recovery codes. You need a verified email, a sign-in from
+              the last 10 minutes and an unused recovery code. The old authenticator is then removed, your
+              other sign-ins end, and you can set up a new one.
             </p>
             {!signInFresh ? (
-              <Button size="sm" variant="outline" onClick={() => void freshSignIn()}>
-                Step 1: Sign in again with Google
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => void signInAgain()}>
+                Step 1: Sign in again
               </Button>
             ) : (
               <form
@@ -512,11 +534,11 @@ function AccountSecurity() {
               </form>
             )}
             <Notice msg={recoveryMsg} />
-            {recovery.codesRemaining === 0 && (
+            {account.codesRemaining === 0 && (
               <p className="text-xs text-muted-foreground">
-                No recovery codes were ever created for this account. In that case only the
-                project owner, signed in to the Lovable editor for this project, can ask for the
-                lost authenticator to be removed. Signing in here alone is never enough.
+                No recovery codes were saved for this account. Then only the project administrator, signed
+                in to the Lovable editor for this project, can remove the lost authenticator. Signing in
+                here alone is never enough.
               </p>
             )}
           </div>
