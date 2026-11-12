@@ -5,6 +5,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { useAccount } from "@/hooks/use-account";
 import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
+import { takeSignInReturn } from "@/lib/owner-mfa";
 import "@lovable.dev/cloud-auth-js/styles.css";
 export const Route = createFileRoute("/auth")({
   head: () =>
@@ -23,7 +24,7 @@ function AuthPage() {
     [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   useEffect(() => {
-    if (ready && user) void navigate({ to: "/beta", replace: true });
+    if (ready && user) void navigate({ to: takeSignInReturn() ?? "/beta", replace: true });
   }, [user, ready, navigate]);
   const oauth = async (provider: "google" | "lovable") => {
     setBusy(true);
@@ -37,7 +38,7 @@ function AuthPage() {
         const { data, error } = await supabase.auth.getUser();
         if (error || !data.user)
           throw new Error("Sign-in could not be confirmed. Please try again.");
-        await navigate({ to: "/beta", replace: true });
+        await navigate({ to: takeSignInReturn() ?? "/beta", replace: true });
       }
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Sign-in unavailable.");
@@ -83,13 +84,13 @@ function AuthPage() {
                 options: { emailRedirectTo: `${window.location.origin}/auth` },
               });
               if (error) throw error;
-              if (data.session) await navigate({ to: "/beta", replace: true });
+              if (data.session) await navigate({ to: takeSignInReturn() ?? "/beta", replace: true });
               else
                 setNotice("Check your email to confirm your account. You are not signed in yet.");
             } else {
               const { error } = await supabase.auth.signInWithPassword({ email, password });
               if (error) throw error;
-              await navigate({ to: "/beta", replace: true });
+              await navigate({ to: takeSignInReturn() ?? "/beta", replace: true });
             }
           } catch (error) {
             setNotice(error instanceof Error ? error.message : "Unable to sign in.");
