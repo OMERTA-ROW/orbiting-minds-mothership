@@ -6,6 +6,7 @@ import {
   deviceStatus,
   formatPairingCode,
   keyFingerprint,
+  mobileAlerts,
   mobileAutonomyBlockers,
   normalizePairingCode,
   pairingCodeHash,
@@ -38,6 +39,9 @@ function fakeStore(
     log: async (_d, e, o) => void calls.push(`log:${e}:${o}`),
     stopEngaged: async () => true,
     handoffStatus: async () => [],
+    cloudSnapshot: async () => (calls.push("cloud"), { agents: [], cloudJobs: [], alerts: [] }),
+    auditTail: async () => (calls.push("audit"), []),
+    control: async (_d, c) => (calls.push(`control:${c.action}`), { ok: true }),
     engageStop: async () => (calls.push("engage"), true),
     holdTask: async (_d, j) => (
       calls.push(`hold:${j.kind}`),
@@ -155,7 +159,7 @@ describe("signed device requests", () => {
     expect(r.body).toMatchObject({
       status: "paired",
       emergencyStop: "engaged",
-      autonomy: { device: "off", omniCore: "off", jackboyCode: "off" },
+      autonomy: { device: "off", omniCore: "off", omniCode: "off", jackboyCode: "off" },
       executor: "none",
     });
     expect((await handleSigned(await req(), "heartbeat", store, NOW)).status).toBe(409);
@@ -372,5 +376,64 @@ describe("signed device requests", () => {
         )
       ).status,
     ).toBe(413);
+  });
+
+  it("cloud and audit reads need their own permission and are refused under Emergency Stop", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const run = async (kind: "cloud" | "audit", perms: string[], stop: boolean) => {
+      const f = fakeStore({ jwk: publicJwk, permissions: perms, stopEngaged: async () => stop });
+      const r = await handleSigned(await signed(DOCK_PATHS[kind], DEVICE, "{}", privateKey), kind, f.store, NOW);
+      return { status: r.status, calls: f.calls, body: r.body };
+    };
+    expect((await run("cloud", ["status.read"], false)).status).toBe(403);
+    expect((await run("audit", ["cloud.read"], false)).status).toBe(403);
+    const c = await run("cloud", ["cloud.read"], false);
+    expect(c.status).toBe(200);
+    expect(c.calls).toContain("cloud");
+    const a = await run("audit", ["audit.read"], false);
+    expect(a.status).toBe(200);
+    expect(a.body["entries"]).toEqual([]);
+    const stopped = await run("cloud", ["cloud.read"], true);
+    expect(stopped.status).toBe(423);
+    expect(stopped.calls).not.toContain("cloud");
+  });
+
+  it("control only pauses or stops, needs jobs.pause, and still works under Emergency Stop", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const send = async (body: unknown, perms: string[], status = "paired") => {
+      const f = fakeStore({ jwk: publicJwk, permissions: perms, status });
+      const text = JSON.stringify(body);
+      const r = await handleSigned(await signed(DOCK_PATHS.control, DEVICE, text, privateKey), "control", f.store, NOW);
+      return { status: r.status, calls: f.calls };
+    };
+    expect((await send({ action: "pause_agent", agentId: "omni" }, ["stop.engage"])).status).toBe(403);
+    expect((await send({ action: "pause_agent", agentId: "omni" }, ["jobs.pause"], "pending")).status).toBe(403);
+    const ok = await send({ action: "pause_agent", agentId: "omni" }, ["jobs.pause"]);
+    expect(ok.status).toBe(200);
+    expect(ok.calls).toContain("control:pause_agent");
+    expect((await send({ action: "stop_job", jobId: DEVICE }, ["jobs.pause"])).status).toBe(200);
+    for (const bad of [{ action: "resume_agent", agentId: "omni" }, { action: "approve", id: DEVICE }, { action: "start_job", jobId: DEVICE }, { action: "stop_job", jobId: "x" }]) {
+      const r = await send(bad, ["jobs.pause"]);
+      expect(r.status).toBe(400);
+      expect(r.calls.some((c) => c.startsWith("control:"))).toBe(false);
+    }
+  });
+});
+
+describe("mobile alerts", () => {
+  const base = { now: NOW, emergencyStopEngaged: false, pendingApprovals: 0, failedLast24h: 0, spendDayCents: 0, dayCapCents: 500, autonomyWindows: [], codeAlwaysOn: false };
+  it("is quiet when nothing needs attention", () => expect(mobileAlerts(base)).toEqual([]));
+  it("raises stop, approvals, failures, spend at 80% and windows ending within 5 minutes", () => {
+    const ids = mobileAlerts({
+      ...base,
+      emergencyStopEngaged: true,
+      pendingApprovals: 2,
+      failedLast24h: 1,
+      spendDayCents: 400,
+      autonomyWindows: [{ agentId: "omni", expiresAt: NOW + 3 * 60_000 }, { agentId: "razul", expiresAt: NOW + 30 * 60_000 }],
+    }).map((a) => `${a.id}:${a.level}`);
+    expect(ids).toEqual(["stop:critical", "approvals:warning", "failed:warning", "spend:warning", "window-omni:info"]);
+    expect(mobileAlerts({ ...base, spendDayCents: 500 })[0]).toMatchObject({ id: "spend", level: "critical" });
+    expect(mobileAlerts({ ...base, spendDayCents: 399 })).toEqual([]);
   });
 });
