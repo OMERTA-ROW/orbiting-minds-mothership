@@ -90,22 +90,16 @@ function AccountSecurity() {
   const [now, setNow] = useState(0);
 
   const refresh = useCallback(async () => {
-    const [f, a, s] = await Promise.all([
+    const [f, a, c] = await Promise.all([
       supabase.auth.mfa.listFactors(),
       supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
-      supabase.auth.getSession(),
+      supabase.auth.getClaims(),
     ]);
     if (f.error) setMsg({ ok: false, text: "Could not load your security settings. Try again." });
     else setFactors((f.data.all ?? []).filter((x) => x.factor_type === "totp") as Factor[]);
     const lvl = a.error ? "" : (a.data.currentLevel ?? "");
     setLevel(lvl);
-    let amr: unknown = null;
-    try {
-      const token = s.data.session?.access_token;
-      if (token) amr = JSON.parse(atob(token.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/")))["amr"];
-    } catch {
-      amr = null;
-    }
+    const amr = c.error ? null : (c.data?.claims as Record<string, unknown> | undefined)?.["amr"];
     setMfaAge(mfaAgeSeconds(amr, Math.floor(Date.now() / 1000)));
     try {
       setRecovery(await readRecovery());
@@ -272,7 +266,7 @@ function AccountSecurity() {
     }
   }
 
-  async function useRecoveryCode() {
+  async function submitRecoveryCode() {
     if (busy) return;
     setBusy(true);
     setRecoveryMsg({ ok: true, text: "Checking recovery code…" });
@@ -495,7 +489,7 @@ function AccountSecurity() {
                 className="flex flex-wrap gap-2"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void useRecoveryCode();
+                  void submitRecoveryCode();
                 }}
               >
                 <Input
