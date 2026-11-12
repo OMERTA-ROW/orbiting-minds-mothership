@@ -101,7 +101,10 @@ export const rulesInput = z.array(organizeRule).min(1).max(FILE_PLAN_LIMITS.maxR
 
 export type PlanOp =
   | { kind: "mkdir"; to: string }
-  | { kind: "move"; from: string; to: string; expect: { size: number; mtimeMs: number }; rule: string; renamed: boolean }
+  /** `expect: null` only on undo restores of a backup the companion wrote itself. */
+  | { kind: "move"; from: string; to: string; expect: { size: number; mtimeMs: number } | null; rule: string; renamed: boolean }
+  /** Undo only: removes a folder the plan created, and only if it is empty. */
+  | { kind: "rmdir_if_empty"; to: string }
   /** Destructive: replaces an existing file. The old file is kept in .omni-undo/ so it can be restored. */
   | { kind: "overwrite"; from: string; to: string; backup: string; expect: { size: number; mtimeMs: number } }
   /** Destructive: moves to the macOS Trash (never permanent delete). */
@@ -212,7 +215,7 @@ export function approvalProblems(ops: PlanOp[], grant: FolderGrant, confirmedDes
   if (!grantActive(grant, now)) p.push("Folder permission expired or revoked.");
   if (grant.mode !== "organize") p.push("This folder is granted read-only.");
   ops.forEach((op, i) => {
-    const paths = op.kind === "mkdir" ? [op.to] : op.kind === "trash" ? [op.from] : op.kind === "overwrite" ? [op.from, op.to, op.backup] : [op.from, op.to];
+    const paths = op.kind === "mkdir" || op.kind === "rmdir_if_empty" ? [op.to] : op.kind === "trash" ? [op.from] : op.kind === "overwrite" ? [op.from, op.to, op.backup] : [op.from, op.to];
     if (!paths.every((x) => insideGrant(x, grant.path))) p.push(`Step ${i + 1} leaves the granted folder.`);
     if (op.kind === "overwrite" && !op.backup.startsWith(`${grant.path}/.omni-undo/`)) p.push(`Step ${i + 1} overwrites without a backup.`);
     if (isDestructive(op) && !confirmedDestructive.has(i)) p.push(`Step ${i + 1} (${op.kind}) needs its own confirmation.`);
@@ -239,14 +242,14 @@ export function undoOps(journal: JournalEntry[]): PlanOp[] {
     if (op.kind === "move") out.push({ kind: "move", from: op.to, to: op.from, expect: op.expect, rule: "undo", renamed: false });
     else if (op.kind === "overwrite") {
       out.push({ kind: "move", from: op.to, to: op.from, expect: op.expect, rule: "undo", renamed: false });
-      out.push({ kind: "move", from: op.backup, to: op.to, expect: { size: -1, mtimeMs: -1 }, rule: "undo-restore", renamed: false });
+      out.push({ kind: "move", from: op.backup, to: op.to, expect: null, rule: "undo-restore", renamed: false });
     } else if (op.kind === "trash" && j.trashedTo)
       out.push({ kind: "move", from: j.trashedTo, to: op.from, expect: op.expect, rule: "undo-trash", renamed: false });
   }
   // Folders created by the plan are removed last, deepest first, only if empty (companion checks).
   for (const j of [...journal].sort((a, b) => b.index - a.index))
-    if (j.result === "applied" && j.op.kind === "mkdir") out.push({ kind: "mkdir", to: j.op.to });
+    if (j.result === "applied" && j.op.kind === "mkdir") out.push({ kind: "rmdir_if_empty", to: j.op.to });
   return out;
 }
 
-export const dirname = dir;
+export const parentFolder = dir;
