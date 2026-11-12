@@ -61,16 +61,39 @@ describe("CODE job state machine", () => {
     expect(backoffSeconds(10)).toBe(CODE_QUEUE_LIMITS.backoffMaxSec);
   });
   it("never retries a destructive job automatically", () =>
-    expect(ok(transition(job({ status: "running", attempts: 1, destructive: true }), { type: "fail", retryable: true }, NOW)).status).toBe("failed"));
+    expect(
+      ok(
+        transition(
+          job({ status: "running", attempts: 1, destructive: true }),
+          { type: "fail", retryable: true },
+          NOW,
+        ),
+      ).status,
+    ).toBe("failed"));
   it("resumes from its checkpoint when a worker's lease expires", () => {
-    const j = job({ status: "running", attempts: 1, checkpoint: "step-4", leaseExpiresAt: NOW - 1 });
+    const j = job({
+      status: "running",
+      attempts: 1,
+      checkpoint: "step-4",
+      leaseExpiresAt: NOW - 1,
+    });
     const r = ok(transition(j, { type: "lease_expired" }, NOW));
     expect(r.status).toBe("queued");
     expect(r.checkpoint).toBe("step-4");
-    expect(typeof transition({ ...j, leaseExpiresAt: NOW + 1000 }, { type: "lease_expired" }, NOW)).toBe("string");
+    expect(
+      typeof transition({ ...j, leaseExpiresAt: NOW + 1000 }, { type: "lease_expired" }, NOW),
+    ).toBe("string");
   });
   it("sends an interrupted destructive job back to the owner instead of resuming it", () =>
-    expect(ok(transition(job({ status: "running", attempts: 1, destructive: true, leaseExpiresAt: NOW - 1 }), { type: "lease_expired" }, NOW)).status).toBe("awaiting_approval"));
+    expect(
+      ok(
+        transition(
+          job({ status: "running", attempts: 1, destructive: true, leaseExpiresAt: NOW - 1 }),
+          { type: "lease_expired" },
+          NOW,
+        ),
+      ).status,
+    ).toBe("awaiting_approval"));
   it("refuses to lease a file-changing job without approval", () => {
     expect(transition(job({ kind: "file_apply" }), { type: "lease" }, NOW)).toMatch(/approval/);
     const a = ok(transition(job({ kind: "file_apply" }), { type: "approve" }, NOW));
@@ -95,11 +118,16 @@ describe("CODE service status (fails closed)", () => {
     expect(codeServiceStatus({ ...live, emergencyStopReleased: null }).processing).toBe(false);
     expect(codeServiceStatus({ ...live, killSwitchEnabled: false }).processing).toBe(false);
     expect(codeServiceStatus({ ...live, readinessPassed: false }).processing).toBe(false);
-    expect(codeServiceStatus({ ...live, settings: { ...live.settings, alwaysOnUntil: NOW - 1 } }).processing).toBe(false);
+    expect(
+      codeServiceStatus({ ...live, settings: { ...live.settings, alwaysOnUntil: NOW - 1 } })
+        .processing,
+    ).toBe(false);
     expect(codeServiceStatus(live).processing).toBe(true);
   });
   it("treats a stale or missing companion heartbeat as disconnected", () => {
-    expect(codeServiceStatus({ ...live, companionHeartbeatAt: NOW - 61_000 }).companion).toBe(false);
+    expect(codeServiceStatus({ ...live, companionHeartbeatAt: NOW - 61_000 }).companion).toBe(
+      false,
+    );
     expect(codeServiceStatus({ ...live, companionHeartbeatAt: null }).companion).toBe(false);
   });
   it("handles overnight hour windows", () => {
@@ -111,8 +139,11 @@ describe("CODE service status (fails closed)", () => {
 
 describe("leasing: bounded concurrency, rate and scoping", () => {
   const many = (n: number, agentId = "omni", kind: CodeJob["kind"] = "code_task") =>
-    Array.from({ length: n }, (_, i) => job({ id: `${agentId}-${i}`, agentId, kind, createdAt: NOW - 10_000 + i }));
-  it("leases nothing while the service is off", () => expect(pickLeasable(many(3), { ...live, settings: DEFAULT_CODE_SERVICE }, {})).toEqual([]));
+    Array.from({ length: n }, (_, i) =>
+      job({ id: `${agentId}-${i}`, agentId, kind, createdAt: NOW - 10_000 + i }),
+    );
+  it("leases nothing while the service is off", () =>
+    expect(pickLeasable(many(3), { ...live, settings: DEFAULT_CODE_SERVICE }, {})).toEqual([]));
   it("respects the per-agent and global limits, oldest first", () => {
     expect(pickLeasable(many(5), live, {})).toEqual(["omni-0", "omni-1"]);
     const mixed = [...many(3, "omni"), ...many(3, "razul"), ...many(3, "jax")];
@@ -122,7 +153,8 @@ describe("leasing: bounded concurrency, rate and scoping", () => {
     expect(pickLeasable(many(2, "jackboy"), live, {})).toEqual([]);
     expect(pickLeasable(many(2), { ...live, pausedAgents: new Set(["omni"]) }, {})).toEqual([]);
   });
-  it("applies the hourly rate limit per agent", () => expect(pickLeasable(many(2), live, { omni: 20 })).toEqual([]));
+  it("applies the hourly rate limit per agent", () =>
+    expect(pickLeasable(many(2), live, { omni: 20 })).toEqual([]));
   it("runs Mac jobs only with the companion connected and the Mac idle", () => {
     const files = many(1, "omni", "file_inventory");
     expect(pickLeasable(files, live, {})).toEqual(["omni-0"]);
@@ -130,5 +162,6 @@ describe("leasing: bounded concurrency, rate and scoping", () => {
     expect(pickLeasable(files, { ...live, companionIdleSeconds: 60 }, {})).toEqual([]);
     expect(pickLeasable(files, { ...live, companionIdleSeconds: null }, {})).toEqual([]);
   });
-  it("skips unapproved file changes", () => expect(pickLeasable(many(1, "omni", "file_apply"), live, {})).toEqual([]));
+  it("skips unapproved file changes", () =>
+    expect(pickLeasable(many(1, "omni", "file_apply"), live, {})).toEqual([]));
 });

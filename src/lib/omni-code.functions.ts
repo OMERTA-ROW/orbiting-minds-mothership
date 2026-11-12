@@ -6,7 +6,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { DEFAULT_CODE_SERVICE, codeServiceStatus, type CodeServiceSettings } from "./omni-code-queue";
+import {
+  DEFAULT_CODE_SERVICE,
+  codeServiceStatus,
+  type CodeServiceSettings,
+} from "./omni-code-queue";
 
 export const readCodeService = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -19,15 +23,31 @@ export const readCodeService = createServerFn({ method: "POST" })
     const db = context.supabase;
     const [svc, jobs, grants, plans, agents, link, controls] = await Promise.all([
       db.from("omni_code_service").select("*").eq("id", 1).maybeSingle(),
-      db.from("omni_code_jobs").select("id,agent_id,kind,status,title,attempts,max_attempts,destructive,approved_at,created_at,ended_at,error").order("created_at", { ascending: false }).limit(50),
-      db.from("omni_mac_folder_grants").select("id,path,mode,expires_at,revoked_at,created_at").order("created_at", { ascending: false }).limit(50),
-      db.from("omni_file_plans").select("id,grant_id,status,summary,created_at,approved_at,applied_at").order("created_at", { ascending: false }).limit(20),
+      db
+        .from("omni_code_jobs")
+        .select(
+          "id,agent_id,kind,status,title,attempts,max_attempts,destructive,approved_at,created_at,ended_at,error",
+        )
+        .order("created_at", { ascending: false })
+        .limit(50),
+      db
+        .from("omni_mac_folder_grants")
+        .select("id,path,mode,expires_at,revoked_at,created_at")
+        .order("created_at", { ascending: false })
+        .limit(50),
+      db
+        .from("omni_file_plans")
+        .select("id,grant_id,status,summary,created_at,approved_at,applied_at")
+        .order("created_at", { ascending: false })
+        .limit(20),
       db.from("omni_agents").select("*").eq("id", "omni"),
       ws.linkState(supabaseAdmin),
       ws.controls(db),
     ]);
     const omni = agents.data?.[0];
-    const readiness = omni ? (await ws.autonomyReadiness(supabaseAdmin, link, controls, [omni], true))[omni.id] : null;
+    const readiness = omni
+      ? (await ws.autonomyReadiness(supabaseAdmin, link, controls, [omni], true))[omni.id]
+      : null;
     const s = svc.data;
     const settings: CodeServiceSettings = s
       ? {
@@ -59,8 +79,13 @@ export const readCodeService = createServerFn({ method: "POST" })
       now,
       settings,
       status,
-      readinessMissing: (readiness?.gates ?? []).filter((g) => !g.ok && g.id !== "passkey").map((g) => g.label),
-      companion: { connected: false, reason: "No Mac companion implementing omni.files/v1 is docked." },
+      readinessMissing: (readiness?.gates ?? [])
+        .filter((g) => !g.ok && g.id !== "passkey")
+        .map((g) => g.label),
+      companion: {
+        connected: false,
+        reason: "No Mac companion implementing omni.files/v1 is docked.",
+      },
       jobs: jobs.data ?? [],
       grants: grants.data ?? [],
       plans: plans.data ?? [],
