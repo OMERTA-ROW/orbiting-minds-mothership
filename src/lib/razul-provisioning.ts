@@ -197,7 +197,12 @@ export function applyProposal(p: Proposal, a: ProposalAction, now: number): Prop
     case "evaluate":
       if (s !== "proposed" && s !== "evaluated") return "Only proposals waiting for review can be evaluated.";
       if (a.evaluation.manifestSha256 !== p.manifestSha256) return "Evaluation is for a different manifest.";
-      return { ...p, status: "evaluated", evaluations: [...p.evaluations, a.evaluation] };
+      // Static checks are recorded but only a sandbox evaluation makes a proposal reviewable.
+      return {
+        ...p,
+        status: a.evaluation.kind === "sandbox" ? "evaluated" : s,
+        evaluations: [...p.evaluations, a.evaluation],
+      };
     case "approve":
       if (a.by !== "owner") return "Only the owner can approve. Razul proposes.";
       if (!a.mfaFresh) return "Confirm your two-step code (last 15 minutes) to approve.";
