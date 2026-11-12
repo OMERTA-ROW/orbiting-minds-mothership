@@ -238,7 +238,6 @@ describe("signed-in owner handoff to a mocked Jackboy", () => {
     configure();
     const jb = mockJackboy("ok");
     const { container } = render(<Harness />);
-    expect(screen.getByLabelText("Jackboy project id")).toBeDefined;
     const send = await sendButton();
     expect((screen.getByLabelText("Jackboy project id") as HTMLInputElement).value).toBe(PROJECT);
     expect(send).toBeEnabled();
@@ -264,7 +263,11 @@ describe("signed-in owner handoff to a mocked Jackboy", () => {
     mockJackboy("bad_proof");
     render(<Harness />);
     fireEvent.click(await sendButton());
-    expect(await screen.findByText(/Not confirmed · retry/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Not confirmed · retry. Jackboy's reply was not signed correctly, so it was not trusted.",
+      ),
+    );
     expect(s.recordCalls.at(-1)).toMatchObject({ _status: "error", _detail: "reply_unsigned", _job: null });
     expect(screen.queryByText(/Queued in Jackboy/)).toBeNull();
   });
@@ -274,7 +277,7 @@ describe("signed-in owner handoff to a mocked Jackboy", () => {
     mockJackboy("unsigned_503");
     render(<Harness />);
     fireEvent.click(await sendButton());
-    expect(await screen.findByText(/Not confirmed · retry/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/^Not confirmed · retry\./));
     expect(s.recordCalls.at(-1)).toMatchObject({ _status: "error", _detail: "reply_unsigned" });
   });
 
