@@ -139,3 +139,21 @@ export function recoveryOutcomeMessage(outcome: string): string {
       return "That recovery code wasn't recognised or was already used.";
   }
 }
+
+/** Pages a fresh sign-in may return to (same-origin, fixed list). */
+export const SIGNIN_RETURN_PATHS = ["/account-security", "/omni-dock"] as const;
+const RETURN_KEY = "omni.signin-return";
+
+export function rememberSignInReturn(path: (typeof SIGNIN_RETURN_PATHS)[number]) {
+  if (typeof window !== "undefined") window.sessionStorage.setItem(RETURN_KEY, path);
+}
+
+/** Reads and clears the remembered page; anything not on the fixed list is ignored. */
+export function takeSignInReturn(): (typeof SIGNIN_RETURN_PATHS)[number] | null {
+  if (typeof window === "undefined") return null;
+  const value = window.sessionStorage.getItem(RETURN_KEY);
+  window.sessionStorage.removeItem(RETURN_KEY);
+  return (SIGNIN_RETURN_PATHS as readonly string[]).includes(value ?? "")
+    ? (value as (typeof SIGNIN_RETURN_PATHS)[number])
+    : null;
+}
