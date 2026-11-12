@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/hooks/use-account";
 import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
+import { knownAuthMessage } from "@/lib/sign-in-help";
 export const Route = createFileRoute("/reset-password")({
   head: () =>
     seo(
@@ -55,9 +56,10 @@ function ResetPassword() {
               finishRecovery();
             } catch (error) {
               setNotice(
-                error instanceof Error
-                  ? error.message
-                  : "Password could not be updated. Try again.",
+                knownAuthMessage(error as { code?: string; message?: string }) ??
+                  (error instanceof Error
+                    ? error.message
+                    : "Password could not be updated. Try again."),
               );
             } finally {
               setBusy(false);

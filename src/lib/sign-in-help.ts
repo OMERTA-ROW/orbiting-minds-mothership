@@ -45,14 +45,19 @@ const BY_MESSAGE: [RegExp, string][] = [
   [/rate limit/i, BY_CODE.over_request_rate_limit!],
 ];
 
-/** Plain-language message for a sign-in, sign-up or password error. */
-export function authErrorMessage(error: AuthErrorLike | null | undefined): string {
-  if (!error) return SIGN_IN_FALLBACK;
+/** Plain-language message for a recognised provider error, or null. */
+export function knownAuthMessage(error: AuthErrorLike | null | undefined): string | null {
+  if (!error) return null;
   if (error.code && BY_CODE[error.code]) return BY_CODE[error.code]!;
   const text = error.message ?? "";
   for (const [pattern, message] of BY_MESSAGE) if (pattern.test(text)) return message;
   if (error.status === 429) return BY_CODE.over_request_rate_limit!;
-  return SIGN_IN_FALLBACK;
+  return null;
+}
+
+/** Plain-language message for a sign-in, sign-up or password error. */
+export function authErrorMessage(error: AuthErrorLike | null | undefined): string {
+  return knownAuthMessage(error) ?? SIGN_IN_FALLBACK;
 }
 
 /** Invitation tokens are 64 lowercase hex characters (server-generated, single use). */
