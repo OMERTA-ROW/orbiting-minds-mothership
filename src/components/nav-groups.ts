@@ -64,11 +64,8 @@ export const navGroups = [
     items: [
       { to: "/beta-omni", label: "OMNI chat", status: "account", note: "Text chat, after owner approval of AI access." },
       { to: "/omni-terminal", label: "OMNI Terminal", status: "owner", note: "Status, held tasks and Emergency Stop. Nothing runs by itself." },
-      { to: "/omni", label: "Razul Central Intelligence", status: "demo", note: "Public overview." },
-      { to: "/omni-razul", label: "Razul workspace", status: "browser", note: "Local notes and settings." },
-      { to: "/omni-agents", label: "Agent registry", status: "demo", note: "Concept list of agents." },
+      { to: "/omni-razul", label: "Observatory & history", status: "browser", note: "Public-source findings and your local notes." },
       { to: "/omni-models", label: "Model choices", status: "browser", note: "Which AI models you plan to use." },
-      { to: "/agents", label: "Agent network", status: "demo", note: "Simulated network." },
     ],
   },
   {
@@ -77,7 +74,6 @@ export const navGroups = [
     blurb: "Nothing important happens without you.",
     items: [
       { to: "/activation-approvals", label: "Activation approvals", status: "owner", note: "Records your decisions. Never switches anything on." },
-      { to: "/approval-ledger", label: "Approval ledger", status: "demo", note: "Example of how approvals are traced." },
     ],
   },
   {
@@ -109,8 +105,15 @@ export const navGroups = [
   items: readonly { to: string; label: string; status: NavStatus; note: string }[];
 }[];
 
-/** Everything else: earlier modules, demos and references, with their original labels. */
+/**
+ * Design previews: earlier modules, demos, samples and references with their original
+ * labels. Hidden from the site unless "Show design previews" is switched on (Advanced).
+ */
 export const advancedItems = [
+  { to: "/omni", label: "OMNI conversation · Scripted demo" },
+  { to: "/omni-agents", label: "OMNI Agent Registry · Concept" },
+  { to: "/agents", label: "Agent Network · Demo" },
+  { to: "/approval-ledger", label: "Approval Ledger · Demo" },
   { to: "/mothership", label: "Mothership" },
   { to: "/command-nexus", label: "Command Nexus · Demo" },
   { to: "/omnibridge", label: "OmniBridge · Demo" },
@@ -167,3 +170,25 @@ export const navItems = [
   ...navGroups.flatMap((g) => g.items.map(({ to, label }) => ({ to, label }))),
   ...advancedItems,
 ] as const;
+
+/** Detail pages and extras that belong to design previews. */
+const PREVIEW_PREFIXES = [
+  "/capsules/",
+  "/challenges/",
+  "/code-exchange/",
+  "/guardian-incidents/",
+  "/incident-archives/",
+  "/robotics/",
+] as const;
+const PREVIEW_PATHS = new Set<string>([...advancedItems.map((i) => i.to), "/join"]);
+
+/** True for demo/sample/simulated areas that are hidden unless previews are switched on. */
+export function isPreviewPath(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return PREVIEW_PATHS.has(path) || PREVIEW_PREFIXES.some((p) => path.startsWith(p));
+}
+
+/** Pages offered in search and menus for the current preview setting. */
+export function visibleNavItems(showPreviews: boolean) {
+  return showPreviews ? navItems : navItems.filter((n) => !isPreviewPath(n.to));
+}
