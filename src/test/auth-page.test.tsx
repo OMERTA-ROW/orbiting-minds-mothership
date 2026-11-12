@@ -1,12 +1,12 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ navigate: vi.fn(), oauth: vi.fn(), getUser: vi.fn() }));
+const mocks = vi.hoisted(() => ({ navigate: vi.fn(), oauth: vi.fn(), getUser: vi.fn(), aal: vi.fn(), factors: vi.fn() }));
 vi.mock("@/hooks/use-account", () => ({ useAccount: () => ({ user: null, ready: true }) }));
 vi.mock("@/integrations/lovable/index", () => ({
   lovable: { auth: { signInWithOAuth: mocks.oauth } },
 }));
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { auth: { getUser: mocks.getUser } },
+  supabase: { auth: { getUser: mocks.getUser, signOut: vi.fn(), mfa: { getAuthenticatorAssuranceLevel: mocks.aal, listFactors: mocks.factors } } },
 }));
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: object) => ({ options }),
@@ -24,6 +24,8 @@ beforeEach(() => {
   mocks.oauth.mockResolvedValue({ redirected: false });
   mocks.getUser.mockResolvedValue({ data: { user: null }, error: null });
   mocks.navigate.mockResolvedValue(undefined);
+  mocks.aal.mockResolvedValue({ data: { currentLevel: "aal1", nextLevel: "aal1" }, error: null });
+  mocks.factors.mockResolvedValue({ data: { totp: [], all: [] }, error: null });
 });
 afterEach(cleanup);
 describe("OAuth handoff confirms actual account identity", () => {
@@ -50,6 +52,32 @@ describe("OAuth handoff confirms actual account identity", () => {
       expect(screen.getByRole("button", { name: "Continue with Lovable" })).toBeEnabled(),
     );
     expect(mocks.getUser).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("optional two-step sign-in at sign-in", () => {
+  beforeEach(() => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: "member-a" } }, error: null });
+  });
+  it("asks accounts with two-step on for their code before opening any page", async () => {
+    // The stored session says nothing about factors; the fresh server list does.
+    mocks.factors.mockResolvedValue({ data: { totp: [{ id: "f1", status: "verified" }], all: [] }, error: null });
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    await screen.findByRole("textbox", { name: "6-digit authenticator code" });
+    expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+  it("does not stop accounts that never turned it on", async () => {
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith({ to: "/beta", replace: true }));
+  });
+  it("stays put with a retry when the check itself fails", async () => {
+    mocks.aal.mockResolvedValue({ data: null, error: { message: "offline" } });
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    await screen.findByRole("button", { name: "Try again" });
     expect(mocks.navigate).not.toHaveBeenCalled();
   });
 });

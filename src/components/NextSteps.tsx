@@ -5,7 +5,7 @@ import { CheckCircle2, Circle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/hooks/use-account";
 import { Button } from "@/components/ui/button";
-import { readOwnerRecovery } from "@/lib/owner-mfa.functions";
+import { readAccountMfa } from "@/lib/account-mfa.functions";
 
 type Step = { done: boolean; label: string; to: "/account-security" | "/members" | "/omni-dock" | "/beta"; optional?: boolean; action: string };
 type State =
@@ -28,7 +28,7 @@ export function ownerSteps(s: { factors: number; aal2: boolean; codes: number | 
 /** Signed-in home panel: the next real thing to do, from actual account state. */
 export function NextSteps() {
   const { user, ready } = useAccount();
-  const readRecovery = useServerFn(readOwnerRecovery);
+  const readRecovery = useServerFn(readAccountMfa);
   const [state, setState] = useState<State>({ kind: "loading" });
 
   useEffect(() => {

@@ -93,7 +93,7 @@ export const navGroups = [
     blurb: "Sign-in, security and members.",
     items: [
       { to: "/sign-in-help", label: "How to sign in", status: "guide", note: "Step-by-step sign-in, two-factor and recovery." },
-      { to: "/account-security", label: "Two-factor & recovery", status: "account", note: "Authenticator app and recovery codes." },
+      { to: "/account-security", label: "Account security", status: "account", note: "Optional two-step sign-in with an authenticator app, plus recovery codes." },
       { to: "/members", label: "Members & invitations", status: "owner", note: "Invite people with single-use links." },
       { to: "/launch-control", label: "Launch readiness", status: "guide", note: "Dated checks. Not a launch approval." },
     ],

@@ -55,8 +55,9 @@ describe("design previews are hidden from the working site", () => {
       expect(isPreviewPath(p)).toBe(false);
   });
   it("primary groups contain no demo pages", () => {
-    expect(navGroups.flatMap((g) => g.items).filter((i) => isPreviewPath(i.to))).toEqual([]);
-    expect(navGroups.flatMap((g) => g.items).some((i) => (i.status as string) === "demo")).toBe(false);
+    const items = navGroups.flatMap((g): readonly { to: string; status: string }[] => g.items);
+    expect(items.filter((i) => isPreviewPath(i.to))).toEqual([]);
+    expect(items.some((i) => i.status === "demo")).toBe(false);
   });
   it("search offers no preview pages while previews are off", () => {
     expect(visibleNavItems(false).some((n) => isPreviewPath(n.to))).toBe(false);

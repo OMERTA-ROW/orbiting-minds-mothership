@@ -2354,6 +2354,26 @@ export type Database = {
         Args: { _token_hash: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      account_mfa_assert_step_up: { Args: never; Returns: undefined }
+      account_mfa_consume_recovery_code: {
+        Args: { _hash: string; _user: string }
+        Returns: string
+      }
+      account_mfa_record_disabled: {
+        Args: { _ok: boolean; _removed: number; _user: string }
+        Returns: undefined
+      }
+      account_mfa_recovery_status: {
+        Args: never
+        Returns: {
+          created_at: string
+          remaining: number
+        }[]
+      }
+      account_mfa_set_recovery_codes: {
+        Args: { _hashes: string[] }
+        Returns: number
+      }
       activation_approval_decide: {
         Args: {
           _action: string

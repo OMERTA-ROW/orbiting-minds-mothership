@@ -5,14 +5,15 @@ import { lovable } from "@/integrations/lovable/index";
 import { useAccount } from "@/hooks/use-account";
 import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
-import { takeSignInReturn } from "@/lib/owner-mfa";
+import { signInNeedsCode, takeSignInReturn } from "@/lib/owner-mfa";
+import { OwnerCodeForm } from "@/components/account/OwnerCodeForm";
 import { authErrorMessage, takePendingInvite } from "@/lib/sign-in-help";
 import "@lovable.dev/cloud-auth-js/styles.css";
 export const Route = createFileRoute("/auth")({
   head: () =>
     seo(
       "Sign in",
-      "Sign in to Evolution with Google, Lovable, or email and password. No app to install. Private beta.",
+      "Sign in to Evolution with Google, Lovable, or email and password. Optional two-step sign-in. Private beta.",
     ),
   component: AuthPage,
 });
@@ -30,13 +31,35 @@ function AuthPage() {
 
   /** Go to the remembered page: a pending invitation first, then an owner page, else projects. */
   const leaving = useRef(false);
+  const destination = useRef<{ invite: string | null; to: ReturnType<typeof takeSignInReturn> } | null>(null);
+  const [codeStep, setCodeStep] = useState<"none" | "code" | "error">("none");
+  const go = () => {
+    const d = destination.current ?? { invite: null, to: null };
+    if (d.invite) return navigate({ to: "/invite", search: { token: d.invite }, replace: true });
+    return navigate({ to: d.to ?? "/beta", replace: true });
+  };
   const goOn = async () => {
     // Session events can fire more than once; only the first one picks the destination.
     if (leaving.current) return;
     leaving.current = true;
-    const invite = takePendingInvite(window.sessionStorage);
-    if (invite) return navigate({ to: "/invite", search: { token: invite }, replace: true });
-    return navigate({ to: takeSignInReturn() ?? "/beta", replace: true });
+    destination.current ??= { invite: takePendingInvite(window.sessionStorage), to: takeSignInReturn() };
+    // Account security handles its own code / recovery step (a lost phone must still reach recovery).
+    if (destination.current.to !== "/account-security") {
+      // Two-step sign-in is optional: only accounts that turned it on are asked for a code.
+      // Factors are read fresh from the server (the stored session's copy can be stale).
+      const [level, factors] = await Promise.all([
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        supabase.auth.mfa.listFactors(),
+      ]);
+      if (level.error || factors.error) {
+        leaving.current = false;
+        return setCodeStep("error");
+      }
+      const hasAuthenticator = (factors.data.totp ?? []).some((f) => f.status === "verified");
+      if (signInNeedsCode({ currentLevel: level.data.currentLevel, nextLevel: hasAuthenticator ? "aal2" : level.data.currentLevel }))
+        return setCodeStep("code");
+    }
+    return go();
   };
 
   useEffect(() => {
@@ -75,6 +98,47 @@ function AuthPage() {
 
   const title =
     mode === "signup" ? "Create your account" : mode === "reset" ? "Reset your password" : "Sign in to Evolution";
+
+  if (codeStep !== "none")
+    return (
+      <section className="mx-auto max-w-lg space-y-5 px-5 py-12 sm:px-6 sm:py-14">
+        <p className="eyebrow">Evolution / two-step sign-in</p>
+        <h1 className="text-3xl">Enter your code</h1>
+        {codeStep === "error" ? (
+          <div className="space-y-3">
+            <p role="alert" className="text-sm text-warning">
+              We couldn't check your two-step sign-in. Check your connection, then try again.
+            </p>
+            <Button variant="cosmic" onClick={() => void goOn()}>
+              Try again
+            </Button>
+          </div>
+        ) : (
+          <OwnerCodeForm
+            intro="Two-step sign-in is on for this account. Enter the 6-digit code from your authenticator app."
+            successText="Code accepted. Opening your page…"
+            onVerified={() => go()}
+          />
+        )}
+        <div className="flex flex-wrap gap-4 text-sm">
+          <Link to="/account-security" hash="recovery" className="text-gold-light underline underline-offset-4">
+            Lost your phone? Use a recovery code
+          </Link>
+          <button
+            type="button"
+            className="text-muted-foreground underline underline-offset-4"
+            onClick={() => {
+              setCodeStep("none");
+              leaving.current = false;
+              destination.current = null;
+              void supabase.auth.signOut();
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      </section>
+    );
 
   return (
     <section className="mx-auto max-w-lg px-5 py-12 sm:px-6 sm:py-14">

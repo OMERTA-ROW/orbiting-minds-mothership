@@ -11,7 +11,7 @@ export const Route = createFileRoute("/sign-in-help")({
   head: () =>
     seo(
       "How to sign in",
-      "Step-by-step help for signing in to Evolution, setting up the owner's two-factor code, and recovering access safely.",
+      "Step-by-step help for signing in to Evolution, turning on optional two-step sign-in, and recovering access safely.",
     ),
   component: SignInHelp,
 });
@@ -65,9 +65,9 @@ function YourStatus() {
       : mfa === "signed_out"
         ? "You're not signed in."
         : mfa === "needs_setup"
-          ? "You're signed in. No authenticator app is set up (only the owner needs one)."
+          ? "You're signed in. Two-step sign-in is off (optional; the owner needs it for owner pages)."
           : mfa === "needs_code"
-            ? "You're signed in. Your authenticator is set up — enter a code to open owner pages."
+            ? "You're signed in. Two-step sign-in is on — enter your current code to confirm it's you."
             : "You're signed in and your authenticator code is confirmed for this session.";
 
   return (
@@ -86,7 +86,7 @@ function YourStatus() {
               <Link to="/beta">Open my projects</Link>
             </Button>
             <Button asChild variant="outline" size="sm">
-              <Link to="/account-security">Two-factor & recovery</Link>
+              <Link to="/account-security">Account security</Link>
             </Button>
           </>
         )}
@@ -102,8 +102,9 @@ function SignInHelp() {
         <p className="eyebrow">Settings / help</p>
         <h1 className="mt-4 text-3xl text-foreground">How to sign in</h1>
         <p className="mt-3 text-muted-foreground">
-          Most people only need a Google account or an email address. Nothing to install. The owner
-          adds one extra step — a 6-digit code from an authenticator app — to open owner-only pages.
+          Most people only need a Google account or an email address. Nothing to install. Anyone can
+          add an optional second step — a 6-digit code from an authenticator app. The owner needs it to
+          open owner-only pages.
         </p>
       </header>
 
@@ -112,7 +113,7 @@ function SignInHelp() {
       <section aria-labelledby="install-h" className="space-y-3">
         <h2 id="install-h" className="text-xl text-foreground">Do I need to install anything?</h2>
         <ul className="space-y-2 text-muted-foreground">
-          <li><strong className="text-foreground">Members:</strong> no. Sign in with Google, Lovable, or email and password.</li>
+          <li><strong className="text-foreground">Members:</strong> no. Sign in with Google, Lovable, or email and password. Two-step sign-in is optional; if you turn it on you need an authenticator app.</li>
           <li>
             <strong className="text-foreground">Owner:</strong> yes, one authenticator app on your phone — any app that shows 6-digit
             codes works (for example Google Authenticator, Microsoft Authenticator, 1Password or Authy).
@@ -152,19 +153,19 @@ function SignInHelp() {
       </section>
 
       <section aria-labelledby="owner-h" className="space-y-3">
-        <h2 id="owner-h" className="text-xl text-foreground">Owner: set up two-factor</h2>
+        <h2 id="owner-h" className="text-xl text-foreground">Turn on two-step sign-in (optional; required for the owner)</h2>
         <ol className="space-y-3 text-muted-foreground">
-          <Step>Sign in with the owner email. The owner role belongs to one configured, confirmed email and can't be handed to anyone else.</Step>
+          <Step>Sign in. (The owner role belongs to one configured, confirmed email and can't be handed to anyone else.)</Step>
           <Step>
-            Open <Link to="/account-security" className="text-gold-light underline underline-offset-4">Two-factor & recovery</Link>. If it says
-            “Not set up”, press <strong className="text-foreground">Set up authenticator app</strong> and scan the QR code.
+            Open <Link to="/account-security" className="text-gold-light underline underline-offset-4">Account security</Link> (account menu → Security). If it says
+            “Off”, press <strong className="text-foreground">Set up authenticator</strong> and scan the QR code, or type the setup key.
           </Step>
-          <Step>Type the 6-digit code from the new <strong className="text-foreground">{TOTP_ISSUER}</strong> entry. Two-factor only turns on after a code works.</Step>
+          <Step>Type the 6-digit code from the new <strong className="text-foreground">{TOTP_ISSUER}</strong> entry. Two-step sign-in only turns on after a code works.</Step>
           <Step>
             Press <strong className="text-foreground">Create recovery codes</strong>. Download or write them down and keep them off your
             phone (a password manager or paper in a safe place). Each code works once.
           </Step>
-          <Step>Next time, owner pages ask for the current code. That's normal.</Step>
+          <Step>Next time you sign in, you'll be asked for the current code. Owner pages ask again after 15 minutes for sensitive changes. That's normal.</Step>
         </ol>
       </section>
 
@@ -176,12 +177,12 @@ function SignInHelp() {
             <strong className="text-foreground">{LEGACY_TOTP_ISSUER}</strong>. Check other phones and your app's cloud backup.
           </li>
           <li>
-            Still lost? On <Link to="/account-security" hash="recovery" className="text-gold-light underline underline-offset-4">Two-factor & recovery</Link>,
+            Still lost? On <Link to="/account-security" hash="recovery" className="text-gold-light underline underline-offset-4">Account security</Link>,
             sign in again, then enter one unused recovery code within 10 minutes. The old authenticator
             is removed, your other sign-ins end, and you set up a new one.
           </li>
           <li>
-            No recovery codes? There is no self-service way around two-factor — on purpose. The
+            No recovery codes? There is no self-service way around two-step sign-in — on purpose. The
             project's administrator, signed in to the Lovable editor for this project, has to remove
             the old authenticator. Signing in here alone is never enough.
           </li>
