@@ -46,12 +46,18 @@ function AuthPage() {
     // Account security handles its own code / recovery step (a lost phone must still reach recovery).
     if (destination.current.to !== "/account-security") {
       // Two-step sign-in is optional: only accounts that turned it on are asked for a code.
-      const level = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (level.error) {
+      // Factors are read fresh from the server (the stored session's copy can be stale).
+      const [level, factors] = await Promise.all([
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        supabase.auth.mfa.listFactors(),
+      ]);
+      if (level.error || factors.error) {
         leaving.current = false;
         return setCodeStep("error");
       }
-      if (signInNeedsCode(level.data)) return setCodeStep("code");
+      const hasAuthenticator = (factors.data.totp ?? []).some((f) => f.status === "verified");
+      if (signInNeedsCode({ currentLevel: level.data.currentLevel, nextLevel: hasAuthenticator ? "aal2" : level.data.currentLevel }))
+        return setCodeStep("code");
     }
     return go();
   };
