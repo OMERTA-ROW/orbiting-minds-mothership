@@ -79,6 +79,8 @@ export const commandInput = z.object({
 });
 export const pollInput = z.object({ sessionId: uuid });
 export const stopInput = z.object({ sessionId: uuid.optional(), agentId: agentId.optional() });
+export const STOP_DRILL_COMMAND = "sleep 30";
+export const stopDrillInput = z.object({ sessionId: uuid, checkId: uuid });
 export const autonomyInput = z.object({
   agentId,
   checkId: uuid.optional(),
