@@ -541,14 +541,17 @@ export function respond(raw: string, s: Snapshot): CommandResult {
   if (SHELL_LIKE.test(cmd))
     return {
       outcome: "denied",
-      lines: ["This terminal does not run shell or device commands. Nothing was executed."],
+      lines: [
+        "This status terminal does not run commands. Nothing was executed.",
+        "Use the cloud shell in the OMNI agent workspace above; you approve each command before it runs.",
+      ],
     };
   if (EXECUTE_LIKE.test(cmd))
     return {
       outcome: "blocked",
       lines: [
-        "Execution is not available. CODE is off, autonomous mode is off and no executor is connected.",
-        "Queue a held task in the CODE tab instead. Nothing was run.",
+        "This status terminal cannot run anything. CODE and autonomous mode are off.",
+        "Use the cloud shell in the agent workspace (each command needs your approval) or hold a task in the CODE tab. Nothing was run.",
       ],
     };
   return { outcome: "error", lines: [`Unknown command "${cmd.slice(0, 40)}". Type help.`] };
