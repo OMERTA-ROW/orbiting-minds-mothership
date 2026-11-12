@@ -69,7 +69,9 @@ export function RazulProvisioning() {
       setNotice(
         /authorization header|unauthorized/i.test(m)
           ? "Sign in as the owner (with your two-step code) to open this."
-          : m || "Owner access could not be verified.",
+          : /owner/i.test(m)
+            ? "Only the owner, signed in with a two-step code, can open this."
+            : "Owner access could not be verified.",
       );
     } finally {
       setBusy(false);
