@@ -192,7 +192,8 @@ export function signInNeedsCode(level: {
   currentLevel?: string | null;
   nextLevel?: string | null;
 }): boolean {
-  return level.currentLevel === "aal1" && level.nextLevel === "aal2";
+  // Fail closed: an authenticator on the account and anything short of aal2 means "ask".
+  return level.nextLevel === "aal2" && level.currentLevel !== "aal2";
 }
 
 /**

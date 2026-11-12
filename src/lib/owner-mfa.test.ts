@@ -101,6 +101,8 @@ describe("recovery codes", () => {
 describe("two-step sign-in is optional", () => {
   it("asks for a code after sign-in only when the account turned it on", () => {
     expect(signInNeedsCode({ currentLevel: "aal1", nextLevel: "aal2" })).toBe(true);
+    // A session with an unknown level still has to enter the code.
+    expect(signInNeedsCode({ currentLevel: null, nextLevel: "aal2" })).toBe(true);
     // No authenticator confirmed: existing logins are unchanged.
     expect(signInNeedsCode({ currentLevel: "aal1", nextLevel: "aal1" })).toBe(false);
     // Already confirmed this session.
