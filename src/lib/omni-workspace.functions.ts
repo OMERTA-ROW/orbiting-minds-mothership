@@ -18,8 +18,11 @@ import {
   passkeyNameInput,
   passkeyPurposeInput,
   pollInput,
+  prInput,
   startSessionInput,
   stopInput,
+  AUTONOMY_ENABLED,
+  evaluateSandboxHealth,
 } from "./omni-workspace";
 
 type Ctx = {
@@ -65,7 +68,13 @@ export const readWorkspace = createServerFn({ method: "POST" })
     return {
       now: Date.now(),
       gate,
-      link: { configured: link.configured, approvalValid: link.approvalValid, selfTestPassedAt: link.selfTestPassedAt },
+      link: {
+        configured: link.configured,
+        enabled: link.enabled,
+        problem: link.problem,
+        selfTestPassedAt: link.selfTestPassedAt,
+        lastCheck: link.lastCheck,
+      },
       killSwitchEnabled: controls.killSwitchEnabled,
       killSwitchChangedAt: controls.settings?.changed_at ?? null,
       emergencyStopReleased: controls.emergencyStopReleased,
@@ -170,6 +179,51 @@ export const setKillSwitch = createServerFn({ method: "POST" })
     }
   });
 
+// ---- Cloud sandbox self-test ---------------------------------------------
+
+/**
+ * Asks the sandbox for its live health probe over the signed link and records the result.
+ * Passes only if isolation and limits check out; the reply proof is verified first.
+ */
+export const runSandboxSelfTest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => checkIdInput.parse(i))
+  .handler(async ({ context, data }) => {
+    const { db, admin, pk, ws, uid } = await owner(context);
+    try {
+      await pk.consumePasskeyCheck(admin, uid, data.checkId, ["open"]);
+      const c = await ws.controls(db);
+      if (!c.emergencyStopReleased) throw new Error("Emergency Stop is engaged.");
+      const link = await ws.linkState(admin);
+      if (!link.configured) throw new Error(link.problem ?? "Cloud sandbox is not configured.");
+      if (!link.enabled) throw new Error("Cloud sandbox switch (OMNI_SANDBOX_ENABLED) is off.");
+      let health;
+      try {
+        const reply = await ws.relay(link, "health.check", {});
+        health = reply.health;
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : "error";
+        await ws.audit(admin, { actor: "owner", event: "sandbox_self_test_failed", detail: { failures: [reason] } });
+        return { ok: false as const, message: reason };
+      }
+      if (!health) {
+        await ws.audit(admin, { actor: "owner", event: "sandbox_self_test_failed", detail: { failures: ["No health report."] } });
+        return { ok: false as const, message: "The sandbox did not send a health report." };
+      }
+      const verdict = evaluateSandboxHealth(health);
+      await ws.audit(admin, {
+        actor: "owner",
+        event: verdict.passed ? "sandbox_self_test_passed" : "sandbox_self_test_failed",
+        detail: { health, failures: verdict.failures },
+      });
+      return verdict.passed
+        ? { ok: true as const }
+        : { ok: false as const, message: `Self-test failed: ${verdict.failures[0]}` };
+    } catch (e) {
+      return fail(e);
+    }
+  });
+
 // ---- Sessions, chat, commands --------------------------------------------
 
 export const startSession = createServerFn({ method: "POST" })
@@ -183,11 +237,15 @@ export const startSession = createServerFn({ method: "POST" })
       if (!gate.open) throw new Error(gate.blockers[0] ?? "Not connected.");
       const { data: agent } = await db.from("omni_agents").select("*").eq("id", data.agentId).maybeSingle();
       if (!agent || agent.status !== "enrolled") throw new Error("This agent is not enrolled.");
-      const { data: row, error } = await admin.from("omni_workspace_sessions").insert({ owner_id: uid, agent_id: agent.id }).select("*").single();
+      const { data: row, error } = await admin
+        .from("omni_workspace_sessions")
+        .insert({ owner_id: uid, agent_id: agent.id, provider: data.provider, repository: data.repository ?? null, repo_ref: data.repository ? (data.ref ?? "main") : null })
+        .select("*")
+        .single();
       if (error || !row) throw new Error("Session could not be created.");
       await ws.audit(admin, { actor: "owner", event: "session_start_requested", agentId: agent.id, sessionId: row.id });
       try {
-        const reply = await ws.relay(link, "session.start", { sessionId: row.id, agentId: agent.id, allowedActions: agent.allowed_actions });
+        const reply = await ws.relay(link, "session.start", { sessionId: row.id, agentId: agent.id, allowedActions: agent.allowed_actions, provider: data.provider });
         if (!reply.session) throw new Error("OMNI did not report a sandbox.");
         await admin.from("omni_workspace_sessions").update({ sandbox_id: reply.session.sandboxId, sandbox_name: reply.session.sandboxName, model: reply.session.model }).eq("id", row.id);
         await ws.audit(admin, { actor: agent.id, event: "session_started", agentId: agent.id, sessionId: row.id, detail: reply.session });
@@ -196,36 +254,51 @@ export const startSession = createServerFn({ method: "POST" })
         await ws.audit(admin, { actor: "system", event: "session_start_failed", agentId: agent.id, sessionId: row.id, detail: { error: e instanceof Error ? e.message : "error" } });
         throw e;
       }
+      if (data.repository) {
+        const r = await submit(context, row.id, {
+          jobKind: "command",
+          need: "edit_files",
+          input: `checkout ${data.repository}@${data.ref ?? "main"}`,
+          action: "repo.checkout",
+          payload: { repository: data.repository, ref: data.ref ?? "main" },
+        });
+        if (!r.ok) return { ok: true as const, sessionId: row.id, warning: `Session started, but checkout was not sent: ${r.message}` };
+      }
       return { ok: true as const, sessionId: row.id };
     } catch (e) {
       return fail(e);
     }
   });
 
-async function submit(context: Ctx, sessionId: string, kind: "chat" | "command", input: string) {
+type Submit = {
+  jobKind: "chat" | "command";
+  need: "chat" | "run_commands" | "edit_files";
+  input: string;
+  action: "chat.send" | "command.run" | "repo.checkout" | "pr.propose";
+  payload: Record<string, unknown>;
+};
+const NEED_LABEL = { chat: "chat", run_commands: "run commands", edit_files: "change repository files" } as const;
+
+async function submit(context: Ctx, sessionId: string, req: Submit) {
   const { db, admin, ws, uid } = await owner(context);
   try {
     const { gate, link } = await ws.gateFor(db, admin, uid, true);
     if (!gate.open) throw new Error(gate.blockers[0] ?? "Not connected.");
     const { session, agent } = await ws.activeSession(db, admin, sessionId);
-    const need = kind === "chat" ? "chat" : "run_commands";
-    if (!agent.allowed_actions.includes(need)) throw new Error(`${agent.display_name} is not allowed to ${kind === "chat" ? "chat" : "run commands"}.`);
-    const budget = await ws.checkBudget(db, agent);
-    if (!budget.allowed) throw new Error(budget.reason!);
-    const { data: job, error } = await admin.from("omni_agent_jobs").insert({ agent_id: agent.id, session_id: session.id, kind, origin: "owner", input, status: "queued" }).select("id").single();
+    if (!agent.allowed_actions.includes(req.need)) throw new Error(`${agent.display_name} is not allowed to ${NEED_LABEL[req.need]}.`);
+    // Model calls are billed, so they need budget first. Shell, checkout and PR jobs report any cost they incur.
+    if (req.jobKind === "chat") {
+      const budget = await ws.checkBudget(db, agent);
+      if (!budget.allowed) throw new Error(budget.reason!);
+    }
+    if (req.action === "pr.propose" && !session.repository) throw new Error("This session has no repository.");
+    const { data: job, error } = await admin.from("omni_agent_jobs").insert({ agent_id: agent.id, session_id: session.id, kind: req.jobKind, origin: "owner", input: req.input, status: "queued" }).select("id").single();
     if (error || !job) throw new Error("Job could not be created.");
-    await ws.audit(admin, { actor: "owner", event: kind === "chat" ? "chat_sent" : "command_sent", agentId: agent.id, sessionId, jobId: job.id, output: input });
+    await ws.audit(admin, { actor: "owner", event: req.action === "chat.send" ? "chat_sent" : req.action === "command.run" ? "command_sent" : req.action.replace(".", "_"), agentId: agent.id, sessionId, jobId: job.id, output: req.input });
     await ws.touch(admin, sessionId);
-    const w = await ws.openWindow(db, agent.id);
-    const autonomous = Boolean(w && Date.parse(w.expires_at) > Date.now());
     try {
-      const reply = await ws.relay(link, kind === "chat" ? "chat.send" : "command.run", {
-        sessionId,
-        jobId: job.id,
-        agentId: agent.id,
-        autonomous,
-        ...(kind === "chat" ? { text: input } : { command: input }),
-      });
+      // Autonomy stays off: every command waits for the owner on the sandbox side too.
+      const reply = await ws.relay(link, req.action, { sessionId, jobId: job.id, agentId: agent.id, autonomous: false, ...req.payload });
       await ws.ingest(admin, db, agent, sessionId, job.id, reply);
     } catch (e) {
       await admin.from("omni_agent_jobs").update({ status: "failed", ended_at: new Date().toISOString() }).eq("id", job.id);
@@ -241,12 +314,24 @@ async function submit(context: Ctx, sessionId: string, kind: "chat" | "command",
 export const sendChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => chatInput.parse(i))
-  .handler(({ context, data }) => submit(context, data.sessionId, "chat", data.text));
+  .handler(({ context, data }) =>
+    submit(context, data.sessionId, { jobKind: "chat", need: "chat", input: data.text, action: "chat.send", payload: { text: data.text } }),
+  );
 
 export const runCommand = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => commandInput.parse(i))
-  .handler(({ context, data }) => submit(context, data.sessionId, "command", data.command));
+  .handler(({ context, data }) =>
+    submit(context, data.sessionId, { jobKind: "command", need: "run_commands", input: data.command, action: "command.run", payload: { command: data.command } }),
+  );
+
+/** Asks the sandbox to prepare a draft pull request; opening it needs a passkey approval. */
+export const proposePullRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => prInput.parse(i))
+  .handler(({ context, data }) =>
+    submit(context, data.sessionId, { jobKind: "command", need: "edit_files", input: `pull request: ${data.title}`, action: "pr.propose", payload: { title: data.title } }),
+  );
 
 /** Near-live output: the page asks OMNI for new step events about once a second. */
 export const pollSession = createServerFn({ method: "POST" })
@@ -330,6 +415,7 @@ export const setAutonomy = createServerFn({ method: "POST" })
         await ws.audit(admin, { actor: "owner", event: "autonomy_off", agentId: data.agentId });
         return { ok: true as const };
       }
+      if (!AUTONOMY_ENABLED) throw new Error("Autonomous Mode stays off in this release. Every command needs your approval.");
       if (!data.minutes) throw new Error("Pick 15, 30 or 60 minutes.");
       await pk.consumePasskeyCheck(admin, uid, data.checkId, ["autonomy"]);
       const { gate } = await ws.gateFor(db, admin, uid, true);
@@ -365,7 +451,6 @@ export const decideStep = createServerFn({ method: "POST" })
         await pk.consumePasskeyCheck(admin, uid, data.checkId, ["approval"]);
         const { data: a } = await db.from("omni_workspace_approvals").select("*").eq("id", data.approvalId).eq("status", "pending").maybeSingle();
         if (!a) throw new Error("This approval is no longer waiting.");
-        await admin.from("omni_workspace_approvals").update({ status: data.approve ? "approved" : "rejected", decided_at: new Date().toISOString(), decided_by: uid }).eq("id", a.id);
         ({ job_id: jobId, remote_id: remoteId, session_id: sessionId, agent_id: agentId } = a);
       } else if (data.stepId) {
         const { data: s } = await db.from("omni_agent_steps").select("*").eq("id", data.stepId).eq("status", "pending_approval").maybeSingle();
@@ -374,12 +459,16 @@ export const decideStep = createServerFn({ method: "POST" })
         if (gated) throw new Error("This step needs a passkey approval in Approvals waiting.");
         ({ job_id: jobId, remote_id: remoteId, session_id: sessionId, agent_id: agentId } = s);
       } else throw new Error("Nothing to decide.");
+      const { gate, link } = await ws.gateFor(db, admin, uid, true);
+      if (data.approve && !gate.open) throw new Error(`Not sent: ${gate.blockers[0] ?? "not connected"}`);
+      if (data.approvalId)
+        await admin.from("omni_workspace_approvals").update({ status: data.approve ? "approved" : "rejected", decided_at: new Date().toISOString(), decided_by: uid }).eq("id", data.approvalId);
       await admin.from("omni_agent_steps").update({ status: data.approve ? "approved" : "rejected", decided_at: new Date().toISOString() }).eq("job_id", jobId).eq("remote_id", remoteId);
       await ws.audit(admin, { actor: "owner", event: data.approve ? "step_approved" : "step_rejected", agentId, sessionId, jobId, detail: { remoteId } });
-      const { gate, link } = await ws.gateFor(db, admin, uid, true);
       if (gate.open) {
-        await ws.activeSession(db, admin, sessionId);
-        await ws.relay(link, "step.decide", { sessionId, jobId, stepId: remoteId, approve: data.approve });
+        const { agent } = await ws.activeSession(db, admin, sessionId);
+        const reply = await ws.relay(link, "step.decide", { sessionId, jobId, stepId: remoteId, approve: data.approve });
+        await ws.ingest(admin, db, agent, sessionId, jobId, reply);
       }
       return { ok: true as const };
     } catch (e) {

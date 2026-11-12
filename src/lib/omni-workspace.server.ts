@@ -9,6 +9,7 @@ import {
   budgetDecision,
   capHead,
   needsOwnerDecision,
+  sandboxHealth,
   sessionEndReason,
   workspaceGate,
   type RemoteReply,
@@ -45,30 +46,39 @@ export async function audit(
   if (error) throw new Error("Audit write failed; nothing was sent.");
 }
 
+/** Cloud sandbox link state. Only a proof-checked, passing self-test recorded here counts. */
 export async function linkState(admin: Db) {
-  let configured = false;
-  let config = null as Awaited<ReturnType<typeof import("./jackboy-link.server").configuredJackboyLink>> | null;
-  try {
-    const { configuredJackboyLink } = await import("./jackboy-link.server");
-    config = await configuredJackboyLink();
-    configured = true;
-  } catch {
-    configured = false;
-  }
-  const approvalValid = configured && Boolean(process.env["OMNI_LINK_APPROVAL_ID"]);
+  const { sandboxSettings } = await import("./omni-sandbox-config.server");
+  const { state, config } = sandboxSettings();
   const { data } = await admin
-    .from("razul_control_audit")
-    .select("occurred_at")
-    .eq("record_type", "jackboy_link")
-    .eq("action", "self_test_passed")
-    .order("occurred_at", { ascending: false })
+    .from("omni_workspace_audit")
+    .select("at,event,detail")
+    .in("event", ["sandbox_self_test_passed", "sandbox_self_test_failed"])
+    .order("at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  const { data: passed } = await admin
+    .from("omni_workspace_audit")
+    .select("at")
+    .eq("event", "sandbox_self_test_passed")
+    .order("at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const parsed = sandboxHealth.safeParse((data?.detail as { health?: unknown } | null)?.health);
   return {
-    configured,
-    approvalValid,
+    configured: state.configured,
+    enabled: state.enabled,
+    problem: state.problem,
     config,
-    selfTestPassedAt: data?.occurred_at ? Date.parse(data.occurred_at) : null,
+    selfTestPassedAt: passed?.at ? Date.parse(passed.at) : null,
+    lastCheck: data
+      ? {
+          at: data.at,
+          passed: data.event === "sandbox_self_test_passed",
+          failures: ((data.detail as { failures?: unknown } | null)?.failures as string[] | undefined) ?? [],
+          health: parsed.success ? parsed.data : null,
+        }
+      : null,
   };
 }
 
@@ -91,7 +101,7 @@ export async function gateFor(db: Db, admin: Db, ownerId: string, passkeyFresh?:
     selfTestPassedAt: link.selfTestPassedAt,
     killSwitchEnabled: c.killSwitchEnabled,
     emergencyStopReleased: c.emergencyStopReleased,
-    linkApprovalValid: link.approvalValid,
+    sandboxEnabled: link.enabled,
     passkeyFresh: passkeyFresh ?? freshAt !== null,
     now: Date.now(),
   });
@@ -99,7 +109,7 @@ export async function gateFor(db: Db, admin: Db, ownerId: string, passkeyFresh?:
 }
 
 export async function relay(link: Awaited<ReturnType<typeof linkState>>, action: WorkspaceAction, payload: Record<string, unknown>) {
-  if (!link.config) throw new Error("Secure link is not configured.");
+  if (!link.config) throw new Error("Cloud sandbox is not configured.");
   const { workspaceRequest } = await import("./omni-workspace-link.server");
   return workspaceRequest(link.config, action, payload);
 }

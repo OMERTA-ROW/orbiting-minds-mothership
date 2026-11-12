@@ -125,5 +125,24 @@ export async function loadTerminalSnapshot(
       known: !dock.error,
     },
     workspaceEnabled: ws.error ? null : ws.data ? ws.data.terminal_enabled === true : false,
+    sandbox: await sandboxSnapshot(db),
+  };
+}
+
+async function sandboxSnapshot(db: Db): Promise<Snapshot["sandbox"]> {
+  const { sandboxSettings } = await import("./omni-sandbox-config.server");
+  const { state } = sandboxSettings();
+  const { data } = await db
+    .from("omni_workspace_audit")
+    .select("at")
+    .eq("event", "sandbox_self_test_passed")
+    .order("at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return {
+    configured: state.configured,
+    enabled: state.enabled,
+    problem: state.problem,
+    selfTestPassedAt: data?.at ?? null,
   };
 }

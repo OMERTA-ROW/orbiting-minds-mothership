@@ -10,6 +10,8 @@ export const IDLE_LIMIT_MS = 10 * 60_000;
 export const SESSION_MAX_MS = 60 * 60_000;
 export const SELF_TEST_VALID_MS = 24 * 3600_000;
 export const AUTONOMY_MINUTES = [15, 30, 60] as const;
+/** Autonomous Mode stays off in this release: the server refuses to turn it on. */
+export const AUTONOMY_ENABLED = false as const;
 export const AUDIT_HEAD_BYTES = 4096;
 /** Owner-wide caps in cents: $1 per task, $5 per day, $10 lifetime. */
 export const GLOBAL_LIMITS = { task: 100, day: 500, total: 1000 } as const;
@@ -23,6 +25,7 @@ export const GATED_ACTIONS = [
   "secrets",
   "github_permissions",
   "network",
+  "pull_request",
 ] as const;
 export type GatedAction = (typeof GATED_ACTIONS)[number];
 export const FUTURE_AGENTS = [
@@ -30,6 +33,17 @@ export const FUTURE_AGENTS = [
   { id: "razul", name: "Razul" },
   { id: "hercules", name: "Hercules" },
 ] as const;
+
+/** Model providers the cloud sandbox can use. Keys live only on the Railway sandbox service. */
+export const PROVIDERS = ["none", "openai", "anthropic"] as const;
+export type Provider = (typeof PROVIDERS)[number];
+export const PROVIDER_LABEL: Record<Provider, string> = {
+  none: "Shell only (no model)",
+  openai: "OpenAI (Codex models)",
+  anthropic: "Claude (Anthropic)",
+};
+export const REPOSITORY = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+export const GIT_REF = /^[A-Za-z0-9._/-]{1,100}$/;
 
 const uuid = z.string().uuid();
 const agentId = z.string().regex(/^[a-z][a-z0-9-]{1,31}$/);
@@ -39,7 +53,16 @@ export const killSwitchInput = z.object({
   enabled: z.boolean(),
   reason: z.string().trim().min(3).max(200),
 });
-export const startSessionInput = z.object({ checkId: uuid, agentId });
+export const startSessionInput = z
+  .object({
+    checkId: uuid,
+    agentId,
+    provider: z.enum(PROVIDERS).default("none"),
+    repository: z.string().trim().regex(REPOSITORY, "Use owner/repository.").max(200).optional(),
+    ref: z.string().trim().regex(GIT_REF, "Use a branch name.").optional(),
+  })
+  .refine((s) => !s.ref || s.repository, { message: "Pick a repository for that branch.", path: ["ref"] });
+export const prInput = z.object({ sessionId: uuid, title: z.string().trim().min(3).max(120) });
 export const chatInput = z.object({ sessionId: uuid, text: z.string().trim().min(1).max(4000) });
 export const commandInput = z.object({
   sessionId: uuid,
@@ -78,7 +101,7 @@ export type GateInput = {
   selfTestPassedAt: number | null;
   killSwitchEnabled: boolean | null; // null = missing/unreadable
   emergencyStopReleased: boolean | null;
-  linkApprovalValid: boolean;
+  sandboxEnabled: boolean;
   passkeyFresh: boolean;
   now: number;
 };
@@ -87,12 +110,12 @@ export type Gate = { open: boolean; blockers: string[] };
 /** Every item must be true. Missing or unreadable state counts as closed. */
 export function workspaceGate(g: GateInput): Gate {
   const blockers: string[] = [];
-  if (!g.linkConfigured) blockers.push("Secure link is not configured or switched on.");
+  if (!g.linkConfigured) blockers.push("Cloud sandbox settings are missing or invalid.");
+  if (!g.sandboxEnabled) blockers.push("Cloud sandbox switch (OMNI_SANDBOX_ENABLED) is off.");
   if (g.selfTestPassedAt === null || g.now - g.selfTestPassedAt > SELF_TEST_VALID_MS)
-    blockers.push("OMNI secure-link self-test has not passed in the last 24 hours.");
+    blockers.push("Cloud sandbox self-test has not passed in the last 24 hours.");
   if (g.killSwitchEnabled !== true) blockers.push("Kill switch has the terminal disabled.");
   if (g.emergencyStopReleased !== true) blockers.push("Emergency Stop is engaged.");
-  if (!g.linkApprovalValid) blockers.push("Your link approval is missing or expired.");
   if (!g.passkeyFresh) blockers.push("Fresh passkey check needed.");
   return { open: blockers.length === 0, blockers };
 }
@@ -161,9 +184,87 @@ export const remoteStep = z.object({
   gated: z.enum(GATED_ACTIONS).nullable().default(null),
   status: z.enum(["pending_approval", "done", "failed"]).default("done"),
 });
+const limit = (max: number) => z.number().int().min(0).max(max);
+/** Reported by the sandbox in reply to health.check. Untrusted until the reply proof checks out. */
+export const sandboxHealth = z.object({
+  service: z.literal("omni-sandbox"),
+  version: z.string().max(40),
+  isolation: z.object({
+    network: z.enum(["isolated", "open"]),
+    uid: z.number().int(),
+    perSessionUser: z.boolean(),
+    envNames: z.array(z.string().max(40)).max(64),
+    probeExitCode: z.number().int(),
+  }),
+  limits: z.object({
+    commandTimeoutSec: limit(100000),
+    cpuSec: limit(100000),
+    memoryMb: limit(1000000),
+    maxProcesses: limit(100000),
+    fileSizeMb: limit(1000000),
+    outputCapBytes: limit(100000000),
+    maxSessions: limit(1000),
+    idleMinutes: limit(100000),
+    sessionMinutes: limit(100000),
+  }),
+  providers: z
+    .array(
+      z.object({
+        id: z.enum(["openai", "anthropic"]),
+        configured: z.boolean(),
+        verified: z.boolean(),
+        model: z.string().max(80).nullable(),
+        pricing: z.boolean(),
+        checkedAt: z.string().max(40).nullable(),
+      }),
+    )
+    .max(4),
+  github: z.object({
+    configured: z.boolean(),
+    repositories: z.array(z.object({ fullName: z.string().regex(REPOSITORY).max(200), access: z.boolean() })).max(20),
+    checkedAt: z.string().max(40).nullable(),
+  }),
+  autonomy: z.literal("off"),
+  merge: z.literal("never"),
+});
+export type SandboxHealth = z.infer<typeof sandboxHealth>;
+
+/** Names a sandboxed command may see in its environment. Anything else could be a leaked setting. */
+export const SANDBOX_ENV_ALLOWED = ["HOME", "LANG", "OLDPWD", "PATH", "TERM"] as const;
+/** Hard ceilings Mothership accepts from a sandbox, whatever it is configured with. */
+export const SANDBOX_CEILINGS = {
+  commandTimeoutSec: 300,
+  cpuSec: 300,
+  memoryMb: 8192,
+  maxProcesses: 512,
+  fileSizeMb: 2048,
+  outputCapBytes: 1_048_576,
+  maxSessions: 5,
+  idleMinutes: 10,
+  sessionMinutes: 60,
+} as const;
+
+/** Self-test passes only when isolation is proven by the live probe and every limit is within ceilings. */
+export function evaluateSandboxHealth(h: SandboxHealth): { passed: boolean; failures: string[] } {
+  const f: string[] = [];
+  if (h.isolation.network !== "isolated") f.push("Commands can reach the network; isolation is required.");
+  if (h.isolation.uid <= 0) f.push("Commands run as root.");
+  if (!h.isolation.perSessionUser) f.push("Sessions share one user account.");
+  if (h.isolation.probeExitCode !== 0) f.push("The sandbox probe command did not finish cleanly.");
+  const extra = h.isolation.envNames.filter((n) => !(SANDBOX_ENV_ALLOWED as readonly string[]).includes(n));
+  if (extra.length) f.push(`Commands can see extra settings: ${extra.slice(0, 5).join(", ")}.`);
+  for (const [k, max] of Object.entries(SANDBOX_CEILINGS)) {
+    const v = h.limits[k as keyof typeof SANDBOX_CEILINGS];
+    if (v <= 0 || v > max) f.push(`Limit ${k} is ${v}; allowed 1–${max}.`);
+  }
+  return { passed: f.length === 0, failures: f };
+}
+
 export const remoteReply = z.object({
   contract: z.literal(WORKSPACE_CONTRACT),
   requestNonce: z.string(),
+  error: z.string().max(400).optional(),
+  health: sandboxHealth.optional(),
   session: z
     .object({
       sandboxId: z.string().regex(/^[A-Za-z0-9_.-]{1,64}$/),

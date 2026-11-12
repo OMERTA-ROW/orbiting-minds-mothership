@@ -19,7 +19,7 @@ const open = {
   selfTestPassedAt: now - 1000,
   killSwitchEnabled: true,
   emergencyStopReleased: true,
-  linkApprovalValid: true,
+  sandboxEnabled: true,
   passkeyFresh: true,
   now,
 };
@@ -35,6 +35,7 @@ describe("workspace gate", () => {
   it("engaged Emergency Stop blocks", () =>
     expect(workspaceGate({ ...open, emergencyStopReleased: false }).open).toBe(false));
   it("stale passkey blocks", () => expect(workspaceGate({ ...open, passkeyFresh: false }).open).toBe(false));
+  it("sandbox switch off blocks", () => expect(workspaceGate({ ...open, sandboxEnabled: false }).open).toBe(false));
 });
 
 describe("session timeout", () => {

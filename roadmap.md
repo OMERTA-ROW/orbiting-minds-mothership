@@ -358,3 +358,11 @@ First staged pilot (one project only; owner selection pending):
 - [ ] Railway: `omni.workspace/v1` endpoint + isolated sandbox per contract §4 — blocked on OMNI/Railway work outside this project.
 - [ ] Owner records approvals 1–10, then sets `JACKBOY_LINK_SELF_TEST_ENABLED` and runs handshake + self-test — owner decision.
 - [ ] `omni.memory/v1` read path for agents — design only; needs owner approval and a tested build.
+
+## OMNI cloud shell (2026-11-12, priority)
+- [x] Mothership: separate `OMNI_SANDBOX_*` link (refuses Jackboy host/secret reuse), signed self-test with isolation/limit verdict, per-command approval, live stdout/stderr/exit, stop, repository checkout, passkey-gated draft pull requests, OpenAI/Claude provider status, autonomy refused server-side.
+- [x] Reference Railway service `services/omni-sandbox/` + Dockerfile + deploy guide; 11 local end-to-end checks pass on Lovable's machine.
+- [ ] Deploy the sandbox service on Railway and confirm logs say `network isolated` — owner/Railway step.
+- [ ] Add `OMNI_SANDBOX_ORIGIN`, `OMNI_SANDBOX_CLIENT_ID`, `OMNI_SANDBOX_HMAC_SECRET`, `OMNI_SANDBOX_ENABLED` — owner step after deploy.
+- [ ] GitHub fine-grained token + allow-list; OpenAI/Anthropic keys and prices on the sandbox service — owner step.
+- [ ] First live run: self-test, session, approved command, checkout, draft PR — blocked on the steps above.
