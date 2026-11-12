@@ -301,6 +301,8 @@ export const REASON_MESSAGE: Record<string, string> = {
   revoked: "This device was revoked by the owner.",
   replay: "Request already used.",
   not_permitted: "The owner has not allowed this for the device.",
+  stop_engaged: "Emergency Stop is engaged. Nothing was queued or read.",
+  unavailable: "Status is unavailable right now. Retry later.",
   secret_like: "That looks like a key or token. It was not saved.",
   id_conflict: "That task id was used for a different task.",
   daily_limit: "This device has proposed 20 tasks today.",
