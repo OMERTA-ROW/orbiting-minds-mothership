@@ -51,9 +51,12 @@ export function PaletteTrigger() {
 export function CommandPaletteProvider({
   children,
   pages: navigation,
+  includeDemo = false,
 }: {
   children: ReactNode;
   pages: readonly { to: (typeof navItems)[number]["to"]; label: string }[];
+  /** Sample modules/projects/agents only appear when design previews are switched on. */
+  includeDemo?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -99,9 +102,9 @@ export function CommandPaletteProvider({
         hash: `idea-${entry.id}`,
       });
   };
-  const matches = searchCommands(query);
+  const matches = includeDemo ? searchCommands(query) : [];
   const orderedKinds = query.trim() ? [...new Set(matches.map((entry) => entry.kind))] : kinds;
-  const pages = [...navigation, { to: "/join", label: "Join" } as const].filter(
+  const pages = [...navigation, ...(includeDemo ? [{ to: "/join", label: "Join" } as const] : [])].filter(
     (p) => !query.trim() || p.label.toLowerCase().includes(query.toLowerCase().trim()),
   );
   return (
@@ -118,10 +121,10 @@ export function CommandPaletteProvider({
           }}
         >
           <DialogTitle className="px-5 pb-2 pt-5 font-display text-gold-light">
-            Mothership command
+            Search
           </DialogTitle>
           <DialogDescription className="px-5 pb-4 text-xs">
-            Modules · demo projects, agents, proposals and code
+            {includeDemo ? "Pages, plus sample modules, projects, agents and code (design previews)" : "Find a page"}
           </DialogDescription>
           <Command
             shouldFilter={false}
@@ -134,14 +137,14 @@ export function CommandPaletteProvider({
               value={query}
               onValueChange={(text) => {
                 setQuery(text);
-                setValue(searchCommands(text)[0]?.key ?? "");
+                setValue(includeDemo ? (searchCommands(text)[0]?.key ?? "") : "");
               }}
               autoFocus
-              placeholder="Search the constellation…"
+              placeholder={includeDemo ? "Search pages and previews…" : "Search pages…"}
               aria-label="Search commands"
             />
             <CommandList className="max-h-[min(55svh,450px)] px-2 py-2">
-              <CommandEmpty>No matching worlds or commands.</CommandEmpty>
+              <CommandEmpty>No matching pages.</CommandEmpty>
               {orderedKinds.map((kind) => {
                 const entries = matches.filter((e) => e.kind === kind);
                 const Icon = icons[kind];
@@ -198,7 +201,7 @@ export function CommandPaletteProvider({
             </CommandList>
           </Command>
           <div className="border-t border-border px-5 py-3 font-mono text-[9px] uppercase text-muted-foreground">
-            Owner-reviewed · demo results only
+            {includeDemo ? "Sample results are demos, not real records" : "Design previews are hidden"}
           </div>
         </DialogContent>
       </Dialog>
