@@ -298,7 +298,12 @@ function AccountSecurity() {
         <p className="text-sm text-muted-foreground">Account Security</p>
         <h1 className="text-2xl font-semibold">Two-Factor Authentication</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Owner-only pages need an authenticator app code. Status:{" "}
+          Only the owner needs this: owner-only pages ask for a 6-digit authenticator app code.
+          Members can skip it.{" "}
+          <Link to="/sign-in-help" className="underline underline-offset-4">
+            How this works
+          </Link>
+          . Status:{" "}
           <strong>
             {!loaded
               ? "Checking…"
@@ -517,9 +522,14 @@ function AccountSecurity() {
           </div>
         )}
       </section>
-      <Link to="/members" className="text-sm underline">
-        Back to Members
-      </Link>
+      <p className="flex flex-wrap gap-4 text-sm">
+        <Link to="/beta" className="underline">
+          Back to my projects
+        </Link>
+        <Link to="/sign-in-help" className="underline">
+          Sign-in help
+        </Link>
+      </p>
     </main>
   );
 }

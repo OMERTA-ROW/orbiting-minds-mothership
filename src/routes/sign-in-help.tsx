@@ -182,7 +182,8 @@ function SignInHelp() {
           </li>
           <li>
             No recovery codes? There is no self-service way around two-factor — on purpose. The
-            project administrator has to remove the old authenticator after checking it's really you.
+            project's administrator, signed in to the Lovable editor for this project, has to remove
+            the old authenticator. Signing in here alone is never enough.
           </li>
         </ol>
       </section>

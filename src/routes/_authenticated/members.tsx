@@ -47,7 +47,7 @@ function Members() {
   return (
     <main className="mx-auto max-w-4xl space-y-8 px-6 py-24">
       <header>
-        <p className="text-xs uppercase tracking-[0.3em] text-primary">Blocked until activated</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-primary">Owner and admins only</p>
         <h1 className="font-display text-4xl text-foreground">Members & Invitations</h1>
         <p className="mt-2 text-muted-foreground">
           Owners and admins only. Each link works once, for one confirmed email. Nothing is emailed:
@@ -111,7 +111,7 @@ function Members() {
           </div>
         )}
         <Button variant="ghost" size="sm" onClick={() => run(() => claim())}>
-          Claim owner (only works for the configured, confirmed owner email)
+          One-time setup: claim the owner role (only the configured, confirmed owner email can)
         </Button>
       </section>
       <section>
