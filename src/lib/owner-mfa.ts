@@ -35,7 +35,11 @@ export function totpFriendlyName(now: Date): string {
 
 export const isSixDigitCode = (value: string) => /^\d{6}$/.test(value);
 
-type ProviderError = { code?: string | null; status?: number | null; message?: string | null };
+type ProviderError = {
+  code?: string | null | undefined;
+  status?: number | null | undefined;
+  message?: string | null | undefined;
+};
 
 /** Plain-language message for a provider MFA error. Never echoes codes or secrets. */
 export function mfaErrorMessage(error: ProviderError | null | undefined): string | null {
