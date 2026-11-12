@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { Anchor, OctagonX, Power, RefreshCw, ShieldCheck, Smartphone } from "lucide-react";
+import { Anchor, OctagonX, Power, RefreshCw, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { FRESH_MFA_SECONDS, noteProblem } from "@/lib/activation-approvals";
+import { ownerMfaState, type OwnerMfaState } from "@/lib/owner-mfa";
+import { OwnerCodeForm } from "@/components/account/OwnerCodeForm";
 import {
   approveDockDevice,
   cancelDockInvite,
@@ -58,7 +60,7 @@ export function DockingBay() {
   const [notice, setNotice] = useState<{ area: string; text: string; lines?: string[] } | null>(
     null,
   );
-  const [code, setCode] = useState("");
+  const [gate, setGate] = useState<OwnerMfaState | "not_owner" | null>(null);
   const [kind, setKind] = useState<BranchKind>("honeycomb_mobile");
   const [requested, setRequested] = useState<DockPermission[]>(DEFAULT_MOBILE_PERMISSIONS);
   const [minutes, setMinutes] = useState(10);
@@ -68,13 +70,30 @@ export function DockingBay() {
   const [origin, setOrigin] = useState("");
 
   const refresh = useCallback(async () => setBay(await read()), [read]);
+  const load = useCallback(async () => {
+    try {
+      await refresh();
+      setAccess("ok");
+    } catch {
+      setAccess("denied");
+      // Work out the owner's next step from their own session; the server still decides access.
+      const [u, f, a] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.auth.mfa.listFactors(),
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+      ]);
+      const state = ownerMfaState({
+        signedIn: !u.error && Boolean(u.data.user),
+        verifiedFactors: f.data?.totp.filter((x) => x.status === "verified").length ?? 0,
+        aal: a.data?.currentLevel,
+      });
+      setGate(state === "verified" ? "not_owner" : state);
+    }
+  }, [refresh]);
   useEffect(() => {
     setOrigin(window.location.origin);
-    refresh().then(
-      () => setAccess("ok"),
-      () => setAccess("denied"),
-    );
-  }, [refresh]);
+    void load();
+  }, [load]);
 
   const mfaFresh =
     bay?.mfaAgeSeconds !== null && (bay?.mfaAgeSeconds ?? Infinity) <= FRESH_MFA_SECONDS;
@@ -95,33 +114,6 @@ export function DockingBay() {
       setNotice({ area, text: done });
     } catch {
       setNotice({ area, text: "Not confirmed. Refresh before retrying." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function reverify() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const factors = await supabase.auth.mfa.listFactors();
-      const factor = factors.data?.totp.find((f) => f.status === "verified");
-      if (!factor)
-        return setNotice({
-          area: "mfa",
-          text: "No verified authenticator. Set one up on Two-factor.",
-        });
-      const r = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
-      if (r.error)
-        return setNotice({
-          area: "mfa",
-          text: "That code was not accepted. Try the current code.",
-        });
-      setCode("");
-      await refresh();
-      setNotice({ area: "mfa", text: "Two-factor re-verified for 15 minutes." });
-    } catch {
-      setNotice({ area: "mfa", text: "Re-verification could not complete. Try again." });
     } finally {
       setBusy(false);
     }
@@ -160,21 +152,40 @@ export function DockingBay() {
 
   if (access !== "ok" || !bay) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-16">
+      <main className="mx-auto max-w-3xl space-y-6 px-6 py-16">
         <h1 className="text-2xl">OMNI Docking Bay</h1>
-        <p className="mt-4 text-sm text-muted-foreground">
-          {access === "checking"
+        <p className="text-sm text-muted-foreground">
+          {access === "checking" || (access === "denied" && !gate)
             ? "Checking owner access…"
-            : "The Docking Bay is private to the verified owner with two-factor sign-in."}
+            : gate === "signed_out"
+              ? "The Docking Bay is private to the verified owner. Sign in first."
+              : gate === "needs_setup"
+                ? "Owner pages need an authenticator app. Set one up first; it only turns on after you enter a working code."
+                : gate === "needs_code"
+                  ? "Enter the code from your authenticator app to open the Docking Bay."
+                  : "This account is signed in with two-factor but is not the owner, so the Docking Bay stays closed."}
         </p>
-        {access === "denied" && (
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button asChild variant="outline">
-              <Link to="/auth">Owner sign in</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/account-security">Two-factor</Link>
-            </Button>
+        {gate === "needs_code" && (
+          <OwnerCodeForm
+            intro="Owner two-factor check for the Docking Bay."
+            onVerified={async () => {
+              setGate(null);
+              await load();
+            }}
+          />
+        )}
+        {access === "denied" && gate && gate !== "needs_code" && (
+          <div className="flex flex-wrap gap-2">
+            {gate === "signed_out" && (
+              <Button asChild variant="outline">
+                <Link to="/auth">Owner sign in</Link>
+              </Button>
+            )}
+            {gate === "needs_setup" && (
+              <Button asChild>
+                <Link to="/account-security">Set up authenticator</Link>
+              </Button>
+            )}
           </div>
         )}
       </main>
@@ -254,33 +265,11 @@ export function DockingBay() {
       </section>
 
       {!mfaFresh && (
-        <form
-          className="flex max-w-md flex-wrap items-center gap-2 rounded-lg border bg-card p-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void reverify();
-          }}
-        >
-          <p className="w-full text-sm">
-            <ShieldCheck size={14} className="mr-1 inline" aria-hidden />
-            Creating codes, approving devices and changing permissions need two-factor from the last
-            15 minutes.
-          </p>
-          <Input
-            className="max-w-40"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            aria-label="6-digit authenticator code"
-            placeholder="6-digit code"
-          />
-          <Button type="submit" size="sm" variant="outline" disabled={busy || code.length !== 6}>
-            Verify
-          </Button>
-          {msg("mfa")}
-        </form>
+        <OwnerCodeForm
+          intro="Creating codes, approving devices and changing permissions need two-factor from the last 15 minutes."
+          onVerified={refresh}
+          disabled={busy}
+        />
       )}
 
       <section aria-labelledby="pair-h" className="space-y-4 rounded-lg border bg-card p-4 md:p-5">
