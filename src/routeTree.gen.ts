@@ -40,6 +40,7 @@ import { Route as GuardianRouteImport } from './routes/guardian'
 import { Route as GuardianIncidentsRouteImport } from './routes/guardian-incidents'
 import { Route as ImpactScorecardRouteImport } from './routes/impact-scorecard'
 import { Route as IncidentArchivesRouteImport } from './routes/incident-archives'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as KnowledgeFusionRouteImport } from './routes/knowledge-fusion'
 import { Route as LaunchControlRouteImport } from './routes/launch-control'
@@ -79,7 +80,6 @@ import { Route as VoiceRouteImport } from './routes/voice'
 import { Route as AuthenticatedAccountSecurityRouteImport } from './routes/_authenticated/account-security'
 import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
 import { Route as AuthenticatedBetaOmniRouteImport } from './routes/_authenticated/beta-omni'
-import { Route as AuthenticatedInviteRouteImport } from './routes/_authenticated/invite'
 import { Route as AuthenticatedKnowledgeBriefRouteImport } from './routes/_authenticated/knowledge-brief'
 import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
 import { Route as AuthenticatedQuantumStudioRouteImport } from './routes/_authenticated/quantum-studio'
@@ -256,6 +256,11 @@ const ImpactScorecardRoute = ImpactScorecardRouteImport.update({
 const IncidentArchivesRoute = IncidentArchivesRouteImport.update({
   id: '/incident-archives',
   path: '/incident-archives',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinRoute = JoinRouteImport.update({
@@ -454,11 +459,6 @@ const AuthenticatedBetaOmniRoute = AuthenticatedBetaOmniRouteImport.update({
   path: '/beta-omni',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedInviteRoute = AuthenticatedInviteRouteImport.update({
-  id: '/invite',
-  path: '/invite',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedKnowledgeBriefRoute =
   AuthenticatedKnowledgeBriefRouteImport.update({
     id: '/knowledge-brief',
@@ -614,6 +614,7 @@ export interface FileRoutesByFullPath {
   '/guardian-incidents': typeof GuardianIncidentsRoute
   '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
+  '/invite': typeof InviteRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/launch-control': typeof LaunchControlRoute
@@ -653,7 +654,6 @@ export interface FileRoutesByFullPath {
   '/account-security': typeof AuthenticatedAccountSecurityRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
-  '/invite': typeof AuthenticatedInviteRoute
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
@@ -709,6 +709,7 @@ export interface FileRoutesByTo {
   '/guardian-incidents': typeof GuardianIncidentsRoute
   '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
+  '/invite': typeof InviteRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/launch-control': typeof LaunchControlRoute
@@ -748,7 +749,6 @@ export interface FileRoutesByTo {
   '/account-security': typeof AuthenticatedAccountSecurityRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
-  '/invite': typeof AuthenticatedInviteRoute
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
@@ -806,6 +806,7 @@ export interface FileRoutesById {
   '/guardian-incidents': typeof GuardianIncidentsRoute
   '/impact-scorecard': typeof ImpactScorecardRoute
   '/incident-archives': typeof IncidentArchivesRoute
+  '/invite': typeof InviteRoute
   '/join': typeof JoinRoute
   '/knowledge-fusion': typeof KnowledgeFusionRoute
   '/launch-control': typeof LaunchControlRoute
@@ -845,7 +846,6 @@ export interface FileRoutesById {
   '/_authenticated/account-security': typeof AuthenticatedAccountSecurityRoute
   '/_authenticated/beta': typeof AuthenticatedBetaRoute
   '/_authenticated/beta-omni': typeof AuthenticatedBetaOmniRoute
-  '/_authenticated/invite': typeof AuthenticatedInviteRoute
   '/_authenticated/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/_authenticated/members': typeof AuthenticatedMembersRoute
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
@@ -903,6 +903,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents'
     | '/impact-scorecard'
     | '/incident-archives'
+    | '/invite'
     | '/join'
     | '/knowledge-fusion'
     | '/launch-control'
@@ -942,7 +943,6 @@ export interface FileRouteTypes {
     | '/account-security'
     | '/beta'
     | '/beta-omni'
-    | '/invite'
     | '/knowledge-brief'
     | '/members'
     | '/quantum-studio'
@@ -998,6 +998,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents'
     | '/impact-scorecard'
     | '/incident-archives'
+    | '/invite'
     | '/join'
     | '/knowledge-fusion'
     | '/launch-control'
@@ -1037,7 +1038,6 @@ export interface FileRouteTypes {
     | '/account-security'
     | '/beta'
     | '/beta-omni'
-    | '/invite'
     | '/knowledge-brief'
     | '/members'
     | '/quantum-studio'
@@ -1094,6 +1094,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents'
     | '/impact-scorecard'
     | '/incident-archives'
+    | '/invite'
     | '/join'
     | '/knowledge-fusion'
     | '/launch-control'
@@ -1133,7 +1134,6 @@ export interface FileRouteTypes {
     | '/_authenticated/account-security'
     | '/_authenticated/beta'
     | '/_authenticated/beta-omni'
-    | '/_authenticated/invite'
     | '/_authenticated/knowledge-brief'
     | '/_authenticated/members'
     | '/_authenticated/quantum-studio'
@@ -1191,6 +1191,7 @@ export interface RootRouteChildren {
   GuardianIncidentsRoute: typeof GuardianIncidentsRoute
   ImpactScorecardRoute: typeof ImpactScorecardRoute
   IncidentArchivesRoute: typeof IncidentArchivesRoute
+  InviteRoute: typeof InviteRoute
   JoinRoute: typeof JoinRoute
   KnowledgeFusionRoute: typeof KnowledgeFusionRoute
   LaunchControlRoute: typeof LaunchControlRoute
@@ -1468,6 +1469,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IncidentArchivesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/join': {
       id: '/join'
       path: '/join'
@@ -1741,13 +1749,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBetaOmniRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/invite': {
-      id: '/_authenticated/invite'
-      path: '/invite'
-      fullPath: '/invite'
-      preLoaderRoute: typeof AuthenticatedInviteRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/knowledge-brief': {
       id: '/_authenticated/knowledge-brief'
       path: '/knowledge-brief'
@@ -1916,7 +1917,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountSecurityRoute: typeof AuthenticatedAccountSecurityRoute
   AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
   AuthenticatedBetaOmniRoute: typeof AuthenticatedBetaOmniRoute
-  AuthenticatedInviteRoute: typeof AuthenticatedInviteRoute
   AuthenticatedKnowledgeBriefRoute: typeof AuthenticatedKnowledgeBriefRoute
   AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
   AuthenticatedQuantumStudioRoute: typeof AuthenticatedQuantumStudioRoute
@@ -1926,7 +1926,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountSecurityRoute: AuthenticatedAccountSecurityRoute,
   AuthenticatedBetaRoute: AuthenticatedBetaRoute,
   AuthenticatedBetaOmniRoute: AuthenticatedBetaOmniRoute,
-  AuthenticatedInviteRoute: AuthenticatedInviteRoute,
   AuthenticatedKnowledgeBriefRoute: AuthenticatedKnowledgeBriefRoute,
   AuthenticatedMembersRoute: AuthenticatedMembersRoute,
   AuthenticatedQuantumStudioRoute: AuthenticatedQuantumStudioRoute,
@@ -1967,6 +1966,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuardianIncidentsRoute: GuardianIncidentsRoute,
   ImpactScorecardRoute: ImpactScorecardRoute,
   IncidentArchivesRoute: IncidentArchivesRoute,
+  InviteRoute: InviteRoute,
   JoinRoute: JoinRoute,
   KnowledgeFusionRoute: KnowledgeFusionRoute,
   LaunchControlRoute: LaunchControlRoute,
