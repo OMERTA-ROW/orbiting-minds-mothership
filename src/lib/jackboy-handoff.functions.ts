@@ -102,7 +102,7 @@ const REASON: Record<string, string> = {
   reply_invalid: "Jackboy's reply was not in the expected format.",
 };
 
-function explain(reply: { reason: string; verified: boolean; hint?: string }) {
+function explain(reply: { reason: string; verified: boolean; hint?: string | undefined }) {
   if (reply.verified) return REASON[reply.reason] ?? `Jackboy refused it (${reply.reason}).`;
   const base = "Not confirmed · retry. ";
   if (reply.hint) return `${base}Unsigned reply suggested: ${REASON[reply.hint] ?? reply.hint}`;

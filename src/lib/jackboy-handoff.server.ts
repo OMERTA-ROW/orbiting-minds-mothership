@@ -79,7 +79,7 @@ export function unixSeconds(nowMs: number) {
 export type HandoffReply =
   | { ok: true; jackboyJobId: string; status: JackboyStatus; httpStatus: number }
   /** verified: Jackboy's signed refusal. Otherwise the reply was discarded. */
-  | { ok: false; reason: string; verified: boolean; hint?: string };
+  | { ok: false; reason: string; verified: boolean; hint?: string | undefined };
 
 const UNSIGNED_HINTS = new Set([
   "authentication_failed",
