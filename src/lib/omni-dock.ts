@@ -21,6 +21,7 @@ export const DOCK_PATHS = {
   heartbeat: "/api/public/omni/dock/heartbeat",
   jobs: "/api/public/omni/dock/jobs",
   stop: "/api/public/omni/dock/stop",
+  jobsStatus: "/api/public/omni/dock/jobs-status",
 } as const;
 
 /** Honeycomb Terminal origins allowed to call the dock from a browser. Native apps send no Origin. */
@@ -227,6 +228,7 @@ export const jobBodySchema = z
   });
 
 export const stopBodySchema = z.object({}).strict();
+export const jobsStatusBodySchema = z.object({}).strict();
 
 /* ---------------- Status and switches ---------------- */
 

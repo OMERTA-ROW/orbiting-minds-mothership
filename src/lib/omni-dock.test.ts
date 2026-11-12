@@ -36,7 +36,8 @@ function fakeStore(
       return { ok: true, status: over.status ?? "paired", permissions: over.permissions ?? [] };
     },
     log: async (_d, e, o) => void calls.push(`log:${e}:${o}`),
-    stopEngaged: async () => true,
+    stopEngaged: async () => false,
+    handoffStatus: async () => [],
     engageStop: async () => (calls.push("engage"), true),
     holdTask: async (_d, j) => (
       calls.push(`hold:${j.kind}`),
