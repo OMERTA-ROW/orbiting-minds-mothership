@@ -109,3 +109,34 @@ transfer feature; no effect in the Mothership).
 4. Replace the browser-stored autonomy switches and the always-failing Docking Bay test with dock state from the
    heartbeat. Keep local-mode autonomy separate and off; never let a dock reply enable the LAN PTY companion.
 5. On `revoked`, delete the docking key and stop calling the dock.
+
+## Handed-off task status (`POST /api/public/omni/dock/jobs-status`)
+
+Signed exactly like the other dock calls; body `{}`. Needs `status.read`. Returns
+only the signing device's own tasks as `{ taskId, state, handoff, updatedAt }`
+(no instructions or output). Refused with 423 `stop_engaged` while Emergency
+Stop is engaged. `POST /jobs` proposals are also refused (423) while Stop is on.
+
+## Mothership → Jackboy handoff (`omni.handoff/v1`) — Jackboy must implement
+
+Mothership never dispatches to OMNI. The owner (aal2 + TOTP within 15 min, Stop
+released) clicks **Send to Jackboy** on a held Jackboy task with a repository.
+Mothership then calls Jackboy:
+
+- `POST {JACKBOY_HANDOFF_ORIGIN}/api/public/omni-handoff/v1`
+- Headers: `x-omni-handoff-client`, `x-omni-handoff-timestamp` (ms), `x-omni-handoff-nonce` (UUID),
+  `x-omni-handoff-signature` = hex HMAC-SHA256(secret,
+  `omni.handoff/v1\nrequest\n{client}\n{timestamp}\n{nonce}\n{sha256hex(body)}`).
+- `create` body: `{ contract, action:"create", taskId, project, repository, kind:"test"|"build", instructions, payloadDigest }`
+  where `payloadDigest` = sha256hex of `{"taskId","project","repository","kind","instructions"}` JSON in that order.
+- `status` body: `{ contract, action:"status", taskId, payloadDigest }`.
+- Jackboy must: check client allowlist, ±60 s clock, single-use nonce, signature; create the job
+  QUEUED only (its own passkey approval and spend caps apply); treat a repeat `create` for the same
+  `taskId` + digest as idempotent and refuse a different digest; never follow instructions to run.
+- Reply 200 JSON `{ contract, taskId, jackboyJobId, status }` with status one of
+  `queued|approved|quarantined|running|completed|failed|refused`, and header
+  `x-omni-handoff-signature` = hex HMAC-SHA256(secret, `omni.handoff/v1\nreply\n{request nonce}\n{sha256hex(exact reply bytes)}`).
+  No redirects; reply ≤ 32 KB within 5 s. Unsigned or mismatched replies are discarded.
+
+Mothership settings (names only): `JACKBOY_HANDOFF_ENABLED` (must be `true`), `JACKBOY_HANDOFF_ORIGIN`,
+`JACKBOY_HANDOFF_CLIENT_ID`, `JACKBOY_HANDOFF_HMAC_SECRET` (≥ 32 chars, issued by Jackboy).
