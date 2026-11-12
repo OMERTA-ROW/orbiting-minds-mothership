@@ -316,6 +316,13 @@
       "when": 1794503960846,
       "tag": "0044_mfa_admin_factor_removal_event",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1794508470035,
+      "tag": "0045_omni_agent_memories",
+      "breakpoints": true
     }
   ]
 }

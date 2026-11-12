@@ -715,6 +715,75 @@ export type Database = {
           },
         ]
       }
+      omni_agent_memories: {
+        Row: {
+          agent_id: string
+          body: string
+          body_sha256: string
+          created_at: string
+          id: string
+          kind: string
+          owner_id: string
+          source_kind: string
+          source_ref: string
+          title: string
+        }
+        Insert: {
+          agent_id: string
+          body: string
+          body_sha256: string
+          created_at?: string
+          id?: string
+          kind: string
+          owner_id: string
+          source_kind: string
+          source_ref?: string
+          title: string
+        }
+        Update: {
+          agent_id?: string
+          body?: string
+          body_sha256?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          owner_id?: string
+          source_kind?: string
+          source_ref?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      omni_agent_memory_audit: {
+        Row: {
+          actor_id: string
+          agent_id: string
+          at: string
+          event: string
+          id: number
+          item_count: number
+          memory_id: string | null
+        }
+        Insert: {
+          actor_id: string
+          agent_id: string
+          at?: string
+          event: string
+          id?: never
+          item_count?: number
+          memory_id?: string | null
+        }
+        Update: {
+          actor_id?: string
+          agent_id?: string
+          at?: string
+          event?: string
+          id?: never
+          item_count?: number
+          memory_id?: string | null
+        }
+        Relationships: []
+      }
       omni_agent_runs: {
         Row: {
           consent: boolean
@@ -2767,6 +2836,43 @@ export type Database = {
         Returns: Json
       }
       omni_dock_valid_permissions: { Args: { _p: string[] }; Returns: boolean }
+      omni_memory_delete: {
+        Args: { _agent: string; _id: string }
+        Returns: boolean
+      }
+      omni_memory_list: {
+        Args: { _agent: string }
+        Returns: {
+          agent_id: string
+          body: string
+          body_sha256: string
+          created_at: string
+          id: string
+          kind: string
+          owner_id: string
+          source_kind: string
+          source_ref: string
+          title: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_agent_memories"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_memory_save: {
+        Args: {
+          _agent: string
+          _body: string
+          _kind: string
+          _source_kind: string
+          _source_ref: string
+          _title: string
+        }
+        Returns: string
+      }
+      omni_memory_valid_agent: { Args: { _agent: string }; Returns: boolean }
       omni_social_transition: {
         Args: {
           _action: string
