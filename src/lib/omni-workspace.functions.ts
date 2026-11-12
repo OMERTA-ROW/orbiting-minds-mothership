@@ -451,7 +451,6 @@ export const decideStep = createServerFn({ method: "POST" })
         await pk.consumePasskeyCheck(admin, uid, data.checkId, ["approval"]);
         const { data: a } = await db.from("omni_workspace_approvals").select("*").eq("id", data.approvalId).eq("status", "pending").maybeSingle();
         if (!a) throw new Error("This approval is no longer waiting.");
-        await admin.from("omni_workspace_approvals").update({ status: data.approve ? "approved" : "rejected", decided_at: new Date().toISOString(), decided_by: uid }).eq("id", a.id);
         ({ job_id: jobId, remote_id: remoteId, session_id: sessionId, agent_id: agentId } = a);
       } else if (data.stepId) {
         const { data: s } = await db.from("omni_agent_steps").select("*").eq("id", data.stepId).eq("status", "pending_approval").maybeSingle();
@@ -462,6 +461,8 @@ export const decideStep = createServerFn({ method: "POST" })
       } else throw new Error("Nothing to decide.");
       const { gate, link } = await ws.gateFor(db, admin, uid, true);
       if (data.approve && !gate.open) throw new Error(`Not sent: ${gate.blockers[0] ?? "not connected"}`);
+      if (data.approvalId)
+        await admin.from("omni_workspace_approvals").update({ status: data.approve ? "approved" : "rejected", decided_at: new Date().toISOString(), decided_by: uid }).eq("id", data.approvalId);
       await admin.from("omni_agent_steps").update({ status: data.approve ? "approved" : "rejected", decided_at: new Date().toISOString() }).eq("job_id", jobId).eq("remote_id", remoteId);
       await ws.audit(admin, { actor: "owner", event: data.approve ? "step_approved" : "step_rejected", agentId, sessionId, jobId, detail: { remoteId } });
       if (gate.open) {
