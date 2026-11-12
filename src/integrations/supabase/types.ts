@@ -2123,6 +2123,91 @@ export type Database = {
         }
         Relationships: []
       }
+      razul_agent_manifests: {
+        Row: {
+          agent_id: string
+          app_id: string
+          created_at: string
+          created_by: string
+          created_by_user: string | null
+          id: string
+          manifest: Json
+          manifest_sha256: string
+          version: string
+        }
+        Insert: {
+          agent_id: string
+          app_id: string
+          created_at?: string
+          created_by: string
+          created_by_user?: string | null
+          id?: string
+          manifest: Json
+          manifest_sha256: string
+          version: string
+        }
+        Update: {
+          agent_id?: string
+          app_id?: string
+          created_at?: string
+          created_by?: string
+          created_by_user?: string | null
+          id?: string
+          manifest?: Json
+          manifest_sha256?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      razul_agent_releases: {
+        Row: {
+          agent_id: string
+          app_id: string
+          manifest_id: string
+          previous_manifest_id: string | null
+          proposal_id: string
+          released_at: string
+        }
+        Insert: {
+          agent_id: string
+          app_id: string
+          manifest_id: string
+          previous_manifest_id?: string | null
+          proposal_id: string
+          released_at?: string
+        }
+        Update: {
+          agent_id?: string
+          app_id?: string
+          manifest_id?: string
+          previous_manifest_id?: string | null
+          proposal_id?: string
+          released_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razul_agent_releases_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "razul_agent_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "razul_agent_releases_previous_manifest_id_fkey"
+            columns: ["previous_manifest_id"]
+            isOneToOne: false
+            referencedRelation: "razul_agent_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "razul_agent_releases_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "razul_update_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       razul_alert_events: {
         Row: {
           agent: string
@@ -2225,6 +2310,50 @@ export type Database = {
             columns: ["sentinel_id"]
             isOneToOne: false
             referencedRelation: "razul_sentinels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      razul_evaluations: {
+        Row: {
+          id: string
+          kind: string
+          manifest_sha256: string
+          passed: boolean
+          proof_verified: boolean
+          proposal_id: string
+          ran_at: string
+          runner: string
+          summary: Json
+        }
+        Insert: {
+          id?: string
+          kind: string
+          manifest_sha256: string
+          passed: boolean
+          proof_verified?: boolean
+          proposal_id: string
+          ran_at?: string
+          runner: string
+          summary?: Json
+        }
+        Update: {
+          id?: string
+          kind?: string
+          manifest_sha256?: string
+          passed?: boolean
+          proof_verified?: boolean
+          proposal_id?: string
+          ran_at?: string
+          runner?: string
+          summary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razul_evaluations_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "razul_update_proposals"
             referencedColumns: ["id"]
           },
         ]
@@ -2339,6 +2468,45 @@ export type Database = {
         }
         Relationships: []
       }
+      razul_knowledge_docs: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          namespace: string
+          retrieved_at: string
+          source_kind: string
+          source_ref: string
+          source_sha256: string
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          namespace: string
+          retrieved_at: string
+          source_kind: string
+          source_ref: string
+          source_sha256: string
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          namespace?: string
+          retrieved_at?: string
+          source_kind?: string
+          source_ref?: string
+          source_sha256?: string
+          title?: string
+        }
+        Relationships: []
+      }
       razul_project_passports: {
         Row: {
           architecture: string
@@ -2396,6 +2564,39 @@ export type Database = {
           updated_at?: string
           verified_tests?: string[]
           version?: number
+        }
+        Relationships: []
+      }
+      razul_provisioning_events: {
+        Row: {
+          actor: string
+          agent_id: string | null
+          app_id: string | null
+          at: string
+          detail: Json
+          event: string
+          id: number
+          proposal_id: string | null
+        }
+        Insert: {
+          actor: string
+          agent_id?: string | null
+          app_id?: string | null
+          at?: string
+          detail?: Json
+          event: string
+          id?: never
+          proposal_id?: string | null
+        }
+        Update: {
+          actor?: string
+          agent_id?: string | null
+          app_id?: string | null
+          at?: string
+          detail?: Json
+          event?: string
+          id?: never
+          proposal_id?: string | null
         }
         Relationships: []
       }
@@ -2631,6 +2832,87 @@ export type Database = {
           url?: string
         }
         Relationships: []
+      }
+      razul_update_proposals: {
+        Row: {
+          agent_id: string
+          app_id: string
+          approved_at: string | null
+          approved_by: string | null
+          changes: Json
+          created_at: string
+          escalations: Json
+          escalations_acknowledged: boolean
+          id: string
+          manifest_id: string
+          note: string
+          owner_id: string
+          previous_manifest_id: string | null
+          proposed_by: string
+          revision: number
+          stage: number | null
+          stage_healthy: boolean | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          app_id: string
+          approved_at?: string | null
+          approved_by?: string | null
+          changes?: Json
+          created_at?: string
+          escalations?: Json
+          escalations_acknowledged?: boolean
+          id?: string
+          manifest_id: string
+          note?: string
+          owner_id: string
+          previous_manifest_id?: string | null
+          proposed_by: string
+          revision?: number
+          stage?: number | null
+          stage_healthy?: boolean | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          app_id?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          changes?: Json
+          created_at?: string
+          escalations?: Json
+          escalations_acknowledged?: boolean
+          id?: string
+          manifest_id?: string
+          note?: string
+          owner_id?: string
+          previous_manifest_id?: string | null
+          proposed_by?: string
+          revision?: number
+          stage?: number | null
+          stage_healthy?: boolean | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razul_update_proposals_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: true
+            referencedRelation: "razul_agent_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "razul_update_proposals_previous_manifest_id_fkey"
+            columns: ["previous_manifest_id"]
+            isOneToOne: false
+            referencedRelation: "razul_agent_manifests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       studio_assets: {
         Row: {
@@ -3356,6 +3638,17 @@ export type Database = {
         Args: { _hashes: string[] }
         Returns: number
       }
+      razul_add_knowledge: {
+        Args: {
+          _body: string
+          _namespace: string
+          _retrieved_at: string
+          _source_kind: string
+          _source_ref: string
+          _title: string
+        }
+        Returns: string
+      }
       razul_configure: {
         Args: {
           _blocked_sources: string[]
@@ -3365,6 +3658,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      razul_decide_proposal: {
+        Args: {
+          _acknowledge: boolean
+          _action: string
+          _id: string
+          _stage: number
+        }
+        Returns: undefined
+      }
+      razul_delete_knowledge: { Args: { _id: string }; Returns: undefined }
       razul_dispatch_scout: {
         Args: { _scout_type: string; _sentinel_id: string; _task: string }
         Returns: string
@@ -3383,6 +3686,16 @@ export type Database = {
         Returns: undefined
       }
       razul_pause: { Args: { _reason: string }; Returns: undefined }
+      razul_propose_manifest: {
+        Args: {
+          _changes: Json
+          _escalations: Json
+          _manifest: Json
+          _note: string
+          _static: Json
+        }
+        Returns: string
+      }
       razul_resume: { Args: never; Returns: undefined }
       razul_revoke_sentinel: { Args: { _id: string }; Returns: undefined }
       razul_sentinel_verify: {
