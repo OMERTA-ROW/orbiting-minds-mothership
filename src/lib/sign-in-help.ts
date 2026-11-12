@@ -12,7 +12,7 @@ type AuthErrorLike = {
 export const SIGN_IN_FALLBACK =
   "Sign-in didn't finish. Check your connection and try again, or use another sign-in option.";
 
-const BY_CODE: Record<string, string> = {
+const BY_CODE = {
   invalid_credentials:
     "Email or password is wrong. If you first signed in with Google, use “Continue with Google” instead.",
   email_not_confirmed:
@@ -34,24 +34,26 @@ const BY_CODE: Record<string, string> = {
   validation_failed: "Check the email and password, then try again.",
   session_not_found: "Your sign-in expired. Sign in again.",
   session_expired: "Your sign-in expired. Sign in again.",
-};
+} as const;
+const CODE_LOOKUP: Readonly<Record<string, string>> = BY_CODE;
 
 const BY_MESSAGE: [RegExp, string][] = [
-  [/invalid login credentials/i, BY_CODE.invalid_credentials!],
-  [/email not confirmed/i, BY_CODE.email_not_confirmed!],
-  [/already registered|already exists/i, BY_CODE.user_already_exists!],
-  [/unsupported provider|provider is not enabled/i, BY_CODE.provider_disabled!],
-  [/password should be|weak password|pwned/i, BY_CODE.weak_password!],
-  [/rate limit/i, BY_CODE.over_request_rate_limit!],
+  [/invalid login credentials/i, BY_CODE.invalid_credentials],
+  [/email not confirmed/i, BY_CODE.email_not_confirmed],
+  [/already registered|already exists/i, BY_CODE.user_already_exists],
+  [/unsupported provider|provider is not enabled/i, BY_CODE.provider_disabled],
+  [/password should be|weak password|pwned/i, BY_CODE.weak_password],
+  [/rate limit/i, BY_CODE.over_request_rate_limit],
 ];
 
 /** Plain-language message for a recognised provider error, or null. */
 export function knownAuthMessage(error: AuthErrorLike | null | undefined): string | null {
   if (!error) return null;
-  if (error.code && BY_CODE[error.code]) return BY_CODE[error.code]!;
+  const byCode = error.code ? CODE_LOOKUP[error.code] : undefined;
+  if (byCode) return byCode;
   const text = error.message ?? "";
   for (const [pattern, message] of BY_MESSAGE) if (pattern.test(text)) return message;
-  if (error.status === 429) return BY_CODE.over_request_rate_limit!;
+  if (error.status === 429) return BY_CODE.over_request_rate_limit;
   return null;
 }
 
