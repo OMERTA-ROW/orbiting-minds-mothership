@@ -7,7 +7,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { canonicalJob, refreshInput, sendInput, type HandoffJob } from "./jackboy-handoff";
+import {
+  STORED_STATUS,
+  canonicalJob,
+  refreshInput,
+  sendInput,
+  type HandoffJob,
+} from "./jackboy-handoff";
 
 type Ctx = {
   supabase: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0];
@@ -35,7 +41,12 @@ function fail(message: string) {
   return { ok: false as const, message };
 }
 
-async function loadJob(context: Ctx, taskId: string, kind?: "test" | "build") {
+async function loadJob(
+  context: Ctx,
+  taskId: string,
+  kind?: "test" | "build",
+  jackboyProjectId = "",
+) {
   const { data: t } = await context.supabase
     .from("omni_terminal_tasks")
     .select("id,agent,state,project_label,repository,instructions")
@@ -49,8 +60,8 @@ async function loadJob(context: Ctx, taskId: string, kind?: "test" | "build") {
     .maybeSingle();
   const job: HandoffJob = {
     taskId: t.id,
-    project: t.project_label,
-    repository: t.repository,
+    projectId: jackboyProjectId,
+    repo: t.repository,
     kind: (h?.job_kind as "test" | "build" | undefined) ?? kind ?? "test",
     instructions: t.instructions,
   };
@@ -70,11 +81,33 @@ async function record(taskId: string, actor: string, job: string | null, status:
 }
 
 const REASON: Record<string, string> = {
+  // Jackboy's signed refusals
+  kill_switch_on: "Jackboy's Kill Switch is on, so nothing was queued.",
+  digest_mismatch: "Jackboy found the instructions did not match their fingerprint. Nothing was queued.",
+  project_not_authorized: "That Jackboy project id is not authorized for this repository in Jackboy.",
+  task_conflict: "Jackboy already has this task with different details, so it refused a second version.",
+  owner_unavailable: "Jackboy could not confirm its owner right now. Nothing was queued; retry later.",
+  invalid_request: "Jackboy rejected the request format.",
+  task_not_found: "Jackboy has no job for this task yet.",
+  handoff_unavailable: "Jackboy's handoff storage is unavailable right now; retry later.",
+  // Local / unconfirmed
+  authentication_failed: "Jackboy did not accept Mothership's signature (check client id and shared secret).",
+  handoff_disabled: "The handoff is turned off on Jackboy's side.",
+  body_too_large: "The task was too large for Jackboy.",
+  https_post_required: "Jackboy refused the address used.",
+  request_too_large: "The task is too large to send (8 KB limit). Nothing was sent.",
   unreachable: "Jackboy could not be reached. Nothing was queued; retry later.",
   redirect_refused: "Jackboy answered with a redirect, which is refused.",
   reply_unsigned: "Jackboy's reply was not signed correctly, so it was not trusted.",
   reply_invalid: "Jackboy's reply was not in the expected format.",
 };
+
+function explain(reply: { reason: string; verified: boolean; hint?: string }) {
+  if (reply.verified) return REASON[reply.reason] ?? `Jackboy refused it (${reply.reason}).`;
+  const base = "Not confirmed · retry. ";
+  if (reply.hint) return `${base}Unsigned reply suggested: ${REASON[reply.hint] ?? reply.hint}`;
+  return base + (REASON[reply.reason] ?? "");
+}
 
 export const sendTaskToJackboy = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -85,7 +118,7 @@ export const sendTaskToJackboy = createServerFn({ method: "POST" })
     const config = handoffConfig(process.env);
     if (!config) return fail("The Jackboy handoff is not configured or is turned off.");
     if (await stopIsEngaged(context)) return fail("Emergency Stop is engaged; nothing was sent.");
-    const loaded = await loadJob(context, data.taskId, data.kind);
+    const loaded = await loadJob(context, data.taskId, data.kind, data.jackboyProjectId);
     if (!loaded) return fail("Only Jackboy tasks with a repository can be sent.");
     if (loaded.sent && loaded.job.kind !== data.kind)
       return fail("This task was already sent as a different job type.");
@@ -103,9 +136,15 @@ export const sendTaskToJackboy = createServerFn({ method: "POST" })
     const reply = await sendHandoff(config, "create", loaded.job);
     if (!reply.ok) {
       await record(data.taskId, context.userId, null, "error", reply.reason);
-      return fail(REASON[reply.reason] ?? "Not confirmed by Jackboy.");
+      return fail(explain(reply));
     }
-    const saved = await record(data.taskId, context.userId, reply.jackboyJobId, reply.status, "");
+    const saved = await record(
+      data.taskId,
+      context.userId,
+      reply.jackboyJobId,
+      STORED_STATUS[reply.status],
+      `jackboy:${reply.status}`,
+    );
     if (!saved) return fail("Jackboy replied, but the status could not be saved. Refresh.");
     return { ok: true as const, status: reply.status };
   });
@@ -122,8 +161,14 @@ export const refreshTaskHandoff = createServerFn({ method: "POST" })
     const loaded = await loadJob(context, data.taskId);
     if (!loaded?.sent) return fail("This task has not been sent to Jackboy.");
     const reply = await sendHandoff(config, "status", loaded.job);
-    if (!reply.ok) return fail(REASON[reply.reason] ?? "Not confirmed by Jackboy.");
-    const saved = await record(data.taskId, context.userId, reply.jackboyJobId, reply.status, "");
+    if (!reply.ok) return fail(explain(reply));
+    const saved = await record(
+      data.taskId,
+      context.userId,
+      reply.jackboyJobId,
+      STORED_STATUS[reply.status],
+      `jackboy:${reply.status}`,
+    );
     if (!saved) return fail("Jackboy reported a different job for this task; status not saved.");
     return { ok: true as const, status: reply.status };
   });
