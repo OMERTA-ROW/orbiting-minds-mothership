@@ -111,7 +111,6 @@ def main():
 
         # Untouched: other members' approvals.
         assert sql(f"SELECT ai_approved::text FROM public.beta_access WHERE user_id='{TESTER}';") == "true"
-        checks += 8
         print(f"PASS: {checks} isolated SQL checks: truthful revoke, accept/revoke race, single use, invitee-only decline, expiry, role boundaries, removal closes sent/received invitations, approval withdrawal, immediate loss of member functions, repeated removal refused. No hosted fixtures.")
     finally:
         if started:
