@@ -19,6 +19,9 @@ export const CLIENT_COOLDOWN_MS = 30 * 1000;
 
 export type OwnerMfaState = "signed_out" | "needs_setup" | "needs_code" | "verified";
 
+/** Generic alias: the same states apply to every account. */
+export type AccountMfaState = OwnerMfaState;
+
 export function ownerMfaState(input: {
   signedIn: boolean;
   verifiedFactors: number;
@@ -88,14 +91,12 @@ export function primarySignInAgeSeconds(amr: unknown, nowSeconds: number): numbe
   return Math.max(0, nowSeconds - latest);
 }
 
-/** Why recovery cannot start, or null when the identity checks pass. */
+/** Why recovery cannot start, or null when the identity checks pass. Any account may recover itself. */
 export function recoveryBlocker(input: {
   emailVerified: boolean;
-  isOwner: boolean;
   signInAgeSeconds: number | null;
 }): string | null {
   if (!input.emailVerified) return "Recovery needs a verified email address on this account.";
-  if (!input.isOwner) return "Only the owner account can use owner recovery.";
   if (input.signInAgeSeconds === null || input.signInAgeSeconds > RECOVERY_FRESH_SIGNIN_SECONDS)
     return "Sign in again (within the last 10 minutes) before using a recovery code.";
   return null;
@@ -129,7 +130,7 @@ export async function recoveryCodeHash(userId: string, normalized: string): Prom
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export type RecoveryOutcome = "accepted" | "invalid" | "locked" | "not_owner";
+export type RecoveryOutcome = "accepted" | "invalid" | "locked" | "unverified";
 
 export function recoveryOutcomeMessage(outcome: string): string {
   switch (outcome) {
@@ -137,8 +138,8 @@ export function recoveryOutcomeMessage(outcome: string): string {
       return "Recovery code accepted.";
     case "locked":
       return "Too many wrong recovery codes. Recovery is paused for an hour.";
-    case "not_owner":
-      return "Only the owner account can use owner recovery.";
+    case "unverified":
+      return "Recovery needs a verified email address on this account.";
     default:
       return "That recovery code wasn't recognised or was already used.";
   }
@@ -160,4 +161,69 @@ export function takeSignInReturn(): (typeof SIGNIN_RETURN_PATHS)[number] | null 
   return (SIGNIN_RETURN_PATHS as readonly string[]).includes(value ?? "")
     ? (value as (typeof SIGNIN_RETURN_PATHS)[number])
     : null;
+}
+
+/** Seconds within which an authenticator code counts as "fresh" for sensitive changes. */
+export const STEP_UP_SECONDS = 15 * 60;
+/** Server rule: recovery codes may be replaced at most this many times per hour. */
+export const MAX_CODE_REPLACEMENTS_PER_HOUR = 5;
+
+/**
+ * Why a sensitive two-step change (new recovery codes, turning it off) must wait, or null.
+ * Needs this session at aal2 AND an authenticator code entered in the last 15 minutes.
+ */
+export function stepUpBlocker(aal: unknown, amr: unknown, nowSeconds: number): string | null {
+  if (aal !== "aal2") return "Enter a code from your authenticator app first.";
+  if (!Array.isArray(amr)) return "Enter a fresh authenticator code first (last 15 minutes).";
+  let latest: number | null = null;
+  for (const e of amr) {
+    if (!e || typeof e !== "object") continue;
+    const { method, timestamp } = e as { method?: unknown; timestamp?: unknown };
+    if (method !== "totp" || typeof timestamp !== "number" || !Number.isFinite(timestamp)) continue;
+    if (latest === null || timestamp > latest) latest = timestamp;
+  }
+  if (latest === null || latest > nowSeconds + 60 || nowSeconds - latest > STEP_UP_SECONDS)
+    return "Enter a fresh authenticator code first (last 15 minutes).";
+  return null;
+}
+
+/** After a password/Google sign-in: ask for the authenticator code only if this account turned it on. */
+export function signInNeedsCode(level: {
+  currentLevel?: string | null;
+  nextLevel?: string | null;
+}): boolean {
+  return level.currentLevel === "aal1" && level.nextLevel === "aal2";
+}
+
+/**
+ * True only for a standard otpauth://totp URI with a base32 secret, as issued by the sign-in
+ * provider. Anything else is treated as "setup unavailable" so no fake QR is ever shown.
+ */
+export function isStandardTotpUri(uri: unknown): boolean {
+  if (typeof uri !== "string" || !uri.startsWith("otpauth://totp/")) return false;
+  const query = uri.split("?")[1];
+  if (!query) return false;
+  const secret = new URLSearchParams(query).get("secret");
+  return Boolean(secret && /^[A-Z2-7]{16,}=*$/i.test(secret));
+}
+
+/** True only for an image data URL (the provider returns an SVG QR code). */
+export const isQrImage = (qr: unknown) =>
+  typeof qr === "string" && /^data:image\/(svg\+xml|png)[;,]/.test(qr);
+
+/** Groups a base32 setup key in fours for typing: "ABCD EFGH …". */
+export function formatSetupKey(secret: string): string {
+  return secret
+    .replace(/[\s=]/g, "")
+    .toUpperCase()
+    .replace(/(.{4})/g, "$1 ")
+    .trim();
+}
+
+/** Local pause after repeated wrong codes (the provider also rate-limits on its side). */
+export function afterFailedCode(fails: number, nowMs: number): { fails: number; pausedUntil: number } {
+  const next = fails + 1;
+  return next >= CLIENT_MAX_ATTEMPTS
+    ? { fails: 0, pausedUntil: nowMs + CLIENT_COOLDOWN_MS }
+    : { fails: next, pausedUntil: 0 };
 }
