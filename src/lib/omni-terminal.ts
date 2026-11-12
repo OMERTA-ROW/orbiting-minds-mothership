@@ -291,7 +291,9 @@ export function capabilities(s: Snapshot): Capability[] {
       authorizationNote: selfTestAuthorized
         ? "Steps 1–7 approved and both switches on."
         : `Needs steps 1–7 approved, link and self-test switches on.${stopNote}`,
-      evidence: "Not run from this terminal. Record the result at approval step 8.",
+      evidence: ev.lastSelfTestPassedAt
+        ? `Jackboy link self-test passed ${when(ev.lastSelfTestPassedAt)} (verified reply). This is separate from the cloud sandbox self-test.`
+        : "No Jackboy link self-test recorded in Mothership. Results kept only in Jackboy are not visible here.",
       state: selfTestAuthorized ? "Available" : "Off",
     },
     {
@@ -754,7 +756,9 @@ export function terminalReadiness(s: Snapshot): {
       ok: allApproved,
       detail: allApproved
         ? "All steps approved."
-        : `Next: step ${nextApprovalStep(s.approvals, s.now)}. Needed for Jackboy CODE, not the cloud shell.`,
+        : s.approvals.every((r) => r.decided_at === null)
+          ? "No decision has ever been recorded in Mothership. Approvals made in Jackboy Dev Control stay there and are not copied here. Needed for Jackboy CODE, not the cloud shell."
+          : `Next: step ${nextApprovalStep(s.approvals, s.now)}. Needed for Jackboy CODE, not the cloud shell.`,
       where: "here",
       link: "/activation-approvals",
     },
@@ -768,7 +772,9 @@ export function terminalReadiness(s: Snapshot): {
           : "Jackboy link address or owner ID does not check out."
         : ev.lastConnectedAt
           ? `Last verified handshake ${when(ev.lastConnectedAt)}.`
-          : "Settings present; no verified handshake recorded.",
+          : ev.lastAttemptAt
+            ? `Settings present; attempt ${when(ev.lastAttemptAt)} did not complete. No verified handshake.`
+            : "Settings present; no handshake has ever been attempted from Mothership.",
       where: "external",
     },
   ];
