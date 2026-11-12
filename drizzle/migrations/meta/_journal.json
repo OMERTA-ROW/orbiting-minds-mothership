@@ -337,6 +337,13 @@
       "when": 1794510017595,
       "tag": "0047_omni_autonomy_fail_closed_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1794510486074,
+      "tag": "0048_omni_code_supervised_queue",
+      "breakpoints": true
     }
   ]
 }

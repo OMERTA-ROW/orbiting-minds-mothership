@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { OmniWorkspace } from "./OmniWorkspace";
 import { AgentMemory } from "./AgentMemory";
+import { CodeService } from "./CodeService";
 import { TaskHandoff, type HandoffRow } from "./TaskHandoff";
 import { readTaskHandoffs } from "@/lib/jackboy-handoff.functions";
 import { FRESH_MFA_SECONDS, noteProblem } from "@/lib/activation-approvals";
@@ -440,7 +441,11 @@ export function OmniTerminal() {
               {item.ok ? (
                 <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
               ) : (
-                <CircleDashed size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
+                <CircleDashed
+                  size={16}
+                  className="mt-0.5 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
               )}
               <div className="space-y-0.5">
                 <div className="font-medium text-foreground">
@@ -702,6 +707,7 @@ export function OmniTerminal() {
         </TabsContent>
 
         <TabsContent value="code" className="space-y-6 pt-4">
+          <CodeService />
           <p role="note" className="rounded-lg border bg-card p-3 text-sm">
             Held tasks are saved privately but never sent. CODE is off, there is no dispatcher and
             no isolated test runner. Sending later needs approval step 10, the Railway CODE switch
