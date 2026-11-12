@@ -104,10 +104,10 @@ function probe(c, net) {
   const uid = c.uidBase;
   fs.chownSync(dir, uid, uid);
   const script =
-    'id -u; (exec 3<>/dev/tcp/1.1.1.1/443) 2>/dev/null && echo NET_OPEN || echo NET_BLOCKED; ' +
+    'id -u; timeout 2 bash -c "exec 3<>/dev/tcp/1.1.1.1/443" 2>/dev/null && echo NET_OPEN || echo NET_BLOCKED; ' +
     'env | cut -d= -f1 | grep -v "^OMNI_CMD$" | grep -v "^PWD$" | grep -v "^SHLVL$" | grep -v "^_$" | sort | tr "\\n" ","';
   const [cmd, ...args] = sandboxArgv(c, uid, net);
-  const r = spawnSync(cmd, args, { env: sandboxEnv(dir, script), cwd: dir, timeout: 5000, encoding: "utf8" });
+  const r = spawnSync(cmd, args, { env: sandboxEnv(dir, script), cwd: dir, timeout: 3500, encoding: "utf8" });
   fs.rmSync(dir, { recursive: true, force: true });
   const lines = (r.stdout ?? "").trim().split("\n");
   return {
@@ -139,7 +139,10 @@ export function createSandbox(c, opts = {}) {
       try { process.kill(-job.proc.pid, "SIGKILL"); } catch {}
       job.state = "stopped";
       job.events.push({ stream: "system", text: `Stopped (${reason}).` });
-    } else if (job.state === "awaiting_approval" || job.state === "queued") job.state = "stopped";
+    } else if (job.state === "awaiting_approval" || job.state === "queued") {
+      job.pending = null;
+      job.state = "stopped";
+    }
   }
   function endSession(s, reason) {
     for (const j of s.jobs.values()) killJob(j, reason);
@@ -173,7 +176,6 @@ export function createSandbox(c, opts = {}) {
 
   function run(s, job, command) {
     job.state = "running";
-    job.steps.push({ id: `cmd-${job.steps.length}`, kind: "command", title: command.slice(0, 200), body: command, status: "done" });
     const [cmd, ...args] = sandboxArgv(c, s.uid, net);
     const proc = spawn(cmd, args, { cwd: s.work, env: sandboxEnv(s.dir, command), detached: true, stdio: ["ignore", "pipe", "pipe"] });
     job.proc = proc;
@@ -270,12 +272,12 @@ export function createSandbox(c, opts = {}) {
     job.pending = { kind: "pr", title, patch };
     const branch = `omni/${s.id.slice(0, 8)}-${Date.now().toString(36)}`;
     job.pending.branch = branch;
-    job.steps.push({ id: "pr-diff", kind: "diff", title: `Proposed changes for ${s.repo.fullName}`, body: patch.slice(0, 16000), status: "done" });
+    const intro = `Pushes branch ${branch} to ${s.repo.fullName} and opens a DRAFT pull request against ${s.repo.ref}. Never merges.\n`;
     job.steps.push({
       id: "pr",
-      kind: "result",
+      kind: "diff",
       title: `Open draft pull request "${title}"`,
-      body: `Pushes branch ${branch} to ${s.repo.fullName} and opens a DRAFT pull request against ${s.repo.ref}. Never merges.`,
+      body: (intro + patch).slice(0, 16000),
       gated: "pull_request",
       status: "pending_approval",
     });
@@ -291,14 +293,14 @@ export function createSandbox(c, opts = {}) {
       const patchFile = path.join(c.root, ".mirrors", `${s.id}.patch`);
       fs.writeFileSync(patchFile, p.patch, { mode: 0o600 });
       const steps = [
-        ["checkout", "-b", p.branch],
-        ["apply", "--index", "--binary", patchFile],
-        ["-c", "user.name=OMNI Sandbox", "-c", "user.email=omni-sandbox@users.noreply.github.com", "commit", "-m", p.title],
-        ["push", "origin", `HEAD:refs/heads/${p.branch}`],
+        ["branch", ["checkout", "-b", p.branch]],
+        ["apply", ["apply", "--index", "--binary", patchFile]],
+        ["commit", ["-c", "user.name=OMNI Sandbox", "-c", "user.email=omni-sandbox@users.noreply.github.com", "commit", "-m", p.title]],
+        ["push", ["push", "origin", `HEAD:refs/heads/${p.branch}`]],
       ];
-      for (const a of steps) {
+      for (const [label, a] of steps) {
         const r = await git(s.mirror, a);
-        if (r.code !== 0) throw new Error(`git ${a.find((x) => !x.startsWith("-") && !x.includes("=")) ?? ""} failed: ${r.err.slice(0, 300)}`);
+        if (r.code !== 0) throw new Error(`git ${label} failed: ${r.err.slice(0, 300)}`);
       }
       fs.rmSync(patchFile, { force: true });
       const res = await c.fetch(`https://api.github.com/repos/${s.repo.fullName}/pulls`, {
@@ -366,6 +368,7 @@ export function createSandbox(c, opts = {}) {
       "To propose one shell command, put it alone in a fenced block tagged omni-command. Never ask for or print secrets.";
     try {
       const msgs = s.history.slice(-20);
+      while (msgs[0]?.role === "assistant") msgs.shift();
       const res =
         id === "openai"
           ? await c.fetch("https://api.openai.com/v1/chat/completions", {
