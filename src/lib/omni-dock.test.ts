@@ -36,7 +36,7 @@ function fakeStore(
       return { ok: true, status: over.status ?? "paired", permissions: over.permissions ?? [] };
     },
     log: async (_d, e, o) => void calls.push(`log:${e}:${o}`),
-    stopEngaged: async () => false,
+    stopEngaged: async () => true,
     handoffStatus: async () => [],
     engageStop: async () => (calls.push("engage"), true),
     holdTask: async (_d, j) => (
@@ -250,7 +250,11 @@ describe("signed device requests", () => {
       project: "Mothership",
       instructions: "Add a test",
     };
-    const { store, calls } = fakeStore({ jwk: publicJwk, permissions: ["jobs.propose"] });
+    const { store, calls } = fakeStore({
+      jwk: publicJwk,
+      permissions: ["jobs.propose"],
+      stopEngaged: async () => false,
+    });
     const held = await handleSigned(
       await signed(DOCK_PATHS.jobs, DEVICE, JSON.stringify(job), privateKey),
       "jobs",
@@ -340,6 +344,7 @@ describe("signed device requests", () => {
     const ok = fakeStore({
       jwk: publicJwk,
       permissions: ["status.read"],
+      stopEngaged: async () => false,
       handoffStatus: async (d: string) => (asked.push(d), rows),
     });
     const r2 = await handleSigned(
