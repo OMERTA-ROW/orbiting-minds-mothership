@@ -351,6 +351,13 @@
       "when": 1794510878963,
       "tag": "0049_omni_dock_mobile_companion_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1794511673056,
+      "tag": "0050_razul_intelligence_provisioning",
+      "breakpoints": true
     }
   ]
 }

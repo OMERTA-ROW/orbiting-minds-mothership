@@ -374,3 +374,11 @@ First staged pilot (one project only; owner selection pending):
 - [ ] Add `OMNI_SANDBOX_ORIGIN`, `OMNI_SANDBOX_CLIENT_ID`, `OMNI_SANDBOX_HMAC_SECRET`, `OMNI_SANDBOX_ENABLED` — owner step after deploy.
 - [ ] GitHub fine-grained token + allow-list; OpenAI/Anthropic keys and prices on the sandbox service — owner step.
 - [ ] First live run: self-test, session, approved command, checkout, draft PR — blocked on the steps above.
+
+## Razul intelligence provisioning (2026-11-12)
+- [x] `razul.manifest/v1` manifests, static checks, escalation diff, proposal/rollout/rollback rules, namespaced knowledge with sources, health checks, history (migration 0050, `docs/RAZUL-PROVISIONING.md`).
+- [x] Owner screen on Razul page; 22 unit + 71 isolated SQL checks.
+- [ ] Sandbox evaluation endpoint with signed proof — blocked on deployed OMNI cloud sandbox (Railway).
+- [ ] Agent runtime that loads active manifests, reports stage health, auto-rolls back — OMNI/Railway work.
+- [ ] Razul auto-proposer and memory link for app agents — after the two items above.
+
