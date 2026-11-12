@@ -344,6 +344,13 @@
       "when": 1794510486074,
       "tag": "0048_omni_code_supervised_queue",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1794510878963,
+      "tag": "0049_omni_dock_mobile_companion_permissions",
+      "breakpoints": true
     }
   ]
 }
