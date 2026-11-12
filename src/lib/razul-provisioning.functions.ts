@@ -8,7 +8,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Json } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { isMfaFresh, mfaAgeSeconds } from "./activation-approvals";
 import {
   agentManifest,
@@ -22,7 +23,7 @@ import {
   type KnowledgeDoc,
 } from "./razul-provisioning";
 
-type Ctx = { supabase: any; userId: string; claims: Record<string, unknown> };
+type Ctx = { supabase: SupabaseClient<Database>; userId: string; claims: Record<string, unknown> };
 async function owner(context: Ctx) {
   setResponseHeader("Cache-Control", "private, no-store");
   const { requireRazulOwner } = await import("./razul-owner.server");
@@ -197,12 +198,12 @@ export const searchKnowledge = createServerFn({ method: "POST" })
       .eq("namespace", data.namespace)
       .limit(200);
     if (error) return { ok: false as const, message: "Knowledge could not be read." };
-    const docs: KnowledgeDoc[] = (rows ?? []).map((r: any) => ({
+    const docs: KnowledgeDoc[] = (rows ?? []).map((r) => ({
       id: r.id,
       namespace: r.namespace,
       title: r.title,
       body: r.body,
-      source: { kind: r.source_kind, ref: r.source_ref, retrievedAt: Date.parse(r.retrieved_at), sha256: r.source_sha256 },
+      source: { kind: r.source_kind as KnowledgeDoc["source"]["kind"], ref: r.source_ref, retrievedAt: Date.parse(r.retrieved_at), sha256: r.source_sha256 },
     }));
     return { ok: true as const, hits: retrieve(data.query, docs, data.namespace) };
   });
