@@ -108,7 +108,6 @@ def main():
 
         # Replacing codes invalidates every earlier code.
         caller(OWNER, 'aal2', FRESH, "SELECT public.owner_mfa_set_recovery_codes(ARRAY[" + ",".join(f"'{H(i)}'" for i in range(101, 111)) + "]);")
-        sql("DELETE FROM public.owner_mfa_recovery_events WHERE false;")
         assert sql(f"SELECT count(*) FROM public.owner_mfa_recovery_codes WHERE code_hash='{H(4)}';") == '0'
 
         print(f"PASS: {checks} isolated SQL checks: hash-only storage, browser denial, fresh-MFA owner creation, single-use service consumption, restore on failed removal, 5-per-hour lock, owner-only aal2 audit reads, append-only audit, replacement invalidation. No hosted fixtures.")
