@@ -65,7 +65,12 @@ export function RazulProvisioning() {
       setNotice(message);
     } catch (e) {
       setSnap(null);
-      setNotice(e instanceof Error ? e.message : "Owner access could not be verified.");
+      const m = e instanceof Error ? e.message : "";
+      setNotice(
+        /authorization header|unauthorized/i.test(m)
+          ? "Sign in as the owner (with your two-step code) to open this."
+          : m || "Owner access could not be verified.",
+      );
     } finally {
       setBusy(false);
     }
