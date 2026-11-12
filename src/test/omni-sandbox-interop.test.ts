@@ -163,6 +163,15 @@ describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () 
     expect(second.status).toBe(401);
   });
 
+  it("keeps sessions apart: one session cannot read another's files", async () => {
+    const other = randomUUID();
+    await call("session.start", { sessionId: other, agentId: "omni", provider: "none" });
+    await runApproved(sessionId, "echo private > note.txt");
+    const peek = await runApproved(other, `cat ${path.join(dir, "root", sessionId, "work", "note.txt")} 2>&1 || true`);
+    expect(peek.out("stdout")).not.toContain("private");
+    await call("session.end", { sessionId: other });
+  });
+
   it("ends the session and refuses further work", async () => {
     await call("session.end", { sessionId });
     await expect(call("command.run", { sessionId, jobId: randomUUID(), command: "echo hi" })).rejects.toThrow(/refused/);
