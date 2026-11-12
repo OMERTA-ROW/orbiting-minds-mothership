@@ -1,13 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { OctagonX, Power, RefreshCw, ShieldCheck, TerminalSquare, Wifi } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleDashed,
+  OctagonX,
+  Power,
+  RefreshCw,
+  ShieldCheck,
+  TerminalSquare,
+  Wifi,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { OmniWorkspace } from "./OmniWorkspace";
+import { AgentMemory } from "./AgentMemory";
 import { TaskHandoff, type HandoffRow } from "./TaskHandoff";
 import { readTaskHandoffs } from "@/lib/jackboy-handoff.functions";
 import { FRESH_MFA_SECONDS, noteProblem } from "@/lib/activation-approvals";
@@ -23,10 +33,15 @@ import {
   KIND_LABEL,
   TASK_AGENTS,
   TASK_KINDS,
+  TERMINAL_STATES,
+  TERMINAL_STATE_LABEL,
   agentRegistry,
   capabilities,
+  lockReason,
   taskInput,
+  terminalReadiness,
   type Capability,
+  type LockReason,
   type Snapshot,
   type TaskAgent,
   type TaskKind,
@@ -57,6 +72,7 @@ export function OmniTerminal() {
 
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [access, setAccess] = useState<"checking" | "ok" | "denied">("checking");
+  const [lock, setLock] = useState<LockReason | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ area: string; text: string } | null>(null);
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
@@ -64,7 +80,7 @@ export function OmniTerminal() {
     {
       id: 0,
       kind: "out",
-      text: "OMNI Terminal. Type help. Commands are read-only; nothing runs code.",
+      text: "OMNI Terminal (read-only status). Type help. Nothing here runs code on OMNI, Railway or a device.",
     },
   ]);
   const [command, setCommand] = useState("");
@@ -98,12 +114,58 @@ export function OmniTerminal() {
     void loadHandoffs();
   }, [read, loadHandoffs]);
 
-  useEffect(() => {
-    refresh().then(
-      () => setAccess("ok"),
-      () => setAccess("denied"),
+  /** Explain which gate refused this browser. Reads only this account's own state. */
+  const diagnose = useCallback(async () => {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+      if (!user)
+        return setLock(
+          lockReason({
+            signedIn: false,
+            emailVerified: false,
+            isOwner: null,
+            aal: null,
+            hasVerifiedTotp: false,
+          }),
+        );
+      const [aal, factors, role] = await Promise.all([
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        supabase.auth.mfa.listFactors(),
+        supabase.rpc("has_role", { _user_id: user.id, _role: "owner" }),
+      ]);
+      const level: string | null = aal.data?.currentLevel ?? null;
+      setLock(
+        lockReason({
+          signedIn: true,
+          emailVerified: Boolean(user.email_confirmed_at),
+          isOwner: role.error ? null : role.data === true,
+          aal: level === "aal2" ? "aal2" : level === "aal1" ? "aal1" : null,
+          hasVerifiedTotp: Boolean(factors.data?.totp.some((f) => f.status === "verified")),
+        }),
+      );
+    } catch {
+      setLock(null);
+    }
+  }, []);
+
+  const checkAccess = useCallback(() => {
+    setAccess("checking");
+    return refresh().then(
+      () => {
+        setLock(null);
+        setAccess("ok");
+      },
+      () => {
+        setAccess("denied");
+        void diagnose();
+      },
     );
-  }, [refresh]);
+  }, [refresh, diagnose]);
+
+  useEffect(() => {
+    void checkAccess();
+  }, [checkAccess]);
 
   useEffect(() => {
     logEnd.current?.scrollIntoView?.({ block: "nearest" });
@@ -163,6 +225,10 @@ export function OmniTerminal() {
           text: "That code was not accepted. Try the current code.",
         });
       setCode("");
+      if (access !== "ok") {
+        await checkAccess();
+        return;
+      }
       await refresh();
       setNotice({ area: "stop", text: "Two-factor re-verified for 15 minutes." });
     } catch {
@@ -246,34 +312,65 @@ export function OmniTerminal() {
 
   if (access !== "ok" || !snap) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-16">
+      <main className="mx-auto max-w-3xl space-y-6 px-6 py-16">
         <h1 className="text-2xl">OMNI Terminal</h1>
-        <p className="mt-4 text-sm text-muted-foreground">
-          {access === "checking"
-            ? "Checking owner access…"
-            : "This terminal is private to the verified owner with two-factor sign-in."}
-        </p>
-        {access === "denied" && (
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button asChild variant="outline">
-              <Link to="/auth">Owner sign in</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/account-security">Two-factor</Link>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setAccess("checking");
-                void refresh().then(
-                  () => setAccess("ok"),
-                  () => setAccess("denied"),
-                );
-              }}
-            >
-              Retry access check
-            </Button>
-          </div>
+        {access === "checking" ? (
+          <p className="text-sm text-muted-foreground">Checking owner access…</p>
+        ) : (
+          <section aria-labelledby="lock-title" className="space-y-3 rounded-lg border bg-card p-5">
+            <h2 id="lock-title" className="text-base font-medium">
+              Locked · {lock?.title ?? "Owner access not confirmed"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {lock?.detail ??
+                "This terminal is private to the verified owner with two-step sign-in."}
+            </p>
+            {lock?.id === "code_needed" && (
+              <form
+                className="flex max-w-sm gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void reverify();
+                }}
+              >
+                <Input
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  aria-label="6-digit authenticator code"
+                  placeholder="6-digit code"
+                />
+                <Button type="submit" className="shrink-0" disabled={busy || code.length !== 6}>
+                  Unlock
+                </Button>
+              </form>
+            )}
+            {notice?.area === "stop" && (
+              <p role="status" className="text-sm">
+                {notice.text}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {(lock === null || lock.id === "signed_out" || lock.id === "not_owner") && (
+                <Button asChild variant="outline">
+                  <Link to="/auth">Owner sign in</Link>
+                </Button>
+              )}
+              {(lock === null || lock.id === "no_authenticator" || lock.id === "code_needed") && (
+                <Button asChild variant="outline">
+                  <Link to="/account-security">Account security</Link>
+                </Button>
+              )}
+              <Button asChild variant="ghost">
+                <Link to="/sign-in-help">Sign-in help</Link>
+              </Button>
+              <Button variant="ghost" onClick={() => void checkAccess()}>
+                Retry access check
+              </Button>
+            </div>
+          </section>
         )}
       </main>
     );
@@ -283,6 +380,8 @@ export function OmniTerminal() {
   const link = cap("link")!;
   const held = snap.tasks.filter((t) => t.state === "held");
   const sessions = groupSessions(snap.log);
+  const readiness = terminalReadiness(snap);
+  const primary = TERMINAL_STATE_LABEL[readiness.primary];
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-5 py-10 md:px-8">
@@ -314,6 +413,58 @@ export function OmniTerminal() {
           <RefreshCw size={14} /> Refresh
         </Button>
       </header>
+      <section
+        aria-labelledby="readiness-title"
+        className="space-y-3 rounded-lg border bg-card p-4"
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="readiness-title" className="text-sm font-medium">
+            Current state: <span className="text-base font-semibold">{primary.title}</span>
+          </h2>
+          <ul className="flex flex-wrap gap-1" aria-label="State conditions">
+            {TERMINAL_STATES.map((k) => (
+              <li
+                key={k}
+                title={TERMINAL_STATE_LABEL[k].detail}
+                className={`rounded border px-2 py-0.5 text-xs ${readiness.conditions[k] ? "border-primary text-foreground" : "text-muted-foreground line-through"}`}
+              >
+                {TERMINAL_STATE_LABEL[k].title}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="text-xs text-muted-foreground">{primary.detail}</p>
+        <ol className="grid gap-2 md:grid-cols-2" aria-label="Readiness checklist">
+          {readiness.items.map((item, i) => (
+            <li key={item.id} className="flex gap-2 rounded border p-2 text-xs">
+              {item.ok ? (
+                <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
+              ) : (
+                <CircleDashed size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
+              )}
+              <div className="space-y-0.5">
+                <div className="font-medium text-foreground">
+                  {i + 1}. {item.label}{" "}
+                  <span className="sr-only">{item.ok ? "(done)" : "(not done)"}</span>
+                </div>
+                <div className="text-muted-foreground">{item.detail}</div>
+                <div className="text-muted-foreground">
+                  {item.where === "here"
+                    ? "Fix here in Mothership."
+                    : item.where === "settings"
+                      ? "Owner sets this in Lovable project settings (names only)."
+                      : "Needs work on OMNI/Railway or a device first."}{" "}
+                  {item.link && !item.ok && (
+                    <Link to={item.link} className="underline">
+                      Open
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
       <OmniWorkspace />
       {notice?.area === "top" && (
         <p role="status" className="text-sm text-muted-foreground">
@@ -469,6 +620,7 @@ export function OmniTerminal() {
           <TabsTrigger value="terminal">Terminal</TabsTrigger>
           <TabsTrigger value="code">CODE & tasks ({held.length})</TabsTrigger>
           <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="memory">Memory</TabsTrigger>
           <TabsTrigger value="health">Health</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
@@ -476,7 +628,8 @@ export function OmniTerminal() {
         <TabsContent value="terminal" className="space-y-3 pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>
-              Session {sessionId.slice(0, 8)} · saved to your private history on the server
+              Read-only status session {sessionId.slice(0, 8)} · answers come from Mothership
+              records; nothing runs on OMNI, Railway or a device · saved to your private history
             </span>
             <Button
               size="sm"
@@ -536,7 +689,7 @@ export function OmniTerminal() {
               placeholder="status"
             />
             <Button type="submit" disabled={busy || !command.trim()}>
-              Run
+              Check
             </Button>
           </form>
           <div className="flex flex-wrap gap-1">
@@ -695,6 +848,10 @@ export function OmniTerminal() {
               </li>
             ))}
           </ul>
+        </TabsContent>
+
+        <TabsContent value="memory" className="pt-4">
+          <AgentMemory />
         </TabsContent>
 
         <TabsContent value="health" className="space-y-4 pt-4">

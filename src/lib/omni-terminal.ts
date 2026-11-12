@@ -148,6 +148,10 @@ export type Snapshot = {
   razul: { lastRunStatus: string | null; lastRunAt: string | null; paused: boolean };
   tasks: TaskRow[];
   log: LogRow[];
+  /** Docked branch devices (Docking Bay). `known: false` means the read failed. */
+  dock: { paired: number; pending: number; known: boolean };
+  /** Agent workspace kill switch: true = terminal enabled; null = missing or unreadable. */
+  workspaceEnabled: boolean | null;
 };
 
 /** Fail closed: an unreadable or missing controls row counts as engaged. */
@@ -206,6 +210,7 @@ export function linkEvidence(audit: AuditRow[]) {
     .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
   const lastAttempt = link.find((a) => a.action === "connecting") ?? null;
   const lastConnected = link.find((a) => a.action === "connected") ?? null;
+  const lastSelfTest = link.find((a) => a.action === "self_test_passed") ?? null;
   const completed =
     lastAttempt !== null &&
     lastConnected !== null &&
@@ -214,6 +219,7 @@ export function linkEvidence(audit: AuditRow[]) {
     lastAttemptAt: lastAttempt?.occurred_at ?? null,
     lastConnectedAt: lastConnected?.occurred_at ?? null,
     lastAttemptFailed: lastAttempt !== null && !completed,
+    lastSelfTestPassedAt: lastSelfTest?.occurred_at ?? null,
   };
 }
 
@@ -582,4 +588,239 @@ export function describeProbe(p: ProbeResult): string {
     default:
       return "Railway service could not be reached (network or certificate error).";
   }
+}
+
+// ---------------------------------------------------------------- readiness
+
+/** Same 24-hour window the agent workspace gate uses. */
+export const SELF_TEST_WINDOW_MS = 24 * 3600_000;
+
+export const TERMINAL_STATES = [
+  "stopped",
+  "unauthorized",
+  "disconnected",
+  "unpaired",
+  "read_only",
+] as const;
+export type TerminalState = (typeof TERMINAL_STATES)[number];
+export const TERMINAL_STATE_LABEL: Record<TerminalState, { title: string; detail: string }> = {
+  stopped: {
+    title: "Stopped",
+    detail: "Emergency Stop is engaged or the terminal kill switch is off. Nothing can be sent.",
+  },
+  unauthorized: {
+    title: "Not authorized",
+    detail: "Activation approvals or the Railway link switches are not complete.",
+  },
+  disconnected: {
+    title: "Not connected",
+    detail: "No verified handshake or no passed self-test with OMNI on Railway in the last 24 hours.",
+  },
+  unpaired: {
+    title: "No device docked",
+    detail: "No desktop or mobile OMNI branch is paired in the Docking Bay.",
+  },
+  read_only: {
+    title: "Read-only",
+    detail:
+      "No isolated sandbox is connected. Commands here answer from Mothership records; nothing runs on OMNI, Railway or a device.",
+  },
+};
+
+export type ReadinessItem = {
+  id: string;
+  label: string;
+  ok: boolean;
+  detail: string;
+  /** Who can fix it: here in Mothership, in Lovable settings, or outside (Railway/OMNI/device). */
+  where: "here" | "settings" | "external";
+  link?: "/activation-approvals" | "/omni-dock" | "/account-security";
+};
+
+export function terminalReadiness(s: Snapshot): {
+  primary: TerminalState;
+  conditions: Record<TerminalState, boolean>;
+  items: ReadinessItem[];
+} {
+  const present = (n: string) => s.settings.find((x) => x.name === n)?.present === true;
+  const missing = LINK_REQUIRED_SETTINGS.filter((n) => !present(n));
+  const ev = linkEvidence(s.audit);
+  const selfTestFresh =
+    ev.lastSelfTestPassedAt !== null &&
+    s.now - Date.parse(ev.lastSelfTestPassedAt) <= SELF_TEST_WINDOW_MS;
+  const approved = s.approvals.filter((r) => isEffectivelyApproved(r, s.now)).length;
+  const allApproved = approvedThrough(s.approvals, ACTIVATION_STEPS.length, s.now);
+  const switchesOn = s.switches.linkEnabled && s.switches.selfTestEnabled;
+  const settingsReady = missing.length === 0 && s.originValid && s.ownerIdMatches === "match";
+  const conditions: Record<TerminalState, boolean> = {
+    stopped: s.emergencyStop.engaged || s.workspaceEnabled !== true,
+    unauthorized: !allApproved || !switchesOn,
+    disconnected: ev.lastConnectedAt === null || !selfTestFresh,
+    unpaired: !s.dock.known || s.dock.paired === 0,
+    read_only: !EXECUTOR_AVAILABLE,
+  };
+  const primary = TERMINAL_STATES.find((k) => conditions[k]) ?? "read_only";
+  const items: ReadinessItem[] = [
+    {
+      id: "owner",
+      label: "Owner signed in with a two-step code",
+      ok: true,
+      detail:
+        s.mfaAgeSeconds === null
+          ? "Signed in at two-step level."
+          : `Code confirmed ${Math.round(s.mfaAgeSeconds / 60)} min ago.`,
+      where: "here",
+    },
+    {
+      id: "stop",
+      label: "Emergency Stop released",
+      ok: !s.emergencyStop.engaged,
+      detail: s.emergencyStop.engaged
+        ? s.emergencyStop.known
+          ? "Engaged. Release it above with a fresh code and a reason."
+          : "Could not be read, so it counts as engaged."
+        : "Released. Releasing turns nothing on by itself.",
+      where: "here",
+    },
+    {
+      id: "kill_switch",
+      label: "Terminal kill switch enabled",
+      ok: s.workspaceEnabled === true,
+      detail:
+        s.workspaceEnabled === null
+          ? "Could not be read, so it counts as off."
+          : s.workspaceEnabled
+            ? "Enabled with a passkey."
+            : "Off. Use “Enable terminal” in the agent workspace (needs your passkey).",
+      where: "here",
+    },
+    {
+      id: "approvals",
+      label: `Activation approvals (${approved} of ${ACTIVATION_STEPS.length})`,
+      ok: allApproved,
+      detail: allApproved
+        ? "All steps approved."
+        : `Next: step ${nextApprovalStep(s.approvals, s.now)}. Approvals are records only; they switch nothing on.`,
+      where: "here",
+      link: "/activation-approvals",
+    },
+    {
+      id: "settings",
+      label: "Secure-link settings present",
+      ok: settingsReady,
+      detail: settingsReady
+        ? "All names present (values are never shown)."
+        : missing.length
+          ? `Missing: ${missing.join(", ")}.`
+          : !s.originValid
+            ? "JACKBOY_LINK_ORIGIN is not a public HTTPS address."
+            : "JACKBOY_LINK_MOTHERSHIP_OWNER_ID does not match your account.",
+      where: "settings",
+    },
+    {
+      id: "switches",
+      label: "Link and self-test switches on",
+      ok: switchesOn,
+      detail: `JACKBOY_LINK_ENABLED is ${s.switches.linkEnabled ? "on" : "off"}; JACKBOY_LINK_SELF_TEST_ENABLED is ${s.switches.selfTestEnabled ? "on" : "off"}. Turn on only after the matching approval steps.`,
+      where: "settings",
+    },
+    {
+      id: "handshake",
+      label: "Verified handshake with OMNI on Railway",
+      ok: ev.lastConnectedAt !== null,
+      detail: ev.lastConnectedAt
+        ? `Last verified ${when(ev.lastConnectedAt)}.`
+        : "None recorded. A reachability ping is not a handshake.",
+      where: "external",
+    },
+    {
+      id: "self_test",
+      label: "Secure-link self-test passed (last 24 h)",
+      ok: selfTestFresh,
+      detail: ev.lastSelfTestPassedAt
+        ? `Last passed ${when(ev.lastSelfTestPassedAt)}${selfTestFresh ? "." : " — older than 24 hours."}`
+        : "Never passed. The agent workspace stays locked until it does.",
+      where: "external",
+    },
+    {
+      id: "dock",
+      label: "Desktop or mobile branch docked",
+      ok: s.dock.known && s.dock.paired > 0,
+      detail: !s.dock.known
+        ? "Docking Bay could not be read."
+        : s.dock.paired
+          ? `${s.dock.paired} paired device(s).`
+          : s.dock.pending
+            ? `${s.dock.pending} device(s) waiting for your approval.`
+            : "None paired. Optional for this web terminal; needed for CLI/Honeycomb.",
+      where: "here",
+      link: "/omni-dock",
+    },
+    {
+      id: "sandbox",
+      label: "Isolated sandbox executor connected",
+      ok: EXECUTOR_AVAILABLE,
+      detail:
+        "Not built. OMNI on Railway must provide an isolated sandbox first; see the backend contract guide.",
+      where: "external",
+    },
+  ];
+  return { primary, conditions, items };
+}
+
+export type LockInput = {
+  signedIn: boolean;
+  emailVerified: boolean;
+  /** null = could not be checked */
+  isOwner: boolean | null;
+  aal: "aal1" | "aal2" | null;
+  hasVerifiedTotp: boolean;
+};
+export type LockReason = {
+  id:
+    | "signed_out"
+    | "email_unverified"
+    | "not_owner"
+    | "no_authenticator"
+    | "code_needed"
+    | "server_refused";
+  title: string;
+  detail: string;
+};
+
+/** Why the owner-only terminal refused this browser. Order matters: first failing gate wins. */
+export function lockReason(i: LockInput): LockReason {
+  if (!i.signedIn)
+    return { id: "signed_out", title: "Not signed in", detail: "Sign in with the owner account." };
+  if (!i.emailVerified)
+    return {
+      id: "email_unverified",
+      title: "Email not confirmed",
+      detail: "Confirm the owner email address from the message you were sent, then sign in again.",
+    };
+  if (i.isOwner === false)
+    return {
+      id: "not_owner",
+      title: "Not the owner account",
+      detail: "This terminal is private to the owner. Sign in with the owner account.",
+    };
+  if (!i.hasVerifiedTotp)
+    return {
+      id: "no_authenticator",
+      title: "Two-step sign-in not set up",
+      detail:
+        "Set up an authenticator app on Account security, confirm one code, and save your recovery codes.",
+    };
+  if (i.aal !== "aal2")
+    return {
+      id: "code_needed",
+      title: "Enter your authenticator code",
+      detail: "This session was opened without a two-step code. Enter the 6-digit code below.",
+    };
+  return {
+    id: "server_refused",
+    title: "The server did not confirm access",
+    detail:
+      "Your account checks look right in this browser, but the server refused or could not be reached. Retry; if it persists, sign out and in again.",
+  };
 }
