@@ -382,3 +382,13 @@ First staged pilot (one project only; owner selection pending):
 - [ ] Agent runtime that loads active manifests, reports stage health, auto-rolls back — OMNI/Railway work.
 - [ ] Razul auto-proposer and memory link for app agents — after the two items above.
 
+
+## Legacy code modernization ("dinosaur code") (2026-11-12, audit; after cloud shell goes live)
+Audit: no dedicated legacy-modernization feature exists. Reusable pieces: reference sandbox (`services/omni-sandbox/`, checkout/approved commands/diff, tested locally only, not deployed), workspace diff view, CLI change records, CODE queue `code_task` (no worker), Jackboy handoff Test/Build (never sent live), Razul digests/staged rollout pattern.
+- [ ] M1 First safe proof (local only, no network, no model, no Jackboy call): add a case to `src/test/omni-sandbox-interop.test.ts` with a bundled legacy fixture and an owner-written modern version; the sandbox runs both on the same fixed inputs, outputs must match exactly, a deliberately changed version must be caught, and the modern copy gets a SHA-256 fingerprint while the original stays unchanged.
+- [ ] M2 Modernization job type in CODE queue: original read-only, work on a branch copy, characterization tests captured before any change, every command owner-approved.
+- [ ] M3 Comparison report: same-input output/exit-code/timing comparison, coverage of captured cases, mismatches block approval.
+- [ ] M4 Versioned artifacts: immutable digest-pinned versions (original, each candidate), lineage and rollback to the original.
+- [ ] M5 Jackboy package handoff: build the `jackboy.omni-handoff/v1` payload with artifact digest + comparison report; held until owner fresh-TOTP send; Jackboy keeps passkey/spend gates.
+- [ ] M6 Model-assisted conversion (OpenAI/Claude in sandbox) — blocked on live sandbox, verified provider and spend caps.
+Blockers: M2–M6 need the deployed Railway sandbox (cloud shell priority stays first); M5 also needs the Jackboy handoff settings; autonomy stays off.
