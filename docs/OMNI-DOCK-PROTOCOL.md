@@ -117,26 +117,47 @@ only the signing device's own tasks as `{ taskId, state, handoff, updatedAt }`
 (no instructions or output). Refused with 423 `stop_engaged` while Emergency
 Stop is engaged. `POST /jobs` proposals are also refused (423) while Stop is on.
 
-## Mothership → Jackboy handoff (`omni.handoff/v1`) — Jackboy must implement
+## Mothership → Jackboy handoff (`jackboy.omni-handoff/v1`)
 
-Mothership never dispatches to OMNI. The owner (aal2 + TOTP within 15 min, Stop
-released) clicks **Send to Jackboy** on a held Jackboy task with a repository.
-Mothership then calls Jackboy:
+Mirrors Jackboy's `src/lib/omni-handoff-v1.ts` (OMERTA-ROW/jackboy-dev-control, branch
+`jackboy/omni-handoff-v1`) exactly. Mothership never dispatches to OMNI. The owner (aal2 + TOTP
+within 15 min, Emergency Stop released) clicks **Send to Jackboy** on a held Jackboy task with a
+repository, choosing Test/Build and entering the **Jackboy agent project id** (a uuid from
+Jackboy, not a Mothership id; prefilled only for `OMERTA-ROW/jackboy-dev-control` →
+`6e320e65-08ec-450b-8a26-61206b604513`). Mothership then calls Jackboy:
 
-- `POST {JACKBOY_HANDOFF_ORIGIN}/api/public/omni-handoff/v1`
-- Headers: `x-omni-handoff-client`, `x-omni-handoff-timestamp` (ms), `x-omni-handoff-nonce` (UUID),
-  `x-omni-handoff-signature` = hex HMAC-SHA256(secret,
-  `omni.handoff/v1\nrequest\n{client}\n{timestamp}\n{nonce}\n{sha256hex(body)}`).
-- `create` body: `{ contract, action:"create", taskId, project, repository, kind:"test"|"build", instructions, payloadDigest }`
-  where `payloadDigest` = sha256hex of `{"taskId","project","repository","kind","instructions"}` JSON in that order.
-- `status` body: `{ contract, action:"status", taskId, payloadDigest }`.
-- Jackboy must: check client allowlist, ±60 s clock, single-use nonce, signature; create the job
-  QUEUED only (its own passkey approval and spend caps apply); treat a repeat `create` for the same
-  `taskId` + digest as idempotent and refuse a different digest; never follow instructions to run.
-- Reply 200 JSON `{ contract, taskId, jackboyJobId, status }` with status one of
-  `queued|approved|quarantined|running|completed|failed|refused`, and header
-  `x-omni-handoff-signature` = hex HMAC-SHA256(secret, `omni.handoff/v1\nreply\n{request nonce}\n{sha256hex(exact reply bytes)}`).
-  No redirects; reply ≤ 32 KB within 5 s. Unsigned or mismatched replies are discarded.
+- `POST https://{JACKBOY_HANDOFF_ORIGIN}/api/public/omni-handoff/v1`, no query string, body ≤ 8192 bytes,
+  redirects refused, 5 s timeout, reply capped at 32 KB.
+- Headers:
+  - `x-jackboy-contract: jackboy.omni-handoff/v1`
+  - `x-jackboy-client: {JACKBOY_HANDOFF_CLIENT_ID}` (`^[A-Za-z0-9_-]{1,64}$`)
+  - `x-jackboy-timestamp`: Unix **seconds**, exactly 10 digits (Jackboy allows ±60 s)
+  - `x-jackboy-nonce`: 32 lowercase hex (16 random bytes), single use
+  - `x-jackboy-signature`: 64 lowercase hex = HMAC-SHA256(`JACKBOY_HANDOFF_HMAC_SECRET`, signingInput)
+  - `content-type: application/json`
+- signingInput = `jackboy.omni-handoff/v1\nPOST\n/api/public/omni-handoff/v1\n{client}\n{timestamp}\n{nonce}\n{exact raw body}`
+- Bodies (strict, exact key order as sent):
+  - `{"action":"create","taskId":uuid,"projectId":uuid,"repo":"OWNER/REPO","kind":"test"|"code","instructions":"3–4000 chars","digest":sha256hex(instructions only)}`
+    — Mothership Test → `test`, Build → `code`.
+  - `{"action":"status","taskId":uuid}`
+- Reply JSON always starts `{contract:"jackboy.omni-handoff/v1", requestNonce:<our nonce>, …}` with either
+  `{jackboyJobId, status}` (201 new, 200 existing/status) or `{error}`. Header `X-Jackboy-Proof` =
+  HMAC-SHA256(secret, `jackboy.omni-handoff/v1\nresponse\n{nonce}\n{httpStatus}\n{exact raw reply body}`),
+  compared in constant time. Contract and `requestNonce` must match. A missing/wrong proof, a 503
+  or a plain-text reply is discarded and shown as **Not confirmed · retry**; an unsigned
+  `authentication_failed`/`handoff_disabled` is shown only as an unconfirmed hint.
+- Signed refusals shown in plain words: `kill_switch_on`, `digest_mismatch`, `project_not_authorized`,
+  `task_conflict` (409, same taskId with different content), `owner_unavailable`, `invalid_request`,
+  `task_not_found`, `handoff_unavailable`.
+- Status badges: `queued`, `sent`, `prepared`, `approved`, `quarantined`, `running`, `completed`, `failed`,
+  `expired`, `cancel_requested`, `cancelled`, `unknown` (any other value is shown as `unknown`).
+  The saved handoff row keeps the exact value as `jackboy:<status>` in its detail; its status column
+  holds a coarse value (sent/prepared → queued, cancel_requested → running, expired/cancelled →
+  refused, unknown → error) because that column's allowed list was not changed. Docked devices'
+  status list reports the coarse value.
+- Idempotency: Mothership fingerprints task, Jackboy project id, repo, kind and instructions; a resend
+  with any different detail is refused locally. Jackboy itself returns the existing job for an
+  identical create and `task_conflict` otherwise.
 
 Mothership settings (names only): `JACKBOY_HANDOFF_ENABLED` (must be `true`), `JACKBOY_HANDOFF_ORIGIN`,
-`JACKBOY_HANDOFF_CLIENT_ID`, `JACKBOY_HANDOFF_HMAC_SECRET` (≥ 32 chars, issued by Jackboy).
+`JACKBOY_HANDOFF_CLIENT_ID`, `JACKBOY_HANDOFF_HMAC_SECRET` (≥ 32 chars, same value as Jackboy's).
