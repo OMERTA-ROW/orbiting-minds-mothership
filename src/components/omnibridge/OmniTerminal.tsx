@@ -342,7 +342,7 @@ export function OmniTerminal() {
                   aria-label="6-digit authenticator code"
                   placeholder="6-digit code"
                 />
-                <Button type="submit" disabled={busy || code.length !== 6}>
+                <Button type="submit" className="shrink-0" disabled={busy || code.length !== 6}>
                   Unlock
                 </Button>
               </form>
