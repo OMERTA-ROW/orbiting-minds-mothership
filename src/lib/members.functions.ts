@@ -1,11 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
+import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { expiryFrom, hashInviteToken, newInviteToken } from "@/lib/invitations";
 
-// The invitation RPCs live in .lovable/pending/owner-invitations.sql and are NOT
-// applied to the shared backend yet. Every authorization decision is made inside
-// those SECURITY DEFINER functions; these wrappers only pass verified callers through.
+// Every authorization decision is made inside the SECURITY DEFINER invitation RPCs
+// (migrations 0018 and 0041); these wrappers only pass verified callers through.
 type Rpc = (
   fn: string,
   args?: Record<string, unknown>,
@@ -21,20 +21,36 @@ function fail(e: { message: string; code?: string }): never {
 export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    // Always read the authoritative rows; never let a browser or proxy reuse a stale list.
+    setResponseHeader("Cache-Control", "private, no-store");
     const rpc = (context.supabase.rpc as unknown as Rpc).bind(context.supabase);
     const [m, i] = await Promise.all([rpc("list_members"), rpc("list_invitations")]);
     if (m.error) fail(m.error);
     if (i.error) fail(i.error);
+    type Row = {
+      id: string;
+      email: string;
+      role: string;
+      expires_at: string;
+      revoked_at: string | null;
+      accepted_at: string | null;
+      declined_at?: string | null;
+      created_at: string;
+    };
     return {
       members: (m.data ?? []) as { user_id: string; email: string; role: string }[],
-      invitations: (i.data ?? []) as {
-        id: string;
-        email: string;
-        role: string;
-        expires_at: string;
-        revoked_at: string | null;
-        accepted_at: string | null;
-      }[],
+      // Explicit fields only: the stored token hash never leaves the server.
+      invitations: ((i.data ?? []) as Row[]).map((r) => ({
+        id: r.id,
+        email: r.email,
+        role: r.role,
+        expires_at: r.expires_at,
+        revoked_at: r.revoked_at,
+        accepted_at: r.accepted_at,
+        declined_at: r.declined_at ?? null,
+        created_at: r.created_at,
+      })),
+      readAt: new Date().toISOString(),
     };
   });
 
@@ -104,6 +120,23 @@ export const acceptInvitation = createServerFn({ method: "POST" })
     );
     if (r.error) fail(r.error);
     return { role: r.data as string };
+  });
+export const declineInvitation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({ token: z.string().regex(/^[0-9a-f]{64}$/) })
+      .strict()
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const r = await (context.supabase.rpc as unknown as Rpc).call(
+      context.supabase,
+      "decline_invitation",
+      { _token_hash: await hashInviteToken(data.token) },
+    );
+    if (r.error) fail(r.error);
+    return { ok: true };
   });
 export const claimOwner = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

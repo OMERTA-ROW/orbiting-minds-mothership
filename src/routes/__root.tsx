@@ -13,7 +13,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { SiteNav, SiteFooter, navItems } from "../components/SiteNav";
+import { SiteNav, SiteFooter } from "../components/SiteNav";
+import { isPreviewPath, visibleNavItems } from "../components/nav-groups";
+import { PreviewHidden } from "../components/PreviewHidden";
+import { useShowPreviews } from "../lib/preview-setting";
 import { Starfield } from "../components/evo";
 import OrbitalBackground from "../components/OrbitalBackground";
 import { CommandPaletteProvider } from "@/components/CommandPalette";
@@ -136,6 +139,8 @@ function RootComponent() {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const omniArea = path.startsWith("/omni") || path === "/beta-omni" || path === "/angel-tech";
   const calmArea = omniArea || path === "/dashboard";
+  const showPreviews = useShowPreviews();
+  const hidden = isPreviewPath(path) && !showPreviews;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -147,7 +152,7 @@ function RootComponent() {
                 <IncidentProvider>
                   <DemoExchangeProvider>
                     <ExchangeLocaleProvider>
-                      <CommandPaletteProvider pages={navItems}>
+                      <CommandPaletteProvider pages={visibleNavItems(showPreviews)} includeDemo={showPreviews}>
                         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
                         <div
                           className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}`}
@@ -158,8 +163,9 @@ function RootComponent() {
                           </div>
                           <SiteNav />
                           <main className="flex-1">
-                            {omniArea && <OmniAreaHeader />}
-                            <Outlet />
+                            {omniArea && !hidden && <OmniAreaHeader />}
+                            {/* Demo/sample areas are hidden unless design previews are switched on. */}
+                            {hidden ? <PreviewHidden /> : <Outlet />}
                           </main>
                           <SiteFooter />
                         </div>

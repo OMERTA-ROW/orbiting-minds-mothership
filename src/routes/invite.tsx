@@ -5,7 +5,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "@/hooks/use-account";
 import { seo } from "@/lib/seo";
-import { acceptInvitation } from "@/lib/members.functions";
+import { acceptInvitation, declineInvitation } from "@/lib/members.functions";
+import { memberErrorMessage } from "@/lib/invitations";
 import { rememberPendingInvite } from "@/lib/sign-in-help";
 
 // Public page: a signed-out invitee is asked to sign in and brought back here.
@@ -31,7 +32,8 @@ function Invite() {
   const { user, ready } = useAccount();
   const navigate = useNavigate();
   const accept = useServerFn(acceptInvitation);
-  const [state, setState] = useState<{ ok?: string; err?: string }>({});
+  const decline = useServerFn(declineInvitation);
+  const [state, setState] = useState<{ ok?: string; err?: string; declined?: boolean }>({});
   const [busy, setBusy] = useState(false);
 
   return (
@@ -45,6 +47,10 @@ function Invite() {
             fails, ask the owner for a new link.
           </p>
         </div>
+      ) : state.declined ? (
+        <p role="status" className="text-foreground">
+          You declined this invitation. The link no longer works. Nothing else changed.
+        </p>
       ) : state.ok ? (
         <p role="status" className="text-foreground">
           You joined as {state.ok}.{" "}
@@ -87,18 +93,32 @@ function Invite() {
                 const r = await accept({ data: { token } });
                 setState({ ok: r.role });
               } catch (e) {
-                setState({
-                  err:
-                    e instanceof Error && e.message
-                      ? `${e.message} Make sure you're signed in with the invited email, or ask the owner for a new link.`
-                      : "This invitation couldn't be accepted. Ask the owner for a new link.",
-                });
+                setState({ err: memberErrorMessage(e instanceof Error ? e.message : "") });
               } finally {
                 setBusy(false);
               }
             }}
           >
-            {busy ? "Accepting…" : "Accept invitation"}
+            {busy ? "Please wait…" : "Accept invitation"}
+          </Button>
+          <Button
+            variant="ghost"
+            disabled={busy}
+            onClick={async () => {
+              if (!window.confirm("Decline this invitation? The link will stop working.")) return;
+              setBusy(true);
+              setState({});
+              try {
+                await decline({ data: { token } });
+                setState({ declined: true });
+              } catch (e) {
+                setState({ err: memberErrorMessage(e instanceof Error ? e.message : "") });
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Decline
           </Button>
           {state.err && (
             <p role="alert" className="text-sm text-destructive">

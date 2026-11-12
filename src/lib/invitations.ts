@@ -19,10 +19,13 @@ export type InvitationState = {
   expires_at: string;
   revoked_at: string | null;
   accepted_at: string | null;
+  declined_at?: string | null;
 };
-export function invitationStatus(i: InvitationState, now = new Date()) {
+export type InvitationStatus = "open" | "used" | "revoked" | "declined" | "expired";
+export function invitationStatus(i: InvitationState, now = new Date()): InvitationStatus {
   if (i.revoked_at) return "revoked" as const;
   if (i.accepted_at) return "used" as const;
+  if (i.declined_at) return "declined" as const;
   if (new Date(i.expires_at).getTime() <= now.getTime()) return "expired" as const;
   return "open" as const;
 }
@@ -56,4 +59,37 @@ export function assertInviteeMatches(
   if (!user.email_confirmed_at) throw new Error("Confirm your email before accepting.");
   if ((user.email ?? "").trim().toLowerCase() !== inviteEmail.trim().toLowerCase())
     throw new Error("This invitation belongs to a different account.");
+}
+
+/** Split invitations into the active list (open only) and history, newest first. */
+export function splitInvitations<T extends InvitationState & { created_at?: string }>(
+  rows: readonly T[],
+  now = new Date(),
+) {
+  const tagged = rows.map((row) => ({ row, status: invitationStatus(row, now) }));
+  return {
+    active: tagged.filter((t) => t.status === "open"),
+    history: tagged.filter((t) => t.status !== "open"),
+  };
+}
+
+/** Plain-language message for an invitation/member server error. */
+export function memberErrorMessage(message: string): string {
+  if (/already accepted/i.test(message))
+    return "This invitation was already accepted. Remove the member instead if needed.";
+  if (/already revoked/i.test(message)) return "This invitation was already revoked.";
+  if (/already declined/i.test(message)) return "The invited person already declined.";
+  if (/not a member/i.test(message)) return "This person was already removed.";
+  if (/not valid/i.test(message))
+    return "This invitation is no longer valid (used, revoked, declined or expired). Ask for a new link.";
+  if (/different account/i.test(message))
+    return "You're signed in with a different email than the one invited. Sign out and sign in with the invited email.";
+  if (/confirm your email/i.test(message)) return "Confirm your email first, then try again.";
+  if (/invalid expiry/i.test(message)) return "Choose an expiry between 1 hour and 14 days.";
+  if (/owner already assigned/i.test(message)) return "The owner role is already assigned.";
+  if (/not the configured/i.test(message))
+    return "Only the configured, confirmed owner email can claim the owner role.";
+  if (/not allowed/i.test(message)) return "You don't have permission to do that.";
+  if (/not activated/i.test(message)) return message;
+  return "That didn't work. Nothing was changed. Refresh and try again.";
 }

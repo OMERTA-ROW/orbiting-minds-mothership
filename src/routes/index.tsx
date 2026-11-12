@@ -20,6 +20,8 @@ import MothershipBackground from "@/components/MothershipBackground";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NAV_STATUS, advancedItems, navGroups, type NavStatus } from "@/components/nav-groups";
 import { useAccount } from "@/hooks/use-account";
+import { NextSteps } from "@/components/NextSteps";
+import { setShowPreviews, useShowPreviews } from "@/lib/preview-setting";
 
 export const Route = createFileRoute("/")({
   head: () =>
@@ -70,7 +72,7 @@ function Index() {
             MOTHERSHIP / 001
           </div>
           <DemoBadge
-            label="Private beta · demos labeled"
+            label="Private beta"
             className="absolute right-8 top-12 hidden md:inline-flex"
           />
           <div className="hero-copy relative z-10 mx-auto max-w-4xl px-6 text-center">
@@ -88,44 +90,6 @@ function Index() {
             <p className="mt-3 text-sm text-muted-foreground">All technology is converging here.</p>
             <HeroActions />
           </div>
-          <nav className="hero-worlds absolute inset-0" aria-label="Connected Mothership worlds">
-            <Link to="/guardian" className="hero-world hero-world-guardian">
-              <span className="world-beacon">
-                <ShieldCheck size={15} />
-              </span>
-              <span>
-                Guardian<small>Protection layer · demo</small>
-              </span>
-              <ArrowUpRight size={12} />
-            </Link>
-            <Link to="/embassy" className="hero-world hero-world-agents">
-              <span className="world-beacon">
-                <Bot size={15} />
-              </span>
-              <span>
-                Agent Embassy<small>Consenting intelligence · demo</small>
-              </span>
-              <ArrowUpRight size={12} />
-            </Link>
-            <Link to="/knowledge-fusion" className="hero-world hero-world-fusion">
-              <span className="world-beacon">
-                <Sparkles size={15} />
-              </span>
-              <span>
-                Knowledge Fusion<small>Cross-domain insight · demo</small>
-              </span>
-              <ArrowUpRight size={12} />
-            </Link>
-            <Link to="/sandbox" className="hero-world hero-world-dna">
-              <span className="world-beacon">
-                <Dna size={15} />
-              </span>
-              <span>
-                Evolution DNA<small>Compatibility profiles · demo</small>
-              </span>
-              <ArrowUpRight size={12} />
-            </Link>
-          </nav>
           <div className="hero-bottom absolute bottom-8 left-0 z-10 w-full px-6 text-center">
             <p className="font-mono text-[9px] uppercase tracking-widest text-gold-light">
               One Mothership. Infinite possibilities.
@@ -175,7 +139,7 @@ function HeroActions() {
   );
 }
 
-const LEGEND: NavStatus[] = ["account", "owner", "browser", "ai", "demo", "off"];
+const LEGEND: NavStatus[] = ["account", "owner", "browser", "ai", "off", "guide"];
 
 function StartHere() {
   return (
@@ -189,12 +153,15 @@ function StartHere() {
         </div>
         <p className="text-sm leading-7 text-muted-foreground">
           A private workspace where the owner keeps projects, AI agents and devices in one place —
-          and stays in control. Many areas are still early demos, so every link shows a badge that
-          tells you what is real.
+          and stays in control. Every link shows a badge that tells you what works today.
         </p>
       </div>
 
-      <div className="mt-8 rounded-lg border border-gold/30 p-5 text-sm leading-7 text-muted-foreground">
+      <div className="mt-8">
+        <NextSteps />
+      </div>
+
+      <div className="mt-6 rounded-lg border border-gold/30 p-5 text-sm leading-7 text-muted-foreground">
         <p className="text-foreground">Safety stays on</p>
         <p>
           Autonomous and background work is off. Owner approvals, spending limits and the
@@ -254,29 +221,31 @@ function StartHere() {
 }
 
 function AdvancedView() {
-  const [open, setOpen] = useState(false);
+  const previews = useShowPreviews();
   return (
     <Section className="pt-4">
       <div className="border-t border-border pt-8">
+        <p className="eyebrow">Advanced</p>
+        <p className="mt-3 max-w-xl text-xs leading-6 text-muted-foreground">
+          Design previews are earlier demos with sample or simulated content. Nothing in them works
+          for real, so they're hidden. Turning them on affects only this browser.
+        </p>
         <Button
           variant="outline"
-          aria-expanded={open}
+          className="mt-4 gap-2"
+          aria-expanded={previews}
           aria-controls="advanced-view"
-          onClick={() => setOpen(!open)}
-          className="gap-2"
+          onClick={() => setShowPreviews(!previews)}
         >
-          {open ? "Hide advanced view" : "Show advanced view"}
-          <ChevronDown size={14} className={open ? "rotate-180 transition" : "transition"} aria-hidden />
+          {previews ? "Hide design previews" : "Show design previews"}
+          <ChevronDown size={14} className={previews ? "rotate-180 transition" : "transition"} aria-hidden />
         </Button>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Every other module, demo and reference from earlier versions. Nothing was removed.
-        </p>
       </div>
-      {open && (
+      {previews && (
         <div id="advanced-view" className="mt-10 space-y-20">
           <section aria-labelledby="all-areas-h">
             <h3 id="all-areas-h" className="eyebrow">
-              All other areas
+              Design previews · demos
             </h3>
             <ul className="mt-4 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
               {advancedItems.map((n) => (
@@ -294,25 +263,15 @@ function AdvancedView() {
           </section>
 
           <div id="command-core">
-            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-              <div>
-                <p className="eyebrow">Command Core · demo</p>
-                <h2 className="mt-5 text-3xl leading-tight text-foreground md:text-5xl">
-                  A constellation.
-                  <br />
-                  <span className="text-gold-light">Not a collection of tools.</span>
-                </h2>
-              </div>
-              <p className="max-w-md text-sm leading-loose text-muted-foreground">
-                A consent-first collaboration network uniting developers, consenting AI agents,
-                software, research and inventions under one modular Mothership. Select a module.
-              </p>
-            </div>
+            <p className="eyebrow">Command Core · demo</p>
+            <p className="mt-4 max-w-md text-sm leading-loose text-muted-foreground">
+              Sample modules from the original concept. Select one to read about it.
+            </p>
             <OrbitExplorer items={modules.filter((m) => m.ring === 0)} />
           </div>
 
           <div>
-            <p className="eyebrow">Trust at the center</p>
+            <p className="eyebrow">Planned principles · not yet built</p>
             <div className="mt-8 grid gap-10 md:grid-cols-3 md:gap-14">
               {pillars.map((p) => (
                 <article key={p.t} className="border-t border-gold/30 pt-7">
@@ -323,34 +282,7 @@ function AdvancedView() {
               ))}
             </div>
           </div>
-
-          <div className="flex flex-col items-center gap-6 text-center">
-            <p className="eyebrow">Simulated journey</p>
-            <p className="max-w-lg text-sm leading-loose text-muted-foreground">
-              Walk from a DNA profile to a Guardian-approved rollout — fully simulated.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Button asChild variant="cosmic" className="h-12 rounded-sm px-6">
-                <Link to="/sandbox">
-                  Start the demo
-                  <ArrowRight />
-                </Link>
-              </Button>
-              <Button asChild variant="signal" className="h-12 rounded-sm px-6">
-                <Link to="/universe">
-                  Enter the Universe
-                  <ArrowUpRight />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-12 rounded-sm px-6">
-                <Link to="/mothership">
-                  Explore the Mothership
-                  <ArrowUpRight />
-                </Link>
-              </Button>
-            </div>
-            <DemoBadge />
-          </div>
+          <DemoBadge />
         </div>
       )}
     </Section>

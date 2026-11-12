@@ -380,6 +380,7 @@ export type Database = {
           accepted_by: string | null
           created_at: string
           created_by: string
+          declined_at: string | null
           email: string
           expires_at: string
           id: string
@@ -392,6 +393,7 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           created_by: string
+          declined_at?: string | null
           email: string
           expires_at: string
           id?: string
@@ -404,6 +406,7 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           created_by?: string
+          declined_at?: string | null
           email?: string
           expires_at?: string
           id?: string
@@ -2432,6 +2435,7 @@ export type Database = {
         }
         Returns: string
       }
+      decline_invitation: { Args: { _token_hash: string }; Returns: undefined }
       forge_release_transition: {
         Args: {
           _action: string
@@ -2511,6 +2515,7 @@ export type Database = {
           accepted_by: string | null
           created_at: string
           created_by: string
+          declined_at: string | null
           email: string
           expires_at: string
           id: string
