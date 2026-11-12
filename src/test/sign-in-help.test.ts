@@ -21,7 +21,7 @@ describe("sign-in error messages", () => {
     expect(authErrorMessage({ code: "invalid_credentials" })).toContain("Continue with Google");
   });
   it("unconfirmed email tells the user to open the confirmation link", () => {
-    expect(authErrorMessage({ message: "Email not confirmed" })).toContain("confirm");
+    expect(authErrorMessage({ message: "Email not confirmed" })).toMatch(/^Confirm your email first/);
   });
   it("a disabled provider is explained instead of shown raw", () => {
     expect(authErrorMessage({ message: "Unsupported provider: provider is not enabled" })).toBe(
