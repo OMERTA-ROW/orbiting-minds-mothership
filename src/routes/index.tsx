@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -17,6 +18,9 @@ import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
 import { isIndexable } from "@/lib/search-policy";
 import MothershipBackground from "@/components/MothershipBackground";
+import { StatusBadge } from "@/components/StatusBadge";
+import { NAV_STATUS, advancedItems, navGroups, type NavStatus } from "@/components/nav-groups";
+import { useAccount } from "@/hooks/use-account";
 
 export const Route = createFileRoute("/")({
   head: () =>
@@ -66,7 +70,10 @@ function Index() {
             <br />
             MOTHERSHIP / 001
           </div>
-          <DemoBadge className="absolute right-8 top-12 hidden md:inline-flex" />
+          <DemoBadge
+            label="Private beta · demos labeled"
+            className="absolute right-8 top-12 hidden md:inline-flex"
+          />
           <div className="hero-copy relative z-10 mx-auto max-w-4xl px-6 text-center">
             <p className="eyebrow flex items-center justify-center gap-4">
               <span className="h-px w-8 bg-gold/50" />
@@ -80,20 +87,7 @@ function Index() {
               Bridge technology into its next evolution.
             </p>
             <p className="mt-3 text-sm text-muted-foreground">All technology is converging here.</p>
-            <div className="mt-7 flex flex-wrap justify-center gap-3">
-              <Button asChild variant="cosmic" className="h-12 rounded-sm px-6 text-xs">
-                <Link to="/mothership">
-                  Explore the Mothership
-                  <ArrowUpRight />
-                </Link>
-              </Button>
-              <Button asChild variant="signal" className="h-12 rounded-sm px-6 text-xs">
-                <Link to="/launch-control">
-                  Limited Beta · Launch Control
-                  <ArrowRight />
-                </Link>
-              </Button>
-            </div>
+            <HeroActions />
           </div>
           <nav className="hero-worlds absolute inset-0" aria-label="Connected Mothership worlds">
             <Link to="/guardian" className="hero-world hero-world-guardian">
@@ -138,8 +132,8 @@ function Index() {
               One Mothership. Infinite possibilities.
             </p>
             <a
-              href="#command-core"
-              aria-label="Discover the Command Core"
+              href="#start-here"
+              aria-label="Start here"
               className="mx-auto mt-4 inline-flex h-8 w-8 items-center justify-center text-gold"
             >
               <ChevronDown size={18} />
@@ -147,94 +141,194 @@ function Index() {
           </div>
         </section>
 
-        <div className="network-horizon border-y border-border">
-          <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-center gap-x-9 gap-y-4 px-6 py-6 font-mono text-[10px] uppercase text-muted-foreground md:gap-x-14">
-            <Orbit size={16} className="text-gold" />
-            <span>Software</span>
-            <span className="text-gold/50" aria-hidden>
-              ✦
-            </span>
-            <span>Creators</span>
-            <span className="text-gold/50" aria-hidden>
-              ✦
-            </span>
-            <span>AI agents</span>
-            <span className="text-gold/50" aria-hidden>
-              ✦
-            </span>
-            <span>Research</span>
-            <span className="text-gold/50" aria-hidden>
-              ✦
-            </span>
-            <span>Future technologies</span>
-          </div>
+        <StartHere />
+        <AdvancedView />
+      </div>
+    </div>
+  );
+}
+
+function HeroActions() {
+  const { user, ready } = useAccount();
+  const signedIn = ready && !!user;
+  return (
+    <div className="mt-7 flex flex-wrap justify-center gap-3">
+      <Button asChild variant="cosmic" className="h-12 rounded-sm px-6 text-xs">
+        {signedIn ? (
+          <Link to="/beta">
+            Open my projects
+            <ArrowRight />
+          </Link>
+        ) : (
+          <Link to="/auth">
+            Sign in
+            <ArrowRight />
+          </Link>
+        )}
+      </Button>
+      <Button asChild variant="signal" className="h-12 rounded-sm px-6 text-xs">
+        <Link to="/sign-in-help">
+          How sign-in works
+          <ArrowUpRight />
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
+const LEGEND: NavStatus[] = ["account", "owner", "browser", "ai", "demo", "off"];
+
+function StartHere() {
+  return (
+    <Section className="pt-16 md:pt-24">
+      <div id="start-here" className="scroll-mt-28 grid gap-8 md:grid-cols-[1.1fr_1fr] md:items-end">
+        <div>
+          <p className="eyebrow">Start here</p>
+          <h2 className="mt-4 text-3xl leading-tight text-foreground md:text-4xl">
+            What Evolution is
+          </h2>
         </div>
+        <p className="text-sm leading-7 text-muted-foreground">
+          A private workspace where the owner keeps projects, AI agents and devices in one place —
+          and stays in control. Many areas are still early demos, so every link shows a badge that
+          tells you what is real.
+        </p>
+      </div>
 
-        <Section className="pt-20 md:pt-28">
-          <div
-            id="command-core"
-            className="scroll-mt-28 flex flex-col justify-between gap-6 md:flex-row md:items-end"
+      <div className="mt-8 rounded-lg border border-gold/30 p-5 text-sm leading-7 text-muted-foreground">
+        <p className="text-foreground">Safety stays on</p>
+        <p>
+          Autonomous and background work is off. Owner approvals, spending limits and the
+          Emergency Stop in OMNI Terminal stay in place, and nothing connects to outside services
+          without the owner's approval.
+        </p>
+      </div>
+
+      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {navGroups.map((g) => (
+          <section
+            key={g.id}
+            aria-labelledby={`grp-${g.id}`}
+            className="rounded-lg border border-border bg-background/60 p-5"
           >
-            <div>
-              <p className="eyebrow">01 / Command Core</p>
-              <h2 className="mt-5 text-3xl leading-tight text-foreground md:text-5xl">
-                A constellation.
-                <br />
-                <span className="text-gold-light">Not a collection of tools.</span>
-              </h2>
-            </div>
-            <div className="max-w-md">
-              <p className="text-sm leading-loose text-muted-foreground">
-                A consent-first collaboration network uniting developers, consenting AI agents,
-                software, research and inventions under one modular Mothership.
-              </p>
-              <p className="mt-4 font-mono text-[10px] uppercase text-gold">Select a module</p>
-            </div>
-          </div>
-          <OrbitExplorer items={modules.filter((m) => m.ring === 0)} />
-        </Section>
+            <h3 id={`grp-${g.id}`} className="text-lg text-gold-light">
+              {g.label}
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">{g.blurb}</p>
+            <ul className="mt-4 space-y-3">
+              {g.items.map((n) => (
+                <li key={n.to} className="flex items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <Link
+                      to={n.to}
+                      className="text-sm text-foreground underline-offset-4 hover:text-gold-light hover:underline"
+                    >
+                      {n.label}
+                    </Link>
+                    <span className="block text-xs leading-5 text-muted-foreground">{n.note}</span>
+                  </span>
+                  <StatusBadge status={n.status} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
 
-        <Section>
-          <div className="mb-12 flex items-center gap-5">
-            <p className="eyebrow">02 / Trust at the center</p>
-            <span className="h-px flex-1 bg-border" />
+      <section aria-labelledby="legend-h" className="mt-10">
+        <h3 id="legend-h" className="eyebrow">
+          What the badges mean
+        </h3>
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {LEGEND.map((k) => (
+            <div key={k} className="flex items-start gap-3">
+              <dt>
+                <StatusBadge status={k} tooltip={false} />
+              </dt>
+              <dd className="text-xs leading-5 text-muted-foreground">{NAV_STATUS[k].help}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    </Section>
+  );
+}
+
+function AdvancedView() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Section className="pt-4">
+      <div className="border-t border-border pt-8">
+        <Button
+          variant="outline"
+          aria-expanded={open}
+          aria-controls="advanced-view"
+          onClick={() => setOpen(!open)}
+          className="gap-2"
+        >
+          {open ? "Hide advanced view" : "Show advanced view"}
+          <ChevronDown size={14} className={open ? "rotate-180 transition" : "transition"} aria-hidden />
+        </Button>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Every other module, demo and reference from earlier versions. Nothing was removed.
+        </p>
+      </div>
+      {open && (
+        <div id="advanced-view" className="mt-10 space-y-20">
+          <section aria-labelledby="all-areas-h">
+            <h3 id="all-areas-h" className="eyebrow">
+              All other areas
+            </h3>
+            <ul className="mt-4 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+              {advancedItems.map((n) => (
+                <li key={n.to}>
+                  <Link
+                    to={n.to}
+                    className="flex min-h-11 items-center justify-between border-b border-border py-2 text-xs text-muted-foreground hover:text-gold-light"
+                  >
+                    {n.label}
+                    <ArrowUpRight size={12} className="text-gold" aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <div id="command-core">
+            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+              <div>
+                <p className="eyebrow">Command Core · demo</p>
+                <h2 className="mt-5 text-3xl leading-tight text-foreground md:text-5xl">
+                  A constellation.
+                  <br />
+                  <span className="text-gold-light">Not a collection of tools.</span>
+                </h2>
+              </div>
+              <p className="max-w-md text-sm leading-loose text-muted-foreground">
+                A consent-first collaboration network uniting developers, consenting AI agents,
+                software, research and inventions under one modular Mothership. Select a module.
+              </p>
+            </div>
+            <OrbitExplorer items={modules.filter((m) => m.ring === 0)} />
           </div>
-          <div className="grid gap-10 md:grid-cols-3 md:gap-14">
-            {pillars.map((p) => (
-              <article key={p.t} className="border-t border-gold/30 pt-7">
-                <p.icon size={28} strokeWidth={1} className="text-gold" />
-                <h3 className="mt-6 text-xl text-foreground">{p.t}</h3>
-                <p className="mt-4 text-sm leading-loose text-muted-foreground">{p.d}</p>
-              </article>
-            ))}
+
+          <div>
+            <p className="eyebrow">Trust at the center</p>
+            <div className="mt-8 grid gap-10 md:grid-cols-3 md:gap-14">
+              {pillars.map((p) => (
+                <article key={p.t} className="border-t border-gold/30 pt-7">
+                  <p.icon size={28} strokeWidth={1} className="text-gold" />
+                  <h3 className="mt-6 text-xl text-foreground">{p.t}</h3>
+                  <p className="mt-4 text-sm leading-loose text-muted-foreground">{p.d}</p>
+                </article>
+              ))}
+            </div>
           </div>
-        </Section>
-        <div className="journey-band border-t border-border">
-          <Section className="pt-20 text-center">
-            <p className="eyebrow">Creator transmission</p>
-            <h2 className="mx-auto mt-5 max-w-3xl text-3xl leading-tight text-foreground md:text-4xl">
-              A pathway for your concept
-            </h2>
-            <p className="mx-auto mt-5 max-w-lg text-sm leading-loose text-muted-foreground">
-              Describe a technology idea. Receive an AI-generated draft connecting relevant
-              Mothership modules, proposed sandbox checks and an owner approval gate. No validation
-              is run.
-            </p>
-            <Button asChild variant="cosmic" className="mt-7 h-12 rounded-sm px-6">
-              <Link to="/pathway">
-                <Sparkles size={16} />
-                Create an Evolution pathway
-                <ArrowUpRight />
-              </Link>
-            </Button>
-          </Section>
-          <Section className="flex flex-col items-center gap-8 py-20 text-center md:py-28">
-            <p className="eyebrow">Your next evolution begins here</p>
-            <h2 className="max-w-3xl text-3xl leading-tight text-foreground md:text-5xl">
-              Walk a full evolution journey
-            </h2>
+
+          <div className="flex flex-col items-center gap-6 text-center">
+            <p className="eyebrow">Simulated journey</p>
             <p className="max-w-lg text-sm leading-loose text-muted-foreground">
-              From DNA profile to Guardian-approved rollout — fully simulated.
+              Walk from a DNA profile to a Guardian-approved rollout — fully simulated.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Button asChild variant="cosmic" className="h-12 rounded-sm px-6">
@@ -249,11 +343,17 @@ function Index() {
                   <ArrowUpRight />
                 </Link>
               </Button>
+              <Button asChild variant="outline" className="h-12 rounded-sm px-6">
+                <Link to="/mothership">
+                  Explore the Mothership
+                  <ArrowUpRight />
+                </Link>
+              </Button>
             </div>
             <DemoBadge />
-          </Section>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </Section>
   );
 }
