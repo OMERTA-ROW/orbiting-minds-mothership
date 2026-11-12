@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 
 // Uses the hosting platform's standard fetch: the server certificate is checked
 // against public trust automatically. There is deliberately no option to supply a
@@ -10,8 +11,8 @@ const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const SCOPES = ["jobs.cancel", "jobs.read", "protocol.self-test"];
 const MAX_REPLY_BYTES = 32768;
 const TIMEOUT_MS = 5000;
-type Action = "handshake" | "submit" | "run" | "status" | "cancel";
-type JobAction = Exclude<Action, "handshake">;
+type Action = "handshake" | "submit" | "run" | "status" | "cancel" | "configuration";
+type JobAction = Exclude<Action, "handshake" | "configuration">;
 export type JackboyLinkConfig = {
   origin: string;
   clientId: string;
@@ -20,6 +21,8 @@ export type JackboyLinkConfig = {
   secret: string;
   approvalExpiresAt: number;
 };
+type LinkIdentity = Omit<JackboyLinkConfig, "approvalExpiresAt">;
+export type JackboyConfigurationConfig = LinkIdentity & { runnerOrigin: string };
 type Fetch = (input: string, init: RequestInit) => Promise<Response>;
 /** Test seam only; never populated from environment settings. */
 export type JackboyLinkOptions = { fetch?: Fetch; timeoutMs?: number };
@@ -31,6 +34,9 @@ type Reply = {
   expiresAt?: string;
   capabilities?: string[];
   ready?: boolean;
+  projectId?: string;
+  execution?: string;
+  configuration?: unknown;
   job?: {
     id: string;
     status: string;
@@ -40,7 +46,7 @@ type Reply = {
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
 const hmac = (key: string, text: string) => createHmac("sha256", key).update(text).digest("hex");
 
-function assertConfig(c: JackboyLinkConfig) {
+function assertIdentity(c: LinkIdentity) {
   const u = new URL(c.origin);
   if (
     u.protocol !== "https:" ||
@@ -53,7 +59,14 @@ function assertConfig(c: JackboyLinkConfig) {
     !UUID.test(c.projectId) ||
     !/^[-_a-zA-Z0-9]{32,256}$/.test(c.bootstrap) ||
     c.secret.length < 32 ||
-    c.secret === c.bootstrap ||
+    c.secret === c.bootstrap
+  )
+    throw new Error("Jackboy scoped link identity is invalid.");
+}
+
+function assertConfig(c: JackboyLinkConfig) {
+  assertIdentity(c);
+  if (
     !Number.isFinite(c.approvalExpiresAt) ||
     c.approvalExpiresAt <= Date.now() ||
     c.approvalExpiresAt > Date.now() + 86400_000
@@ -105,6 +118,23 @@ export async function configuredJackboyLink(): Promise<JackboyLinkConfig> {
   return c;
 }
 
+export function configuredJackboyConfiguration(): JackboyConfigurationConfig {
+  const c = {
+    origin: process.env["JACKBOY_LINK_ORIGIN"] || "",
+    runnerOrigin: process.env["JACKBOY_LINK_RUNNER_ORIGIN"] || "",
+    clientId: process.env["OMNI_LINK_CLIENT_ID"] || "",
+    projectId: process.env["OMNI_LINK_PROJECT_ID"] || "",
+    bootstrap: process.env["OMNI_LINK_BOOTSTRAP_KEY"] || "",
+    secret: process.env["OMNI_LINK_HMAC_SECRET"] || "",
+  };
+  assertPublicLinkOrigin(c.origin);
+  assertPublicLinkOrigin(c.runnerOrigin);
+  assertIdentity(c);
+  if (new URL(c.origin).origin === new URL(c.runnerOrigin).origin)
+    throw new Error("Jackboy and runner origins must be separate.");
+  return c;
+}
+
 export async function readCapped(response: Response): Promise<string> {
   const declared = Number(response.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > MAX_REPLY_BYTES) {
@@ -135,7 +165,7 @@ export async function readCapped(response: Response): Promise<string> {
 }
 
 async function post(
-  c: JackboyLinkConfig,
+  c: LinkIdentity,
   options: JackboyLinkOptions,
   headers: Record<string, string>,
   body: string,
@@ -171,6 +201,99 @@ async function post(
   return { status: response.status, body: text, proof: response.headers.get("x-omni-proof") || "" };
 }
 
+async function sendSigned(
+  config: LinkIdentity,
+  options: JackboyLinkOptions,
+  action: Action,
+  token: string,
+  jobId?: string,
+): Promise<Reply> {
+  const nonce = randomBytes(16).toString("hex");
+  const ts = String(Math.floor(Date.now() / 1000));
+  const body = JSON.stringify({
+    action,
+    projectId: config.projectId,
+    ...(jobId ? { jobId } : {}),
+    ...(action === "submit" ? { kind: "protocol.self-test" } : {}),
+  });
+  const message = `${CONTRACT}\nPOST\n${PATH}\n${ts}\n${nonce}\n${sha256(token)}\n${body}`;
+  const result = await post(
+    config,
+    options,
+    {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`,
+      "x-omni-client": config.clientId,
+      "x-omni-timestamp": ts,
+      "x-omni-nonce": nonce,
+      "x-omni-signature": hmac(config.secret, message),
+    },
+    body,
+  );
+  if (result.status === 401) throw new Error("Jackboy session rejected.");
+  if (result.status !== 200 && result.status !== 202)
+    throw new Error(`Jackboy request failed (HTTP ${result.status}).`);
+  const expected = hmac(
+    config.secret,
+    `${CONTRACT}\nresponse\n${nonce}\n${result.status}\n${result.body}`,
+  );
+  const received = Buffer.from(result.proof, "utf8");
+  const wanted = Buffer.from(expected, "utf8");
+  if (received.length !== wanted.length || !timingSafeEqual(received, wanted))
+    throw new Error("Jackboy response proof is invalid.");
+  let reply: Reply;
+  try {
+    reply = JSON.parse(result.body);
+  } catch {
+    throw new Error("Jackboy response is not valid JSON.");
+  }
+  if (!reply || typeof reply !== "object" || Array.isArray(reply))
+    throw new Error("Jackboy response contract is invalid.");
+  if (reply.contract !== CONTRACT || reply.requestNonce !== nonce)
+    throw new Error("Jackboy response contract is invalid.");
+  if (
+    jobId &&
+    (reply.job?.id !== jobId ||
+      !["queued", "running", "completed", "failed", "cancelled", "timed_out"].includes(
+        reply.job.status,
+      ))
+  )
+    throw new Error("Jackboy returned an invalid job.");
+  return reply;
+}
+
+const runnerConfigurationSchema = z
+  .object({
+    runnerOrigin: z.string(),
+    runnerMode: z.boolean(),
+    nodeRunnerEnabled: z.boolean(),
+    remoteRunnerSecretConfigured: z.boolean(),
+    runtimeAvailable: z.boolean(),
+  })
+  .strict()
+  .nullable();
+
+export async function checkJackboyRunnerConfiguration(
+  c: JackboyConfigurationConfig,
+  audit: Audit,
+  options: JackboyLinkOptions = {},
+) {
+  assertIdentity(c);
+  assertPublicLinkOrigin(c.origin);
+  assertPublicLinkOrigin(c.runnerOrigin);
+  if (new URL(c.origin).origin === new URL(c.runnerOrigin).origin)
+    throw new Error("Jackboy and runner origins must be separate.");
+  await audit("request_configuration");
+  const reply = await sendSigned(c, options, "configuration", c.bootstrap);
+  const parsed = runnerConfigurationSchema.safeParse(reply.configuration);
+  if (!parsed.success || reply.execution !== "none" || reply.projectId !== c.projectId)
+    throw new Error("Jackboy configuration response is invalid.");
+  if (parsed.data && parsed.data.runnerOrigin !== new URL(c.runnerOrigin).origin)
+    throw new Error("Jackboy configuration targets a different runner.");
+  await audit(parsed.data ? "configuration_verified" : "configuration_unavailable");
+  return parsed.data;
+}
+
 export class JackboyLink {
   private session = "";
   private expiresAt = 0;
@@ -186,51 +309,7 @@ export class JackboyLink {
 
   private async send(action: Action, token: string, jobId?: string): Promise<Reply> {
     assertConfig(this.config);
-    const nonce = randomBytes(16).toString("hex");
-    const ts = String(Math.floor(Date.now() / 1000));
-    const body = JSON.stringify({
-      action,
-      projectId: this.config.projectId,
-      ...(jobId ? { jobId } : {}),
-      ...(action === "submit" ? { kind: "protocol.self-test" } : {}),
-    });
-    const message = `${CONTRACT}\nPOST\n${PATH}\n${ts}\n${nonce}\n${sha256(token)}\n${body}`;
-    const result = await post(
-      this.config,
-      this.options,
-      {
-        "content-type": "application/json",
-        authorization: `Bearer ${token}`,
-        "x-omni-client": this.config.clientId,
-        "x-omni-timestamp": ts,
-        "x-omni-nonce": nonce,
-        "x-omni-signature": hmac(this.config.secret, message),
-      },
-      body,
-    );
-    if (result.status === 401) throw new Error("Jackboy session rejected.");
-    if (result.status !== 200 && result.status !== 202)
-      throw new Error(`Jackboy request failed (HTTP ${result.status}).`);
-    const expected = hmac(
-      this.config.secret,
-      `${CONTRACT}\nresponse\n${nonce}\n${result.status}\n${result.body}`,
-    );
-    const received = Buffer.from(result.proof, "utf8");
-    const wanted = Buffer.from(expected, "utf8");
-    if (received.length !== wanted.length || !timingSafeEqual(received, wanted))
-      throw new Error("Jackboy response proof is invalid.");
-    const reply: Reply = JSON.parse(result.body);
-    if (reply.contract !== CONTRACT || reply.requestNonce !== nonce)
-      throw new Error("Jackboy response contract is invalid.");
-    if (
-      jobId &&
-      (reply.job?.id !== jobId ||
-        !["queued", "running", "completed", "failed", "cancelled", "timed_out"].includes(
-          reply.job.status,
-        ))
-    )
-      throw new Error("Jackboy returned an invalid job.");
-    return reply;
+    return sendSigned(this.config, this.options, action, token, jobId);
   }
 
   async connect() {

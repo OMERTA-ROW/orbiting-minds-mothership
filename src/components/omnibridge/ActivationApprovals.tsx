@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   decideActivationApproval,
   listActivationApprovals,
+  runActivationApprovalCheck,
 } from "@/lib/activation-approvals.functions";
 import {
   ACTIVATION_STEPS,
@@ -15,6 +16,7 @@ import {
   NOTE_MAX,
   allowedActions,
   blockingStep,
+  isTechnicalStep,
   isEffectivelyApproved,
   noteProblem,
   validateExpiry,
@@ -30,6 +32,10 @@ const ACTION_LABEL: Record<string, string> = {
   fail: "Marked failed",
   revoke: "Revoked",
   revoke_cascade: "Reset (earlier step changed)",
+  check_passed: "Check passed",
+  check_failed: "Check failed",
+  check_needs_attention: "Check needs attention",
+  fresh_evidence_required: "Reset for fresh evidence",
 };
 
 function when(iso: string | null) {
@@ -44,6 +50,7 @@ function toLocalInput(ms: number) {
 export function ActivationApprovals() {
   const list = useServerFn(listActivationApprovals);
   const decide = useServerFn(decideActivationApproval);
+  const runCheck = useServerFn(runActivationApprovalCheck);
   const [data, setData] = useState<Loaded | null>(null);
   const [access, setAccess] = useState<"checking" | "ok" | "denied">("checking");
   const [busy, setBusy] = useState(false);
@@ -86,7 +93,10 @@ export function ActivationApprovals() {
       const factors = await supabase.auth.mfa.listFactors();
       const factor = factors.data?.totp.find((f) => f.status === "verified");
       if (!factor) {
-        setNotice({ step: null, text: "No verified authenticator found. Set one up on Two-factor." });
+        setNotice({
+          step: null,
+          text: "No verified authenticator found. Set one up on Two-factor.",
+        });
         return;
       }
       const r = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
@@ -96,7 +106,10 @@ export function ActivationApprovals() {
       }
       setCode("");
       await refresh();
-      setNotice({ step: null, text: "Two-factor re-verified. You can record decisions for 15 minutes." });
+      setNotice({
+        step: null,
+        text: "Two-factor re-verified. You can record decisions for 15 minutes.",
+      });
     } catch {
       setNotice({ step: null, text: "Re-verification could not complete. Try again." });
     } finally {
@@ -200,6 +213,31 @@ export function ActivationApprovals() {
   const latestAudit = (step: number): AuditRow | undefined =>
     data.audit.find((a) => a.record_id === String(step));
   const approvedCount = data.rows.filter((r) => isEffectivelyApproved(r, now)).length;
+  const checkCounts = {
+    passed: data.checks.filter((c) => c.status === "passed").length,
+    failed: data.checks.filter((c) => c.status === "failed").length,
+    needsAttention: data.checks.filter((c) => c.status === "needs_attention").length,
+  };
+
+  async function checkStep(step: number) {
+    if (busy) return;
+    setBusy(true);
+    setNotice({ step, text: "Running server-side check…" });
+    try {
+      const result = await runCheck({ data: { step } });
+      if (!result.ok) {
+        setNotice({ step, text: result.message });
+        if (result.reason === "mfa") await refresh().catch(() => {});
+        return;
+      }
+      await refresh();
+      setNotice({ step, text: result.check.summary });
+    } catch {
+      setNotice({ step, text: "Check could not complete. Refresh before retrying." });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-4xl space-y-8 px-6 py-16">
@@ -211,15 +249,53 @@ export function ActivationApprovals() {
           Go-live checklist for the OMNI–Jackboy link and CODE. Steps unlock in order.{" "}
           {approvedCount} of {ACTIVATION_STEPS.length} approved.
         </p>
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          Technical checks: {checkCounts.passed} passed · {checkCounts.failed} failed ·{" "}
+          {checkCounts.needsAttention} need attention.
+        </p>
         <p
           role="note"
           className="rounded-lg border border-primary/40 bg-card p-3 text-sm text-foreground"
         >
-          Recording only. Approving a step does not flip switches, set secrets, deploy, run the
-          self-test, contact Railway, Jackboy or OpenAI, or make paid calls. You do those yourself,
-          then record them here.
+          Owner approvals only record decisions. Run check may read server configuration, verify the
+          signed Jackboy link, or inspect a self-test result; it never flips switches, sets secrets,
+          deploys, runs the self-test, or makes paid calls.
         </p>
       </header>
+
+      <section
+        aria-labelledby="deployment-mode"
+        className="space-y-2 rounded-lg border bg-card p-4"
+      >
+        <h2 id="deployment-mode" className="text-lg">
+          Deployment configuration
+        </h2>
+        {data.deployment.mode === "runner_only" ? (
+          <p className="text-sm">
+            The runner-only target is configured; Step 2 still requires signed remote evidence.
+            Jackboy on Lovable owns the database; Railway runs the self-test only. Do not configure
+            Supabase credentials on Railway.
+          </p>
+        ) : (
+          <>
+            <p role="status" className="text-sm">
+              {data.deployment.mode === "unknown"
+                ? "Deployment setup is unknown. The remote target references need confirming."
+                : "Deployment target references are inconsistent. Confirm separate Jackboy and runner origins."}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Confirm Mothership's nonsecret <code>JACKBOY_LINK_ORIGIN</code> and{" "}
+              <code>JACKBOY_LINK_RUNNER_ORIGIN</code> references. Missing remote evidence does not
+              mean the Railway variables are missing. These belong on the Railway runner, not
+              Mothership: <code>OMNI_LINK_RUNNER_MODE=true</code>,{" "}
+              <code>OMNI_LINK_NODE_RUNNER_ENABLED=true</code>, and{" "}
+              <code>OMNI_LINK_REMOTE_RUNNER_SECRET</code>. Do not repeat completed setup or copy its
+              secret here. Railway must not receive <code>SUPABASE_URL</code> or{" "}
+              <code>SUPABASE_SERVICE_ROLE_KEY</code>.
+            </p>
+          </>
+        )}
+      </section>
 
       <section aria-labelledby="mfa" className="space-y-3 rounded-lg border bg-card p-4">
         <h2 id="mfa" className="text-lg">
@@ -291,11 +367,19 @@ export function ActivationApprovals() {
           const row = data.rows.find((r) => r.step === meta.step)!;
           const blocker = blockingStep(data.rows, meta.step, now);
           const actions = allowedActions(data.rows, meta.step, now);
+          const technical = isTechnicalStep(meta.step);
+          const check = data.checks.find((c) => c.step === meta.step);
           const audit = latestAudit(meta.step);
           const expired =
             row.step === 7 && row.status === "approved" && !isEffectivelyApproved(row, now);
           const Icon =
-            row.status === "approved" ? CheckCircle2 : row.status === "failed" ? XCircle : blocker ? Lock : CircleDashed;
+            row.status === "approved"
+              ? CheckCircle2
+              : row.status === "failed"
+                ? XCircle
+                : blocker
+                  ? Lock
+                  : CircleDashed;
           return (
             <li key={meta.step} className="space-y-3 rounded-lg border bg-card p-4">
               <div className="flex flex-wrap items-start gap-3">
@@ -335,15 +419,51 @@ export function ActivationApprovals() {
                   </dd>
                 </div>
                 {row.step === 7 && row.approval_expires_at && (
-                  <div className="sm:col-span-3">Expiry recorded: {when(row.approval_expires_at)}</div>
+                  <div className="sm:col-span-3">
+                    Expiry recorded: {when(row.approval_expires_at)}
+                  </div>
                 )}
                 {row.note && <div className="sm:col-span-3">Note: {row.note}</div>}
               </dl>
 
+              {technical && check && (
+                <section
+                  aria-label={`Step ${meta.step} check result`}
+                  className="space-y-2 rounded border p-3"
+                >
+                  <p className="text-sm">
+                    <strong className="capitalize">{check.status.replace("_", " ")}:</strong>{" "}
+                    {check.summary}{" "}
+                    <span className="text-xs text-muted-foreground">· {when(check.checkedAt)}</span>
+                  </p>
+                  <ul className="space-y-1 text-xs text-muted-foreground">
+                    {check.details.map((detail, index) => (
+                      <li key={`${detail.label}-${index}`}>
+                        <strong>{detail.label}:</strong> {detail.detail}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {meta.step === 8 && data.selfTest && (
+                <p className="text-xs text-muted-foreground">
+                  Latest protocol result:{" "}
+                  {data.selfTest.action === "self_test_passed" ? "passed" : "failed"}
+                  {data.selfTest.fresh
+                    ? " within the last 24 hours."
+                    : " · older than 24 hours."}{" "}
+                  Run check to verify and record it here.
+                </p>
+              )}
+
               {meta.step === 1 && (
                 <ul className="grid gap-1 text-xs sm:grid-cols-2">
                   {data.settings.map((s) => (
-                    <li key={s.name} className="flex justify-between gap-2 rounded border px-2 py-1">
+                    <li
+                      key={s.name}
+                      className="flex justify-between gap-2 rounded border px-2 py-1"
+                    >
                       <code>{s.name}</code>
                       <span className="text-muted-foreground">
                         {s.present ? "present" : s.deferred ? "unset · set at step 7" : "missing"}
@@ -373,7 +493,11 @@ export function ActivationApprovals() {
                   {meta.step === 10 && actions.includes("approve") && (
                     <fieldset className="space-y-1 text-sm">
                       <label className="flex items-center gap-2">
-                        <input type="checkbox" checked={cap} onChange={(e) => setCap(e.target.checked)} />
+                        <input
+                          type="checkbox"
+                          checked={cap}
+                          onChange={(e) => setCap(e.target.checked)}
+                        />
                         I confirm the $10 OpenAI cap is set.
                       </label>
                       <label className="flex items-center gap-2">
@@ -386,27 +510,32 @@ export function ActivationApprovals() {
                       </label>
                     </fieldset>
                   )}
-                  <Input
-                    aria-label={`Note for step ${meta.step} (optional, no secrets)`}
-                    placeholder="Optional note — never paste keys or tokens"
-                    maxLength={NOTE_MAX}
-                    value={notes[meta.step] ?? ""}
-                    onChange={(e) => setNotes((n) => ({ ...n, [meta.step]: e.target.value }))}
-                  />
+                  {!technical && (
+                    <Input
+                      aria-label={`Note for step ${meta.step} (optional, no secrets)`}
+                      placeholder="Optional note — never paste keys or tokens"
+                      maxLength={NOTE_MAX}
+                      value={notes[meta.step] ?? ""}
+                      onChange={(e) => setNotes((n) => ({ ...n, [meta.step]: e.target.value }))}
+                    />
+                  )}
                   <div className="flex flex-wrap gap-2">
-                    {actions.includes("approve") && (
-                      <Button size="sm" disabled={busy || !mfaFresh} onClick={() => act(row, "approve")}>
-                        Approve
-                      </Button>
-                    )}
-                    {actions.includes("fail") && (
+                    {technical && (
                       <Button
                         size="sm"
-                        variant="outline"
                         disabled={busy || !mfaFresh}
-                        onClick={() => act(row, "fail")}
+                        onClick={() => void checkStep(meta.step)}
                       >
-                        Mark failed
+                        Run check
+                      </Button>
+                    )}
+                    {!technical && actions.includes("approve") && (
+                      <Button
+                        size="sm"
+                        disabled={busy || !mfaFresh}
+                        onClick={() => act(row, "approve")}
+                      >
+                        Approve
                       </Button>
                     )}
                     {actions.includes("revoke") && (

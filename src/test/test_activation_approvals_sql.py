@@ -1,5 +1,6 @@
 """Disposable PostgreSQL only: Activation Approvals owner/fresh-MFA/order/expiry/cascade/audit checks. Never uses hosted credentials."""
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -31,9 +32,17 @@ def main():
     FRESH = f'[{{"method":"password","timestamp":{now - 3600}}},{{"method":"totp","timestamp":{now - 60}}}]'
     STALE = f'[{{"method":"totp","timestamp":{now - 20 * 60}}}]'
     NOMFA = f'[{{"method":"password","timestamp":{now}}}]'
-    def caller(uid, aal, amr, text, ok=True):
+    def caller(uid, aal, amr, text, ok=True, seed_evidence=True):
         nonlocal checks
         checks += 1
+        match = re.search(r"activation_approval_decide\((\d+), '([a-z]+)'", text)
+        if seed_evidence and match and int(match.group(1)) in (1, 2, 4, 8) and match.group(2) == "approve":
+            step = int(match.group(1))
+            sql(f"""INSERT INTO public.activation_approval_checks
+                (step,status,evidence_version,checked_at,summary,details,deployment_mode)
+                VALUES ({step},'passed',2,now(),'isolated fixture check','[]'::jsonb,'runner_only')
+                ON CONFLICT(step) DO UPDATE SET status='passed',evidence_version=2,
+                  checked_at=now(),deployment_mode='runner_only';""")
         return sql(f"SET ROLE authenticated; SET request.jwt.claim.sub='{uid}'; SET request.jwt.claim.aal='{aal}'; SET request.jwt.claim.amr='{amr}'; {text}", ok)
     def decide(step, action, extra="NULL, false, false", note="''"):
         return f"SELECT count(*) FROM public.activation_approval_decide({step}, '{action}', {note}, {extra});"
@@ -54,23 +63,47 @@ def main():
             paths = list((ROOT / "drizzle/migrations").glob(f"{number:04d}_*.sql"))
             assert len(paths) == 1, number
             sql(paths[0].read_text())
+        sql((ROOT / "drizzle/migrations/0051_activation_approval_checks.sql").read_text())
         sql(f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()),('{OTHER}','other@fixture.invalid',now()); INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner'),('{OTHER}','admin');")
 
         # Denials: anonymous, admin (not owner), aal1, stale MFA, password-only.
         assert sql("SELECT has_function_privilege('anon','public.activation_approval_decide(integer,text,text,timestamptz,boolean,boolean)','execute');") == 'f'
         checks += 1
-        caller(OTHER, 'aal2', FRESH, decide(1, 'approve'), False)
-        caller(OWNER, 'aal1', FRESH, decide(1, 'approve'), False)
-        caller(OWNER, 'aal2', STALE, decide(1, 'approve'), False)
-        caller(OWNER, 'aal2', NOMFA, decide(1, 'approve'), False)
+        caller(OTHER, 'aal2', FRESH, decide(1, 'approve'), False, seed_evidence=False)
+        caller(OWNER, 'aal1', FRESH, decide(1, 'approve'), False, seed_evidence=False)
+        caller(OWNER, 'aal2', STALE, decide(1, 'approve'), False, seed_evidence=False)
+        caller(OWNER, 'aal2', NOMFA, decide(1, 'approve'), False, seed_evidence=False)
 
+        for role in ('anon', 'authenticated'):
+            assert sql(f"SELECT has_function_privilege('{role}','public.activation_approval_record_check(integer,text,integer,text,jsonb,text,uuid)','execute');") == 'f'
+            checks += 1
+        sql(f"SELECT public.activation_approval_record_check(2,'passed',2,'fixture','[]'::jsonb,'runner_only','{OWNER}');")
+        sql("ALTER TABLE public.razul_control_audit ADD CONSTRAINT fixture_deny_check_audit CHECK (action <> 'check_failed') NOT VALID;")
+        try:
+            sql(f"SELECT public.activation_approval_record_check(2,'failed',2,'fixture','[]'::jsonb,'runner_only','{OWNER}');", False)
+            checks += 1
+            assert sql("SELECT status FROM public.activation_approval_checks WHERE step=2;") == 'passed'
+            checks += 1
+        finally:
+            sql("ALTER TABLE public.razul_control_audit DROP CONSTRAINT fixture_deny_check_audit;")
+
+        # A caller cannot directly approve a technical step without fresh service evidence.
+        caller(OWNER, 'aal2', FRESH, decide(1, 'approve'), False, seed_evidence=False)
         # Order: step 2 cannot be approved before step 1.
         caller(OWNER, 'aal2', FRESH, decide(2, 'approve'), False)
         caller(OWNER, 'aal2', FRESH, decide(1, 'approve'))
-        caller(OWNER, 'aal2', FRESH, decide(1, 'approve'), False)  # already approved
+        caller(OWNER, 'aal2', FRESH, decide(1, 'approve'))  # fresh recheck is allowed
         # Secret-looking note refused.
         caller(OWNER, 'aal2', FRESH, decide(2, 'approve', note="'sk-proj-abcdefghijklmnopqrstu'"), False)
-        for s in range(2, 7):
+        # Failed Step 2 remains retryable; a fresh passing check unlocks it.
+        caller(OWNER, 'aal2', FRESH, decide(2, 'fail'))
+        caller(OWNER, 'aal2', FRESH, decide(2, 'fail'))
+        sql("UPDATE public.activation_approval_checks SET evidence_version=1 WHERE step=2;")
+        caller(OWNER, 'aal2', FRESH, decide(2, 'approve'), False, seed_evidence=False)
+        sql("UPDATE public.activation_approval_checks SET evidence_version=2,checked_at=now()+interval '5 minutes' WHERE step=2;")
+        caller(OWNER, 'aal2', FRESH, decide(2, 'approve'), False, seed_evidence=False)
+        caller(OWNER, 'aal2', FRESH, decide(2, 'approve'))
+        for s in range(3, 7):
             caller(OWNER, 'aal2', FRESH, decide(s, 'approve'))
 
         # Step 7 expiry window: missing, past and >24h rejected; 23h accepted.
@@ -103,13 +136,17 @@ def main():
         caller(OWNER, 'aal2', FRESH, decide(8, 'approve'), False)
 
         # Read isolation and no direct writes.
+        assert sql("SELECT has_table_privilege('authenticated','public.activation_approval_checks','SELECT');") == 'f'
+        checks += 1
+        assert sql("SELECT has_table_privilege('anon','public.activation_approval_checks','SELECT');") == 'f'
+        checks += 1
         assert caller(OTHER, 'aal2', FRESH, "SELECT count(*) FROM public.activation_approvals;").endswith('0')
         assert caller(OTHER, 'aal2', FRESH, "SELECT count(*) FROM public.razul_control_audit WHERE record_type='activation_approval';").endswith('0')
         caller(OWNER, 'aal2', FRESH, "UPDATE public.activation_approvals SET status='approved' WHERE step=8;", False)
         caller(OWNER, 'aal2', FRESH, "INSERT INTO public.activation_approvals(step) VALUES (1) ON CONFLICT DO NOTHING;", False)
-        assert caller(OWNER, 'aal2', FRESH, "SELECT count(*) FROM public.razul_control_audit WHERE record_type='activation_approval' AND action='approve' AND actor_id='" + OWNER + "';").endswith('10')
+        assert caller(OWNER, 'aal2', FRESH, "SELECT count(*) FROM public.razul_control_audit WHERE record_type='activation_approval' AND action='approve' AND actor_id='" + OWNER + "';").endswith('11')
 
-        print(f"PASS: {checks} isolated SQL checks: anon/admin/aal1/stale/password-only denial, strict order, secret-note refusal, 24h expiry bound, step-10 spend confirmations, cascade revoke/fail, expired-window lock, owner-only reads, no direct writes, audit trail. No hosted fixtures.")
+        print(f"PASS: {checks} isolated SQL checks: anon/admin/aal1/stale/password-only denial, service-evidence prerequisite, failed Step 2 retry, strict order, secret-note refusal, 24h expiry bound, step-10 spend confirmations, cascade revoke/fail, expired-window lock, owner-only reads, no direct writes, audit trail. No hosted fixtures.")
     finally:
         if started: command(["pg_ctl", "-D", str(base / "db"), "-m", "immediate", "-w", "stop"])
         shutil.rmtree(base)

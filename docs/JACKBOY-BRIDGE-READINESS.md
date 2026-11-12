@@ -104,14 +104,13 @@ For that proposed service only, the reviewed settings are:
 | `OMNI_LINK_BOOTSTRAP_KEY`, `OMNI_LINK_HMAC_SECRET` | Independent dedicated secrets in managed server-side storage; do not reuse metadata API keys or CODE/provider credentials |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Existing Jackboy backend access, only on the approved bridge service |
 
-## Owner decision 2026-11-06: option A (public Railway route)
+## Runner-only activation target (not production-verified)
 
-The owner chose to serve the link from Jackboy's existing public Railway web
-route (`/api/public/omni/link`) using Railway's managed public certificate.
-The separate `scripts/omni-link-server.mjs` listener, `OMNI_LINK_BIND_ADDRESS`
-and `OMNI_LINK_TLS_CERT_FILE`/`OMNI_LINK_TLS_KEY_FILE` are **not used** for this
-path. The private-network design above remains a reference only; nothing outside
-Railway can reach `.railway.internal` names.
+The current activation target is runner-only: Jackboy's Lovable deployment owns
+the database, and Railway runs the fixed protocol self-test. The Railway runner
+is a separate endpoint, not the Jackboy link origin. The separate
+`scripts/omni-link-server.mjs` listener, `OMNI_LINK_BIND_ADDRESS` and
+`OMNI_LINK_TLS_CERT_FILE`/`OMNI_LINK_TLS_KEY_FILE` remain unused.
 
 The Mothership client loads `JACKBOY_LINK_ORIGIN` only if it is a public HTTPS
 DNS name on the default port (no IP literal, `localhost`, `.internal`, `.local`,
@@ -122,18 +121,90 @@ Mothership-only managed settings only at the separately approved activation:
 | --- | --- |
 | `JACKBOY_LINK_ENABLED` | Exact `true` enables the owner-gated client; absent is disabled |
 | `JACKBOY_LINK_SELF_TEST_ENABLED` | Exact `true` separately permits submit/run of the fixed test; absent blocks them |
-| `JACKBOY_LINK_ORIGIN` | Public HTTPS origin of Jackboy's Railway web service |
+| `JACKBOY_LINK_ORIGIN` | Public HTTPS origin of Jackboy on Lovable in runner-only mode; not the Railway runner |
+| `JACKBOY_LINK_RUNNER_ORIGIN` | Nonsecret expected Railway runner HTTPS origin; binds Step 2 evidence to the intended service |
 | `JACKBOY_LINK_MOTHERSHIP_OWNER_ID` | Verified MFA Mothership owner's UUID |
 | `OMNI_LINK_CLIENT_ID`, `OMNI_LINK_PROJECT_ID`, `OMNI_LINK_APPROVAL_ID`, `OMNI_LINK_APPROVAL_EXPIRES_AT` | Exact approved Jackboy scope; approval expiry at most 24 hours |
 | `OMNI_LINK_BOOTSTRAP_KEY`, `OMNI_LINK_HMAC_SECRET` | Dedicated credentials matching Jackboy, server-only |
 
-Open on Jackboy's side (not changed by Mothership work):
-- The handler requires `new URL(request.url).protocol === "https:"`. Behind
-  Railway's edge the app may see plain HTTP and return `https_post_required`;
-  a reviewed Jackboy change must trust only Railway's forwarded protocol.
-- Pin Node 26+ on the Railway service; the fixed runner refuses older Node.
-- Confirm `drizzle/migrations/0030_omni_sessions.sql` and `SUPABASE_URL` /
-  `SUPABASE_SERVICE_ROLE_KEY` on that service.
+Step 2 does **not** read runner flags or the runner secret from Mothership.
+It sends signed `action: "configuration"` through the existing link transport
+to Jackboy on Lovable. Jackboy verifies the bootstrap identity, scoped project,
+owner role, pause state and single-use nonce in its database, then sends signed
+`kind: "runner.configuration"` to its configured Railway runner. Both hops
+verify nonce-bound response HMACs, refuse redirects and use verified HTTPS.
+Only effective boolean configuration metadata is returned, with the runner
+origin bound to Mothership's nonsecret `JACKBOY_LINK_RUNNER_ORIGIN`.
+No session, job or execution approval is issued; metadata reads do not require
+execution switches or approval expiry. Actual handshake/submit/run retain
+their existing switch and grant gates.
+
+Missing metadata is **unverified**, not evidence that Railway variables are
+missing. The existing variables belong on
+`Evolution / production / jackboy-dev-control`: `OMNI_LINK_RUNNER_MODE=true`,
+`OMNI_LINK_NODE_RUNNER_ENABLED=true`, and managed
+`OMNI_LINK_REMOTE_RUNNER_SECRET`. Do not repeat completed setup or copy the
+runner secret into Mothership or the Go `Omni` service. Jackboy on Lovable is
+the authenticated caller and already requires
+`OMNI_LINK_REMOTE_RUNNER_ENABLED`, `OMNI_LINK_REMOTE_RUNNER_URL` and the
+matching managed runner secret; inspect existing caller configuration before
+changing it. Railway must not receive `SUPABASE_URL` or
+`SUPABASE_SERVICE_ROLE_KEY`; the database remains on Lovable.
+
+The owner confirms Node 26 on the Railway runner and verifies Jackboy's actual
+migration history in the Lovable-owned database. Step 4 verifies a signed HTTPS
+configuration exchange through the same `JACKBOY_LINK_ORIGIN` client,
+including public certificate validation, redirect refusal and response proofs.
+It does not create an execution session before the Step 7 approval window.
+Step 8 only verifies a
+fresh, proof-checked self-test result from the separately gated protocol flow:
+configuration or an active deployment alone is not proof.
+
+### Read-only Railway audit, 2026-11-12
+
+Railway's authenticated CLI confirmed both flags are `true` and the runner
+secret is configured on the above service. Mothership and `Omni` do not have
+these runner variables, correctly. The deployed Jackboy SHA was
+`bfa68f9fef7a863a185e1858a3cc28cc7005c134`, with Node 26.13.0 resolved in
+deployment metadata. GET of the runner endpoint returned 405; an unsigned
+POST with `{}` returned 401 `authentication_failed`. In that deployed source,
+401 is reachable only after runner-mode, valid-secret and Node-availability
+checks. This confirms existing configuration is effective, **not** a self-test
+pass. No self-test, secret change, restart or deployment was requested.
+Direct SSH inspection was blocked by Railway's SSH-key admission.
+
+The Railway services share the Evolution project/production environment, but
+the Lovable caller is outside Railway's private mesh. The intended hop uses
+public HTTPS: Jackboy on Lovable → the Railway runner. Private `.internal`
+HTTP must not replace it. The Go `Omni` service points at Jackboy on Lovable,
+not the runner. Lovable's caller configuration and end-to-end authenticated
+connectivity were not inspected.
+
+Production Mothership SHA `7ea35c7cf515190d11fb50ae1602f585ffbc1088`
+has the old recorded-decision checklist; it does not automatically inspect
+Railway variables. A failed Step 2 can be an old decision, not a fresh
+configuration observation. The earlier unshipped revamp also incorrectly read
+Mothership's process environment; this branch replaces that assumption with
+remote attestation. Version 1 evidence cannot approve version 2 steps.
+Production owner records were not inspected.
+
+Runtime readers in Jackboy:
+
+| File / function | Configuration read |
+| --- | --- |
+| `src/lib/omni-remote-runner.ts` / `runnerModeDecision` | `OMNI_LINK_RUNNER_MODE`; rejects site/Lovable hosts for runner-only routing |
+| `src/lib/omni-session-runner.server.ts` / `protocolRunnerAvailable` | `OMNI_LINK_NODE_RUNNER_ENABLED`; Node version and permission support |
+| `src/lib/omni-remote-runner.server.ts` / `handleRunnerRequest` | `OMNI_LINK_REMOTE_RUNNER_SECRET`; the new metadata reply also reads the Node flag |
+| `src/lib/omni-remote-runner.ts` / `remoteRunnerConfig`, `remoteRunnerDiagnostic`, `runnerConfigProblem` | Live Jackboy caller's runner secret, enabled flag and URL |
+| `src/lib/omni-link.functions.ts` / `probeOmniConnection` | Caller-side secret presence/configuration diagnostics; not remote verification |
+| `src/server.ts`, `src/lib/omni-runner-mode.server.ts` | Invoke the mode/availability readers to choose routing and local/remote execution |
+
+The Go `OMERTA-ROW/Omni` source does not read the three runner settings.
+"Evolution" is the Railway project and Mothership application context, not an
+additional runner implementation. Mothership's `currentDeployment` now selects
+nonsecret target references; `evaluateCheck` calls the new signed client probe.
+It stores check evidence and its audit atomically through the service-only
+`activation_approval_record_check` RPC, before any owner approval RPC.
 
 Local evidence (2026-11-06): the cross-repository suite
 (`JACKBOY_TEST_ROOT=<jackboy checkout> node --test tests/jackboy-link-integration.test.mjs`
@@ -158,24 +229,18 @@ network connection is created by this document.
 
 ## Required gates
 
-1. Owner confirms Railway project/environment identity, deployment SHAs,
-   startup configuration and an isolated staging environment; no production
-   requests are authorized by this document.
-2. Verify Jackboy's actual migration history and `0030_omni_sessions.sql`
-   service-role grants without applying or rewriting existing migrations. There
-   are two `0030_` filenames in the source; use the existing reviewed migration
-   procedure and verify actual history, not filename assumptions.
-3. Review a service identity and certificate lifecycle, private listener,
-   runner isolation and deployed audit retention/integrity. Provision staging-only dedicated
-   credentials and explicit expiring owner/project approval separately.
-4. Review the Mothership caller and independently implement a compatible
-   Jackboy-to-Mothership contract. The legacy outbound request does not carry
-   the reverse link's owner/project/approval proof; do not accept it as an
-   authorized job or mark the legacy handshake verified merely to unblock it.
-   Do not treat metadata key scope or a browser checkbox as authorization.
-5. In staging, verify private DNS/reachability, valid and invalid TLS,
-   handshake/proofs, owner/project/expiry checks, replay, session renewal,
-   cancellation, durable audit and explicitly approved fixed self-test.
-6. Only a separately authorized live handshake can establish production
-   connectivity. Keep unrestricted CODE, arbitrary execution, deployment,
-   repository writes, paid providers and autonomous operation disabled.
+1. Owner verifies the Railway runner's effective settings, Node 26 runtime,
+   deployed SHA and isolated test scope. No production settings or deployments
+   are changed by this checklist update.
+2. Verify Jackboy's actual migration history and `0030_omni_sessions.sql` in
+   Lovable's database; do not apply or rewrite migrations from Railway.
+3. Keep the runner restricted to the fixed self-test. It must not receive
+   Supabase credentials, execute caller-provided code, shell commands or
+   repository tests.
+4. Confirm the Step 4 origin is Jackboy on Lovable and preserve TLS,
+   redirect-refusal, scope and signature checks.
+5. Run the existing separately gated protocol self-test and verify its fresh
+   signed result; a configuration check or active service is not a substitute.
+6. Production publishing and activation require a separate owner decision.
+   Keep unrestricted CODE, arbitrary execution, repository writes, paid
+   providers and autonomous operation disabled.
