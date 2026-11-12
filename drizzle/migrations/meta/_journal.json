@@ -309,6 +309,13 @@
       "when": 1794474675827,
       "tag": "0043_account_mfa_events_aal2",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1794503960846,
+      "tag": "0044_mfa_admin_factor_removal_event",
+      "breakpoints": true
     }
   ]
 }
