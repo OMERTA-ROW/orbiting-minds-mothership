@@ -134,13 +134,13 @@ export function OmniTerminal() {
         supabase.auth.mfa.listFactors(),
         supabase.rpc("has_role", { _user_id: user.id, _role: "owner" }),
       ]);
-      const level = aal.data?.currentLevel;
+      const level: string | null = aal.data?.currentLevel ?? null;
       setLock(
         lockReason({
           signedIn: true,
           emailVerified: Boolean(user.email_confirmed_at),
           isOwner: role.error ? null : role.data === true,
-          aal: level === "aal1" || level === "aal2" ? level : null,
+          aal: level === "aal2" ? "aal2" : level === "aal1" ? "aal1" : null,
           hasVerifiedTotp: Boolean(factors.data?.totp.some((f) => f.status === "verified")),
         }),
       );
