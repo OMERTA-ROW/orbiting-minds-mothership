@@ -310,7 +310,7 @@ function AccountSecurity() {
         : "Off";
 
   return (
-    <main className="mx-auto max-w-xl space-y-6 px-4 py-10">
+    <div className="mx-auto max-w-xl space-y-6 px-4 py-10">
       <div>
         <p className="text-sm text-muted-foreground">Account · Security</p>
         <h1 className="text-2xl font-semibold">Two-step sign-in</h1>
@@ -552,6 +552,6 @@ function AccountSecurity() {
           Sign-in help
         </Link>
       </p>
-    </main>
+    </div>
   );
 }
