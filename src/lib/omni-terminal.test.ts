@@ -288,3 +288,36 @@ describe("lock reason", () => {
     expect(lockReason(base).id).toBe("server_refused");
   });
 });
+
+describe("Readiness display reflects recorded evidence only", () => {
+  const item = (s: Snapshot, id: string) => terminalReadiness(s).items.find((i) => i.id === id)!;
+  it("says no approval was ever recorded here when every step is undecided", () => {
+    const d = item(snap(), "approvals");
+    expect(d.ok).toBe(false);
+    expect(d.label).toContain("0 of 10");
+    expect(d.detail).toContain("No decision has ever been recorded in Mothership");
+  });
+  it("shows the next step once any decision exists", () => {
+    const rows = normalizeRows([{ step: 1, status: "approved", decided_at: "2026-11-07T10:00:00Z" }]);
+    const d = item(snap({ approvals: rows }), "approvals");
+    expect(d.label).toContain("1 of 10");
+    expect(d.detail).toContain("Next: step 2");
+  });
+  it("shows a recorded Jackboy link self-test instead of fixed text", () => {
+    const audit = [
+      { id: "a", action: "self_test_passed", record_type: "jackboy_link", record_id: "j", occurred_at: "2026-11-07T15:00:00Z" },
+    ];
+    const cap = capabilities(snap({ audit })).find((c) => c.id === "self_test")!;
+    expect(cap.evidence).toContain("2026-11-07 15:00 UTC");
+    expect(capabilities(snap()).find((c) => c.id === "self_test")!.evidence).toContain("No Jackboy link self-test recorded");
+  });
+  it("distinguishes a never-attempted handshake from a failed attempt", () => {
+    expect(item(snap(), "jackboy_link").detail).toContain("never been attempted");
+    const audit = [
+      { id: "a", action: "connecting", record_type: "jackboy_link", record_id: "x", occurred_at: "2026-11-07T15:00:00Z" },
+    ];
+    const d = item(snap({ audit }), "jackboy_link");
+    expect(d.ok).toBe(false);
+    expect(d.detail).toContain("did not complete");
+  });
+});
