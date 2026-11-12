@@ -1,88 +1,99 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, UserRound } from "lucide-react";
+import { useState } from "react";
 import { useAccount } from "@/hooks/use-account";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const ACCOUNT_LINKS = [
+  { to: "/beta", label: "My projects" },
+  { to: "/account-security", label: "Two-factor & recovery" },
+  { to: "/sign-in-help", label: "How to sign in" },
+  { to: "/members", label: "Members & invitations (owner)" },
+  { to: "/omni-api-keys", label: "API keys (owner)" },
+  { to: "/activation-approvals", label: "Approvals (owner)" },
+] as const;
+
 export function AccountButton() {
   const { user, ready } = useAccount(),
     query = useQueryClient(),
     navigate = useNavigate();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  return (
-    <div className="flex items-center gap-1">
-      <Button
-        asChild
-        variant="ghost"
-        size="icon"
-        aria-label={user ? "My beta projects" : "Sign in"}
-        title={user ? "My beta projects" : "Sign in"}
-      >
-        <Link to={user ? "/beta" : "/auth"}>
-          <UserRound size={18} />
+
+  async function signOut() {
+    setBusy(true);
+    setError("");
+    try {
+      await query.cancelQueries();
+      query.clear();
+      const result = await supabase.auth.signOut();
+      if (result.error) {
+        setError("Sign-out failed. Retry before leaving this device.");
+        return;
+      }
+      await navigate({ to: "/auth", replace: true });
+    } catch {
+      setError("Sign-out failed. Retry before leaving this device.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!ready || !user)
+    return (
+      <Button asChild variant="ghost" size="sm" className="gap-1.5 text-xs">
+        <Link to="/auth">
+          <UserRound size={16} aria-hidden />
+          Sign in
         </Link>
       </Button>
-      {ready && user && (
-        <Button asChild variant="ghost" size="sm" title="Members and owner claim">
-          <Link to="/members">Members · claim owner</Link>
-        </Button>
-      )}
-      {ready && user && (
-        <Button asChild variant="ghost" size="sm" title="Two-factor authentication">
-          <Link to="/account-security">Two-factor</Link>
-        </Button>
-      )}
-      {ready && user && (
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          title="OMNI API keys (owner + two-factor required)"
-        >
-          <Link to="/omni-api-keys">API Keys</Link>
-        </Button>
-      )}
-      {ready && user && (
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          title="Activation approvals (owner + two-factor required)"
-        >
-          <Link to="/activation-approvals">Approvals</Link>
-        </Button>
-      )}
-      {ready && user && (
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={busy}
-          aria-label="Sign out"
-          title="Sign out"
-          onClick={async () => {
-            setBusy(true);
-            setError("");
-            try {
-              await query.cancelQueries();
-              query.clear();
-              const result = await supabase.auth.signOut();
-              if (result.error) {
-                setError("Sign-out failed. Retry before leaving this device.");
-                return;
-              }
-              await navigate({ to: "/auth", replace: true });
-            } catch {
-              setError("Sign-out failed. Retry before leaving this device.");
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <LogOut size={16} />
-        </Button>
-      )}
+    );
+
+  return (
+    <div className="flex items-center gap-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs" disabled={busy}>
+            <UserRound size={16} aria-hidden />
+            <span className="hidden sm:inline">Account</span>
+            <span className="sr-only sm:hidden">Account menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64 border-gold/25 p-2">
+          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+            Signed in
+          </DropdownMenuLabel>
+          {ACCOUNT_LINKS.map((l) => (
+            <DropdownMenuItem key={l.to} asChild>
+              <Link to={l.to} className="py-2.5">
+                {l.label}
+              </Link>
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={busy}
+            onSelect={(e) => {
+              e.preventDefault();
+              void signOut();
+            }}
+            className="gap-2 py-2.5"
+          >
+            <LogOut size={14} aria-hidden />
+            {busy ? "Signing out…" : "Sign out"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {error && (
         <span role="alert" className="max-w-36 text-xs text-warning">
           {error}
