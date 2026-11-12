@@ -103,6 +103,8 @@ export const DEFAULT_MOBILE_PERMISSIONS: DockPermission[] = [
   "status.read",
   "jobs.propose",
   "stop.engage",
+  "cloud.read",
+  "jobs.pause",
 ];
 
 /* ---------------- Pairing code ---------------- */

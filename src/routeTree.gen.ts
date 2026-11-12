@@ -99,6 +99,9 @@ import { Route as ApiPublicJobsRazulObserveRouteImport } from './routes/api/publ
 import { Route as ApiPublicOmniHealthRouteImport } from './routes/api/public/omni/health'
 import { Route as ApiPublicOmniJobsRouteImport } from './routes/api/public/omni/jobs'
 import { Route as ApiPublicRazulSentinelReportRouteImport } from './routes/api/public/razul-sentinel/report'
+import { Route as ApiPublicOmniDockAuditRouteImport } from './routes/api/public/omni/dock/audit'
+import { Route as ApiPublicOmniDockCloudRouteImport } from './routes/api/public/omni/dock/cloud'
+import { Route as ApiPublicOmniDockControlRouteImport } from './routes/api/public/omni/dock/control'
 import { Route as ApiPublicOmniDockHeartbeatRouteImport } from './routes/api/public/omni/dock/heartbeat'
 import { Route as ApiPublicOmniDockJobsRouteImport } from './routes/api/public/omni/dock/jobs'
 import { Route as ApiPublicOmniDockJobsStatusRouteImport } from './routes/api/public/omni/dock/jobs-status'
@@ -561,6 +564,22 @@ const ApiPublicRazulSentinelReportRoute =
     path: '/api/public/razul-sentinel/report',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOmniDockAuditRoute = ApiPublicOmniDockAuditRouteImport.update({
+  id: '/api/public/omni/dock/audit',
+  path: '/api/public/omni/dock/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOmniDockCloudRoute = ApiPublicOmniDockCloudRouteImport.update({
+  id: '/api/public/omni/dock/cloud',
+  path: '/api/public/omni/dock/cloud',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOmniDockControlRoute =
+  ApiPublicOmniDockControlRouteImport.update({
+    id: '/api/public/omni/dock/control',
+    path: '/api/public/omni/dock/control',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicOmniDockHeartbeatRoute =
   ApiPublicOmniDockHeartbeatRouteImport.update({
     id: '/api/public/omni/dock/heartbeat',
@@ -679,6 +698,9 @@ export interface FileRoutesByFullPath {
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
+  '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
+  '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
+  '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
   '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
@@ -775,6 +797,9 @@ export interface FileRoutesByTo {
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
+  '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
+  '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
+  '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
   '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
@@ -873,6 +898,9 @@ export interface FileRoutesById {
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
+  '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
+  '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
+  '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
   '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
@@ -971,6 +999,9 @@ export interface FileRouteTypes {
     | '/api/public/omni/health'
     | '/api/public/omni/jobs'
     | '/api/public/razul-sentinel/report'
+    | '/api/public/omni/dock/audit'
+    | '/api/public/omni/dock/cloud'
+    | '/api/public/omni/dock/control'
     | '/api/public/omni/dock/heartbeat'
     | '/api/public/omni/dock/jobs'
     | '/api/public/omni/dock/jobs-status'
@@ -1067,6 +1098,9 @@ export interface FileRouteTypes {
     | '/api/public/omni/health'
     | '/api/public/omni/jobs'
     | '/api/public/razul-sentinel/report'
+    | '/api/public/omni/dock/audit'
+    | '/api/public/omni/dock/cloud'
+    | '/api/public/omni/dock/control'
     | '/api/public/omni/dock/heartbeat'
     | '/api/public/omni/dock/jobs'
     | '/api/public/omni/dock/jobs-status'
@@ -1164,6 +1198,9 @@ export interface FileRouteTypes {
     | '/api/public/omni/health'
     | '/api/public/omni/jobs'
     | '/api/public/razul-sentinel/report'
+    | '/api/public/omni/dock/audit'
+    | '/api/public/omni/dock/cloud'
+    | '/api/public/omni/dock/control'
     | '/api/public/omni/dock/heartbeat'
     | '/api/public/omni/dock/jobs'
     | '/api/public/omni/dock/jobs-status'
@@ -1256,6 +1293,9 @@ export interface RootRouteChildren {
   ApiPublicOmniHealthRoute: typeof ApiPublicOmniHealthRoute
   ApiPublicOmniJobsRoute: typeof ApiPublicOmniJobsRoute
   ApiPublicRazulSentinelReportRoute: typeof ApiPublicRazulSentinelReportRoute
+  ApiPublicOmniDockAuditRoute: typeof ApiPublicOmniDockAuditRoute
+  ApiPublicOmniDockCloudRoute: typeof ApiPublicOmniDockCloudRoute
+  ApiPublicOmniDockControlRoute: typeof ApiPublicOmniDockControlRoute
   ApiPublicOmniDockHeartbeatRoute: typeof ApiPublicOmniDockHeartbeatRoute
   ApiPublicOmniDockJobsRoute: typeof ApiPublicOmniDockJobsRoute
   ApiPublicOmniDockJobsStatusRoute: typeof ApiPublicOmniDockJobsStatusRoute
@@ -1895,6 +1935,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicRazulSentinelReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/omni/dock/audit': {
+      id: '/api/public/omni/dock/audit'
+      path: '/api/public/omni/dock/audit'
+      fullPath: '/api/public/omni/dock/audit'
+      preLoaderRoute: typeof ApiPublicOmniDockAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/dock/cloud': {
+      id: '/api/public/omni/dock/cloud'
+      path: '/api/public/omni/dock/cloud'
+      fullPath: '/api/public/omni/dock/cloud'
+      preLoaderRoute: typeof ApiPublicOmniDockCloudRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/dock/control': {
+      id: '/api/public/omni/dock/control'
+      path: '/api/public/omni/dock/control'
+      fullPath: '/api/public/omni/dock/control'
+      preLoaderRoute: typeof ApiPublicOmniDockControlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/omni/dock/heartbeat': {
       id: '/api/public/omni/dock/heartbeat'
       path: '/api/public/omni/dock/heartbeat'
@@ -2039,6 +2100,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOmniHealthRoute: ApiPublicOmniHealthRoute,
   ApiPublicOmniJobsRoute: ApiPublicOmniJobsRoute,
   ApiPublicRazulSentinelReportRoute: ApiPublicRazulSentinelReportRoute,
+  ApiPublicOmniDockAuditRoute: ApiPublicOmniDockAuditRoute,
+  ApiPublicOmniDockCloudRoute: ApiPublicOmniDockCloudRoute,
+  ApiPublicOmniDockControlRoute: ApiPublicOmniDockControlRoute,
   ApiPublicOmniDockHeartbeatRoute: ApiPublicOmniDockHeartbeatRoute,
   ApiPublicOmniDockJobsRoute: ApiPublicOmniDockJobsRoute,
   ApiPublicOmniDockJobsStatusRoute: ApiPublicOmniDockJobsStatusRoute,
