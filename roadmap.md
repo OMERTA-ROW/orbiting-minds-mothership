@@ -349,3 +349,12 @@ First staged pilot (one project only; owner selection pending):
 - [x] Grouped navigation (Projects, Agents, Approvals, Connections, Settings, Advanced), status badges with tooltips, single Account menu; simplified home with Advanced view. All earlier pages remain reachable (test).
 - [ ] "Continue with Lovable" server-side availability unverified — no account has used it.
 - [ ] Owner verifies authenticator code and creates recovery codes (0 exist) — owner's phone needed.
+
+## OMNI readiness increment (2026-11-12)
+- [x] Audited terminal lock: page opens for the owner at two-step level; agent workspace locked because no handshake/self-test ever recorded, 0/10 approvals, self-test switch unset. Typecheck clean.
+- [x] Terminal shows one of five states (Stopped, Not authorized, Not connected, No device docked, Read-only) with a numbered checklist; locked screen names the failing sign-in gate and offers code entry; read-only "Check" replaces "Run".
+- [x] Per-agent memory (owner-only save/list/delete, one agent per call, source + fingerprint, metadata-only audit). Not read by any agent or Railway.
+- [x] `docs/OMNI-BACKEND-CONTRACT.md`: GitHub/Railway/Lovable roles, signed contracts, sandbox prerequisites, local shell recovery.
+- [ ] Railway: `omni.workspace/v1` endpoint + isolated sandbox per contract §4 — blocked on OMNI/Railway work outside this project.
+- [ ] Owner records approvals 1–10, then sets `JACKBOY_LINK_SELF_TEST_ENABLED` and runs handshake + self-test — owner decision.
+- [ ] `omni.memory/v1` read path for agents — design only; needs owner approval and a tested build.
