@@ -460,15 +460,14 @@ export const decideStep = createServerFn({ method: "POST" })
         if (gated) throw new Error("This step needs a passkey approval in Approvals waiting.");
         ({ job_id: jobId, remote_id: remoteId, session_id: sessionId, agent_id: agentId } = s);
       } else throw new Error("Nothing to decide.");
+      const { gate, link } = await ws.gateFor(db, admin, uid, true);
+      if (data.approve && !gate.open) throw new Error(`Not sent: ${gate.blockers[0] ?? "not connected"}`);
       await admin.from("omni_agent_steps").update({ status: data.approve ? "approved" : "rejected", decided_at: new Date().toISOString() }).eq("job_id", jobId).eq("remote_id", remoteId);
       await ws.audit(admin, { actor: "owner", event: data.approve ? "step_approved" : "step_rejected", agentId, sessionId, jobId, detail: { remoteId } });
-      const { gate, link } = await ws.gateFor(db, admin, uid, true);
       if (gate.open) {
         const { agent } = await ws.activeSession(db, admin, sessionId);
         const reply = await ws.relay(link, "step.decide", { sessionId, jobId, stepId: remoteId, approve: data.approve });
         await ws.ingest(admin, db, agent, sessionId, jobId, reply);
-      } else if (data.approve) {
-        throw new Error(`Recorded, but not sent: ${gate.blockers[0] ?? "not connected"}.`);
       }
       return { ok: true as const };
     } catch (e) {
