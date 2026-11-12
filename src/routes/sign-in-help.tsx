@@ -154,7 +154,7 @@ function SignInHelp() {
       <section aria-labelledby="owner-h" className="space-y-3">
         <h2 id="owner-h" className="text-xl text-foreground">Owner: set up two-factor</h2>
         <ol className="space-y-3 text-muted-foreground">
-          <Step>Sign in with the owner email (the owner role is already claimed; it can't be given to anyone else).</Step>
+          <Step>Sign in with the owner email. The owner role belongs to one configured, confirmed email and can't be handed to anyone else.</Step>
           <Step>
             Open <Link to="/account-security" className="text-gold-light underline underline-offset-4">Two-factor & recovery</Link>. If it says
             “Not set up”, press <strong className="text-foreground">Set up authenticator app</strong> and scan the QR code.

@@ -73,6 +73,7 @@ import { Route as RoboticsRouteImport } from './routes/robotics'
 import { Route as SandboxRouteImport } from './routes/sandbox'
 import { Route as SdkRouteImport } from './routes/sdk'
 import { Route as SecurityReportRouteImport } from './routes/security-report'
+import { Route as SignInHelpRouteImport } from './routes/sign-in-help'
 import { Route as TrustRouteImport } from './routes/trust'
 import { Route as UniverseRouteImport } from './routes/universe'
 import { Route as UpdatesRouteImport } from './routes/updates'
@@ -423,6 +424,11 @@ const SecurityReportRoute = SecurityReportRouteImport.update({
   path: '/security-report',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignInHelpRoute = SignInHelpRouteImport.update({
+  id: '/sign-in-help',
+  path: '/sign-in-help',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrustRoute = TrustRouteImport.update({
   id: '/trust',
   path: '/trust',
@@ -647,6 +653,7 @@ export interface FileRoutesByFullPath {
   '/sandbox': typeof SandboxRoute
   '/sdk': typeof SdkRoute
   '/security-report': typeof SecurityReportRoute
+  '/sign-in-help': typeof SignInHelpRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
@@ -742,6 +749,7 @@ export interface FileRoutesByTo {
   '/sandbox': typeof SandboxRoute
   '/sdk': typeof SdkRoute
   '/security-report': typeof SecurityReportRoute
+  '/sign-in-help': typeof SignInHelpRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
@@ -839,6 +847,7 @@ export interface FileRoutesById {
   '/sandbox': typeof SandboxRoute
   '/sdk': typeof SdkRoute
   '/security-report': typeof SecurityReportRoute
+  '/sign-in-help': typeof SignInHelpRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
@@ -936,6 +945,7 @@ export interface FileRouteTypes {
     | '/sandbox'
     | '/sdk'
     | '/security-report'
+    | '/sign-in-help'
     | '/trust'
     | '/universe'
     | '/updates'
@@ -1031,6 +1041,7 @@ export interface FileRouteTypes {
     | '/sandbox'
     | '/sdk'
     | '/security-report'
+    | '/sign-in-help'
     | '/trust'
     | '/universe'
     | '/updates'
@@ -1127,6 +1138,7 @@ export interface FileRouteTypes {
     | '/sandbox'
     | '/sdk'
     | '/security-report'
+    | '/sign-in-help'
     | '/trust'
     | '/universe'
     | '/updates'
@@ -1224,6 +1236,7 @@ export interface RootRouteChildren {
   SandboxRoute: typeof SandboxRoute
   SdkRoute: typeof SdkRoute
   SecurityReportRoute: typeof SecurityReportRoute
+  SignInHelpRoute: typeof SignInHelpRoute
   TrustRoute: typeof TrustRoute
   UniverseRoute: typeof UniverseRoute
   UpdatesRoute: typeof UpdatesRoute
@@ -1700,6 +1713,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sign-in-help': {
+      id: '/sign-in-help'
+      path: '/sign-in-help'
+      fullPath: '/sign-in-help'
+      preLoaderRoute: typeof SignInHelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/trust': {
       id: '/trust'
       path: '/trust'
@@ -1999,6 +2019,7 @@ const rootRouteChildren: RootRouteChildren = {
   SandboxRoute: SandboxRoute,
   SdkRoute: SdkRoute,
   SecurityReportRoute: SecurityReportRoute,
+  SignInHelpRoute: SignInHelpRoute,
   TrustRoute: TrustRoute,
   UniverseRoute: UniverseRoute,
   UpdatesRoute: UpdatesRoute,
