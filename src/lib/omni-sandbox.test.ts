@@ -31,7 +31,7 @@ describe("sandbox self-test verdict", () => {
     expect(evaluateSandboxHealth({ ...healthy, limits: { ...healthy.limits, commandTimeoutSec: 301 } }).passed).toBe(false);
     expect(evaluateSandboxHealth({ ...healthy, limits: { ...healthy.limits, idleMinutes: 11 } }).passed).toBe(false);
   });
-  it("refuses a sandbox that reports autonomy on or merging", () => {
+  it("refuses a sandbox that reports an unknown autonomy mode or merging", () => {
     const r = remoteReply.safeParse({ contract: "omni.workspace/v1", requestNonce: "n", health: { ...healthy, autonomy: "on" } });
     expect(r.success).toBe(false);
     const m = remoteReply.safeParse({ contract: "omni.workspace/v1", requestNonce: "n", health: { ...healthy, merge: "allowed" } });
