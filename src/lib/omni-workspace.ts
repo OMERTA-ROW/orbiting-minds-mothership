@@ -70,7 +70,10 @@ export const startSessionInput = z
     repository: z.string().trim().regex(REPOSITORY, "Use owner/repository.").max(200).optional(),
     ref: z.string().trim().regex(GIT_REF, "Use a branch name.").optional(),
   })
-  .refine((s) => !s.ref || s.repository, { message: "Pick a repository for that branch.", path: ["ref"] });
+  .refine((s) => !s.ref || s.repository, {
+    message: "Pick a repository for that branch.",
+    path: ["ref"],
+  });
 export const prInput = z.object({ sessionId: uuid, title: z.string().trim().min(3).max(120) });
 export const chatInput = z.object({ sessionId: uuid, text: z.string().trim().min(1).max(4000) });
 export const commandInput = z.object({
@@ -132,7 +135,10 @@ export function workspaceGate(g: GateInput): Gate {
 }
 
 export type SessionTimes = { startedAt: number; lastActivityAt: number; endedAt: number | null };
-export function sessionEndReason(s: SessionTimes, now: number): null | "timeout" | "max_age" | "ended" {
+export function sessionEndReason(
+  s: SessionTimes,
+  now: number,
+): null | "timeout" | "max_age" | "ended" {
   if (s.endedAt !== null) return "ended";
   if (now - s.startedAt >= SESSION_MAX_MS) return "max_age";
   if (now - s.lastActivityAt >= IDLE_LIMIT_MS) return "timeout";
@@ -232,7 +238,9 @@ export const sandboxHealth = z.object({
     .max(4),
   github: z.object({
     configured: z.boolean(),
-    repositories: z.array(z.object({ fullName: z.string().regex(REPOSITORY).max(200), access: z.boolean() })).max(20),
+    repositories: z
+      .array(z.object({ fullName: z.string().regex(REPOSITORY).max(200), access: z.boolean() }))
+      .max(20),
     checkedAt: z.string().max(40).nullable(),
   }),
   /** "windowed" = the sandbox implements time-bounded autonomy (contract v0.2). */
@@ -259,11 +267,14 @@ export const SANDBOX_CEILINGS = {
 /** Self-test passes only when isolation is proven by the live probe and every limit is within ceilings. */
 export function evaluateSandboxHealth(h: SandboxHealth): { passed: boolean; failures: string[] } {
   const f: string[] = [];
-  if (h.isolation.network !== "isolated") f.push("Commands can reach the network; isolation is required.");
+  if (h.isolation.network !== "isolated")
+    f.push("Commands can reach the network; isolation is required.");
   if (h.isolation.uid <= 0) f.push("Commands run as root.");
   if (!h.isolation.perSessionUser) f.push("Sessions share one user account.");
   if (h.isolation.probeExitCode !== 0) f.push("The sandbox probe command did not finish cleanly.");
-  const extra = h.isolation.envNames.filter((n) => !(SANDBOX_ENV_ALLOWED as readonly string[]).includes(n));
+  const extra = h.isolation.envNames.filter(
+    (n) => !(SANDBOX_ENV_ALLOWED as readonly string[]).includes(n),
+  );
   if (extra.length) f.push(`Commands can see extra settings: ${extra.slice(0, 5).join(", ")}.`);
   for (const [k, max] of Object.entries(SANDBOX_CEILINGS)) {
     const v = h.limits[k as keyof typeof SANDBOX_CEILINGS];
@@ -331,25 +342,37 @@ export function autonomyGates(e: AutonomyEvidence): { allowed: boolean; gates: A
       id: "signed_self_test",
       label: "Signed sandbox connection and self-test (last 24 h)",
       ok: fresh(e.sandboxSelfTestPassedAt, SELF_TEST_VALID_MS),
-      detail: e.sandboxSelfTestPassedAt ? "Recorded from a proof-checked reply." : "No passing self-test recorded.",
+      detail: e.sandboxSelfTestPassedAt
+        ? "Recorded from a proof-checked reply."
+        : "No passing self-test recorded.",
     },
     {
       id: "isolation",
       label: "Isolated shell: no network, per-session user, no leaked settings",
       ok: Boolean(verdict?.passed && h?.isolation.perSessionUser),
-      detail: verdict ? (verdict.passed ? "Live probe passed." : verdict.failures[0]!) : "No health report.",
+      detail: verdict
+        ? verdict.passed
+          ? "Live probe passed."
+          : verdict.failures[0]!
+        : "No health report.",
     },
     {
       id: "sandbox_autonomy",
       label: "Sandbox implements time-bounded autonomy (contract v0.2)",
       ok: h?.autonomy === "windowed",
-      detail: h ? (h.autonomy === "windowed" ? "Reported by the sandbox." : "Sandbox reports autonomy off (reference v0.1 always waits for approval).") : "No health report.",
+      detail: h
+        ? h.autonomy === "windowed"
+          ? "Reported by the sandbox."
+          : "Sandbox reports autonomy off (reference v0.1 always waits for approval)."
+        : "No health report.",
     },
     {
       id: "stop_drill",
       label: "Live stop drill passed (last 24 h)",
       ok: fresh(e.stopDrillPassedAt, STOP_DRILL_VALID_MS),
-      detail: e.stopDrillPassedAt ? "A running sandbox command was stopped and confirmed." : "Run the stop drill in an open session.",
+      detail: e.stopDrillPassedAt
+        ? "A running sandbox command was stopped and confirmed."
+        : "Run the stop drill in an open session.",
     },
     {
       id: "spend_meter",
@@ -360,7 +383,9 @@ export function autonomyGates(e: AutonomyEvidence): { allowed: boolean; gates: A
     {
       id: "agent",
       label: "Agent enrolled, not paused, and not Jackboy",
-      ok: e.agent.status === "enrolled" && !(AUTONOMY_EXCLUDED_AGENTS as readonly string[]).includes(e.agent.id),
+      ok:
+        e.agent.status === "enrolled" &&
+        !(AUTONOMY_EXCLUDED_AGENTS as readonly string[]).includes(e.agent.id),
       detail: (AUTONOMY_EXCLUDED_AGENTS as readonly string[]).includes(e.agent.id)
         ? "Jackboy CODE keeps its own controls; Mothership never grants it autonomy."
         : `Status: ${e.agent.status}.`,
@@ -368,16 +393,28 @@ export function autonomyGates(e: AutonomyEvidence): { allowed: boolean; gates: A
     {
       id: "approval_gates",
       label: "Merge, deploy, publish, secrets, GitHub, network and PRs still need you",
-      ok: ["merge", "deploy", "publish", "secrets", "github_permissions", "network", "pull_request"].every((g) =>
-        (GATED_ACTIONS as readonly string[]).includes(g),
-      ) && h?.merge === "never",
+      ok:
+        [
+          "merge",
+          "deploy",
+          "publish",
+          "secrets",
+          "github_permissions",
+          "network",
+          "pull_request",
+        ].every((g) => (GATED_ACTIONS as readonly string[]).includes(g)) && h?.merge === "never",
       detail: "Gated steps always wait for your passkey, even in Autonomous Mode.",
     },
     {
       id: "controls",
       label: "Emergency Stop released and terminal enabled",
       ok: e.emergencyStopReleased === true && e.killSwitchEnabled === true,
-      detail: e.emergencyStopReleased !== true ? "Emergency Stop engaged or unreadable." : e.killSwitchEnabled !== true ? "Kill switch has the terminal off." : "OK.",
+      detail:
+        e.emergencyStopReleased !== true
+          ? "Emergency Stop engaged or unreadable."
+          : e.killSwitchEnabled !== true
+            ? "Kill switch has the terminal off."
+            : "OK.",
     },
     {
       id: "passkey",

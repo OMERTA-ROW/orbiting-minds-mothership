@@ -441,7 +441,11 @@ export function OmniTerminal() {
               {item.ok ? (
                 <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
               ) : (
-                <CircleDashed size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
+                <CircleDashed
+                  size={16}
+                  className="mt-0.5 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
               )}
               <div className="space-y-0.5">
                 <div className="font-medium text-foreground">

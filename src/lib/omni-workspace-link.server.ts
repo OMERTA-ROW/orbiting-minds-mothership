@@ -65,8 +65,12 @@ export async function workspaceRequest(
   const text = await readCapped(res);
   if (res.status === 401 || res.status === 403) throw new Error("OMNI rejected the signature.");
   if (res.status === 404) throw new Error("OMNI has no workspace endpoint yet.");
-  if (res.status !== 200 && res.status !== 202 && res.status !== 409) throw new Error(`OMNI error (HTTP ${res.status}).`);
-  const expected = hmac(config.secret, `${WORKSPACE_CONTRACT}\nresponse\n${nonce}\n${res.status}\n${text}`);
+  if (res.status !== 200 && res.status !== 202 && res.status !== 409)
+    throw new Error(`OMNI error (HTTP ${res.status}).`);
+  const expected = hmac(
+    config.secret,
+    `${WORKSPACE_CONTRACT}\nresponse\n${nonce}\n${res.status}\n${text}`,
+  );
   const got = Buffer.from(res.headers.get("x-omni-proof") || "", "utf8");
   const want = Buffer.from(expected, "utf8");
   if (got.length !== want.length || !timingSafeEqual(got, want))
@@ -78,8 +82,12 @@ export async function workspaceRequest(
     throw new Error("OMNI reply is not valid.");
   }
   const reply = remoteReply.safeParse(parsed);
-  if (!reply.success || reply.data.requestNonce !== nonce) throw new Error("OMNI reply is not valid.");
+  if (!reply.success || reply.data.requestNonce !== nonce)
+    throw new Error("OMNI reply is not valid.");
   // 409 is a signed refusal: its reason is shown, nothing ran.
-  if (res.status === 409) throw new Error(`OMNI refused: ${(reply.data.error ?? "no reason given").replace(/[^\x20-\x7E]/g, " ")}`);
+  if (res.status === 409)
+    throw new Error(
+      `OMNI refused: ${(reply.data.error ?? "no reason given").replace(/[^\x20-\x7E]/g, " ")}`,
+    );
   return reply.data;
 }
