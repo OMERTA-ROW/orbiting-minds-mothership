@@ -29,6 +29,7 @@ const BLOCKED_SEGMENTS = new Set([
   ".omni-undo",
 ]);
 
+// eslint-disable-next-line no-control-regex -- intentionally rejects control characters in paths
 const CONTROL = /[\u0000-\u001f\u007f]/;
 
 /** A grant must be a folder at least one level inside a macOS home folder, e.g. /Users/me/Downloads. */
