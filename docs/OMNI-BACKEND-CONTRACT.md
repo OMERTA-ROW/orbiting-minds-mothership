@@ -119,3 +119,28 @@ Windows are 15, 30 or 60 minutes. The database (migration 0047) also refuses any
 6. Keep per-agent queues separate: one agent's job never reads another agent's session directory, history or memory.
 
 Until then the Mothership always sends `autonomous: false`.
+
+
+## OMNI CODE supervised queue and Mac companion (designed; nothing connected)
+
+OMNI is the motor; CODE is its terminal/coding engine. **Always-on** = the service may pick up jobs the owner already authorized, continuously, inside these limits. It is not unlimited shell privilege and not standing approval of destructive work. Jackboy's autonomous mode stays OFF independently and Jackboy jobs are refused by the queue.
+
+**Queue (`omni_code_jobs`, migration 0048)** — states `queued → leased → running → succeeded`, with `awaiting_approval`, `retry_wait`, `paused`, `failed`, `stopped`, `cancelled`.
+- Bounded concurrency: default 3 at once (max 5), 2 per agent (max 3), 20 starts per agent per hour (max 60).
+- Leases last 120 s and are renewed by checkpoints. An expired lease returns the job to `queued` and it resumes from its last checkpoint. An interrupted destructive job goes back to the owner instead of resuming.
+- Retries: retryable failures back off 30 s, 60 s, 120 s… (max 15 min), at most 3 attempts (max 5). Destructive jobs are never retried automatically.
+- Spend: the existing $1/task, $5/day, $10 total caps and per-agent budgets apply to every billed step.
+- Idle scheduling: optional allowed hours; Mac jobs run only while the companion reports the Mac idle ≥ N minutes (default 10).
+- Always-on authorization lasts at most 24 h and is renewed with a passkey. The database refuses a lease while it is off or expired, while Emergency Stop is engaged or unreadable, while the kill switch is off, for a paused agent, for Jackboy, during retry back-off, or for an unapproved file change. Emergency Stop or kill switch: always-on off and active jobs stopped. Agent pause: that agent's jobs paused.
+- Every event goes to append-only `omni_code_job_events`.
+- Per-agent memory stays in the existing owner-only per-agent store; a worker receives only the memory the owner attaches to that job.
+
+**Mac companion contract `omni.files/v1` (to be built in the companion, e.g. `omni_desktop`)**
+1. Docks through `omni.dock/v1` (device key, owner approval). No full disk access by default; it reads only owner-granted folders (`omni_mac_folder_grants`: a folder inside `/Users/<you>/`, never the home folder itself, `Library`, `Applications`, `.ssh`, `.gnupg`, `.aws`, `.config`, `.Trash` and similar; read-only or organize; 1–30 days; never widened; revocation permanent).
+2. Signed heartbeat at least every 60 s including idle seconds. No heartbeat = disconnected = no Mac jobs (fail closed).
+3. `inventory`: metadata only (path, size, modified time, folder/symlink flags) for one grant; never file contents.
+4. The Mothership builds a **dry-run plan**: create folders and move files by rule, rename on a name clash (`name (2).ext`). It never generates overwrite or delete. Symlinks, hidden files and anything outside the grant are skipped.
+5. Owner approves the exact plan (SHA-256 of the canonical plan). `overwrite` (old file kept in `.omni-undo/`) and `trash` (macOS Trash, never permanent delete) each need their own confirmation; the database refuses approval otherwise. Plans cannot be edited after creation.
+6. `apply`: the companion recomputes the digest, re-checks each file's size and modified time before each step (changed → skipped), stays inside the grant, refuses symlinks, and journals every step (`omni_file_journal`, append-only).
+7. `undo`: inverse steps newest-first (moves back, backups restored, Trash items put back, created folders removed only if empty), each re-checked first.
+8. Pause/Stop/Emergency Stop are honoured between every step.
