@@ -11,7 +11,7 @@
 
 ## Project rules
 - Prototype data stays separate from owned records; no live claims. SEO defaults to noindex; only approved leaves opt in.
-- Visual primitives live in `src/components/evo.tsx`; nav items in `src/components/SiteNav.tsx`, why: consistent design.
+- Visual primitives live in `src/components/evo.tsx`; nav groups/status badges in `src/components/nav-groups.ts`, every page reachable via a group or Advanced, why: consistent design without hiding features.
 - Cosmic art uses deterministic/static motion and accessible tokenized controls; homepage overlays share one image frame, why: alignment.
 - Pathways use internal streaming routes and request-local AI; secrets server-only, why: drafting is not execution.
 - Persist AI denial/credit blocks service-only; clear after owner confirmation, why: prevent billed retries across reloads/restarts.
@@ -60,3 +60,4 @@
 - OMNI Agent Workspace (on `/omni-terminal`) relays chat/commands only via the signed `omni.workspace/v1` link, after owner+aal2, single-use WebAuthn passkey checks, kill switch, Emergency Stop and a passed self-test (<24 h); server-side spend caps, append-only audit/ledger and gated actions always need the owner, why: the browser never holds secrets and readiness must precede execution.
 - Held OMNI Terminal tasks reach Jackboy only via the owner-triggered signed `jackboy.omni-handoff/v1` call (mirrors Jackboy's contract exactly; owner-entered Jackboy project id; fresh TOTP, Stop released, server-verified signed replies recorded service-only); Mothership never dispatches to OMNI or approves Jackboy jobs, and docked devices only read their own statuses, why: Jackboy stays the passkey/spend gatekeeper.
 - Owner TOTP setup confirms a code before enrollment counts; recovery needs verified owner email, a ≤10-minute sign-in and a single-use hash-only recovery code, then the server removes TOTP factors via the provider and ends other sessions; no-code accounts need project-admin removal, why: login/session alone must never reset or bypass MFA.
+- `/invite` is public and passes a validated token to `/auth` via sessionStorage; acceptance stays server-checked, why: the protected gate drops the URL.

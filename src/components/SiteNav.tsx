@@ -7,78 +7,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AccountButton } from "@/components/beta/AccountButton";
+import { StatusBadge } from "@/components/StatusBadge";
+import { advancedItems, navGroups, navItems } from "@/components/nav-groups";
 
-export const navItems = [
-  { to: "/", label: "Home" },
-  { to: "/launch-control", label: "Launch Control" },
-  { to: "/beta", label: "Private Beta Projects" },
-  { to: "/beta-omni", label: "OMNI · Authorized Beta" },
-  { to: "/mothership", label: "Mothership" },
-  { to: "/command-nexus", label: "Command Nexus · Demo" },
-  { to: "/omnibridge", label: "OmniBridge · Demo" },
-  { to: "/omni", label: "OMNI · Razul Central Intelligence" },
-  { to: "/omni-marketing", label: "OMNI Marketing · Local" },
-  { to: "/omni-gateway", label: "OMNI Coding Gateway · Blocked" },
-  { to: "/omni-agents", label: "OMNI Agent Registry · Concept" },
-  { to: "/omni-models", label: "OMNI Model Gateway · Declarations" },
-  { to: "/omni-api-keys", label: "API Keys · Owner" },
-  { to: "/omni-terminal", label: "OMNI Terminal · Owner" },
-  { to: "/omni-dock", label: "OMNI Docking Bay · Owner" },
-  { to: "/activation-approvals", label: "Activation Approvals · Owner" },
-  { to: "/omni-razul", label: "Razul Central Intelligence · Local" },
-  { to: "/angel-tech", label: "Angel Tech · Sabrina Concept" },
-  { to: "/omni-rights", label: "OMNI Rights · Local" },
-  { to: "/omni-legal", label: "Omni Legal · Synthetic" },
-  { to: "/entertainment", label: "Entertainment Galaxy · Demo" },
-  { to: "/cartoon-galaxy", label: "Cartoon Galaxy · Demo" },
-  { to: "/pathway", label: "AI Pathway" },
-  { to: "/code-exchange", label: "Code Exchange" },
-  { to: "/code-vault", label: "Code Vault · Demo" },
-  { to: "/commons", label: "Commons · Demo" },
-  { to: "/pulse", label: "Pulse · Local" },
-  { to: "/challenges", label: "Grand Challenges" },
-  { to: "/open-call", label: "Evolution Open Call" },
-  { to: "/embassy", label: "Agent Embassy" },
-  { to: "/agent-lounge", label: "Welcome Lounge · Demo" },
-  { to: "/incident-archives", label: "Incident Archives · Demo" },
-  { to: "/agent-debrief", label: "Agent Debrief · Demo" },
-  { to: "/guardian-incidents", label: "Incident Accountability · Demo" },
-  { to: "/report-incident", label: "Report Incident · Demo" },
-  { to: "/sdk", label: "SDK / API Docs" },
-  { to: "/discovery", label: "Discovery Radar" },
-  { to: "/digital-twin", label: "Digital Twin Lab" },
-  { to: "/robotics", label: "Robotics & Mobility Lab" },
-  { to: "/physical-safety", label: "Physical Safety Lock · Demo" },
-  { to: "/experiment-replay", label: "Oracle Experiment Replay · Demo" },
-  { to: "/approval-ledger", label: "Approval Ledger · Demo" },
-  { to: "/impact-scorecard", label: "Idea-to-Impact Scorecard · Demo" },
-  { to: "/trust", label: "Trust & Certification" },
-  { to: "/marketplace", label: "Creator Marketplace" },
-  { to: "/compute-grid", label: "Compute Grid" },
-  { to: "/releases", label: "Release Galaxy" },
-  { to: "/care", label: "Evolution CARE · Demo" },
-  { to: "/updates", label: "Update Engine · Demo" },
-  { to: "/pilot", label: "Evolution Pilot · Demo" },
-  { to: "/voice", label: "Mothership Voice · Demo" },
-  { to: "/care-agent", label: "Native Agent Reference" },
-  { to: "/universe", label: "Universe" },
-  { to: "/platform", label: "Evolution CLI · Planned" },
-  { to: "/knowledge-fusion", label: "Knowledge Fusion" },
-  { to: "/guardian", label: "Guardian" },
-  { to: "/devices", label: "My Devices · Demo" },
-  { to: "/fleet", label: "Fleet Control · Demo" },
-  { to: "/security-report", label: "Health & Security Report" },
-  { to: "/agents", label: "Agent Network" },
-  { to: "/sandbox", label: "Sandbox Lab" },
-  { to: "/roadmap", label: "Roadmap" },
-  { to: "/partnerships", label: "Partnerships" },
-  { to: "/dashboard", label: "Demo Dashboard" },
-  { to: "/arena", label: "Racing Arena · Simulation" },
-  { to: "/knowledge-brief", label: "Daily Knowledge Brief · Beta" },
-] as const;
+export { navItems };
 
 export function SiteNav() {
   const [open, setOpen] = useState(false);
@@ -90,13 +26,9 @@ export function SiteNav() {
     document.addEventListener("keydown", dismiss);
     return () => document.removeEventListener("keydown", dismiss);
   }, [open]);
-  const featured = navItems.filter((n) =>
-    ["/launch-control", "/beta", "/beta-omni"].includes(n.to),
-  );
-  const more = navItems.filter((n) => !featured.some((f) => f.to === n.to) && n.to !== "/");
   return (
     <header className="site-navigation sticky top-0 z-50 border-b border-border">
-      <div className="mx-auto flex h-[78px] max-w-[1600px] items-center justify-between gap-5 px-6 md:px-10">
+      <div className="mx-auto flex h-[78px] max-w-[1600px] items-center justify-between gap-5 px-4 sm:px-6 md:px-10">
         <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <img src="/favicon.svg" width={38} height={38} className="brand-mark" alt="" />
           <span>
@@ -106,53 +38,70 @@ export function SiteNav() {
             </span>
           </span>
         </Link>
-        <nav className="hidden items-center gap-7 xl:flex" aria-label="Main">
-          {featured.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              className="nav-link whitespace-nowrap"
-              activeProps={{ className: "is-current" }}
-            >
-              {n.label}
-            </Link>
+        <nav className="hidden items-center gap-6 lg:flex" aria-label="Main">
+          <Link
+            to="/"
+            className="nav-link whitespace-nowrap"
+            activeProps={{ className: "is-current" }}
+            activeOptions={{ exact: true }}
+          >
+            Home
+          </Link>
+          {navGroups.map((g) => (
+            <DropdownMenu key={g.id}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="nav-link h-auto gap-1 px-0">
+                  {g.label}
+                  <ChevronDown size={12} aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-80 border-gold/25 p-2">
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                  {g.blurb}
+                </DropdownMenuLabel>
+                {g.items.map((n) => (
+                  <DropdownMenuItem key={n.to} asChild>
+                    <Link to={n.to} className="flex items-center justify-between gap-3 py-2.5">
+                      <span>{n.label}</span>
+                      <StatusBadge status={n.status} tooltip={false} />
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           ))}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-auto px-0 text-xs text-muted-foreground">
-                More
-                <ChevronDown size={12} />
+              <Button variant="ghost" className="h-auto gap-1 px-0 text-xs text-muted-foreground">
+                Advanced
+                <ChevronDown size={12} aria-hidden />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-gold/25 p-2">
-              {more.map((n) => (
+            <DropdownMenuContent
+              align="end"
+              className="max-h-[70vh] w-72 overflow-y-auto border-gold/25 p-2"
+            >
+              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                Earlier modules, demos and references. Labels show what is simulated.
+              </DropdownMenuLabel>
+              {advancedItems.map((n) => (
                 <DropdownMenuItem key={n.to} asChild>
-                  <Link to={n.to} className="flex justify-between py-3">
+                  <Link to={n.to} className="flex justify-between py-2.5">
                     {n.label}
-                    <ArrowUpRight size={12} className="text-gold" />
+                    <ArrowUpRight size={12} className="text-gold" aria-hidden />
                   </Link>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </nav>
-        <div className="flex items-center gap-2">
-          <Button
-            asChild
-            variant="signal"
-            className="hidden h-10 rounded-sm px-3 text-xs sm:inline-flex"
-          >
-            <Link to="/pathway">
-              AI Pathway
-              <ArrowUpRight size={14} />
-            </Link>
-          </Button>
+        <div className="flex items-center gap-1 sm:gap-2">
           <PaletteTrigger />
           <AccountButton />
           <Button
             variant="ghost"
             size="icon"
-            className="border border-border text-gold-light xl:hidden"
+            className="border border-border text-gold-light lg:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls="mobile-navigation"
@@ -165,28 +114,67 @@ export function SiteNav() {
       {open && (
         <nav
           id="mobile-navigation"
-          className="absolute left-0 top-full max-h-[calc(100svh-78px)] w-full overflow-y-auto border-b border-border bg-background px-6 py-6 xl:hidden"
+          className="absolute left-0 top-full max-h-[calc(100svh-78px)] w-full overflow-y-auto border-b border-border bg-background px-5 py-6 lg:hidden"
           aria-label="Mobile"
         >
-          <div className="mx-auto grid max-w-3xl grid-cols-2 gap-x-6 gap-y-1">
-            {[...navItems, { to: "/join", label: "Join" } as const].map((n) => (
-              <Link
-                key={n.to}
-                to={n.to}
-                onClick={() => setOpen(false)}
-                className="border-b border-border py-3 text-xs text-muted-foreground hover:text-gold-light"
-                activeProps={{ className: "text-gold-light" }}
-                activeOptions={{ exact: true }}
-              >
-                {n.label}
-              </Link>
+          <div className="mx-auto max-w-3xl space-y-6">
+            <Link
+              to="/"
+              onClick={() => setOpen(false)}
+              className="block border-b border-border py-3 text-sm text-foreground"
+            >
+              Home
+            </Link>
+            {navGroups.map((g) => (
+              <section key={g.id} aria-labelledby={`mnav-${g.id}`}>
+                <h2 id={`mnav-${g.id}`} className="eyebrow">
+                  {g.label}
+                </h2>
+                <ul className="mt-2">
+                  {g.items.map((n) => (
+                    <li key={n.to}>
+                      <Link
+                        to={n.to}
+                        onClick={() => setOpen(false)}
+                        className="flex min-h-11 items-center justify-between gap-3 border-b border-border py-2 text-sm text-muted-foreground hover:text-gold-light"
+                        activeProps={{ className: "text-gold-light" }}
+                      >
+                        <span>{n.label}</span>
+                        <StatusBadge status={n.status} tooltip={false} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
+            <details className="group">
+              <summary className="eyebrow flex min-h-11 cursor-pointer items-center gap-2">
+                Advanced · all other areas
+                <ChevronDown size={12} className="transition group-open:rotate-180" aria-hidden />
+              </summary>
+              <ul className="mt-2 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+                {[...advancedItems, { to: "/join", label: "Join" } as const].map((n) => (
+                  <li key={n.to}>
+                    <Link
+                      to={n.to}
+                      onClick={() => setOpen(false)}
+                      className="block border-b border-border py-3 text-xs text-muted-foreground hover:text-gold-light"
+                      activeProps={{ className: "text-gold-light" }}
+                      activeOptions={{ exact: true }}
+                    >
+                      {n.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </details>
           </div>
         </nav>
       )}
     </header>
   );
 }
+
 
 export function SiteFooter() {
   return (

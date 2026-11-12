@@ -338,3 +338,10 @@ First staged pilot (one project only; owner selection pending):
 
 ## Owner authenticator (2026-11-12)
 - [ ] Owner checks the existing authenticator entry works, then creates and stores recovery codes — owner's phone needed.
+
+## Sign-in audit and simpler home (2026-11-12)
+- [x] Audited sign-in: Lovable Cloud auth with Google, email/password (email confirmation on) and the "Continue with Lovable" button; owner-only TOTP two-factor; owner-only app passkey for the OMNI Workspace. Recorded in `docs/AUTHENTICATION.md`.
+- [x] Guided `/sign-in-help` page; clearer sign-in/reset errors; invitation links now survive sign-in (`/invite` public, acceptance still server-checked).
+- [x] Grouped navigation (Projects, Agents, Approvals, Connections, Settings, Advanced), status badges with tooltips, single Account menu; simplified home with Advanced view. All earlier pages remain reachable (test).
+- [ ] "Continue with Lovable" server-side availability unverified — no account has used it.
+- [ ] Owner verifies authenticator code and creates recovery codes (0 exist) — owner's phone needed.
