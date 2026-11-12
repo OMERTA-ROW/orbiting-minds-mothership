@@ -1636,6 +1636,57 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_mfa_recovery_codes: {
+        Row: {
+          batch_id: string
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          batch_id: string
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          batch_id?: string
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      owner_mfa_recovery_events: {
+        Row: {
+          created_at: string
+          detail: string
+          event: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string
+          event: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string
+          event?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       razul_agent_feedback: {
         Row: {
           agent: string
@@ -2845,6 +2896,25 @@ export type Database = {
         }
       }
       omni_terminal_secret_like: { Args: { _text: string }; Returns: boolean }
+      owner_mfa_consume_recovery_code: {
+        Args: { _hash: string; _user: string }
+        Returns: string
+      }
+      owner_mfa_finish_recovery: {
+        Args: { _hash: string; _ok: boolean; _removed: number; _user: string }
+        Returns: undefined
+      }
+      owner_mfa_recovery_status: {
+        Args: never
+        Returns: {
+          created_at: string
+          remaining: number
+        }[]
+      }
+      owner_mfa_set_recovery_codes: {
+        Args: { _hashes: string[] }
+        Returns: number
+      }
       razul_configure: {
         Args: {
           _blocked_sources: string[]
