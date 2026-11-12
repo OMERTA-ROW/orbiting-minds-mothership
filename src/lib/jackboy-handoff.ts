@@ -131,7 +131,13 @@ export const replyOkSchema = z
     contract: z.literal(HANDOFF_CONTRACT),
     requestNonce: z.string().regex(/^[a-f0-9]{32}$/),
     jackboyJobId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
-    status: z.enum(JACKBOY_STATUSES),
+    // Any other value Jackboy reports is treated as "unknown", never as a known state.
+    status: z
+      .string()
+      .regex(/^[a-z_]{1,32}$/)
+      .transform((v): JackboyStatus =>
+        (JACKBOY_STATUSES as readonly string[]).includes(v) ? (v as JackboyStatus) : "unknown",
+      ),
   })
   .strict();
 
