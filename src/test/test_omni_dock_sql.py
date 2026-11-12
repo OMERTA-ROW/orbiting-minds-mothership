@@ -184,7 +184,7 @@ def main():
         for needle in ["pair_failed:denied", "pair_claimed:ok", "heartbeat:denied", "device_approved:ok", "job_held:ok", "stop_engage:ok", "device_revoked:ok"]:
             assert needle in events, needle
             checks += 1
-        assert owner("SELECT count(*) FROM public.razul_control_audit WHERE record_type='omni_dock';").splitlines()[-1] == '8'
+        assert owner("SELECT count(*) FROM public.razul_control_audit WHERE record_type='omni_dock';").splitlines()[-1] == '9'
 
         print(f"PASS: {checks} isolated SQL checks: service-only device functions, owner fresh-two-factor codes/approval/permissions, single-use codes, key reuse refusal, pending devices powerless, replay refusal, held-only device tasks, device stop engage only, revocation cascade, terminal idempotency fix, no direct writes, owner-only reads, audit. No hosted fixtures.")
     finally:
