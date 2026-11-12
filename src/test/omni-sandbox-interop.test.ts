@@ -1,4 +1,3 @@
-// @vitest-environment node
 /**
  * End-to-end on this machine (not Railway): Mothership's signed workspace client talks to the
  * reference sandbox service in services/omni-sandbox. Proves the contract, approval-before-run,
