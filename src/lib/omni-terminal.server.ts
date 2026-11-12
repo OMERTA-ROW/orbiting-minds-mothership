@@ -39,7 +39,7 @@ export async function loadTerminalSnapshot(
   userId: string,
   claims: Record<string, unknown>,
 ): Promise<Snapshot> {
-  const [controls, tasks, log, approvals, audit, access, runs, razulRun, razulState] =
+  const [controls, tasks, log, approvals, audit, access, runs, razulRun, razulState, dock, ws] =
     await Promise.all([
       db
         .from("omni_terminal_controls")
@@ -82,6 +82,8 @@ export async function loadTerminalSnapshot(
         .limit(1)
         .maybeSingle(),
       db.from("razul_job_state").select("paused_at").limit(1).maybeSingle(),
+      db.from("omni_dock_devices").select("status").limit(500),
+      db.from("omni_workspace_settings").select("terminal_enabled").eq("id", 1).maybeSingle(),
     ]);
   if (tasks.error || log.error || approvals.error || audit.error)
     throw new Error("Terminal records could not be read.");
@@ -117,5 +119,11 @@ export async function loadTerminalSnapshot(
     },
     tasks: tasks.data,
     log: log.data,
+    dock: {
+      paired: (dock.data ?? []).filter((d) => d.status === "paired").length,
+      pending: (dock.data ?? []).filter((d) => d.status === "pending").length,
+      known: !dock.error,
+    },
+    workspaceEnabled: ws.error ? null : ws.data ? ws.data.terminal_enabled === true : false,
   };
 }

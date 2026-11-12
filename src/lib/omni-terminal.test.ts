@@ -48,6 +48,8 @@ function snap(over: Partial<Snapshot> = {}): Snapshot {
     razul: { lastRunStatus: "partial", lastRunAt: "2026-11-07T12:00:00Z", paused: false },
     tasks: [],
     log: [],
+    dock: { paired: 0, pending: 0, known: true },
+    workspaceEnabled: false,
     ...over,
   };
 }
