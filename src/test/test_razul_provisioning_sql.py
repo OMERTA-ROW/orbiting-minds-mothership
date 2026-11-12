@@ -171,7 +171,6 @@ def main():
         assert sql("SELECT manifest_id FROM public.razul_agent_releases;") != m1
         decide(p4, "rollback")
         assert sql("SELECT manifest_id FROM public.razul_agent_releases;") == m1
-        # A stale proposal (active version changed since proposing) cannot stage.
         # History is append-only; proposals cannot be deleted; signed-in users cannot write directly.
         svc("DELETE FROM public.razul_provisioning_events;", ok=False)
         svc("UPDATE public.razul_provisioning_events SET event='x';", ok=False)
