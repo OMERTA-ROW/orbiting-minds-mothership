@@ -5,7 +5,9 @@ import { stopReleased } from "./omni-terminal";
 import { passkeyFreshAt } from "./omni-passkey.server";
 import type { WorkspaceAction } from "./omni-workspace-link.server";
 import {
+  AUTONOMY_VERIFIED_RELEASE,
   autonomyActive,
+  autonomyGates,
   budgetDecision,
   capHead,
   needsOwnerDecision,
@@ -252,4 +254,45 @@ export async function ingest(admin: Db, db: Db, agent: Agent, sessionId: string,
       })
       .eq("id", jobId);
   }
+}
+
+/** Last passing live stop drill (a running sandbox command stopped and confirmed). */
+export async function stopDrillPassedAt(admin: Db) {
+  const { data } = await admin
+    .from("omni_workspace_audit")
+    .select("at")
+    .eq("event", "autonomy_stop_drill_passed")
+    .order("at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.at ? Date.parse(data.at) : null;
+}
+
+/** Autonomy readiness for each agent from recorded, proof-checked evidence only. */
+export async function autonomyReadiness(
+  admin: Db,
+  link: Awaited<ReturnType<typeof linkState>>,
+  c: Awaited<ReturnType<typeof controls>>,
+  agents: Agent[],
+  passkeyFresh: boolean,
+) {
+  const drill = await stopDrillPassedAt(admin);
+  const health = link.lastCheck?.passed ? link.lastCheck.health : null;
+  const now = Date.now();
+  return Object.fromEntries(
+    agents.map((a) => [
+      a.id,
+      autonomyGates({
+        now,
+        verifiedRelease: AUTONOMY_VERIFIED_RELEASE,
+        sandboxSelfTestPassedAt: link.enabled && link.configured ? link.selfTestPassedAt : null,
+        sandboxHealth: health,
+        stopDrillPassedAt: drill,
+        emergencyStopReleased: c.emergencyStopReleased,
+        killSwitchEnabled: c.killSwitchEnabled,
+        passkeyFresh,
+        agent: { id: a.id, status: a.status, budget: { task: a.budget_task_cents, day: a.budget_day_cents, total: a.budget_total_cents } },
+      }),
+    ]),
+  );
 }

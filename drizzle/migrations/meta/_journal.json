@@ -330,6 +330,13 @@
       "when": 1794509241583,
       "tag": "0046_omni_cloud_shell_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1794510017595,
+      "tag": "0047_omni_autonomy_fail_closed_guards",
+      "breakpoints": true
     }
   ]
 }

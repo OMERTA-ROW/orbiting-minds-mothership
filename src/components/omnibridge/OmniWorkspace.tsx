@@ -18,6 +18,7 @@ import {
   readWorkspace,
   runCommand,
   runSandboxSelfTest,
+  runStopDrill,
   sendChat,
   setAutonomy,
   setKillSwitch,
@@ -77,6 +78,7 @@ export function OmniWorkspace() {
     agent: useServerFn(updateAgent),
     selfTest: useServerFn(runSandboxSelfTest),
     pr: useServerFn(proposePullRequest),
+    drill: useServerFn(runStopDrill),
   };
   const [snap, setSnap] = useState<Snap | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -211,6 +213,9 @@ export function OmniWorkspace() {
     return `Connected · ${p.model}${p.pricing ? "" : " · prices not set, chat refused"} · checked ${when(p.checkedAt)}`;
   };
   const repoOk = !repo || REPOSITORY.test(repo);
+  const ready = snap.autonomy[agentId];
+  // The passkey gate is asked for when you press the button, so it is not shown as missing here.
+  const missing = (ready?.gates ?? []).filter((g) => !g.ok && g.id !== "passkey");
 
   return (
     <section aria-label="OMNI agent workspace" className="space-y-4 rounded-lg border border-border bg-card p-4 md:p-5">
@@ -376,12 +381,48 @@ export function OmniWorkspace() {
             <select aria-label="Autonomous duration" className="rounded border border-border bg-background px-2 py-1" value={minutes} onChange={(e) => setMinutes(Number(e.target.value) as 15 | 30 | 60)}>
               {AUTONOMY_MINUTES.map((m) => <option key={m} value={m}>{m} min</option>)}
             </select>
-            <Button size="sm" variant="outline" disabled title="Autonomous Mode stays off in this release; every command needs your approval.">
-              Autonomous: OFF (locked)
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy || !ready?.allowed}
+              title={ready?.allowed ? "Needs your passkey" : `Locked: ${missing.length} gate(s) not met`}
+              onClick={() => withPasskey("autonomy", `Autonomous Mode on for ${minutes} min`, (checkId) => fns.auto({ data: { agentId, on: true, minutes, checkId } }))}
+            >
+              {ready?.allowed ? `Turn Autonomous on (${minutes} min)` : `Autonomous: OFF (locked · ${missing.length} missing)`}
             </Button>
           </>
         )}
       </div>
+
+      <details className="rounded border border-border p-3 text-sm">
+        <summary className="cursor-pointer font-medium">
+          Autonomous Mode readiness · {snap.agents.find((a) => a.id === agentId)?.display_name ?? agentId}: {missing.length ? `${missing.length} gate(s) missing — stays OFF` : "all recorded gates met"}
+        </summary>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Off by default. Windows are 15, 30 or 60 minutes and end on their own, on Stop, when the agent is paused, when the terminal is disabled or when Emergency Stop is engaged. Spending stays inside {fmtCents(GLOBAL_LIMITS.task)} per task, {fmtCents(GLOBAL_LIMITS.day)} per day and {fmtCents(GLOBAL_LIMITS.total)} total. Gated steps (merge, deploy, publish, secrets, GitHub permissions, network, pull requests) always wait for you. Jackboy CODE keeps its own controls.
+        </p>
+        <ul className="mt-2 space-y-1">
+          {(ready?.gates ?? []).map((g) => (
+            <li key={g.id} className="flex items-start gap-2">
+              {g.ok ? <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-primary" aria-label="met" /> : <CircleSlash size={14} className="mt-0.5 shrink-0 text-muted-foreground" aria-label="not met" />}
+              <span>
+                {g.label}
+                <span className="block text-xs text-muted-foreground">{g.detail}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2"
+          disabled={busy || !sessionId || !gateOpen}
+          title={!sessionId ? "Start a session first" : "Runs `sleep 30` in the sandbox, then stops it"}
+          onClick={() => sessionId && withPasskey("autonomy", "Stop drill", (checkId) => fns.drill({ data: { sessionId, checkId } }))}
+        >
+          Run live stop drill
+        </Button>
+      </details>
 
       {session?.repository && (
         <form

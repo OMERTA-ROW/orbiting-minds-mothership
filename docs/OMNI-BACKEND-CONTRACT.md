@@ -88,3 +88,34 @@ If a local OMNI/Evolution terminal seems stuck:
 4. Find a stuck program: `ps -ef | grep -i -E "omni|evolution"` (macOS/Linux) or Task Manager (Windows). Stop only the process you recognise, with `kill <PID>`; use `kill -9 <PID>` only if it ignores that.
 5. Check the companion: `evolution doctor` (or `omni doctor` if you installed it under that name). It reports problems and changes nothing.
 6. Never paste keys, recovery codes or authenticator codes into a terminal or chat while troubleshooting.
+
+
+## Autonomous Mode readiness (contract v0.2 — designed, not active)
+
+Autonomous Mode is **OFF** and cannot be turned on in this build. The Mothership turns it on for one agent only when every gate below is met **at that moment**, from recorded, proof-checked evidence (missing or unreadable evidence counts as not met):
+
+| Gate | Evidence the Mothership checks | Status today |
+|---|---|---|
+| Reviewed live verification | `AUTONOMY_VERIFIED_RELEASE` set in code after a reviewed live Railway run of every gate | **Missing** (null) |
+| Signed connection + self-test | A `sandbox_self_test_passed` audit row from a signed, proof-checked reply, last 24 h, `OMNI_SANDBOX_*` configured and enabled | **Missing** (not configured) |
+| Isolated shell | Self-test health: network `isolated`, per-session user, non-root, only allowed env names, limits within ceilings | **Missing** |
+| Sandbox supports windows | Health reports `autonomy: "windowed"` (reference service v0.1 reports `"off"` and always waits for approval) | **Missing** |
+| Live stop drill | `autonomy_stop_drill_passed`: owner-passkey run of `sleep 30`, sandbox reported `running`, then `stopped` within 3 s, last 24 h | **Missing** |
+| Spend meter | Agent task/day/total budgets above $0 and a verified provider with prices; overall caps stay $1/task, $5/day, $10 total | **Missing** (agent budgets $0) |
+| Agent | Enrolled, not paused, not Jackboy | **Missing** (agents paused; Jackboy never) |
+| Approval gates | Merge, deploy, publish, secrets, GitHub permissions, network and pull requests stay owner-gated; sandbox reports `merge: "never"` | Code ready; health not reported |
+| Controls | Emergency Stop released, terminal kill switch on | Depends on owner settings |
+| Passkey | Fresh single-use passkey check for purpose `autonomy` | Asked at the moment of turning on |
+
+Windows are 15, 30 or 60 minutes. The database (migration 0047) also refuses any other length, refuses Jackboy, refuses opening while Emergency Stop is engaged/unreadable, the kill switch is off or the agent is not enrolled, forbids extending/reassigning/reopening, and ends every open window when Emergency Stop is engaged, the kill switch is turned off, or the agent is paused. Per-agent Stop and global STOP also end windows.
+
+### What the sandbox must add for v0.2 (OMNI GitHub repo / Railway, not this project)
+
+1. Report `autonomy: "windowed"` only once implemented.
+2. Accept `autonomous: true` plus `autonomyExpiresAt` (ISO) on `command.run`/`chat.send`; re-check the expiry on **every** step server-side and fall back to waiting for `step.decide` once expired.
+3. Auto-run only plain shell commands inside the isolated session. Anything touching merge, deploy, publish, secrets, GitHub permissions, outside network or pull requests must still return a gated `pending_approval` step.
+4. Report `costCents` on every billed step; refuse a model call that would exceed the per-task budget sent by the Mothership.
+5. Honour `job.stop`/`agent.stop`/`session.end` immediately while autonomous, and reply `stopped` on the next poll.
+6. Keep per-agent queues separate: one agent's job never reads another agent's session directory, history or memory.
+
+Until then the Mothership always sends `autonomous: false`.

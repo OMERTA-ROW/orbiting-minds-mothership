@@ -2682,6 +2682,10 @@ export type Database = {
         Args: { _key_hash: string; _scope: string }
         Returns: string
       }
+      omni_autonomy_end_all: {
+        Args: { _agent: string; _reason: string }
+        Returns: undefined
+      }
       omni_dock_approve: {
         Args: { _device: string; _permissions: string[] }
         Returns: {

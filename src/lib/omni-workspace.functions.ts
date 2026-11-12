@@ -21,8 +21,9 @@ import {
   prInput,
   startSessionInput,
   stopInput,
-  AUTONOMY_ENABLED,
   evaluateSandboxHealth,
+  stopDrillInput,
+  STOP_DRILL_COMMAND,
 } from "./omni-workspace";
 
 type Ctx = {
@@ -65,6 +66,7 @@ export const readWorkspace = createServerFn({ method: "POST" })
       ws.spend(db),
     ]);
     const agentSpend = await Promise.all((agents.data ?? []).map(async (a) => [a.id, await ws.spend(db, a.id)] as const));
+    const autonomy = await ws.autonomyReadiness(admin, link, controls, agents.data ?? [], passkeyFreshAt !== null);
     return {
       now: Date.now(),
       gate,
@@ -81,6 +83,7 @@ export const readWorkspace = createServerFn({ method: "POST" })
       passkeyFreshAt,
       agents: agents.data ?? [],
       agentSpend: Object.fromEntries(agentSpend),
+      autonomy,
       spend: ledger,
       sessions: sessions.data ?? [],
       jobs: jobs.data ?? [],
@@ -415,13 +418,20 @@ export const setAutonomy = createServerFn({ method: "POST" })
         await ws.audit(admin, { actor: "owner", event: "autonomy_off", agentId: data.agentId });
         return { ok: true as const };
       }
-      if (!AUTONOMY_ENABLED) throw new Error("Autonomous Mode stays off in this release. Every command needs your approval.");
       if (!data.minutes) throw new Error("Pick 15, 30 or 60 minutes.");
+      const { data: agent } = await db.from("omni_agents").select("*").eq("id", data.agentId).maybeSingle();
+      if (!agent) throw new Error("This agent is not enrolled.");
+      // Every readiness gate is checked before the passkey is spent, then again after it.
+      const pre = await ws.gateFor(db, admin, uid, true);
+      const before = (await ws.autonomyReadiness(admin, pre.link, pre.controls, [agent], true))[agent.id]!;
+      const missing = before.gates.filter((g) => !g.ok);
+      if (missing.length) {
+        await ws.audit(admin, { actor: "owner", event: "autonomy_refused", agentId: agent.id, detail: { missing: missing.map((g) => g.id) } });
+        throw new Error(`Autonomous Mode stays off: ${missing.length} gate(s) not met — first: ${missing[0]!.label}.`);
+      }
       await pk.consumePasskeyCheck(admin, uid, data.checkId, ["autonomy"]);
       const { gate } = await ws.gateFor(db, admin, uid, true);
       if (!gate.open) throw new Error(gate.blockers[0] ?? "Not connected.");
-      const { data: agent } = await db.from("omni_agents").select("*").eq("id", data.agentId).maybeSingle();
-      if (!agent || agent.status !== "enrolled") throw new Error("This agent is not enrolled.");
       const budget = await ws.checkBudget(db, agent);
       if (!budget.allowed) throw new Error(budget.reason!);
       await ws.endAutonomy(admin, data.agentId, "replaced");
@@ -500,6 +510,61 @@ export const updateAgent = createServerFn({ method: "POST" })
       if (data.status !== "enrolled") await ws.endAutonomy(admin, data.agentId, "agent_paused");
       await ws.audit(admin, { actor: "owner", event: "agent_updated", agentId: data.agentId, detail: { ...data, checkId: undefined } });
       return { ok: true as const };
+    } catch (e) {
+      return fail(e);
+    }
+  });
+
+/**
+ * Live stop drill: runs one fixed harmless command (`sleep 30`) in an open sandbox session,
+ * stops it, and records a pass only when the sandbox's signed replies show it running and then
+ * stopped. Pressing the button with a passkey is the owner's approval of that one command.
+ */
+export const runStopDrill = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => stopDrillInput.parse(i))
+  .handler(async ({ context, data }) => {
+    const { db, admin, pk, ws, uid } = await owner(context);
+    try {
+      await pk.consumePasskeyCheck(admin, uid, data.checkId, ["autonomy"]);
+      const { gate, link } = await ws.gateFor(db, admin, uid, true);
+      if (!gate.open) throw new Error(gate.blockers[0] ?? "Not connected.");
+      const { agent } = await ws.activeSession(db, admin, data.sessionId);
+      const sessionId = data.sessionId;
+      const { data: job, error } = await admin
+        .from("omni_agent_jobs")
+        .insert({ agent_id: agent.id, session_id: sessionId, kind: "command", origin: "owner", input: STOP_DRILL_COMMAND, status: "queued" })
+        .select("id")
+        .single();
+      if (error || !job) throw new Error("Stop drill job could not be created.");
+      await ws.audit(admin, { actor: "owner", event: "autonomy_stop_drill_started", agentId: agent.id, sessionId, jobId: job.id });
+      const base = { sessionId, jobId: job.id, agentId: agent.id, autonomous: false };
+      const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      let failure: string | null = null;
+      try {
+        await ws.ingest(admin, db, agent, sessionId, job.id, await ws.relay(link, "command.run", { ...base, command: STOP_DRILL_COMMAND }));
+        await ws.ingest(admin, db, agent, sessionId, job.id, await ws.relay(link, "step.decide", { ...base, stepId: "cmd", approve: true }));
+        await admin.from("omni_agent_steps").update({ status: "approved", decided_at: new Date().toISOString() }).eq("job_id", job.id).eq("remote_id", "cmd");
+        await wait(800);
+        const running = await ws.relay(link, "events.poll", base);
+        await ws.ingest(admin, db, agent, sessionId, job.id, running);
+        if (running.job?.status !== "running") failure = `Command was not running before stop (status ${running.job?.status ?? "unknown"}).`;
+        await ws.relay(link, "job.stop", base);
+        let last = "unknown";
+        for (let i = 0; i < 8 && !failure; i++) {
+          await wait(400);
+          const r = await ws.relay(link, "events.poll", base);
+          await ws.ingest(admin, db, agent, sessionId, job.id, r);
+          last = r.job?.status ?? "unknown";
+          if (last === "stopped") break;
+        }
+        if (!failure && last !== "stopped") failure = `Sandbox did not confirm the stop within 3 seconds (status ${last}).`;
+      } catch (e) {
+        failure = e instanceof Error ? e.message : "Sandbox request failed.";
+      }
+      await admin.from("omni_agent_jobs").update({ status: failure ? "failed" : "stopped", ended_at: new Date().toISOString() }).eq("id", job.id).in("status", ["queued", "running"]);
+      await ws.audit(admin, { actor: "system", event: failure ? "autonomy_stop_drill_failed" : "autonomy_stop_drill_passed", agentId: agent.id, sessionId, jobId: job.id, detail: failure ? { failure } : {} });
+      return failure ? { ok: false as const, message: `Stop drill failed: ${failure}` } : { ok: true as const };
     } catch (e) {
       return fail(e);
     }
