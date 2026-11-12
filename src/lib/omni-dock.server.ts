@@ -27,6 +27,10 @@ import {
   sha256Hex,
   signingString,
   stopBodySchema,
+  auditBodySchema,
+  cloudBodySchema,
+  controlBodySchema,
+  type DockControl,
   type DockPublicJwk,
 } from "./omni-dock";
 
@@ -63,6 +67,12 @@ export interface DockStore {
   holdTask(device: string, job: import("zod").infer<typeof jobBodySchema>): Promise<Reply>;
   /** This device's own tasks with handoff status only; no instructions or output. */
   handoffStatus(device: string): Promise<unknown[] | null>;
+  /** Metadata-only cloud snapshot (no inputs, outputs or secrets); null when unreadable. */
+  cloudSnapshot(device: string, now: number): Promise<Record<string, unknown> | null>;
+  /** Metadata-only recent audit entries; null when unreadable. */
+  auditTail(device: string): Promise<unknown[] | null>;
+  /** Reductions only (pause/stop). Returns what changed, or a refusal reason. */
+  control(device: string, c: DockControl): Promise<Reply>;
 }
 
 export type DockResult = { status: number; body: Record<string, unknown> };
@@ -196,18 +206,24 @@ export async function handlePair(
   };
 }
 
-type SignedKind = "heartbeat" | "jobs" | "stop" | "jobsStatus";
+type SignedKind = "heartbeat" | "jobs" | "stop" | "jobsStatus" | "cloud" | "audit" | "control";
 const EVENT: Record<SignedKind, string> = {
   heartbeat: "heartbeat",
   jobs: "job_request",
   stop: "stop_request",
   jobsStatus: "jobs_status",
+  cloud: "cloud_read",
+  audit: "audit_read",
+  control: "control_request",
 };
 const SCHEMA = {
   heartbeat: heartbeatBodySchema,
   jobs: jobBodySchema,
   stop: stopBodySchema,
   jobsStatus: jobsStatusBodySchema,
+  cloud: cloudBodySchema,
+  audit: auditBodySchema,
+  control: controlBodySchema,
 };
 
 export async function handleSigned(
@@ -267,7 +283,7 @@ export async function handleSigned(
     paired && permissions.includes("status.read")
       ? {
           emergencyStop: engaged ? "engaged" : "released",
-          autonomy: { device: "off", omniCore: "off", jackboyCode: "off" },
+          autonomy: { device: "off", omniCore: "off", omniCode: "off", jackboyCode: "off" },
           executor: "none",
         }
       : {};
@@ -292,6 +308,32 @@ export async function handleSigned(
     const jobs = await store.handoffStatus(headers.device);
     if (!jobs) return fail(503, "unavailable");
     return { status: 200, body: { ...state, executor: "none", jobs } };
+  }
+
+  if (kind === "control") {
+    // Pausing and stopping work even while Emergency Stop is engaged: they only reduce activity.
+    if (!paired || !permissions.includes("jobs.pause")) {
+      await store.log(headers.device, "control", "denied", "Not permitted");
+      return fail(403, "not_permitted");
+    }
+    const c = body.data as DockControl;
+    const r = await store.control(headers.device, c);
+    if (!r.ok) return fail(r.reason === "not_found" ? 404 : 503, String(r.reason ?? "unavailable"));
+    return { status: 200, body: { ...state, ...r, action: c.action } };
+  }
+
+  if (kind === "cloud" || kind === "audit") {
+    const need = kind === "cloud" ? "cloud.read" : "audit.read";
+    if (!paired || !permissions.includes(need)) return fail(403, "not_permitted");
+    if (engaged) return fail(423, "stop_engaged");
+    if (kind === "cloud") {
+      const snap = await store.cloudSnapshot(headers.device, now);
+      if (!snap) return fail(503, "unavailable");
+      return { status: 200, body: { ...state, ...snap } };
+    }
+    const entries = await store.auditTail(headers.device);
+    if (!entries) return fail(503, "unavailable");
+    return { status: 200, body: { ...state, entries } };
   }
 
   const job = body.data as import("zod").infer<typeof jobBodySchema>;

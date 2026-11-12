@@ -18,7 +18,9 @@ screen is not built yet. Nothing in this protocol executes commands, dispatches 
 | --- | --- | --- |
 | OMNI core autonomy | OMNI Terminal | Off; "On" refused (no executor) |
 | Jackboy CODE | Railway + Activation Approvals | Off |
+| OMNI CODE always-on | OMNI Terminal → CODE & tasks | Off; database refuses leases until gates pass |
 | Honeycomb mobile autonomy | Docking Bay, per device | Off; "On" refused and logged |
+| Honeycomb device care | Honeycomb app on the device | Separate; grants nothing in OMNI and is never OMNI CODE autonomy |
 
 When a future reviewed change adds mobile autonomy, it may only let a paired device **submit scoped jobs to OMNI**
 without per-job owner confirmation. It must never run commands on the device. Required first: a registered
@@ -161,3 +163,38 @@ Jackboy, not a Mothership id; prefilled only for `OMERTA-ROW/jackboy-dev-control
 
 Mothership settings (names only): `JACKBOY_HANDOFF_ENABLED` (must be `true`), `JACKBOY_HANDOFF_ORIGIN`,
 `JACKBOY_HANDOFF_CLIENT_ID`, `JACKBOY_HANDOFF_HMAC_SECRET` (≥ 32 chars, same value as Jackboy's).
+
+
+## Honeycomb as the iPad/phone companion (Mothership side added 2026-11-12; Honeycomb UI not built)
+
+Cloud jobs run on the server (cloud sandbox / CODE worker). The device only views and reduces them, so jobs keep
+running when you switch from Mac to iPad or close the app.
+
+New per-device permissions (owner picks them when approving; all off unless chosen):
+
+| Permission | Endpoint | What it does |
+| --- | --- | --- |
+| `cloud.read` | `/api/public/omni/dock/cloud` `{}` | Metadata snapshot: agents (status, Autonomous Mode end time), last 30 cloud and CODE jobs (kind, status, cost, short title), approvals waiting (kind, agent, time), spend today/total and caps, CODE always-on state, alerts, and `approveIn` (the Mothership page to approve). No commands, output, instructions or secrets. Refused (423) while Emergency Stop is engaged. |
+| `audit.read` | `/api/public/omni/dock/audit` `{}` | Last 50 audit entries: time, actor, agent, event. No details or outputs. Refused (423) under Emergency Stop. |
+| `jobs.pause` | `/api/public/omni/dock/control` | `{action:"pause_agent",agentId}`, `{action:"stop_agent",agentId}`, `{action:"stop_job",jobId}`. Reductions only: there is no resume, unpause, approve or start. Works even while Emergency Stop is engaged. Pausing an agent also ends its Autonomous Mode window and pauses its CODE jobs (database triggers). Stops are relayed to the cloud sandbox when configured and the reply says whether the sandbox confirmed. Logged in the dock log and OMNI audit as `device:<id>`. |
+| `chat.send` | none yet | Reserved. Needs a verified cloud sandbox and an owner-opened, passkey-confirmed, time-limited mobile chat window. |
+
+**Approvals from the iPad:** the device never approves. Honeycomb shows what is waiting and opens `approveIn`
+(`https://evoomni.tech/omni-terminal`) in Safari, where you sign in with your two-step code and confirm with your
+passkey (iCloud Keychain passkeys work there). A stolen device key therefore cannot approve anything.
+
+**Alerts:** computed by the Mothership in the `cloud` reply (Emergency Stop, approvals waiting, failures in 24 h,
+spend ≥ 80% of the daily cap, Autonomous Mode ending within 5 minutes, CODE always-on running). Delivery is by
+polling while Honeycomb is open. Web Push needs Honeycomb installed to the Home Screen (iPadOS 16.4+), a push
+service and keys; none exist yet.
+
+**iPadOS limits Honeycomb must respect:** a web app does not run in the background (polling stops when it is
+closed or locked); there is no device shell, no access to other apps' data, no remote wipe (that is MDM, not an
+app), no full-disk or folder access (only files you pick); device-care checks are limited to what the browser
+exposes (storage estimate, online state, battery where available, app version). Honeycomb's own device-care
+workflows and permissions stay inside Honeycomb and never become OMNI CODE autonomy or grant OMNI anything.
+
+**Honeycomb-side work (its own project):** dock screen and key (above); a Cloud tab polling `cloud` every
+15–30 s while open (back off when hidden); an Audit tab; Pause/Stop buttons per agent and per job calling
+`control`; a big Emergency Stop calling `stop`; an "Approve in Mothership" button opening `approveIn`; alert list
+from `alerts`; clear "Disconnected" / "Emergency Stop engaged" states when replies are 401/403/423.

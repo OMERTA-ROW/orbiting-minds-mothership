@@ -39,7 +39,7 @@ function ruleMessage(error: { code?: string; message: string } | null, fallback:
   return fallback;
 }
 
-const permissions = z.array(z.enum(DOCK_PERMISSIONS)).max(5);
+const permissions = z.array(z.enum(DOCK_PERMISSIONS)).max(DOCK_PERMISSIONS.length);
 const id = z.string().uuid();
 
 export type DockDeviceView = {

@@ -22,6 +22,9 @@ export const DOCK_PATHS = {
   jobs: "/api/public/omni/dock/jobs",
   stop: "/api/public/omni/dock/stop",
   jobsStatus: "/api/public/omni/dock/jobs-status",
+  cloud: "/api/public/omni/dock/cloud",
+  audit: "/api/public/omni/dock/audit",
+  control: "/api/public/omni/dock/control",
 } as const;
 
 /** Honeycomb Terminal origins allowed to call the dock from a browser. Native apps send no Origin. */
@@ -55,6 +58,10 @@ export const DOCK_PERMISSIONS = [
   "jobs.propose",
   "stop.engage",
   "files.transfer",
+  "cloud.read",
+  "audit.read",
+  "jobs.pause",
+  "chat.send",
 ] as const;
 export type DockPermission = (typeof DOCK_PERMISSIONS)[number];
 export const PERMISSION_INFO: Record<DockPermission, { label: string; detail: string }> = {
@@ -75,11 +82,32 @@ export const PERMISSION_INFO: Record<DockPermission, { label: string; detail: st
     label: "Selected-file transfer",
     detail: "Reserved for Honeycomb's own transfer feature; no effect here.",
   },
+  "cloud.read": {
+    label: "See cloud tasks",
+    detail:
+      "Running OMNI cloud and CODE jobs, agents, spend, approvals waiting and alerts. No commands, output or secrets.",
+  },
+  "audit.read": {
+    label: "See the audit log",
+    detail: "Recent OMNI audit entries (time, agent, event) without outputs or details.",
+  },
+  "jobs.pause": {
+    label: "Pause and stop jobs",
+    detail:
+      "Pause an agent or stop a job or agent from the device. It can never resume, approve or start anything.",
+  },
+  "chat.send": {
+    label: "Chat with OMNI",
+    detail:
+      "Reserved: needs a verified cloud sandbox and a mobile chat window you open with your passkey. No effect yet.",
+  },
 };
 export const DEFAULT_MOBILE_PERMISSIONS: DockPermission[] = [
   "status.read",
   "jobs.propose",
   "stop.engage",
+  "cloud.read",
+  "jobs.pause",
 ];
 
 /* ---------------- Pairing code ---------------- */
@@ -228,6 +256,25 @@ export const jobBodySchema = z
   });
 
 export const stopBodySchema = z.object({}).strict();
+export const cloudBodySchema = z.object({}).strict();
+export const auditBodySchema = z.object({}).strict();
+/** Reductions only: there is no resume, approve, unpause or start action. */
+export const controlBodySchema = z.discriminatedUnion("action", [
+  z
+    .object({
+      action: z.literal("pause_agent"),
+      agentId: z.string().regex(/^[a-z][a-z0-9_-]{1,31}$/),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("stop_agent"),
+      agentId: z.string().regex(/^[a-z][a-z0-9_-]{1,31}$/),
+    })
+    .strict(),
+  z.object({ action: z.literal("stop_job"), jobId: z.string().uuid() }).strict(),
+]);
+export type DockControl = z.infer<typeof controlBodySchema>;
 export const jobsStatusBodySchema = z.object({}).strict();
 
 /* ---------------- Status and switches ---------------- */
@@ -256,12 +303,72 @@ export const STATUS_LABEL: Record<DockDeviceStatus, string> = {
   revoked: "Revoked",
 };
 
-/** The three autonomy switches are separate. All are off and cannot be turned on yet. */
+/** The autonomy switches are separate. All are off and cannot be turned on yet. */
 export const AUTONOMY_SWITCHES = [
   { id: "omni_core", label: "OMNI core autonomy", where: "OMNI Terminal" },
+  { id: "omni_code", label: "OMNI CODE always-on", where: "OMNI Terminal → CODE & tasks" },
   { id: "jackboy_code", label: "Jackboy CODE", where: "Railway (Jackboy) + Activation Approvals" },
   { id: "honeycomb_mobile", label: "Honeycomb mobile autonomy", where: "Docking Bay, per device" },
+  {
+    id: "honeycomb_device_care",
+    label: "Honeycomb device care",
+    where: "Honeycomb app on the device only; grants nothing in OMNI",
+  },
 ] as const;
+
+/* ---------------- Mobile companion alerts ---------------- */
+
+export type MobileAlert = { id: string; level: "critical" | "warning" | "info"; text: string };
+
+/** Alerts a docked phone/tablet shows while open. Delivery is by polling; no push service exists. */
+export function mobileAlerts(s: {
+  now: number;
+  emergencyStopEngaged: boolean;
+  pendingApprovals: number;
+  failedLast24h: number;
+  spendDayCents: number;
+  dayCapCents: number;
+  autonomyWindows: { agentId: string; expiresAt: number }[];
+  codeAlwaysOn: boolean;
+}): MobileAlert[] {
+  const a: MobileAlert[] = [];
+  if (s.emergencyStopEngaged)
+    a.push({ id: "stop", level: "critical", text: "Emergency Stop is engaged. Nothing runs." });
+  if (s.pendingApprovals > 0)
+    a.push({
+      id: "approvals",
+      level: "warning",
+      text: `${s.pendingApprovals} approval${s.pendingApprovals === 1 ? "" : "s"} waiting. Approve in the Mothership with your passkey.`,
+    });
+  if (s.failedLast24h > 0)
+    a.push({
+      id: "failed",
+      level: "warning",
+      text: `${s.failedLast24h} job${s.failedLast24h === 1 ? "" : "s"} failed in the last 24 hours.`,
+    });
+  if (s.dayCapCents > 0 && s.spendDayCents >= s.dayCapCents * 0.8)
+    a.push({
+      id: "spend",
+      level: s.spendDayCents >= s.dayCapCents ? "critical" : "warning",
+      text: `Spend today is ${Math.round((s.spendDayCents / s.dayCapCents) * 100)}% of the daily limit.`,
+    });
+  for (const w of s.autonomyWindows) {
+    const left = w.expiresAt - s.now;
+    if (left > 0 && left <= 5 * 60_000)
+      a.push({
+        id: `window-${w.agentId}`,
+        level: "info",
+        text: `${w.agentId} Autonomous Mode ends in ${Math.ceil(left / 60_000)} min.`,
+      });
+  }
+  if (s.codeAlwaysOn)
+    a.push({
+      id: "code",
+      level: "info",
+      text: "OMNI CODE always-on is processing authorized jobs.",
+    });
+  return a;
+}
 
 export function mobileAutonomyBlockers(s: {
   deviceStatus: DockDeviceStatus;
@@ -306,4 +413,5 @@ export const REASON_MESSAGE: Record<string, string> = {
   secret_like: "That looks like a key or token. It was not saved.",
   id_conflict: "That task id was used for a different task.",
   daily_limit: "This device has proposed 20 tasks today.",
+  not_found: "That job or agent was not found.",
 };
