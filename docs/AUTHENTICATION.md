@@ -8,7 +8,7 @@ Provider: Lovable Cloud Auth (one account system for preview and the published s
 | Email + password (`signUp` / `signInWithPassword`) | Everyone | Enabled; email confirmation required (auto-confirm off). Min 12 characters in the form. |
 | Password reset email → `/reset-password` | Password accounts | Implemented; needs a recovery session from the email link. |
 | "Continue with Lovable" | Everyone | Button implemented; server-side availability not verified (no account has used it). |
-| Authenticator app (TOTP, Cloud MFA) | Owner only | Required (aal2) for owner pages: OMNI Terminal, Docking Bay, API keys, Activation Approvals, Members admin actions. One verified factor exists. |
+| Authenticator app (TOTP, Cloud MFA) | Owner only | Required (aal2) for owner pages: OMNI Terminal, Docking Bay, API keys, Activation Approvals. One verified factor exists. |
 | Owner recovery codes | Owner only | Hash-only, single use, need a sign-in from the last 10 minutes. 0 unused codes exist. |
 | Passkey (app WebAuthn, `omni_passkeys`) | Owner only | Only for OMNI Workspace actions on `/omni-terminal`; added after a fresh TOTP code. Not a sign-in method. 0 registered. |
 
