@@ -10,8 +10,17 @@ export const IDLE_LIMIT_MS = 10 * 60_000;
 export const SESSION_MAX_MS = 60 * 60_000;
 export const SELF_TEST_VALID_MS = 24 * 3600_000;
 export const AUTONOMY_MINUTES = [15, 30, 60] as const;
-/** Autonomous Mode stays off in this release: the server refuses to turn it on. */
-export const AUTONOMY_ENABLED = false as const;
+/**
+ * Set to a reviewed release note ID only after a live Railway end-to-end run (isolated shell,
+ * signed link, spend meter, stop drill, audit, per-agent isolation, approval gates) is recorded
+ * and reviewed. While null, Autonomous Mode cannot be turned on, whatever else passes.
+ */
+export const AUTONOMY_VERIFIED_RELEASE: string | null = null;
+/** Kept for callers/tests: true only once a verified release is recorded. */
+export const AUTONOMY_ENABLED = AUTONOMY_VERIFIED_RELEASE !== null;
+/** Jackboy CODE keeps its own passkey/spend gatekeeper; Mothership never grants it autonomy. */
+export const AUTONOMY_EXCLUDED_AGENTS = ["jackboy"] as const;
+export const STOP_DRILL_VALID_MS = 24 * 3600_000;
 export const AUDIT_HEAD_BYTES = 4096;
 /** Owner-wide caps in cents: $1 per task, $5 per day, $10 lifetime. */
 export const GLOBAL_LIMITS = { task: 100, day: 500, total: 1000 } as const;
@@ -224,7 +233,8 @@ export const sandboxHealth = z.object({
     repositories: z.array(z.object({ fullName: z.string().regex(REPOSITORY).max(200), access: z.boolean() })).max(20),
     checkedAt: z.string().max(40).nullable(),
   }),
-  autonomy: z.literal("off"),
+  /** "windowed" = the sandbox implements time-bounded autonomy (contract v0.2). */
+  autonomy: z.enum(["off", "windowed"]),
   merge: z.literal("never"),
 });
 export type SandboxHealth = z.infer<typeof sandboxHealth>;
@@ -283,3 +293,96 @@ export const remoteReply = z.object({
 export type RemoteReply = z.infer<typeof remoteReply>;
 
 export const fmtCents = (c: number) => `$${(c / 100).toFixed(2)}`;
+
+// ---------------------------------------------------------------- autonomy readiness
+
+export type AutonomyEvidence = {
+  now: number;
+  verifiedRelease: string | null;
+  sandboxSelfTestPassedAt: number | null;
+  sandboxHealth: SandboxHealth | null;
+  stopDrillPassedAt: number | null;
+  emergencyStopReleased: boolean | null;
+  killSwitchEnabled: boolean | null;
+  passkeyFresh: boolean;
+  agent: { id: string; status: string; budget: AgentBudget };
+};
+export type AutonomyGate = { id: string; label: string; ok: boolean; detail: string };
+
+/** Every gate must pass, at the moment of turning on. Missing evidence counts as failed. */
+export function autonomyGates(e: AutonomyEvidence): { allowed: boolean; gates: AutonomyGate[] } {
+  const fresh = (t: number | null, ms: number) => t !== null && e.now - t <= ms;
+  const h = e.sandboxHealth;
+  const verdict = h ? evaluateSandboxHealth(h) : null;
+  const pricedProvider = Boolean(h?.providers.some((p) => p.verified && p.pricing));
+  const b = e.agent.budget;
+  const gates: AutonomyGate[] = [
+    {
+      id: "verified_release",
+      label: "Live end-to-end run recorded in a reviewed build",
+      ok: e.verifiedRelease !== null,
+      detail: e.verifiedRelease
+        ? `Release ${e.verifiedRelease}.`
+        : "Not yet. Needs a live Railway run of every gate below, reviewed, then a new build.",
+    },
+    {
+      id: "signed_self_test",
+      label: "Signed sandbox connection and self-test (last 24 h)",
+      ok: fresh(e.sandboxSelfTestPassedAt, SELF_TEST_VALID_MS),
+      detail: e.sandboxSelfTestPassedAt ? "Recorded from a proof-checked reply." : "No passing self-test recorded.",
+    },
+    {
+      id: "isolation",
+      label: "Isolated shell: no network, per-session user, no leaked settings",
+      ok: Boolean(verdict?.passed && h?.isolation.perSessionUser),
+      detail: verdict ? (verdict.passed ? "Live probe passed." : verdict.failures[0]!) : "No health report.",
+    },
+    {
+      id: "sandbox_autonomy",
+      label: "Sandbox implements time-bounded autonomy (contract v0.2)",
+      ok: h?.autonomy === "windowed",
+      detail: h ? (h.autonomy === "windowed" ? "Reported by the sandbox." : "Sandbox reports autonomy off (reference v0.1 always waits for approval).") : "No health report.",
+    },
+    {
+      id: "stop_drill",
+      label: "Live stop drill passed (last 24 h)",
+      ok: fresh(e.stopDrillPassedAt, STOP_DRILL_VALID_MS),
+      detail: e.stopDrillPassedAt ? "A running sandbox command was stopped and confirmed." : "Run the stop drill in an open session.",
+    },
+    {
+      id: "spend_meter",
+      label: "Spend meter: agent budget set and provider prices reported",
+      ok: b.task > 0 && b.day > 0 && b.total > 0 && pricedProvider,
+      detail: `Agent budget ${fmtCents(b.task)}/task, ${fmtCents(b.day)}/day, ${fmtCents(b.total)} total (overall caps ${fmtCents(GLOBAL_LIMITS.task)}, ${fmtCents(GLOBAL_LIMITS.day)}, ${fmtCents(GLOBAL_LIMITS.total)}). ${pricedProvider ? "Provider prices reported." : "No verified provider with prices."}`,
+    },
+    {
+      id: "agent",
+      label: "Agent enrolled, not paused, and not Jackboy",
+      ok: e.agent.status === "enrolled" && !(AUTONOMY_EXCLUDED_AGENTS as readonly string[]).includes(e.agent.id),
+      detail: (AUTONOMY_EXCLUDED_AGENTS as readonly string[]).includes(e.agent.id)
+        ? "Jackboy CODE keeps its own controls; Mothership never grants it autonomy."
+        : `Status: ${e.agent.status}.`,
+    },
+    {
+      id: "approval_gates",
+      label: "Merge, deploy, publish, secrets, GitHub, network and PRs still need you",
+      ok: ["merge", "deploy", "publish", "secrets", "github_permissions", "network", "pull_request"].every((g) =>
+        (GATED_ACTIONS as readonly string[]).includes(g),
+      ) && h?.merge === "never",
+      detail: "Gated steps always wait for your passkey, even in Autonomous Mode.",
+    },
+    {
+      id: "controls",
+      label: "Emergency Stop released and terminal enabled",
+      ok: e.emergencyStopReleased === true && e.killSwitchEnabled === true,
+      detail: e.emergencyStopReleased !== true ? "Emergency Stop engaged or unreadable." : e.killSwitchEnabled !== true ? "Kill switch has the terminal off." : "OK.",
+    },
+    {
+      id: "passkey",
+      label: "Fresh passkey confirmation",
+      ok: e.passkeyFresh,
+      detail: "Asked for when you press Turn on.",
+    },
+  ];
+  return { allowed: gates.every((g) => g.ok), gates };
+}
