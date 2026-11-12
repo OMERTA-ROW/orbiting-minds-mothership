@@ -21,6 +21,16 @@ async function owner(context: Ctx) {
   await requireRazulOwner(context.supabase, context.userId, context.claims);
 }
 
+async function stopIsEngaged(context: Ctx) {
+  const { assertEmergencyStopReleased } = await import("./omni-terminal.server");
+  try {
+    await assertEmergencyStopReleased(context.supabase);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 function fail(message: string) {
   return { ok: false as const, message };
 }
@@ -74,6 +84,7 @@ export const sendTaskToJackboy = createServerFn({ method: "POST" })
     const { handoffConfig, sendHandoff, sha256Hex } = await import("./jackboy-handoff.server");
     const config = handoffConfig(process.env);
     if (!config) return fail("The Jackboy handoff is not configured or is turned off.");
+    if (await stopIsEngaged(context)) return fail("Emergency Stop is engaged; nothing was sent.");
     const loaded = await loadJob(context, data.taskId, data.kind);
     if (!loaded) return fail("Only Jackboy tasks with a repository can be sent.");
     if (loaded.sent && loaded.job.kind !== data.kind)
@@ -104,8 +115,7 @@ export const refreshTaskHandoff = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => refreshInput.parse(input))
   .handler(async ({ context, data }) => {
     await owner(context);
-    const { stopEngaged } = await import("./omni-terminal.server");
-    if (await stopEngaged(context.supabase)) return fail("Emergency Stop is engaged; status checks are paused.");
+    if (await stopIsEngaged(context)) return fail("Emergency Stop is engaged; status checks are paused.");
     const { handoffConfig, sendHandoff } = await import("./jackboy-handoff.server");
     const config = handoffConfig(process.env);
     if (!config) return fail("The Jackboy handoff is not configured or is turned off.");
