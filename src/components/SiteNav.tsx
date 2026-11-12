@@ -13,11 +13,13 @@ import {
 import { AccountButton } from "@/components/beta/AccountButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { advancedItems, navGroups, navItems } from "@/components/nav-groups";
+import { setShowPreviews, useShowPreviews } from "@/lib/preview-setting";
 
 export { navItems };
 
 export function SiteNav() {
   const [open, setOpen] = useState(false);
+  const previews = useShowPreviews();
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: KeyboardEvent) => {
@@ -82,9 +84,19 @@ export function SiteNav() {
               className="max-h-[70vh] w-72 overflow-y-auto border-gold/25 p-2"
             >
               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                Earlier modules, demos and references. Labels show what is simulated.
+                Design previews: earlier demos and samples. Hidden unless you turn them on. Nothing
+                in them works for real.
               </DropdownMenuLabel>
-              {advancedItems.map((n) => (
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setShowPreviews(!previews);
+                }}
+                className="py-2.5 text-gold-light"
+              >
+                {previews ? "Hide design previews" : "Show design previews"}
+              </DropdownMenuItem>
+              {previews && advancedItems.map((n) => (
                 <DropdownMenuItem key={n.to} asChild>
                   <Link to={n.to} className="flex justify-between py-2.5">
                     {n.label}
@@ -149,11 +161,22 @@ export function SiteNav() {
             ))}
             <details className="group">
               <summary className="eyebrow flex min-h-11 cursor-pointer items-center gap-2">
-                Advanced · all other areas
+                Advanced · design previews
                 <ChevronDown size={12} className="transition group-open:rotate-180" aria-hidden />
               </summary>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Earlier demos and samples. Nothing in them works for real.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-3"
+                onClick={() => setShowPreviews(!previews)}
+              >
+                {previews ? "Hide design previews" : "Show design previews"}
+              </Button>
               <ul className="mt-2 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-                {[...advancedItems, { to: "/join", label: "Join" } as const].map((n) => (
+                {(previews ? [...advancedItems, { to: "/join", label: "Join" } as const] : []).map((n) => (
                   <li key={n.to}>
                     <Link
                       to={n.to}
@@ -185,12 +208,11 @@ export function SiteFooter() {
           <p className="mt-3 text-[11px]">Bridge technology into its next evolution.</p>
         </div>
         <p className="max-w-md text-[10px] leading-loose md:text-right">
-          Beta launch blocked pending verified gates and founder approval.
+          Private beta. Not publicly launched.
           <br />
-          Only private beta projects/declarations use account storage; other network records remain
-          DEMO.
+          Every link is labeled with what works today. Design previews are hidden by default.
           <br />
-          AI drafts are not validation or execution evidence.
+          AI drafts are suggestions, not tested or executed work.
         </p>
       </div>
     </footer>
