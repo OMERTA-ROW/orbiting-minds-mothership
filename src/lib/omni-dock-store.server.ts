@@ -75,5 +75,9 @@ export async function adminDockStore(): Promise<DockStore> {
       });
       return asReply(data, error);
     },
+    async handoffStatus(device) {
+      const { data, error } = await db.rpc("omni_dock_handoff_status", { _device: device });
+      return error || !Array.isArray(data) ? null : (data as unknown[]);
+    },
   };
 }

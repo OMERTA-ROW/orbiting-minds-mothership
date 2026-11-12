@@ -260,6 +260,20 @@
       "when": 1794078401135,
       "tag": "0036_omni_agent_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794453606325,
+      "tag": "0037_omni_task_handoffs",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1794453864651,
+      "tag": "0038_omni_task_handoffs_revoke",
+      "breakpoints": true
     }
   ]
 }

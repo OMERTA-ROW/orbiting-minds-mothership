@@ -21,6 +21,7 @@ export const DOCK_PATHS = {
   heartbeat: "/api/public/omni/dock/heartbeat",
   jobs: "/api/public/omni/dock/jobs",
   stop: "/api/public/omni/dock/stop",
+  jobsStatus: "/api/public/omni/dock/jobs-status",
 } as const;
 
 /** Honeycomb Terminal origins allowed to call the dock from a browser. Native apps send no Origin. */
@@ -227,6 +228,7 @@ export const jobBodySchema = z
   });
 
 export const stopBodySchema = z.object({}).strict();
+export const jobsStatusBodySchema = z.object({}).strict();
 
 /* ---------------- Status and switches ---------------- */
 
@@ -299,6 +301,8 @@ export const REASON_MESSAGE: Record<string, string> = {
   revoked: "This device was revoked by the owner.",
   replay: "Request already used.",
   not_permitted: "The owner has not allowed this for the device.",
+  stop_engaged: "Emergency Stop is engaged. Nothing was queued or read.",
+  unavailable: "Status is unavailable right now. Retry later.",
   secret_like: "That looks like a key or token. It was not saved.",
   id_conflict: "That task id was used for a different task.",
   daily_limit: "This device has proposed 20 tasks today.",

@@ -64,6 +64,22 @@ export type DockDeviceView = {
   autonomyBlockers: string[];
 };
 
+const STOPPED = {
+  ok: false as const,
+  message: "Emergency Stop is engaged. Release it in OMNI Terminal first.",
+};
+
+/** Fail closed: unreadable or missing controls count as engaged. */
+async function stopEngaged(context: Ctx) {
+  const { assertEmergencyStopReleased } = await import("./omni-terminal.server");
+  try {
+    await assertEmergencyStopReleased(context.supabase);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 export const readDockingBay = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -167,6 +183,7 @@ export const createDockInvite = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await owner(context);
+    if (await stopEngaged(context)) return STOPPED;
     // The code is generated on the server, returned once and only its hash is stored.
     const code = formatPairingCode(crypto.getRandomValues(new Uint8Array(10)));
     const hash = await pairingCodeHash(code);
@@ -197,6 +214,7 @@ export const approveDockDevice = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id, permissions }).parse(input))
   .handler(async ({ context, data }) => {
     await owner(context);
+    if (await stopEngaged(context)) return STOPPED;
     const { data: rows, error } = await context.supabase.rpc("omni_dock_approve", {
       _device: data.id,
       _permissions: data.permissions,
@@ -219,6 +237,7 @@ export const setDockPermissions = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await owner(context);
+    if (await stopEngaged(context)) return STOPPED;
     const { error } = await context.supabase.rpc("omni_dock_set_permissions", {
       _device: data.id,
       _permissions: data.permissions,

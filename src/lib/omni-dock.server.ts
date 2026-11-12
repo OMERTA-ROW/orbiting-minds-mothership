@@ -16,6 +16,7 @@ import {
   deviceStatus,
   heartbeatBodySchema,
   jobBodySchema,
+  jobsStatusBodySchema,
   keyFingerprint,
   mobileAutonomyBlockers,
   nonceSchema,
@@ -60,6 +61,8 @@ export interface DockStore {
   stopEngaged(): Promise<boolean>;
   engageStop(device: string): Promise<boolean>;
   holdTask(device: string, job: import("zod").infer<typeof jobBodySchema>): Promise<Reply>;
+  /** This device's own tasks with handoff status only; no instructions or output. */
+  handoffStatus(device: string): Promise<unknown[] | null>;
 }
 
 export type DockResult = { status: number; body: Record<string, unknown> };
@@ -193,13 +196,19 @@ export async function handlePair(
   };
 }
 
-type SignedKind = "heartbeat" | "jobs" | "stop";
+type SignedKind = "heartbeat" | "jobs" | "stop" | "jobsStatus";
 const EVENT: Record<SignedKind, string> = {
   heartbeat: "heartbeat",
   jobs: "job_request",
   stop: "stop_request",
+  jobsStatus: "jobs_status",
 };
-const SCHEMA = { heartbeat: heartbeatBodySchema, jobs: jobBodySchema, stop: stopBodySchema };
+const SCHEMA = {
+  heartbeat: heartbeatBodySchema,
+  jobs: jobBodySchema,
+  stop: stopBodySchema,
+  jobsStatus: jobsStatusBodySchema,
+};
 
 export async function handleSigned(
   request: Request,
@@ -277,6 +286,14 @@ export async function handleSigned(
     };
   }
 
+  if (kind === "jobsStatus") {
+    if (!paired || !permissions.includes("status.read")) return fail(403, "not_permitted");
+    if (engaged) return fail(423, "stop_engaged");
+    const jobs = await store.handoffStatus(headers.device);
+    if (!jobs) return fail(503, "unavailable");
+    return { status: 200, body: { ...state, executor: "none", jobs } };
+  }
+
   const job = body.data as import("zod").infer<typeof jobBodySchema>;
   if (job.autonomous) {
     const blockers = mobileAutonomyBlockers({
@@ -293,6 +310,10 @@ export async function handleSigned(
     });
   }
   if (!paired) return fail(403, "not_permitted");
+  if (engaged) {
+    await store.log(headers.device, "job_propose", "refused", "Emergency Stop engaged");
+    return fail(423, "stop_engaged");
+  }
   const held = await store.holdTask(headers.device, job);
   if (!held.ok)
     return fail(
