@@ -152,6 +152,8 @@ export type Snapshot = {
   dock: { paired: number; pending: number; known: boolean };
   /** Agent workspace kill switch: true = terminal enabled; null = missing or unreadable. */
   workspaceEnabled: boolean | null;
+  /** Separate OMNI cloud sandbox on Railway (names/state only, never values). */
+  sandbox: { configured: boolean; enabled: boolean; problem: string | null; selfTestPassedAt: string | null };
 };
 
 /** Fail closed: an unreadable or missing controls row counts as engaged. */
@@ -603,27 +605,31 @@ export const TERMINAL_STATES = [
   "read_only",
 ] as const;
 export type TerminalState = (typeof TERMINAL_STATES)[number];
-export const TERMINAL_STATE_LABEL: Record<TerminalState, { title: string; detail: string }> = {
+export type PrimaryState = Exclude<TerminalState, "unpaired" | "read_only"> | "ready";
+export const TERMINAL_STATE_LABEL: Record<TerminalState | "ready", { title: string; detail: string }> = {
   stopped: {
     title: "Stopped",
     detail: "Emergency Stop is engaged or the terminal kill switch is off. Nothing can be sent.",
   },
   unauthorized: {
     title: "Not authorized",
-    detail: "Activation approvals or the Railway link switches are not complete.",
+    detail: "The cloud sandbox switch (OMNI_SANDBOX_ENABLED) is off.",
   },
   disconnected: {
     title: "Not connected",
-    detail: "No verified handshake or no passed self-test with OMNI on Railway in the last 24 hours.",
+    detail: "The cloud sandbox is not set up, or its self-test has not passed in the last 24 hours.",
   },
   unpaired: {
     title: "No device docked",
-    detail: "No desktop or mobile OMNI branch is paired in the Docking Bay.",
+    detail: "No desktop or mobile OMNI branch is paired in the Docking Bay. The web cloud shell does not need one.",
   },
   read_only: {
     title: "Read-only",
-    detail:
-      "No isolated sandbox is connected. Commands here answer from Mothership records; nothing runs on OMNI, Railway or a device.",
+    detail: "Commands cannot run yet. This status terminal only reads Mothership records.",
+  },
+  ready: {
+    title: "Cloud shell ready",
+    detail: "Commands run in the isolated sandbox on Railway, one at a time, only after you approve each one. Autonomy is off.",
   },
 };
 
@@ -638,7 +644,7 @@ export type ReadinessItem = {
 };
 
 export function terminalReadiness(s: Snapshot): {
-  primary: TerminalState;
+  primary: PrimaryState;
   conditions: Record<TerminalState, boolean>;
   items: ReadinessItem[];
 } {
@@ -646,20 +652,22 @@ export function terminalReadiness(s: Snapshot): {
   const missing = LINK_REQUIRED_SETTINGS.filter((n) => !present(n));
   const ev = linkEvidence(s.audit);
   const selfTestFresh =
-    ev.lastSelfTestPassedAt !== null &&
-    s.now - Date.parse(ev.lastSelfTestPassedAt) <= SELF_TEST_WINDOW_MS;
+    s.sandbox.selfTestPassedAt !== null &&
+    s.now - Date.parse(s.sandbox.selfTestPassedAt) <= SELF_TEST_WINDOW_MS;
   const approved = s.approvals.filter((r) => isEffectivelyApproved(r, s.now)).length;
   const allApproved = approvedThrough(s.approvals, ACTIVATION_STEPS.length, s.now);
-  const switchesOn = s.switches.linkEnabled && s.switches.selfTestEnabled;
-  const settingsReady = missing.length === 0 && s.originValid && s.ownerIdMatches === "match";
+  const linkSettingsReady = missing.length === 0 && s.originValid && s.ownerIdMatches === "match";
+  const stopped = s.emergencyStop.engaged || s.workspaceEnabled !== true;
+  const unauthorized = !s.sandbox.enabled;
+  const disconnected = !s.sandbox.configured || !selfTestFresh;
   const conditions: Record<TerminalState, boolean> = {
-    stopped: s.emergencyStop.engaged || s.workspaceEnabled !== true,
-    unauthorized: !allApproved || !switchesOn,
-    disconnected: ev.lastConnectedAt === null || !selfTestFresh,
+    stopped,
+    unauthorized,
+    disconnected,
     unpaired: !s.dock.known || s.dock.paired === 0,
-    read_only: !EXECUTOR_AVAILABLE,
+    read_only: stopped || unauthorized || disconnected,
   };
-  const primary = TERMINAL_STATES.find((k) => conditions[k]) ?? "read_only";
+  const primary: PrimaryState = stopped ? "stopped" : unauthorized ? "unauthorized" : disconnected ? "disconnected" : "ready";
   const items: ReadinessItem[] = [
     {
       id: "owner",
@@ -695,56 +703,37 @@ export function terminalReadiness(s: Snapshot): {
       where: "here",
     },
     {
-      id: "approvals",
-      label: `Activation approvals (${approved} of ${ACTIVATION_STEPS.length})`,
-      ok: allApproved,
-      detail: allApproved
-        ? "All steps approved."
-        : `Next: step ${nextApprovalStep(s.approvals, s.now)}. Approvals are records only; they switch nothing on.`,
-      where: "here",
-      link: "/activation-approvals",
-    },
-    {
-      id: "settings",
-      label: "Secure-link settings present",
-      ok: settingsReady,
-      detail: settingsReady
-        ? "All names present (values are never shown)."
-        : missing.length
-          ? `Missing: ${missing.join(", ")}.`
-          : !s.originValid
-            ? "JACKBOY_LINK_ORIGIN is not a public HTTPS address."
-            : "JACKBOY_LINK_MOTHERSHIP_OWNER_ID does not match your account.",
-      where: "settings",
-    },
-    {
-      id: "switches",
-      label: "Link and self-test switches on",
-      ok: switchesOn,
-      detail: `JACKBOY_LINK_ENABLED is ${s.switches.linkEnabled ? "on" : "off"}; JACKBOY_LINK_SELF_TEST_ENABLED is ${s.switches.selfTestEnabled ? "on" : "off"}. Turn on only after the matching approval steps.`,
-      where: "settings",
-    },
-    {
-      id: "handshake",
-      label: "Verified handshake with OMNI on Railway",
-      ok: ev.lastConnectedAt !== null,
-      detail: ev.lastConnectedAt
-        ? `Last verified ${when(ev.lastConnectedAt)}.`
-        : "None recorded. A reachability ping is not a handshake.",
+      id: "sandbox_service",
+      label: "Cloud sandbox service deployed on Railway",
+      ok: s.sandbox.configured,
+      detail: s.sandbox.configured
+        ? "Settings present (values never shown)."
+        : "Deploy the sandbox service (see the backend guide), then add its settings here.",
       where: "external",
     },
     {
-      id: "self_test",
-      label: "Secure-link self-test passed (last 24 h)",
+      id: "sandbox_settings",
+      label: "Cloud sandbox settings and switch",
+      ok: s.sandbox.configured && s.sandbox.enabled,
+      detail: s.sandbox.problem
+        ? s.sandbox.problem
+        : s.sandbox.enabled
+          ? "OMNI_SANDBOX_ENABLED is on."
+          : "OMNI_SANDBOX_ENABLED is off.",
+      where: "settings",
+    },
+    {
+      id: "sandbox_self_test",
+      label: "Sandbox self-test passed (last 24 h)",
       ok: selfTestFresh,
-      detail: ev.lastSelfTestPassedAt
-        ? `Last passed ${when(ev.lastSelfTestPassedAt)}${selfTestFresh ? "." : " — older than 24 hours."}`
-        : "Never passed. The agent workspace stays locked until it does.",
-      where: "external",
+      detail: s.sandbox.selfTestPassedAt
+        ? `Last passed ${when(s.sandbox.selfTestPassedAt)}${selfTestFresh ? "." : " — older than 24 hours."}`
+        : "Never passed. Run it from the agent workspace; it checks isolation, limits and providers.",
+      where: "here",
     },
     {
       id: "dock",
-      label: "Desktop or mobile branch docked",
+      label: "Desktop or mobile branch docked (optional)",
       ok: s.dock.known && s.dock.paired > 0,
       detail: !s.dock.known
         ? "Docking Bay could not be read."
@@ -752,16 +741,31 @@ export function terminalReadiness(s: Snapshot): {
           ? `${s.dock.paired} paired device(s).`
           : s.dock.pending
             ? `${s.dock.pending} device(s) waiting for your approval.`
-            : "None paired. Optional for this web terminal; needed for CLI/Honeycomb.",
+            : "None paired. Needed only for the CLI or Honeycomb, not the web cloud shell.",
       where: "here",
       link: "/omni-dock",
     },
     {
-      id: "sandbox",
-      label: "Isolated sandbox executor connected",
-      ok: EXECUTOR_AVAILABLE,
-      detail:
-        "Not built. OMNI on Railway must provide an isolated sandbox first; see the backend contract guide.",
+      id: "approvals",
+      label: `Jackboy/CODE activation approvals (${approved} of ${ACTIVATION_STEPS.length})`,
+      ok: allApproved,
+      detail: allApproved
+        ? "All steps approved."
+        : `Next: step ${nextApprovalStep(s.approvals, s.now)}. Needed for Jackboy CODE, not the cloud shell.`,
+      where: "here",
+      link: "/activation-approvals",
+    },
+    {
+      id: "jackboy_link",
+      label: "Jackboy link settings and handshake",
+      ok: linkSettingsReady && ev.lastConnectedAt !== null,
+      detail: !linkSettingsReady
+        ? missing.length
+          ? `Missing: ${missing.join(", ")}.`
+          : "Jackboy link address or owner ID does not check out."
+        : ev.lastConnectedAt
+          ? `Last verified handshake ${when(ev.lastConnectedAt)}.`
+          : "Settings present; no verified handshake recorded.",
       where: "external",
     },
   ];

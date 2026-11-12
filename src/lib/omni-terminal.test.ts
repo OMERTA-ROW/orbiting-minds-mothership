@@ -52,6 +52,7 @@ function snap(over: Partial<Snapshot> = {}): Snapshot {
     log: [],
     dock: { paired: 0, pending: 0, known: true },
     workspaceEnabled: false,
+    sandbox: { configured: false, enabled: false, problem: "Missing: OMNI_SANDBOX_ORIGIN.", selfTestPassedAt: null },
     ...over,
   };
 }
@@ -237,40 +238,39 @@ describe("Railway reachability check", () => {
 
 describe("terminal readiness states", () => {
   const released = { engaged: false, known: true, changedAt: null, reason: "ok" };
-  const passed = (iso: string) => [
-    { id: "h", action: "connected", record_type: "jackboy_link", record_id: "a", occurred_at: iso },
-    { id: "s", action: "self_test_passed", record_type: "jackboy_link", record_id: "b", occurred_at: iso },
-  ];
+  const sandbox = (over: Partial<Snapshot["sandbox"]> = {}) => ({
+    configured: true,
+    enabled: true,
+    problem: null,
+    selfTestPassedAt: new Date(NOW - 3600_000).toISOString(),
+    ...over,
+  });
   it("is Stopped while the Emergency Stop is engaged or the kill switch is off", () => {
-    expect(terminalReadiness(snap()).primary).toBe("stopped");
-    expect(terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: false })).primary).toBe("stopped");
-    expect(terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: null })).primary).toBe("stopped");
+    expect(terminalReadiness(snap({ sandbox: sandbox() })).primary).toBe("stopped");
+    expect(terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: false, sandbox: sandbox() })).primary).toBe("stopped");
+    expect(terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: null, sandbox: sandbox() })).primary).toBe("stopped");
   });
-  it("is Not authorized until all ten approvals and both link switches are on", () => {
-    const s = snap({ emergencyStop: released, workspaceEnabled: true });
+  it("is Not authorized while the sandbox switch is off", () => {
+    const s = snap({ emergencyStop: released, workspaceEnabled: true, sandbox: sandbox({ enabled: false }) });
     expect(terminalReadiness(s).primary).toBe("unauthorized");
-    expect(terminalReadiness({ ...s, approvals: allApproved }).primary).toBe("unauthorized");
   });
-  it("is Not connected without a handshake and a self-test inside 24 hours", () => {
-    const s = snap({
-      emergencyStop: released,
-      workspaceEnabled: true,
-      approvals: allApproved,
-      switches: { linkEnabled: true, selfTestEnabled: true },
-    });
-    expect(terminalReadiness(s).primary).toBe("disconnected");
+  it("is Not connected without a sandbox self-test inside 24 hours", () => {
+    const base = { emergencyStop: released, workspaceEnabled: true as const };
+    expect(terminalReadiness(snap({ ...base, sandbox: sandbox({ selfTestPassedAt: null }) })).primary).toBe("disconnected");
     const stale = new Date(NOW - 25 * 3600_000).toISOString();
-    expect(terminalReadiness({ ...s, audit: passed(stale) }).primary).toBe("disconnected");
-    const fresh = new Date(NOW - 3600_000).toISOString();
-    expect(terminalReadiness({ ...s, audit: passed(fresh) }).primary).toBe("unpaired");
-    expect(
-      terminalReadiness({ ...s, audit: passed(fresh), dock: { paired: 1, pending: 0, known: true } }).primary,
-    ).toBe("read_only");
+    expect(terminalReadiness(snap({ ...base, sandbox: sandbox({ selfTestPassedAt: stale }) })).primary).toBe("disconnected");
+    expect(terminalReadiness(snap({ ...base, sandbox: sandbox({ configured: false }) })).primary).toBe("disconnected");
   });
-  it("stays Read-only with no executor even when everything else is ready", () => {
+  it("is ready only when every cloud-shell item passes; docking stays optional", () => {
+    const r = terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: true, sandbox: sandbox() }));
+    expect(r.primary).toBe("ready");
+    expect(r.conditions.read_only).toBe(false);
+    expect(r.conditions.unpaired).toBe(true);
+  });
+  it("stays Read-only by default", () => {
     const r = terminalReadiness(snap());
     expect(r.conditions.read_only).toBe(true);
-    expect(r.items.find((i) => i.id === "sandbox")!.ok).toBe(false);
+    expect(r.items.find((i) => i.id === "sandbox_self_test")!.ok).toBe(false);
   });
   it("an unreadable Docking Bay counts as unpaired", () => {
     expect(terminalReadiness(snap({ dock: { paired: 3, pending: 0, known: false } })).conditions.unpaired).toBe(true);
