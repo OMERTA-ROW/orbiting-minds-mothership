@@ -81,23 +81,53 @@ export async function adminDockStore(): Promise<DockStore> {
       const since = new Date(now - 24 * 3600_000).toISOString();
       const [agents, jobs, code, approvals, windows, ledger, svc] = await Promise.all([
         db.from("omni_agents").select("id,display_name,status"),
-        db.from("omni_agent_jobs").select("id,agent_id,kind,status,cost_cents,created_at,ended_at").order("created_at", { ascending: false }).limit(30),
-        db.from("omni_code_jobs").select("id,agent_id,kind,status,title,attempts,max_attempts,created_at,ended_at").order("created_at", { ascending: false }).limit(30),
-        db.from("omni_workspace_approvals").select("id,agent_id,action_kind,created_at").eq("status", "pending").order("created_at"),
+        db
+          .from("omni_agent_jobs")
+          .select("id,agent_id,kind,status,cost_cents,created_at,ended_at")
+          .order("created_at", { ascending: false })
+          .limit(30),
+        db
+          .from("omni_code_jobs")
+          .select("id,agent_id,kind,status,title,attempts,max_attempts,created_at,ended_at")
+          .order("created_at", { ascending: false })
+          .limit(30),
+        db
+          .from("omni_workspace_approvals")
+          .select("id,agent_id,action_kind,created_at")
+          .eq("status", "pending")
+          .order("created_at"),
         db.from("omni_autonomy_windows").select("agent_id,expires_at").is("ended_at", null),
         db.from("omni_spend_ledger").select("cents,created_at"),
         db.from("omni_code_service").select("always_on,always_on_until").eq("id", 1).maybeSingle(),
       ]);
-      if (agents.error || jobs.error || code.error || approvals.error || windows.error || ledger.error || svc.error) return null;
+      if (
+        agents.error ||
+        jobs.error ||
+        code.error ||
+        approvals.error ||
+        windows.error ||
+        ledger.error ||
+        svc.error
+      )
+        return null;
       const { GLOBAL_LIMITS } = await import("./omni-workspace");
       const { mobileAlerts } = await import("./omni-dock");
-      const spendDay = (ledger.data ?? []).filter((r) => r.created_at >= day.toISOString()).reduce((t, r) => t + r.cents, 0);
+      const spendDay = (ledger.data ?? [])
+        .filter((r) => r.created_at >= day.toISOString())
+        .reduce((t, r) => t + r.cents, 0);
       const spendTotal = (ledger.data ?? []).reduce((t, r) => t + r.cents, 0);
       const failed =
         (jobs.data ?? []).filter((j) => j.status === "failed" && j.created_at >= since).length +
         (code.data ?? []).filter((j) => j.status === "failed" && j.created_at >= since).length;
-      const codeOn = Boolean(svc.data?.always_on && svc.data.always_on_until && Date.parse(svc.data.always_on_until) > now);
-      const win = (windows.data ?? []).map((w) => ({ agentId: w.agent_id, expiresAt: Date.parse(w.expires_at) }));
+      const codeOn = Boolean(
+        svc.data?.always_on &&
+        svc.data.always_on_until &&
+        Date.parse(svc.data.always_on_until) > now,
+      );
+      const win = (windows.data ?? []).map((w) => ({
+        agentId: w.agent_id,
+        expiresAt: Date.parse(w.expires_at),
+      }));
       return {
         executor: "server",
         agents: (agents.data ?? []).map((a) => ({
@@ -108,7 +138,12 @@ export async function adminDockStore(): Promise<DockStore> {
         })),
         cloudJobs: jobs.data ?? [],
         codeJobs: (code.data ?? []).map((j) => ({ ...j, title: j.title.slice(0, 80) })),
-        approvals: (approvals.data ?? []).map((a) => ({ id: a.id, agent: a.agent_id, kind: a.action_kind, createdAt: a.created_at })),
+        approvals: (approvals.data ?? []).map((a) => ({
+          id: a.id,
+          agent: a.agent_id,
+          kind: a.action_kind,
+          createdAt: a.created_at,
+        })),
         approveIn: "https://evoomni.tech/omni-terminal",
         spend: { dayCents: spendDay, totalCents: spendTotal, limits: GLOBAL_LIMITS },
         codeService: { alwaysOn: codeOn },
@@ -136,10 +171,15 @@ export async function adminDockStore(): Promise<DockStore> {
       const now = new Date().toISOString();
       const actor = `device:${device.slice(0, 8)}`;
       const audit = (event: string, agentId: string | null, detail: Record<string, unknown>) =>
-        db.from("omni_workspace_audit").insert({ actor, event, agent_id: agentId, detail: detail as never });
+        db
+          .from("omni_workspace_audit")
+          .insert({ actor, event, agent_id: agentId, detail: detail as never });
       const ws = await import("./omni-workspace.server");
       const link = await ws.linkState(db).catch(() => null);
-      const remote = async (action: "job.stop" | "agent.stop", payload: Record<string, unknown>) => {
+      const remote = async (
+        action: "job.stop" | "agent.stop",
+        payload: Record<string, unknown>,
+      ) => {
         if (!link?.configured) return "not sent (sandbox not configured)";
         return ws
           .relay(link, action, payload)
@@ -148,34 +188,93 @@ export async function adminDockStore(): Promise<DockStore> {
       };
       if (c.action === "stop_job") {
         const [{ data: wj }, { data: cj }] = await Promise.all([
-          db.from("omni_agent_jobs").update({ status: "stopped", ended_at: now }).eq("id", c.jobId).in("status", ["queued", "running"]).select("id,agent_id,session_id"),
-          db.from("omni_code_jobs").update({ status: "stopped", ended_at: now, lease_expires_at: null }).eq("id", c.jobId).in("status", ["queued", "leased", "running", "awaiting_approval", "retry_wait", "paused"]).select("id,agent_id"),
+          db
+            .from("omni_agent_jobs")
+            .update({ status: "stopped", ended_at: now })
+            .eq("id", c.jobId)
+            .in("status", ["queued", "running"])
+            .select("id,agent_id,session_id"),
+          db
+            .from("omni_code_jobs")
+            .update({ status: "stopped", ended_at: now, lease_expires_at: null })
+            .eq("id", c.jobId)
+            .in("status", [
+              "queued",
+              "leased",
+              "running",
+              "awaiting_approval",
+              "retry_wait",
+              "paused",
+            ])
+            .select("id,agent_id"),
         ]);
         const hit = wj?.[0] ?? cj?.[0];
         if (!hit) return { ok: false, reason: "not_found" };
-        const r = wj?.[0] ? await remote("job.stop", { sessionId: wj[0].session_id, jobId: c.jobId }) : "queue only";
+        const r = wj?.[0]
+          ? await remote("job.stop", { sessionId: wj[0].session_id, jobId: c.jobId })
+          : "queue only";
         await audit("device_stop_job", hit.agent_id, { jobId: c.jobId, remote: r });
-        await db.rpc("omni_dock_log", { _device: device, _event: "control_stop_job", _outcome: "ok", _detail: r.slice(0, 300) });
+        await db.rpc("omni_dock_log", {
+          _device: device,
+          _event: "control_stop_job",
+          _outcome: "ok",
+          _detail: r.slice(0, 300),
+        });
         return { ok: true, stopped: 1, remote: r };
       }
-      const { data: agent } = await db.from("omni_agents").select("id,status").eq("id", c.agentId).maybeSingle();
+      const { data: agent } = await db
+        .from("omni_agents")
+        .select("id,status")
+        .eq("id", c.agentId)
+        .maybeSingle();
       if (!agent) return { ok: false, reason: "not_found" };
       if (c.action === "pause_agent") {
         // Database triggers end its Autonomous Mode window and pause its CODE jobs.
-        if (agent.status === "enrolled") await db.from("omni_agents").update({ status: "paused", updated_at: now }).eq("id", agent.id);
+        if (agent.status === "enrolled")
+          await db
+            .from("omni_agents")
+            .update({ status: "paused", updated_at: now })
+            .eq("id", agent.id);
         await audit("device_pause_agent", agent.id, {});
-        await db.rpc("omni_dock_log", { _device: device, _event: "control_pause_agent", _outcome: "ok", _detail: agent.id });
+        await db.rpc("omni_dock_log", {
+          _device: device,
+          _event: "control_pause_agent",
+          _outcome: "ok",
+          _detail: agent.id,
+        });
         return { ok: true, paused: agent.id };
       }
       const [{ data: wj }, { data: cj }] = await Promise.all([
-        db.from("omni_agent_jobs").update({ status: "stopped", ended_at: now }).eq("agent_id", agent.id).in("status", ["queued", "running"]).select("id"),
-        db.from("omni_code_jobs").update({ status: "stopped", ended_at: now, lease_expires_at: null }).eq("agent_id", agent.id).in("status", ["queued", "leased", "running", "awaiting_approval", "retry_wait", "paused"]).select("id"),
+        db
+          .from("omni_agent_jobs")
+          .update({ status: "stopped", ended_at: now })
+          .eq("agent_id", agent.id)
+          .in("status", ["queued", "running"])
+          .select("id"),
+        db
+          .from("omni_code_jobs")
+          .update({ status: "stopped", ended_at: now, lease_expires_at: null })
+          .eq("agent_id", agent.id)
+          .in("status", [
+            "queued",
+            "leased",
+            "running",
+            "awaiting_approval",
+            "retry_wait",
+            "paused",
+          ])
+          .select("id"),
       ]);
       await ws.endAutonomy(db, agent.id, "device_stop");
       const r = await remote("agent.stop", { agentId: agent.id });
       const stopped = (wj?.length ?? 0) + (cj?.length ?? 0);
       await audit("device_stop_agent", agent.id, { stopped, remote: r });
-      await db.rpc("omni_dock_log", { _device: device, _event: "control_stop_agent", _outcome: "ok", _detail: `${agent.id}: ${r}`.slice(0, 300) });
+      await db.rpc("omni_dock_log", {
+        _device: device,
+        _event: "control_stop_agent",
+        _outcome: "ok",
+        _detail: `${agent.id}: ${r}`.slice(0, 300),
+      });
       return { ok: true, stopped, remote: r };
     },
     async handoffStatus(device) {

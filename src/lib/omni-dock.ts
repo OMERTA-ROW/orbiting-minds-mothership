@@ -84,7 +84,8 @@ export const PERMISSION_INFO: Record<DockPermission, { label: string; detail: st
   },
   "cloud.read": {
     label: "See cloud tasks",
-    detail: "Running OMNI cloud and CODE jobs, agents, spend, approvals waiting and alerts. No commands, output or secrets.",
+    detail:
+      "Running OMNI cloud and CODE jobs, agents, spend, approvals waiting and alerts. No commands, output or secrets.",
   },
   "audit.read": {
     label: "See the audit log",
@@ -92,11 +93,13 @@ export const PERMISSION_INFO: Record<DockPermission, { label: string; detail: st
   },
   "jobs.pause": {
     label: "Pause and stop jobs",
-    detail: "Pause an agent or stop a job or agent from the device. It can never resume, approve or start anything.",
+    detail:
+      "Pause an agent or stop a job or agent from the device. It can never resume, approve or start anything.",
   },
   "chat.send": {
     label: "Chat with OMNI",
-    detail: "Reserved: needs a verified cloud sandbox and a mobile chat window you open with your passkey. No effect yet.",
+    detail:
+      "Reserved: needs a verified cloud sandbox and a mobile chat window you open with your passkey. No effect yet.",
   },
 };
 export const DEFAULT_MOBILE_PERMISSIONS: DockPermission[] = [
@@ -257,8 +260,18 @@ export const cloudBodySchema = z.object({}).strict();
 export const auditBodySchema = z.object({}).strict();
 /** Reductions only: there is no resume, approve, unpause or start action. */
 export const controlBodySchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("pause_agent"), agentId: z.string().regex(/^[a-z][a-z0-9_-]{1,31}$/) }).strict(),
-  z.object({ action: z.literal("stop_agent"), agentId: z.string().regex(/^[a-z][a-z0-9_-]{1,31}$/) }).strict(),
+  z
+    .object({
+      action: z.literal("pause_agent"),
+      agentId: z.string().regex(/^[a-z][a-z0-9_-]{1,31}$/),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("stop_agent"),
+      agentId: z.string().regex(/^[a-z][a-z0-9_-]{1,31}$/),
+    })
+    .strict(),
   z.object({ action: z.literal("stop_job"), jobId: z.string().uuid() }).strict(),
 ]);
 export type DockControl = z.infer<typeof controlBodySchema>;
@@ -328,7 +341,11 @@ export function mobileAlerts(s: {
       text: `${s.pendingApprovals} approval${s.pendingApprovals === 1 ? "" : "s"} waiting. Approve in the Mothership with your passkey.`,
     });
   if (s.failedLast24h > 0)
-    a.push({ id: "failed", level: "warning", text: `${s.failedLast24h} job${s.failedLast24h === 1 ? "" : "s"} failed in the last 24 hours.` });
+    a.push({
+      id: "failed",
+      level: "warning",
+      text: `${s.failedLast24h} job${s.failedLast24h === 1 ? "" : "s"} failed in the last 24 hours.`,
+    });
   if (s.dayCapCents > 0 && s.spendDayCents >= s.dayCapCents * 0.8)
     a.push({
       id: "spend",
@@ -338,9 +355,18 @@ export function mobileAlerts(s: {
   for (const w of s.autonomyWindows) {
     const left = w.expiresAt - s.now;
     if (left > 0 && left <= 5 * 60_000)
-      a.push({ id: `window-${w.agentId}`, level: "info", text: `${w.agentId} Autonomous Mode ends in ${Math.ceil(left / 60_000)} min.` });
+      a.push({
+        id: `window-${w.agentId}`,
+        level: "info",
+        text: `${w.agentId} Autonomous Mode ends in ${Math.ceil(left / 60_000)} min.`,
+      });
   }
-  if (s.codeAlwaysOn) a.push({ id: "code", level: "info", text: "OMNI CODE always-on is processing authorized jobs." });
+  if (s.codeAlwaysOn)
+    a.push({
+      id: "code",
+      level: "info",
+      text: "OMNI CODE always-on is processing authorized jobs.",
+    });
   return a;
 }
 
