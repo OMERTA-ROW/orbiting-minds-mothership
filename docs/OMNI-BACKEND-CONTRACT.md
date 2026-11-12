@@ -80,5 +80,5 @@ If a local OMNI/Evolution terminal seems stuck:
 2. Open a **new** terminal window or tab. Leave the stuck one alone; don't close anything that may be writing files.
 3. To check whether your shell startup is the problem without changing it, start a clean shell just for this window: `zsh -f` (macOS default) or `bash --noprofile --norc`. If that works, the delay comes from a startup file; review it later, slowly, with a backup.
 4. Find a stuck program: `ps -ef | grep -i -E "omni|evolution"` (macOS/Linux) or Task Manager (Windows). Stop only the process you recognise, with `kill <PID>`; use `kill -9 <PID>` only if it ignores that.
-5. Check the companion: `evolution doctor` (alias `omni doctor` if installed). It reports problems and changes nothing.
+5. Check the companion: `evolution doctor` (or `omni doctor` if you installed it under that name). It reports problems and changes nothing.
 6. Never paste keys, recovery codes or authenticator codes into a terminal or chat while troubleshooting.
