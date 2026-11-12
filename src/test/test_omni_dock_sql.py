@@ -153,6 +153,11 @@ def main():
         owner(f"SELECT count(*) FROM public.omni_dock_set_permissions('{device}',ARRAY['status.read'],{int(rev) + 5});", False)
         owner(f"SELECT count(*) FROM public.omni_dock_set_permissions('{device}',ARRAY['status.read','stop.engage'],{rev});")
         assert '"not_permitted"' in hold(tid="cccccccc-cccc-4ccc-8ccc-cccccccccccc")
+        # Mobile companion permissions (0049) are grantable; unknown ones are not.
+        rev = owner(f"SELECT revision FROM public.omni_dock_devices WHERE id='{device}';").splitlines()[-1]
+        owner(f"SELECT count(*) FROM public.omni_dock_set_permissions('{device}',ARRAY['status.read','shell.run'],{rev});", False)
+        owner(f"SELECT count(*) FROM public.omni_dock_set_permissions('{device}',ARRAY['status.read','stop.engage','cloud.read','audit.read','jobs.pause'],{rev});")
+        assert owner(f"SELECT array_to_string(permissions,',') FROM public.omni_dock_devices WHERE id='{device}';").endswith('status.read,stop.engage,cloud.read,audit.read,jobs.pause')
 
         # Revoke: owner only (no fresh code), clears permissions, cancels held device tasks, denies future requests.
         caller(OTHER, 'aal2', FRESH, f"SELECT count(*) FROM public.omni_dock_revoke('{device}','lost');", False)
