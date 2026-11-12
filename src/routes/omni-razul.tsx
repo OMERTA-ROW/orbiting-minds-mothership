@@ -3,11 +3,16 @@ import { RazulArchive } from "@/components/omnibridge/RazulArchive";
 import { RasulChat } from "@/components/omnibridge/RasulChat";
 import { seo } from "@/lib/seo";
 import { AllSeeingEye } from "@/components/razul/AllSeeingEye";
+import { RazulProvisioning } from "@/components/razul/RazulProvisioning";
 
 function RazulPage() {
   return (
     <div className="mx-auto max-w-[1440px] px-5 pb-12 md:px-10">
       <AllSeeingEye />
+      <details className="omni-support">
+        <summary>Intelligence provisioning · owner</summary>
+        <RazulProvisioning />
+      </details>
       <details className="omni-support">
         <summary>Conversation</summary>
         <RasulChat />
