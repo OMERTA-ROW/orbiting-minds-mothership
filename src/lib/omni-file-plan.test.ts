@@ -93,7 +93,7 @@ describe("approval and undo", () => {
       { index: 3, op: { kind: "trash", from: `${G}/t`, expect: exp }, result: "applied", trashedTo: "/Users/me/.Trash/t" },
       { index: 4, op: { kind: "move", from: `${G}/s`, to: `${G}/D/s`, expect: exp, rule: "r", renamed: false }, result: "skipped_changed" },
     ]);
-    expect(u.map((o) => (o.kind === "move" ? `${o.from}>${o.to}` : `${o.kind}:${o.to}`))).toEqual([
+    expect(u.map((o) => (o.kind === "move" ? `${o.from}>${o.to}` : o.kind === "trash" ? `trash:${o.from}` : `${o.kind}:${o.to}`))).toEqual([
       `/Users/me/.Trash/t>${G}/t`,
       `${G}/D/n>${G}/n`,
       `${G}/.omni-undo/n>${G}/D/n`,
