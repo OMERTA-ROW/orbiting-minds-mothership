@@ -122,6 +122,39 @@ CREATE TRIGGER razul_agent_manifests_append_only BEFORE UPDATE OR DELETE ON publ
   FOR EACH ROW EXECUTE FUNCTION public.omni_append_only();
 CREATE TRIGGER razul_agent_manifests_no_truncate BEFORE TRUNCATE ON public.razul_agent_manifests
   FOR EACH STATEMENT EXECUTE FUNCTION public.omni_append_only();
+-- Evaluations attach only to open proposals and to the exact manifest digest; a sandbox result
+-- moves a proposal to evaluated.
+CREATE OR REPLACE FUNCTION public.razul_evaluation_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path = '' AS $$
+DECLARE _status text; _sha text;
+BEGIN
+  SELECT p.status, m.manifest_sha256 INTO _status, _sha
+    FROM public.razul_update_proposals p JOIN public.razul_agent_manifests m ON m.id = p.manifest_id WHERE p.id = NEW.proposal_id;
+  IF _status IS NULL OR _status NOT IN ('proposed','evaluated') THEN
+    RAISE EXCEPTION 'Only open, unapproved proposals can be evaluated' USING ERRCODE = '22023';
+  END IF;
+  IF NEW.manifest_sha256 <> _sha THEN RAISE EXCEPTION 'Evaluation is for a different manifest' USING ERRCODE = '22023'; END IF;
+  NEW.ran_at := now();
+  RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION public.razul_evaluation_guard() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER razul_evaluation_guard BEFORE INSERT ON public.razul_evaluations
+  FOR EACH ROW EXECUTE FUNCTION public.razul_evaluation_guard();
+
+CREATE OR REPLACE FUNCTION public.razul_evaluation_after()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+BEGIN
+  IF NEW.kind = 'sandbox' THEN
+    UPDATE public.razul_update_proposals SET status = 'evaluated' WHERE id = NEW.proposal_id AND status = 'proposed';
+  END IF;
+  INSERT INTO public.razul_provisioning_events (actor, event, proposal_id, detail)
+  VALUES (NEW.runner, 'evaluation_' || NEW.kind, NEW.proposal_id, jsonb_build_object('passed', NEW.passed));
+  RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION public.razul_evaluation_after() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER razul_evaluation_after AFTER INSERT ON public.razul_evaluations
+  FOR EACH ROW EXECUTE FUNCTION public.razul_evaluation_after();
+
 CREATE TRIGGER razul_evaluations_append_only BEFORE UPDATE OR DELETE ON public.razul_evaluations
   FOR EACH ROW EXECUTE FUNCTION public.omni_append_only();
 CREATE TRIGGER razul_evaluations_no_truncate BEFORE TRUNCATE ON public.razul_evaluations
@@ -180,8 +213,8 @@ BEGIN
   IF OLD.status IN ('rejected','withdrawn','rolled_back') THEN
     RAISE EXCEPTION 'This proposal is closed' USING ERRCODE = '22023';
   END IF;
-  IF NEW.status <> 'approved' AND NEW.status <> 'staged' AND NEW.status <> 'promoted'
-     AND (NEW.approved_by IS DISTINCT FROM OLD.approved_by OR NEW.approved_at IS DISTINCT FROM OLD.approved_at) THEN
+  IF NEW.status <> 'approved' AND (NEW.approved_by IS DISTINCT FROM OLD.approved_by OR NEW.approved_at IS DISTINCT FROM OLD.approved_at
+     OR NEW.escalations_acknowledged <> OLD.escalations_acknowledged) THEN
     RAISE EXCEPTION 'Approval fields change only on approval' USING ERRCODE = '22023';
   END IF;
   SELECT * INTO _m FROM public.razul_agent_manifests WHERE id = NEW.manifest_id;

@@ -146,17 +146,6 @@ export function diffManifests(prev: AgentManifest | null, next: AgentManifest) {
   return { changes, escalations };
 }
 
-/** Stable JSON (sorted keys) the manifest digest is computed over. */
-export function canonicalManifest(m: AgentManifest): string {
-  const sort = (v: unknown): unknown =>
-    Array.isArray(v)
-      ? v.map(sort)
-      : v && typeof v === "object"
-        ? Object.fromEntries(Object.keys(v as object).sort().map((k) => [k, sort((v as Record<string, unknown>)[k])]))
-        : v;
-  return JSON.stringify(sort(m));
-}
-
 export function compareVersions(a: string, b: string) {
   const x = a.split(".").map(Number);
   const y = b.split(".").map(Number);
