@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { OmniWorkspace } from "./OmniWorkspace";
+import { TaskHandoff, type HandoffRow } from "./TaskHandoff";
+import { readTaskHandoffs } from "@/lib/jackboy-handoff.functions";
 import { FRESH_MFA_SECONDS, noteProblem } from "@/lib/activation-approvals";
 import {
   cancelTerminalTask,
@@ -78,7 +80,23 @@ export function OmniTerminal() {
   const lineId = useRef(1);
   const logEnd = useRef<HTMLDivElement>(null);
 
-  const refresh = useCallback(async () => setSnap(await read()), [read]);
+  const readHandoffs = useServerFn(readTaskHandoffs);
+  const [handoffs, setHandoffs] = useState<{ rows: HandoffRow[]; configured: boolean }>({
+    rows: [],
+    configured: false,
+  });
+  const loadHandoffs = useCallback(async () => {
+    try {
+      const r = await readHandoffs();
+      setHandoffs({ rows: r.handoffs, configured: r.configured });
+    } catch {
+      setHandoffs((h) => h);
+    }
+  }, [readHandoffs]);
+  const refresh = useCallback(async () => {
+    setSnap(await read());
+    void loadHandoffs();
+  }, [read, loadHandoffs]);
 
   useEffect(() => {
     refresh().then(
@@ -638,6 +656,13 @@ export function OmniTerminal() {
                   {t.repository ? ` · ${t.repository}` : ""} · {when(t.created_at)}
                 </p>
                 <p className="whitespace-pre-wrap break-words">{t.instructions}</p>
+                <TaskHandoff
+                  task={t}
+                  handoff={handoffs.rows.find((h) => h.task_id === t.id)}
+                  configured={handoffs.configured}
+                  stopEngaged={stop !== "released"}
+                  onChanged={refresh}
+                />
                 {t.state === "held" && (
                   <Button
                     size="sm"
