@@ -94,7 +94,7 @@ function Index() {
                 <ShieldCheck size={15} />
               </span>
               <span>
-                Guardian<small>Protection layer</small>
+                Guardian<small>Protection layer · demo</small>
               </span>
               <ArrowUpRight size={12} />
             </Link>
@@ -103,7 +103,7 @@ function Index() {
                 <Bot size={15} />
               </span>
               <span>
-                Agent Embassy<small>Consenting intelligence</small>
+                Agent Embassy<small>Consenting intelligence · demo</small>
               </span>
               <ArrowUpRight size={12} />
             </Link>
@@ -112,7 +112,7 @@ function Index() {
                 <Sparkles size={15} />
               </span>
               <span>
-                Knowledge Fusion<small>Cross-domain insight</small>
+                Knowledge Fusion<small>Cross-domain insight · demo</small>
               </span>
               <ArrowUpRight size={12} />
             </Link>
@@ -121,7 +121,7 @@ function Index() {
                 <Dna size={15} />
               </span>
               <span>
-                Evolution DNA<small>Compatibility profiles</small>
+                Evolution DNA<small>Compatibility profiles · demo</small>
               </span>
               <ArrowUpRight size={12} />
             </Link>
