@@ -128,10 +128,20 @@ export const refreshTaskHandoff = createServerFn({ method: "POST" })
     return { ok: true as const, status: reply.status };
   });
 
-export const readHandoffSettings = createServerFn({ method: "GET" })
+export const readTaskHandoffs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await owner(context);
     const { handoffSettingNames, handoffConfig } = await import("./jackboy-handoff.server");
-    return { names: handoffSettingNames(process.env), usable: Boolean(handoffConfig(process.env)) };
+    const { data, error } = await context.supabase
+      .from("omni_task_handoffs")
+      .select("task_id,job_kind,jackboy_job_id,status,detail,updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(50);
+    return {
+      handoffs: error ? [] : data,
+      readable: !error,
+      settings: handoffSettingNames(process.env),
+      configured: Boolean(handoffConfig(process.env)),
+    };
   });
