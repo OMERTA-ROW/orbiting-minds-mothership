@@ -5,7 +5,9 @@ import {
   autonomyBlockers,
   capabilities,
   linkEvidence,
+  lockReason,
   respond,
+  terminalReadiness,
   stopReleased,
   stopState,
   taskInput,
@@ -230,5 +232,59 @@ describe("Railway reachability check", () => {
     expect(
       (await probeRailway("https://jackboy.example.com", { fetch, timeoutMs: 10 })).state,
     ).toBe("timeout");
+  });
+});
+
+describe("terminal readiness states", () => {
+  const released = { engaged: false, known: true, changedAt: null, reason: "ok" };
+  const passed = (iso: string) => [
+    { id: "h", action: "connected", record_type: "jackboy_link", record_id: "a", occurred_at: iso },
+    { id: "s", action: "self_test_passed", record_type: "jackboy_link", record_id: "b", occurred_at: iso },
+  ];
+  it("is Stopped while the Emergency Stop is engaged or the kill switch is off", () => {
+    expect(terminalReadiness(snap()).primary).toBe("stopped");
+    expect(terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: false })).primary).toBe("stopped");
+    expect(terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: null })).primary).toBe("stopped");
+  });
+  it("is Not authorized until all ten approvals and both link switches are on", () => {
+    const s = snap({ emergencyStop: released, workspaceEnabled: true });
+    expect(terminalReadiness(s).primary).toBe("unauthorized");
+    expect(terminalReadiness({ ...s, approvals: allApproved }).primary).toBe("unauthorized");
+  });
+  it("is Not connected without a handshake and a self-test inside 24 hours", () => {
+    const s = snap({
+      emergencyStop: released,
+      workspaceEnabled: true,
+      approvals: allApproved,
+      switches: { linkEnabled: true, selfTestEnabled: true },
+    });
+    expect(terminalReadiness(s).primary).toBe("disconnected");
+    const stale = new Date(NOW - 25 * 3600_000).toISOString();
+    expect(terminalReadiness({ ...s, audit: passed(stale) }).primary).toBe("disconnected");
+    const fresh = new Date(NOW - 3600_000).toISOString();
+    expect(terminalReadiness({ ...s, audit: passed(fresh) }).primary).toBe("unpaired");
+    expect(
+      terminalReadiness({ ...s, audit: passed(fresh), dock: { paired: 1, pending: 0, known: true } }).primary,
+    ).toBe("read_only");
+  });
+  it("stays Read-only with no executor even when everything else is ready", () => {
+    const r = terminalReadiness(snap());
+    expect(r.conditions.read_only).toBe(true);
+    expect(r.items.find((i) => i.id === "sandbox")!.ok).toBe(false);
+  });
+  it("an unreadable Docking Bay counts as unpaired", () => {
+    expect(terminalReadiness(snap({ dock: { paired: 3, pending: 0, known: false } })).conditions.unpaired).toBe(true);
+  });
+});
+
+describe("lock reason", () => {
+  const base = { signedIn: true, emailVerified: true, isOwner: true, aal: "aal2" as const, hasVerifiedTotp: true };
+  it("names the first failing gate", () => {
+    expect(lockReason({ ...base, signedIn: false }).id).toBe("signed_out");
+    expect(lockReason({ ...base, emailVerified: false }).id).toBe("email_unverified");
+    expect(lockReason({ ...base, isOwner: false }).id).toBe("not_owner");
+    expect(lockReason({ ...base, hasVerifiedTotp: false, aal: "aal1" }).id).toBe("no_authenticator");
+    expect(lockReason({ ...base, aal: "aal1" }).id).toBe("code_needed");
+    expect(lockReason(base).id).toBe("server_refused");
   });
 });
