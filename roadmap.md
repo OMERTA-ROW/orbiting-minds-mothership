@@ -334,3 +334,7 @@ First staged pilot (one project only; owner selection pending):
 - [ ] Jackboy endpoint exists on branch `jackboy/omni-handoff-v1`; live call blocked on Jackboy deploy + the four handoff settings.
 - [ ] Owner adds four `JACKBOY_HANDOFF_*` settings — blocked on Jackboy-issued secret.
 - [ ] First staging dock with desktop CLI — blocked on the CLI implementing omni.dock/v1 signing.
+- [x] Browser-environment test: owner handoff flow against a mocked Jackboy endpoint; missing settings keep sending disabled, no secrets shown. Real-browser positive run blocked on a two-factor-verified owner session.
+
+## Owner authenticator (2026-11-12)
+- [ ] Owner checks the existing authenticator entry works, then creates and stores recovery codes — owner's phone needed.
