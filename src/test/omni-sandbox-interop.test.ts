@@ -128,9 +128,11 @@ describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () 
 
   it("refuses repositories outside the allow-list", async () => {
     const jobId = randomUUID();
-    await call("repo.checkout", { sessionId, jobId, repository: "someone/else", ref: "main" });
+    const first = await call("repo.checkout", { sessionId, jobId, repository: "someone/else", ref: "main" });
     await new Promise((r) => setTimeout(r, 200));
-    const r = await call("events.poll", { sessionId, jobId });
+    const later = await call("events.poll", { sessionId, jobId });
+    const r = { steps: [...first.steps, ...later.steps] };
+    expect(later.job?.status).toBe("failed");
     expect(r.steps.some((s) => s.status === "failed" && /ALLOWLIST/.test(s.body))).toBe(true);
   });
 
