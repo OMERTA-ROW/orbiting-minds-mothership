@@ -295,6 +295,13 @@
       "when": 1794468931975,
       "tag": "0041_invitations_truthful_transitions",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794474471352,
+      "tag": "0042_account_two_step_signin",
+      "breakpoints": true
     }
   ]
 }
