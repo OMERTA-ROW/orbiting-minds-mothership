@@ -660,7 +660,7 @@ export function OmniTerminal() {
                   task={t}
                   handoff={handoffs.rows.find((h) => h.task_id === t.id)}
                   configured={handoffs.configured}
-                  stopEngaged={stop !== "released"}
+                  stopEngaged={stop.engaged}
                   onChanged={refresh}
                 />
                 {t.state === "held" && (
