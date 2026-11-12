@@ -1300,6 +1300,53 @@ export type Database = {
           },
         ]
       }
+      omni_task_handoffs: {
+        Row: {
+          created_at: string
+          created_by: string
+          detail: string
+          jackboy_job_id: string | null
+          job_kind: string
+          last_checked_at: string | null
+          payload_digest: string
+          status: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          detail?: string
+          jackboy_job_id?: string | null
+          job_kind: string
+          last_checked_at?: string | null
+          payload_digest: string
+          status?: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          detail?: string
+          jackboy_job_id?: string | null
+          job_kind?: string
+          last_checked_at?: string | null
+          payload_digest?: string
+          status?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_task_handoffs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: true
+            referencedRelation: "omni_terminal_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       omni_terminal_controls: {
         Row: {
           changed_at: string
@@ -2551,6 +2598,7 @@ export type Database = {
         }
       }
       omni_dock_engage_stop: { Args: { _device: string }; Returns: boolean }
+      omni_dock_handoff_status: { Args: { _device: string }; Returns: Json }
       omni_dock_hold_task: {
         Args: {
           _agent: string
@@ -2669,6 +2717,38 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      omni_stop_engaged: { Args: never; Returns: boolean }
+      omni_task_handoff_begin: {
+        Args: { _digest: string; _kind: string; _task: string }
+        Returns: {
+          created_at: string
+          created_by: string
+          detail: string
+          jackboy_job_id: string | null
+          job_kind: string
+          last_checked_at: string | null
+          payload_digest: string
+          status: string
+          task_id: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "omni_task_handoffs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      omni_task_handoff_record: {
+        Args: {
+          _actor: string
+          _detail: string
+          _job: string
+          _status: string
+          _task: string
+        }
+        Returns: boolean
       }
       omni_terminal_cancel_task: {
         Args: { _id: string }
