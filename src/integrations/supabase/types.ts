@@ -1043,6 +1043,172 @@ export type Database = {
           },
         ]
       }
+      omni_code_job_events: {
+        Row: {
+          actor: string
+          agent_id: string
+          at: string
+          detail: Json
+          event: string
+          id: number
+          job_id: string
+        }
+        Insert: {
+          actor: string
+          agent_id: string
+          at?: string
+          detail?: Json
+          event: string
+          id?: never
+          job_id: string
+        }
+        Update: {
+          actor?: string
+          agent_id?: string
+          at?: string
+          detail?: Json
+          event?: string
+          id?: never
+          job_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_code_job_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "omni_code_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      omni_code_jobs: {
+        Row: {
+          agent_id: string
+          approved_at: string | null
+          approved_by: string | null
+          attempts: number
+          checkpoint: string | null
+          cost_cents: number
+          created_at: string
+          destructive: boolean
+          ended_at: string | null
+          error: string | null
+          id: string
+          instructions: string
+          kind: string
+          lease_expires_at: string | null
+          lease_owner: string | null
+          max_attempts: number
+          not_before: string | null
+          owner_id: string
+          plan_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number
+          checkpoint?: string | null
+          cost_cents?: number
+          created_at?: string
+          destructive?: boolean
+          ended_at?: string | null
+          error?: string | null
+          id?: string
+          instructions?: string
+          kind: string
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          max_attempts?: number
+          not_before?: string | null
+          owner_id: string
+          plan_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number
+          checkpoint?: string | null
+          cost_cents?: number
+          created_at?: string
+          destructive?: boolean
+          ended_at?: string | null
+          error?: string | null
+          id?: string
+          instructions?: string
+          kind?: string
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          max_attempts?: number
+          not_before?: string | null
+          owner_id?: string
+          plan_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_code_jobs_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "omni_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      omni_code_service: {
+        Row: {
+          always_on: boolean
+          always_on_until: string | null
+          changed_at: string
+          changed_by: string | null
+          id: number
+          idle_only: boolean
+          jobs_per_agent_hour: number
+          max_concurrent: number
+          max_per_agent: number
+          min_idle_minutes: number
+          window_end_hour: number | null
+          window_start_hour: number | null
+        }
+        Insert: {
+          always_on?: boolean
+          always_on_until?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id: number
+          idle_only?: boolean
+          jobs_per_agent_hour?: number
+          max_concurrent?: number
+          max_per_agent?: number
+          min_idle_minutes?: number
+          window_end_hour?: number | null
+          window_start_hour?: number | null
+        }
+        Update: {
+          always_on?: boolean
+          always_on_until?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          id?: number
+          idle_only?: boolean
+          jobs_per_agent_hour?: number
+          max_concurrent?: number
+          max_per_agent?: number
+          min_idle_minutes?: number
+          window_end_hour?: number | null
+          window_start_hour?: number | null
+        }
+        Relationships: []
+      }
       omni_dock_devices: {
         Row: {
           app_version: string
@@ -1211,6 +1377,133 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      omni_file_journal: {
+        Row: {
+          at: string
+          id: number
+          op: Json
+          op_index: number
+          plan_id: string
+          result: string
+          trashed_to: string | null
+          undo: boolean
+        }
+        Insert: {
+          at?: string
+          id?: never
+          op: Json
+          op_index: number
+          plan_id: string
+          result: string
+          trashed_to?: string | null
+          undo?: boolean
+        }
+        Update: {
+          at?: string
+          id?: never
+          op?: Json
+          op_index?: number
+          plan_id?: string
+          result?: string
+          trashed_to?: string | null
+          undo?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_file_journal_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "omni_file_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      omni_file_plans: {
+        Row: {
+          applied_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          confirmed_destructive: number[]
+          created_at: string
+          grant_id: string
+          id: string
+          ops: Json
+          owner_id: string
+          plan_sha256: string
+          status: string
+          summary: Json
+        }
+        Insert: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          confirmed_destructive?: number[]
+          created_at?: string
+          grant_id: string
+          id?: string
+          ops?: Json
+          owner_id: string
+          plan_sha256: string
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          confirmed_destructive?: number[]
+          created_at?: string
+          grant_id?: string
+          id?: string
+          ops?: Json
+          owner_id?: string
+          plan_sha256?: string
+          status?: string
+          summary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_file_plans_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "omni_mac_folder_grants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      omni_mac_folder_grants: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          expires_at: string
+          id: string
+          mode: string
+          owner_id: string
+          path: string
+          revoked_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          expires_at: string
+          id?: string
+          mode: string
+          owner_id: string
+          path: string
+          revoked_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          expires_at?: string
+          id?: string
+          mode?: string
+          owner_id?: string
+          path?: string
+          revoked_at?: string | null
+        }
+        Relationships: []
       }
       omni_passkey_checks: {
         Row: {
@@ -2683,6 +2976,10 @@ export type Database = {
         Returns: string
       }
       omni_autonomy_end_all: {
+        Args: { _agent: string; _reason: string }
+        Returns: undefined
+      }
+      omni_code_halt: {
         Args: { _agent: string; _reason: string }
         Returns: undefined
       }
