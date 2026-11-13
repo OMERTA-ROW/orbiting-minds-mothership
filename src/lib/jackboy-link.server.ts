@@ -249,6 +249,12 @@ export async function readCapped(response: Response): Promise<string> {
   return new TextDecoder("utf-8", { fatal: true }).decode(all);
 }
 
+/** Abort reasons may be DOMExceptions, which are not `Error` instances on every runtime. */
+const isAbort = (error: unknown) =>
+  !!error &&
+  typeof error === "object" &&
+  ["TimeoutError", "AbortError"].includes(String((error as { name?: unknown }).name));
+
 async function post(
   c: LinkIdentity,
   options: JackboyLinkOptions,
@@ -275,7 +281,7 @@ async function post(
       signal: AbortSignal.timeout(limitMs),
     });
   } catch (error) {
-    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
+    if (isAbort(error))
       throw timedOut("reply");
     throw new JackboyLinkError("Jackboy link connection failed.", "connection");
   }
@@ -288,7 +294,7 @@ async function post(
     text = await readCapped(response);
   } catch (error) {
     if (error instanceof JackboyLinkError) throw error;
-    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
+    if (isAbort(error))
       throw timedOut("body");
     throw new JackboyLinkError("Jackboy link connection failed.", "connection");
   }
