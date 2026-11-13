@@ -136,7 +136,7 @@ describe("one account per identity", () => {
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "owner@fixture.invalid" },
     });
-    fireEvent.change(screen.getByLabelText("Password"), {
+    fireEvent.change(screen.getByLabelText(/^Password/), {
       target: { value: "a-long-password-123" },
     });
     fireEvent.click(screen.getByRole("checkbox", { name: "Accept private beta data storage" }));
