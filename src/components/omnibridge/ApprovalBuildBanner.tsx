@@ -91,8 +91,7 @@ export function ApprovalBuildBanner() {
       </p>
       <p className="text-xs text-muted-foreground">This flow: {APPROVAL_FLOW_SUMMARY}.</p>
       <div className="flex flex-wrap gap-2">
-        {notice.title === "This page is out of date" ||
-        notice.title === "Live page does not match its own server" ? (
+        {notice.reload ? (
           <Button size="sm" variant="outline" onClick={() => window.location.reload()}>
             Reload page
           </Button>

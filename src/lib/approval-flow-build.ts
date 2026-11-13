@@ -64,7 +64,13 @@ export function compareLive(
   return { state: "current", version };
 }
 
-export type BuildNotice = { tone: "ok" | "warn" | "info"; title: string; detail: string };
+export type BuildNotice = {
+  tone: "ok" | "warn" | "info";
+  title: string;
+  detail: string;
+  /** The open page itself is stale; reloading fixes it. */
+  reload?: boolean;
+};
 
 /** What the page says about itself and the live site. Never claims more than the marker shows. */
 export function buildNotice(input: {
@@ -78,6 +84,7 @@ export function buildNotice(input: {
   if (input.serverVersion !== null && input.serverVersion !== client)
     return {
       tone: "warn",
+      reload: true,
       title: "This page is out of date",
       detail: `This open page uses approval flow v${client}, but the site now runs v${input.serverVersion}. Reload the page before running checks or recording decisions.`,
     };
@@ -86,6 +93,7 @@ export function buildNotice(input: {
     if (live?.state === "outdated" || live?.state === "newer")
       return {
         tone: "warn",
+        reload: true,
         title: "Live page does not match its own server",
         detail: "Reload the page before running checks or recording decisions.",
       };
