@@ -241,7 +241,7 @@ export type TerminalStatusInput = {
     display_name: string;
     budget_day_cents: number;
     budget_total_cents: number;
-    paused: boolean;
+    status: string;
   }[];
 };
 
@@ -259,7 +259,7 @@ export function terminalSummary(s: TerminalStatusInput): { connected: boolean; l
     `Spent: ${dollars(s.spend.day)} today, ${dollars(s.spend.total)} total.`,
     ...s.agents.map(
       (a) =>
-        `${a.display_name}: limit ${dollars(a.budget_day_cents)}/day, ${dollars(a.budget_total_cents)} total${a.paused ? ", paused" : ""}.`,
+        `${a.display_name}: limit ${dollars(a.budget_day_cents)}/day, ${dollars(a.budget_total_cents)} total (${a.status}).`,
     ),
   ];
   return { connected: s.gate.open && s.emergencyStopReleased, lines };

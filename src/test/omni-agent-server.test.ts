@@ -162,6 +162,50 @@ describe("Persisted OMNI agent request", () => {
     await (await handleOmniAgent(request())).text();
     expect(m.call).not.toHaveBeenCalled();
   });
+  it("sends earlier saved turns only when the owner chose them", async () => {
+    const earlier = [
+      { ...run, id: "11111111-1111-4111-8111-111111111111", status: "completed", message: "first", result: "reply one", created_at: "2026-11-01" },
+    ];
+    m.auth.mockResolvedValue({
+      userId: "owner",
+      client: {
+        rpc: (name: string) =>
+          name === "caller_role"
+            ? m.role()
+            : name === "list_omni_agent_runs"
+              ? Promise.resolve({ data: earlier, error: null })
+              : m.prepare(),
+        from: () => ({ select: () => q(m.project) }),
+      },
+    });
+    const text = await (await handleOmniAgent(request({ contextTurns: 2 }))).text();
+    expect(text).toContain('"type":"context"');
+    expect(m.call.mock.calls[0][5]).toEqual([
+      { role: "user", content: "first" },
+      { role: "assistant", content: "reply one" },
+    ]);
+  });
+  it("sends no earlier turns by default", async () => {
+    await (await handleOmniAgent(request())).text();
+    expect(m.call.mock.calls[0][5]).toEqual([]);
+  });
+  it("fails closed when earlier turns cannot be read", async () => {
+    m.auth.mockResolvedValue({
+      userId: "owner",
+      client: {
+        rpc: (name: string) =>
+          name === "caller_role"
+            ? m.role()
+            : name === "list_omni_agent_runs"
+              ? Promise.resolve({ data: null, error: { message: "x" } })
+              : m.prepare(),
+        from: () => ({ select: () => q(m.project) }),
+      },
+    });
+    expect((await handleOmniAgent(request({ contextTurns: 2 }))).status).toBe(503);
+    expect(m.prepare).not.toHaveBeenCalled();
+    expect(m.call).not.toHaveBeenCalled();
+  });
   it("persists bounded result and actual token counts", async () => {
     const response = await handleOmniAgent(request());
     const text = await response.text();
