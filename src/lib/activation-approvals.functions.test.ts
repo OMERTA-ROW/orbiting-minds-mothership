@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   probe: vi.fn(),
   insert: vi.fn(),
   record: vi.fn(),
+  checks: vi.fn(),
 }));
 vi.mock("@tanstack/react-start", () => ({
   createServerFn: () => {
@@ -30,33 +31,61 @@ vi.mock("./jackboy-link.server", () => ({
   checkJackboyRunnerConfiguration: mocks.probe,
 }));
 vi.mock("@/integrations/supabase/client.server", () => ({
-  supabaseAdmin: { from: () => ({ insert: mocks.insert }), rpc: mocks.record },
+  supabaseAdmin: {
+    from: (table: string) =>
+      table === "activation_approval_checks"
+        ? chain(() => mocks.checks())
+        : { insert: mocks.insert },
+    rpc: mocks.record,
+  },
 }));
+
+/** A thenable query builder: every filter returns itself; awaiting resolves the table result. */
+function chain(result: () => unknown) {
+  const q: Record<string, unknown> = {};
+  for (const m of ["select", "eq", "in", "order", "limit"]) q[m] = () => q;
+  q.then = (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) =>
+    Promise.resolve(result()).then(ok, bad);
+  return q;
+}
 import "./activation-approvals.functions";
 
 const OWNER = "11111111-1111-4111-8111-111111111111";
-function invocation(approved = true, fresh = true) {
+function invocation(
+  approved = true,
+  fresh = true,
+  opts: {
+    events?: Array<{ event: string; created_at: string }>;
+    data?: Record<string, unknown>;
+    decidedAt?: string;
+  } = {},
+) {
   const rpc = vi.fn(async () => ({ error: null }));
+  const tables: Record<string, () => unknown> = {
+    activation_approvals: () => ({
+      data: [
+        {
+          step: 1,
+          status: approved ? "approved" : "pending",
+          decided_at: opts.decidedAt ?? "2026-11-12T21:25:56Z",
+        },
+      ],
+      error: null,
+    }),
+    owner_mfa_recovery_events: () => ({ data: opts.events ?? [], error: null }),
+    razul_control_audit: () => ({ data: [], error: null }),
+  };
   return {
     rpc,
     input: {
-      data: { step: 2 },
+      data: opts.data ?? { step: 2 },
       context: {
         userId: OWNER,
         claims: {
+          aal: "aal2",
           amr: [{ method: "totp", timestamp: Math.floor(Date.now() / 1000) - (fresh ? 0 : 3600) }],
         },
-        supabase: {
-          from: () => ({
-            select: () => ({
-              order: async () => ({
-                data: [{ step: 1, status: approved ? "approved" : "pending" }],
-                error: null,
-              }),
-            }),
-          }),
-          rpc,
-        },
+        supabase: { from: (t: string) => chain(tables[t]!), rpc },
       },
     },
   };
@@ -76,6 +105,7 @@ beforeEach(() => {
   mocks.probe.mockReset().mockResolvedValue(proof);
   mocks.insert.mockReset().mockResolvedValue({ error: null });
   mocks.record.mockReset().mockResolvedValue({ error: null });
+  mocks.checks.mockReset().mockReturnValue({ data: [], error: null });
   vi.stubEnv("JACKBOY_LINK_ORIGIN", "https://jackboy.lovable.app");
   vi.stubEnv("JACKBOY_LINK_RUNNER_ORIGIN", "https://runner.up.railway.app");
   vi.stubEnv("JACKBOY_LINK_MOTHERSHIP_OWNER_ID", OWNER);
@@ -141,6 +171,91 @@ describe("Step 2 trusted remote evidence", () => {
     mocks.record.mockResolvedValueOnce({ error: { message: "fixture audit unavailable" } });
     const { input, rpc } = invocation();
     expect(await mocks.handlers[1]!(input)).toMatchObject({ ok: false });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+const RESET = [{ event: "mfa_disabled", created_at: "2026-11-13T16:20:51Z" }];
+
+describe("owner access on the approvals list", () => {
+  it.each([
+    ["Verified owner identity is required.", "identity"],
+    ["All-Seeing Eye infrastructure is available only to the configured owner.", "not_owner"],
+    ["Complete owner multi-factor verification before inspecting infrastructure.", "needs_code"],
+  ])("returns a specific reason and no records when refused: %s", async (message, reason) => {
+    mocks.owner.mockRejectedValueOnce(new Error(message));
+    const result = await mocks.handlers[0]!(invocation().input);
+    expect(result).toEqual({ denied: true, reason });
+    expect(mocks.checks).not.toHaveBeenCalled();
+  });
+  it("still lists approvals when the check store is not installed", async () => {
+    mocks.checks.mockReturnValue({
+      data: null,
+      error: { code: "PGRST205", message: "Could not find the table" },
+    });
+    const result = await mocks.handlers[0]!(invocation().input);
+    expect(result).toMatchObject({ checksStore: "missing", checks: [] });
+    expect((result as { rows: unknown[] }).rows).toHaveLength(10);
+  });
+  it("reports the last security reset", async () => {
+    const result = await mocks.handlers[0]!(invocation(true, true, { events: RESET }).input);
+    expect(result).toMatchObject({ securityResetAt: "2026-11-13T16:20:51Z", checksStore: "ready" });
+  });
+});
+
+describe("security reset requires fresh approval on the server", () => {
+  it("refuses a later check when step 1 was approved before the reset", async () => {
+    const { input, rpc } = invocation(true, true, { events: RESET });
+    expect(await mocks.handlers[1]!(input)).toMatchObject({
+      ok: false,
+      reason: "rule",
+      message: "Step 1 must be approved first.",
+    });
+    expect(mocks.probe).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("allows it again once step 1 is re-approved after the reset", async () => {
+    const { input } = invocation(true, true, { events: RESET, decidedAt: "2026-11-13T16:25:00Z" });
+    expect(await mocks.handlers[1]!(input)).toMatchObject({ ok: true });
+  });
+  it("refuses an owner-step approval that depends on a pre-reset approval", async () => {
+    const { input, rpc } = invocation(true, true, {
+      events: RESET,
+      data: { step: 2, action: "approve", note: "", expiresAt: null },
+    });
+    // Step 2 is technical, so use an owner step to reach the order rule.
+    input.data = { step: 3, action: "approve", note: "", expiresAt: null };
+    expect(await mocks.handlers[2]!(input)).toMatchObject({ ok: false, reason: "rule" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("still allows revoking without reading prerequisites", async () => {
+    const { input, rpc } = invocation(true, true, { events: RESET });
+    input.data = { step: 1, action: "revoke", note: "", expiresAt: null };
+    expect(await mocks.handlers[2]!(input)).toMatchObject({ ok: true });
+    expect(rpc).toHaveBeenCalledWith(
+      "activation_approval_decide",
+      expect.objectContaining({ _step: 1, _action: "revoke" }),
+    );
+  });
+  it("refuses decisions without a fresh code", async () => {
+    const { input, rpc } = invocation(true, false);
+    input.data = { step: 3, action: "approve", note: "", expiresAt: null };
+    expect(await mocks.handlers[2]!(input)).toMatchObject({ ok: false, reason: "mfa" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("missing check store", () => {
+  it("says the database update is missing and records no approval", async () => {
+    mocks.record.mockResolvedValueOnce({
+      error: { code: "PGRST202", message: "Could not find the function" },
+    });
+    const { input, rpc } = invocation();
+    expect(await mocks.handlers[1]!(input)).toMatchObject({
+      ok: false,
+      reason: "store_missing",
+      message: expect.stringMatching(/0051/),
+    });
     expect(rpc).not.toHaveBeenCalled();
   });
 });
