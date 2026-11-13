@@ -132,6 +132,14 @@ function LiveOmni() {
     hasProject: !!projectId,
     consent,
   });
+  // Orb shows why OMNI can't answer, not "Ready", when sending is blocked for reasons other than this message.
+  const sendBlock = canSendTo(agentId, {
+    provider,
+    aiApproved: !!data.access?.ai_approved,
+    paused: !!paused,
+    hasProject: true,
+    consent: true,
+  });
   const bump = () => {
     level.current = Math.min(1, level.current + 0.4);
   };
@@ -393,6 +401,11 @@ function LiveOmni() {
           agentName={agent.name}
           muted={!voiceOn}
           level={level}
+          statusText={
+            agent.chatPath && !sendBlock.ok && !busy && !speech.listening && !voice.speaking
+              ? `Can't answer yet · ${sendBlock.reason}`
+              : undefined
+          }
           state={orbState({
             agentConnected: !!agent.chatPath,
             listening: speech.listening,
