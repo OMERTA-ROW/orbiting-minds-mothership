@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
-import { readFile, mkdtemp, rm } from "node:fs/promises";
+import { readFile, readdir, mkdtemp, rm } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
@@ -61,9 +61,13 @@ test("signed dispatch quarantines an explicitly authorized job across verified l
       CREATE TABLE site_log(actor text, action text, category text, status text,
         summary text, project_id uuid, detail jsonb);
     `);
-    await jackboy.exec(
-      await readFile(join(root, "drizzle/migrations/0044_omni_dispatch_grants.sql"), "utf8"),
+    const dispatchMigrations = (await readdir(join(root, "drizzle/migrations"))).filter((name) =>
+      /^\d{4}_omni_dispatch_grants\.sql$/.test(name),
     );
+    assert.equal(dispatchMigrations.length, 1, "expected exactly one dispatch-grants migration");
+    const [dispatchMigration] = dispatchMigrations;
+    assert.ok(dispatchMigration);
+    await jackboy.exec(await readFile(join(root, "drizzle/migrations", dispatchMigration), "utf8"));
     await jackboy.query("INSERT INTO user_roles VALUES ($1,'owner')", [owner]);
     await jackboy.query(
       "INSERT INTO agent_projects VALUES ($1,$2,true,'https://github.com/acme/repo')",
