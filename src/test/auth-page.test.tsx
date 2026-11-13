@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   aal: vi.fn(),
   factors: vi.fn(),
+  signUp: vi.fn(),
+  signIn: vi.fn(),
 }));
 vi.mock("@/hooks/use-account", () => ({ useAccount: () => ({ user: null, ready: true }) }));
 vi.mock("@/integrations/lovable/index", () => ({
@@ -15,6 +17,8 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getUser: mocks.getUser,
+      signUp: mocks.signUp,
+      signInWithPassword: mocks.signIn,
       signOut: vi.fn(),
       mfa: { getAuthenticatorAssuranceLevel: mocks.aal, listFactors: mocks.factors },
     },
@@ -96,5 +100,51 @@ describe("optional two-step sign-in at sign-in", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
     await screen.findByRole("button", { name: "Try again" });
     expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("one account per identity", () => {
+  it("a returning Google sign-in reuses the account and never signs up", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: "owner-a" } }, error: null });
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledTimes(1));
+    expect(mocks.signUp).not.toHaveBeenCalled();
+    expect(mocks.oauth).toHaveBeenCalledWith("google", expect.anything());
+  });
+  it("a returning owner with two-step on is asked for the code, not shown a new-account flow", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: "owner-a" } }, error: null });
+    mocks.factors.mockResolvedValue({
+      data: { totp: [{ id: "f1", status: "verified" }], all: [] },
+      error: null,
+    });
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+    await screen.findByRole("heading", { name: "Enter your code" });
+    expect(screen.queryByText(/Create your account/)).toBeNull();
+    expect(mocks.signUp).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+  it("a sign-up with an email that already has an account signs nobody in and says no second account is made", async () => {
+    // The provider answers an existing email with no session and no identities.
+    mocks.signUp.mockResolvedValue({
+      data: { user: { id: "obfuscated", identities: [] }, session: null },
+      error: null,
+    });
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Create an account" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "owner@fixture.invalid" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "a-long-password-123" },
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Accept private beta data storage" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      /You are not signed in yet.*no second account is made/,
+    );
+    expect(mocks.navigate).not.toHaveBeenCalled();
+    expect(mocks.aal).not.toHaveBeenCalled();
   });
 });
