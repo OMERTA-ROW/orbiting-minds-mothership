@@ -274,6 +274,51 @@ describe("Jackboy link transport (public certificate, no CA file)", () => {
     await expect(link.connect()).rejects.toThrow("Jackboy link timeout.");
   });
 
+  it("records the expired deadline and wait on a timeout", async () => {
+    const link = new JackboyLink(config(), async () => {}, {
+      timeoutMs: 20,
+      fetch: (_url, init) =>
+        new Promise((_resolve, reject) =>
+          init.signal!.addEventListener("abort", () => reject(init.signal!.reason)),
+        ),
+    });
+    const error = (await link.connect().catch((e: unknown) => e)) as JackboyLinkError;
+    expect(error).toBeInstanceOf(JackboyLinkError);
+    expect(error.stage).toBe("timeout");
+    expect(error.limitMs).toBe(20);
+    expect(error.phase).toBe("reply");
+    expect(error.waitedMs).toBeGreaterThanOrEqual(15);
+  });
+
+  it("gives the configuration probe 9 s by default, beyond Jackboy's 5 s runner wait", async () => {
+    vi.useFakeTimers();
+    try {
+      let aborted = false;
+      const pending = checkJackboyRunnerConfiguration(
+        { ...config(), runnerOrigin: "https://runner.up.railway.app" },
+        async () => {},
+        {
+          fetch: (_url, init) =>
+            new Promise((_resolve, reject) =>
+              init.signal!.addEventListener("abort", () => {
+                aborted = true;
+                reject(init.signal!.reason);
+              }),
+            ),
+        },
+      ).catch((e: unknown) => e);
+      await vi.advanceTimersByTimeAsync(5500);
+      expect(aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(4000);
+      const error = (await pending) as JackboyLinkError;
+      expect(aborted).toBe(true);
+      expect(error.stage).toBe("timeout");
+      expect(error.limitMs).toBe(9000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("reports a failed connection, such as an untrusted certificate, without details", async () => {
     const link = new JackboyLink(config(), async () => {}, {
       fetch: async () => {
