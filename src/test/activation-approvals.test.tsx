@@ -143,23 +143,27 @@ describe("Activation Approvals deployment checks", () => {
       summary: "Existing Railway runner configuration verified through Jackboy.",
       details: [{ label: "OMNI_LINK_NODE_RUNNER_ENABLED", status: "passed", detail: "Enabled." }],
     };
+    const freshPass = { ...passed, checkedAt: new Date().toISOString() };
     mocks.list
       .mockResolvedValueOnce(
         snapshot("runner_only", { approvedThrough: 1, failedStep: 2, checks: [failed] }),
       )
-      .mockResolvedValueOnce(snapshot("runner_only", { approvedThrough: 2, checks: [passed] }));
-    mocks.check.mockResolvedValue({ ok: true, check: passed });
+      .mockResolvedValueOnce(snapshot("runner_only", { approvedThrough: 1, checks: [freshPass] }));
+    mocks.check.mockResolvedValue({ ok: true, check: freshPass, approvalNeeded: true });
     render(<ActivationApprovals />);
 
     expect(await screen.findByText(/Runner configuration needs attention/)).toBeInTheDocument();
     const step = screen
       .getByRole("heading", { name: /2\. Railway runner settings verified/ })
       .closest("li");
-    fireEvent.click(within(step!).getByRole("button", { name: "Run check" }));
+    fireEvent.click(within(step!).getByRole("button", { name: "Retry check" }));
     await waitFor(() => expect(mocks.check).toHaveBeenCalledWith({ data: { step: 2 } }));
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Existing Railway runner configuration verified through Jackboy.",
+    expect(await within(step!).findByRole("status")).toHaveTextContent(
+      /Existing Railway runner configuration verified through Jackboy\. Not approved yet/,
     );
+    // A pass is never approved for the owner.
+    expect(mocks.decide).not.toHaveBeenCalled();
+    expect(within(step!).getByText("Pending")).toBeInTheDocument();
   });
 
   it("keeps an unknown deployment unresolved and names the exact settings to confirm", async () => {
@@ -265,5 +269,201 @@ describe("Activation Approvals access and next step", () => {
     const step1 = screen.getByRole("heading", { name: /1\. Mothership link/ }).closest("li")!;
     expect(within(step1).getByText("Approved")).toBeInTheDocument();
     expect(screen.getByText(/1 of 10 approved/)).toBeInTheDocument();
+  });
+});
+
+function deferred<T>() {
+  let resolve!: (v: T) => void;
+  const promise = new Promise<T>((r) => (resolve = r));
+  return { promise, resolve };
+}
+const stepItem = (n: number) =>
+  screen.getByRole("heading", { name: new RegExp(`^${n}\\. `) }).closest("li")!;
+const audit = (id: string, action: string, step: number, at: string) => ({
+  id,
+  actor_id: owner,
+  action,
+  record_id: String(step),
+  occurred_at: at,
+});
+
+describe("Activation Approvals workflow", () => {
+  it("shows an approved step as closed with disabled Run check/Approve and its own audit history, and focuses the next step", async () => {
+    mocks.list.mockResolvedValue(
+      snapshot("runner_only", {
+        approvedThrough: 1,
+        audit: [
+          audit("a2", "approve", 1, "2026-11-13T19:51:01Z"),
+          audit("a1", "check_passed", 1, "2026-11-13T19:51:00Z"),
+        ],
+      }),
+    );
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^1\. / });
+    const step1 = stepItem(1);
+    expect(within(step1).getByText("Approved")).toBeInTheDocument();
+    expect(within(step1).getByRole("button", { name: "Run check" })).toBeDisabled();
+    expect(within(step1).getByRole("button", { name: "Approve" })).toBeDisabled();
+    const toggle = within(step1).getByRole("button", { name: "Show details" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(within(step1).queryByRole("region", { name: "Step 1 audit history" })).toBeNull();
+    fireEvent.click(toggle);
+    const history = within(step1).getByRole("region", { name: "Step 1 audit history" });
+    expect(within(history).getAllByRole("listitem")).toHaveLength(2);
+    expect(history).toHaveTextContent(/Check passed/);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("heading", { name: /^2\. / })),
+    );
+    expect(stepItem(2)).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("progressbar", { name: "Approved steps" })).toHaveAttribute(
+      "aria-valuenow",
+      "1",
+    );
+  });
+
+  it("explains failed signed Step 2 evidence, offers a safe retry and keeps steps 3–10 locked", async () => {
+    const evidence = {
+      step: 2,
+      status: "needs_attention",
+      evidenceVersion: 2,
+      checkedAt: "2026-11-13T19:51:53Z",
+      summary: "Railway runner configuration is not yet attested.",
+      details: [
+        { label: "Jackboy reply", status: "needs_attention", detail: "HTTP 503 · link_disabled" },
+        {
+          label: "Likely cause",
+          status: "needs_attention",
+          detail: "Jackboy's published site treated this as an ordinary link request.",
+        },
+      ],
+    };
+    mocks.list.mockResolvedValue(
+      snapshot("runner_only", { approvedThrough: 1, failedStep: 2, checks: [evidence] }),
+    );
+    render(<ActivationApprovals />);
+    const result = await screen.findByRole("region", { name: "Step 2 check result" });
+    expect(result).toHaveTextContent("Jackboy reply (Needs attention): HTTP 503 · link_disabled");
+    const step2 = stepItem(2);
+    expect(within(step2).getByText("Failed")).toBeInTheDocument();
+    expect(within(step2).getByRole("button", { name: "Retry check" })).toBeEnabled();
+    expect(within(step2).getByRole("button", { name: "Approve" })).toBeDisabled();
+    for (let n = 3; n <= 10; n++) {
+      expect(within(stepItem(n)).getByText("Locked — waiting on step 2.")).toBeInTheDocument();
+      expect(within(stepItem(n)).queryByRole("button", { name: /Run check|Approve/ })).toBeNull();
+    }
+  });
+
+  it("ignores a second click while a check is running", async () => {
+    const run = deferred<unknown>();
+    mocks.list.mockResolvedValue(snapshot("runner_only", { approvedThrough: 1 }));
+    mocks.check.mockReturnValue(run.promise);
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^2\. / });
+    const button = within(stepItem(2)).getByRole("button", { name: "Run check" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    fireEvent.click(within(screen.getByRole("region", { name: "Next step" })).getByRole("button"));
+    expect(mocks.check).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/Running the step 2 check/)).toBeInTheDocument();
+    run.resolve({ ok: false, reason: "rule", message: "Step 1 must be approved first." });
+    expect(await within(stepItem(2)).findByRole("status")).toHaveTextContent(/approved first/);
+  });
+
+  it("stops waiting on a stuck check, does not rerun it, and shows the recorded status", async () => {
+    mocks.list.mockResolvedValue(snapshot("runner_only", { approvedThrough: 1 }));
+    mocks.check.mockReturnValue(new Promise(() => {}));
+    render(<ActivationApprovals timeouts={{ check: 40 }} />);
+    await screen.findByRole("heading", { name: /^2\. / });
+    fireEvent.click(within(stepItem(2)).getByRole("button", { name: "Run check" }));
+    expect(await within(stepItem(2)).findByRole("status")).toHaveTextContent(
+      /No reply after .* the check was not retried/,
+    );
+    expect(mocks.check).toHaveBeenCalledTimes(1);
+    expect(mocks.list).toHaveBeenCalledTimes(2);
+    expect(within(stepItem(2)).getByRole("button", { name: "Run check" })).toBeEnabled();
+  });
+
+  it("recovers from a stuck first load with a retry", async () => {
+    mocks.list
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockResolvedValue(snapshot("runner_only", { approvedThrough: 1 }));
+    render(<ActivationApprovals timeouts={{ list: 40 }} />);
+    expect(
+      await screen.findByRole("heading", { name: "Loading is taking too long" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry access check" }));
+    expect(await screen.findByRole("heading", { name: /^2\. / })).toBeInTheDocument();
+  });
+
+  it("Refresh status only reads records and never reruns a check", async () => {
+    mocks.list.mockResolvedValue(snapshot("runner_only", { approvedThrough: 1 }));
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^2\. / });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh status" }));
+    expect(await screen.findByText(/No checks were run/)).toBeInTheDocument();
+    expect(mocks.list).toHaveBeenCalledTimes(2);
+    expect(mocks.check).not.toHaveBeenCalled();
+    expect(mocks.decide).not.toHaveBeenCalled();
+  });
+
+  it("approves a technical step only by the owner's click after a fresh pass", async () => {
+    const pass = {
+      step: 2,
+      status: "passed",
+      evidenceVersion: 2,
+      checkedAt: new Date().toISOString(),
+      summary: "Existing Railway runner configuration verified through Jackboy.",
+      details: [],
+    };
+    mocks.list
+      .mockResolvedValueOnce(snapshot("runner_only", { approvedThrough: 1, checks: [pass] }))
+      .mockResolvedValue(snapshot("runner_only", { approvedThrough: 2, checks: [pass] }));
+    mocks.decide.mockResolvedValue({ ok: true });
+    render(<ActivationApprovals />);
+    expect(await screen.findByRole("region", { name: "Next step" })).toHaveTextContent(
+      /Approve step 2/,
+    );
+    fireEvent.click(within(stepItem(2)).getByRole("button", { name: "Approve" }));
+    await waitFor(() =>
+      expect(mocks.decide).toHaveBeenCalledWith({
+        data: expect.objectContaining({ step: 2, action: "approve" }),
+      }),
+    );
+    // Authoritative status: shown as approved only after the server's record says so.
+    await waitFor(() => expect(within(stepItem(2)).getByText("Approved")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("heading", { name: /^3\. / })),
+    );
+  });
+
+  it("moves to the next step after an owner approval is recorded", async () => {
+    mocks.list
+      .mockResolvedValueOnce(snapshot("runner_only", { approvedThrough: 2 }))
+      .mockResolvedValue(snapshot("runner_only", { approvedThrough: 3 }));
+    mocks.decide.mockResolvedValue({ ok: true });
+    render(<ActivationApprovals />);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("heading", { name: /^3\. / })),
+    );
+    fireEvent.click(within(stepItem(3)).getByRole("button", { name: "Approve" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("heading", { name: /^4\. / })),
+    );
+    expect(within(stepItem(3)).getByRole("button", { name: "Show details" })).toBeInTheDocument();
+    expect(screen.getByText(/3 of 10 approved/)).toBeInTheDocument();
+  });
+
+  it("keeps every action disabled without a fresh two-step code", async () => {
+    mocks.list.mockResolvedValue(
+      snapshot("runner_only", { approvedThrough: 2, mfaAgeSeconds: null }),
+    );
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^3\. / });
+    expect(within(stepItem(3)).getByRole("button", { name: "Approve" })).toBeDisabled();
+    expect(screen.getByRole("region", { name: "Next step" })).toHaveTextContent(
+      /Enter your authenticator code/,
+    );
+    fireEvent.click(within(stepItem(2)).getByRole("button", { name: "Show details" }));
+    expect(within(stepItem(2)).getByRole("button", { name: "Revoke" })).toBeDisabled();
   });
 });

@@ -97,7 +97,21 @@ export function stepState(
 }
 
 export type NextActionKind =
-  "reverify" | "database_update" | "run_check" | "approve" | "fresh_approval" | "done";
+  | "reverify"
+  | "database_update"
+  | "run_check"
+  | "approve_checked"
+  | "approve"
+  | "fresh_approval"
+  | "done";
+
+/** The database accepts a technical approval only within 15 minutes of a passed check. */
+export const CHECK_FRESH_MS = 15 * 60 * 1000;
+
+export function checkIsFresh(checkedAt: string | undefined, now: number): boolean {
+  const at = checkedAt ? Date.parse(checkedAt) : NaN;
+  return Number.isFinite(at) && at <= now + 60_000 && now - at < CHECK_FRESH_MS;
+}
 
 export interface NextAction {
   kind: NextActionKind;
@@ -108,7 +122,7 @@ export interface NextAction {
 
 export function nextAction(input: {
   rows: ApprovalRow[];
-  checks: Array<{ step: number; status: CheckStatus }>;
+  checks: Array<{ step: number; status: CheckStatus; checkedAt?: string }>;
   now: number;
   resetAt: string | null;
   mfaFresh: boolean;
@@ -153,15 +167,25 @@ export function nextAction(input: {
       detail:
         "This was approved before your last security reset. Revoke it, then approve it again.",
     };
-  if (technical)
+  if (technical) {
+    const check = input.checks.find((c) => c.step === first.step);
+    if (check?.status === "passed" && checkIsFresh(check.checkedAt, input.now))
+      return {
+        kind: "approve_checked",
+        step: first.step,
+        title: `Approve step ${first.step}: ${meta.title}`,
+        detail:
+          "The server-side check passed. Review it, then approve within 15 minutes of the check; a pass is never approved for you.",
+      };
     return {
       kind: "run_check",
       step: first.step,
       title: `Run check for step ${first.step}: ${meta.title}`,
       detail: stale
-        ? "Approved before your last security reset; a fresh passing check re-approves it."
-        : "A passing server-side check approves this step. A failing check marks it failed with the reason.",
+        ? "Approved before your last security reset. Run a fresh check, then approve it again yourself."
+        : "Run the server-side check. If it passes, you approve it yourself; a failing check marks it failed with the reason.",
     };
+  }
   return {
     kind: "approve",
     step: first.step,

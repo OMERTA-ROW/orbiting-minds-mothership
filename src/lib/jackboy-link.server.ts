@@ -43,6 +43,60 @@ type Reply = {
     result?: { passed: boolean; checks: number; runner: string } | null;
   };
 };
+/** Nonsecret reason codes Jackboy returns on refusal; anything else is reported as unrecognized. */
+export const JACKBOY_REFUSAL_CODES = [
+  "link_disabled",
+  "configuration_check_unavailable",
+  "authentication_failed",
+  "project_or_action_denied",
+  "configuration_scope_denied",
+  "https_post_required",
+  "invalid_request",
+] as const;
+export type JackboyRefusalCode = (typeof JACKBOY_REFUSAL_CODES)[number];
+export type JackboyFailureStage =
+  | "audit"
+  | "connection"
+  | "timeout"
+  | "redirect"
+  | "too_large"
+  | "http"
+  | "proof"
+  | "contract"
+  | "runner_mismatch";
+
+/** A link failure with a safe stage, HTTP status and allowlisted refusal code; never reply contents. */
+export class JackboyLinkError extends Error {
+  readonly stage: JackboyFailureStage;
+  readonly status: number | undefined;
+  readonly code: JackboyRefusalCode | undefined;
+  constructor(
+    message: string,
+    stage: JackboyFailureStage,
+    extra: { status?: number; code?: JackboyRefusalCode } = {},
+  ) {
+    super(message);
+    this.name = "JackboyLinkError";
+    this.stage = stage;
+    this.status = extra.status;
+    this.code = extra.code;
+  }
+}
+
+/** Only an exact allowlisted `{ "error": code }` is kept. */
+export function refusalCode(body: string): JackboyRefusalCode | undefined {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return undefined;
+    const code = (parsed as { error?: unknown }).error;
+    return (JACKBOY_REFUSAL_CODES as readonly unknown[]).includes(code)
+      ? (code as JackboyRefusalCode)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
 const hmac = (key: string, text: string) => createHmac("sha256", key).update(text).digest("hex");
 
@@ -139,7 +193,7 @@ export async function readCapped(response: Response): Promise<string> {
   const declared = Number(response.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > MAX_REPLY_BYTES) {
     await response.body?.cancel().catch(() => {});
-    throw new Error("Jackboy response too large.");
+    throw new JackboyLinkError("Jackboy response too large.", "too_large");
   }
   if (!response.body) return "";
   const reader = response.body.getReader();
@@ -151,7 +205,7 @@ export async function readCapped(response: Response): Promise<string> {
     length += value.byteLength;
     if (length > MAX_REPLY_BYTES) {
       await reader.cancel().catch(() => {});
-      throw new Error("Jackboy response too large.");
+      throw new JackboyLinkError("Jackboy response too large.", "too_large");
     }
     chunks.push(value);
   }
@@ -182,21 +236,21 @@ async function post(
     });
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
-      throw new Error("Jackboy link timeout.");
-    throw new Error("Jackboy link connection failed.");
+      throw new JackboyLinkError("Jackboy link timeout.", "timeout");
+    throw new JackboyLinkError("Jackboy link connection failed.", "connection");
   }
   if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
     await response.body?.cancel().catch(() => {});
-    throw new Error("Jackboy link refused a redirect.");
+    throw new JackboyLinkError("Jackboy link refused a redirect.", "redirect");
   }
   let text: string;
   try {
     text = await readCapped(response);
   } catch (error) {
-    if (error instanceof Error && error.message === "Jackboy response too large.") throw error;
+    if (error instanceof JackboyLinkError) throw error;
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
-      throw new Error("Jackboy link timeout.");
-    throw new Error("Jackboy link connection failed.");
+      throw new JackboyLinkError("Jackboy link timeout.", "timeout");
+    throw new JackboyLinkError("Jackboy link connection failed.", "connection");
   }
   return { status: response.status, body: text, proof: response.headers.get("x-omni-proof") || "" };
 }
@@ -230,9 +284,13 @@ async function sendSigned(
     },
     body,
   );
-  if (result.status === 401) throw new Error("Jackboy session rejected.");
-  if (result.status !== 200 && result.status !== 202)
-    throw new Error(`Jackboy request failed (HTTP ${result.status}).`);
+  if (result.status !== 200 && result.status !== 202) {
+    const code = refusalCode(result.body);
+    const extra = code ? { status: result.status, code } : { status: result.status };
+    if (result.status === 401)
+      throw new JackboyLinkError("Jackboy session rejected.", "http", extra);
+    throw new JackboyLinkError(`Jackboy request failed (HTTP ${result.status}).`, "http", extra);
+  }
   const expected = hmac(
     config.secret,
     `${CONTRACT}\nresponse\n${nonce}\n${result.status}\n${result.body}`,
@@ -240,17 +298,17 @@ async function sendSigned(
   const received = Buffer.from(result.proof, "utf8");
   const wanted = Buffer.from(expected, "utf8");
   if (received.length !== wanted.length || !timingSafeEqual(received, wanted))
-    throw new Error("Jackboy response proof is invalid.");
+    throw new JackboyLinkError("Jackboy response proof is invalid.", "proof");
   let reply: Reply;
   try {
     reply = JSON.parse(result.body);
   } catch {
-    throw new Error("Jackboy response is not valid JSON.");
+    throw new JackboyLinkError("Jackboy response is not valid JSON.", "contract");
   }
   if (!reply || typeof reply !== "object" || Array.isArray(reply))
-    throw new Error("Jackboy response contract is invalid.");
+    throw new JackboyLinkError("Jackboy response contract is invalid.", "contract");
   if (reply.contract !== CONTRACT || reply.requestNonce !== nonce)
-    throw new Error("Jackboy response contract is invalid.");
+    throw new JackboyLinkError("Jackboy response contract is invalid.", "contract");
   if (
     jobId &&
     (reply.job?.id !== jobId ||
@@ -287,9 +345,12 @@ export async function checkJackboyRunnerConfiguration(
   const reply = await sendSigned(c, options, "configuration", c.bootstrap);
   const parsed = runnerConfigurationSchema.safeParse(reply.configuration);
   if (!parsed.success || reply.execution !== "none" || reply.projectId !== c.projectId)
-    throw new Error("Jackboy configuration response is invalid.");
+    throw new JackboyLinkError("Jackboy configuration response is invalid.", "contract");
   if (parsed.data && parsed.data.runnerOrigin !== new URL(c.runnerOrigin).origin)
-    throw new Error("Jackboy configuration targets a different runner.");
+    throw new JackboyLinkError(
+      "Jackboy configuration targets a different runner.",
+      "runner_mismatch",
+    );
   await audit(parsed.data ? "configuration_verified" : "configuration_unavailable");
   return parsed.data;
 }
