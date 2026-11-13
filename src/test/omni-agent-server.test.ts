@@ -180,14 +180,14 @@ describe("Persisted OMNI agent request", () => {
     });
     const text = await (await handleOmniAgent(request({ contextTurns: 2 }))).text();
     expect(text).toContain('"type":"context"');
-    expect(m.call.mock.calls[0][5]).toEqual([
+    expect(m.call.mock.calls[0]?.[5]).toEqual([
       { role: "user", content: "first" },
       { role: "assistant", content: "reply one" },
     ]);
   });
   it("sends no earlier turns by default", async () => {
     await (await handleOmniAgent(request())).text();
-    expect(m.call.mock.calls[0][5]).toEqual([]);
+    expect(m.call.mock.calls[0]?.[5]).toEqual([]);
   });
   it("fails closed when earlier turns cannot be read", async () => {
     m.auth.mockResolvedValue({

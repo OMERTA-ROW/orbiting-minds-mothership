@@ -53,7 +53,7 @@ describe("earlier-turn context", () => {
     const ctx = contextFromRuns(runs, "now", 2);
     expect(ctx.ids).toEqual(["b", "c"]);
     expect(ctx.messages.map((m) => m.role)).toEqual(["user", "assistant", "user", "assistant"]);
-    expect(ctx.messages[0].content).toBe("ask b");
+    expect(ctx.messages[0]?.content).toBe("ask b");
   });
   it("caps at six turns and skips turns the safety check rejects", () => {
     const many = Array.from({ length: 10 }, (_, i) => run(`r${i}`, `2026-10-${10 + i}`));
@@ -77,7 +77,7 @@ describe("saved history in chat", () => {
     const turns = savedTurns([run("b", "2026-11-02"), run("a", "2026-11-01")], new Set(["b"]));
     expect(turns.map((t) => t.key)).toEqual(["a:u", "a:a"]);
     expect(turns.every((t) => t.agent === "omni" && t.saved)).toBe(true);
-    expect(turns[1].request).toBe("ask a");
+    expect(turns[1]?.request).toBe("ask a");
   });
 });
 
@@ -117,11 +117,11 @@ describe("connection rows", () => {
     expect(rows.find((r) => r.id === "text-agent")?.state).toBe("ready");
   });
   it("shows the text agent blocked when paused or unapproved", () => {
-    expect(chatConnections({ ...base, provider: "ready", paused: true })[0].state).toBe("blocked");
-    expect(chatConnections({ ...base, provider: "ready", aiApproved: false })[0].state).toBe(
+    expect(chatConnections({ ...base, provider: "ready", paused: true })[0]?.state).toBe("blocked");
+    expect(chatConnections({ ...base, provider: "ready", aiApproved: false })[0]?.state).toBe(
       "blocked",
     );
-    expect(chatConnections({ ...base, provider: "unknown" })[0].state).toBe("unknown");
+    expect(chatConnections({ ...base, provider: "unknown" })[0]?.state).toBe("unknown");
   });
 });
 
