@@ -95,7 +95,7 @@
   --orb-blue: oklch(0.68 0.17 255);
   --orb-violet: oklch(0.62 0.2 295);
   --orb-glow-blue: oklch(0.62 0.17 255 / 38%);
-  --orb-glow-violet: oklch(0.55 0.2 295 / 26%);
+  --orb-glow-violet: oklch(0.55 0.22 295 / 40%);
   --orb-glow-dim: oklch(0.6 0.02 270 / 18%);
   --orb-rim: oklch(0.72 0.15 265 / 55%);
   --orb-highlight: oklch(0.95 0.03 260 / 16%);
@@ -132,7 +132,6 @@
 }
 .omni-area { background: var(--background); }
 .omni-area:has(.omni-orb-dashboard) { --background: var(--orb-space); --card: oklch(0.12 0.02 275); --popover: oklch(0.12 0.02 275); --muted: oklch(0.18 0.025 275); --border: oklch(0.4 0.05 275 / 55%); --ring: var(--orb-blue); background: var(--orb-starfield), var(--orb-space); }
-.omni-orb-stage { background: var(--orb-starfield); }
 .omni-area > .orbital-background, .omni-area > .site-cosmos { display: none; }
 .omni-area h1, .omni-area h2, .omni-area h3 { font-family: var(--font-sans); }
 .omni-area h1:not(.omni-area-header h1) { font-size: 1.875rem; line-height: 1.3; }
