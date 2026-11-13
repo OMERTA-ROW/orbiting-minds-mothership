@@ -70,7 +70,7 @@ type Pending = {
   step: number | null;
   since: number;
 };
-type Notice = { step: number | null; text: string; tone?: "ok" | "error" };
+type Notice = { step: number | null; text: string; tone?: "ok" | "error" | undefined };
 
 function when(iso: string | null) {
   return iso ? new Date(iso).toLocaleString() : "—";
