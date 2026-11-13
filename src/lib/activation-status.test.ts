@@ -47,9 +47,7 @@ describe("fresh approval after a security reset", () => {
       const r = rows(3);
       expect(approvedBeforeReset(r[0]!, reset)).toBe(true);
       expect(effectiveRows(r, reset).filter((x) => x.status === "approved")).toHaveLength(0);
-      expect(stepState(r[0]!, { rows: r, now: NOW, resetAt: reset })).toBe(
-        "needs_fresh_approval",
-      );
+      expect(stepState(r[0]!, { rows: r, now: NOW, resetAt: reset })).toBe("needs_fresh_approval");
     },
   );
   it("keeps approvals decided after the reset", () => {
@@ -116,9 +114,10 @@ describe("next step is always actionable", () => {
     const stale = rows(3);
     stale[0] = { ...stale[0]!, decided_at: "2026-11-13T16:25:00Z" };
     stale[1] = { ...stale[1]!, decided_at: "2026-11-13T16:25:00Z" };
-    expect(
-      nextAction({ ...base, rows: stale, resetAt: "2026-11-13T16:20:51Z" }),
-    ).toMatchObject({ kind: "fresh_approval", step: 3 });
+    expect(nextAction({ ...base, rows: stale, resetAt: "2026-11-13T16:20:51Z" })).toMatchObject({
+      kind: "fresh_approval",
+      step: 3,
+    });
   });
   it("reports done without implying anything was switched on", () => {
     const n = nextAction({ ...base, rows: rows(10), resetAt: null });

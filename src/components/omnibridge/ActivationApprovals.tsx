@@ -79,7 +79,7 @@ export function ActivationApprovals() {
   const refresh = useCallback(async () => {
     const result = await list();
     if ("denied" in result) {
-      setReason(result.reason);
+      setReason(result.reason ?? "unreadable");
       throw new Error(result.reason);
     }
     setData(result);
@@ -228,7 +228,10 @@ export function ActivationApprovals() {
             Checking owner access…
           </p>
         ) : (
-          <section aria-labelledby="access-title" className="space-y-3 rounded-lg border bg-card p-4">
+          <section
+            aria-labelledby="access-title"
+            className="space-y-3 rounded-lg border bg-card p-4"
+          >
             <h2 id="access-title" className="text-lg">
               {text.title}
             </h2>

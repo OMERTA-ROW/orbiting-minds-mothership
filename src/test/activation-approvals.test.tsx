@@ -11,7 +11,9 @@ vi.mock("@tanstack/react-start", () => ({
   useServerFn: (name: string) => mocks[name as keyof typeof mocks],
 }));
 vi.mock("@tanstack/react-router", () => ({
-  Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
+  ),
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -247,7 +249,13 @@ describe("Activation Approvals access and next step", () => {
       snapshot("runner_only", {
         approvedThrough: 1,
         audit: [
-          { id: "a1", actor_id: owner, action: "revoke", record_id: "2", occurred_at: "2026-11-12T13:00:00Z" },
+          {
+            id: "a1",
+            actor_id: owner,
+            action: "revoke",
+            record_id: "2",
+            occurred_at: "2026-11-12T13:00:00Z",
+          },
         ],
       }),
     );

@@ -52,7 +52,10 @@ type CheckStoreClient = {
       order(column: string): PromiseLike<{ data: CheckRowRaw[] | null; error: DbError }>;
     };
   };
-  rpc(fn: "activation_approval_record_check", args: Record<string, unknown>): PromiseLike<{
+  rpc(
+    fn: "activation_approval_record_check",
+    args: Record<string, unknown>,
+  ): PromiseLike<{
     error: DbError;
   }>;
 };
@@ -525,7 +528,11 @@ export const runActivationApprovalCheck = createServerFn({ method: "POST" })
         message: "Account security history could not be read; no check was run.",
       };
     }
-    const blocker = blockingStep(effectiveRows(normalizeRows(rows), resetAt), data.step, Date.now());
+    const blocker = blockingStep(
+      effectiveRows(normalizeRows(rows), resetAt),
+      data.step,
+      Date.now(),
+    );
     if (blocker !== null)
       return {
         ok: false as const,
@@ -541,18 +548,19 @@ export const runActivationApprovalCheck = createServerFn({ method: "POST" })
     const { error: evidenceError } = await checkStore(supabaseAdmin).rpc(
       "activation_approval_record_check",
       {
-      _step: data.step,
-      _status: evaluated.check.status,
-      _version: evaluated.check.evidenceVersion,
-      _summary: evaluated.check.summary,
-      _details: evaluated.check.details.map((detail): Json => ({
-        label: detail.label,
-        status: detail.status,
-        detail: detail.detail,
-      })),
-      _mode: evaluated.deploymentMode,
-      _actor: context.userId,
-    });
+        _step: data.step,
+        _status: evaluated.check.status,
+        _version: evaluated.check.evidenceVersion,
+        _summary: evaluated.check.summary,
+        _details: evaluated.check.details.map((detail): Json => ({
+          label: detail.label,
+          status: detail.status,
+          detail: detail.detail,
+        })),
+        _mode: evaluated.deploymentMode,
+        _actor: context.userId,
+      },
+    );
     if (evidenceError)
       return {
         ok: false as const,

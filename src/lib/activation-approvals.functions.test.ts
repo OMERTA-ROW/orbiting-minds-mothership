@@ -44,7 +44,7 @@ vi.mock("@/integrations/supabase/client.server", () => ({
 function chain(result: () => unknown) {
   const q: Record<string, unknown> = {};
   for (const m of ["select", "eq", "in", "order", "limit"]) q[m] = () => q;
-  q.then = (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) =>
+  q["then"] = (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) =>
     Promise.resolve(result()).then(ok, bad);
   return q;
 }

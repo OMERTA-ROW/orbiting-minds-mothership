@@ -63,13 +63,7 @@ export function effectiveRows(rows: ApprovalRow[], resetAt: string | null): Appr
 }
 
 export type StepState =
-  | "approved"
-  | "needs_fresh_approval"
-  | "expired"
-  | "revoked"
-  | "failed"
-  | "locked"
-  | "pending";
+  "approved" | "needs_fresh_approval" | "expired" | "revoked" | "failed" | "locked" | "pending";
 
 const REVOKE_ACTIONS = ["revoke", "revoke_cascade", "fresh_evidence_required"];
 
@@ -85,10 +79,16 @@ export const STEP_STATE_LABEL: Record<StepState, string> = {
 
 export function stepState(
   row: ApprovalRow,
-  ctx: { rows: ApprovalRow[]; now: number; resetAt: string | null; lastAuditAction?: string },
+  ctx: {
+    rows: ApprovalRow[];
+    now: number;
+    resetAt: string | null;
+    lastAuditAction?: string | undefined;
+  },
 ): StepState {
   if (approvedBeforeReset(row, ctx.resetAt)) return "needs_fresh_approval";
-  if (row.status === "approved") return isEffectivelyApproved(row, ctx.now) ? "approved" : "expired";
+  if (row.status === "approved")
+    return isEffectivelyApproved(row, ctx.now) ? "approved" : "expired";
   if (row.status === "failed") return "failed";
   if (blockingStep(effectiveRows(ctx.rows, ctx.resetAt), row.step, ctx.now) !== null)
     return "locked";
@@ -97,12 +97,7 @@ export function stepState(
 }
 
 export type NextActionKind =
-  | "reverify"
-  | "database_update"
-  | "run_check"
-  | "approve"
-  | "fresh_approval"
-  | "done";
+  "reverify" | "database_update" | "run_check" | "approve" | "fresh_approval" | "done";
 
 export interface NextAction {
   kind: NextActionKind;
