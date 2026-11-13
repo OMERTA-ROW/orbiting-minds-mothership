@@ -5,11 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { betaQuery } from "@/lib/beta-query";
 import { type OmniEvent } from "@/lib/beta";
 import { omniAgentInput, type AgentEvent } from "@/lib/omni-agent";
-import {
-  cancelOmniAgent,
-  readOmniAgentRuns,
-  readOmniChatStatus,
-} from "@/lib/omni-agent.functions";
+import { cancelOmniAgent, readOmniAgentRuns, readOmniChatStatus } from "@/lib/omni-agent.functions";
 import {
   CONTEXT_TURN_CHOICES,
   RUN_STATUS_LABEL,
@@ -109,13 +105,10 @@ function LiveOmni() {
   const models = chatModels(statusQuery.data);
   const sessionRunIds = useMemo(
     () =>
-      new Set(
-        items.flatMap((it) => (it.kind === "turn" && it.turn.runId ? [it.turn.runId] : [])),
-      ),
+      new Set(items.flatMap((it) => (it.kind === "turn" && it.turn.runId ? [it.turn.runId] : []))),
     [items],
   );
-  const history =
-    showSaved && runsQuery.data ? savedTurns(runsQuery.data, sessionRunIds) : [];
+  const history = showSaved && runsQuery.data ? savedTurns(runsQuery.data, sessionRunIds) : [];
   const projectName = data.projects.find((p) => p.id === projectId)?.name ?? "";
   const [agentId, setAgentId] = useState<VoiceAgentId>("omni");
   const [voiceOn, setVoiceOn] = useState(false);
@@ -221,7 +214,14 @@ function LiveOmni() {
       ...prev,
       {
         kind: "turn",
-        turn: { ...base, key: `${runId}:u`, role: "user", text: input.message, status: null, at: now },
+        turn: {
+          ...base,
+          key: `${runId}:u`,
+          role: "user",
+          text: input.message,
+          status: null,
+          at: now,
+        },
       },
       {
         kind: "turn",
@@ -520,7 +520,9 @@ function LiveOmni() {
                     onChange={(next) =>
                       setItems((prev) =>
                         prev.map((p) =>
-                          p.kind === "task" && p.task.id === next.id ? { kind: "task", task: next } : p,
+                          p.kind === "task" && p.task.id === next.id
+                            ? { kind: "task", task: next }
+                            : p,
                         ),
                       )
                     }
@@ -590,9 +592,9 @@ function LiveOmni() {
                 disabled={busy}
               />
               I consent to sending non-sensitive message and selected project context
-              {contextTurns ? `, plus up to ${contextTurns} earlier saved turns,` : ""} to Lovable AI.
-              Workspace credits are charged; exact charge is not available here. I also consent to
-              saving this message and the response privately in my project.
+              {contextTurns ? `, plus up to ${contextTurns} earlier saved turns,` : ""} to Lovable
+              AI. Workspace credits are charged; exact charge is not available here. I also consent
+              to saving this message and the response privately in my project.
             </label>
             <div className="mt-4 flex gap-2">
               {busy ? (

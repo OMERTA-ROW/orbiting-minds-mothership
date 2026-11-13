@@ -62,7 +62,9 @@ describe("OMNI orb state", () => {
 
 describe("speakableText", () => {
   it("does not read code blocks or link addresses aloud", () => {
-    const out = speakableText("Run this:\n```ts\nconst x = 1;\n```\nSee [docs](https://example.com).");
+    const out = speakableText(
+      "Run this:\n```ts\nconst x = 1;\n```\nSee [docs](https://example.com).",
+    );
     expect(out).not.toContain("const x");
     expect(out).not.toContain("https://");
     expect(out).toContain("docs");

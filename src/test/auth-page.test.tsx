@@ -1,12 +1,24 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ navigate: vi.fn(), oauth: vi.fn(), getUser: vi.fn(), aal: vi.fn(), factors: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  navigate: vi.fn(),
+  oauth: vi.fn(),
+  getUser: vi.fn(),
+  aal: vi.fn(),
+  factors: vi.fn(),
+}));
 vi.mock("@/hooks/use-account", () => ({ useAccount: () => ({ user: null, ready: true }) }));
 vi.mock("@/integrations/lovable/index", () => ({
   lovable: { auth: { signInWithOAuth: mocks.oauth } },
 }));
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: { auth: { getUser: mocks.getUser, signOut: vi.fn(), mfa: { getAuthenticatorAssuranceLevel: mocks.aal, listFactors: mocks.factors } } },
+  supabase: {
+    auth: {
+      getUser: mocks.getUser,
+      signOut: vi.fn(),
+      mfa: { getAuthenticatorAssuranceLevel: mocks.aal, listFactors: mocks.factors },
+    },
+  },
 }));
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: object) => ({ options }),
@@ -62,7 +74,10 @@ describe("optional two-step sign-in at sign-in", () => {
   });
   it("asks accounts with two-step on for their code before opening any page", async () => {
     // The stored session says nothing about factors; the fresh server list does.
-    mocks.factors.mockResolvedValue({ data: { totp: [{ id: "f1", status: "verified" }], all: [] }, error: null });
+    mocks.factors.mockResolvedValue({
+      data: { totp: [{ id: "f1", status: "verified" }], all: [] },
+      error: null,
+    });
     open();
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
     await screen.findByRole("textbox", { name: "6-digit authenticator code" });
@@ -71,7 +86,9 @@ describe("optional two-step sign-in at sign-in", () => {
   it("does not stop accounts that never turned it on", async () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
-    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith({ to: "/beta", replace: true }));
+    await waitFor(() =>
+      expect(mocks.navigate).toHaveBeenCalledWith({ to: "/beta", replace: true }),
+    );
   });
   it("stays put with a retry when the check itself fails", async () => {
     mocks.aal.mockResolvedValue({ data: null, error: { message: "offline" } });

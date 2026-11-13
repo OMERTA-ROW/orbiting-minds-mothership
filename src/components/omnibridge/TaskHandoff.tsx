@@ -129,19 +129,23 @@ export function TaskHandoff(props: {
           </Button>
         )}
       </div>
-      {task.state === "held" && (!handoff || handoff.status === "error") && !projectOk && !blocked && (
-        <p className="text-xs text-muted-foreground">
-          Enter the Jackboy project id for {task.repository}. It is Jackboy's id, not a Mothership one.
-        </p>
-      )}
+      {task.state === "held" &&
+        (!handoff || handoff.status === "error") &&
+        !projectOk &&
+        !blocked && (
+          <p className="text-xs text-muted-foreground">
+            Enter the Jackboy project id for {task.repository}. It is Jackboy's id, not a Mothership
+            one.
+          </p>
+        )}
       {(note || blocked) && (
         <p role="status" className="text-xs text-muted-foreground">
           {note || blocked}
         </p>
       )}
       <p className="text-xs text-muted-foreground">
-        Needs your authenticator within 15 minutes. Jackboy queues it and still asks for your passkey.
-        Mothership never runs it.
+        Needs your authenticator within 15 minutes. Jackboy queues it and still asks for your
+        passkey. Mothership never runs it.
       </p>
     </div>
   );

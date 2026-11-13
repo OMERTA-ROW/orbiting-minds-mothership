@@ -16,11 +16,19 @@ import { evaluateSandboxHealth, type RemoteReply } from "@/lib/omni-workspace";
 const root = process.getuid?.() === 0;
 const PORT = 18000 + Math.floor(Math.random() * 1000);
 const SECRET = "t".repeat(48);
-const cfg = { origin: `http://127.0.0.1:${PORT}`, clientId: "mothership-test", secret: SECRET, projectId: "omni" };
+const cfg = {
+  origin: `http://127.0.0.1:${PORT}`,
+  clientId: "mothership-test",
+  secret: SECRET,
+  projectId: "omni",
+};
 let proc: ChildProcess | null = null;
 let dir = "";
 
-async function call(action: Parameters<typeof workspaceRequest>[1], payload: Record<string, unknown>) {
+async function call(
+  action: Parameters<typeof workspaceRequest>[1],
+  payload: Record<string, unknown>,
+) {
   return workspaceRequest(cfg, action, payload);
 }
 
@@ -31,13 +39,27 @@ async function runApproved(sessionId: string, command: string) {
   const decided = await call("step.decide", { sessionId, jobId, stepId: "cmd", approve: true });
   steps.push(...decided.steps);
   let status = decided.job?.status;
-  for (let i = 0; i < 100 && status !== "done" && status !== "failed" && status !== "stopped"; i++) {
+  for (
+    let i = 0;
+    i < 100 && status !== "done" && status !== "failed" && status !== "stopped";
+    i++
+  ) {
     await new Promise((r) => setTimeout(r, 100));
     const r = await call("events.poll", { sessionId, jobId });
     steps.push(...r.steps);
     status = r.job?.status;
   }
-  return { jobId, queued, status, steps, out: (stream: string) => steps.filter((s) => s.stream === stream).map((s) => s.body).join("") };
+  return {
+    jobId,
+    queued,
+    status,
+    steps,
+    out: (stream: string) =>
+      steps
+        .filter((s) => s.stream === stream)
+        .map((s) => s.body)
+        .join(""),
+  };
 }
 
 describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () => {
@@ -59,7 +81,10 @@ describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () 
       stdio: ["ignore", "pipe", "pipe"],
     });
     for (let i = 0; i < 50; i++) {
-      const ok = await fetch(`${cfg.origin}/healthz`).then((r) => r.ok, () => false);
+      const ok = await fetch(`${cfg.origin}/healthz`).then(
+        (r) => r.ok,
+        () => false,
+      );
       if (ok) break;
       await new Promise((r) => setTimeout(r, 100));
     }
@@ -82,7 +107,12 @@ describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () 
     const s = await call("session.start", { sessionId, agentId: "omni", provider: "none" });
     expect(s.session?.sandboxId).toMatch(/^sbx-/);
     const jobId = randomUUID();
-    const q = await call("command.run", { sessionId, jobId, command: "touch ran", autonomous: true });
+    const q = await call("command.run", {
+      sessionId,
+      jobId,
+      command: "touch ran",
+      autonomous: true,
+    });
     expect(q.steps[0]).toMatchObject({ kind: "command", status: "pending_approval" });
     expect(q.job?.status).toBe("queued");
     const rej = await call("step.decide", { sessionId, jobId, stepId: "cmd", approve: false });
@@ -101,7 +131,10 @@ describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () 
   });
 
   it("has no network and cannot read the service's settings", async () => {
-    const net = await runApproved(sessionId, 'timeout 2 bash -c "exec 3<>/dev/tcp/1.1.1.1/443" 2>/dev/null && echo OPEN || echo BLOCKED');
+    const net = await runApproved(
+      sessionId,
+      'timeout 2 bash -c "exec 3<>/dev/tcp/1.1.1.1/443" 2>/dev/null && echo OPEN || echo BLOCKED',
+    );
     expect(net.out("stdout")).toContain("BLOCKED");
     const env = await runApproved(sessionId, "env; cat /proc/1/environ 2>&1 | head -c 200; echo");
     expect(env.out("stdout") + env.out("stderr")).not.toContain(SECRET);
@@ -128,7 +161,12 @@ describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () 
 
   it("refuses repositories outside the allow-list", async () => {
     const jobId = randomUUID();
-    const first = await call("repo.checkout", { sessionId, jobId, repository: "someone/else", ref: "main" });
+    const first = await call("repo.checkout", {
+      sessionId,
+      jobId,
+      repository: "someone/else",
+      ref: "main",
+    });
     await new Promise((r) => setTimeout(r, 200));
     const later = await call("events.poll", { sessionId, jobId });
     const r = { steps: [...first.steps, ...later.steps] };
@@ -144,7 +182,9 @@ describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () 
   });
 
   it("rejects wrong signatures and replayed requests", async () => {
-    await expect(workspaceRequest({ ...cfg, secret: "x".repeat(48) }, "health.check", {})).rejects.toThrow(/signature/);
+    await expect(
+      workspaceRequest({ ...cfg, secret: "x".repeat(48) }, "health.check", {}),
+    ).rejects.toThrow(/signature/);
     const body = JSON.stringify({ action: "health.check", projectId: "omni" });
     const { createHash, createHmac } = await import("node:crypto");
     const ts = String(Math.floor(Date.now() / 1000));
@@ -157,8 +197,16 @@ describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () 
       "x-omni-nonce": nonce,
       "x-omni-signature": createHmac("sha256", SECRET).update(msg).digest("hex"),
     };
-    const first = await fetch(`${cfg.origin}/api/public/omni/workspace`, { method: "POST", headers, body });
-    const second = await fetch(`${cfg.origin}/api/public/omni/workspace`, { method: "POST", headers, body });
+    const first = await fetch(`${cfg.origin}/api/public/omni/workspace`, {
+      method: "POST",
+      headers,
+      body,
+    });
+    const second = await fetch(`${cfg.origin}/api/public/omni/workspace`, {
+      method: "POST",
+      headers,
+      body,
+    });
     expect(first.status).toBe(200);
     expect(second.status).toBe(401);
   });
@@ -167,13 +215,18 @@ describe.skipIf(!root)("cloud sandbox reference service (local end-to-end)", () 
     const other = randomUUID();
     await call("session.start", { sessionId: other, agentId: "omni", provider: "none" });
     await runApproved(sessionId, "echo private > note.txt");
-    const peek = await runApproved(other, `cat ${path.join(dir, "root", sessionId, "work", "note.txt")} 2>&1 || true`);
+    const peek = await runApproved(
+      other,
+      `cat ${path.join(dir, "root", sessionId, "work", "note.txt")} 2>&1 || true`,
+    );
     expect(peek.out("stdout")).not.toContain("private");
     await call("session.end", { sessionId: other });
   });
 
   it("ends the session and refuses further work", async () => {
     await call("session.end", { sessionId });
-    await expect(call("command.run", { sessionId, jobId: randomUUID(), command: "echo hi" })).rejects.toThrow(/refused/);
+    await expect(
+      call("command.run", { sessionId, jobId: randomUUID(), command: "echo hi" }),
+    ).rejects.toThrow(/refused/);
   });
 });

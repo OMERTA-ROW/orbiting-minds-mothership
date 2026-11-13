@@ -117,7 +117,12 @@ export function canonicalJob(job: HandoffJob) {
 }
 
 /** Exact bytes signed for x-jackboy-signature. */
-export function requestSigningString(client: string, timestamp: string, nonce: string, body: string) {
+export function requestSigningString(
+  client: string,
+  timestamp: string,
+  nonce: string,
+  body: string,
+) {
   return `${HANDOFF_CONTRACT}\nPOST\n${HANDOFF_PATH}\n${client}\n${timestamp}\n${nonce}\n${body}`;
 }
 

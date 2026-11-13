@@ -153,7 +153,12 @@ export type Snapshot = {
   /** Agent workspace kill switch: true = terminal enabled; null = missing or unreadable. */
   workspaceEnabled: boolean | null;
   /** Separate OMNI cloud sandbox on Railway (names/state only, never values). */
-  sandbox: { configured: boolean; enabled: boolean; problem: string | null; selfTestPassedAt: string | null };
+  sandbox: {
+    configured: boolean;
+    enabled: boolean;
+    problem: string | null;
+    selfTestPassedAt: string | null;
+  };
 };
 
 /** Fail closed: an unreadable or missing controls row counts as engaged. */
@@ -611,7 +616,10 @@ export const TERMINAL_STATES = [
 ] as const;
 export type TerminalState = (typeof TERMINAL_STATES)[number];
 export type PrimaryState = Exclude<TerminalState, "unpaired" | "read_only"> | "ready";
-export const TERMINAL_STATE_LABEL: Record<TerminalState | "ready", { title: string; detail: string }> = {
+export const TERMINAL_STATE_LABEL: Record<
+  TerminalState | "ready",
+  { title: string; detail: string }
+> = {
   stopped: {
     title: "Stopped",
     detail: "Emergency Stop is engaged or the terminal kill switch is off. Nothing can be sent.",
@@ -622,11 +630,13 @@ export const TERMINAL_STATE_LABEL: Record<TerminalState | "ready", { title: stri
   },
   disconnected: {
     title: "Not connected",
-    detail: "The cloud sandbox is not set up, or its self-test has not passed in the last 24 hours.",
+    detail:
+      "The cloud sandbox is not set up, or its self-test has not passed in the last 24 hours.",
   },
   unpaired: {
     title: "No device docked",
-    detail: "No desktop or mobile OMNI branch is paired in the Docking Bay. The web cloud shell does not need one.",
+    detail:
+      "No desktop or mobile OMNI branch is paired in the Docking Bay. The web cloud shell does not need one.",
   },
   read_only: {
     title: "Read-only",
@@ -634,7 +644,8 @@ export const TERMINAL_STATE_LABEL: Record<TerminalState | "ready", { title: stri
   },
   ready: {
     title: "Cloud shell ready",
-    detail: "Commands run in the isolated sandbox on Railway, one at a time, only after you approve each one. Autonomy is off.",
+    detail:
+      "Commands run in the isolated sandbox on Railway, one at a time, only after you approve each one. Autonomy is off.",
   },
 };
 
@@ -672,7 +683,13 @@ export function terminalReadiness(s: Snapshot): {
     unpaired: !s.dock.known || s.dock.paired === 0,
     read_only: stopped || unauthorized || disconnected,
   };
-  const primary: PrimaryState = stopped ? "stopped" : unauthorized ? "unauthorized" : disconnected ? "disconnected" : "ready";
+  const primary: PrimaryState = stopped
+    ? "stopped"
+    : unauthorized
+      ? "unauthorized"
+      : disconnected
+        ? "disconnected"
+        : "ready";
   const items: ReadinessItem[] = [
     {
       id: "owner",

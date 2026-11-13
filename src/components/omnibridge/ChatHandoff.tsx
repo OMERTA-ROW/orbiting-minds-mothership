@@ -124,8 +124,7 @@ export function ChatHandoffDialog(props: {
         <DialogHeader>
           <DialogTitle>Hand off as a held task</DialogTitle>
           <DialogDescription>
-            Saves this to the OMNI Terminal queue as held. Nothing runs, nothing is sent to
-            {" "}
+            Saves this to the OMNI Terminal queue as held. Nothing runs, nothing is sent to{" "}
             {AGENT_LABEL[target]}, and no money is spent. You review held tasks in OMNI Terminal.
           </DialogDescription>
         </DialogHeader>
@@ -192,9 +191,7 @@ export function ChatHandoffDialog(props: {
               disabled={busy}
             />
           </label>
-          {!parsed.success && (
-            <p className="text-warning">{parsed.error.issues[0]?.message}</p>
-          )}
+          {!parsed.success && <p className="text-warning">{parsed.error.issues[0]?.message}</p>}
           <label className="flex items-start gap-2 leading-6">
             <input
               type="checkbox"

@@ -27,11 +27,17 @@ const ENTRY_POINTS = [
 ] as const;
 
 /** Connection states read in this session, plus tool entry points. Never claims unchecked links. */
-export function ChatConnections(props: { rows: ConnectionRow[]; onRefresh: () => void; refreshing: boolean }) {
+export function ChatConnections(props: {
+  rows: ConnectionRow[];
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
   const readTerminal = useServerFn(readWorkspace);
-  const [terminal, setTerminal] = useState<{ connected: boolean; lines: string[]; at: string } | null>(
-    null,
-  );
+  const [terminal, setTerminal] = useState<{
+    connected: boolean;
+    lines: string[];
+    at: string;
+  } | null>(null);
   const [checking, setChecking] = useState(false);
   const [note, setNote] = useState("");
   const rows = props.rows.map((r) =>
@@ -109,7 +115,10 @@ export function ChatConnections(props: { rows: ConnectionRow[]; onRefresh: () =>
       <ul className="mt-2 space-y-1">
         {ENTRY_POINTS.map((e) => (
           <li key={e.label}>
-            <Link to="/omni-terminal" className="text-gold-light underline-offset-4 hover:underline">
+            <Link
+              to="/omni-terminal"
+              className="text-gold-light underline-offset-4 hover:underline"
+            >
               {e.label}
             </Link>
             <span className="block text-[10px] text-muted-foreground">{e.detail}</span>

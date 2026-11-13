@@ -30,7 +30,10 @@ export function crc32(input: string): string {
 
 /** Input: hex bytes ("00 01 f2 …"). Output: folded 16-bit one's-complement sum, hex. */
 export function internetChecksumSum(hexBytes: string): string {
-  const b = hexBytes.trim().split(/\s+/).map((h) => parseInt(h, 16));
+  const b = hexBytes
+    .trim()
+    .split(/\s+/)
+    .map((h) => parseInt(h, 16));
   let sum = 0;
   for (let i = 0; i < b.length; i += 2) sum += (b[i]! << 8) | (b[i + 1] ?? 0);
   while (sum > 0xffff) sum = (sum & 0xffff) + (sum >>> 16);
@@ -38,7 +41,7 @@ export function internetChecksumSum(hexBytes: string): string {
 }
 
 export function internetChecksum(hexBytes: string): string {
-  return ((~parseInt(internetChecksumSum(hexBytes), 16)) & 0xffff).toString(16).padStart(4, "0");
+  return (~parseInt(internetChecksumSum(hexBytes), 16) & 0xffff).toString(16).padStart(4, "0");
 }
 
 /** Input: "a,b" (non-negative integers). Euclid's algorithm by remainders. */

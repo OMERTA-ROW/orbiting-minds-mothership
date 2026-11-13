@@ -187,7 +187,10 @@ function Members() {
         </section>
       ) : (
         <>
-          <section aria-labelledby="new-h" className="space-y-4 rounded-lg border border-gold/30 p-5">
+          <section
+            aria-labelledby="new-h"
+            className="space-y-4 rounded-lg border border-gold/30 p-5"
+          >
             <h2 id="new-h" className="text-lg text-foreground">
               Invite someone
             </h2>
@@ -197,13 +200,22 @@ function Members() {
                   Link created for {link.email}. Copy it now — it isn't shown again.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <Input readOnly aria-label="Invitation link" value={link.url} className="text-xs" />
+                  <Input
+                    readOnly
+                    aria-label="Invitation link"
+                    value={link.url}
+                    className="text-xs"
+                  />
                   <Button
                     variant="outline"
                     onClick={() =>
                       void navigator.clipboard.writeText(link.url).then(
                         () => setCopied(true),
-                        () => setNotice({ ok: false, text: "Copy failed. Select the link and copy it by hand." }),
+                        () =>
+                          setNotice({
+                            ok: false,
+                            text: "Copy failed. Select the link and copy it by hand.",
+                          }),
                       )
                     }
                   >
@@ -243,7 +255,10 @@ function Members() {
                       `Invitation created for ${target}.`,
                     );
                     if (ok && token) {
-                      setLink({ url: `${window.location.origin}/invite?token=${token}`, email: target });
+                      setLink({
+                        url: `${window.location.origin}/invite?token=${token}`,
+                        email: target,
+                      });
                       setEmail("");
                     }
                   })();
@@ -308,7 +323,10 @@ function Members() {
             ) : (
               <ul className="divide-y divide-border rounded-lg border border-border">
                 {active.map(({ row }) => (
-                  <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
+                  <li
+                    key={row.id}
+                    className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"
+                  >
                     <span className="min-w-0">
                       <span className="block break-all text-foreground">{row.email}</span>
                       <span className="text-xs text-muted-foreground">
@@ -335,34 +353,50 @@ function Members() {
             </h2>
             <ul className="divide-y divide-border rounded-lg border border-border">
               {q.data!.members.map((m) => (
-                <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm">
+                <li
+                  key={m.user_id}
+                  className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"
+                >
                   <span className="min-w-0">
                     <span className="block break-all text-foreground">
                       {m.email}
-                      {m.user_id === user?.id && <span className="text-muted-foreground"> (you)</span>}
+                      {m.user_id === user?.id && (
+                        <span className="text-muted-foreground"> (you)</span>
+                      )}
                     </span>
                     <span className="text-xs text-muted-foreground">{m.role}</span>
                   </span>
-                  {m.role !== "owner" && m.user_id !== user?.id && (myRole === "owner" || m.role === "tester") && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy === m.user_id}
-                      onClick={() => setConfirm({ kind: "remove", id: m.user_id, email: m.email })}
-                    >
-                      {busy === m.user_id ? "Removing…" : "Remove"}
-                    </Button>
-                  )}
+                  {m.role !== "owner" &&
+                    m.user_id !== user?.id &&
+                    (myRole === "owner" || m.role === "tester") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy === m.user_id}
+                        onClick={() =>
+                          setConfirm({ kind: "remove", id: m.user_id, email: m.email })
+                        }
+                      >
+                        {busy === m.user_id ? "Removing…" : "Remove"}
+                      </Button>
+                    )}
                 </li>
               ))}
             </ul>
             {q.data!.members.length === 1 && (
-              <p className="text-xs text-muted-foreground">Only you so far. Invite someone above.</p>
+              <p className="text-xs text-muted-foreground">
+                Only you so far. Invite someone above.
+              </p>
             )}
           </section>
 
-          <details className="group rounded-lg border border-border p-4" open={history.length > 0 && history.length <= 5}>
-            <summary className="cursor-pointer text-lg text-foreground">History ({history.length})</summary>
+          <details
+            className="group rounded-lg border border-border p-4"
+            open={history.length > 0 && history.length <= 5}
+          >
+            <summary className="cursor-pointer text-lg text-foreground">
+              History ({history.length})
+            </summary>
             <p className="mt-2 text-xs text-muted-foreground">
               Kept as a record. Closed invitations can't be used again.
             </p>
@@ -370,7 +404,11 @@ function Members() {
               <p className="mt-3 text-sm text-muted-foreground">Nothing here yet.</p>
             ) : (
               <>
-                <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Filter history">
+                <div
+                  className="mt-3 flex flex-wrap items-center gap-2"
+                  role="group"
+                  aria-label="Filter history"
+                >
                   {(["all", "used", "revoked", "declined", "expired"] as const).map((f) => (
                     <Button
                       key={f}
@@ -401,7 +439,9 @@ function Members() {
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {HISTORY_LABEL[status as Exclude<InvitationStatus, "open">]} ·{" "}
-                          {when(row.accepted_at ?? row.revoked_at ?? row.declined_at ?? row.expires_at)}
+                          {when(
+                            row.accepted_at ?? row.revoked_at ?? row.declined_at ?? row.expires_at,
+                          )}
                         </span>
                       </li>
                     ))}
@@ -436,9 +476,17 @@ function Members() {
                 setConfirm(null);
                 if (!c) return;
                 if (c.kind === "remove")
-                  void change(c.id, () => remove({ data: { id: c.id } }), `${c.email} was removed.`);
+                  void change(
+                    c.id,
+                    () => remove({ data: { id: c.id } }),
+                    `${c.email} was removed.`,
+                  );
                 else
-                  void change(c.id, () => revoke({ data: { id: c.id } }), `Invitation for ${c.email} revoked.`);
+                  void change(
+                    c.id,
+                    () => revoke({ data: { id: c.id } }),
+                    `Invitation for ${c.email} revoked.`,
+                  );
               }}
             >
               {confirm?.kind === "remove" ? "Remove" : "Revoke"}

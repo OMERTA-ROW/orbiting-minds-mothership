@@ -22,7 +22,9 @@ describe("chat handoff approval", () => {
   beforeEach(() => Object.values(m).forEach((f) => f.mockReset()));
   it("fails closed when owner terminal access is not confirmed", async () => {
     m.read.mockRejectedValue(new Error("aal2"));
-    render(<ChatHandoffDialog source={source} projectName="p" onClose={() => {}} onQueued={() => {}} />);
+    render(
+      <ChatHandoffDialog source={source} projectName="p" onClose={() => {}} onQueued={() => {}} />,
+    );
     await screen.findByText(/Owner terminal access was not confirmed/);
     expect(screen.getByRole("button", { name: /Save held task/ })).toBeDisabled();
     expect(screen.getByRole("checkbox")).toBeDisabled();
@@ -32,7 +34,9 @@ describe("chat handoff approval", () => {
     m.read.mockResolvedValue({ emergencyStop: { engaged: true }, tasks: [] });
     m.queue.mockResolvedValue({ ok: true });
     const onQueued = vi.fn();
-    render(<ChatHandoffDialog source={source} projectName="p" onClose={() => {}} onQueued={onQueued} />);
+    render(
+      <ChatHandoffDialog source={source} projectName="p" onClose={() => {}} onQueued={onQueued} />,
+    );
     await screen.findByText(/Emergency Stop is engaged/);
     fireEvent.change(screen.getByLabelText("Task type"), { target: { value: "code.test" } });
     const save = screen.getByRole("button", { name: /Save held task/ });

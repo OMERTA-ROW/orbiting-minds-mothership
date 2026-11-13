@@ -217,7 +217,9 @@ export function chatConnections(input: {
       id: "voice-out",
       label: "Voice replies",
       state: input.voice ? "ready" : "not_connected",
-      detail: input.voice ? "Browser voice, off until you turn it on." : "This browser has no voice.",
+      detail: input.voice
+        ? "Browser voice, off until you turn it on."
+        : "This browser has no voice.",
     },
   ];
 }
@@ -275,7 +277,8 @@ export function handoffDraft(input: { projectName: string; request: string; repl
   const reply = input.reply.trim();
   return {
     project: input.projectName.trim().slice(0, PROJECT_MAX) || "OMNI chat",
-    instructions: head + (reply.length > room ? reply.slice(0, Math.max(0, room - 1)) + "…" : reply),
+    instructions:
+      head + (reply.length > room ? reply.slice(0, Math.max(0, room - 1)) + "…" : reply),
   };
 }
 

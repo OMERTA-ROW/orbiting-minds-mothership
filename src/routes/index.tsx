@@ -144,7 +144,10 @@ const LEGEND: NavStatus[] = ["account", "owner", "browser", "ai", "off", "guide"
 function StartHere() {
   return (
     <Section className="pt-16 md:pt-24">
-      <div id="start-here" className="scroll-mt-28 grid gap-8 md:grid-cols-[1.1fr_1fr] md:items-end">
+      <div
+        id="start-here"
+        className="scroll-mt-28 grid gap-8 md:grid-cols-[1.1fr_1fr] md:items-end"
+      >
         <div>
           <p className="eyebrow">Start here</p>
           <h2 className="mt-4 text-3xl leading-tight text-foreground md:text-4xl">
@@ -164,9 +167,9 @@ function StartHere() {
       <div className="mt-6 rounded-lg border border-gold/30 p-5 text-sm leading-7 text-muted-foreground">
         <p className="text-foreground">Safety stays on</p>
         <p>
-          Autonomous and background work is off. Owner approvals, spending limits and the
-          Emergency Stop in OMNI Terminal stay in place, and nothing connects to outside services
-          without the owner's approval.
+          Autonomous and background work is off. Owner approvals, spending limits and the Emergency
+          Stop in OMNI Terminal stay in place, and nothing connects to outside services without the
+          owner's approval.
         </p>
       </div>
 
@@ -238,7 +241,11 @@ function AdvancedView() {
           onClick={() => setShowPreviews(!previews)}
         >
           {previews ? "Hide design previews" : "Show design previews"}
-          <ChevronDown size={14} className={previews ? "rotate-180 transition" : "transition"} aria-hidden />
+          <ChevronDown
+            size={14}
+            className={previews ? "rotate-180 transition" : "transition"}
+            aria-hidden
+          />
         </Button>
       </div>
       {previews && (

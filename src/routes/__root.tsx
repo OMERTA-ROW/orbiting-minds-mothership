@@ -152,7 +152,10 @@ function RootComponent() {
                 <IncidentProvider>
                   <DemoExchangeProvider>
                     <ExchangeLocaleProvider>
-                      <CommandPaletteProvider pages={visibleNavItems(showPreviews)} includeDemo={showPreviews}>
+                      <CommandPaletteProvider
+                        pages={visibleNavItems(showPreviews)}
+                        includeDemo={showPreviews}
+                      >
                         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
                         <div
                           className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}`}
