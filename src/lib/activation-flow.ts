@@ -12,7 +12,14 @@ import {
   type ApprovalRow,
   type CheckStatus,
 } from "./activation-approvals";
-import { approvedBeforeReset, effectiveRows, nextAction, stepState, type StepState } from "./activation-status";
+import {
+  approvedBeforeReset,
+  checkIsFresh,
+  effectiveRows,
+  nextAction,
+  stepState,
+  type StepState,
+} from "./activation-status";
 
 export interface FlowAudit {
   id: string;
@@ -36,6 +43,8 @@ export interface StepView {
   /** Label for the check button: a failed or unresolved check offers a retry. */
   checkLabel: "Run check" | "Retry check";
   canApprove: boolean;
+  /** A passed technical check recent enough for the database to accept an approval. */
+  freshPass: boolean;
   canRevoke: boolean;
   /** Why the main action is unavailable, for a visible hint; null when available. */
   blockedReason: string | null;
@@ -45,7 +54,7 @@ export interface StepView {
 
 export interface FlowInput {
   rows: ApprovalRow[];
-  checks: Array<{ step: number; status: CheckStatus }>;
+  checks: Array<{ step: number; status: CheckStatus; checkedAt?: string }>;
   audit: FlowAudit[];
   now: number;
   resetAt: string | null;
@@ -70,7 +79,9 @@ export function stepViews(input: FlowInput): StepView[] {
     });
     const complete = state === "approved";
     const actions: ApprovalAction[] = stale ? ["revoke"] : allowedActions(effective, meta.step, input.now);
-    const lastCheck = input.checks.find((c) => c.step === meta.step)?.status ?? null;
+    const check = input.checks.find((c) => c.step === meta.step);
+    const lastCheck = check?.status ?? null;
+    const freshPass = check?.status === "passed" && checkIsFresh(check.checkedAt, input.now);
     const unlocked = blocker === null;
     const checkPossible = technical && unlocked && !complete && state !== "expired";
     const blockedReason = complete
@@ -97,7 +108,12 @@ export function stepViews(input: FlowInput): StepView[] {
         lastCheck === "failed" || lastCheck === "needs_attention" || state === "failed"
           ? "Retry check"
           : "Run check",
-      canApprove: !technical && actions.includes("approve") && input.mfaFresh,
+      // Technical steps: only after a fresh passed check, and still the owner's own decision.
+      canApprove:
+        actions.includes("approve") &&
+        input.mfaFresh &&
+        (!technical || (freshPass && input.checksStore === "ready")),
+      freshPass,
       canRevoke: actions.includes("revoke") && input.mfaFresh,
       blockedReason,
       collapsedByDefault: complete,

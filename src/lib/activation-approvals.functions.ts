@@ -592,9 +592,13 @@ export const runActivationApprovalCheck = createServerFn({ method: "POST" })
           : "The check evidence and audit could not be stored; no approval was recorded.",
       };
 
+    // A pass is evidence only: the owner approves it separately (the database requires a
+    // passed check from the last 15 minutes). A failure is recorded so later steps stay locked.
+    if (evaluated.check.status === "passed")
+      return { ok: true as const, check: evaluated.check, approvalNeeded: true as const };
     const { error } = await context.supabase.rpc("activation_approval_decide", {
       _step: data.step,
-      _action: evaluated.check.status === "passed" ? "approve" : "fail",
+      _action: "fail",
       _note: "",
       // NULL is valid for every step except 7; the generated type omits nullability.
       _expires_at: null as unknown as string,
@@ -617,7 +621,7 @@ export const runActivationApprovalCheck = createServerFn({ method: "POST" })
             : "The check was not recorded as an approval. Refresh and retry.",
       };
     }
-    return { ok: true as const, check: evaluated.check };
+    return { ok: true as const, check: evaluated.check, approvalNeeded: false as const };
   });
 
 export const decideActivationApproval = createServerFn({ method: "POST" })
@@ -625,11 +629,13 @@ export const decideActivationApproval = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => decisionInput.parse(input))
   .handler(async ({ context, data }) => {
     await ownerContext(context);
-    if (isTechnicalStep(data.step) && data.action !== "revoke")
+    // Technical steps are failed only by a recorded check; approving one needs a passed
+    // check from the last 15 minutes, which the database verifies.
+    if (isTechnicalStep(data.step) && data.action === "fail")
       return {
         ok: false as const,
         reason: "rule" as const,
-        message: "Technical steps require a fresh server-side Run check.",
+        message: "Technical steps are marked failed only by a server-side check.",
       };
     if (!isMfaFresh(context.claims["amr"], Math.floor(Date.now() / 1000)))
       return {
@@ -694,7 +700,13 @@ export const decideActivationApproval = createServerFn({ method: "POST" })
           message: "Re-verify with your authenticator first.",
         };
       if (error.code === "22023")
-        return { ok: false as const, reason: "rule" as const, message: error.message };
+        return {
+          ok: false as const,
+          reason: "rule" as const,
+          message: error.message.includes("Fresh server-side check")
+            ? "This step needs a passing check from the last 15 minutes. Run the check again, then approve."
+            : error.message,
+        };
       return {
         ok: false as const,
         reason: "denied" as const,
