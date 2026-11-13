@@ -93,6 +93,7 @@ import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
 import { Route as GuardianIncidentsIdRouteImport } from './routes/guardian-incidents_.$id'
 import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archives_.$id'
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
+import { Route as ApiPublicApprovalFlowRouteImport } from './routes/api/public/approval-flow'
 import { Route as ApiPublicJackboyDispatchRouteImport } from './routes/api/public/jackboy/dispatch'
 import { Route as ApiPublicJobsKnowledgeCollectRouteImport } from './routes/api/public/jobs/knowledge-collect'
 import { Route as ApiPublicJobsRazulObserveRouteImport } from './routes/api/public/jobs/razul-observe'
@@ -530,6 +531,11 @@ const RoboticsIdRoute = RoboticsIdRouteImport.update({
   path: '/robotics/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicApprovalFlowRoute = ApiPublicApprovalFlowRouteImport.update({
+  id: '/api/public/approval-flow',
+  path: '/api/public/approval-flow',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicJackboyDispatchRoute =
   ApiPublicJackboyDispatchRouteImport.update({
     id: '/api/public/jackboy/dispatch',
@@ -692,6 +698,7 @@ export interface FileRoutesByFullPath {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
@@ -791,6 +798,7 @@ export interface FileRoutesByTo {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
@@ -892,6 +900,7 @@ export interface FileRoutesById {
   '/guardian-incidents_/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives_/$id': typeof IncidentArchivesIdRoute
   '/robotics_/$id': typeof RoboticsIdRoute
+  '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
@@ -993,6 +1002,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/public/approval-flow'
     | '/api/public/jackboy/dispatch'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
@@ -1092,6 +1102,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/public/approval-flow'
     | '/api/public/jackboy/dispatch'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
@@ -1192,6 +1203,7 @@ export interface FileRouteTypes {
     | '/guardian-incidents_/$id'
     | '/incident-archives_/$id'
     | '/robotics_/$id'
+    | '/api/public/approval-flow'
     | '/api/public/jackboy/dispatch'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
@@ -1287,6 +1299,7 @@ export interface RootRouteChildren {
   GuardianIncidentsIdRoute: typeof GuardianIncidentsIdRoute
   IncidentArchivesIdRoute: typeof IncidentArchivesIdRoute
   RoboticsIdRoute: typeof RoboticsIdRoute
+  ApiPublicApprovalFlowRoute: typeof ApiPublicApprovalFlowRoute
   ApiPublicJackboyDispatchRoute: typeof ApiPublicJackboyDispatchRoute
   ApiPublicJobsKnowledgeCollectRoute: typeof ApiPublicJobsKnowledgeCollectRoute
   ApiPublicJobsRazulObserveRoute: typeof ApiPublicJobsRazulObserveRoute
@@ -1893,6 +1906,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoboticsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/approval-flow': {
+      id: '/api/public/approval-flow'
+      path: '/api/public/approval-flow'
+      fullPath: '/api/public/approval-flow'
+      preLoaderRoute: typeof ApiPublicApprovalFlowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/jackboy/dispatch': {
       id: '/api/public/jackboy/dispatch'
       path: '/api/public/jackboy/dispatch'
@@ -2094,6 +2114,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuardianIncidentsIdRoute: GuardianIncidentsIdRoute,
   IncidentArchivesIdRoute: IncidentArchivesIdRoute,
   RoboticsIdRoute: RoboticsIdRoute,
+  ApiPublicApprovalFlowRoute: ApiPublicApprovalFlowRoute,
   ApiPublicJackboyDispatchRoute: ApiPublicJackboyDispatchRoute,
   ApiPublicJobsKnowledgeCollectRoute: ApiPublicJobsKnowledgeCollectRoute,
   ApiPublicJobsRazulObserveRoute: ApiPublicJobsRazulObserveRoute,

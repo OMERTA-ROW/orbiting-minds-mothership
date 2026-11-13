@@ -34,6 +34,10 @@ vi.mock("@/lib/activation-approvals.functions", () => ({
   runActivationApprovalCheck: "check",
 }));
 
+vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
+  ApprovalBuildBanner: () => null,
+}));
+
 import { ActivationApprovals } from "@/components/omnibridge/ActivationApprovals";
 
 const owner = "11111111-1111-4111-8111-111111111111";

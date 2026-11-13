@@ -48,6 +48,7 @@ import {
   type FlowTimeouts,
 } from "@/lib/activation-flow";
 import { OwnerCodeForm } from "@/components/account/OwnerCodeForm";
+import { ApprovalBuildBanner } from "@/components/omnibridge/ApprovalBuildBanner";
 
 type Listed = Awaited<ReturnType<typeof listActivationApprovals>>;
 type Loaded = Extract<Listed, { rows: unknown }>;
@@ -446,6 +447,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         <h1 className="flex items-center gap-2 text-2xl">
           <ShieldCheck size={22} aria-hidden /> Activation Approvals
         </h1>
+        <ApprovalBuildBanner />
         <p className="text-sm text-muted-foreground">
           Go-live checklist for the OMNI–Jackboy link and CODE. Steps unlock in order.{" "}
           {approvedCount} of {ACTIVATION_STEPS.length} approved.
