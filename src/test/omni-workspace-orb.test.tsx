@@ -81,7 +81,7 @@ describe("OMNI terminal orb", () => {
       "unavailable",
     );
     expect(screen.getAllByText("Cloud sandbox settings are missing or invalid.").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /^Speak$/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Microphone not supported/ })).toBeDisabled();
     expect(screen.getByLabelText("Message OMNI")).toBeDisabled();
   });
 
