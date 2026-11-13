@@ -11,8 +11,8 @@ interface OmniOrbProps {
   /** 0..1 loudness or word-timing pulse written by the voice hooks. */
   level: MutableRefObject<number>;
   /** Overrides the default state wording, e.g. a specific "not connected" reason. */
-  statusText?: string;
-  compact?: boolean;
+  statusText?: string | undefined;
+  compact?: boolean | undefined;
 }
 
 /**
