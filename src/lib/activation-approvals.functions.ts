@@ -17,12 +17,14 @@ import {
   isMfaFresh,
   isTechnicalStep,
   mfaAgeSeconds,
+  isEffectivelyApproved,
   normalizeRows,
   type ActivationCheck,
   type ActivationCheckDetail,
   type CheckStatus,
 } from "./activation-approvals";
 import type { Json } from "@/integrations/supabase/types";
+import { probeFailureDetails } from "./activation-probe";
 import {
   accessReason,
   approvedBeforeReset,
@@ -165,7 +167,10 @@ async function runnerConfigurationProof(context: { userId: string }) {
       record_type: "jackboy_link",
       record_id: process.env["OMNI_LINK_PROJECT_ID"] || "configuration",
     });
-    if (error) throw new Error("Runner configuration audit failed.");
+    if (error) {
+      const { JackboyLinkError } = await import("./jackboy-link.server");
+      throw new JackboyLinkError("Runner configuration audit failed.", "audit");
+    }
   });
 }
 
@@ -213,10 +218,11 @@ async function evaluateCheck(
   }
 
   if (step === 2) {
-    const unavailable = (detail: string) => ({
+    const unavailable = (detail: string, extra: ActivationCheckDetail[] = []) => ({
       deploymentMode: deployment.mode,
       check: checked(step, "needs_attention", "Railway runner configuration is not yet attested.", [
         { label: "Verification path", status: "needs_attention", detail },
+        ...extra,
         {
           label: "Existing Railway settings",
           status: "needs_attention",
@@ -281,9 +287,10 @@ async function evaluateCheck(
           details,
         ),
       };
-    } catch {
+    } catch (error) {
       return unavailable(
-        "The signed configuration probe could not verify or record evidence. Check the Jackboy probe version, link identity, HTTPS references and audit access; do not infer missing Railway variables.",
+        "The signed configuration probe did not complete, so the Railway runner was not reached through Jackboy.",
+        probeFailureDetails(error),
       );
     }
   }
@@ -350,7 +357,7 @@ async function evaluateCheck(
           },
         ]),
       };
-    } catch {
+    } catch (error) {
       return {
         deploymentMode: deployment.mode,
         check: checked(step, "failed", safeLinkFailure(), [
@@ -359,6 +366,7 @@ async function evaluateCheck(
             status: "failed",
             detail: safeLinkFailure(),
           },
+          ...probeFailureDetails(error),
         ]),
       };
     }
@@ -537,16 +545,21 @@ export const runActivationApprovalCheck = createServerFn({ method: "POST" })
         message: "Account security history could not be read; no check was run.",
       };
     }
-    const blocker = blockingStep(
-      effectiveRows(normalizeRows(rows), resetAt),
-      data.step,
-      Date.now(),
-    );
+    const effective = effectiveRows(normalizeRows(rows), resetAt);
+    const blocker = blockingStep(effective, data.step, Date.now());
     if (blocker !== null)
       return {
         ok: false as const,
         reason: "rule" as const,
         message: `Step ${blocker} must be approved first.`,
+      };
+    // A repeat check on an approved step would silently re-approve (or fail and reset later steps).
+    const current = effective.find((r) => r.step === data.step);
+    if (current && isEffectivelyApproved(current, Date.now()))
+      return {
+        ok: false as const,
+        reason: "already_approved" as const,
+        message: `Step ${data.step} is already approved. Nothing was rerun; revoke it first to check again.`,
       };
 
     const evaluated = await evaluateCheck(data.step, {
@@ -656,6 +669,12 @@ export const decideActivationApproval = createServerFn({ method: "POST" })
           reason: "rule" as const,
           message:
             "Approved before your last security reset. Revoke this step, then approve it again.",
+        };
+      if (target && isEffectivelyApproved(target, Date.now()))
+        return {
+          ok: false as const,
+          reason: "already_approved" as const,
+          message: `Step ${data.step} is already approved. Nothing was recorded twice.`,
         };
     }
     const { error } = await context.supabase.rpc("activation_approval_decide", {

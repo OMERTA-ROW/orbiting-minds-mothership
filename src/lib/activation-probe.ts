@@ -24,7 +24,7 @@ export function probeFailure(error: unknown): ProbeFailure {
 
 const BY_CODE: Record<string, string> = {
   link_disabled:
-    "Jackboy's published site handled this as an ordinary link request, so it does not include the configuration probe yet. Publish Jackboy's configuration-probe update from the Jackboy project (its database update 0063 is a separate approval there). Railway and Mothership settings were not shown to be wrong.",
+    "Jackboy's published site treated this as an ordinary link request, so it lacks the configuration probe. Publish Jackboy's probe update from the Jackboy project (its update 0063 is a separate approval there). Railway settings were not shown to be wrong.",
   configuration_check_unavailable:
     "Jackboy's probe is published but could not run: its link identity settings (including OMNI_LINK_OWNER_ID) are incomplete there, or its authorization update 0063 is not applied.",
   authentication_failed:
@@ -71,6 +71,6 @@ export function probeFailureDetails(error: unknown): ActivationCheckDetail[] {
       : "The signed probe could not be completed. Check Mothership's link settings and retry.");
   return [
     { label: "Jackboy reply", status: "needs_attention", detail: reply },
-    { label: "Likely cause", status: "needs_attention", detail: detail.slice(0, 280) },
+    { label: "Likely cause", status: "needs_attention", detail },
   ];
 }
