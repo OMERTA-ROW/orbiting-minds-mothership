@@ -43,7 +43,10 @@ export function loadConfig(env = process.env) {
     // Explicit, owner-set escape hatch; Mothership's self-test refuses an open network.
     allowNetwork: env.OMNI_SANDBOX_ALLOW_NETWORK === "true",
     githubToken: env.GITHUB_TOKEN ?? "",
-    repoAllowlist: (env.OMNI_REPO_ALLOWLIST ?? "").split(",").map((s) => s.trim()).filter((s) => REPO.test(s)),
+    repoAllowlist: (env.OMNI_REPO_ALLOWLIST ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => REPO.test(s)),
     providers: {
       openai: {
         key: env.OPENAI_API_KEY ?? "",
@@ -60,8 +63,10 @@ export function loadConfig(env = process.env) {
     },
     fetch: globalThis.fetch,
   };
-  if (!/^[A-Za-z0-9_.:-]{3,80}$/.test(c.clientId)) throw new Error("OMNI_SANDBOX_CLIENT_ID is missing or invalid.");
-  if (c.secret.length < 32) throw new Error("OMNI_SANDBOX_HMAC_SECRET must be at least 32 characters.");
+  if (!/^[A-Za-z0-9_.:-]{3,80}$/.test(c.clientId))
+    throw new Error("OMNI_SANDBOX_CLIENT_ID is missing or invalid.");
+  if (c.secret.length < 32)
+    throw new Error("OMNI_SANDBOX_HMAC_SECRET must be at least 32 characters.");
   return c;
 }
 
@@ -79,13 +84,34 @@ const safeEqual = (a, b) => {
 function sandboxArgv(c, uid, net) {
   const L = c.limits;
   const ulimits = `ulimit -t ${L.cpuSec} -v ${L.memoryMb * 1024} -u ${L.maxProcesses} -f ${L.fileSizeMb * 1024} -n 256 -c 0`;
-  const inner = ["/bin/bash", "--noprofile", "--norc", "-c", `${ulimits} && exec /bin/bash --noprofile --norc -c "$OMNI_CMD"`];
-  const drop = ["setpriv", `--reuid=${uid}`, `--regid=${uid}`, "--clear-groups", "--inh-caps=-all", "--"];
-  return net === "isolated" ? [...drop, "unshare", "--user", "--map-current-user", "--net", "--", ...inner] : [...drop, ...inner];
+  const inner = [
+    "/bin/bash",
+    "--noprofile",
+    "--norc",
+    "-c",
+    `${ulimits} && exec /bin/bash --noprofile --norc -c "$OMNI_CMD"`,
+  ];
+  const drop = [
+    "setpriv",
+    `--reuid=${uid}`,
+    `--regid=${uid}`,
+    "--clear-groups",
+    "--inh-caps=-all",
+    "--",
+  ];
+  return net === "isolated"
+    ? [...drop, "unshare", "--user", "--map-current-user", "--net", "--", ...inner]
+    : [...drop, ...inner];
 }
 
 function sandboxEnv(home, command) {
-  return { PATH: "/usr/local/bin:/usr/bin:/bin", HOME: home, LANG: "C.UTF-8", TERM: "dumb", OMNI_CMD: command };
+  return {
+    PATH: "/usr/local/bin:/usr/bin:/bin",
+    HOME: home,
+    LANG: "C.UTF-8",
+    TERM: "dumb",
+    OMNI_CMD: command,
+  };
 }
 
 /** Probe once at boot: can we cut the network for an unprivileged child? */
@@ -107,7 +133,12 @@ function probe(c, net) {
     'id -u; timeout 2 bash -c "exec 3<>/dev/tcp/1.1.1.1/443" 2>/dev/null && echo NET_OPEN || echo NET_BLOCKED; ' +
     'env | cut -d= -f1 | grep -v "^OMNI_CMD$" | grep -v "^PWD$" | grep -v "^SHLVL$" | grep -v "^_$" | sort | tr "\\n" ","';
   const [cmd, ...args] = sandboxArgv(c, uid, net);
-  const r = spawnSync(cmd, args, { env: sandboxEnv(dir, script), cwd: dir, timeout: 3500, encoding: "utf8" });
+  const r = spawnSync(cmd, args, {
+    env: sandboxEnv(dir, script),
+    cwd: dir,
+    timeout: 3500,
+    encoding: "utf8",
+  });
   fs.rmSync(dir, { recursive: true, force: true });
   const lines = (r.stdout ?? "").trim().split("\n");
   return {
@@ -124,7 +155,10 @@ export function createSandbox(c, opts = {}) {
   const net = opts.network ?? detectNetwork(c);
   const sessions = new Map();
   const nonces = new Map();
-  const status = { providers: {}, github: { configured: Boolean(c.githubToken), repositories: [], checkedAt: null } };
+  const status = {
+    providers: {},
+    github: { configured: Boolean(c.githubToken), repositories: [], checkedAt: null },
+  };
   fs.mkdirSync(c.root, { recursive: true, mode: 0o711 });
   fs.mkdirSync(path.join(c.root, ".mirrors"), { recursive: true, mode: 0o700 });
 
@@ -136,7 +170,9 @@ export function createSandbox(c, opts = {}) {
 
   function killJob(job, reason) {
     if (job.proc && job.state === "running") {
-      try { process.kill(-job.proc.pid, "SIGKILL"); } catch {}
+      try {
+        process.kill(-job.proc.pid, "SIGKILL");
+      } catch {}
       job.state = "stopped";
       job.events.push({ stream: "system", text: `Stopped (${reason}).` });
     } else if (job.state === "awaiting_approval" || job.state === "queued") {
@@ -154,7 +190,10 @@ export function createSandbox(c, opts = {}) {
   const reaper = setInterval(() => {
     const now = Date.now();
     for (const s of sessions.values())
-      if (now - s.lastAt > c.limits.idleMinutes * 60_000 || now - s.startedAt > c.limits.sessionMinutes * 60_000)
+      if (
+        now - s.lastAt > c.limits.idleMinutes * 60_000 ||
+        now - s.startedAt > c.limits.sessionMinutes * 60_000
+      )
         endSession(s, "timeout");
     for (const [n, t] of nonces) if (now - t > 300_000) nonces.delete(n);
   }, 15_000);
@@ -169,7 +208,16 @@ export function createSandbox(c, opts = {}) {
   function newJob(s, jobId, kind) {
     if (!UUID.test(jobId ?? "")) throw new Refusal("Invalid job ID.");
     if (s.jobs.has(jobId)) return s.jobs.get(jobId);
-    const job = { id: jobId, kind, state: "queued", events: [], steps: [], proc: null, pending: null, outBytes: 0 };
+    const job = {
+      id: jobId,
+      kind,
+      state: "queued",
+      events: [],
+      steps: [],
+      proc: null,
+      pending: null,
+      outBytes: 0,
+    };
     s.jobs.set(jobId, job);
     return job;
   }
@@ -177,7 +225,12 @@ export function createSandbox(c, opts = {}) {
   function run(s, job, command) {
     job.state = "running";
     const [cmd, ...args] = sandboxArgv(c, s.uid, net);
-    const proc = spawn(cmd, args, { cwd: s.work, env: sandboxEnv(s.dir, command), detached: true, stdio: ["ignore", "pipe", "pipe"] });
+    const proc = spawn(cmd, args, {
+      cwd: s.work,
+      env: sandboxEnv(s.dir, command),
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     job.proc = proc;
     const cap = c.limits.outputCapBytes;
     const onData = (stream) => (buf) => {
@@ -186,15 +239,25 @@ export function createSandbox(c, opts = {}) {
       job.outBytes += Buffer.byteLength(text);
       job.events.push({ stream, text });
       if (job.outBytes >= cap) {
-        job.events.push({ stream: "system", text: `Output cap of ${cap} bytes reached; command stopped.` });
-        try { process.kill(-proc.pid, "SIGKILL"); } catch {}
+        job.events.push({
+          stream: "system",
+          text: `Output cap of ${cap} bytes reached; command stopped.`,
+        });
+        try {
+          process.kill(-proc.pid, "SIGKILL");
+        } catch {}
       }
     };
     proc.stdout.on("data", onData("stdout"));
     proc.stderr.on("data", onData("stderr"));
     const timer = setTimeout(() => {
-      job.events.push({ stream: "system", text: `Time limit of ${c.limits.commandTimeoutSec}s reached; command stopped.` });
-      try { process.kill(-proc.pid, "SIGKILL"); } catch {}
+      job.events.push({
+        stream: "system",
+        text: `Time limit of ${c.limits.commandTimeoutSec}s reached; command stopped.`,
+      });
+      try {
+        process.kill(-proc.pid, "SIGKILL");
+      } catch {}
     }, c.limits.commandTimeoutSec * 1000);
     proc.on("close", (code, signal) => {
       clearTimeout(timer);
@@ -213,38 +276,81 @@ export function createSandbox(c, opts = {}) {
     const env = { PATH: "/usr/local/bin:/usr/bin:/bin", HOME: "/tmp", GIT_TERMINAL_PROMPT: "0" };
     if (c.githubToken) {
       const basic = Buffer.from(`x-access-token:${c.githubToken}`).toString("base64");
-      Object.assign(env, { GIT_CONFIG_COUNT: "1", GIT_CONFIG_KEY_0: "http.https://github.com/.extraheader", GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}` });
+      Object.assign(env, {
+        GIT_CONFIG_COUNT: "1",
+        GIT_CONFIG_KEY_0: "http.https://github.com/.extraheader",
+        GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}`,
+      });
     }
     return env;
   };
-  const SAFE_GIT = ["-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=false", "-c", "protocol.file.allow=never"];
+  const SAFE_GIT = [
+    "-c",
+    "core.hooksPath=/dev/null",
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    "protocol.file.allow=never",
+  ];
   const git = (cwd, args) =>
     new Promise((resolve) => {
-      const p = spawn("git", [...SAFE_GIT, ...args], { cwd, env: gitEnv(), stdio: ["ignore", "pipe", "pipe"] });
+      const p = spawn("git", [...SAFE_GIT, ...args], {
+        cwd,
+        env: gitEnv(),
+        stdio: ["ignore", "pipe", "pipe"],
+      });
       let out = "";
       let err = "";
       p.stdout.on("data", (d) => (out += d));
       p.stderr.on("data", (d) => (err += d));
       const t = setTimeout(() => p.kill("SIGKILL"), 120_000);
-      p.on("close", (code) => { clearTimeout(t); resolve({ code: code ?? -1, out, err: err.replaceAll(c.githubToken || "\u0000", "[redacted]") }); });
+      p.on("close", (code) => {
+        clearTimeout(t);
+        resolve({
+          code: code ?? -1,
+          out,
+          err: err.replaceAll(c.githubToken || "\u0000", "[redacted]"),
+        });
+      });
     });
 
   async function checkout(s, job, repository, ref) {
     job.state = "running";
-    const step = (title, body, ok = true) => job.steps.push({ id: `co-${job.steps.length}`, kind: "result", title, body, status: ok ? "done" : "failed" });
+    const step = (title, body, ok = true) =>
+      job.steps.push({
+        id: `co-${job.steps.length}`,
+        kind: "result",
+        title,
+        body,
+        status: ok ? "done" : "failed",
+      });
     try {
-      if (!REPO.test(repository) || !REF.test(ref)) throw new Error("Invalid repository or branch name.");
-      if (!c.repoAllowlist.includes(repository)) throw new Error(`${repository} is not in OMNI_REPO_ALLOWLIST.`);
+      if (!REPO.test(repository) || !REF.test(ref))
+        throw new Error("Invalid repository or branch name.");
+      if (!c.repoAllowlist.includes(repository))
+        throw new Error(`${repository} is not in OMNI_REPO_ALLOWLIST.`);
       if (!c.githubToken) throw new Error("GITHUB_TOKEN is not set on the sandbox service.");
       fs.rmSync(s.mirror, { recursive: true, force: true });
-      const clone = await git(path.dirname(s.mirror), ["clone", "--depth", "50", "--no-recurse-submodules", "--branch", ref, `https://github.com/${repository}.git`, s.mirror]);
+      const clone = await git(path.dirname(s.mirror), [
+        "clone",
+        "--depth",
+        "50",
+        "--no-recurse-submodules",
+        "--branch",
+        ref,
+        `https://github.com/${repository}.git`,
+        s.mirror,
+      ]);
       if (clone.code !== 0) throw new Error(`Clone failed: ${clone.err.slice(0, 400)}`);
       const head = await git(s.mirror, ["rev-parse", "HEAD"]);
       fs.rmSync(s.work, { recursive: true, force: true });
       spawnSync("cp", ["-a", s.mirror, s.work]);
       spawnSync("chown", ["-R", `${s.uid}:${s.uid}`, s.work]);
       s.repo = { fullName: repository, ref, commit: head.out.trim() };
-      step(`Checked out ${repository}@${ref}`, `Commit ${s.repo.commit}. Commands now run in this copy.`);
+      step(
+        `Checked out ${repository}@${ref}`,
+        `Commit ${s.repo.commit}. Commands now run in this copy.`,
+      );
       job.state = "done";
     } catch (e) {
       step("Checkout failed", e instanceof Error ? e.message : "error", false);
@@ -255,17 +361,35 @@ export function createSandbox(c, opts = {}) {
   async function proposePr(s, job, title) {
     job.state = "running";
     if (!s.repo) {
-      job.steps.push({ id: "pr-none", kind: "result", title: "No repository", body: "Start the session with a repository first.", status: "failed" });
+      job.steps.push({
+        id: "pr-none",
+        kind: "result",
+        title: "No repository",
+        body: "Start the session with a repository first.",
+        status: "failed",
+      });
       job.state = "failed";
       return;
     }
     // Diff is computed as the session user, inside the sandbox; the patch is untrusted data.
-    const script = 'git add -A >/dev/null 2>&1; git -c core.hooksPath=/dev/null diff --cached --binary HEAD';
+    const script =
+      "git add -A >/dev/null 2>&1; git -c core.hooksPath=/dev/null diff --cached --binary HEAD";
     const [cmd, ...args] = sandboxArgv(c, s.uid, net);
-    const r = spawnSync(cmd, args, { cwd: s.work, env: sandboxEnv(s.dir, script), timeout: 30_000, maxBuffer: 2 * 1024 * 1024 });
+    const r = spawnSync(cmd, args, {
+      cwd: s.work,
+      env: sandboxEnv(s.dir, script),
+      timeout: 30_000,
+      maxBuffer: 2 * 1024 * 1024,
+    });
     const patch = r.stdout?.toString("utf8") ?? "";
     if (!patch.trim()) {
-      job.steps.push({ id: "pr-empty", kind: "result", title: "Nothing to propose", body: "No changes in the sandbox copy.", status: "failed" });
+      job.steps.push({
+        id: "pr-empty",
+        kind: "result",
+        title: "Nothing to propose",
+        body: "No changes in the sandbox copy.",
+        status: "failed",
+      });
       job.state = "failed";
       return;
     }
@@ -288,14 +412,32 @@ export function createSandbox(c, opts = {}) {
     const p = job.pending;
     job.pending = null;
     job.state = "running";
-    const step = (title, body, ok = true) => job.steps.push({ id: `pr-${job.steps.length}`, kind: "result", title, body, status: ok ? "done" : "failed" });
+    const step = (title, body, ok = true) =>
+      job.steps.push({
+        id: `pr-${job.steps.length}`,
+        kind: "result",
+        title,
+        body,
+        status: ok ? "done" : "failed",
+      });
     try {
       const patchFile = path.join(c.root, ".mirrors", `${s.id}.patch`);
       fs.writeFileSync(patchFile, p.patch, { mode: 0o600 });
       const steps = [
         ["branch", ["checkout", "-b", p.branch]],
         ["apply", ["apply", "--index", "--binary", patchFile]],
-        ["commit", ["-c", "user.name=OMNI Sandbox", "-c", "user.email=omni-sandbox@users.noreply.github.com", "commit", "-m", p.title]],
+        [
+          "commit",
+          [
+            "-c",
+            "user.name=OMNI Sandbox",
+            "-c",
+            "user.email=omni-sandbox@users.noreply.github.com",
+            "commit",
+            "-m",
+            p.title,
+          ],
+        ],
         ["push", ["push", "origin", `HEAD:refs/heads/${p.branch}`]],
       ];
       for (const [label, a] of steps) {
@@ -305,11 +447,23 @@ export function createSandbox(c, opts = {}) {
       fs.rmSync(patchFile, { force: true });
       const res = await c.fetch(`https://api.github.com/repos/${s.repo.fullName}/pulls`, {
         method: "POST",
-        headers: { authorization: `Bearer ${c.githubToken}`, accept: "application/vnd.github+json", "content-type": "application/json", "user-agent": "omni-sandbox" },
-        body: JSON.stringify({ title: p.title, head: p.branch, base: s.repo.ref, draft: true, body: "Opened by the OMNI cloud sandbox after owner approval in Mothership. Review before merging; OMNI never merges." }),
+        headers: {
+          authorization: `Bearer ${c.githubToken}`,
+          accept: "application/vnd.github+json",
+          "content-type": "application/json",
+          "user-agent": "omni-sandbox",
+        },
+        body: JSON.stringify({
+          title: p.title,
+          head: p.branch,
+          base: s.repo.ref,
+          draft: true,
+          body: "Opened by the OMNI cloud sandbox after owner approval in Mothership. Review before merging; OMNI never merges.",
+        }),
       });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok || typeof j.html_url !== "string") throw new Error(`GitHub refused the pull request (HTTP ${res.status}).`);
+      if (!res.ok || typeof j.html_url !== "string")
+        throw new Error(`GitHub refused the pull request (HTTP ${res.status}).`);
       step("Draft pull request opened", j.html_url);
       job.state = "done";
     } catch (e) {
@@ -323,13 +477,27 @@ export function createSandbox(c, opts = {}) {
   async function verifyProviders() {
     for (const id of ["openai", "anthropic"]) {
       const p = c.providers[id];
-      const entry = { configured: Boolean(p.key && p.model), verified: false, model: p.model || null, pricing: p.inCents > 0 && p.outCents > 0, checkedAt: null };
+      const entry = {
+        configured: Boolean(p.key && p.model),
+        verified: false,
+        model: p.model || null,
+        pricing: p.inCents > 0 && p.outCents > 0,
+        checkedAt: null,
+      };
       if (entry.configured) {
         try {
-          const res = await c.fetch(id === "openai" ? "https://api.openai.com/v1/models" : "https://api.anthropic.com/v1/models", {
-            headers: id === "openai" ? { authorization: `Bearer ${p.key}` } : { "x-api-key": p.key, "anthropic-version": "2023-06-01" },
-            signal: AbortSignal.timeout(10_000),
-          });
+          const res = await c.fetch(
+            id === "openai"
+              ? "https://api.openai.com/v1/models"
+              : "https://api.anthropic.com/v1/models",
+            {
+              headers:
+                id === "openai"
+                  ? { authorization: `Bearer ${p.key}` }
+                  : { "x-api-key": p.key, "anthropic-version": "2023-06-01" },
+              signal: AbortSignal.timeout(10_000),
+            },
+          );
           await res.body?.cancel().catch(() => {});
           entry.verified = res.ok;
         } catch {}
@@ -342,13 +510,20 @@ export function createSandbox(c, opts = {}) {
       let access = false;
       if (c.githubToken)
         try {
-          const res = await c.fetch(`https://api.github.com/repos/${r}`, { headers: { authorization: `Bearer ${c.githubToken}`, "user-agent": "omni-sandbox" }, signal: AbortSignal.timeout(10_000) });
+          const res = await c.fetch(`https://api.github.com/repos/${r}`, {
+            headers: { authorization: `Bearer ${c.githubToken}`, "user-agent": "omni-sandbox" },
+            signal: AbortSignal.timeout(10_000),
+          });
           const j = await res.json().catch(() => ({}));
           access = res.ok && j?.permissions?.push === true;
         } catch {}
       repos.push({ fullName: r, access });
     }
-    status.github = { configured: Boolean(c.githubToken), repositories: repos, checkedAt: new Date().toISOString() };
+    status.github = {
+      configured: Boolean(c.githubToken),
+      repositories: repos,
+      checkedAt: new Date().toISOString(),
+    };
   }
 
   async function chat(s, job, text) {
@@ -357,11 +532,23 @@ export function createSandbox(c, opts = {}) {
     const p = c.providers[id];
     const st = status.providers[id];
     const fail = (msg) => {
-      job.steps.push({ id: "chat-err", kind: "result", title: "Model not available", body: msg, status: "failed" });
+      job.steps.push({
+        id: "chat-err",
+        kind: "result",
+        title: "Model not available",
+        body: msg,
+        status: "failed",
+      });
       job.state = "failed";
     };
-    if (!p || !st?.verified) return fail("This session has no verified model provider. Start a session with OpenAI or Claude after the self-test shows it connected.");
-    if (!st.pricing) return fail("Set the provider price variables on the sandbox service so spend can be counted.");
+    if (!p || !st?.verified)
+      return fail(
+        "This session has no verified model provider. Start a session with OpenAI or Claude after the self-test shows it connected.",
+      );
+    if (!st.pricing)
+      return fail(
+        "Set the provider price variables on the sandbox service so spend can be counted.",
+      );
     s.history.push({ role: "user", content: text });
     const system =
       "You are OMNI, a coding agent working in an isolated, network-less Linux sandbox. The owner approves every command. " +
@@ -374,27 +561,56 @@ export function createSandbox(c, opts = {}) {
           ? await c.fetch("https://api.openai.com/v1/chat/completions", {
               method: "POST",
               headers: { authorization: `Bearer ${p.key}`, "content-type": "application/json" },
-              body: JSON.stringify({ model: p.model, max_completion_tokens: 1500, messages: [{ role: "system", content: system }, ...msgs] }),
+              body: JSON.stringify({
+                model: p.model,
+                max_completion_tokens: 1500,
+                messages: [{ role: "system", content: system }, ...msgs],
+              }),
               signal: AbortSignal.timeout(90_000),
             })
           : await c.fetch("https://api.anthropic.com/v1/messages", {
               method: "POST",
-              headers: { "x-api-key": p.key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+              headers: {
+                "x-api-key": p.key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+              },
               body: JSON.stringify({ model: p.model, max_tokens: 1500, system, messages: msgs }),
               signal: AbortSignal.timeout(90_000),
             });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) return fail(`${id === "openai" ? "OpenAI" : "Claude"} returned HTTP ${res.status}.`);
-      const reply = id === "openai" ? (j.choices?.[0]?.message?.content ?? "") : (j.content ?? []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
+      if (!res.ok)
+        return fail(`${id === "openai" ? "OpenAI" : "Claude"} returned HTTP ${res.status}.`);
+      const reply =
+        id === "openai"
+          ? (j.choices?.[0]?.message?.content ?? "")
+          : (j.content ?? [])
+              .filter((b) => b.type === "text")
+              .map((b) => b.text)
+              .join("\n");
       const inT = id === "openai" ? j.usage?.prompt_tokens : j.usage?.input_tokens;
       const outT = id === "openai" ? j.usage?.completion_tokens : j.usage?.output_tokens;
       const cents = Math.ceil(((inT ?? 0) * p.inCents + (outT ?? 0) * p.outCents) / 1_000_000);
       s.history.push({ role: "assistant", content: reply });
-      job.steps.push({ id: "msg", kind: "message", title: "", body: reply.slice(0, 16000), costCents: Math.min(cents, 1000), model: p.model, status: "done" });
+      job.steps.push({
+        id: "msg",
+        kind: "message",
+        title: "",
+        body: reply.slice(0, 16000),
+        costCents: Math.min(cents, 1000),
+        model: p.model,
+        status: "done",
+      });
       const m = /```omni-command\n([\s\S]*?)```/.exec(reply);
       if (m && m[1].trim()) {
         job.pending = { kind: "command", command: m[1].trim().slice(0, 2000) };
-        job.steps.push({ id: "cmd", kind: "command", title: job.pending.command.slice(0, 200), body: job.pending.command, status: "pending_approval" });
+        job.steps.push({
+          id: "cmd",
+          kind: "command",
+          title: job.pending.command.slice(0, 200),
+          body: job.pending.command,
+          status: "pending_approval",
+        });
         job.state = "awaiting_approval";
       } else job.state = "done";
     } catch {
@@ -412,17 +628,37 @@ export function createSandbox(c, opts = {}) {
     while (cursor < job.events.length && bytes < 12_000) {
       const e = job.events[cursor];
       if (e.stream === "exit")
-        steps.push({ id: `exit-${cursor}`, kind: "result", title: `Exit code ${e.code}`, body: e.signal ? `Signal ${e.signal}` : "", exitCode: Math.max(-1, Math.min(255, e.code)), status: e.code === 0 ? "done" : "failed" });
+        steps.push({
+          id: `exit-${cursor}`,
+          kind: "result",
+          title: `Exit code ${e.code}`,
+          body: e.signal ? `Signal ${e.signal}` : "",
+          exitCode: Math.max(-1, Math.min(255, e.code)),
+          status: e.code === 0 ? "done" : "failed",
+        });
       else {
         const body = e.text.slice(0, 12_000);
         bytes += Buffer.byteLength(body);
-        steps.push({ id: `out-${cursor}`, kind: "output", title: "", body, stream: e.stream, status: "done" });
+        steps.push({
+          id: `out-${cursor}`,
+          kind: "output",
+          title: "",
+          body,
+          stream: e.stream,
+          status: "done",
+        });
       }
       cursor++;
     }
     job.cursor = String(cursor);
-    const finished = ["done", "failed", "stopped"].includes(job.state) && cursor >= job.events.length;
-    const st = job.state === "awaiting_approval" || job.state === "queued" ? "queued" : finished ? job.state : "running";
+    const finished =
+      ["done", "failed", "stopped"].includes(job.state) && cursor >= job.events.length;
+    const st =
+      job.state === "awaiting_approval" || job.state === "queued"
+        ? "queued"
+        : finished
+          ? job.state
+          : "running";
     return { job: { status: st, cursor: job.cursor }, steps };
   }
 
@@ -434,9 +670,24 @@ export function createSandbox(c, opts = {}) {
           health: {
             service: "omni-sandbox",
             version: VERSION,
-            isolation: { network: net === "isolated" && pr.networkBlocked ? "isolated" : "open", uid: pr.uid, perSessionUser: true, envNames: pr.envNames, probeExitCode: pr.exitCode },
+            isolation: {
+              network: net === "isolated" && pr.networkBlocked ? "isolated" : "open",
+              uid: pr.uid,
+              perSessionUser: true,
+              envNames: pr.envNames,
+              probeExitCode: pr.exitCode,
+            },
             limits: c.limits,
-            providers: ["openai", "anthropic"].map((id) => ({ id, ...(status.providers[id] ?? { configured: false, verified: false, model: null, pricing: false, checkedAt: null }) })),
+            providers: ["openai", "anthropic"].map((id) => ({
+              id,
+              ...(status.providers[id] ?? {
+                configured: false,
+                verified: false,
+                model: null,
+                pricing: false,
+                checkedAt: null,
+              }),
+            })),
             github: status.github,
             autonomy: "off",
             merge: "never",
@@ -445,7 +696,8 @@ export function createSandbox(c, opts = {}) {
       }
       case "session.start": {
         if (!UUID.test(b.sessionId ?? "")) throw new Refusal("Invalid session ID.");
-        if (net !== "isolated" && !c.allowNetwork) throw new Refusal("Network isolation is unavailable on this host; commands are refused.");
+        if (net !== "isolated" && !c.allowNetwork)
+          throw new Refusal("Network isolation is unavailable on this host; commands are refused.");
         let s = sessions.get(b.sessionId);
         if (!s) {
           const slot = slotFree();
@@ -457,11 +709,30 @@ export function createSandbox(c, opts = {}) {
           fs.mkdirSync(work, { mode: 0o700 });
           spawnSync("chown", ["-R", `${uid}:${uid}`, dir]);
           const provider = ["openai", "anthropic"].includes(b.provider) ? b.provider : "none";
-          s = { id: b.sessionId, slot, uid, dir, work, mirror: path.join(c.root, ".mirrors", b.sessionId), provider, jobs: new Map(), history: [], repo: null, startedAt: Date.now(), lastAt: Date.now() };
+          s = {
+            id: b.sessionId,
+            slot,
+            uid,
+            dir,
+            work,
+            mirror: path.join(c.root, ".mirrors", b.sessionId),
+            provider,
+            jobs: new Map(),
+            history: [],
+            repo: null,
+            startedAt: Date.now(),
+            lastAt: Date.now(),
+          };
           sessions.set(s.id, s);
         }
-        const model = s.provider === "none" ? null : (c.providers[s.provider].model || null);
-        return { session: { sandboxId: `sbx-${s.id.slice(0, 8)}`, sandboxName: `omni-sandbox uid ${s.uid}`, model } };
+        const model = s.provider === "none" ? null : c.providers[s.provider].model || null;
+        return {
+          session: {
+            sandboxId: `sbx-${s.id.slice(0, 8)}`,
+            sandboxName: `omni-sandbox uid ${s.uid}`,
+            model,
+          },
+        };
       }
       case "repo.checkout": {
         const s = getSession(b.sessionId);
@@ -477,7 +748,13 @@ export function createSandbox(c, opts = {}) {
         if (job.state === "queued") {
           // Never runs on arrival: the owner approves each command (autonomy is ignored).
           job.pending = { kind: "command", command };
-          job.steps.push({ id: "cmd", kind: "command", title: command.slice(0, 200), body: command, status: "pending_approval" });
+          job.steps.push({
+            id: "cmd",
+            kind: "command",
+            title: command.slice(0, 200),
+            body: command,
+            status: "pending_approval",
+          });
           job.state = "awaiting_approval";
         }
         return jobReply(job);
@@ -491,7 +768,8 @@ export function createSandbox(c, opts = {}) {
       case "pr.propose": {
         const s = getSession(b.sessionId);
         const job = newJob(s, b.jobId, "pr");
-        if (job.state === "queued") void proposePr(s, job, String(b.title ?? "OMNI changes").slice(0, 120));
+        if (job.state === "queued")
+          void proposePr(s, job, String(b.title ?? "OMNI changes").slice(0, 120));
         return jobReply(job);
       }
       case "step.decide": {
@@ -503,7 +781,13 @@ export function createSandbox(c, opts = {}) {
         if (b.approve !== true) {
           job.pending = null;
           job.state = "stopped";
-          job.steps.push({ id: `rej-${Date.now()}`, kind: "result", title: "Rejected by owner", body: "Nothing was run.", status: "failed" });
+          job.steps.push({
+            id: `rej-${Date.now()}`,
+            kind: "result",
+            title: "Rejected by owner",
+            body: "Nothing was run.",
+            status: "failed",
+          });
         } else if (job.pending.kind === "pr") void openPr(s, job);
         else {
           const { command } = job.pending;
@@ -520,7 +804,8 @@ export function createSandbox(c, opts = {}) {
       }
       case "job.stop": {
         const s = sessions.get(b.sessionId);
-        if (s) for (const j of s.jobs.values()) if (!b.jobId || j.id === b.jobId) killJob(j, "owner");
+        if (s)
+          for (const j of s.jobs.values()) if (!b.jobId || j.id === b.jobId) killJob(j, "owner");
         return {};
       }
       case "agent.stop": {
@@ -562,7 +847,13 @@ export function createSandbox(c, opts = {}) {
       const nonce = h("x-omni-nonce");
       const message = `${CONTRACT}\nPOST\n${PATH}\n${ts}\n${nonce}\n${sha256(raw)}`;
       const fresh = /^\d{10}$/.test(ts) && Math.abs(Date.now() / 1000 - Number(ts)) <= 60;
-      if (h("x-omni-client") !== c.clientId || !fresh || !/^[0-9a-f]{32}$/.test(nonce) || nonces.has(nonce) || !safeEqual(h("x-omni-signature"), hmac(c.secret, message))) {
+      if (
+        h("x-omni-client") !== c.clientId ||
+        !fresh ||
+        !/^[0-9a-f]{32}$/.test(nonce) ||
+        nonces.has(nonce) ||
+        !safeEqual(h("x-omni-signature"), hmac(c.secret, message))
+      ) {
         res.writeHead(401).end();
         return;
       }
@@ -572,13 +863,28 @@ export function createSandbox(c, opts = {}) {
       try {
         const b = JSON.parse(raw);
         if (b.projectId !== c.projectId) throw new Refusal("Wrong project.");
-        payload = { contract: CONTRACT, requestNonce: nonce, steps: [], ...(await handle(String(b.action), b)) };
+        payload = {
+          contract: CONTRACT,
+          requestNonce: nonce,
+          steps: [],
+          ...(await handle(String(b.action), b)),
+        };
       } catch (e) {
         status = 409;
-        payload = { contract: CONTRACT, requestNonce: nonce, error: e instanceof Refusal ? e.message : "Request failed.", steps: [] };
+        payload = {
+          contract: CONTRACT,
+          requestNonce: nonce,
+          error: e instanceof Refusal ? e.message : "Request failed.",
+          steps: [],
+        };
       }
       const text = JSON.stringify(payload);
-      res.writeHead(status, { "content-type": "application/json", "x-omni-proof": hmac(c.secret, `${CONTRACT}\nresponse\n${nonce}\n${status}\n${text}`) }).end(text);
+      res
+        .writeHead(status, {
+          "content-type": "application/json",
+          "x-omni-proof": hmac(c.secret, `${CONTRACT}\nresponse\n${nonce}\n${status}\n${text}`),
+        })
+        .end(text);
     });
   });
 
@@ -598,15 +904,24 @@ class Refusal extends Error {}
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (process.getuid?.() !== 0) {
-    console.error("omni-sandbox must start as root so it can drop each command to an unprivileged per-session user.");
+    console.error(
+      "omni-sandbox must start as root so it can drop each command to an unprivileged per-session user.",
+    );
     process.exit(1);
   }
   const c = loadConfig();
   const sb = createSandbox(c);
-  console.log(`omni-sandbox ${VERSION}: network ${sb.network}; ${c.repoAllowlist.length} allowed repositories`);
-  if (sb.network !== "isolated" && !c.allowNetwork) console.warn("Network isolation unavailable: sessions will be refused.");
+  console.log(
+    `omni-sandbox ${VERSION}: network ${sb.network}; ${c.repoAllowlist.length} allowed repositories`,
+  );
+  if (sb.network !== "isolated" && !c.allowNetwork)
+    console.warn("Network isolation unavailable: sessions will be refused.");
   void sb.verifyProviders();
   setInterval(() => void sb.verifyProviders(), 10 * 60_000).unref();
   sb.server.listen(c.port, () => console.log(`listening on :${c.port}`));
-  for (const sig of ["SIGTERM", "SIGINT"]) process.on(sig, () => { sb.close(); process.exit(0); });
+  for (const sig of ["SIGTERM", "SIGINT"])
+    process.on(sig, () => {
+      sb.close();
+      process.exit(0);
+    });
 }

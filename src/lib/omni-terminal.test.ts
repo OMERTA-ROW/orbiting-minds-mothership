@@ -52,7 +52,12 @@ function snap(over: Partial<Snapshot> = {}): Snapshot {
     log: [],
     dock: { paired: 0, pending: 0, known: true },
     workspaceEnabled: false,
-    sandbox: { configured: false, enabled: false, problem: "Missing: OMNI_SANDBOX_ORIGIN.", selfTestPassedAt: null },
+    sandbox: {
+      configured: false,
+      enabled: false,
+      problem: "Missing: OMNI_SANDBOX_ORIGIN.",
+      selfTestPassedAt: null,
+    },
     ...over,
   };
 }
@@ -247,22 +252,42 @@ describe("terminal readiness states", () => {
   });
   it("is Stopped while the Emergency Stop is engaged or the kill switch is off", () => {
     expect(terminalReadiness(snap({ sandbox: sandbox() })).primary).toBe("stopped");
-    expect(terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: false, sandbox: sandbox() })).primary).toBe("stopped");
-    expect(terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: null, sandbox: sandbox() })).primary).toBe("stopped");
+    expect(
+      terminalReadiness(
+        snap({ emergencyStop: released, workspaceEnabled: false, sandbox: sandbox() }),
+      ).primary,
+    ).toBe("stopped");
+    expect(
+      terminalReadiness(
+        snap({ emergencyStop: released, workspaceEnabled: null, sandbox: sandbox() }),
+      ).primary,
+    ).toBe("stopped");
   });
   it("is Not authorized while the sandbox switch is off", () => {
-    const s = snap({ emergencyStop: released, workspaceEnabled: true, sandbox: sandbox({ enabled: false }) });
+    const s = snap({
+      emergencyStop: released,
+      workspaceEnabled: true,
+      sandbox: sandbox({ enabled: false }),
+    });
     expect(terminalReadiness(s).primary).toBe("unauthorized");
   });
   it("is Not connected without a sandbox self-test inside 24 hours", () => {
     const base = { emergencyStop: released, workspaceEnabled: true as const };
-    expect(terminalReadiness(snap({ ...base, sandbox: sandbox({ selfTestPassedAt: null }) })).primary).toBe("disconnected");
+    expect(
+      terminalReadiness(snap({ ...base, sandbox: sandbox({ selfTestPassedAt: null }) })).primary,
+    ).toBe("disconnected");
     const stale = new Date(NOW - 25 * 3600_000).toISOString();
-    expect(terminalReadiness(snap({ ...base, sandbox: sandbox({ selfTestPassedAt: stale }) })).primary).toBe("disconnected");
-    expect(terminalReadiness(snap({ ...base, sandbox: sandbox({ configured: false }) })).primary).toBe("disconnected");
+    expect(
+      terminalReadiness(snap({ ...base, sandbox: sandbox({ selfTestPassedAt: stale }) })).primary,
+    ).toBe("disconnected");
+    expect(
+      terminalReadiness(snap({ ...base, sandbox: sandbox({ configured: false }) })).primary,
+    ).toBe("disconnected");
   });
   it("is ready only when every cloud-shell item passes; docking stays optional", () => {
-    const r = terminalReadiness(snap({ emergencyStop: released, workspaceEnabled: true, sandbox: sandbox() }));
+    const r = terminalReadiness(
+      snap({ emergencyStop: released, workspaceEnabled: true, sandbox: sandbox() }),
+    );
     expect(r.primary).toBe("ready");
     expect(r.conditions.read_only).toBe(false);
     expect(r.conditions.unpaired).toBe(true);
@@ -273,17 +298,28 @@ describe("terminal readiness states", () => {
     expect(r.items.find((i) => i.id === "sandbox_self_test")!.ok).toBe(false);
   });
   it("an unreadable Docking Bay counts as unpaired", () => {
-    expect(terminalReadiness(snap({ dock: { paired: 3, pending: 0, known: false } })).conditions.unpaired).toBe(true);
+    expect(
+      terminalReadiness(snap({ dock: { paired: 3, pending: 0, known: false } })).conditions
+        .unpaired,
+    ).toBe(true);
   });
 });
 
 describe("lock reason", () => {
-  const base = { signedIn: true, emailVerified: true, isOwner: true, aal: "aal2" as const, hasVerifiedTotp: true };
+  const base = {
+    signedIn: true,
+    emailVerified: true,
+    isOwner: true,
+    aal: "aal2" as const,
+    hasVerifiedTotp: true,
+  };
   it("names the first failing gate", () => {
     expect(lockReason({ ...base, signedIn: false }).id).toBe("signed_out");
     expect(lockReason({ ...base, emailVerified: false }).id).toBe("email_unverified");
     expect(lockReason({ ...base, isOwner: false }).id).toBe("not_owner");
-    expect(lockReason({ ...base, hasVerifiedTotp: false, aal: "aal1" }).id).toBe("no_authenticator");
+    expect(lockReason({ ...base, hasVerifiedTotp: false, aal: "aal1" }).id).toBe(
+      "no_authenticator",
+    );
     expect(lockReason({ ...base, aal: "aal1" }).id).toBe("code_needed");
     expect(lockReason(base).id).toBe("server_refused");
   });
@@ -298,23 +334,39 @@ describe("Readiness display reflects recorded evidence only", () => {
     expect(d.detail).toContain("No decision has ever been recorded in Mothership");
   });
   it("shows the next step once any decision exists", () => {
-    const rows = normalizeRows([{ step: 1, status: "approved", decided_at: "2026-11-07T10:00:00Z" }]);
+    const rows = normalizeRows([
+      { step: 1, status: "approved", decided_at: "2026-11-07T10:00:00Z" },
+    ]);
     const d = item(snap({ approvals: rows }), "approvals");
     expect(d.label).toContain("1 of 10");
     expect(d.detail).toContain("Next: step 2");
   });
   it("shows a recorded Jackboy link self-test instead of fixed text", () => {
     const audit = [
-      { id: "a", action: "self_test_passed", record_type: "jackboy_link", record_id: "j", occurred_at: "2026-11-07T15:00:00Z" },
+      {
+        id: "a",
+        action: "self_test_passed",
+        record_type: "jackboy_link",
+        record_id: "j",
+        occurred_at: "2026-11-07T15:00:00Z",
+      },
     ];
     const cap = capabilities(snap({ audit })).find((c) => c.id === "self_test")!;
     expect(cap.evidence).toContain("2026-11-07 15:00 UTC");
-    expect(capabilities(snap()).find((c) => c.id === "self_test")!.evidence).toContain("No Jackboy link self-test recorded");
+    expect(capabilities(snap()).find((c) => c.id === "self_test")!.evidence).toContain(
+      "No Jackboy link self-test recorded",
+    );
   });
   it("distinguishes a never-attempted handshake from a failed attempt", () => {
     expect(item(snap(), "jackboy_link").detail).toContain("no handshake has ever been attempted");
     const audit = [
-      { id: "a", action: "connecting", record_type: "jackboy_link", record_id: "x", occurred_at: "2026-11-07T15:00:00Z" },
+      {
+        id: "a",
+        action: "connecting",
+        record_type: "jackboy_link",
+        record_id: "x",
+        occurred_at: "2026-11-07T15:00:00Z",
+      },
     ];
     const d = item(snap({ audit }), "jackboy_link");
     expect(d.ok).toBe(false);

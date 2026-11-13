@@ -31,7 +31,8 @@ async function owner(context: Ctx) {
 }
 function ruleError(error: { code?: string; message: string } | null) {
   if (!error) return null;
-  if (error.message.includes("Fresh two-factor")) return "Confirm your two-step code (last 15 minutes) first.";
+  if (error.message.includes("Fresh two-factor"))
+    return "Confirm your two-step code (last 15 minutes) first.";
   // 22023 messages are written by the provisioning functions themselves and contain no data.
   if (error.code === "22023") return error.message;
   return "Not recorded. Check owner access and refresh.";
@@ -45,18 +46,40 @@ export const readProvisioning = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const ws = await import("./omni-workspace.server");
     const [manifests, proposals, evals, releases, events, docs, link] = await Promise.all([
-      db.from("razul_agent_manifests").select("id,app_id,agent_id,version,manifest,manifest_sha256,created_by,created_at").order("created_at", { ascending: false }).limit(100),
-      db.from("razul_update_proposals").select("*").order("created_at", { ascending: false }).limit(50),
-      db.from("razul_evaluations").select("id,proposal_id,manifest_sha256,kind,passed,proof_verified,runner,ran_at").order("ran_at", { ascending: false }).limit(200),
+      db
+        .from("razul_agent_manifests")
+        .select("id,app_id,agent_id,version,manifest,manifest_sha256,created_by,created_at")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      db
+        .from("razul_update_proposals")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50),
+      db
+        .from("razul_evaluations")
+        .select("id,proposal_id,manifest_sha256,kind,passed,proof_verified,runner,ran_at")
+        .order("ran_at", { ascending: false })
+        .limit(200),
       db.from("razul_agent_releases").select("*"),
-      db.from("razul_provisioning_events").select("id,at,actor,event,app_id,agent_id,proposal_id,detail").order("at", { ascending: false }).limit(50),
-      db.from("razul_knowledge_docs").select("id,namespace,title,source_kind,source_ref,source_sha256,retrieved_at,created_at").order("created_at", { ascending: false }).limit(500),
+      db
+        .from("razul_provisioning_events")
+        .select("id,at,actor,event,app_id,agent_id,proposal_id,detail")
+        .order("at", { ascending: false })
+        .limit(50),
+      db
+        .from("razul_knowledge_docs")
+        .select("id,namespace,title,source_kind,source_ref,source_sha256,retrieved_at,created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
       ws.linkState(supabaseAdmin),
     ]);
     const now = Date.now();
-    const sandboxPassed = link.selfTestPassedAt !== null && now - link.selfTestPassedAt < 24 * 3600_000;
+    const sandboxPassed =
+      link.selfTestPassedAt !== null && now - link.selfTestPassedAt < 24 * 3600_000;
     const docCount = new Map<string, number>();
-    for (const d of docs.data ?? []) docCount.set(d.namespace, (docCount.get(d.namespace) ?? 0) + 1);
+    for (const d of docs.data ?? [])
+      docCount.set(d.namespace, (docCount.get(d.namespace) ?? 0) + 1);
     const health: Record<string, ReturnType<typeof integrationHealth>> = {};
     for (const m of manifests.data ?? []) {
       const parsed = agentManifest.safeParse(m.manifest);
@@ -102,7 +125,11 @@ export const proposeManifest = createServerFn({ method: "POST" })
       .maybeSingle();
     let prev: AgentManifest | null = null;
     if (rel.data?.manifest_id) {
-      const m = await db.from("razul_agent_manifests").select("manifest").eq("id", rel.data.manifest_id).maybeSingle();
+      const m = await db
+        .from("razul_agent_manifests")
+        .select("manifest")
+        .eq("id", rel.data.manifest_id)
+        .maybeSingle();
       const parsed = agentManifest.safeParse(m.data?.manifest);
       prev = parsed.success ? parsed.data : null;
     }
@@ -112,7 +139,10 @@ export const proposeManifest = createServerFn({ method: "POST" })
       _escalations: diff.escalations as unknown as Json,
       _changes: diff.changes as unknown as Json,
       _note: data.note,
-      _static: { problems: 0, checks: ["schema", "tools", "namespace", "budgets", "model", "text"] } as Json,
+      _static: {
+        problems: 0,
+        checks: ["schema", "tools", "namespace", "budgets", "model", "text"],
+      } as Json,
     });
     const message = ruleError(error);
     if (message) return { ok: false as const, problems: [message] };
@@ -123,7 +153,14 @@ const decideInput = z
   .object({
     proposalId: z.string().uuid(),
     action: z.enum(["approve", "reject", "withdraw", "stage", "promote", "rollback"]),
-    stage: z.union([z.literal(ROLLOUT_STAGES[0]), z.literal(ROLLOUT_STAGES[1]), z.literal(ROLLOUT_STAGES[2])]).nullable().default(null),
+    stage: z
+      .union([
+        z.literal(ROLLOUT_STAGES[0]),
+        z.literal(ROLLOUT_STAGES[1]),
+        z.literal(ROLLOUT_STAGES[2]),
+      ])
+      .nullable()
+      .default(null),
     acknowledge: z.boolean().default(false),
   })
   .strict();
@@ -133,7 +170,10 @@ export const decideProvisioning = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => decideInput.parse(input))
   .handler(async ({ context, data }) => {
     await owner(context);
-    if (["approve", "stage", "promote"].includes(data.action) && !isMfaFresh(context.claims["amr"], Math.floor(Date.now() / 1000)))
+    if (
+      ["approve", "stage", "promote"].includes(data.action) &&
+      !isMfaFresh(context.claims["amr"], Math.floor(Date.now() / 1000))
+    )
       return { ok: false as const, message: "Confirm your two-step code (last 15 minutes) first." };
     const { error } = await context.supabase.rpc("razul_decide_proposal", {
       _id: data.proposalId,
@@ -188,7 +228,10 @@ export const deleteKnowledge = createServerFn({ method: "POST" })
 export const searchKnowledge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ namespace: ns, query: z.string().trim().min(1).max(200) }).strict().parse(input),
+    z
+      .object({ namespace: ns, query: z.string().trim().min(1).max(200) })
+      .strict()
+      .parse(input),
   )
   .handler(async ({ context, data }) => {
     await owner(context);
@@ -203,7 +246,12 @@ export const searchKnowledge = createServerFn({ method: "POST" })
       namespace: r.namespace,
       title: r.title,
       body: r.body,
-      source: { kind: r.source_kind as KnowledgeDoc["source"]["kind"], ref: r.source_ref, retrievedAt: Date.parse(r.retrieved_at), sha256: r.source_sha256 },
+      source: {
+        kind: r.source_kind as KnowledgeDoc["source"]["kind"],
+        ref: r.source_ref,
+        retrievedAt: Date.parse(r.retrieved_at),
+        sha256: r.source_sha256,
+      },
     }));
     return { ok: true as const, hits: retrieve(data.query, docs, data.namespace) };
   });

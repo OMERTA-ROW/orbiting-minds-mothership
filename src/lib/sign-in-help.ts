@@ -24,7 +24,8 @@ const BY_CODE = {
   weak_password:
     "Choose a stronger password: at least 12 characters, not one that has appeared in a data leak.",
   same_password: "Your new password must be different from the old one.",
-  over_email_send_rate_limit: "Too many emails were sent recently. Wait a few minutes, then try again.",
+  over_email_send_rate_limit:
+    "Too many emails were sent recently. Wait a few minutes, then try again.",
   over_request_rate_limit: "Too many attempts. Wait a minute, then try again.",
   signup_disabled: "New accounts are closed right now. Ask the owner for an invitation.",
   email_provider_disabled:

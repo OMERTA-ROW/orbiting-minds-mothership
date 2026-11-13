@@ -68,7 +68,13 @@ async function loadJob(
   return { job, state: t.state, sent: Boolean(h) };
 }
 
-async function record(taskId: string, actor: string, job: string | null, status: string, detail: string) {
+async function record(
+  taskId: string,
+  actor: string,
+  job: string | null,
+  status: string,
+  detail: string,
+) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.rpc("omni_task_handoff_record", {
     _task: taskId,
@@ -83,15 +89,20 @@ async function record(taskId: string, actor: string, job: string | null, status:
 const REASON: Record<string, string> = {
   // Jackboy's signed refusals
   kill_switch_on: "Jackboy's Kill Switch is on, so nothing was queued.",
-  digest_mismatch: "Jackboy found the instructions did not match their fingerprint. Nothing was queued.",
-  project_not_authorized: "That Jackboy project id is not authorized for this repository in Jackboy.",
-  task_conflict: "Jackboy already has this task with different details, so it refused a second version.",
-  owner_unavailable: "Jackboy could not confirm its owner right now. Nothing was queued; retry later.",
+  digest_mismatch:
+    "Jackboy found the instructions did not match their fingerprint. Nothing was queued.",
+  project_not_authorized:
+    "That Jackboy project id is not authorized for this repository in Jackboy.",
+  task_conflict:
+    "Jackboy already has this task with different details, so it refused a second version.",
+  owner_unavailable:
+    "Jackboy could not confirm its owner right now. Nothing was queued; retry later.",
   invalid_request: "Jackboy rejected the request format.",
   task_not_found: "Jackboy has no job for this task yet.",
   handoff_unavailable: "Jackboy's handoff storage is unavailable right now; retry later.",
   // Local / unconfirmed
-  authentication_failed: "Jackboy did not accept Mothership's signature (check client id and shared secret).",
+  authentication_failed:
+    "Jackboy did not accept Mothership's signature (check client id and shared secret).",
   handoff_disabled: "The handoff is turned off on Jackboy's side.",
   body_too_large: "The task was too large for Jackboy.",
   https_post_required: "Jackboy refused the address used.",
@@ -130,8 +141,11 @@ export const sendTaskToJackboy = createServerFn({ method: "POST" })
       _digest: digest,
     });
     if (error) {
-      if (error.message.includes("Fresh two-factor")) return fail("Re-verify with your authenticator first.");
-      return fail(error.code === "22023" ? error.message : "The handoff was not recorded. Refresh and retry.");
+      if (error.message.includes("Fresh two-factor"))
+        return fail("Re-verify with your authenticator first.");
+      return fail(
+        error.code === "22023" ? error.message : "The handoff was not recorded. Refresh and retry.",
+      );
     }
     const reply = await sendHandoff(config, "create", loaded.job);
     if (!reply.ok) {
@@ -154,7 +168,8 @@ export const refreshTaskHandoff = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => refreshInput.parse(input))
   .handler(async ({ context, data }) => {
     await owner(context);
-    if (await stopIsEngaged(context)) return fail("Emergency Stop is engaged; status checks are paused.");
+    if (await stopIsEngaged(context))
+      return fail("Emergency Stop is engaged; status checks are paused.");
     const { handoffConfig, sendHandoff } = await import("./jackboy-handoff.server");
     const config = handoffConfig(process.env);
     if (!config) return fail("The Jackboy handoff is not configured or is turned off.");
