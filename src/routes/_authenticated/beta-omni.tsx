@@ -20,7 +20,20 @@ import {
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { seo } from "@/lib/seo";
 import { useSpeechInput } from "@/hooks/use-speech-input";
-import { Square, Send, Trash2, Mic, Pause, Play } from "lucide-react";
+import { useSpeechOutput } from "@/hooks/use-speech-output";
+import { useMicLevel } from "@/hooks/use-mic-level";
+import { OmniOrb } from "@/components/omnibridge/OmniOrb";
+import { OmniVoiceBar } from "@/components/omnibridge/OmniVoiceBar";
+import {
+  canSendTo,
+  introFor,
+  orbState,
+  speakableText,
+  speakerLabel,
+  voiceAgent,
+  type VoiceAgentId,
+} from "@/lib/omni-voice";
+import { Square, Send, Trash2, Pause, Play } from "lucide-react";
 import { z } from "zod";
 const studioSearch = z.object({
   studioGoal: z.string().max(1000).optional().catch(undefined),
@@ -49,7 +62,9 @@ function LiveOmni() {
     ),
     [text, setText] = useState(draft.studioGoal ?? ""),
     [consent, setConsent] = useState(false),
-    [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]),
+    [messages, setMessages] = useState<
+      { role: "user" | "assistant"; text: string; agent: VoiceAgentId }[]
+    >([]),
     [thinking, setThinking] = useState(""),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
@@ -59,6 +74,42 @@ function LiveOmni() {
     setText((prev) => (prev ? prev.trimEnd() + " " : "") + spoken),
   );
   const paused = guardian.paused || data.access?.paused;
+  const [agentId, setAgentId] = useState<VoiceAgentId>("omni");
+  const [voiceOn, setVoiceOn] = useState(false);
+  const voiceOnRef = useRef(false);
+  voiceOnRef.current = voiceOn;
+  const level = useRef(0);
+  const voice = useSpeechOutput();
+  useMicLevel(speech.listening, level);
+  const agent = voiceAgent(agentId);
+  const gate = canSendTo(agentId, {
+    aiApproved: !!data.access?.ai_approved,
+    paused: !!paused,
+    hasProject: !!projectId,
+    consent,
+  });
+  const bump = () => {
+    level.current = Math.min(1, level.current + 0.55);
+  };
+  const say = (line: string) => {
+    if (voiceOnRef.current) voice.speak(line, { onWord: bump });
+  };
+  const changeAgent = (id: VoiceAgentId) => {
+    speech.stop();
+    voice.cancel();
+    setAgentId(id);
+    say(introFor(id));
+  };
+  const toggleVoice = () => {
+    if (voiceOn) {
+      voice.cancel();
+      setVoiceOn(false);
+      return;
+    }
+    voiceOnRef.current = true;
+    setVoiceOn(true);
+    say(introFor(agentId));
+  };
   useEffect(() => () => current.current?.abort(), []);
   useEffect(() => {
     if (paused) current.current?.abort();
@@ -77,6 +128,18 @@ function LiveOmni() {
   };
   const send = async () => {
     if (current.current) return;
+    const allowed = canSendTo(agentId, {
+      aiApproved: !!data.access?.ai_approved,
+      paused: !!paused,
+      hasProject: !!projectId,
+      consent,
+    });
+    if (!allowed.ok) {
+      setNotice(allowed.reason);
+      return;
+    }
+    voice.cancel();
+    speech.stop();
     let input;
     try {
       if (paused || readCreativePause()) throw new Error("Guardian or Nexus planning is paused.");
@@ -100,8 +163,8 @@ function LiveOmni() {
     const index = messages.length + 1;
     setMessages((prev) => [
       ...prev,
-      { role: "user", text: input.message },
-      { role: "assistant", text: "" },
+      { role: "user", text: input.message, agent: "omni" },
+      { role: "assistant", text: "", agent: "omni" },
     ]);
     setText("");
     try {
@@ -124,10 +187,13 @@ function LiveOmni() {
       if (!reader) throw new Error("Empty response.");
       const decoder = new TextDecoder();
       let buffer = "",
-        terminal = false;
+        terminal = false,
+        reply = "",
+        completed = false;
       const consume = (line: string) => {
         if (!line.trim()) return;
         const event = JSON.parse(line) as AgentEvent;
+        if (event.type === "text") reply += event.text;
         if (event.type === "text")
           setMessages((prev) =>
             prev.map((m, i) => (i === index ? { ...m, text: m.text + event.text } : m)),
@@ -136,6 +202,7 @@ function LiveOmni() {
         if (event.type === "result") {
           const run = event.run;
           terminal = true;
+          if (run.status === "completed") completed = true;
           if (run.status === "completed")
             setUsage({
               type: "done",
@@ -162,6 +229,7 @@ function LiveOmni() {
       }
       consume(buffer + decoder.decode());
       if (!terminal) throw new Error("Response ended early. No completed answer recorded.");
+      if (completed && reply.trim() && !abort.signal.aborted) say(speakableText(reply));
     } catch (e) {
       setNotice(
         abort.signal.aborted
@@ -179,7 +247,7 @@ function LiveOmni() {
     }
   };
   return (
-    <section className="mx-auto max-w-6xl px-6 py-10">
+    <section className="omni-orb-dashboard mx-auto max-w-6xl px-6 py-10">
       <header className="border-b border-border pb-6">
         <p className="eyebrow">OmniBridge / authorized beta channel</p>
         <h1 className="mt-4 text-4xl">OMNI</h1>
@@ -198,6 +266,32 @@ function LiveOmni() {
           </p>
         )}
       </header>
+      <div className="omni-orb-stage mt-6 flex flex-col items-center gap-2 border-b border-border pb-6">
+        <OmniOrb
+          agentName={agent.name}
+          muted={!voiceOn}
+          level={level}
+          state={orbState({
+            agentConnected: !!agent.chatPath,
+            listening: speech.listening,
+            speaking: voice.speaking,
+            busy,
+          })}
+        />
+        <OmniVoiceBar
+          agentId={agentId}
+          onAgentChange={changeAgent}
+          busy={busy}
+          dictationSupported={speech.supported}
+          listening={speech.listening}
+          onToggleMic={() => (speech.listening ? speech.stop() : speech.start())}
+          voiceSupported={voice.supported}
+          voiceOn={voiceOn}
+          onToggleVoice={toggleVoice}
+          speaking={voice.speaking}
+          onStopSpeaking={voice.cancel}
+        />
+      </div>
       <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0">
           <label className="block text-xs">
@@ -231,7 +325,8 @@ function LiveOmni() {
               {messages.map((m, i) => (
                 <Message key={i} from={m.role}>
                   <p className="text-[10px] text-gold-light">
-                    {m.role === "user" ? "YOU" : "OMNI / MODEL RESPONSE"}
+                    {speakerLabel(m.role, m.agent)}
+                    {m.role === "assistant" ? " / MODEL RESPONSE" : ""}
                   </p>
                   <MessageContent>
                     <MessageResponse className="break-words text-sm leading-7">
@@ -257,34 +352,20 @@ function LiveOmni() {
             }}
           >
             <label className="block text-xs">
-              Message OMNI
+              Message {agent.name}
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 maxLength={2000}
-                disabled={busy}
+                disabled={busy || !agent.chatPath}
                 required
                 className="exchange-select mt-2 min-h-28 w-full"
               />
             </label>
-            {speech.supported && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={busy}
-                  onClick={() => (speech.listening ? speech.stop() : speech.start())}
-                >
-                  <Mic size={14} />
-                  {speech.listening ? "Stop dictation" : "Dictate"}
-                </Button>
-                <p className="text-[10px] leading-5 text-muted-foreground">
-                  {speech.listening
-                    ? "Listening… dictated text appears above for your review. Nothing is sent automatically."
-                    : "Optional browser dictation; your browser may process audio with its own service. Typed input always works."}
-                </p>
-              </div>
+            {speech.listening && (
+              <p className="mt-2 text-[10px] leading-5 text-muted-foreground">
+                Listening… spoken words appear above for your review. Nothing is sent automatically.
+              </p>
             )}
             {speech.error && (
               <p role="status" className="mt-2 text-[10px] text-warning">
@@ -312,10 +393,11 @@ function LiveOmni() {
                 <Button
                   type="submit"
                   variant="cosmic"
-                  disabled={!consent || !projectId || paused || !data.access?.ai_approved}
+                  disabled={!gate.ok}
+                  title={gate.ok ? undefined : gate.reason}
                 >
                   <Send size={14} />
-                  Run OMNI agent
+                  {agent.chatPath ? `Run ${agent.name} agent` : `${agent.name} not connected here`}
                 </Button>
               )}
               <Button
