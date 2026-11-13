@@ -1,11 +1,27 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { betaQuery } from "@/lib/beta-query";
 import { type OmniEvent } from "@/lib/beta";
 import { omniAgentInput, type AgentEvent } from "@/lib/omni-agent";
-import { cancelOmniAgent } from "@/lib/omni-agent.functions";
+import {
+  cancelOmniAgent,
+  readOmniAgentRuns,
+  readOmniChatStatus,
+} from "@/lib/omni-agent.functions";
+import {
+  CONTEXT_TURN_CHOICES,
+  RUN_STATUS_LABEL,
+  chatConnections,
+  chatModels,
+  providerState,
+  savedTurns,
+  type ChatTurn,
+  type HeldTask,
+} from "@/lib/omni-chat";
+import { ChatConnections } from "@/components/omnibridge/ChatConnections";
+import { ChatHandoffDialog, HeldTaskCard } from "@/components/omnibridge/ChatHandoff";
 import { changeBetaPause } from "@/lib/beta.functions";
 import { OmniAgentHistory } from "@/components/omnibridge/OmniAgentHistory";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +49,7 @@ import {
   voiceAgent,
   type VoiceAgentId,
 } from "@/lib/omni-voice";
-import { Square, Send, Trash2, Pause, Play } from "lucide-react";
+import { Square, Send, Trash2, Pause, Play, Forward } from "lucide-react";
 import { z } from "zod";
 const studioSearch = z.object({
   studioGoal: z.string().max(1000).optional().catch(undefined),
@@ -44,27 +60,31 @@ export const Route = createFileRoute("/_authenticated/beta-omni")({
   head: () =>
     seo(
       "OMNI · Private text agent",
-      "Private single-turn OMNI agent with explicit consent, project-scoped saved results, streaming, cancellation and account pause. No tools or desktop access.",
+      "Private OMNI text agent with saved conversation history, opt-in earlier-turn context, explicit consent, held-task handoff, streaming, cancellation and account pause. No tools or desktop access.",
     ),
   loader: ({ context }) => context.queryClient.ensureQueryData(betaQuery),
   component: LiveOmni,
 });
+type ChatItem = { kind: "turn"; turn: ChatTurn } | { kind: "task"; task: HeldTask };
 function LiveOmni() {
   const { data } = useSuspenseQuery(betaQuery),
     { store: guardian } = useGuardian();
   const draft = Route.useSearch();
   const qc = useQueryClient(),
     cancelRun = useServerFn(cancelOmniAgent),
-    pauseAccount = useServerFn(changeBetaPause);
+    pauseAccount = useServerFn(changeBetaPause),
+    readRuns = useServerFn(readOmniAgentRuns),
+    readStatus = useServerFn(readOmniChatStatus);
   const activeId = useRef<string | null>(null);
   const [projectId, setProject] = useState(
       data.projects.find((p) => p.id === draft.studioProject)?.id ?? data.projects[0]?.id ?? "",
     ),
     [text, setText] = useState(draft.studioGoal ?? ""),
     [consent, setConsent] = useState(false),
-    [messages, setMessages] = useState<
-      { role: "user" | "assistant"; text: string; agent: VoiceAgentId }[]
-    >([]),
+    [items, setItems] = useState<ChatItem[]>([]),
+    [showSaved, setShowSaved] = useState(true),
+    [contextTurns, setContextTurns] = useState(0),
+    [handoff, setHandoff] = useState<{ request: string; reply: string } | null>(null),
     [thinking, setThinking] = useState(""),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(""),
@@ -74,6 +94,29 @@ function LiveOmni() {
     setText((prev) => (prev ? prev.trimEnd() + " " : "") + spoken),
   );
   const paused = guardian.paused || data.access?.paused;
+  const runsQuery = useQuery({
+    queryKey: ["omni-agent-runs", projectId],
+    queryFn: () => readRuns({ data: { projectId } }),
+    enabled: Boolean(projectId),
+    retry: false,
+  });
+  const statusQuery = useQuery({
+    queryKey: ["omni-chat-status"],
+    queryFn: () => readStatus(),
+    retry: false,
+  });
+  const provider = providerState(statusQuery.data, !!statusQuery.error);
+  const models = chatModels(statusQuery.data);
+  const sessionRunIds = useMemo(
+    () =>
+      new Set(
+        items.flatMap((it) => (it.kind === "turn" && it.turn.runId ? [it.turn.runId] : [])),
+      ),
+    [items],
+  );
+  const history =
+    showSaved && runsQuery.data ? savedTurns(runsQuery.data, sessionRunIds) : [];
+  const projectName = data.projects.find((p) => p.id === projectId)?.name ?? "";
   const [agentId, setAgentId] = useState<VoiceAgentId>("omni");
   const [voiceOn, setVoiceOn] = useState(false);
   const voiceOnRef = useRef(false);
@@ -83,6 +126,7 @@ function LiveOmni() {
   useMicLevel(speech.listening, level);
   const agent = voiceAgent(agentId);
   const gate = canSendTo(agentId, {
+    provider,
     aiApproved: !!data.access?.ai_approved,
     paused: !!paused,
     hasProject: !!projectId,
@@ -129,6 +173,7 @@ function LiveOmni() {
   const send = async () => {
     if (current.current) return;
     const allowed = canSendTo(agentId, {
+      provider,
       aiApproved: !!data.access?.ai_approved,
       paused: !!paused,
       hasProject: !!projectId,
@@ -148,6 +193,7 @@ function LiveOmni() {
         message: text.replace(/^@omni\s*/i, ""),
         consent,
         requestId: crypto.randomUUID(),
+        contextTurns,
       });
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Invalid input");
@@ -160,12 +206,36 @@ function LiveOmni() {
     setThinking("");
     setNotice("");
     setUsage(null);
-    const index = messages.length + 1;
-    setMessages((prev) => [
+    const runId = input.requestId,
+      now = new Date().toISOString();
+    const base = { agent: "omni" as const, runId, model: null, saved: false, contextIds: [] };
+    setItems((prev) => [
       ...prev,
-      { role: "user", text: input.message, agent: "omni" },
-      { role: "assistant", text: "", agent: "omni" },
+      {
+        kind: "turn",
+        turn: { ...base, key: `${runId}:u`, role: "user", text: input.message, status: null, at: now },
+      },
+      {
+        kind: "turn",
+        turn: {
+          ...base,
+          key: `${runId}:a`,
+          role: "assistant",
+          text: "",
+          status: "running",
+          at: now,
+          request: input.message,
+        },
+      },
     ]);
+    const patch = (key: string, fn: (t: ChatTurn) => Partial<ChatTurn>) =>
+      setItems((prev) =>
+        prev.map((it) =>
+          it.kind === "turn" && it.turn.key === key
+            ? { kind: "turn", turn: { ...it.turn, ...fn(it.turn) } }
+            : it,
+        ),
+      );
     setText("");
     try {
       const { data: session } = await supabase.auth.getSession();
@@ -194,14 +264,17 @@ function LiveOmni() {
         if (!line.trim()) return;
         const event = JSON.parse(line) as AgentEvent;
         if (event.type === "text") reply += event.text;
-        if (event.type === "text")
-          setMessages((prev) =>
-            prev.map((m, i) => (i === index ? { ...m, text: m.text + event.text } : m)),
-          );
+        if (event.type === "text") patch(`${runId}:a`, (t) => ({ text: t.text + event.text }));
+        if (event.type === "context") patch(`${runId}:u`, () => ({ contextIds: event.ids }));
         if (event.type === "thinking") setThinking((prev) => prev + event.text);
         if (event.type === "result") {
           const run = event.run;
           terminal = true;
+          patch(`${runId}:a`, () => ({
+            status: run.status,
+            model: run.model,
+            at: run.finished_at ?? run.created_at,
+          }));
           if (run.status === "completed") completed = true;
           if (run.status === "completed")
             setUsage({
@@ -231,6 +304,9 @@ function LiveOmni() {
       if (!terminal) throw new Error("Response ended early. No completed answer recorded.");
       if (completed && reply.trim() && !abort.signal.aborted) say(speakableText(reply));
     } catch (e) {
+      patch(`${runId}:a`, (t) =>
+        t.status === "running" ? { status: abort.signal.aborted ? "cancelled" : "failed" } : {},
+      );
       setNotice(
         abort.signal.aborted
           ? "Stopped. Partial text retained; billed usage may still apply."
@@ -243,18 +319,64 @@ function LiveOmni() {
       current.current = null;
       activeId.current = null;
       setConsent(false);
+      setContextTurns(0);
       await qc.invalidateQueries({ queryKey: ["omni-agent-runs", projectId] });
+      await qc.invalidateQueries({ queryKey: ["omni-chat-status"] });
     }
   };
+  const renderTurn = (m: ChatTurn) => (
+    <Message key={m.key} from={m.role}>
+      <p className="text-[10px] text-gold-light">
+        {speakerLabel(m.role, m.agent)}
+        {m.role === "assistant" ? " / MODEL RESPONSE" : ""}
+        {m.saved ? " · SAVED" : ""}
+      </p>
+      <MessageContent>
+        <MessageResponse className="break-words text-sm leading-7">
+          {m.text ||
+            (m.status === "running" && busy ? "Waiting for the model…" : "No answer received.")}
+        </MessageResponse>
+      </MessageContent>
+      {m.role === "user" && m.contextIds.length > 0 && (
+        <p className="text-[10px] text-muted-foreground">
+          Sent with {m.contextIds.length} earlier saved turn
+          {m.contextIds.length === 1 ? "" : "s"} you chose as context.
+        </p>
+      )}
+      {m.role === "assistant" && (
+        <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+          <span>
+            {m.status ? RUN_STATUS_LABEL[m.status] : "Unknown"}
+            {m.at ? ` · ${new Date(m.at).toLocaleString()}` : ""}
+            {m.model ? ` · ${m.model}` : ""}
+            {m.runId ? ` · ref ${m.runId.slice(0, 8)}` : ""}
+          </span>
+          {m.status === "completed" && m.text.trim() && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-6 px-2 text-[10px]"
+              onClick={() => setHandoff({ request: m.request ?? "", reply: m.text })}
+            >
+              <Forward size={12} />
+              Hand off
+            </Button>
+          )}
+        </div>
+      )}
+    </Message>
+  );
   return (
     <section className="omni-orb-dashboard mx-auto max-w-6xl px-6 py-10">
       <header className="border-b border-border pb-6">
         <p className="eyebrow">OmniBridge / authorized beta channel</p>
         <h1 className="mt-4 text-4xl">OMNI</h1>
         <p className="mt-4 text-xs leading-7 text-muted-foreground">
-          Lovable AI · openai/gpt-6-astra · 4,000 output-token budget including reasoning. No tool
-          access. Each run sends only this message and your selected project name/brief; history is
-          not resent. Text-only agent · activation pending verified account and protected setup.
+          Lovable AI · 4,000 output-token budget including reasoning. No tool access. Each run sends
+          this message and your selected project name/brief; earlier saved turns are sent only when
+          you choose them for that one message. Text-only agent · activation pending verified
+          account and protected setup.
         </p>
         <Button asChild variant="signal" size="sm" className="mt-4">
           <Link to="/quantum-studio">Quantum Studio</Link>
@@ -301,7 +423,8 @@ function LiveOmni() {
               disabled={busy}
               onChange={(e) => {
                 setProject(e.target.value);
-                setMessages([]);
+                setItems([]);
+                setContextTurns(0);
                 setUsage(null);
                 setConsent(false);
               }}
@@ -315,26 +438,82 @@ function LiveOmni() {
               ))}
             </select>
           </label>
-          <Conversation className="mt-5 h-[480px] min-h-0 border-y border-border">
+          <label className="mt-4 block text-xs">
+            Model
+            <select
+              value={models[0]?.id ?? ""}
+              disabled
+              aria-describedby="model-note"
+              className="exchange-select mt-2 w-full"
+            >
+              {models.length ? (
+                models.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))
+              ) : (
+                <option value="">No configured model</option>
+              )}
+            </select>
+            <span id="model-note" className="mt-1 block text-[10px] text-muted-foreground">
+              {statusQuery.error
+                ? "Model status could not be read."
+                : models.length === 1
+                  ? "Only one model is set up for this agent, so there is nothing else to pick."
+                  : models.length
+                    ? "Configured models only."
+                    : "No model provider is set up."}
+            </span>
+          </label>
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showSaved}
+                onChange={(e) => setShowSaved(e.target.checked)}
+              />
+              Show saved history in this chat
+            </label>
+            <span className="text-[10px] text-muted-foreground">
+              {runsQuery.error
+                ? "Saved history unavailable."
+                : `${runsQuery.data?.length ?? 0} saved run(s), newest 20 kept visible. Only you can read them.`}
+            </span>
+          </div>
+          <Conversation className="mt-3 h-[480px] min-h-0 border-y border-border">
             <ConversationContent>
-              {!messages.length && (
+              {!history.length && !items.length && (
                 <p className="py-12 text-sm text-muted-foreground">
                   No agent response in this session.
                 </p>
               )}
-              {messages.map((m, i) => (
-                <Message key={i} from={m.role}>
-                  <p className="text-[10px] text-gold-light">
-                    {speakerLabel(m.role, m.agent)}
-                    {m.role === "assistant" ? " / MODEL RESPONSE" : ""}
-                  </p>
-                  <MessageContent>
-                    <MessageResponse className="break-words text-sm leading-7">
-                      {m.text || (busy ? "Waiting for the model…" : "No answer received.")}
-                    </MessageResponse>
-                  </MessageContent>
-                </Message>
-              ))}
+              {history.length > 0 && (
+                <p className="text-[10px] uppercase text-muted-foreground">
+                  Saved history · read back from your project
+                </p>
+              )}
+              {history.map(renderTurn)}
+              {history.length > 0 && items.length > 0 && (
+                <p className="text-[10px] uppercase text-muted-foreground">This session</p>
+              )}
+              {items.map((it) =>
+                it.kind === "turn" ? (
+                  renderTurn(it.turn)
+                ) : (
+                  <HeldTaskCard
+                    key={`task:${it.task.id}`}
+                    task={it.task}
+                    onChange={(next) =>
+                      setItems((prev) =>
+                        prev.map((p) =>
+                          p.kind === "task" && p.task.id === next.id ? { kind: "task", task: next } : p,
+                        ),
+                      )
+                    }
+                  />
+                ),
+              )}
             </ConversationContent>
             <ConversationScrollButton />
           </Conversation>
@@ -372,6 +551,24 @@ function LiveOmni() {
                 {speech.error}
               </p>
             )}
+            <label className="mt-4 block text-xs">
+              Earlier turns to include as context (this message only)
+              <select
+                value={contextTurns}
+                disabled={busy}
+                onChange={(e) => setContextTurns(Number(e.target.value))}
+                className="exchange-select mt-2 w-full"
+              >
+                {CONTEXT_TURN_CHOICES.map((n) => (
+                  <option key={n} value={n}>
+                    {n === 0 ? "None — send only this message" : `Last ${n} completed saved turns`}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-[10px] text-muted-foreground">
+                Resets to none after each send. Agent memory notes are never sent from this chat.
+              </span>
+            </label>
             <label className="mt-4 flex items-start gap-2 text-xs leading-6">
               <input
                 type="checkbox"
@@ -379,7 +576,8 @@ function LiveOmni() {
                 onChange={(e) => setConsent(e.target.checked)}
                 disabled={busy}
               />
-              I consent to sending non-sensitive message and selected project context to Lovable AI.
+              I consent to sending non-sensitive message and selected project context
+              {contextTurns ? `, plus up to ${contextTurns} earlier saved turns,` : ""} to Lovable AI.
               Workspace credits are charged; exact charge is not available here. I also consent to
               saving this message and the response privately in my project.
             </label>
@@ -407,9 +605,12 @@ function LiveOmni() {
                 aria-label="Clear conversation"
                 disabled={busy}
                 onClick={() => {
-                  setMessages([]);
+                  setItems([]);
+                  setShowSaved(false);
                   setThinking("");
-                  setNotice("Conversation cleared. Saved agent runs are unchanged.");
+                  setNotice(
+                    "Cleared from this screen. Saved agent runs stay in your project; deleting them is not available yet.",
+                  );
                   setUsage(null);
                 }}
               >
@@ -419,7 +620,19 @@ function LiveOmni() {
           </form>
         </div>
         <aside className="min-w-0 text-xs leading-7">
-          <h2 className="text-lg">Request boundaries</h2>
+          <ChatConnections
+            rows={chatConnections({
+              provider,
+              status: statusQuery.data,
+              aiApproved: !!data.access?.ai_approved,
+              paused: !!paused,
+              dictation: speech.supported,
+              voice: voice.supported,
+            })}
+            refreshing={statusQuery.isFetching}
+            onRefresh={() => void statusQuery.refetch()}
+          />
+          <h2 className="mt-6 text-lg">Request boundaries</h2>
           <p className="mt-4 text-warning">
             {!data.access?.ai_approved
               ? "AWAITING FOUNDER AI APPROVAL"
@@ -489,6 +702,15 @@ function LiveOmni() {
         </aside>
       </div>
       <OmniAgentHistory projectId={projectId} busy={busy} />
+      <ChatHandoffDialog
+        source={handoff}
+        projectName={projectName}
+        onClose={() => setHandoff(null)}
+        onQueued={(task) => {
+          setItems((prev) => [...prev, { kind: "task", task }]);
+          setNotice("Held task saved in OMNI Terminal. Nothing runs until you act there.");
+        }}
+      />
       {notice && (
         <p
           role="status"
