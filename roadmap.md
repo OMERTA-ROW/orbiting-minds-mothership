@@ -1,5 +1,8 @@
 # Evolution — reconciled blueprint roadmap
 
+## OMNI chat experience upgrade — 2026-11-13
+- [ ] Private OMNI chat (`/beta-omni`): saved conversation history in chat, opt-in earlier-turn context, configured-model display, connection states, terminal/CODE/memory entry points, approval-gated held-task handoff with in-chat status. Orb, voice and safety gates unchanged.
+
 ## Current OMNI simplification and controls — 2026-11-04
 - [x] Scoped silver/gray OMNI and demo-dashboard theme, plain shared workspace navigation, expandable connection/autonomy/scope/local-archive sections, mobile wrapping. Every existing route/feature retained; homepage cosmic identity unchanged.
 - [x] Reproduced Rights unreadable-storage overwrite, unhandled specimen-hash rejection and specialist mobile overflow before edits; same browser checks now pass. Fixed copy/import/export feedback, task busy/retry states, local grant no-op explanation, saved-run refresh/cancel feedback and sign-out exceptions. Shared local-record hook protects unreadable/concurrent saved copies across eight workspaces and reports temporary edits rather than silent saving. No new endpoint, secret, account or hosted-data changes.
