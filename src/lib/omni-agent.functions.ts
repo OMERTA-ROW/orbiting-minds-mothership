@@ -47,3 +47,34 @@ export const cancelOmniAgent = createServerFn({ method: "POST" })
       );
     return result.data as OmniAgentRun;
   });
+
+/** Name-only status for the private chat: provider configured, model, and any saved pause. */
+export const readOmniChatStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { setResponseHeader } = await import("@tanstack/react-start/server");
+    setResponseHeader("Cache-Control", "private, no-store");
+    await member(context.supabase);
+    const { omniModel } = await import("./ai/omni-responses.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const state = await supabaseAdmin
+      .from("ai_gateway_state")
+      .select("blocked_status, message")
+      .eq("feature", "evolution-omni")
+      .maybeSingle();
+    return {
+      provider: "Lovable AI",
+      model: omniModel,
+      providerConfigured: Boolean(process.env["LOVABLE_API_KEY"]),
+      blockKnown: !state.error,
+      blocked: state.data
+        ? {
+            status: state.data.blocked_status,
+            // The in-progress guard names a request ID that may belong to someone else.
+            message: /^OMNI request [0-9a-f-]{36} is in progress/i.test(state.data.message)
+              ? "An OMNI request is in progress or its outcome needs owner review."
+              : state.data.message,
+          }
+        : null,
+    };
+  });

@@ -1,7 +1,14 @@
 import { z } from "zod";
 import { liveOmniInput } from "./beta";
 
-export const omniAgentInput = liveOmniInput.extend({ requestId: z.string().uuid() }).strict();
+/** Earlier saved turns the owner may attach to one request. Keep in sync with omni-chat MAX_CONTEXT_TURNS. */
+const MAX_CONTEXT = 6;
+export const omniAgentInput = liveOmniInput
+  .extend({
+    requestId: z.string().uuid(),
+    contextTurns: z.number().int().min(0).max(MAX_CONTEXT).default(0),
+  })
+  .strict();
 export const agentStates = [
   "queued",
   "running",
@@ -33,6 +40,8 @@ export type AgentEvent =
   | { type: "state"; id: string; status: AgentState }
   | { type: "text" | "thinking"; text: string }
   | { type: "result"; run: OmniAgentRun }
+  /** Saved run IDs actually sent as context with this request. */
+  | { type: "context"; ids: string[] }
   | { type: "error"; status: number; message: string };
 export function assertAgentMembership(role: unknown) {
   if (role !== "owner" && role !== "admin" && role !== "tester")

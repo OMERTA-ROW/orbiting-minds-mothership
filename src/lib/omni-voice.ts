@@ -51,7 +51,12 @@ export function speakerLabel(role: "user" | "assistant", agentId: VoiceAgentId):
   return role === "user" ? "YOU" : voiceAgent(agentId).name.toUpperCase();
 }
 
+/** Server-read model provider state for the text agent; anything but "ready" blocks sending. */
+export type ProviderState = "ready" | "missing" | "blocked" | "unknown";
+
 export interface SendGate {
+  /** Omitted by older callers; when present, must be "ready". */
+  provider?: ProviderState;
   aiApproved: boolean;
   paused: boolean;
   hasProject: boolean;
@@ -65,6 +70,12 @@ export function canSendTo(
 ): { ok: true } | { ok: false; reason: string } {
   const agent = voiceAgent(agentId);
   if (!agent.chatPath) return { ok: false, reason: agent.unavailableReason ?? "Not connected." };
+  if (gate.provider === "unknown")
+    return { ok: false, reason: "Connection status could not be read. Refresh and retry." };
+  if (gate.provider === "missing")
+    return { ok: false, reason: "No model provider is set up for this agent." };
+  if (gate.provider === "blocked")
+    return { ok: false, reason: "OMNI is paused for review or another request is in progress." };
   if (!gate.aiApproved) return { ok: false, reason: "Waiting for founder AI approval." };
   if (gate.paused) return { ok: false, reason: "Paused by Guardian or account pause." };
   if (!gate.hasProject) return { ok: false, reason: "Select a private project first." };

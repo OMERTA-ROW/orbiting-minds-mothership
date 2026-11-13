@@ -8,6 +8,7 @@ import {
   type OmniAgentRun,
 } from "@/lib/omni-agent";
 import { createOmniCall } from "./omni-responses.server.ts";
+import { contextFromRuns, type ContextMessage } from "@/lib/omni-chat";
 import { getLovableAiGatewayResponseHeaders } from "./run-id.server.ts";
 import { requiresPersistentPause } from "./gateway-errors";
 
@@ -40,6 +41,31 @@ export async function handleOmniAgent(request: Request) {
       .maybeSingle();
     if (project.error || !project.data) return jsonError(404, "Project not found in your account.");
     assertNonSensitive(`${project.data.name}\n${project.data.brief}`);
+    // Earlier turns are sent only when the owner chose a number for this request.
+    let history: ContextMessage[] = [],
+      contextIds: string[] = [];
+    if (input.contextTurns > 0) {
+      const saved = await (client.rpc as unknown as Rpc).call(client, "list_omni_agent_runs", {
+        _project: input.projectId,
+      });
+      if (saved.error || !Array.isArray(saved.data))
+        return jsonError(503, "Earlier saved turns could not be read. No request started.");
+      const picked = contextFromRuns(
+        saved.data as OmniAgentRun[],
+        input.requestId,
+        input.contextTurns,
+        (text) => {
+          try {
+            assertNonSensitive(text);
+            return true;
+          } catch {
+            return false;
+          }
+        },
+      );
+      history = picked.messages;
+      contextIds = picked.ids;
+    }
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) return jsonError(503, "Lovable AI is not configured. No request started.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -169,12 +195,14 @@ export async function handleOmniAgent(request: Request) {
           await check();
           if (signal.aborted) throw new DOMException("Stopped", "AbortError");
           send({ type: "state", id: input.requestId, status: "running" });
+          if (contextIds.length) send({ type: "context", ids: contextIds });
           call = createOmniCall(
             request,
             apiKey,
             JSON.stringify(project.data),
             input.message,
             signal,
+            history,
           );
           ready();
           for await (const part of call.result.fullStream) {
