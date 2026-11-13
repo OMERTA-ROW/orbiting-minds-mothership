@@ -225,7 +225,7 @@ function AuthPage() {
               else
                 setNotice({
                   ok: true,
-                  text: "Almost done: open the confirmation link we emailed you, then sign in. You are not signed in yet.",
+                  text: "Almost done: open the confirmation link we emailed you, then sign in. You are not signed in yet. If this email already has an account (for example through Google), no second account is made: sign in the way you did before.",
                 });
             } else {
               const { error } = await supabase.auth.signInWithPassword({ email, password });

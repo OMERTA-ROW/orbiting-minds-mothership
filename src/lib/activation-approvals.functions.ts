@@ -23,6 +23,46 @@ import {
   type CheckStatus,
 } from "./activation-approvals";
 import type { Json } from "@/integrations/supabase/types";
+import {
+  accessReason,
+  approvedBeforeReset,
+  effectiveRows,
+  isMissingObject,
+  latestSecurityReset,
+  type SecurityEvent,
+} from "./activation-status";
+
+/**
+ * The check store (`activation_approval_checks`, `activation_approval_record_check`) comes from
+ * database update 0051, which is absent from the generated types until it is applied. Only these two
+ * calls go through this narrow untyped view; results are validated before use.
+ */
+type CheckRowRaw = {
+  step: number;
+  status: string;
+  evidence_version: number;
+  checked_at: string;
+  summary: string;
+  details: unknown;
+};
+type DbError = { code?: string; message: string } | null;
+type CheckStoreClient = {
+  from(table: "activation_approval_checks"): {
+    select(columns: string): {
+      order(column: string): PromiseLike<{ data: CheckRowRaw[] | null; error: DbError }>;
+    };
+  };
+  rpc(
+    fn: "activation_approval_record_check",
+    args: Record<string, unknown>,
+  ): PromiseLike<{
+    error: DbError;
+  }>;
+};
+const checkStore = (admin: unknown) => admin as CheckStoreClient;
+
+const STORE_MISSING =
+  "Check results can't be saved yet: database update 0051 (approval check store) has not been applied. Nothing was approved.";
 
 const checkDetailSchema = z
   .object({
@@ -83,6 +123,21 @@ async function ownerContext(context: {
   setResponseHeader("Cache-Control", "private, no-store");
   const { requireRazulOwner } = await import("./razul-owner.server");
   await requireRazulOwner(context.supabase, context.userId, context.claims);
+}
+
+/** Newest owner security reset (two-step off, recovery, admin removal); fails closed when unreadable. */
+async function securityResetAt(
+  db: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0],
+  userId: string,
+): Promise<string | null> {
+  const { data, error } = await db
+    .from("owner_mfa_recovery_events")
+    .select("event,created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error("Account security history could not be read.");
+  return latestSecurityReset((data ?? []) as SecurityEvent[]);
 }
 
 async function selfTestEvents(
@@ -359,9 +414,26 @@ async function evaluateCheck(
 export const listActivationApprovals = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await ownerContext(context);
+    try {
+      await ownerContext(context);
+    } catch (error) {
+      // A specific reason, never record contents: lets the owner see exactly what to do next.
+      let reason = accessReason(error instanceof Error ? error.message : "");
+      // The owner check needs aal2, so an owner whose sign-in has not passed the code yet would
+      // read as "not the owner". The own role row only picks the message; it grants nothing.
+      if (reason === "not_owner" && context.claims["aal"] !== "aal2") {
+        const role = await context.supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", context.userId)
+          .eq("role", "owner")
+          .maybeSingle();
+        if (!role.error && role.data?.role === "owner") reason = "needs_code";
+      }
+      return { denied: true as const, reason };
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [steps, audit, checks, selfTest] = await Promise.all([
+    const [steps, audit, checks, selfTest, resetAt] = await Promise.all([
       context.supabase
         .from("activation_approvals")
         .select(
@@ -374,14 +446,22 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
         .eq("record_type", "activation_approval")
         .order("occurred_at", { ascending: false })
         .limit(100),
-      supabaseAdmin
+      checkStore(supabaseAdmin)
         .from("activation_approval_checks")
         .select("step,status,evidence_version,checked_at,summary,details")
         .order("step"),
       selfTestEvents(context.supabase),
+      securityResetAt(context.supabase, context.userId),
     ]);
-    if (steps.error || audit.error || checks.error)
-      throw new Error("Approval records could not be read.");
+    if (steps.error || audit.error) throw new Error("Approval records could not be read.");
+    // The approvals stay visible even when the check store is missing or unreadable;
+    // technical steps then cannot be approved (fail closed).
+    const checksStore: "ready" | "missing" | "unreadable" = !checks.error
+      ? "ready"
+      : isMissingObject(checks.error)
+        ? "missing"
+        : "unreadable";
+    const checkRows = checks.error ? [] : (checks.data ?? []);
     const deployment = currentDeployment();
     const nowSeconds = Math.floor(Date.now() / 1000);
     const latestSelfTest = selfTest
@@ -395,7 +475,9 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       viewerId: context.userId,
       rows: normalizeRows(steps.data),
       audit: audit.data,
-      checks: checks.data.map((row) => ({
+      checksStore,
+      securityResetAt: resetAt,
+      checks: checkRows.map((row) => ({
         step: row.step,
         status:
           row.evidence_version === ACTIVATION_CHECK_VERSION
@@ -445,7 +527,21 @@ export const runActivationApprovalCheck = createServerFn({ method: "POST" })
         reason: "denied" as const,
         message: "Approval prerequisites could not be read; no check was run.",
       };
-    const blocker = blockingStep(normalizeRows(rows), data.step, Date.now());
+    let resetAt: string | null;
+    try {
+      resetAt = await securityResetAt(context.supabase, context.userId);
+    } catch {
+      return {
+        ok: false as const,
+        reason: "denied" as const,
+        message: "Account security history could not be read; no check was run.",
+      };
+    }
+    const blocker = blockingStep(
+      effectiveRows(normalizeRows(rows), resetAt),
+      data.step,
+      Date.now(),
+    );
     if (blocker !== null)
       return {
         ok: false as const,
@@ -458,24 +554,29 @@ export const runActivationApprovalCheck = createServerFn({ method: "POST" })
       userId: context.userId,
     });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error: evidenceError } = await supabaseAdmin.rpc("activation_approval_record_check", {
-      _step: data.step,
-      _status: evaluated.check.status,
-      _version: evaluated.check.evidenceVersion,
-      _summary: evaluated.check.summary,
-      _details: evaluated.check.details.map((detail): Json => ({
-        label: detail.label,
-        status: detail.status,
-        detail: detail.detail,
-      })),
-      _mode: evaluated.deploymentMode,
-      _actor: context.userId,
-    });
+    const { error: evidenceError } = await checkStore(supabaseAdmin).rpc(
+      "activation_approval_record_check",
+      {
+        _step: data.step,
+        _status: evaluated.check.status,
+        _version: evaluated.check.evidenceVersion,
+        _summary: evaluated.check.summary,
+        _details: evaluated.check.details.map((detail): Json => ({
+          label: detail.label,
+          status: detail.status,
+          detail: detail.detail,
+        })),
+        _mode: evaluated.deploymentMode,
+        _actor: context.userId,
+      },
+    );
     if (evidenceError)
       return {
         ok: false as const,
-        reason: "denied" as const,
-        message: "The check evidence and audit could not be stored; no approval was recorded.",
+        reason: isMissingObject(evidenceError) ? ("store_missing" as const) : ("denied" as const),
+        message: isMissingObject(evidenceError)
+          ? STORE_MISSING
+          : "The check evidence and audit could not be stored; no approval was recorded.",
       };
 
     const { error } = await context.supabase.rpc("activation_approval_decide", {
@@ -523,6 +624,40 @@ export const decideActivationApproval = createServerFn({ method: "POST" })
         reason: "mfa" as const,
         message: "Re-verify with your authenticator first.",
       };
+    if (data.action === "approve") {
+      // Approvals from before the owner's last security reset no longer unlock later steps.
+      const [{ data: rows, error: rowsError }, resetAt] = await Promise.all([
+        context.supabase
+          .from("activation_approvals")
+          .select(
+            "step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision",
+          )
+          .order("step"),
+        securityResetAt(context.supabase, context.userId).catch(() => undefined),
+      ]);
+      if (rowsError || resetAt === undefined)
+        return {
+          ok: false as const,
+          reason: "denied" as const,
+          message: "Approval prerequisites could not be read; nothing was recorded.",
+        };
+      const normalized = normalizeRows(rows);
+      const blocker = blockingStep(effectiveRows(normalized, resetAt), data.step, Date.now());
+      if (blocker !== null)
+        return {
+          ok: false as const,
+          reason: "rule" as const,
+          message: `Step ${blocker} must be approved first.`,
+        };
+      const target = normalized.find((r) => r.step === data.step);
+      if (target && approvedBeforeReset(target, resetAt))
+        return {
+          ok: false as const,
+          reason: "rule" as const,
+          message:
+            "Approved before your last security reset. Revoke this step, then approve it again.",
+        };
+    }
     const { error } = await context.supabase.rpc("activation_approval_decide", {
       _step: data.step,
       _action: data.action,
