@@ -35,7 +35,10 @@ export function useMicLevel(active: boolean, level: MutableRefObject<number>) {
           analyser.getByteTimeDomainData(data);
           let sum = 0;
           for (const v of data) sum += ((v - 128) / 128) ** 2;
-          level.current = Math.max(level.current * 0.85, Math.min(1, Math.sqrt(sum / data.length) * 4));
+          level.current = Math.max(
+            level.current * 0.85,
+            Math.min(1, Math.sqrt(sum / data.length) * 4),
+          );
           frame = requestAnimationFrame(tick);
         };
         tick();

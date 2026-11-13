@@ -96,7 +96,9 @@ export async function sendHandoff(
   opts: { fetch?: Fetch; now?: number; nonce?: string; timeoutMs?: number } = {},
 ): Promise<HandoffReply> {
   const body =
-    action === "create" ? createBody(job, await sha256Hex(job.instructions)) : statusBody(job.taskId);
+    action === "create"
+      ? createBody(job, await sha256Hex(job.instructions))
+      : statusBody(job.taskId);
   if (new TextEncoder().encode(body).byteLength > HANDOFF_MAX_BODY_BYTES)
     return { ok: false, reason: "request_too_large", verified: false };
   const timestamp = unixSeconds(opts.now ?? Date.now());
@@ -140,7 +142,10 @@ export async function sendHandoff(
     clearTimeout(timer);
   }
 
-  const expected = await dispatchHmac(config.secret, responseSigningString(nonce, res.status, text));
+  const expected = await dispatchHmac(
+    config.secret,
+    responseSigningString(nonce, res.status, text),
+  );
   if (!safeEqual(res.headers.get("x-jackboy-proof") ?? "", expected)) {
     // Unsigned replies are never trusted; a known plain reason is shown only as a hint.
     let hint: string | undefined;
@@ -163,7 +168,8 @@ export async function sendHandoff(
     if (!safeEqual(okReply.data.requestNonce, nonce))
       return { ok: false, reason: "reply_invalid", verified: false };
     const allowed = action === "create" ? [200, 201] : [200];
-    if (!allowed.includes(res.status)) return { ok: false, reason: "reply_invalid", verified: false };
+    if (!allowed.includes(res.status))
+      return { ok: false, reason: "reply_invalid", verified: false };
     return {
       ok: true,
       jackboyJobId: okReply.data.jackboyJobId,

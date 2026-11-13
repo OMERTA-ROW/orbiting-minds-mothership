@@ -160,7 +160,11 @@ describe("handoff", () => {
     expect(handoffAgent("agent.handoff", "razul")).toBe("razul");
   });
   it("draft fits the terminal task limits", () => {
-    const d = handoffDraft({ projectName: "x".repeat(300), request: "do it", reply: "y".repeat(9000) });
+    const d = handoffDraft({
+      projectName: "x".repeat(300),
+      request: "do it",
+      reply: "y".repeat(9000),
+    });
     expect(d.project.length).toBe(120);
     expect(d.instructions.length).toBeLessThanOrEqual(4000);
     expect(d.instructions).toContain("suggestion only, not tested");

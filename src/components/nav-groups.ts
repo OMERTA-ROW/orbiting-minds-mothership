@@ -51,10 +51,30 @@ export const navGroups = [
     label: "Projects",
     blurb: "Your private work and drafts.",
     items: [
-      { to: "/beta", label: "My projects", status: "account", note: "Private projects saved to your account." },
-      { to: "/quantum-studio", label: "Quantum Studio", status: "account", note: "Private media for approved members." },
-      { to: "/knowledge-brief", label: "Daily Knowledge Brief", status: "account", note: "For approved readers." },
-      { to: "/pathway", label: "AI Pathway", status: "ai", note: "Describe an idea; get a written draft plan." },
+      {
+        to: "/beta",
+        label: "My projects",
+        status: "account",
+        note: "Private projects saved to your account.",
+      },
+      {
+        to: "/quantum-studio",
+        label: "Quantum Studio",
+        status: "account",
+        note: "Private media for approved members.",
+      },
+      {
+        to: "/knowledge-brief",
+        label: "Daily Knowledge Brief",
+        status: "account",
+        note: "For approved readers.",
+      },
+      {
+        to: "/pathway",
+        label: "AI Pathway",
+        status: "ai",
+        note: "Describe an idea; get a written draft plan.",
+      },
     ],
   },
   {
@@ -62,10 +82,30 @@ export const navGroups = [
     label: "Agents",
     blurb: "OMNI and the agents it coordinates.",
     items: [
-      { to: "/beta-omni", label: "OMNI chat", status: "account", note: "Text chat, after owner approval of AI access." },
-      { to: "/omni-terminal", label: "OMNI Terminal", status: "owner", note: "Status, held tasks and Emergency Stop. Nothing runs by itself." },
-      { to: "/omni-razul", label: "Observatory & history", status: "browser", note: "Public-source findings and your local notes." },
-      { to: "/omni-models", label: "Model choices", status: "browser", note: "Which AI models you plan to use." },
+      {
+        to: "/beta-omni",
+        label: "OMNI chat",
+        status: "account",
+        note: "Text chat, after owner approval of AI access.",
+      },
+      {
+        to: "/omni-terminal",
+        label: "OMNI Terminal",
+        status: "owner",
+        note: "Status, held tasks and Emergency Stop. Nothing runs by itself.",
+      },
+      {
+        to: "/omni-razul",
+        label: "Observatory & history",
+        status: "browser",
+        note: "Public-source findings and your local notes.",
+      },
+      {
+        to: "/omni-models",
+        label: "Model choices",
+        status: "browser",
+        note: "Which AI models you plan to use.",
+      },
     ],
   },
   {
@@ -73,7 +113,12 @@ export const navGroups = [
     label: "Approvals",
     blurb: "Nothing important happens without you.",
     items: [
-      { to: "/activation-approvals", label: "Activation approvals", status: "owner", note: "Records your decisions. Never switches anything on." },
+      {
+        to: "/activation-approvals",
+        label: "Activation approvals",
+        status: "owner",
+        note: "Records your decisions. Never switches anything on.",
+      },
     ],
   },
   {
@@ -81,10 +126,30 @@ export const navGroups = [
     label: "Connections",
     blurb: "Devices, keys and outside services.",
     items: [
-      { to: "/omni-dock", label: "Docking Bay (devices)", status: "owner", note: "Pair a desktop or phone app. No device paired yet." },
-      { to: "/omni-api-keys", label: "API keys", status: "owner", note: "Create, limit and revoke keys. Shown once." },
-      { to: "/omni-gateway", label: "Coding gateway", status: "off", note: "Blocked until approved and verified." },
-      { to: "/platform", label: "Evolution CLI", status: "off", note: "Planned terminal companion." },
+      {
+        to: "/omni-dock",
+        label: "Docking Bay (devices)",
+        status: "owner",
+        note: "Pair a desktop or phone app. No device paired yet.",
+      },
+      {
+        to: "/omni-api-keys",
+        label: "API keys",
+        status: "owner",
+        note: "Create, limit and revoke keys. Shown once.",
+      },
+      {
+        to: "/omni-gateway",
+        label: "Coding gateway",
+        status: "off",
+        note: "Blocked until approved and verified.",
+      },
+      {
+        to: "/platform",
+        label: "Evolution CLI",
+        status: "off",
+        note: "Planned terminal companion.",
+      },
     ],
   },
   {
@@ -92,10 +157,30 @@ export const navGroups = [
     label: "Settings",
     blurb: "Sign-in, security and members.",
     items: [
-      { to: "/sign-in-help", label: "How to sign in", status: "guide", note: "Step-by-step sign-in, two-factor and recovery." },
-      { to: "/account-security", label: "Account security", status: "account", note: "Optional two-step sign-in with an authenticator app, plus recovery codes." },
-      { to: "/members", label: "Members & invitations", status: "owner", note: "Invite people with single-use links." },
-      { to: "/launch-control", label: "Launch readiness", status: "guide", note: "Dated checks. Not a launch approval." },
+      {
+        to: "/sign-in-help",
+        label: "How to sign in",
+        status: "guide",
+        note: "Step-by-step sign-in, two-factor and recovery.",
+      },
+      {
+        to: "/account-security",
+        label: "Account security",
+        status: "account",
+        note: "Optional two-step sign-in with an authenticator app, plus recovery codes.",
+      },
+      {
+        to: "/members",
+        label: "Members & invitations",
+        status: "owner",
+        note: "Invite people with single-use links.",
+      },
+      {
+        to: "/launch-control",
+        label: "Launch readiness",
+        status: "guide",
+        note: "Dated checks. Not a launch approval.",
+      },
     ],
   },
 ] as const satisfies readonly {

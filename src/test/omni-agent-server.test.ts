@@ -164,7 +164,14 @@ describe("Persisted OMNI agent request", () => {
   });
   it("sends earlier saved turns only when the owner chose them", async () => {
     const earlier = [
-      { ...run, id: "11111111-1111-4111-8111-111111111111", status: "completed", message: "first", result: "reply one", created_at: "2026-11-01" },
+      {
+        ...run,
+        id: "11111111-1111-4111-8111-111111111111",
+        status: "completed",
+        message: "first",
+        result: "reply one",
+        created_at: "2026-11-01",
+      },
     ];
     m.auth.mockResolvedValue({
       userId: "owner",

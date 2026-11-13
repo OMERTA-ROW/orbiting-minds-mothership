@@ -31,7 +31,10 @@ function AuthPage() {
 
   /** Go to the remembered page: a pending invitation first, then an owner page, else projects. */
   const leaving = useRef(false);
-  const destination = useRef<{ invite: string | null; to: ReturnType<typeof takeSignInReturn> } | null>(null);
+  const destination = useRef<{
+    invite: string | null;
+    to: ReturnType<typeof takeSignInReturn>;
+  } | null>(null);
   const [codeStep, setCodeStep] = useState<"none" | "code" | "error">("none");
   const go = () => {
     const d = destination.current ?? { invite: null, to: null };
@@ -42,7 +45,10 @@ function AuthPage() {
     // Session events can fire more than once; only the first one picks the destination.
     if (leaving.current) return;
     leaving.current = true;
-    destination.current ??= { invite: takePendingInvite(window.sessionStorage), to: takeSignInReturn() };
+    destination.current ??= {
+      invite: takePendingInvite(window.sessionStorage),
+      to: takeSignInReturn(),
+    };
     // Account security handles its own code / recovery step (a lost phone must still reach recovery).
     if (destination.current.to !== "/account-security") {
       // Two-step sign-in is optional: only accounts that turned it on are asked for a code.
@@ -56,7 +62,12 @@ function AuthPage() {
         return setCodeStep("error");
       }
       const hasAuthenticator = (factors.data.totp ?? []).some((f) => f.status === "verified");
-      if (signInNeedsCode({ currentLevel: level.data.currentLevel, nextLevel: hasAuthenticator ? "aal2" : level.data.currentLevel }))
+      if (
+        signInNeedsCode({
+          currentLevel: level.data.currentLevel,
+          nextLevel: hasAuthenticator ? "aal2" : level.data.currentLevel,
+        })
+      )
         return setCodeStep("code");
     }
     return go();
@@ -97,7 +108,11 @@ function AuthPage() {
   };
 
   const title =
-    mode === "signup" ? "Create your account" : mode === "reset" ? "Reset your password" : "Sign in to Evolution";
+    mode === "signup"
+      ? "Create your account"
+      : mode === "reset"
+        ? "Reset your password"
+        : "Sign in to Evolution";
 
   if (codeStep !== "none")
     return (
@@ -121,7 +136,11 @@ function AuthPage() {
           />
         )}
         <div className="flex flex-wrap gap-4 text-sm">
-          <Link to="/account-security" hash="recovery" className="text-gold-light underline underline-offset-4">
+          <Link
+            to="/account-security"
+            hash="recovery"
+            className="text-gold-light underline underline-offset-4"
+          >
             Lost your phone? Use a recovery code
           </Link>
           <button

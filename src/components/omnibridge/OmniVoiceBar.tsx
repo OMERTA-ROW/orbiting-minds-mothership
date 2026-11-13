@@ -21,7 +21,11 @@ export function OmniVoiceBar(p: OmniVoiceBarProps) {
   const agent = voiceAgent(p.agentId);
   return (
     <div className="flex w-full flex-col items-center gap-3">
-      <div role="radiogroup" aria-label="Speaking agent" className="flex flex-wrap justify-center gap-1">
+      <div
+        role="radiogroup"
+        aria-label="Speaking agent"
+        className="flex flex-wrap justify-center gap-1"
+      >
         {VOICE_AGENTS.map((a) => (
           <Button
             key={a.id}
@@ -57,9 +61,10 @@ export function OmniVoiceBar(p: OmniVoiceBarProps) {
         </p>
       ) : (
         <p className="max-w-xl text-center text-[11px] leading-5 text-muted-foreground">
-          Speaking with {agent.name}, {agent.site}. For the OMNI terminal, open Terminal · owner. Spoken words appear in the message box for
-          your review and are never sent automatically. Voice replies use your browser's built-in
-          voice; your browser may process audio with its own service.
+          Speaking with {agent.name}, {agent.site}. For the OMNI terminal, open Terminal · owner.
+          Spoken words appear in the message box for your review and are never sent automatically.
+          Voice replies use your browser's built-in voice; your browser may process audio with its
+          own service.
         </p>
       )}
     </div>

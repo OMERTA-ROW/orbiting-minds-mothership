@@ -27,11 +27,19 @@ const ALLOWED_ORIGINS = [
 
 export function relyingParty() {
   const origin = getRequestHeader("origin") || "";
-  if (!ALLOWED_ORIGINS.includes(origin)) throw new Error("Passkeys are not allowed from this address.");
+  if (!ALLOWED_ORIGINS.includes(origin))
+    throw new Error("Passkeys are not allowed from this address.");
   return { origin, rpID: new URL(origin).hostname };
 }
 
-async function newCheck(admin: Admin, ownerId: string, kind: "register" | "assert", purpose: Purpose, challenge: string, rpID: string) {
+async function newCheck(
+  admin: Admin,
+  ownerId: string,
+  kind: "register" | "assert",
+  purpose: Purpose,
+  challenge: string,
+  rpID: string,
+) {
   const { data, error } = await admin
     .from("omni_passkey_checks")
     .insert({
@@ -48,7 +56,12 @@ async function newCheck(admin: Admin, ownerId: string, kind: "register" | "asser
   return data.id;
 }
 
-async function pendingCheck(admin: Admin, ownerId: string, checkId: string, kind: "register" | "assert") {
+async function pendingCheck(
+  admin: Admin,
+  ownerId: string,
+  checkId: string,
+  kind: "register" | "assert",
+) {
   const { data } = await admin
     .from("omni_passkey_checks")
     .select("*")
@@ -57,7 +70,8 @@ async function pendingCheck(admin: Admin, ownerId: string, checkId: string, kind
     .eq("kind", kind)
     .is("confirmed_at", null)
     .maybeSingle();
-  if (!data || Date.parse(data.expires_at) < Date.now()) throw new Error("Passkey check expired. Try again.");
+  if (!data || Date.parse(data.expires_at) < Date.now())
+    throw new Error("Passkey check expired. Try again.");
   return data;
 }
 
@@ -84,7 +98,13 @@ export async function registrationOptions(admin: Admin, ownerId: string, email: 
   return { checkId, options };
 }
 
-export async function verifyRegistration(admin: Admin, ownerId: string, checkId: string, response: RegistrationResponseJSON, name: string) {
+export async function verifyRegistration(
+  admin: Admin,
+  ownerId: string,
+  checkId: string,
+  response: RegistrationResponseJSON,
+  name: string,
+) {
   const { origin, rpID } = relyingParty();
   const check = await pendingCheck(admin, ownerId, checkId, "register");
   if (check.rp_id !== rpID) throw new Error("Passkey check came from a different address.");
@@ -95,7 +115,10 @@ export async function verifyRegistration(admin: Admin, ownerId: string, checkId:
     expectedRPID: rpID,
     requireUserVerification: true,
   }).catch(() => null);
-  await admin.from("omni_passkey_checks").update({ confirmed_at: new Date().toISOString(), used_at: new Date().toISOString() }).eq("id", checkId);
+  await admin
+    .from("omni_passkey_checks")
+    .update({ confirmed_at: new Date().toISOString(), used_at: new Date().toISOString() })
+    .eq("id", checkId);
   if (!result?.verified) throw new Error("Passkey was not verified.");
   const cred = result.registrationInfo.credential;
   const { error } = await admin.from("omni_passkeys").insert({
@@ -121,13 +144,21 @@ export async function assertionOptions(admin: Admin, ownerId: string, purpose: P
   const options = await generateAuthenticationOptions({
     rpID,
     userVerification: "required",
-    allowCredentials: keys.map((k) => ({ id: k.credential_id, transports: k.transports as AuthenticatorTransportFuture[] })),
+    allowCredentials: keys.map((k) => ({
+      id: k.credential_id,
+      transports: k.transports as AuthenticatorTransportFuture[],
+    })),
   });
   const checkId = await newCheck(admin, ownerId, "assert", purpose, options.challenge, rpID);
   return { checkId, options };
 }
 
-export async function verifyAssertion(admin: Admin, ownerId: string, checkId: string, response: AuthenticationResponseJSON) {
+export async function verifyAssertion(
+  admin: Admin,
+  ownerId: string,
+  checkId: string,
+  response: AuthenticationResponseJSON,
+) {
   const { origin, rpID } = relyingParty();
   const check = await pendingCheck(admin, ownerId, checkId, "assert");
   const { data: key } = await admin
@@ -152,16 +183,27 @@ export async function verifyAssertion(admin: Admin, ownerId: string, checkId: st
     },
   }).catch(() => null);
   if (!result?.verified) {
-    await admin.from("omni_passkey_checks").update({ used_at: new Date().toISOString() }).eq("id", checkId);
+    await admin
+      .from("omni_passkey_checks")
+      .update({ used_at: new Date().toISOString() })
+      .eq("id", checkId);
     throw new Error("Passkey was not verified.");
   }
   const now = new Date().toISOString();
-  await admin.from("omni_passkeys").update({ counter: result.authenticationInfo.newCounter, last_used_at: now }).eq("id", key.id);
+  await admin
+    .from("omni_passkeys")
+    .update({ counter: result.authenticationInfo.newCounter, last_used_at: now })
+    .eq("id", key.id);
   await admin.from("omni_passkey_checks").update({ confirmed_at: now }).eq("id", checkId);
 }
 
 /** Single use: a confirmed, unexpired check for one of the given purposes is marked used. */
-export async function consumePasskeyCheck(admin: Admin, ownerId: string, checkId: string | undefined, purposes: Purpose[]) {
+export async function consumePasskeyCheck(
+  admin: Admin,
+  ownerId: string,
+  checkId: string | undefined,
+  purposes: Purpose[],
+) {
   if (!checkId) throw new Error("Fresh passkey check needed.");
   const since = new Date(Date.now() - PASSKEY_FRESH_SECONDS * 1000).toISOString();
   const { data } = await admin

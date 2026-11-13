@@ -258,7 +258,8 @@ export function OmniWorkspace() {
     fresh.forEach((s) => spokenSteps.current.add(s.id));
     const last = fresh[fresh.length - 1];
     if (!last || !terminalLive || !snap) return;
-    const who = last.agent_id === speakerAgentId ? "" : `${stepSpeaker(last.agent_id, snap.agents)}: `;
+    const who =
+      last.agent_id === speakerAgentId ? "" : `${stepSpeaker(last.agent_id, snap.agents)}: `;
     say(who + speakableText(last.body));
   }, [steps]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -793,10 +794,10 @@ export function OmniWorkspace() {
                     {s.kind === "message"
                       ? stepSpeaker(s.agent_id, snap.agents)
                       : s.kind === "diff"
-                      ? "Files changed"
-                      : s.kind === "command"
-                        ? "Command run"
-                        : s.kind}
+                        ? "Files changed"
+                        : s.kind === "command"
+                          ? "Command run"
+                          : s.kind}
                   </span>
                   <span>
                     {s.model ?? ""} {s.cost_cents ? fmtCents(s.cost_cents) : ""} ·{" "}

@@ -21,7 +21,9 @@ describe("sign-in error messages", () => {
     expect(authErrorMessage({ code: "invalid_credentials" })).toContain("Continue with Google");
   });
   it("unconfirmed email tells the user to open the confirmation link", () => {
-    expect(authErrorMessage({ message: "Email not confirmed" })).toMatch(/^Confirm your email first/);
+    expect(authErrorMessage({ message: "Email not confirmed" })).toMatch(
+      /^Confirm your email first/,
+    );
   });
   it("a disabled provider is explained instead of shown raw", () => {
     expect(authErrorMessage({ message: "Unsupported provider: provider is not enabled" })).toBe(
@@ -29,7 +31,9 @@ describe("sign-in error messages", () => {
     );
   });
   it("rate limits ask the user to wait", () => {
-    expect(authErrorMessage({ status: 429 })).toBe("Too many attempts. Wait a minute, then try again.");
+    expect(authErrorMessage({ status: 429 })).toBe(
+      "Too many attempts. Wait a minute, then try again.",
+    );
   });
   it("unknown provider text is never echoed", () => {
     expect(authErrorMessage({ message: "internal stack trace xyz" })).toBe(SIGN_IN_FALLBACK);

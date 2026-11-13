@@ -28,7 +28,13 @@ const snapshot = {
       "Cloud sandbox self-test has not passed in the last 24 hours.",
     ],
   },
-  link: { configured: false, enabled: false, problem: null, selfTestPassedAt: null, lastCheck: null },
+  link: {
+    configured: false,
+    enabled: false,
+    problem: null,
+    selfTestPassedAt: null,
+    lastCheck: null,
+  },
   killSwitchEnabled: true,
   killSwitchChangedAt: null,
   emergencyStopReleased: true,
@@ -80,7 +86,9 @@ describe("OMNI terminal orb", () => {
     expect(screen.getByRole("img", { name: /voice orb/ }).getAttribute("data-state")).toBe(
       "unavailable",
     );
-    expect(screen.getAllByText("Cloud sandbox settings are missing or invalid.").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Cloud sandbox settings are missing or invalid.").length,
+    ).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /Microphone not supported/ })).toBeDisabled();
     expect(screen.getByLabelText("Message OMNI")).toBeDisabled();
   });

@@ -222,7 +222,10 @@ export function formatSetupKey(secret: string): string {
 }
 
 /** Local pause after repeated wrong codes (the provider also rate-limits on its side). */
-export function afterFailedCode(fails: number, nowMs: number): { fails: number; pausedUntil: number } {
+export function afterFailedCode(
+  fails: number,
+  nowMs: number,
+): { fails: number; pausedUntil: number } {
   const next = fails + 1;
   return next >= CLIENT_MAX_ATTEMPTS
     ? { fails: 0, pausedUntil: nowMs + CLIENT_COOLDOWN_MS }

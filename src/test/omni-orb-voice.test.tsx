@@ -34,7 +34,9 @@ describe("OmniOrb", () => {
 describe("OmniVoiceBar", () => {
   it("marks Jackboy as not connected and disables the microphone for it", () => {
     render(<OmniVoiceBar {...barProps} agentId="jackboy" />);
-    expect(screen.getByRole("radio", { name: /Jackboy/ }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("radio", { name: /Jackboy/ }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
     expect(screen.getByRole("radio", { name: /Jackboy/ }).textContent).toContain("not connected");
     expect(screen.getByRole("button", { name: /Speak/ })).toBeDisabled();
     expect(screen.getByRole("status").textContent).toContain("OMNI will not answer as Jackboy");
@@ -42,7 +44,9 @@ describe("OmniVoiceBar", () => {
   it("switches agent and toggles mute through callbacks", () => {
     const onAgentChange = vi.fn();
     const onToggleVoice = vi.fn();
-    render(<OmniVoiceBar {...barProps} onAgentChange={onAgentChange} onToggleVoice={onToggleVoice} />);
+    render(
+      <OmniVoiceBar {...barProps} onAgentChange={onAgentChange} onToggleVoice={onToggleVoice} />,
+    );
     fireEvent.click(screen.getByRole("radio", { name: /Jackboy/ }));
     expect(onAgentChange).toHaveBeenCalledWith("jackboy");
     fireEvent.click(screen.getByRole("button", { name: /Voice replies muted/ }));
