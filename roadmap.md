@@ -1,7 +1,8 @@
 # Evolution — reconciled blueprint roadmap
 
 ## OMNI chat experience upgrade — 2026-11-13
-- [ ] Private OMNI chat (`/beta-omni`): saved conversation history in chat, opt-in earlier-turn context, configured-model display, connection states, terminal/CODE/memory entry points, approval-gated held-task handoff with in-chat status. Orb, voice and safety gates unchanged.
+- [x] Private OMNI chat (`/beta-omni`): saved conversation history in chat, opt-in earlier-turn context (0–6, resets each send, fails closed), configured-model display, connection states with owner terminal check (relay, Emergency Stop, autonomy off, spending), terminal/CODE/memory entry points, approval-gated held-task handoff with in-chat status/cancel. Orb, voice and safety gates unchanged. 19 new tests pass; browser: signed-in page shows truthful states, terminal check refused without two-step code.
+- [ ] Blocked: deleting saved runs and recording which turns were used as context need a database change (not approved); live replies need founder AI approval on the account; handoff/terminal status need an owner sign-in with fresh two-step code; Jackboy/terminal chat need the sandbox settings + self-test.
 
 ## Current OMNI simplification and controls — 2026-11-04
 - [x] Scoped silver/gray OMNI and demo-dashboard theme, plain shared workspace navigation, expandable connection/autonomy/scope/local-archive sections, mobile wrapping. Every existing route/feature retained; homepage cosmic identity unchanged.
