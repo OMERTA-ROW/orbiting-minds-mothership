@@ -9,16 +9,33 @@ export interface ProbeFailure {
   stage: string;
   status?: number | undefined;
   code?: string | undefined;
+  /** Timeout only: deadline that expired, and whether any part of a reply had begun. */
+  limitMs?: number | undefined;
+  phase?: "reply" | "body" | undefined;
 }
+
+/** Jackboy gives up on the Railway runner after this long (mirrors its omni-remote-runner). */
+export const JACKBOY_RUNNER_WAIT_SECONDS = 5;
 
 /** Duck-typed so tests and callers need not import the server-only link client. */
 export function probeFailure(error: unknown): ProbeFailure {
   if (!error || typeof error !== "object") return { stage: "unknown" };
-  const e = error as { stage?: unknown; status?: unknown; code?: unknown };
+  const e = error as {
+    stage?: unknown;
+    status?: unknown;
+    code?: unknown;
+    limitMs?: unknown;
+    phase?: unknown;
+  };
   return {
     stage: typeof e.stage === "string" ? e.stage : "unknown",
     status: typeof e.status === "number" ? e.status : undefined,
     code: typeof e.code === "string" ? e.code : undefined,
+    limitMs:
+      typeof e.limitMs === "number" && Number.isFinite(e.limitMs) && e.limitMs > 0
+        ? e.limitMs
+        : undefined,
+    phase: e.phase === "reply" || e.phase === "body" ? e.phase : undefined,
   };
 }
 
@@ -41,8 +58,6 @@ const BY_CODE: Record<string, string> = {
 
 const BY_STAGE: Record<string, string> = {
   audit: "The probe could not be written to the audit log, so nothing was sent to Jackboy.",
-  timeout:
-    "Jackboy did not answer within 5 seconds. Retry; if it repeats, check that Jackboy is online.",
   connection:
     "Mothership could not open a trusted HTTPS connection to Jackboy (address or certificate).",
   redirect:
@@ -56,6 +71,19 @@ const BY_STAGE: Record<string, string> = {
     "Jackboy reports a different Railway runner address than Mothership's JACKBOY_LINK_RUNNER_ORIGIN.",
 };
 
+const seconds = (ms: number) => `${Math.round(ms / 100) / 10} s`;
+
+/** Why a timeout happened, judged against Jackboy's own wait for the runner. */
+export function timeoutExplanation(f: ProbeFailure): string {
+  if (f.phase === "body")
+    return "Jackboy started replying but the reply stalled before it finished. Retrying is safe: it sends one new read-only check.";
+  if (f.limitMs === undefined)
+    return "Jackboy did not answer in time. Retrying is safe; if it repeats, check that Jackboy's published site is online.";
+  if (f.limitMs > JACKBOY_RUNNER_WAIT_SECONDS * 1000)
+    return `Jackboy sent no answer within ${seconds(f.limitMs)}, though it stops waiting for the Railway runner after ${JACKBOY_RUNNER_WAIT_SECONDS} s. The delay is in Jackboy's site itself (starting, mid-publish or its database). Retrying is safe.`;
+  return `Jackboy sent no answer within ${seconds(f.limitMs)}. Retrying is safe; if it repeats, check that Jackboy's published site is online.`;
+}
+
 /** Evidence lines for a failed probe: what answered, and the one thing to look at. */
 export function probeFailureDetails(error: unknown): ActivationCheckDetail[] {
   const f = probeFailure(error);
@@ -64,9 +92,12 @@ export function probeFailureDetails(error: unknown): ActivationCheckDetail[] {
       ? `HTTP ${f.status ?? "?"}${f.code ? ` · ${f.code}` : " · unrecognized reason"}`
       : f.stage === "unknown"
         ? "No classified reply"
-        : `No usable reply (${f.stage.replace("_", " ")})`;
+        : f.stage === "timeout" && f.limitMs !== undefined
+          ? `No usable reply (timeout after ${seconds(f.limitMs)}${f.phase === "body" ? ", reply incomplete" : ""})`
+          : `No usable reply (${f.stage.replace("_", " ")})`;
   const detail =
     (f.code && BY_CODE[f.code]) ||
+    (f.stage === "timeout" ? timeoutExplanation(f) : undefined) ||
     BY_STAGE[f.stage] ||
     (f.stage === "http"
       ? `Jackboy refused the probe with HTTP ${f.status ?? "?"}. Check its link settings and version.`
