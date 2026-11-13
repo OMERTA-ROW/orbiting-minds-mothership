@@ -37,12 +37,12 @@ export function OmniOrb({ state, agentName, muted, level }: OmniOrbProps) {
     const el = root.current;
     const cv = canvas.current;
     if (!el || !cv) return;
-    const ctx = cv.getContext?.("2d");
-    if (!active || !ctx) {
+    if (!active) {
       el.style.setProperty("--orb-level", "0");
-      ctx?.clearRect(0, 0, cv.width, cv.height);
       return;
     }
+    const ctx = cv.getContext?.("2d");
+    if (!ctx) return;
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const small = window.matchMedia?.("(max-width: 640px), (pointer: coarse)").matches ?? false;
     const dpr = small ? 1 : Math.min(window.devicePixelRatio || 1, 2);
