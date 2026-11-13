@@ -93,7 +93,7 @@ export function ActivationApprovals() {
       (error: unknown) => {
         // Thrown before the owner check (no session, network): say so specifically.
         const msg = error instanceof Error ? error.message : "";
-        if (!(msg in ACCESS_TEXT)) setReason(accessReason(msg) === "unreadable" ? "signed_out" : accessReason(msg));
+        if (!(msg in ACCESS_TEXT)) setReason(accessReason(msg));
         setAccess("denied");
       },
     );

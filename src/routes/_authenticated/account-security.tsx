@@ -240,8 +240,8 @@ function AccountSecurity() {
         return;
       }
       const ownerNote = account?.isOwner
-        ? " Owner-only pages will lock until you set it up again."
-        : "";
+        ? " Owner-only pages will lock until you set it up again, and Activation Approvals recorded before now will need fresh approval. This is the same account; no new account is created."
+        : " This is the same account; no new account is created.";
       if (
         !window.confirm(
           `Turn off two-step sign-in? Your authenticator and recovery codes stop working.${ownerNote}`,
