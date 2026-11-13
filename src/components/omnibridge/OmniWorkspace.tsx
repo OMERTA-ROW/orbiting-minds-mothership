@@ -48,6 +48,16 @@ import {
   type AgentAction,
   type Provider,
 } from "@/lib/omni-workspace";
+import { OmniOrb } from "./OmniOrb";
+import { OrbVoiceControls } from "./OrbVoiceControls";
+import { useOrbVoice } from "@/hooks/use-orb-voice";
+import {
+  orbState,
+  speakableText,
+  stepSpeaker,
+  terminalIntro,
+  unreadReplies,
+} from "@/lib/omni-voice";
 
 type Snap = Awaited<ReturnType<typeof readWorkspace>>;
 type Step = Snap["steps"][number];
@@ -122,6 +132,11 @@ export function OmniWorkspace() {
   const [prTitle, setPrTitle] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const termRef = useRef<HTMLDivElement>(null);
+  const orbVoice = useOrbVoice((spoken) =>
+    setChatText((prev) => (prev ? prev.trimEnd() + " " : "") + spoken),
+  );
+  const spokenSteps = useRef<Set<string>>(new Set());
+  const lastSpeaker = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     const s = await read({
@@ -221,6 +236,32 @@ export function OmniWorkspace() {
   );
   const chatCards = useMemo(() => steps.filter((s) => s.kind !== "output"), [steps]);
 
+  // Voice: the speaking agent is the open session's enrolled agent, else the selected one.
+  const speakerAgentId = session?.agent_id ?? agentId;
+  const speakerName = snap ? stepSpeaker(speakerAgentId, snap.agents) : speakerAgentId;
+  const terminalLive = gateOpen && !!session;
+  const { say, speech: dictation, output: voiceOut } = orbVoice;
+  useEffect(() => {
+    if (!snap) return;
+    if (lastSpeaker.current !== null && lastSpeaker.current !== speakerAgentId) {
+      voiceOut.cancel();
+      dictation.stop();
+      say(terminalIntro(speakerName, terminalLive));
+    }
+    lastSpeaker.current = speakerAgentId;
+  }, [speakerAgentId, Boolean(snap)]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    spokenSteps.current = new Set(steps.map((s) => s.id));
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const fresh = unreadReplies(steps, spokenSteps.current);
+    fresh.forEach((s) => spokenSteps.current.add(s.id));
+    const last = fresh[fresh.length - 1];
+    if (!last || !terminalLive || !snap) return;
+    const who = last.agent_id === speakerAgentId ? "" : `${stepSpeaker(last.agent_id, snap.agents)}: `;
+    say(who + speakableText(last.body));
+  }, [steps]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!snap) {
     return (
       <section
@@ -270,7 +311,7 @@ export function OmniWorkspace() {
   return (
     <section
       aria-label="OMNI agent workspace"
-      className="space-y-4 rounded-lg border border-border bg-card p-4 md:p-5"
+      className="omni-orb-dashboard space-y-4 rounded-lg border border-border bg-card p-4 md:p-5"
     >
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-lg">
@@ -678,7 +719,65 @@ export function OmniWorkspace() {
       {/* Chat + terminal */}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex min-h-[420px] flex-col rounded border border-border">
-          <div className="border-b border-border px-3 py-2 text-sm font-medium">Chat with OMNI</div>
+          <div className="border-b border-border px-3 py-2 text-sm font-medium">
+            Chat with {speakerName}
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              via OMNI terminal (Railway) ·{" "}
+              {!gateOpen ? "not connected" : session ? "session open" : "no session"}
+            </span>
+          </div>
+          <div className="flex flex-col items-center gap-2 border-b border-border p-3">
+            <OmniOrb
+              compact
+              agentName={speakerName}
+              muted={!orbVoice.voiceOn}
+              level={orbVoice.level}
+              state={
+                gateOpen
+                  ? orbState({
+                      agentConnected: true,
+                      listening: dictation.listening,
+                      speaking: voiceOut.speaking,
+                      busy,
+                    })
+                  : "unavailable"
+              }
+              statusText={
+                !gateOpen
+                  ? "OMNI terminal not connected"
+                  : !session
+                    ? "Connected · start a session to talk"
+                    : undefined
+              }
+            />
+            <OrbVoiceControls
+              dictationSupported={dictation.supported}
+              listening={dictation.listening}
+              micDisabled={!sessionId || !gateOpen || busy}
+              onToggleMic={() => (dictation.listening ? dictation.stop() : dictation.start())}
+              voiceSupported={voiceOut.supported}
+              voiceOn={orbVoice.voiceOn}
+              onToggleVoice={() => orbVoice.toggleVoice(terminalIntro(speakerName, terminalLive))}
+              speaking={voiceOut.speaking}
+              onStopSpeaking={voiceOut.cancel}
+            />
+            {dictation.error && (
+              <p role="status" className="text-xs text-warning">
+                {dictation.error}
+              </p>
+            )}
+            {!gateOpen && (
+              <ul className="w-full list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
+                {snap.gate.blockers.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+            )}
+            <p className="text-center text-[11px] text-muted-foreground">
+              Spoken words go into the message box for review; nothing is sent automatically. Voice
+              replies use your browser's built-in voice and only read real OMNI terminal replies.
+            </p>
+          </div>
           <ol className="flex-1 space-y-2 overflow-auto p-3 text-sm" aria-live="polite">
             {!chatCards.length && (
               <li className="text-muted-foreground">
@@ -691,7 +790,9 @@ export function OmniWorkspace() {
               <li key={s.id} className="rounded border border-border p-2">
                 <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
                   <span className="uppercase tracking-wide">
-                    {s.kind === "diff"
+                    {s.kind === "message"
+                      ? stepSpeaker(s.agent_id, snap.agents)
+                      : s.kind === "diff"
                       ? "Files changed"
                       : s.kind === "command"
                         ? "Command run"
@@ -750,12 +851,12 @@ export function OmniWorkspace() {
             }}
           >
             <Textarea
-              aria-label="Message OMNI"
+              aria-label={`Message ${speakerName}`}
               rows={2}
               disabled={!sessionId || !gateOpen}
               value={chatText}
               onChange={(e) => setChatText(e.target.value)}
-              placeholder="Ask OMNI to build, fix or explain…"
+              placeholder={`Ask ${speakerName} to build, fix or explain…`}
             />
             <Button
               type="submit"
