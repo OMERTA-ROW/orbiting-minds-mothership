@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_approval_checks: {
+        Row: {
+          checked_at: string
+          deployment_mode: string | null
+          details: Json
+          evidence_version: number
+          status: string
+          step: number
+          summary: string
+        }
+        Insert: {
+          checked_at?: string
+          deployment_mode?: string | null
+          details?: Json
+          evidence_version: number
+          status: string
+          step: number
+          summary: string
+        }
+        Update: {
+          checked_at?: string
+          deployment_mode?: string | null
+          details?: Json
+          evidence_version?: number
+          status?: string
+          step?: number
+          summary?: string
+        }
+        Relationships: []
+      }
       activation_approvals: {
         Row: {
           approval_expires_at: string | null
@@ -3052,6 +3082,18 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      activation_approval_record_check: {
+        Args: {
+          _actor: string
+          _details: Json
+          _mode: string
+          _status: string
+          _step: number
+          _summary: string
+          _version: number
+        }
+        Returns: undefined
       }
       assert_fresh_mfa: {
         Args: { _max_age_seconds?: number }
