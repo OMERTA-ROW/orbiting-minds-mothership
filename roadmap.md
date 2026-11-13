@@ -1,5 +1,9 @@
 # Evolution — reconciled blueprint roadmap
 
+## Activation Approvals Step 2 timeout — 2026-11-13
+- [x] Runner check now waits 9 s (longer than Jackboy's own 5 s wait on the Railway runner; self-test run 10 s vs Jackboy's 6 s); timeouts show the actual deadline and whether a reply had started. Approval flow marker bumped to 3. Tests pass.
+- [ ] Waiting on owner: publish Mothership, then re-run Step 2 and approve it separately with a fresh two-step code if it passes.
+
 ## OMNI chat experience upgrade — 2026-11-13
 - [x] Private OMNI chat (`/beta-omni`): saved conversation history in chat, opt-in earlier-turn context (0–6, resets each send, fails closed), configured-model display, connection states with owner terminal check (relay, Emergency Stop, autonomy off, spending), terminal/CODE/memory entry points, approval-gated held-task handoff with in-chat status/cancel. Orb, voice and safety gates unchanged. 19 new tests pass; browser: signed-in page shows truthful states, terminal check refused without two-step code.
 - [ ] Blocked: deleting saved runs and recording which turns were used as context need a database change (not approved); live replies need founder AI approval on the account; handoff/terminal status need an owner sign-in with fresh two-step code; Jackboy/terminal chat need the sandbox settings + self-test.
