@@ -669,14 +669,16 @@ export const decideActivationApproval = createServerFn({ method: "POST" })
           message: `Step ${blocker} must be approved first.`,
         };
       const target = normalized.find((r) => r.step === data.step);
-      if (target && approvedBeforeReset(target, resetAt))
+      // Owner steps must be revoked first; a technical step is re-approved after a fresh passed check.
+      if (target && approvedBeforeReset(target, resetAt) && !isTechnicalStep(data.step))
         return {
           ok: false as const,
           reason: "rule" as const,
           message:
             "Approved before your last security reset. Revoke this step, then approve it again.",
         };
-      if (target && isEffectivelyApproved(target, Date.now()))
+      const effectiveTarget = effectiveRows(normalized, resetAt).find((r) => r.step === data.step);
+      if (effectiveTarget && isEffectivelyApproved(effectiveTarget, Date.now()))
         return {
           ok: false as const,
           reason: "already_approved" as const,

@@ -78,7 +78,11 @@ export function stepViews(input: FlowInput): StepView[] {
       lastAuditAction: audit[0]?.action,
     });
     const complete = state === "approved";
-    const actions: ApprovalAction[] = stale ? ["revoke"] : allowedActions(effective, meta.step, input.now);
+    const actions: ApprovalAction[] = stale
+      ? technical
+        ? ["approve", "revoke"]
+        : ["revoke"]
+      : allowedActions(effective, meta.step, input.now);
     const check = input.checks.find((c) => c.step === meta.step);
     const lastCheck = check?.status ?? null;
     const freshPass = check?.status === "passed" && checkIsFresh(check.checkedAt, input.now);
