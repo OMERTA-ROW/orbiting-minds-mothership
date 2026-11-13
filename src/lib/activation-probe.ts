@@ -50,6 +50,8 @@ const BY_CODE: Record<string, string> = {
     "Jackboy refused the project: OMNI_LINK_PROJECT_ID differs between Mothership and Jackboy.",
   configuration_scope_denied:
     "Jackboy refused the check: its project/owner record does not match, its global pause is on, or the probe limit (60 per 10 minutes) was reached.",
+  kill_switch_on:
+    "Safety denial, not a fault: Jackboy's global Kill Switch is on, so it refuses even this read-only check. Nothing was run. The check can only pass after the owner decides to release it in Jackboy.",
   https_post_required:
     "Jackboy did not see an HTTPS request on its link address. Confirm JACKBOY_LINK_ORIGIN is Jackboy's final public HTTPS address.",
   invalid_request:
