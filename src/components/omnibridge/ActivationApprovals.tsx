@@ -869,7 +869,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
                             {view.checkLabel}
                           </Button>
                         )}
-                        {!view.complete && (view.canApprove || view.technical) && (
+                        {!view.complete && (view.technical || !view.stale) && (
                           <Button
                             size="sm"
                             variant={view.technical ? "outline" : "default"}
