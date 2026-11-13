@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  ACTIVATION_STEPS,
   allowedActions,
   applyDecision,
   blockingStep,
+  deploymentConfiguration,
   decisionInput,
   isMfaFresh,
   noteProblem,
@@ -27,7 +29,15 @@ describe("activation approvals ordering", () => {
   it("has exactly 10 steps, all pending at first", () => {
     const rows = normalizeRows([]);
     expect(rows).toHaveLength(10);
+    expect(ACTIVATION_STEPS.map((item) => item.step)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(rows.every((r) => r.status === "pending")).toBe(true);
+  });
+
+  it("allows a failed Step 2 to be retried after Step 1 is approved", () => {
+    let rows = applyDecision(normalizeRows([]), 1, "approve", OWNER, NOW);
+    rows = applyDecision(rows, 2, "fail", OWNER, NOW);
+    expect(allowedActions(rows, 2, NOW)).toContain("approve");
+    expect(blockingStep(rows, 3, NOW)).toBe(2);
   });
 
   it("step 1 is unlocked; step 2 waits on step 1", () => {
@@ -35,6 +45,37 @@ describe("activation approvals ordering", () => {
     expect(blockingStep(rows, 1, NOW)).toBeNull();
     expect(blockingStep(rows, 2, NOW)).toBe(1);
     expect(allowedActions(rows, 2, NOW)).toEqual([]);
+  });
+
+  describe("runner-only deployment configuration", () => {
+    it("selects separate Jackboy and runner references without requiring runner secrets on Mothership", () => {
+      expect(
+        deploymentConfiguration({
+          jackboyOrigin: "https://jackboy.lovable.app",
+          runnerOrigin: "https://runner.up.railway.app",
+        }).mode,
+      ).toBe("runner_only");
+    });
+
+    it("keeps an absent deployment setup unknown", () => {
+      const config = deploymentConfiguration({
+        jackboyOrigin: undefined,
+        runnerOrigin: undefined,
+      });
+      expect(config.mode).toBe("unknown");
+      expect(config.attention).toContain(
+        "Railway flags and its secret belong on the runner, not on Mothership.",
+      );
+    });
+
+    it("flags same-endpoint or partial references as inconsistent", () => {
+      expect(
+        deploymentConfiguration({
+          jackboyOrigin: "https://runner.up.railway.app",
+          runnerOrigin: "https://runner.up.railway.app",
+        }).mode,
+      ).toBe("inconsistent");
+    });
   });
 
   it("a failed earlier step keeps later steps locked", () => {
@@ -60,7 +101,9 @@ describe("activation approvals ordering", () => {
 describe("approval expiry", () => {
   it("accepts 24 hours ahead and rejects 24 hours plus one minute", () => {
     expect(validateExpiry(new Date(NOW + 24 * 3600_000).toISOString(), NOW)).toBeNull();
-    expect(validateExpiry(new Date(NOW + 24 * 3600_000 + 60_000).toISOString(), NOW)).not.toBeNull();
+    expect(
+      validateExpiry(new Date(NOW + 24 * 3600_000 + 60_000).toISOString(), NOW),
+    ).not.toBeNull();
   });
   it("rejects a past expiry", () => {
     expect(validateExpiry(new Date(NOW - 1000).toISOString(), NOW)).not.toBeNull();

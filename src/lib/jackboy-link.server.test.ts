@@ -5,6 +5,8 @@ import {
   JackboyLink,
   assertPublicLinkOrigin,
   configuredJackboyLink,
+  configuredJackboyConfiguration,
+  checkJackboyRunnerConfiguration,
   type JackboyLinkConfig,
 } from "./jackboy-link.server";
 
@@ -78,6 +80,96 @@ afterEach(() => {
 });
 
 describe("Jackboy link transport (public certificate, no CA file)", () => {
+  it("verifies a signed remote configuration using link credentials, never a local runner secret or execution grant", async () => {
+    vi.stubEnv("OMNI_LINK_RUNNER_MODE", "");
+    vi.stubEnv("OMNI_LINK_NODE_RUNNER_ENABLED", "");
+    vi.stubEnv("OMNI_LINK_REMOTE_RUNNER_SECRET", "");
+    vi.stubEnv("JACKBOY_LINK_ENABLED", "");
+    vi.stubEnv("OMNI_LINK_APPROVAL_EXPIRES_AT", "");
+    vi.stubEnv("JACKBOY_LINK_ORIGIN", ORIGIN);
+    vi.stubEnv("JACKBOY_LINK_RUNNER_ORIGIN", "https://runner.up.railway.app");
+    vi.stubEnv("OMNI_LINK_CLIENT_ID", "mothership-test");
+    vi.stubEnv("OMNI_LINK_PROJECT_ID", PROJECT);
+    vi.stubEnv("OMNI_LINK_BOOTSTRAP_KEY", BOOTSTRAP);
+    vi.stubEnv("OMNI_LINK_HMAC_SECRET", SECRET);
+    const seen: Seen[] = [];
+    const audit = vi.fn(async () => {});
+    const configuration = {
+      runnerOrigin: "https://runner.up.railway.app",
+      runnerMode: true,
+      nodeRunnerEnabled: true,
+      remoteRunnerSecretConfigured: true,
+      runtimeAvailable: true,
+    };
+    const result = await checkJackboyRunnerConfiguration(configuredJackboyConfiguration(), audit, {
+      fetch: fakeJackboy(seen, (reply) => ({
+        ...reply,
+        projectId: PROJECT,
+        execution: "none",
+        configuration,
+      })),
+    });
+    expect(result).toEqual(configuration);
+    expect(seen).toHaveLength(1);
+    expect(JSON.parse(String(seen[0]!.init.body))).toEqual({
+      action: "configuration",
+      projectId: PROJECT,
+    });
+    expect(JSON.stringify(result)).not.toContain(SECRET);
+    expect(audit).toHaveBeenCalledWith("configuration_verified");
+  });
+
+  it.each(["proof", "origin", "shape", "execution", "project"])(
+    "refuses a configuration response with invalid %s",
+    async (problem) => {
+      const configuration = {
+        runnerOrigin:
+          problem === "origin" ? "https://other.example" : "https://runner.up.railway.app",
+        runnerMode: true,
+        nodeRunnerEnabled: problem === "shape" ? "true" : true,
+        remoteRunnerSecretConfigured: true,
+        runtimeAvailable: true,
+      };
+      await expect(
+        checkJackboyRunnerConfiguration(
+          { ...config(), runnerOrigin: "https://runner.up.railway.app" },
+          async () => {},
+          {
+            fetch: fakeJackboy(
+              [],
+              (reply) => ({
+                ...reply,
+                projectId: problem === "project" ? JOB : PROJECT,
+                execution: problem === "execution" ? "self-test" : "none",
+                configuration,
+              }),
+              problem === "proof" ? "0".repeat(64) : undefined,
+            ),
+          },
+        ),
+      ).rejects.toThrow();
+    },
+  );
+
+  it("treats signed unavailable configuration as unresolved and fails closed on audit errors", async () => {
+    const c = { ...config(), runnerOrigin: "https://runner.up.railway.app" };
+    const fetch = fakeJackboy([], (reply) => ({
+      ...reply,
+      projectId: PROJECT,
+      execution: "none",
+      configuration: null,
+    }));
+    expect(await checkJackboyRunnerConfiguration(c, async () => {}, { fetch })).toBeNull();
+    const noAudit = vi.fn(async () => {
+      throw new Error("audit unavailable");
+    });
+    const send = vi.fn(fetch);
+    await expect(checkJackboyRunnerConfiguration(c, noAudit, { fetch: send })).rejects.toThrow(
+      "audit unavailable",
+    );
+    expect(send).not.toHaveBeenCalled();
+  });
+
   it("posts a signed request to the exact public route with redirects refused and a timeout", async () => {
     const seen: Seen[] = [];
     const link = new JackboyLink(config(), async () => {}, { fetch: fakeJackboy(seen) });

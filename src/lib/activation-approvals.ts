@@ -8,29 +8,134 @@ import { z } from "zod";
 
 export type ApprovalStatus = "pending" | "approved" | "failed";
 export type ApprovalAction = "approve" | "fail" | "revoke";
+export type DeploymentMode = "runner_only" | "unknown" | "inconsistent";
+export type CheckStatus = "passed" | "failed" | "needs_attention";
+
+export const ACTIVATION_CHECK_VERSION = 2;
+export const ACTIVATION_CHECK_STEPS = [1, 2, 4, 8] as const;
+
+export interface DeploymentConfiguration {
+  mode: DeploymentMode;
+  jackboyOriginConfigured: boolean;
+  runnerOriginConfigured: boolean;
+  attention: string[];
+}
+
+export interface ActivationCheckDetail {
+  label: string;
+  status: CheckStatus;
+  detail: string;
+}
+
+export interface ActivationCheck {
+  step: number;
+  status: CheckStatus;
+  evidenceVersion: number;
+  checkedAt: string;
+  summary: string;
+  details: ActivationCheckDetail[];
+}
+
+export function isTechnicalStep(step: number): boolean {
+  return (ACTIVATION_CHECK_STEPS as readonly number[]).includes(step);
+}
+
+/** Target selection only. Remote readiness requires the signed Step 2 probe. */
+export function deploymentConfiguration(input: {
+  jackboyOrigin: string | undefined;
+  runnerOrigin: string | undefined;
+}): DeploymentConfiguration {
+  const jackboyOriginConfigured = Boolean(input.jackboyOrigin?.trim());
+  const runnerOriginConfigured = Boolean(input.runnerOrigin?.trim());
+  let distinctOrigins = false;
+  try {
+    const jackboy = new URL(input.jackboyOrigin || "");
+    const runner = new URL(input.runnerOrigin || "");
+    distinctOrigins =
+      jackboy.protocol === "https:" &&
+      runner.protocol === "https:" &&
+      jackboy.origin !== runner.origin;
+  } catch {
+    // Missing or malformed references select no verified deployment target.
+  }
+  const mode: DeploymentMode =
+    !jackboyOriginConfigured && !runnerOriginConfigured
+      ? "unknown"
+      : distinctOrigins
+        ? "runner_only"
+        : "inconsistent";
+  const attention: string[] = [];
+  if (!jackboyOriginConfigured) attention.push("Confirm JACKBOY_LINK_ORIGIN on Mothership.");
+  if (!runnerOriginConfigured)
+    attention.push("Confirm the nonsecret JACKBOY_LINK_RUNNER_ORIGIN on Mothership.");
+  if (jackboyOriginConfigured && runnerOriginConfigured && !distinctOrigins)
+    attention.push("Jackboy and Railway runner must have distinct HTTPS origins.");
+  attention.push("Railway flags and its secret belong on the runner, not on Mothership.");
+
+  return {
+    mode,
+    jackboyOriginConfigured,
+    runnerOriginConfigured,
+    attention,
+  };
+}
 
 export const ACTIVATION_STEPS = [
-  { step: 1, title: "Link settings saved", detail: "7 OMNI_LINK values + JACKBOY_LINK_ORIGIN" },
+  {
+    step: 1,
+    title: "Mothership link settings verified",
+    detail: "Server-side setting names and public HTTPS origin; secret values stay private",
+    kind: "check",
+  },
   {
     step: 2,
-    title: "Railway Jackboy variables confirmed",
-    detail: "Including SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
+    title: "Railway runner settings verified",
+    detail: "Runner-only mode, Node runner enabled and shared runner secret configured",
+    kind: "check",
   },
-  { step: 3, title: "Node 26 pinned on Jackboy", detail: "Jackboy runtime version" },
-  { step: 4, title: "Migration 0030_omni_sessions applied", detail: "Jackboy database" },
+  {
+    step: 3,
+    title: "Node 26 pinned on the runner",
+    detail: "Owner confirms the Railway runner runtime",
+    kind: "owner",
+  },
+  {
+    step: 4,
+    title: "Jackboy HTTPS link verified",
+    detail:
+      "Signed configuration exchange with Jackboy on Lovable; Railway runner is a separate endpoint",
+    kind: "check",
+  },
   {
     step: 5,
-    title: "Jackboy link route verified as HTTPS behind Railway",
-    detail: "/api/public/omni/link on Railway's managed certificate",
+    title: "Jackboy database migration confirmed",
+    detail: "Jackboy's Lovable deployment owns the database; verify migration 0030 there",
+    kind: "owner",
   },
-  { step: 6, title: "Final readiness check passed", detail: "Names and formats only" },
-  { step: 7, title: "Approval expiry set", detail: "At most 24 hours ahead" },
-  { step: 8, title: "Self-test approved and passed", detail: "Recorded by you after it runs" },
-  { step: 9, title: "Live link switches on", detail: "Recorded by you after you switch them" },
+  {
+    step: 6,
+    title: "Final readiness review",
+    detail: "Owner reviews the checks and remaining attention items",
+    kind: "owner",
+  },
+  { step: 7, title: "Approval expiry set", detail: "At most 24 hours ahead", kind: "owner" },
+  {
+    step: 8,
+    title: "Protocol self-test proof verified",
+    detail: "Run the separately gated self-test first; this check only verifies its signed result",
+    kind: "check",
+  },
+  {
+    step: 9,
+    title: "Live link switches approved",
+    detail: "Owner decision only; no switch is changed here",
+    kind: "owner",
+  },
   {
     step: 10,
     title: "CODE production switch",
     detail: "$10 OpenAI cap and $5 daily limit confirmed",
+    kind: "owner",
   },
 ] as const;
 
@@ -41,14 +146,15 @@ export const NOTE_MAX = 280;
 
 /** Setting names checked by presence only on step 1; values are never read out. */
 export const LINK_SETTING_NAMES = [
+  "JACKBOY_LINK_ENABLED",
+  "JACKBOY_LINK_MOTHERSHIP_OWNER_ID",
+  "JACKBOY_LINK_ORIGIN",
   "OMNI_LINK_CLIENT_ID",
   "OMNI_LINK_PROJECT_ID",
-  "OMNI_LINK_OWNER_ID",
   "OMNI_LINK_APPROVAL_ID",
   "OMNI_LINK_BOOTSTRAP_KEY",
   "OMNI_LINK_HMAC_SECRET",
   "OMNI_LINK_APPROVAL_EXPIRES_AT",
-  "JACKBOY_LINK_ORIGIN",
 ] as const;
 /** Intentionally left unset until step 7 is approved. */
 export const DEFERRED_SETTING = "OMNI_LINK_APPROVAL_EXPIRES_AT";
@@ -203,11 +309,7 @@ export function isMfaFresh(amr: unknown, nowSeconds: number): boolean {
 
 export const decisionInput = z
   .object({
-    step: z
-      .number()
-      .int()
-      .min(1)
-      .max(STEP_COUNT),
+    step: z.number().int().min(1).max(STEP_COUNT),
     action: z.enum(["approve", "fail", "revoke"]),
     note: z.string().max(NOTE_MAX).default(""),
     expiresAt: z.iso.datetime({ offset: true }).nullable().default(null),

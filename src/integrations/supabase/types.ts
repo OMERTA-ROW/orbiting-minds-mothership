@@ -47,6 +47,36 @@ export type Database = {
         }
         Relationships: []
       }
+      activation_approval_checks: {
+        Row: {
+          checked_at: string;
+          deployment_mode: string | null;
+          details: Json;
+          evidence_version: number;
+          status: string;
+          step: number;
+          summary: string;
+        };
+        Insert: {
+          checked_at?: string;
+          deployment_mode?: string | null;
+          details?: Json;
+          evidence_version: number;
+          status: string;
+          step: number;
+          summary: string;
+        };
+        Update: {
+          checked_at?: string;
+          deployment_mode?: string | null;
+          details?: Json;
+          evidence_version?: number;
+          status?: string;
+          step?: number;
+          summary?: string;
+        };
+        Relationships: [];
+      };
       ai_gateway_state: {
         Row: {
           blocked_at: string
@@ -3053,6 +3083,18 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      activation_approval_record_check: {
+        Args: {
+          _step: number;
+          _status: string;
+          _version: number;
+          _summary: string;
+          _details: Json;
+          _mode: string;
+          _actor: string;
+        };
+        Returns: undefined;
+      };
       assert_fresh_mfa: {
         Args: { _max_age_seconds?: number }
         Returns: undefined

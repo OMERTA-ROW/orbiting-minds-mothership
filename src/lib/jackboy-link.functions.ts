@@ -36,14 +36,26 @@ export const requestJackboyLink = createServerFn({ method: "POST" })
     }
     if (!data.jobId) throw new Error("Job ID is required.");
     const job = await client.execute(data.action, data.jobId);
-    // Evidence for the OMNI workspace gate: only a verified, passed self-test result counts.
-    if (job.status === "completed" && job.result?.passed === true) {
-      await supabaseAdmin.from("razul_control_audit").insert({
+    // Only the proof-checked protocol result counts as self-test evidence.
+    const selfTestAction =
+      job.status === "completed" && job.result?.passed === true
+        ? "self_test_passed"
+        : (job.status === "completed" && job.result?.passed === false) ||
+            job.status === "failed" ||
+            job.status === "timed_out"
+          ? "self_test_failed"
+          : null;
+    if (selfTestAction) {
+      const { error } = await supabaseAdmin.from("razul_control_audit").insert({
         actor_id: context.userId,
-        action: "self_test_passed",
+        action: selfTestAction,
         record_type: "jackboy_link",
         record_id: data.jobId,
       });
+      if (error)
+        throw new Error(
+          "Protocol self-test result audit failed; outcome may require reconciliation.",
+        );
     }
     return job;
   });
