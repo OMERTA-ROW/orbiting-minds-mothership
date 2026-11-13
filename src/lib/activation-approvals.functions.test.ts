@@ -118,19 +118,25 @@ beforeEach(() => {
   vi.stubEnv("OMNI_LINK_REMOTE_RUNNER_SECRET", "");
 });
 describe("Step 2 trusted remote evidence", () => {
-  it("approves a signed remote pass with no runner flags or runner secret on Mothership", async () => {
+  it("records a signed remote pass as evidence only, then approves on the owner's own decision", async () => {
     const { input, rpc } = invocation();
     expect(await mocks.handlers[1]!(input)).toMatchObject({
       ok: true,
+      approvalNeeded: true,
       check: { step: 2, status: "passed", evidenceVersion: 2 },
     });
-    expect(rpc).toHaveBeenCalledWith(
-      "activation_approval_decide",
-      expect.objectContaining({ _step: 2, _action: "approve" }),
-    );
+    expect(rpc).not.toHaveBeenCalled();
     expect(mocks.record).toHaveBeenCalledWith(
       "activation_approval_record_check",
       expect.objectContaining({ _status: "passed", _version: 2 }),
+    );
+    const decision = invocation(true, true, {
+      data: { step: 2, action: "approve", note: "", expiresAt: null },
+    });
+    expect(await mocks.handlers[2]!(decision.input)).toEqual({ ok: true });
+    expect(decision.rpc).toHaveBeenCalledWith(
+      "activation_approval_decide",
+      expect.objectContaining({ _step: 2, _action: "approve" }),
     );
   });
   it("records unresolved evidence and allows a subsequent signed retry to pass", async () => {
@@ -141,10 +147,31 @@ describe("Step 2 trusted remote evidence", () => {
       "activation_approval_decide",
       expect.objectContaining({ _action: "fail" }),
     );
+    rpc.mockClear();
     expect(await mocks.handlers[1]!(input)).toMatchObject({ check: { status: "passed" } });
-    expect(rpc).toHaveBeenLastCalledWith(
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("explains an older published Jackboy (link_disabled) without inferring missing Railway variables", async () => {
+    mocks.probe.mockRejectedValueOnce(
+      Object.assign(new Error("Jackboy request failed (HTTP 503)."), {
+        stage: "http",
+        status: 503,
+        code: "link_disabled",
+      }),
+    );
+    const { input, rpc } = invocation();
+    const result = (await mocks.handlers[1]!(input)) as {
+      check: { status: string; details: Array<{ label: string; detail: string }> };
+    };
+    expect(result.check.status).toBe("needs_attention");
+    const byLabel = Object.fromEntries(result.check.details.map((d) => [d.label, d.detail]));
+    expect(byLabel["Jackboy reply"]).toBe("HTTP 503 · link_disabled");
+    expect(byLabel["Likely cause"]).toMatch(/lacks the configuration probe/);
+    expect(byLabel["Existing Railway settings"]).toMatch(/Unverified does not mean missing/);
+    expect(JSON.stringify(result)).not.toMatch(/OMNI_LINK_HMAC_SECRET=|sb_secret|service_role/);
+    expect(rpc).toHaveBeenCalledWith(
       "activation_approval_decide",
-      expect.objectContaining({ _action: "approve" }),
+      expect.objectContaining({ _step: 2, _action: "fail" }),
     );
   });
   it("does not approve an unknown remote target just because local flags are true", async () => {
@@ -261,6 +288,48 @@ describe("security reset requires fresh approval on the server", () => {
     input.data = { step: 3, action: "approve", note: "", expiresAt: null };
     expect(await mocks.handlers[2]!(input)).toMatchObject({ ok: false, reason: "mfa" });
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("no duplicate approvals", () => {
+  it("refuses to rerun the check of an already approved step", async () => {
+    const { input, rpc } = invocation(true, true, { data: { step: 1 } });
+    expect(await mocks.handlers[1]!(input)).toMatchObject({
+      ok: false,
+      reason: "already_approved",
+    });
+    expect(mocks.record).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("refuses to approve an already approved step twice", async () => {
+    const { input, rpc } = invocation(true, true, {
+      data: { step: 1, action: "approve", note: "", expiresAt: null },
+    });
+    expect(await mocks.handlers[2]!(input)).toMatchObject({
+      ok: false,
+      reason: "already_approved",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("never lets the owner mark a technical step failed by hand", async () => {
+    const { input, rpc } = invocation(true, true, {
+      data: { step: 2, action: "fail", note: "", expiresAt: null },
+    });
+    expect(await mocks.handlers[2]!(input)).toMatchObject({ ok: false, reason: "rule" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("explains when the database needs a fresher passing check", async () => {
+    const { input, rpc } = invocation(true, true, {
+      data: { step: 2, action: "approve", note: "", expiresAt: null },
+    });
+    rpc.mockResolvedValueOnce({
+      error: { code: "22023", message: "Fresh server-side check required" },
+    } as never);
+    expect(await mocks.handlers[2]!(input)).toMatchObject({
+      ok: false,
+      reason: "rule",
+      message: expect.stringMatching(/last 15 minutes/),
+    });
   });
 });
 

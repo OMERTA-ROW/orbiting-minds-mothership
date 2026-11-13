@@ -7,6 +7,8 @@ import {
   configuredJackboyLink,
   configuredJackboyConfiguration,
   checkJackboyRunnerConfiguration,
+  JackboyLinkError,
+  refusalCode,
   type JackboyLinkConfig,
 } from "./jackboy-link.server";
 
@@ -150,6 +152,26 @@ describe("Jackboy link transport (public certificate, no CA file)", () => {
       ).rejects.toThrow();
     },
   );
+
+  it("reports a refusal's HTTP status and allowlisted reason, never other reply text", async () => {
+    const c = { ...config(), runnerOrigin: "https://runner.up.railway.app" };
+    const refuse = (body: string) => async () => new Response(body, { status: 503 });
+    const error = await checkJackboyRunnerConfiguration(c, async () => {}, {
+      fetch: refuse('{"error":"link_disabled"}'),
+    }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(JackboyLinkError);
+    expect(error).toMatchObject({ stage: "http", status: 503, code: "link_disabled" });
+    const other = await checkJackboyRunnerConfiguration(c, async () => {}, {
+      fetch: refuse('{"error":"private detail sk-abc"}'),
+    }).catch((e: unknown) => e);
+    expect(other).toMatchObject({ stage: "http", status: 503, code: undefined });
+    expect(refusalCode("not json")).toBeUndefined();
+    expect(refusalCode('["link_disabled"]')).toBeUndefined();
+    const bad = await checkJackboyRunnerConfiguration(c, async () => {}, {
+      fetch: fakeJackboy([], (r) => r, "0".repeat(64)),
+    }).catch((e: unknown) => e);
+    expect(bad).toMatchObject({ stage: "proof" });
+  });
 
   it("treats signed unavailable configuration as unresolved and fails closed on audit errors", async () => {
     const c = { ...config(), runnerOrigin: "https://runner.up.railway.app" };
