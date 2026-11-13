@@ -28,6 +28,10 @@ describe("Step 2 probe failure explanations", () => {
       /global pause/,
     );
     expect(probeFailureDetails(err("timeout"))[1]!.detail).toMatch(/did not answer in time/);
+    const killSwitch = probeFailureDetails(err("http", 403, "kill_switch_on"));
+    expect(killSwitch[0]!.detail).toBe("HTTP 403 · kill_switch_on");
+    expect(killSwitch[1]!.detail).toMatch(/^Safety denial, not a fault/);
+    expect(killSwitch[1]!.detail).not.toMatch(/timeout|did not answer/i);
     expect(probeFailureDetails(err("proof"))[1]!.detail).toMatch(/signature did not verify/);
     expect(probeFailureDetails(new Error("plain"))[0]!.detail).toBe("No classified reply");
   });

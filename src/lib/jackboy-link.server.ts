@@ -68,6 +68,8 @@ export const JACKBOY_REFUSAL_CODES = [
   "authentication_failed",
   "project_or_action_denied",
   "configuration_scope_denied",
+  /** Proposed for Jackboy: a distinct safety denial while its global Kill Switch is on. */
+  "kill_switch_on",
   "https_post_required",
   "invalid_request",
 ] as const;
