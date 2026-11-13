@@ -418,10 +418,19 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       await ownerContext(context);
     } catch (error) {
       // A specific reason, never record contents: lets the owner see exactly what to do next.
-      return {
-        denied: true as const,
-        reason: accessReason(error instanceof Error ? error.message : ""),
-      };
+      let reason = accessReason(error instanceof Error ? error.message : "");
+      // The owner check needs aal2, so an owner whose sign-in has not passed the code yet would
+      // read as "not the owner". The own role row only picks the message; it grants nothing.
+      if (reason === "not_owner" && context.claims["aal"] !== "aal2") {
+        const role = await context.supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", context.userId)
+          .eq("role", "owner")
+          .maybeSingle();
+        if (!role.error && role.data?.role === "owner") reason = "needs_code";
+      }
+      return { denied: true as const, reason };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [steps, audit, checks, selfTest, resetAt] = await Promise.all([

@@ -44,6 +44,7 @@ vi.mock("@/integrations/supabase/client.server", () => ({
 function chain(result: () => unknown) {
   const q: Record<string, unknown> = {};
   for (const m of ["select", "eq", "in", "order", "limit"]) q[m] = () => q;
+  q["maybeSingle"] = () => q;
   q["then"] = (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) =>
     Promise.resolve(result()).then(ok, bad);
   return q;
@@ -58,6 +59,8 @@ function invocation(
     events?: Array<{ event: string; created_at: string }>;
     data?: Record<string, unknown>;
     decidedAt?: string;
+    role?: string;
+    aal?: string;
   } = {},
 ) {
   const rpc = vi.fn(async () => ({ error: null }));
@@ -74,6 +77,7 @@ function invocation(
     }),
     owner_mfa_recovery_events: () => ({ data: opts.events ?? [], error: null }),
     razul_control_audit: () => ({ data: [], error: null }),
+    user_roles: () => ({ data: opts.role ? { role: opts.role } : null, error: null }),
   };
   return {
     rpc,
@@ -82,7 +86,7 @@ function invocation(
       context: {
         userId: OWNER,
         claims: {
-          aal: "aal2",
+          aal: opts.aal ?? "aal2",
           amr: [{ method: "totp", timestamp: Math.floor(Date.now() / 1000) - (fresh ? 0 : 3600) }],
         },
         supabase: { from: (t: string) => chain(tables[t]!), rpc },
@@ -186,6 +190,22 @@ describe("owner access on the approvals list", () => {
     mocks.owner.mockRejectedValueOnce(new Error(message));
     const result = await mocks.handlers[0]!(invocation().input);
     expect(result).toEqual({ denied: true, reason });
+    expect(mocks.checks).not.toHaveBeenCalled();
+  });
+  it("tells the real owner at aal1 to enter a code, never that they are not the owner", async () => {
+    mocks.owner.mockRejectedValue(
+      new Error("All-Seeing Eye infrastructure is available only to the configured owner."),
+    );
+    expect(
+      await mocks.handlers[0]!(invocation(true, true, { aal: "aal1", role: "owner" }).input),
+    ).toEqual({ denied: true, reason: "needs_code" });
+    expect(await mocks.handlers[0]!(invocation(true, true, { aal: "aal1" }).input)).toEqual({
+      denied: true,
+      reason: "not_owner",
+    });
+    expect(
+      await mocks.handlers[0]!(invocation(true, true, { aal: "aal2", role: "owner" }).input),
+    ).toEqual({ denied: true, reason: "not_owner" });
     expect(mocks.checks).not.toHaveBeenCalled();
   });
   it("still lists approvals when the check store is not installed", async () => {
