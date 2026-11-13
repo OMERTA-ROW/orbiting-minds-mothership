@@ -35,12 +35,14 @@ const BY_CODE: Record<string, string> = {
     "Jackboy refused the check: its project/owner record does not match, its global pause is on, or the probe limit (60 per 10 minutes) was reached.",
   https_post_required:
     "Jackboy did not see an HTTPS request on its link address. Confirm JACKBOY_LINK_ORIGIN is Jackboy's final public HTTPS address.",
-  invalid_request: "Jackboy could not read the request. Confirm both sides run the same link version.",
+  invalid_request:
+    "Jackboy could not read the request. Confirm both sides run the same link version.",
 };
 
 const BY_STAGE: Record<string, string> = {
   audit: "The probe could not be written to the audit log, so nothing was sent to Jackboy.",
-  timeout: "Jackboy did not answer within 5 seconds. Retry; if it repeats, check that Jackboy is online.",
+  timeout:
+    "Jackboy did not answer within 5 seconds. Retry; if it repeats, check that Jackboy is online.",
   connection:
     "Mothership could not open a trusted HTTPS connection to Jackboy (address or certificate).",
   redirect:

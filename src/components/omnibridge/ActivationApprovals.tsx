@@ -660,7 +660,11 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
               <div className="flex flex-wrap items-start gap-3">
                 <Icon size={18} aria-hidden className="mt-0.5 shrink-0 text-primary" />
                 <div className="min-w-0 flex-1">
-                  <h3 id={`step-${view.step}-title`} tabIndex={-1} className="font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <h3
+                    id={`step-${view.step}-title`}
+                    tabIndex={-1}
+                    className="font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
                     {meta.step}. {meta.title}
                   </h3>
                   <p className="text-xs text-muted-foreground">{meta.detail}</p>
@@ -845,9 +849,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
                           placeholder="Optional note — never paste keys or tokens"
                           maxLength={NOTE_MAX}
                           value={notes[meta.step] ?? ""}
-                          onChange={(e) =>
-                            setNotes((n) => ({ ...n, [meta.step]: e.target.value }))
-                          }
+                          onChange={(e) => setNotes((n) => ({ ...n, [meta.step]: e.target.value }))}
                         />
                       )}
                       <div className="flex flex-wrap items-center gap-2">
@@ -877,8 +879,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
                             Approve
                           </Button>
                         )}
-                        {view.canRevoke ||
-                        (row.status !== "pending" && !mfaFresh && !view.stale) ? (
+                        {row.status !== "pending" && (
                           <Button
                             size="sm"
                             variant="ghost"
@@ -887,7 +888,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
                           >
                             Revoke
                           </Button>
-                        ) : view.stale ? null : null}
+                        )}
                         {view.blockedReason && !view.complete && (
                           <span className="text-xs text-muted-foreground">
                             {view.blockedReason}

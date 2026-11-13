@@ -287,7 +287,8 @@ async function sendSigned(
   if (result.status !== 200 && result.status !== 202) {
     const code = refusalCode(result.body);
     const extra = code ? { status: result.status, code } : { status: result.status };
-    if (result.status === 401) throw new JackboyLinkError("Jackboy session rejected.", "http", extra);
+    if (result.status === 401)
+      throw new JackboyLinkError("Jackboy session rejected.", "http", extra);
     throw new JackboyLinkError(`Jackboy request failed (HTTP ${result.status}).`, "http", extra);
   }
   const expected = hmac(
@@ -346,7 +347,10 @@ export async function checkJackboyRunnerConfiguration(
   if (!parsed.success || reply.execution !== "none" || reply.projectId !== c.projectId)
     throw new JackboyLinkError("Jackboy configuration response is invalid.", "contract");
   if (parsed.data && parsed.data.runnerOrigin !== new URL(c.runnerOrigin).origin)
-    throw new JackboyLinkError("Jackboy configuration targets a different runner.", "runner_mismatch");
+    throw new JackboyLinkError(
+      "Jackboy configuration targets a different runner.",
+      "runner_mismatch",
+    );
   await audit(parsed.data ? "configuration_verified" : "configuration_unavailable");
   return parsed.data;
 }
