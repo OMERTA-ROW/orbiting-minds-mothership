@@ -74,3 +74,9 @@ users 1 · sign-in identities 1 · roles 1 · beta access rows 5 · MFA recovery
 
 ## Out of scope
 The optional update 0052 (database-enforced reset rule / single owner), CODE, autonomy, deploys and secrets.
+
+## Pre-apply record (read-only, 2026-11-13 19:11 UTC)
+- Preconditions re-confirmed: 51 history rows (max id 51, newest created_at 1794511673056 = 0050); check table and record function absent; 0051 file SHA-256 1a09ae7e87041f0f15429aae0a1f0f39e7a5a487442124425f317dab48823a6f; 1 user account; 2 control-audit rows.
+- Step 1 before change: status approved, approver 40543e40-5202-4219-a852-ead1c659e9a9, decided_at 2026-11-12 21:25:56.570764 UTC, note '' (empty), approval_expires_at NULL, spend_confirmations NULL, revision 1.
+- Matching audit row: id 140bd914-989c-41a0-989d-868cc73a13b9, action approve, record 1, 2026-11-12 21:25:56.570764 UTC.
+- Steps 2–10: pending, revision 0, no approver.
