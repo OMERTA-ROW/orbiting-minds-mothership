@@ -23,8 +23,20 @@ import {
   type ApprovalAction,
   type ApprovalRow,
 } from "@/lib/activation-approvals";
+import {
+  ACCESS_TEXT,
+  STEP_STATE_LABEL,
+  accessReason,
+  approvedBeforeReset,
+  effectiveRows,
+  nextAction,
+  stepState,
+  type AccessReason,
+} from "@/lib/activation-status";
+import { OwnerCodeForm } from "@/components/account/OwnerCodeForm";
 
-type Loaded = Awaited<ReturnType<typeof listActivationApprovals>>;
+type Listed = Awaited<ReturnType<typeof listActivationApprovals>>;
+type Loaded = Extract<Listed, { rows: unknown }>;
 type AuditRow = Loaded["audit"][number];
 
 const ACTION_LABEL: Record<string, string> = {
@@ -53,6 +65,8 @@ export function ActivationApprovals() {
   const runCheck = useServerFn(runActivationApprovalCheck);
   const [data, setData] = useState<Loaded | null>(null);
   const [access, setAccess] = useState<"checking" | "ok" | "denied">("checking");
+  const [reason, setReason] = useState<AccessReason>("unreadable");
+  const [who, setWho] = useState<{ email: string; since: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ step: number | null; text: string } | null>(null);
   const [notes, setNotes] = useState<Record<number, string>>({});
@@ -64,16 +78,39 @@ export function ActivationApprovals() {
 
   const refresh = useCallback(async () => {
     const result = await list();
+    if ("denied" in result) {
+      setReason(result.reason);
+      throw new Error(result.reason);
+    }
     setData(result);
     setNow(Date.now());
   }, [list]);
 
-  useEffect(() => {
-    refresh().then(
+  const checkAccess = useCallback(() => {
+    setAccess("checking");
+    return refresh().then(
       () => setAccess("ok"),
-      () => setAccess("denied"),
+      (error: unknown) => {
+        // Thrown before the owner check (no session, network): say so specifically.
+        const msg = error instanceof Error ? error.message : "";
+        if (!(msg in ACCESS_TEXT)) setReason(accessReason(msg) === "unreadable" ? "signed_out" : accessReason(msg));
+        setAccess("denied");
+      },
     );
   }, [refresh]);
+
+  useEffect(() => {
+    void checkAccess();
+  }, [checkAccess]);
+
+  // Which account is signed in, so a returning owner can see it is the same account.
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data: u }) => {
+      if (u.user?.email)
+        setWho({ email: u.user.email, since: new Date(u.user.created_at).toLocaleDateString() });
+      else setWho(null);
+    });
+  }, [access]);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -175,44 +212,72 @@ export function ActivationApprovals() {
     }
   }
 
+  const signedInLine = who && (
+    <p className="text-xs text-muted-foreground">
+      Signed in as {who.email} · account created {who.since}
+    </p>
+  );
+
   if (access !== "ok" || !data) {
+    const text = ACCESS_TEXT[reason];
     return (
-      <main className="mx-auto max-w-3xl px-6 py-16">
+      <main className="mx-auto max-w-3xl space-y-4 px-6 py-16">
         <h1 className="text-2xl">Activation Approvals</h1>
-        <p className="mt-4 text-sm text-muted-foreground">
-          {access === "checking"
-            ? "Checking owner access…"
-            : "This page is private to the verified owner with two-factor sign-in."}
-        </p>
-        {access === "denied" && (
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button asChild variant="outline">
-              <Link to="/auth">Owner sign in</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/account-security">Two-factor</Link>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setAccess("checking");
-                void refresh().then(
-                  () => setAccess("ok"),
-                  () => setAccess("denied"),
-                );
-              }}
-            >
-              Retry access check
-            </Button>
-          </div>
+        {access === "checking" ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Checking owner access…
+          </p>
+        ) : (
+          <section aria-labelledby="access-title" className="space-y-3 rounded-lg border bg-card p-4">
+            <h2 id="access-title" className="text-lg">
+              {text.title}
+            </h2>
+            <p role="alert" className="text-sm">
+              {text.detail}
+            </p>
+            {signedInLine}
+            {reason === "needs_code" ? (
+              <OwnerCodeForm
+                intro="Your approvals are kept. Enter your code to see them."
+                successText="Code accepted. Loading your approvals…"
+                onVerified={() => checkAccess()}
+              />
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {reason !== "unreadable" && (
+                  <Button asChild variant="outline">
+                    <Link to="/auth">Owner sign in</Link>
+                  </Button>
+                )}
+                <Button asChild variant="outline">
+                  <Link to="/account-security">Two-step sign-in settings</Link>
+                </Button>
+                <Button variant="ghost" onClick={() => void checkAccess()}>
+                  Retry access check
+                </Button>
+              </div>
+            )}
+          </section>
         )}
       </main>
     );
   }
 
+  const resetAt = data.securityResetAt;
+  const effective = effectiveRows(data.rows, resetAt);
+  const checksReady = data.checksStore === "ready";
+
   const latestAudit = (step: number): AuditRow | undefined =>
     data.audit.find((a) => a.record_id === String(step));
-  const approvedCount = data.rows.filter((r) => isEffectivelyApproved(r, now)).length;
+  const approvedCount = effective.filter((r) => isEffectivelyApproved(r, now)).length;
+  const next = nextAction({
+    rows: data.rows,
+    checks: data.checks,
+    now,
+    resetAt,
+    mfaFresh,
+    checksStore: data.checksStore,
+  });
   const checkCounts = {
     passed: data.checks.filter((c) => c.status === "passed").length,
     failed: data.checks.filter((c) => c.status === "failed").length,
@@ -249,6 +314,7 @@ export function ActivationApprovals() {
           Go-live checklist for the OMNI–Jackboy link and CODE. Steps unlock in order.{" "}
           {approvedCount} of {ACTIVATION_STEPS.length} approved.
         </p>
+        {signedInLine}
         <p className="text-xs text-muted-foreground" aria-live="polite">
           Technical checks: {checkCounts.passed} passed · {checkCounts.failed} failed ·{" "}
           {checkCounts.needsAttention} need attention.
@@ -262,6 +328,46 @@ export function ActivationApprovals() {
           deploys, runs the self-test, or makes paid calls.
         </p>
       </header>
+
+      <section
+        aria-labelledby="next-step"
+        className="space-y-2 rounded-lg border border-primary/60 bg-card p-4"
+      >
+        <h2 id="next-step" className="text-lg">
+          Next step
+        </h2>
+        <p className="font-medium">{next.title}</p>
+        <p className="text-sm text-muted-foreground">{next.detail}</p>
+        {resetAt && data.rows.some((r) => approvedBeforeReset(r, resetAt)) && (
+          <p className="text-xs text-muted-foreground">
+            Last security reset on this account: {when(resetAt)}. Approvals recorded before it need
+            fresh approval; ordinary sign-ins never reset them.
+          </p>
+        )}
+        {next.kind === "run_check" && next.step !== null && (
+          <Button size="sm" disabled={busy} onClick={() => void checkStep(next.step!)}>
+            Run check for step {next.step}
+          </Button>
+        )}
+        {(next.kind === "approve" || next.kind === "fresh_approval") && next.step !== null && (
+          <Button asChild size="sm" variant="outline">
+            <a href={`#step-${next.step}`}>Go to step {next.step}</a>
+          </Button>
+        )}
+        {next.kind === "reverify" && (
+          <Button asChild size="sm" variant="outline">
+            <a href="#mfa">Enter code</a>
+          </Button>
+        )}
+      </section>
+
+      {!checksReady && (
+        <p role="alert" className="rounded-lg border border-destructive/50 bg-card p-3 text-sm">
+          {data.checksStore === "missing"
+            ? "Technical checks are paused: the check store (database update 0051) is not installed yet, so Run check can't save results. Your existing approvals are shown unchanged."
+            : "Saved check results could not be read. Technical steps can't be approved until they can."}
+        </p>
+      )}
 
       <section
         aria-labelledby="deployment-mode"
@@ -365,23 +471,34 @@ export function ActivationApprovals() {
       <ol className="space-y-4">
         {ACTIVATION_STEPS.map((meta) => {
           const row = data.rows.find((r) => r.step === meta.step)!;
-          const blocker = blockingStep(data.rows, meta.step, now);
-          const actions = allowedActions(data.rows, meta.step, now);
+          const blocker = blockingStep(effective, meta.step, now);
+          const stale = approvedBeforeReset(row, resetAt);
+          const actions: ApprovalAction[] = stale
+            ? ["revoke"]
+            : allowedActions(effective, meta.step, now);
           const technical = isTechnicalStep(meta.step);
           const check = data.checks.find((c) => c.step === meta.step);
           const audit = latestAudit(meta.step);
-          const expired =
-            row.step === 7 && row.status === "approved" && !isEffectivelyApproved(row, now);
+          const state = stepState(row, {
+            rows: data.rows,
+            now,
+            resetAt,
+            lastAuditAction: audit?.action,
+          });
           const Icon =
-            row.status === "approved"
+            state === "approved"
               ? CheckCircle2
-              : row.status === "failed"
+              : state === "failed"
                 ? XCircle
-                : blocker
+                : state === "locked"
                   ? Lock
                   : CircleDashed;
           return (
-            <li key={meta.step} className="space-y-3 rounded-lg border bg-card p-4">
+            <li
+              key={meta.step}
+              id={`step-${meta.step}`}
+              className="scroll-mt-24 space-y-3 rounded-lg border bg-card p-4"
+            >
               <div className="flex flex-wrap items-start gap-3">
                 <Icon size={18} aria-hidden className="mt-0.5 shrink-0 text-primary" />
                 <div className="min-w-0 flex-1">
@@ -390,9 +507,7 @@ export function ActivationApprovals() {
                   </h3>
                   <p className="text-xs text-muted-foreground">{meta.detail}</p>
                 </div>
-                <span className="text-xs uppercase tracking-wide">
-                  {expired ? "Approved · expired" : row.status}
-                </span>
+                <span className="text-xs uppercase tracking-wide">{STEP_STATE_LABEL[state]}</span>
               </div>
 
               <dl className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-3">
@@ -473,7 +588,7 @@ export function ActivationApprovals() {
                 </ul>
               )}
 
-              {blocker && row.status === "pending" ? (
+              {blocker && !stale && row.status === "pending" ? (
                 <p className="text-xs text-muted-foreground">Locked — waiting on step {blocker}.</p>
               ) : (
                 <div className="space-y-3">
@@ -523,7 +638,7 @@ export function ActivationApprovals() {
                     {technical && (
                       <Button
                         size="sm"
-                        disabled={busy || !mfaFresh}
+                        disabled={busy || !mfaFresh || !checksReady}
                         onClick={() => void checkStep(meta.step)}
                       >
                         Run check
