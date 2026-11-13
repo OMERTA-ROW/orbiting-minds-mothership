@@ -10,6 +10,9 @@ interface OmniOrbProps {
   muted: boolean;
   /** 0..1 loudness or word-timing pulse written by the voice hooks. */
   level: MutableRefObject<number>;
+  /** Overrides the default state wording, e.g. a specific "not connected" reason. */
+  statusText?: string | undefined;
+  compact?: boolean | undefined;
 }
 
 /**
@@ -18,7 +21,8 @@ interface OmniOrbProps {
  * is a GPU transform; the waveform canvas only draws while listening or
  * speaking, pauses off-screen and respects reduced motion.
  */
-export function OmniOrb({ state, agentName, muted, level }: OmniOrbProps) {
+export function OmniOrb({ state, agentName, muted, level, statusText, compact }: OmniOrbProps) {
+  const status = statusText ?? ORB_STATE_TEXT[state];
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const active = state === "listening" || state === "speaking";
@@ -102,7 +106,7 @@ export function OmniOrb({ state, agentName, muted, level }: OmniOrbProps) {
   } as CSSProperties;
 
   return (
-    <div className="omni-orb-wrap">
+    <div className={`omni-orb-wrap${compact ? " omni-orb-wrap--compact" : ""}`}>
       <div
         ref={root}
         className="omni-orb"
@@ -110,7 +114,7 @@ export function OmniOrb({ state, agentName, muted, level }: OmniOrbProps) {
         data-muted={muted ? "true" : "false"}
         style={textures}
         role="img"
-        aria-label={`${agentName} voice orb: ${ORB_STATE_TEXT[state]}${muted ? ", voice replies muted" : ""}`}
+        aria-label={`${agentName} voice orb: ${status}${muted ? ", voice replies muted" : ""}`}
       >
         <div className="omni-orb__aura" aria-hidden />
         <canvas ref={canvas} className="omni-orb__wave" aria-hidden />
@@ -125,7 +129,7 @@ export function OmniOrb({ state, agentName, muted, level }: OmniOrbProps) {
         {agentName}
       </p>
       <p className="omni-orb__status" aria-live="polite" data-testid="orb-status">
-        {ORB_STATE_TEXT[state]}
+        {status}
         {muted ? " · voice replies muted" : ""}
       </p>
     </div>

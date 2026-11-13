@@ -5,6 +5,9 @@ import {
   orbState,
   speakableText,
   speakerLabel,
+  stepSpeaker,
+  terminalIntro,
+  unreadReplies,
   voiceAgent,
 } from "@/lib/omni-voice";
 
@@ -32,7 +35,9 @@ describe("OMNI voice agent identity and routing", () => {
   });
 
   it("introduces OMNI by name and never voices Jackboy as if it were speaking", () => {
-    expect(introFor("omni")).toBe("You are now speaking with OMNI, on Orbiting Minds Mothership.");
+    expect(introFor("omni")).toBe(
+      "You are now speaking with OMNI, the Mothership text agent (Lovable AI), not the OMNI terminal on Railway.",
+    );
     const jackboy = introFor("jackboy");
     expect(jackboy).toContain("Jackboy is not connected");
     expect(jackboy).not.toMatch(/speaking with Jackboy|this is Jackboy/i);
@@ -64,5 +69,35 @@ describe("speakableText", () => {
   });
   it("caps very long replies", () => {
     expect(speakableText("Word. ".repeat(600)).length).toBeLessThan(1300);
+  });
+});
+
+describe("OMNI terminal voice identity", () => {
+  const agents = [
+    { id: "omni", display_name: "OMNI" },
+    { id: "jackboy", display_name: "Jackboy" },
+  ];
+  it("names each reply by the enrolled agent that produced it, never defaulting to OMNI", () => {
+    expect(stepSpeaker("jackboy", agents)).toBe("Jackboy");
+    expect(stepSpeaker("omni", agents)).toBe("OMNI");
+    expect(stepSpeaker("razul", agents)).toBe("Unknown agent (razul)");
+  });
+  it("says the terminal is not connected instead of claiming a live conversation", () => {
+    expect(terminalIntro("Jackboy", true)).toBe(
+      "You are now speaking with Jackboy, through the OMNI terminal.",
+    );
+    const off = terminalIntro("Jackboy", false);
+    expect(off).toContain("not connected");
+    expect(off).not.toMatch(/speaking with/);
+  });
+  it("reads aloud only real chat replies, once each", () => {
+    const steps = [
+      { id: "a", kind: "message", body: "Done." },
+      { id: "b", kind: "output", body: "ls" },
+      { id: "c", kind: "message", body: "  " },
+      { id: "d", kind: "message", body: "Next." },
+    ];
+    expect(unreadReplies(steps, new Set()).map((s) => s.id)).toEqual(["a", "d"]);
+    expect(unreadReplies(steps, new Set(["a"])).map((s) => s.id)).toEqual(["d"]);
   });
 });

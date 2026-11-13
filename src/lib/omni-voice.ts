@@ -26,7 +26,7 @@ export const VOICE_AGENTS: readonly VoiceAgent[] = [
   {
     id: "omni",
     name: "OMNI",
-    site: "Orbiting Minds Mothership",
+    site: "the Mothership text agent (Lovable AI), not the OMNI terminal on Railway",
     chatPath: "/api/omni-agent",
     unavailableReason: null,
   },
@@ -80,7 +80,33 @@ export function introFor(agentId: VoiceAgentId): string {
   const agent = voiceAgent(agentId);
   if (!agent.chatPath)
     return `${agent.name} is not connected on this page. Messages here will not reach ${agent.name}.`;
-  return `You are now speaking with ${agent.name}, on ${agent.site}.`;
+  return `You are now speaking with ${agent.name}, ${agent.site}.`;
+}
+
+/**
+ * Spoken when the speaking agent changes in the OMNI terminal workspace.
+ * `name` must be the enrolled display name from the agent record.
+ */
+export function terminalIntro(name: string, connected: boolean): string {
+  return connected
+    ? `You are now speaking with ${name}, through the OMNI terminal.`
+    : `${name} selected. The OMNI terminal is not connected, so nothing will be sent to ${name}.`;
+}
+
+/** Name for a terminal reply: the enrolled record for the agent that produced it, never a default. */
+export function stepSpeaker(
+  agentId: string,
+  agents: readonly { id: string; display_name: string }[],
+): string {
+  return agents.find((a) => a.id === agentId)?.display_name ?? `Unknown agent (${agentId})`;
+}
+
+/** OMNI terminal chat replies not yet read aloud, oldest first. */
+export function unreadReplies<T extends { id: string; kind: string; body: string }>(
+  steps: readonly T[],
+  seen: ReadonlySet<string>,
+): T[] {
+  return steps.filter((s) => s.kind === "message" && s.body.trim() && !seen.has(s.id));
 }
 
 export type OrbState = "idle" | "listening" | "thinking" | "speaking" | "unavailable";

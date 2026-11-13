@@ -1,4 +1,4 @@
-import { Mic, MicOff, Volume2, VolumeX, Square } from "lucide-react";
+import { OrbVoiceControls } from "./OrbVoiceControls";
 import { Button } from "@/components/ui/button";
 import { VOICE_AGENTS, voiceAgent, type VoiceAgentId } from "@/lib/omni-voice";
 
@@ -40,50 +40,24 @@ export function OmniVoiceBar(p: OmniVoiceBarProps) {
           </Button>
         ))}
       </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        <Button
-          type="button"
-          variant={p.listening ? "secondary" : "outline"}
-          size="sm"
-          aria-pressed={p.listening}
-          disabled={!p.dictationSupported || p.busy || !agent.chatPath}
-          onClick={p.onToggleMic}
-        >
-          {p.listening ? <MicOff size={14} /> : <Mic size={14} />}
-          {!p.dictationSupported
-            ? "Microphone not supported in this browser"
-            : p.listening
-              ? "Stop listening"
-              : "Speak"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          aria-pressed={p.voiceOn}
-          disabled={!p.voiceSupported}
-          onClick={p.onToggleVoice}
-        >
-          {p.voiceOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-          {!p.voiceSupported
-            ? "Voice replies not supported"
-            : p.voiceOn
-              ? "Voice replies on"
-              : "Voice replies muted"}
-        </Button>
-        {p.speaking && (
-          <Button type="button" variant="signal" size="sm" onClick={p.onStopSpeaking}>
-            <Square size={14} /> Stop speaking
-          </Button>
-        )}
-      </div>
+      <OrbVoiceControls
+        dictationSupported={p.dictationSupported}
+        listening={p.listening}
+        micDisabled={p.busy || !agent.chatPath}
+        onToggleMic={p.onToggleMic}
+        voiceSupported={p.voiceSupported}
+        voiceOn={p.voiceOn}
+        onToggleVoice={p.onToggleVoice}
+        speaking={p.speaking}
+        onStopSpeaking={p.onStopSpeaking}
+      />
       {agent.unavailableReason ? (
         <p role="status" className="max-w-xl text-center text-xs leading-6 text-warning">
           {agent.unavailableReason}
         </p>
       ) : (
         <p className="max-w-xl text-center text-[11px] leading-5 text-muted-foreground">
-          Speaking with {agent.name} on {agent.site}. Spoken words appear in the message box for
+          Speaking with {agent.name}, {agent.site}. For the OMNI terminal, open Terminal · owner. Spoken words appear in the message box for
           your review and are never sent automatically. Voice replies use your browser's built-in
           voice; your browser may process audio with its own service.
         </p>

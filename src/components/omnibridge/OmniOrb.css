@@ -65,6 +65,8 @@
 .omni-orb__name { margin-top: -0.75rem; font-size: 1.25rem; font-weight: 600; letter-spacing: 0.08em; color: var(--foreground); }
 .omni-orb__status { font-size: 0.75rem; color: var(--muted-foreground); }
 
+.omni-orb-wrap--compact .omni-orb { --orb-size: clamp(130px, 14vw, 170px); }
+
 @keyframes omni-orb-turn { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
 @keyframes omni-orb-breathe { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
 
