@@ -219,12 +219,11 @@ describe("security reset requires fresh approval on the server", () => {
     expect(await mocks.handlers[1]!(input)).toMatchObject({ ok: true });
   });
   it("refuses an owner-step approval that depends on a pre-reset approval", async () => {
+    // Step 3 is an owner step; step 1 was approved before the reset.
     const { input, rpc } = invocation(true, true, {
       events: RESET,
-      data: { step: 2, action: "approve", note: "", expiresAt: null },
+      data: { step: 3, action: "approve", note: "", expiresAt: null },
     });
-    // Step 2 is technical, so use an owner step to reach the order rule.
-    input.data = { step: 3, action: "approve", note: "", expiresAt: null };
     expect(await mocks.handlers[2]!(input)).toMatchObject({ ok: false, reason: "rule" });
     expect(rpc).not.toHaveBeenCalled();
   });

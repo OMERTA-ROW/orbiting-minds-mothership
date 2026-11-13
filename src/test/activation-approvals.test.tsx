@@ -10,6 +10,22 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@tanstack/react-start", () => ({
   useServerFn: (name: string) => mocks[name as keyof typeof mocks],
 }));
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
+}));
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    auth: {
+      getUser: async () => ({
+        data: { user: { email: "owner@fixture.invalid", created_at: "2026-11-01T19:10:09Z" } },
+      }),
+      mfa: {
+        listFactors: async () => ({ data: { totp: [{ id: "f1", status: "verified" }] } }),
+        challengeAndVerify: vi.fn(),
+      },
+    },
+  },
+}));
 vi.mock("@/lib/activation-approvals.functions", () => ({
   listActivationApprovals: "list",
   decideActivationApproval: "decide",
@@ -22,7 +38,15 @@ const owner = "11111111-1111-4111-8111-111111111111";
 
 function snapshot(
   mode: "runner_only" | "unknown" | "inconsistent",
-  overrides: { approvedThrough?: number; failedStep?: number; checks?: unknown[] } = {},
+  overrides: {
+    approvedThrough?: number;
+    failedStep?: number;
+    checks?: unknown[];
+    checksStore?: "ready" | "missing" | "unreadable";
+    securityResetAt?: string | null;
+    audit?: unknown[];
+    mfaAgeSeconds?: number | null;
+  } = {},
 ) {
   const rows = Array.from({ length: 10 }, (_, index) => {
     const step = index + 1;
@@ -41,8 +65,10 @@ function snapshot(
   return {
     viewerId: owner,
     rows,
-    audit: [],
+    audit: overrides.audit ?? [],
     checks: overrides.checks ?? [],
+    checksStore: overrides.checksStore ?? "ready",
+    securityResetAt: overrides.securityResetAt ?? null,
     settings: [],
     deployment: {
       mode,
@@ -51,7 +77,7 @@ function snapshot(
       attention: [],
     },
     selfTest: null,
-    mfaAgeSeconds: 0,
+    mfaAgeSeconds: overrides.mfaAgeSeconds === undefined ? 0 : overrides.mfaAgeSeconds,
   };
 }
 
@@ -160,5 +186,76 @@ describe("Activation Approvals deployment checks", () => {
       .closest("li");
     fireEvent.click(within(step!).getByRole("button", { name: "Run check" }));
     await waitFor(() => expect(mocks.check).toHaveBeenCalledWith({ data: { step: 2 } }));
+  });
+});
+
+describe("Activation Approvals access and next step", () => {
+  it("tells a returning owner without a fresh sign-in code exactly what to do, without showing records", async () => {
+    mocks.list.mockResolvedValue({ denied: true, reason: "needs_code" });
+    render(<ActivationApprovals />);
+    expect(
+      await screen.findByRole("heading", { name: "Enter your two-step code" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "6-digit authenticator code" })).toBeInTheDocument();
+    expect(await screen.findByText(/owner@fixture.invalid · account created/)).toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Approve|Run check|Revoke/ })).toBeNull();
+  });
+
+  it("says plainly when the signed-in account is not the owner", async () => {
+    mocks.list.mockResolvedValue({ denied: true, reason: "not_owner" });
+    render(<ActivationApprovals />);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not with the owner account/);
+    expect(screen.getByRole("link", { name: "Owner sign in" })).toBeInTheDocument();
+  });
+
+  it("shows records and the database-update blocker when the check store is missing", async () => {
+    mocks.list.mockResolvedValue(
+      snapshot("runner_only", { approvedThrough: 1, checksStore: "missing" }),
+    );
+    render(<ActivationApprovals />);
+    const next = await screen.findByRole("region", { name: "Next step" });
+    expect(next).toHaveTextContent(/Step 2 is waiting on a database update/);
+    expect(next).toHaveTextContent(/0051/);
+    expect(screen.getByRole("alert")).toHaveTextContent(/check store/);
+    const step = screen.getByRole("heading", { name: /2\. Railway runner settings verified/ });
+    expect(within(step.closest("li")!).getByRole("button", { name: "Run check" })).toBeDisabled();
+  });
+
+  it("marks approvals from before a security reset as needing fresh approval", async () => {
+    mocks.list.mockResolvedValue(
+      snapshot("runner_only", {
+        approvedThrough: 3,
+        securityResetAt: "2026-11-13T16:20:51.000Z",
+      }),
+    );
+    mocks.check.mockResolvedValue({ ok: true, check: passingCheck });
+    render(<ActivationApprovals />);
+    const next = await screen.findByRole("region", { name: "Next step" });
+    expect(next).toHaveTextContent(/Run check for step 1/);
+    expect(screen.getAllByText("Needs fresh approval")).toHaveLength(3);
+    expect(screen.getByText(/0 of 10 approved/)).toBeInTheDocument();
+    const step3 = screen.getByRole("heading", { name: /3\. Node 26 pinned/ }).closest("li")!;
+    expect(within(step3).queryByRole("button", { name: "Approve" })).toBeNull();
+    expect(within(step3).getByRole("button", { name: "Revoke" })).toBeInTheDocument();
+    fireEvent.click(within(next).getByRole("button", { name: "Run check for step 1" }));
+    await waitFor(() => expect(mocks.check).toHaveBeenCalledWith({ data: { step: 1 } }));
+  });
+
+  it("labels a revoked step as revoked and keeps ordinary approvals", async () => {
+    mocks.list.mockResolvedValue(
+      snapshot("runner_only", {
+        approvedThrough: 1,
+        audit: [
+          { id: "a1", actor_id: owner, action: "revoke", record_id: "2", occurred_at: "2026-11-12T13:00:00Z" },
+        ],
+      }),
+    );
+    render(<ActivationApprovals />);
+    const step2 = (await screen.findByRole("heading", { name: /2\. Railway/ })).closest("li")!;
+    expect(within(step2).getByText("Revoked")).toBeInTheDocument();
+    const step1 = screen.getByRole("heading", { name: /1\. Mothership link/ }).closest("li")!;
+    expect(within(step1).getByText("Approved")).toBeInTheDocument();
+    expect(screen.getByText(/1 of 10 approved/)).toBeInTheDocument();
   });
 });
