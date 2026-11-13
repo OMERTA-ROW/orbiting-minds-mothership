@@ -247,7 +247,7 @@ async function evaluateCheck(
       const proof = await runnerConfigurationProof(context);
       if (!proof)
         return unavailable(
-          "Jackboy could not attest its remote runner. Confirm its existing remote-runner URL/enabled flag and managed secret; Railway settings may already be correct.",
+          "Jackboy answered (signed) but could not attest its Railway runner: the runner did not answer Jackboy within 5 s (for example while waking), or Jackboy's runner URL/enabled flag/secret differ. Retrying is safe.",
         );
       const details: ActivationCheckDetail[] = [
         {
