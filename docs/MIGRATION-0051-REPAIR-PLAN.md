@@ -80,3 +80,10 @@ The optional update 0052 (database-enforced reset rule / single owner), CODE, au
 - Step 1 before change: status approved, approver 40543e40-5202-4219-a852-ead1c659e9a9, decided_at 2026-11-12 21:25:56.570764 UTC, note '' (empty), approval_expires_at NULL, spend_confirmations NULL, revision 1.
 - Matching audit row: id 140bd914-989c-41a0-989d-868cc73a13b9, action approve, record 1, 2026-11-12 21:25:56.570764 UTC.
 - Steps 2–10: pending, revision 0, no approver.
+
+## Applied (2026-11-13 19:16 UTC, owner-approved)
+- First attempt (19:12) rolled back fully: the tool re-filed 0051's text as a duplicate. Nothing changed; it used up sequence id 52.
+- Applied 0051 exactly as written plus 0052 (one table COMMENT only) in one normal tool run.
+- History: 53 rows; ids 53 (0051, hash 1a09ae7e8704…) and 54 (0052, hash 4c458affbdb8…). Id 52 is skipped because the rolled-back attempt used it.
+- Check table: present, RLS on, 0 rows, service role only (no anon/authenticated access). Record function: SECURITY DEFINER, service role only. Decide function: requires fresh check; authenticated only (owner+MFA enforced inside), not anon.
+- Step 1 pending revision 2, approver/time cleared; steps 2–10 pending revision 0 unchanged. Audit 3 rows (new: fresh_evidence_required, step 1). Accounts: 1.

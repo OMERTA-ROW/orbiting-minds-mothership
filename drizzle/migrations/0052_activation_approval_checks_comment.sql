@@ -1,0 +1,1 @@
+COMMENT ON TABLE public.activation_approval_checks IS 'Server-recorded activation approval check results (service role only).';
