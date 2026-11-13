@@ -32,6 +32,32 @@ import {
   type SecurityEvent,
 } from "./activation-status";
 
+/**
+ * The check store (`activation_approval_checks`, `activation_approval_record_check`) comes from
+ * database update 0051, which is absent from the generated types until it is applied. Only these two
+ * calls go through this narrow untyped view; results are validated before use.
+ */
+type CheckRowRaw = {
+  step: number;
+  status: string;
+  evidence_version: number;
+  checked_at: string;
+  summary: string;
+  details: unknown;
+};
+type DbError = { code?: string; message: string } | null;
+type CheckStoreClient = {
+  from(table: "activation_approval_checks"): {
+    select(columns: string): {
+      order(column: string): PromiseLike<{ data: CheckRowRaw[] | null; error: DbError }>;
+    };
+  };
+  rpc(fn: "activation_approval_record_check", args: Record<string, unknown>): PromiseLike<{
+    error: DbError;
+  }>;
+};
+const checkStore = (admin: unknown) => admin as CheckStoreClient;
+
 const STORE_MISSING =
   "Check results can't be saved yet: database update 0051 (approval check store) has not been applied. Nothing was approved.";
 
@@ -408,7 +434,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
         .eq("record_type", "activation_approval")
         .order("occurred_at", { ascending: false })
         .limit(100),
-      supabaseAdmin
+      checkStore(supabaseAdmin)
         .from("activation_approval_checks")
         .select("step,status,evidence_version,checked_at,summary,details")
         .order("step"),
@@ -512,7 +538,9 @@ export const runActivationApprovalCheck = createServerFn({ method: "POST" })
       userId: context.userId,
     });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error: evidenceError } = await supabaseAdmin.rpc("activation_approval_record_check", {
+    const { error: evidenceError } = await checkStore(supabaseAdmin).rpc(
+      "activation_approval_record_check",
+      {
       _step: data.step,
       _status: evaluated.check.status,
       _version: evaluated.check.evidenceVersion,
