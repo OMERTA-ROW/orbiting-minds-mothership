@@ -96,14 +96,15 @@ export function SiteNav() {
               >
                 {previews ? "Hide design previews" : "Show design previews"}
               </DropdownMenuItem>
-              {previews && advancedItems.map((n) => (
-                <DropdownMenuItem key={n.to} asChild>
-                  <Link to={n.to} className="flex justify-between py-2.5">
-                    {n.label}
-                    <ArrowUpRight size={12} className="text-gold" aria-hidden />
-                  </Link>
-                </DropdownMenuItem>
-              ))}
+              {previews &&
+                advancedItems.map((n) => (
+                  <DropdownMenuItem key={n.to} asChild>
+                    <Link to={n.to} className="flex justify-between py-2.5">
+                      {n.label}
+                      <ArrowUpRight size={12} className="text-gold" aria-hidden />
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </nav>
@@ -176,19 +177,21 @@ export function SiteNav() {
                 {previews ? "Hide design previews" : "Show design previews"}
               </Button>
               <ul className="mt-2 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-                {(previews ? [...advancedItems, { to: "/join", label: "Join" } as const] : []).map((n) => (
-                  <li key={n.to}>
-                    <Link
-                      to={n.to}
-                      onClick={() => setOpen(false)}
-                      className="block border-b border-border py-3 text-xs text-muted-foreground hover:text-gold-light"
-                      activeProps={{ className: "text-gold-light" }}
-                      activeOptions={{ exact: true }}
-                    >
-                      {n.label}
-                    </Link>
-                  </li>
-                ))}
+                {(previews ? [...advancedItems, { to: "/join", label: "Join" } as const] : []).map(
+                  (n) => (
+                    <li key={n.to}>
+                      <Link
+                        to={n.to}
+                        onClick={() => setOpen(false)}
+                        className="block border-b border-border py-3 text-xs text-muted-foreground hover:text-gold-light"
+                        activeProps={{ className: "text-gold-light" }}
+                        activeOptions={{ exact: true }}
+                      >
+                        {n.label}
+                      </Link>
+                    </li>
+                  ),
+                )}
               </ul>
             </details>
           </div>
@@ -197,7 +200,6 @@ export function SiteNav() {
     </header>
   );
 }
-
 
 export function SiteFooter() {
   return (

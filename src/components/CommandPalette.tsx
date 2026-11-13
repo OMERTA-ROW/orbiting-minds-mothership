@@ -104,9 +104,10 @@ export function CommandPaletteProvider({
   };
   const matches = includeDemo ? searchCommands(query) : [];
   const orderedKinds = query.trim() ? [...new Set(matches.map((entry) => entry.kind))] : kinds;
-  const pages = [...navigation, ...(includeDemo ? [{ to: "/join", label: "Join" } as const] : [])].filter(
-    (p) => !query.trim() || p.label.toLowerCase().includes(query.toLowerCase().trim()),
-  );
+  const pages = [
+    ...navigation,
+    ...(includeDemo ? [{ to: "/join", label: "Join" } as const] : []),
+  ].filter((p) => !query.trim() || p.label.toLowerCase().includes(query.toLowerCase().trim()));
   return (
     <PaletteContext.Provider value={reveal}>
       {children}
@@ -120,11 +121,11 @@ export function CommandPaletteProvider({
               ?.focus();
           }}
         >
-          <DialogTitle className="px-5 pb-2 pt-5 font-display text-gold-light">
-            Search
-          </DialogTitle>
+          <DialogTitle className="px-5 pb-2 pt-5 font-display text-gold-light">Search</DialogTitle>
           <DialogDescription className="px-5 pb-4 text-xs">
-            {includeDemo ? "Pages, plus sample modules, projects, agents and code (design previews)" : "Find a page"}
+            {includeDemo
+              ? "Pages, plus sample modules, projects, agents and code (design previews)"
+              : "Find a page"}
           </DialogDescription>
           <Command
             shouldFilter={false}
@@ -201,7 +202,9 @@ export function CommandPaletteProvider({
             </CommandList>
           </Command>
           <div className="border-t border-border px-5 py-3 font-mono text-[9px] uppercase text-muted-foreground">
-            {includeDemo ? "Sample results are demos, not real records" : "Design previews are hidden"}
+            {includeDemo
+              ? "Sample results are demos, not real records"
+              : "Design previews are hidden"}
           </div>
         </DialogContent>
       </Dialog>

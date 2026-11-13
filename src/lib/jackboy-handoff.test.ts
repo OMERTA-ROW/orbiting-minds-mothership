@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { dispatchHmac } from "./jackboy-dispatch.server";
-import { handoffConfig, newNonce, sendHandoff, sha256Hex, unixSeconds } from "./jackboy-handoff.server";
+import {
+  handoffConfig,
+  newNonce,
+  sendHandoff,
+  sha256Hex,
+  unixSeconds,
+} from "./jackboy-handoff.server";
 import {
   HANDOFF_PATH,
   STORED_STATUS,
@@ -56,7 +62,11 @@ const fixed = { now: NOW_MS, nonce: NONCE };
 function liveJackboy(payload: Record<string, unknown>, status = 200) {
   return (async (_url: string, init: RequestInit) => {
     const nonce = new Headers(init.headers).get("x-jackboy-nonce")!;
-    const body = JSON.stringify({ contract: "jackboy.omni-handoff/v1", requestNonce: nonce, ...payload });
+    const body = JSON.stringify({
+      contract: "jackboy.omni-handoff/v1",
+      requestNonce: nonce,
+      ...payload,
+    });
     const proof = await dispatchHmac(secret, responseSigningString(nonce, status, body));
     return new Response(body, { status, headers: { "X-Jackboy-Proof": proof } });
   }) as unknown as typeof fetch;
@@ -89,9 +99,9 @@ describe("jackboy.omni-handoff/v1 request", () => {
   });
 
   it("signing input is contract, POST, path, client, timestamp, nonce, raw body", async () => {
-    expect(await dispatchHmac(secret, requestSigningString("mothership", TS, NONCE, CREATE_BODY))).toBe(
-      CREATE_SIG,
-    );
+    expect(
+      await dispatchHmac(secret, requestSigningString("mothership", TS, NONCE, CREATE_BODY)),
+    ).toBe(CREATE_SIG);
   });
 
   it("digest is sha256 of the instructions only", async () => {
@@ -125,7 +135,9 @@ describe("jackboy.omni-handoff/v1 request", () => {
 
 describe("jackboy.omni-handoff/v1 response proof", () => {
   it("accepts the fixed 201 vector", async () => {
-    expect(OK_PROOF_201).toBe(await dispatchHmac(secret, responseSigningString(NONCE, 201, OK_BODY)));
+    expect(OK_PROOF_201).toBe(
+      await dispatchHmac(secret, responseSigningString(NONCE, 201, OK_BODY)),
+    );
     const { f } = replying(OK_BODY, 201, OK_PROOF_201);
     expect(await sendHandoff(config, "create", job, { ...fixed, fetch: f })).toEqual({
       ok: true,
@@ -217,21 +229,30 @@ describe("jackboy.omni-handoff/v1 response proof", () => {
 
   it("works end to end with random nonces and real-time seconds", async () => {
     const r = await sendHandoff(config, "status", job, {
-      fetch: liveJackboy({ jackboyJobId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", status: "prepared" }),
+      fetch: liveJackboy({
+        jackboyJobId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        status: "prepared",
+      }),
     });
     expect(r).toMatchObject({ ok: true, status: "prepared" });
   });
 
   it("reports unrecognised statuses as unknown", async () => {
     const r = await sendHandoff(config, "status", job, {
-      fetch: liveJackboy({ jackboyJobId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", status: "warp_speed" }),
+      fetch: liveJackboy({
+        jackboyJobId: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        status: "warp_speed",
+      }),
     });
     expect(r).toMatchObject({ ok: true, status: "unknown" });
   });
 
   it("refuses redirects", async () => {
     const f = (async () =>
-      new Response(null, { status: 302, headers: { location: "https://x.example" } })) as unknown as typeof fetch;
+      new Response(null, {
+        status: 302,
+        headers: { location: "https://x.example" },
+      })) as unknown as typeof fetch;
     expect(await sendHandoff(config, "status", job, { fetch: f })).toMatchObject({
       ok: false,
       reason: "redirect_refused",
@@ -251,7 +272,9 @@ describe("handoff inputs, statuses and config", () => {
     expect(handoffConfig(env)).not.toBeNull();
   });
   it("refuses non-public origins, bad client ids and secrets under 32 characters", () => {
-    expect(handoffConfig({ ...env, JACKBOY_HANDOFF_ORIGIN: "http://jackboy.example.com" })).toBeNull();
+    expect(
+      handoffConfig({ ...env, JACKBOY_HANDOFF_ORIGIN: "http://jackboy.example.com" }),
+    ).toBeNull();
     expect(handoffConfig({ ...env, JACKBOY_HANDOFF_ORIGIN: "https://localhost" })).toBeNull();
     expect(handoffConfig({ ...env, JACKBOY_HANDOFF_HMAC_SECRET: "a".repeat(31) })).toBeNull();
     expect(handoffConfig({ ...env, JACKBOY_HANDOFF_HMAC_SECRET: "a".repeat(32) })).not.toBeNull();
@@ -261,7 +284,9 @@ describe("handoff inputs, statuses and config", () => {
   it("requires an explicit uuid Jackboy project id to send", () => {
     const base = { taskId: job.taskId, kind: "test" };
     expect(sendInput.safeParse(base).success).toBe(false);
-    expect(sendInput.safeParse({ ...base, jackboyProjectId: "jackboy-dev-control" }).success).toBe(false);
+    expect(sendInput.safeParse({ ...base, jackboyProjectId: "jackboy-dev-control" }).success).toBe(
+      false,
+    );
     expect(sendInput.safeParse({ ...base, jackboyProjectId: job.projectId }).success).toBe(true);
   });
   it("a different Jackboy project id changes the idempotency fingerprint", () => {

@@ -38,7 +38,10 @@ describe("per-agent memory input", () => {
   });
   it("matches the database's allowed agent IDs exactly", () => {
     const sql = readFileSync("drizzle/migrations/0045_omni_agent_memories.sql", "utf8");
-    const list = /agent_id IN \(([^)]+)\)/.exec(sql)![1]!.match(/'([a-z]+)'/g)!.map((x) => x.slice(1, -1));
+    const list = /agent_id IN \(([^)]+)\)/
+      .exec(sql)![1]!
+      .match(/'([a-z]+)'/g)!
+      .map((x) => x.slice(1, -1));
     expect(list).toEqual([...MEMORY_AGENTS]);
   });
 });

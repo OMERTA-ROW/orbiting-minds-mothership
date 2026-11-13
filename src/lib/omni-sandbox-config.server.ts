@@ -12,7 +12,12 @@ export const SANDBOX_SETTINGS = [
 ] as const;
 export const SANDBOX_SWITCH = "OMNI_SANDBOX_ENABLED";
 
-export type SandboxLinkConfig = { origin: string; clientId: string; secret: string; projectId: string };
+export type SandboxLinkConfig = {
+  origin: string;
+  clientId: string;
+  secret: string;
+  projectId: string;
+};
 
 export type SandboxSettingsState = {
   configured: boolean;
@@ -38,11 +43,20 @@ export function sandboxSettings(env: Record<string, string | undefined> = proces
       problem = "OMNI_SANDBOX_ORIGIN must be a public HTTPS address.";
     }
   }
-  if (!problem && !/^[A-Za-z0-9_.:-]{3,80}$/.test(clientId)) problem = "OMNI_SANDBOX_CLIENT_ID is invalid.";
-  if (!problem && secret.length < 32) problem = "OMNI_SANDBOX_HMAC_SECRET must be at least 32 characters.";
-  if (!problem && [env["OMNI_LINK_HMAC_SECRET"], env["JACKBOY_HANDOFF_HMAC_SECRET"]].includes(secret))
+  if (!problem && !/^[A-Za-z0-9_.:-]{3,80}$/.test(clientId))
+    problem = "OMNI_SANDBOX_CLIENT_ID is invalid.";
+  if (!problem && secret.length < 32)
+    problem = "OMNI_SANDBOX_HMAC_SECRET must be at least 32 characters.";
+  if (
+    !problem &&
+    [env["OMNI_LINK_HMAC_SECRET"], env["JACKBOY_HANDOFF_HMAC_SECRET"]].includes(secret)
+  )
     problem = "OMNI_SANDBOX_HMAC_SECRET must differ from the Jackboy link secrets.";
-  if (!problem && env["JACKBOY_LINK_ORIGIN"] && new URL(origin).host === safeHost(env["JACKBOY_LINK_ORIGIN"]))
+  if (
+    !problem &&
+    env["JACKBOY_LINK_ORIGIN"] &&
+    new URL(origin).host === safeHost(env["JACKBOY_LINK_ORIGIN"])
+  )
     problem = "The sandbox must be a separate service from the Jackboy/production host.";
   const configured = problem === null;
   return {

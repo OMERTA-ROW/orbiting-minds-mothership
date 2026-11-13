@@ -5,7 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/hooks/use-account";
 import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
-import { LEGACY_TOTP_ISSUER, TOTP_ISSUER, ownerMfaState, type OwnerMfaState } from "@/lib/owner-mfa";
+import {
+  LEGACY_TOTP_ISSUER,
+  TOTP_ISSUER,
+  ownerMfaState,
+  type OwnerMfaState,
+} from "@/lib/owner-mfa";
 
 export const Route = createFileRoute("/sign-in-help")({
   head: () =>
@@ -17,12 +22,27 @@ export const Route = createFileRoute("/sign-in-help")({
 });
 
 const MESSAGES: [string, string][] = [
-  ["Email or password is wrong", "Check both. If you first used Google, press “Continue with Google” — Google accounts have no password here."],
-  ["Confirm your email first", "Open the confirmation link we emailed you (check spam), then sign in again."],
-  ["An account with this email already exists", "Sign in instead, or use “Forgot password” if you made a password."],
-  ["That code didn't match", "Codes change every 30 seconds. Wait for a new one and make sure your phone sets its time automatically."],
+  [
+    "Email or password is wrong",
+    "Check both. If you first used Google, press “Continue with Google” — Google accounts have no password here.",
+  ],
+  [
+    "Confirm your email first",
+    "Open the confirmation link we emailed you (check spam), then sign in again.",
+  ],
+  [
+    "An account with this email already exists",
+    "Sign in instead, or use “Forgot password” if you made a password.",
+  ],
+  [
+    "That code didn't match",
+    "Codes change every 30 seconds. Wait for a new one and make sure your phone sets its time automatically.",
+  ],
   ["Too many attempts", "Wait a minute, then try again with the newest code."],
-  ["Your sign-in expired", "Sign in again. Owner pages also ask for a fresh code after a while — that's expected."],
+  [
+    "Your sign-in expired",
+    "Sign in again. Owner pages also ask for a fresh code after a while — that's expected.",
+  ],
   ["This sign-in option is turned off", "Use another button on the sign-in page."],
 ];
 
@@ -30,7 +50,11 @@ function Step({ done, children }: { done?: boolean; children: React.ReactNode })
   const Icon = done ? CheckCircle2 : Circle;
   return (
     <li className="flex gap-3">
-      <Icon size={18} className={`mt-0.5 shrink-0 ${done ? "text-success" : "text-muted-foreground"}`} aria-hidden />
+      <Icon
+        size={18}
+        className={`mt-0.5 shrink-0 ${done ? "text-success" : "text-muted-foreground"}`}
+        aria-hidden
+      />
       <span>
         {done && <span className="sr-only">Done: </span>}
         {children}
@@ -51,8 +75,17 @@ function YourStatus() {
       supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
     ]).then(([f, a]) => {
       if (!live) return;
-      const verified = f.error ? 0 : (f.data.all ?? []).filter((x) => x.factor_type === "totp" && x.status === "verified").length;
-      setMfa(ownerMfaState({ signedIn: true, verifiedFactors: verified, aal: a.error ? null : a.data.currentLevel }));
+      const verified = f.error
+        ? 0
+        : (f.data.all ?? []).filter((x) => x.factor_type === "totp" && x.status === "verified")
+            .length;
+      setMfa(
+        ownerMfaState({
+          signedIn: true,
+          verifiedFactors: verified,
+          aal: a.error ? null : a.data.currentLevel,
+        }),
+      );
     });
     return () => {
       live = false;
@@ -72,8 +105,12 @@ function YourStatus() {
 
   return (
     <section aria-labelledby="status-h" className="rounded-lg border border-gold/30 p-5">
-      <h2 id="status-h" className="text-lg text-foreground">Your status</h2>
-      <p role="status" className="mt-2 text-sm text-muted-foreground">{text}</p>
+      <h2 id="status-h" className="text-lg text-foreground">
+        Your status
+      </h2>
+      <p role="status" className="mt-2 text-sm text-muted-foreground">
+        {text}
+      </p>
       <div className="mt-4 flex flex-wrap gap-2">
         {mfa === "signed_out" && (
           <Button asChild variant="cosmic" size="sm">
@@ -103,94 +140,157 @@ function SignInHelp() {
         <h1 className="mt-4 text-3xl text-foreground">How to sign in</h1>
         <p className="mt-3 text-muted-foreground">
           Most people only need a Google account or an email address. Nothing to install. Anyone can
-          add an optional second step — a 6-digit code from an authenticator app. The owner needs it to
-          open owner-only pages.
+          add an optional second step — a 6-digit code from an authenticator app. The owner needs it
+          to open owner-only pages.
         </p>
       </header>
 
       <YourStatus />
 
       <section aria-labelledby="install-h" className="space-y-3">
-        <h2 id="install-h" className="text-xl text-foreground">Do I need to install anything?</h2>
+        <h2 id="install-h" className="text-xl text-foreground">
+          Do I need to install anything?
+        </h2>
         <ul className="space-y-2 text-muted-foreground">
-          <li><strong className="text-foreground">Members:</strong> no. Sign in with Google, Lovable, or email and password. Two-step sign-in is optional; if you turn it on you need an authenticator app.</li>
           <li>
-            <strong className="text-foreground">Owner:</strong> yes, one authenticator app on your phone — any app that shows 6-digit
-            codes works (for example Google Authenticator, Microsoft Authenticator, 1Password or Authy).
+            <strong className="text-foreground">Members:</strong> no. Sign in with Google, Lovable,
+            or email and password. Two-step sign-in is optional; if you turn it on you need an
+            authenticator app.
           </li>
           <li>
-            <strong className="text-foreground">Passkey (owner, optional):</strong> only the OMNI Workspace on the OMNI Terminal page uses
-            one. It uses your device's built-in Face ID, fingerprint, Windows Hello or security key —
-            no extra app. You add it there after entering your authenticator code.
+            <strong className="text-foreground">Owner:</strong> yes, one authenticator app on your
+            phone — any app that shows 6-digit codes works (for example Google Authenticator,
+            Microsoft Authenticator, 1Password or Authy).
+          </li>
+          <li>
+            <strong className="text-foreground">Passkey (owner, optional):</strong> only the OMNI
+            Workspace on the OMNI Terminal page uses one. It uses your device's built-in Face ID,
+            fingerprint, Windows Hello or security key — no extra app. You add it there after
+            entering your authenticator code.
           </li>
         </ul>
       </section>
 
       <section aria-labelledby="signin-h" className="space-y-3">
-        <h2 id="signin-h" className="text-xl text-foreground">Sign in</h2>
+        <h2 id="signin-h" className="text-xl text-foreground">
+          Sign in
+        </h2>
         <ol className="list-decimal space-y-2 pl-5 text-muted-foreground">
-          <li>Open <Link to="/auth" className="text-gold-light underline underline-offset-4">Sign in</Link>.</li>
-          <li>Choose <strong className="text-foreground">Continue with Google</strong>, <strong className="text-foreground">Continue with Lovable</strong>, or enter your email and password.</li>
-          <li>Always use the same option you started with. A Google account has no password here.</li>
+          <li>
+            Open{" "}
+            <Link to="/auth" className="text-gold-light underline underline-offset-4">
+              Sign in
+            </Link>
+            .
+          </li>
+          <li>
+            Choose <strong className="text-foreground">Continue with Google</strong>,{" "}
+            <strong className="text-foreground">Continue with Lovable</strong>, or enter your email
+            and password.
+          </li>
+          <li>
+            Always use the same option you started with. A Google account has no password here.
+          </li>
         </ol>
         <p className="text-muted-foreground">
-          <strong className="text-foreground">New with email?</strong> Choose “Create an account”, use at least 12 characters, then open the
-          confirmation email before signing in.
+          <strong className="text-foreground">New with email?</strong> Choose “Create an account”,
+          use at least 12 characters, then open the confirmation email before signing in.
         </p>
         <p className="text-muted-foreground">
-          <strong className="text-foreground">Forgot your password?</strong> Choose “Forgot password” on the sign-in page and open the link
-          on the same device. (Google sign-in has no password to reset — use Google's own recovery.)
+          <strong className="text-foreground">Forgot your password?</strong> Choose “Forgot
+          password” on the sign-in page and open the link on the same device. (Google sign-in has no
+          password to reset — use Google's own recovery.)
         </p>
       </section>
 
       <section aria-labelledby="invite-h" className="space-y-3">
-        <h2 id="invite-h" className="text-xl text-foreground">Accept an invitation</h2>
+        <h2 id="invite-h" className="text-xl text-foreground">
+          Accept an invitation
+        </h2>
         <ol className="list-decimal space-y-2 pl-5 text-muted-foreground">
-          <li>Open the invitation link the owner sent you. It works once and expires after 72 hours.</li>
-          <li>Press <strong className="text-foreground">Sign in to accept</strong> and sign in with the exact email it was sent to.</li>
-          <li>You come back to the invitation. Press <strong className="text-foreground">Accept invitation</strong>.</li>
+          <li>
+            Open the invitation link the owner sent you. It works once and expires after 72 hours.
+          </li>
+          <li>
+            Press <strong className="text-foreground">Sign in to accept</strong> and sign in with
+            the exact email it was sent to.
+          </li>
+          <li>
+            You come back to the invitation. Press{" "}
+            <strong className="text-foreground">Accept invitation</strong>.
+          </li>
         </ol>
       </section>
 
       <section aria-labelledby="owner-h" className="space-y-3">
-        <h2 id="owner-h" className="text-xl text-foreground">Turn on two-step sign-in (optional; required for the owner)</h2>
+        <h2 id="owner-h" className="text-xl text-foreground">
+          Turn on two-step sign-in (optional; required for the owner)
+        </h2>
         <ol className="space-y-3 text-muted-foreground">
-          <Step>Sign in. (The owner role belongs to one configured, confirmed email and can't be handed to anyone else.)</Step>
           <Step>
-            Open <Link to="/account-security" className="text-gold-light underline underline-offset-4">Account security</Link> (account menu → Security). If it says
-            “Off”, press <strong className="text-foreground">Set up authenticator</strong> and scan the QR code, or type the setup key.
+            Sign in. (The owner role belongs to one configured, confirmed email and can't be handed
+            to anyone else.)
           </Step>
-          <Step>Type the 6-digit code from the new <strong className="text-foreground">{TOTP_ISSUER}</strong> entry. Two-step sign-in only turns on after a code works.</Step>
           <Step>
-            Press <strong className="text-foreground">Create recovery codes</strong>. Download or write them down and keep them off your
-            phone (a password manager or paper in a safe place). Each code works once.
+            Open{" "}
+            <Link to="/account-security" className="text-gold-light underline underline-offset-4">
+              Account security
+            </Link>{" "}
+            (account menu → Security). If it says “Off”, press{" "}
+            <strong className="text-foreground">Set up authenticator</strong> and scan the QR code,
+            or type the setup key.
           </Step>
-          <Step>Next time you sign in, you'll be asked for the current code. Owner pages ask again after 15 minutes for sensitive changes. That's normal.</Step>
+          <Step>
+            Type the 6-digit code from the new{" "}
+            <strong className="text-foreground">{TOTP_ISSUER}</strong> entry. Two-step sign-in only
+            turns on after a code works.
+          </Step>
+          <Step>
+            Press <strong className="text-foreground">Create recovery codes</strong>. Download or
+            write them down and keep them off your phone (a password manager or paper in a safe
+            place). Each code works once.
+          </Step>
+          <Step>
+            Next time you sign in, you'll be asked for the current code. Owner pages ask again after
+            15 minutes for sensitive changes. That's normal.
+          </Step>
         </ol>
       </section>
 
       <section aria-labelledby="lost-h" className="space-y-3">
-        <h2 id="lost-h" className="text-xl text-foreground">Lost your authenticator?</h2>
+        <h2 id="lost-h" className="text-xl text-foreground">
+          Lost your authenticator?
+        </h2>
         <ol className="list-decimal space-y-2 pl-5 text-muted-foreground">
           <li>
-            Look in your app for <strong className="text-foreground">{TOTP_ISSUER}</strong> or, for older setups,{" "}
-            <strong className="text-foreground">{LEGACY_TOTP_ISSUER}</strong>. Check other phones and your app's cloud backup.
+            Look in your app for <strong className="text-foreground">{TOTP_ISSUER}</strong> or, for
+            older setups, <strong className="text-foreground">{LEGACY_TOTP_ISSUER}</strong>. Check
+            other phones and your app's cloud backup.
           </li>
           <li>
-            Still lost? On <Link to="/account-security" hash="recovery" className="text-gold-light underline underline-offset-4">Account security</Link>,
-            sign in again, then enter one unused recovery code within 10 minutes. The old authenticator
-            is removed, your other sign-ins end, and you set up a new one.
+            Still lost? On{" "}
+            <Link
+              to="/account-security"
+              hash="recovery"
+              className="text-gold-light underline underline-offset-4"
+            >
+              Account security
+            </Link>
+            , sign in again, then enter one unused recovery code within 10 minutes. The old
+            authenticator is removed, your other sign-ins end, and you set up a new one.
           </li>
           <li>
-            No recovery codes? There is no self-service way around two-step sign-in — on purpose. The
-            project's administrator, signed in to the Lovable editor for this project, has to remove
-            the old authenticator. Signing in here alone is never enough.
+            No recovery codes? There is no self-service way around two-step sign-in — on purpose.
+            The project's administrator, signed in to the Lovable editor for this project, has to
+            remove the old authenticator. Signing in here alone is never enough.
           </li>
         </ol>
       </section>
 
       <section aria-labelledby="msg-h" className="space-y-3">
-        <h2 id="msg-h" className="text-xl text-foreground">What the messages mean</h2>
+        <h2 id="msg-h" className="text-xl text-foreground">
+          What the messages mean
+        </h2>
         <dl className="divide-y divide-border rounded-lg border border-border">
           {MESSAGES.map(([m, fix]) => (
             <div key={m} className="grid gap-1 p-4 sm:grid-cols-[14rem_1fr] sm:gap-4">
@@ -202,7 +302,9 @@ function SignInHelp() {
       </section>
 
       <section aria-labelledby="not-h" className="space-y-2 text-muted-foreground">
-        <h2 id="not-h" className="text-xl text-foreground">Not offered</h2>
+        <h2 id="not-h" className="text-xl text-foreground">
+          Not offered
+        </h2>
         <p>
           Text-message codes, email “magic links”, Apple or Microsoft sign-in, and signing in with a
           passkey alone are not available. We will never ask for your password, code or recovery

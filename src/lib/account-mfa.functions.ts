@@ -73,7 +73,9 @@ export const createRecoveryCodes = createServerFn({ method: "POST" })
     const hashes = await Promise.all(
       codes.map((c) => recoveryCodeHash(context.userId, normalizeRecoveryCode(c)!)),
     );
-    const { error } = await context.supabase.rpc("account_mfa_set_recovery_codes", { _hashes: hashes });
+    const { error } = await context.supabase.rpc("account_mfa_set_recovery_codes", {
+      _hashes: hashes,
+    });
     if (error)
       return {
         ok: false as const,
@@ -120,7 +122,10 @@ export const recoverAuthenticator = createServerFn({ method: "POST" })
     if (listed.error) ok = false;
     else
       for (const f of listed.data.factors.filter((x) => x.factor_type === "totp")) {
-        const r = await supabaseAdmin.auth.admin.mfa.deleteFactor({ id: f.id, userId: context.userId });
+        const r = await supabaseAdmin.auth.admin.mfa.deleteFactor({
+          id: f.id,
+          userId: context.userId,
+        });
         if (r.error) ok = false;
         else removed++;
       }
@@ -133,7 +138,8 @@ export const recoverAuthenticator = createServerFn({ method: "POST" })
     if (!ok)
       return {
         ok: false as const,
-        message: "The old authenticator could not be removed. Your recovery code still works; try again.",
+        message:
+          "The old authenticator could not be removed. Your recovery code still works; try again.",
       };
     // End every other sign-in so a stolen session cannot keep using the account.
     await supabaseAdmin.auth.admin.signOut(id.token, "others");
@@ -154,7 +160,10 @@ export const disableTwoStep = createServerFn({ method: "POST" })
     if (listed.error) ok = false;
     else
       for (const f of listed.data.factors.filter((x) => x.factor_type === "totp")) {
-        const r = await supabaseAdmin.auth.admin.mfa.deleteFactor({ id: f.id, userId: context.userId });
+        const r = await supabaseAdmin.auth.admin.mfa.deleteFactor({
+          id: f.id,
+          userId: context.userId,
+        });
         if (r.error) ok = false;
         else removed++;
       }

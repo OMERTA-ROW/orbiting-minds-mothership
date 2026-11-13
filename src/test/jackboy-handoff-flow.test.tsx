@@ -32,17 +32,15 @@ vi.mock("@tanstack/react-start", () => {
       middleware: () => chain,
       inputValidator: (v: (x: unknown) => unknown) => ((validate = v), chain),
       // The browser calls fn({ data }); the "server" adds the signed-in owner context.
-      handler:
-        (fn: (a: unknown) => unknown) =>
-        async (args?: { data?: unknown }) =>
-          JSON.parse(
-            JSON.stringify(
-              await fn({
-                data: validate(args?.data),
-                context: { supabase: db(), userId: OWNER, claims: { aal: "aal2" } },
-              }),
-            ),
+      handler: (fn: (a: unknown) => unknown) => async (args?: { data?: unknown }) =>
+        JSON.parse(
+          JSON.stringify(
+            await fn({
+              data: validate(args?.data),
+              context: { supabase: db(), userId: OWNER, claims: { aal: "aal2" } },
+            }),
           ),
+        ),
     };
     return chain;
   };
@@ -155,12 +153,15 @@ function mockJackboy(mode: Mode = "ok") {
       expect(parsed.digest).toBe(createHash("sha256").update(TASK_ROW.instructions).digest("hex"));
     } else expect(parsed).toEqual({ action: "status", taskId: TASK });
 
-    if (mode === "unsigned_503")
-      return new Response("Service Unavailable", { status: 503 });
+    if (mode === "unsigned_503") return new Response("Service Unavailable", { status: 503 });
     const status = mode === "signed_refusal" ? 403 : parsed.action === "create" ? 201 : 200;
     const reply = JSON.stringify(
       mode === "signed_refusal"
-        ? { contract: "jackboy.omni-handoff/v1", requestNonce: nonce, error: "project_not_authorized" }
+        ? {
+            contract: "jackboy.omni-handoff/v1",
+            requestNonce: nonce,
+            error: "project_not_authorized",
+          }
         : {
             contract: "jackboy.omni-handoff/v1",
             requestNonce: nonce,
@@ -173,7 +174,8 @@ function mockJackboy(mode: Mode = "ok") {
       status,
       headers: {
         "content-type": "application/json",
-        "x-jackboy-proof": mode === "bad_proof" ? proof.replace(/^./, (c) => (c === "0" ? "1" : "0")) : proof,
+        "x-jackboy-proof":
+          mode === "bad_proof" ? proof.replace(/^./, (c) => (c === "0" ? "1" : "0")) : proof,
       },
     });
   });
@@ -223,7 +225,8 @@ beforeEach(() => {
   s.handoff = null;
   s.recordCalls = [];
   s.begin.mockReset();
-  for (const k of ["ENABLED", "ORIGIN", "CLIENT_ID", "HMAC_SECRET"]) vi.stubEnv(`JACKBOY_HANDOFF_${k}`, "");
+  for (const k of ["ENABLED", "ORIGIN", "CLIENT_ID", "HMAC_SECRET"])
+    vi.stubEnv(`JACKBOY_HANDOFF_${k}`, "");
 });
 afterEach(() => {
   cleanup();
@@ -242,11 +245,17 @@ describe("signed-in owner handoff to a mocked Jackboy", () => {
     expect((screen.getByLabelText("Jackboy project id") as HTMLInputElement).value).toBe(PROJECT);
     expect(send).toBeEnabled();
     fireEvent.click(send);
-    expect(await screen.findByText("Sent. Approve it with your passkey in Jackboy.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Sent. Approve it with your passkey in Jackboy."),
+    ).toBeInTheDocument();
     expect(await screen.findByText(/Queued in Jackboy · needs your passkey/)).toBeInTheDocument();
     expect(screen.getByText(/job jb_fixture_1/)).toBeInTheDocument();
     expect(s.begin).toHaveBeenCalledTimes(1);
-    expect(s.recordCalls.at(-1)).toMatchObject({ _status: "queued", _detail: "jackboy:queued", _job: "jb_fixture_1" });
+    expect(s.recordCalls.at(-1)).toMatchObject({
+      _status: "queued",
+      _detail: "jackboy:queued",
+      _job: "jb_fixture_1",
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Refresh status" }));
     expect(await screen.findByText(/Quarantined by OMNI/)).toBeInTheDocument();
@@ -268,7 +277,11 @@ describe("signed-in owner handoff to a mocked Jackboy", () => {
         "Not confirmed · retry. Jackboy's reply was not signed correctly, so it was not trusted.",
       ),
     );
-    expect(s.recordCalls.at(-1)).toMatchObject({ _status: "error", _detail: "reply_unsigned", _job: null });
+    expect(s.recordCalls.at(-1)).toMatchObject({
+      _status: "error",
+      _detail: "reply_unsigned",
+      _job: null,
+    });
     expect(screen.queryByText(/Queued in Jackboy/)).toBeNull();
   });
 
@@ -277,7 +290,9 @@ describe("signed-in owner handoff to a mocked Jackboy", () => {
     mockJackboy("unsigned_503");
     render(<Harness />);
     fireEvent.click(await sendButton());
-    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/^Not confirmed · retry\./));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(/^Not confirmed · retry\./),
+    );
     expect(s.recordCalls.at(-1)).toMatchObject({ _status: "error", _detail: "reply_unsigned" });
   });
 
@@ -287,7 +302,9 @@ describe("signed-in owner handoff to a mocked Jackboy", () => {
     render(<Harness />);
     fireEvent.click(await sendButton());
     expect(
-      await screen.findByText("That Jackboy project id is not authorized for this repository in Jackboy."),
+      await screen.findByText(
+        "That Jackboy project id is not authorized for this repository in Jackboy.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -298,7 +315,9 @@ describe("signed-in owner handoff to a mocked Jackboy", () => {
     const send = await sendButton();
     s.ownerOk = false;
     fireEvent.click(send);
-    expect(await screen.findByText(/Not confirmed. Check your sign-in and two-factor/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Not confirmed. Check your sign-in and two-factor/),
+    ).toBeInTheDocument();
     expect(jb.fetchMock).not.toHaveBeenCalled();
   });
 
@@ -315,7 +334,15 @@ describe("signed-in owner handoff to a mocked Jackboy", () => {
 
 describe("missing or invalid settings keep sending disabled", () => {
   const cases: [string, Partial<Record<string, string>>][] = [
-    ["no settings at all", { JACKBOY_HANDOFF_ENABLED: "", JACKBOY_HANDOFF_ORIGIN: "", JACKBOY_HANDOFF_CLIENT_ID: "", JACKBOY_HANDOFF_HMAC_SECRET: "" }],
+    [
+      "no settings at all",
+      {
+        JACKBOY_HANDOFF_ENABLED: "",
+        JACKBOY_HANDOFF_ORIGIN: "",
+        JACKBOY_HANDOFF_CLIENT_ID: "",
+        JACKBOY_HANDOFF_HMAC_SECRET: "",
+      },
+    ],
     ["switch not set to true", { JACKBOY_HANDOFF_ENABLED: "" }],
     ["switch is 'yes'", { JACKBOY_HANDOFF_ENABLED: "yes" }],
     ["address missing", { JACKBOY_HANDOFF_ORIGIN: "" }],
@@ -336,14 +363,21 @@ describe("missing or invalid settings keep sending disabled", () => {
 
     // Even a forged direct call to the server function sends nothing.
     const r = await (
-      (await import("@/lib/jackboy-handoff.functions")).sendTaskToJackboy as unknown as (a: unknown) => Promise<unknown>
+      (
+        await import("@/lib/jackboy-handoff.functions")
+      ).sendTaskToJackboy as unknown as (a: unknown) => Promise<unknown>
     )({ data: { taskId: TASK, kind: "test", jackboyProjectId: PROJECT } });
-    expect(r).toEqual({ ok: false, message: "The Jackboy handoff is not configured or is turned off." });
+    expect(r).toEqual({
+      ok: false,
+      message: "The Jackboy handoff is not configured or is turned off.",
+    });
     expect(jb.fetchMock).not.toHaveBeenCalled();
     expect(s.begin).not.toHaveBeenCalled();
 
     // The settings report carries names and presence only, never values.
-    const read = (await (readTaskHandoffs as unknown as () => Promise<Record<string, unknown>>)()) as {
+    const read = (await (
+      readTaskHandoffs as unknown as () => Promise<Record<string, unknown>>
+    )()) as {
       settings: unknown;
       configured: boolean;
     };

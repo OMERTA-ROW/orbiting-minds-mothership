@@ -7,21 +7,45 @@ import { useAccount } from "@/hooks/use-account";
 import { Button } from "@/components/ui/button";
 import { readAccountMfa } from "@/lib/account-mfa.functions";
 
-type Step = { done: boolean; label: string; to: "/account-security" | "/members" | "/omni-dock" | "/beta"; optional?: boolean; action: string };
+type Step = {
+  done: boolean;
+  label: string;
+  to: "/account-security" | "/members" | "/omni-dock" | "/beta";
+  optional?: boolean;
+  action: string;
+};
 type State =
-  | { kind: "loading" }
-  | { kind: "member" }
-  | { kind: "owner"; steps: Step[] }
-  | { kind: "error" };
+  { kind: "loading" } | { kind: "member" } | { kind: "owner"; steps: Step[] } | { kind: "error" };
 
 /** Pure: owner onboarding steps from real account state, in order. */
 export function ownerSteps(s: { factors: number; aal2: boolean; codes: number | null }): Step[] {
   return [
-    { done: s.factors > 0, label: "Set up your authenticator app", to: "/account-security", action: "Set up" },
-    { done: s.aal2, label: "Enter today's 6-digit code", to: "/account-security", action: "Enter code" },
-    { done: (s.codes ?? 0) > 0, label: "Save recovery codes", to: "/account-security", action: "Create codes" },
+    {
+      done: s.factors > 0,
+      label: "Set up your authenticator app",
+      to: "/account-security",
+      action: "Set up",
+    },
+    {
+      done: s.aal2,
+      label: "Enter today's 6-digit code",
+      to: "/account-security",
+      action: "Enter code",
+    },
+    {
+      done: (s.codes ?? 0) > 0,
+      label: "Save recovery codes",
+      to: "/account-security",
+      action: "Create codes",
+    },
     { done: false, label: "Invite a member", to: "/members", optional: true, action: "Invite" },
-    { done: false, label: "Pair a desktop or phone app", to: "/omni-dock", optional: true, action: "Open Docking Bay" },
+    {
+      done: false,
+      label: "Pair a desktop or phone app",
+      to: "/omni-dock",
+      optional: true,
+      action: "Open Docking Bay",
+    },
   ];
 }
 
@@ -45,10 +69,15 @@ export function NextSteps() {
         if (!rec.isOwner) return setState({ kind: "member" });
         const factors = f.error
           ? 0
-          : (f.data.all ?? []).filter((x) => x.factor_type === "totp" && x.status === "verified").length;
+          : (f.data.all ?? []).filter((x) => x.factor_type === "totp" && x.status === "verified")
+              .length;
         setState({
           kind: "owner",
-          steps: ownerSteps({ factors, aal2: !a.error && a.data.currentLevel === "aal2", codes: rec.codesRemaining }),
+          steps: ownerSteps({
+            factors,
+            aal2: !a.error && a.data.currentLevel === "aal2",
+            codes: rec.codesRemaining,
+          }),
         });
       } catch {
         if (live) setState({ kind: "error" });
@@ -63,7 +92,10 @@ export function NextSteps() {
   const next = state.kind === "owner" ? state.steps.find((s) => !s.done && !s.optional) : undefined;
 
   return (
-    <section aria-labelledby="next-h" className="rounded-lg border border-gold/40 bg-background/70 p-5">
+    <section
+      aria-labelledby="next-h"
+      className="rounded-lg border border-gold/40 bg-background/70 p-5"
+    >
       <h2 id="next-h" className="text-lg text-gold-light">
         Your next step
       </h2>
@@ -79,7 +111,10 @@ export function NextSteps() {
       )}
       {state.kind === "member" && (
         <div className="mt-2 space-y-3 text-sm text-muted-foreground">
-          <p>You're signed in. Your private projects are ready. OMNI chat opens once the owner approves AI access for you.</p>
+          <p>
+            You're signed in. Your private projects are ready. OMNI chat opens once the owner
+            approves AI access for you.
+          </p>
           <Button asChild variant="cosmic" size="sm">
             <Link to="/beta">Open my projects</Link>
           </Button>
@@ -93,15 +128,26 @@ export function NextSteps() {
               return (
                 <li key={s.label} className="flex items-center justify-between gap-3">
                   <span className="flex items-center gap-2">
-                    <Icon size={16} className={s.done ? "text-success" : "text-muted-foreground"} aria-hidden />
-                    <span className={s.done ? "text-muted-foreground line-through" : "text-foreground"}>
+                    <Icon
+                      size={16}
+                      className={s.done ? "text-success" : "text-muted-foreground"}
+                      aria-hidden
+                    />
+                    <span
+                      className={s.done ? "text-muted-foreground line-through" : "text-foreground"}
+                    >
                       {s.done && <span className="sr-only">Done: </span>}
                       {s.label}
-                      {s.optional && <span className="text-xs text-muted-foreground"> (optional)</span>}
+                      {s.optional && (
+                        <span className="text-xs text-muted-foreground"> (optional)</span>
+                      )}
                     </span>
                   </span>
                   {!s.done && (
-                    <Link to={s.to} className="shrink-0 text-xs text-gold-light underline underline-offset-4">
+                    <Link
+                      to={s.to}
+                      className="shrink-0 text-xs text-gold-light underline underline-offset-4"
+                    >
                       {s.action}
                     </Link>
                   )}

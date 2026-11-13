@@ -4,11 +4,7 @@ import { Brain, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  deleteAgentMemory,
-  listAgentMemories,
-  saveAgentMemory,
-} from "@/lib/omni-memory.functions";
+import { deleteAgentMemory, listAgentMemories, saveAgentMemory } from "@/lib/omni-memory.functions";
 import {
   MEMORY_AGENTS,
   MEMORY_AGENT_LABEL,
@@ -27,7 +23,13 @@ import {
 
 const selectClass =
   "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground disabled:opacity-60";
-const empty = { kind: "note" as MemoryKind, title: "", body: "", sourceKind: "owner_typed" as MemorySource, sourceRef: "" };
+const empty = {
+  kind: "note" as MemoryKind,
+  title: "",
+  body: "",
+  sourceKind: "owner_typed" as MemorySource,
+  sourceRef: "",
+};
 
 /** Owner-controlled memory for one agent at a time. Nothing is shared with any agent yet. */
 export function AgentMemory() {
@@ -107,10 +109,10 @@ export function AgentMemory() {
           <Brain size={16} aria-hidden /> Agent memory
         </h2>
         <p role="note" className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">
-          Each agent has its own separate memory. Stored in {MEMORY_BACKEND.storedIn}. No agent, model,
-          OMNI on Railway or Jackboy reads these yet — there is no outside memory service connected.
-          You save, view and delete every entry yourself; saves, views and deletions are logged without
-          their text.
+          Each agent has its own separate memory. Stored in {MEMORY_BACKEND.storedIn}. No agent,
+          model, OMNI on Railway or Jackboy reads these yet — there is no outside memory service
+          connected. You save, view and delete every entry yourself; saves, views and deletions are
+          logged without their text.
         </p>
       </div>
 
@@ -222,15 +224,25 @@ export function AgentMemory() {
             <p className="whitespace-pre-wrap break-words">{m.body}</p>
             <p className="text-xs text-muted-foreground">
               Source: {MEMORY_SOURCE_LABEL[m.source_kind as MemorySource] ?? m.source_kind}
-              {m.source_ref ? ` · ${m.source_ref}` : ""} · {new Date(m.created_at).toLocaleString()} ·
-              fingerprint {m.body_sha256.slice(0, 12)}
+              {m.source_ref ? ` · ${m.source_ref}` : ""} · {new Date(m.created_at).toLocaleString()}{" "}
+              · fingerprint {m.body_sha256.slice(0, 12)}
             </p>
             {confirmId === m.id ? (
               <div className="flex gap-2">
-                <Button size="sm" variant="destructive" disabled={busy} onClick={() => onDelete(m.id)}>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  disabled={busy}
+                  onClick={() => onDelete(m.id)}
+                >
                   Confirm delete
                 </Button>
-                <Button size="sm" variant="ghost" disabled={busy} onClick={() => setConfirmId(null)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => setConfirmId(null)}
+                >
                   Keep
                 </Button>
               </div>

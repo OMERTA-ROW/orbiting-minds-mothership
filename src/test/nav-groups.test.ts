@@ -3,16 +3,72 @@ import { NAV_STATUS, advancedItems, navGroups, navItems } from "@/components/nav
 
 // Every page the old flat menu linked to must stay reachable after simplification.
 const OLD_MENU = [
-  "/", "/launch-control", "/beta", "/beta-omni", "/mothership", "/command-nexus", "/omnibridge", "/omni",
-  "/omni-marketing", "/omni-gateway", "/omni-agents", "/omni-models", "/omni-api-keys", "/omni-terminal",
-  "/omni-dock", "/activation-approvals", "/omni-razul", "/angel-tech", "/omni-rights", "/omni-legal",
-  "/entertainment", "/cartoon-galaxy", "/pathway", "/code-exchange", "/code-vault", "/commons", "/pulse",
-  "/challenges", "/open-call", "/embassy", "/agent-lounge", "/incident-archives", "/agent-debrief",
-  "/guardian-incidents", "/report-incident", "/sdk", "/discovery", "/digital-twin", "/robotics",
-  "/physical-safety", "/experiment-replay", "/approval-ledger", "/impact-scorecard", "/trust", "/marketplace",
-  "/compute-grid", "/releases", "/care", "/updates", "/pilot", "/voice", "/care-agent", "/universe",
-  "/platform", "/knowledge-fusion", "/guardian", "/devices", "/fleet", "/security-report", "/agents",
-  "/sandbox", "/roadmap", "/partnerships", "/dashboard", "/arena", "/knowledge-brief",
+  "/",
+  "/launch-control",
+  "/beta",
+  "/beta-omni",
+  "/mothership",
+  "/command-nexus",
+  "/omnibridge",
+  "/omni",
+  "/omni-marketing",
+  "/omni-gateway",
+  "/omni-agents",
+  "/omni-models",
+  "/omni-api-keys",
+  "/omni-terminal",
+  "/omni-dock",
+  "/activation-approvals",
+  "/omni-razul",
+  "/angel-tech",
+  "/omni-rights",
+  "/omni-legal",
+  "/entertainment",
+  "/cartoon-galaxy",
+  "/pathway",
+  "/code-exchange",
+  "/code-vault",
+  "/commons",
+  "/pulse",
+  "/challenges",
+  "/open-call",
+  "/embassy",
+  "/agent-lounge",
+  "/incident-archives",
+  "/agent-debrief",
+  "/guardian-incidents",
+  "/report-incident",
+  "/sdk",
+  "/discovery",
+  "/digital-twin",
+  "/robotics",
+  "/physical-safety",
+  "/experiment-replay",
+  "/approval-ledger",
+  "/impact-scorecard",
+  "/trust",
+  "/marketplace",
+  "/compute-grid",
+  "/releases",
+  "/care",
+  "/updates",
+  "/pilot",
+  "/voice",
+  "/care-agent",
+  "/universe",
+  "/platform",
+  "/knowledge-fusion",
+  "/guardian",
+  "/devices",
+  "/fleet",
+  "/security-report",
+  "/agents",
+  "/sandbox",
+  "/roadmap",
+  "/partnerships",
+  "/dashboard",
+  "/arena",
+  "/knowledge-brief",
 ];
 
 describe("grouped navigation", () => {
@@ -25,15 +81,31 @@ describe("grouped navigation", () => {
     expect(new Set(all).size).toBe(all.length);
   });
   it("uses the requested main groups", () => {
-    expect(navGroups.map((g) => g.label)).toEqual(["Projects", "Agents", "Approvals", "Connections", "Settings"]);
+    expect(navGroups.map((g) => g.label)).toEqual([
+      "Projects",
+      "Agents",
+      "Approvals",
+      "Connections",
+      "Settings",
+    ]);
   });
   it("marks owner-gated pages as owner only", () => {
-    const status = Object.fromEntries(navGroups.flatMap((g) => g.items.map((i) => [i.to, i.status])));
-    for (const p of ["/omni-terminal", "/omni-dock", "/omni-api-keys", "/activation-approvals", "/members"])
+    const status = Object.fromEntries(
+      navGroups.flatMap((g) => g.items.map((i) => [i.to, i.status])),
+    );
+    for (const p of [
+      "/omni-terminal",
+      "/omni-dock",
+      "/omni-api-keys",
+      "/activation-approvals",
+      "/members",
+    ])
       expect(status[p]).toBe("owner");
   });
   it("never labels a blocked connection as working", () => {
-    const status = Object.fromEntries(navGroups.flatMap((g) => g.items.map((i) => [i.to, i.status])));
+    const status = Object.fromEntries(
+      navGroups.flatMap((g) => g.items.map((i) => [i.to, i.status])),
+    );
     expect(status["/omni-gateway"]).toBe("off");
     expect(status["/platform"]).toBe("off");
   });
@@ -48,10 +120,19 @@ import { memberErrorMessage, splitInvitations } from "@/lib/invitations";
 
 describe("design previews are hidden from the working site", () => {
   it("treats demo pages and their detail pages as previews", () => {
-    for (const p of ["/omni", "/dashboard", "/arena", "/robotics/abc", "/join"]) expect(isPreviewPath(p)).toBe(true);
+    for (const p of ["/omni", "/dashboard", "/arena", "/robotics/abc", "/join"])
+      expect(isPreviewPath(p)).toBe(true);
   });
   it("keeps real pages visible", () => {
-    for (const p of ["/", "/beta", "/members", "/omni-terminal", "/omni-dock", "/account-security", "/invite"])
+    for (const p of [
+      "/",
+      "/beta",
+      "/members",
+      "/omni-terminal",
+      "/omni-dock",
+      "/account-security",
+      "/invite",
+    ])
       expect(isPreviewPath(p)).toBe(false);
   });
   it("primary groups contain no demo pages", () => {
@@ -66,7 +147,12 @@ describe("design previews are hidden from the working site", () => {
 });
 
 describe("invitation lists", () => {
-  const base = { expires_at: "2030-01-01T00:00:00Z", revoked_at: null, accepted_at: null, declined_at: null };
+  const base = {
+    expires_at: "2030-01-01T00:00:00Z",
+    revoked_at: null,
+    accepted_at: null,
+    declined_at: null,
+  };
   it("revoked, declined, used and expired invitations leave the active list", () => {
     const now = new Date("2029-01-01T00:00:00Z");
     const { active, history } = splitInvitations(
@@ -88,6 +174,8 @@ describe("invitation lists", () => {
     );
   });
   it("explains a repeated removal", () => {
-    expect(memberErrorMessage("Not a member (already removed)")).toBe("This person was already removed.");
+    expect(memberErrorMessage("Not a member (already removed)")).toBe(
+      "This person was already removed.",
+    );
   });
 });

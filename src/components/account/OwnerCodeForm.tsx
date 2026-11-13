@@ -76,7 +76,10 @@ export function OwnerCodeForm({
       setMsg({ ok: true, text: successText });
       await onVerified();
     } catch {
-      setMsg({ ok: false, text: "The code could not be checked. Check your connection and try again." });
+      setMsg({
+        ok: false,
+        text: "The code could not be checked. Check your connection and try again.",
+      });
     } finally {
       setBusy(false);
     }
@@ -116,7 +119,10 @@ export function OwnerCodeForm({
         </Button>
       </div>
       {msg && (
-        <p role={msg.ok ? "status" : "alert"} className={msg.ok ? "text-sm text-muted-foreground" : "text-sm text-destructive"}>
+        <p
+          role={msg.ok ? "status" : "alert"}
+          className={msg.ok ? "text-sm text-muted-foreground" : "text-sm text-destructive"}
+        >
           {msg.text}
         </p>
       )}

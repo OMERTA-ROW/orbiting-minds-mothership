@@ -36,7 +36,9 @@ describe("owner two-factor state", () => {
   it("names new authenticator entries OMNI Mothership and remembers the legacy name", () => {
     expect(TOTP_ISSUER).toBe("OMNI Mothership");
     expect(LEGACY_TOTP_ISSUER).toBe("orbiting-minds-mothership.lovable.app");
-    expect(totpFriendlyName(new Date("2026-11-12T06:09:30Z"))).toBe("OMNI Mothership 2026-11-12 06:09");
+    expect(totpFriendlyName(new Date("2026-11-12T06:09:30Z"))).toBe(
+      "OMNI Mothership 2026-11-12 06:09",
+    );
   });
 });
 
@@ -111,7 +113,8 @@ describe("two-step sign-in is optional", () => {
 });
 
 describe("setup shows only a real provider code", () => {
-  const uri = "otpauth://totp/OMNI%20Mothership:a%40b.c?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=OMNI%20Mothership";
+  const uri =
+    "otpauth://totp/OMNI%20Mothership:a%40b.c?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=OMNI%20Mothership";
   it("accepts a standard otpauth TOTP URI with a base32 secret", () => {
     expect(isStandardTotpUri(uri)).toBe(true);
   });
@@ -132,10 +135,14 @@ describe("setup shows only a real provider code", () => {
 describe("sensitive changes need a fresh code (15 minutes)", () => {
   const now = 2_000_000_000;
   it("refuses a session that has not entered a code", () => {
-    expect(stepUpBlocker("aal1", [{ method: "oauth", timestamp: now }], now)).toContain("authenticator");
+    expect(stepUpBlocker("aal1", [{ method: "oauth", timestamp: now }], now)).toContain(
+      "authenticator",
+    );
   });
   it("refuses a code older than 15 minutes", () => {
-    expect(stepUpBlocker("aal2", [{ method: "totp", timestamp: now - 15 * 60 - 1 }], now)).toContain("fresh");
+    expect(
+      stepUpBlocker("aal2", [{ method: "totp", timestamp: now - 15 * 60 - 1 }], now),
+    ).toContain("fresh");
   });
   it("allows a code from the last 15 minutes", () => {
     expect(stepUpBlocker("aal2", [{ method: "totp", timestamp: now - 15 * 60 }], now)).toBeNull();
