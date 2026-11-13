@@ -27,7 +27,7 @@ export function OmniOrb({ state, agentName, muted, level }: OmniOrbProps) {
     const el = root.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(([entry]) => {
-      el.dataset.visible = entry?.isIntersecting ? "true" : "false";
+      el.dataset["visible"] = entry?.isIntersecting ? "true" : "false";
     });
     io.observe(el);
     return () => io.disconnect();
@@ -60,7 +60,7 @@ export function OmniOrb({ state, agentName, muted, level }: OmniOrbProps) {
       frame = requestAnimationFrame(draw);
       if (small && t - last < 33) return; // ~30 fps on phones
       last = t;
-      if (el.dataset.visible === "false") return;
+      if (el.dataset["visible"] === "false") return;
       const lv = Math.max(0, Math.min(1, level.current));
       level.current = lv * 0.94;
       el.style.setProperty("--orb-level", lv.toFixed(3));
