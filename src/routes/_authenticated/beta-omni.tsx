@@ -89,7 +89,7 @@ function LiveOmni() {
     consent,
   });
   const bump = () => {
-    level.current = Math.min(1, level.current + 0.55);
+    level.current = Math.min(1, level.current + 0.4);
   };
   const say = (line: string) => {
     if (voiceOnRef.current) voice.speak(line, { onWord: bump });
