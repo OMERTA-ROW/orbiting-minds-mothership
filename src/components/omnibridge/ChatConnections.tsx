@@ -29,17 +29,16 @@ const ENTRY_POINTS = [
 /** Connection states read in this session, plus tool entry points. Never claims unchecked links. */
 export function ChatConnections(props: { rows: ConnectionRow[]; onRefresh: () => void; refreshing: boolean }) {
   const readTerminal = useServerFn(readWorkspace);
-  const [terminal, setTerminal] = useState<{ lines: string[]; at: string } | null>(null);
+  const [terminal, setTerminal] = useState<{ connected: boolean; lines: string[]; at: string } | null>(
+    null,
+  );
   const [checking, setChecking] = useState(false);
   const [note, setNote] = useState("");
   const rows = props.rows.map((r) =>
     r.id === "terminal" && terminal
       ? {
           ...r,
-          state: (terminal.lines[0]?.endsWith("connected.") &&
-          !terminal.lines[0].includes("not connected")
-            ? "ready"
-            : "not_connected") as ConnectionState,
+          state: (terminal.connected ? "ready" : "not_connected") as ConnectionState,
           detail: `Checked ${new Date(terminal.at).toLocaleTimeString()}.`,
         }
       : r,
@@ -80,7 +79,7 @@ export function ChatConnections(props: { rows: ConnectionRow[]; onRefresh: () =>
           setNote("");
           try {
             const s = await readTerminal({ data: {} });
-            setTerminal({ lines: terminalSummary(s).lines, at: new Date().toISOString() });
+            setTerminal({ ...terminalSummary(s), at: new Date().toISOString() });
           } catch {
             setTerminal(null);
             setNote("Terminal status not read: owner sign-in with a fresh two-step code needed.");
