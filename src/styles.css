@@ -91,6 +91,16 @@
   --omni-secondary-text: oklch(0.75 0.002 260);
   --omni-silver: oklch(0.85 0.003 260);
   --omni-border: oklch(0.42 0.003 260);
+  --orb-space: oklch(0.08 0.02 275);
+  --orb-blue: oklch(0.68 0.17 255);
+  --orb-violet: oklch(0.62 0.2 295);
+  --orb-glow-blue: oklch(0.62 0.17 255 / 38%);
+  --orb-glow-violet: oklch(0.55 0.22 295 / 40%);
+  --orb-glow-dim: oklch(0.6 0.02 270 / 18%);
+  --orb-rim: oklch(0.72 0.15 265 / 55%);
+  --orb-highlight: oklch(0.95 0.03 260 / 16%);
+  --orb-terminator: oklch(0.05 0.02 275 / 92%);
+  --orb-starfield: radial-gradient(1px 1px at 12% 18%, oklch(0.9 0.02 260 / 55%), transparent 60%), radial-gradient(1px 1px at 78% 12%, oklch(0.9 0.02 260 / 45%), transparent 60%), radial-gradient(1.5px 1.5px at 64% 72%, oklch(0.85 0.05 280 / 40%), transparent 60%), radial-gradient(1px 1px at 28% 82%, oklch(0.9 0.02 260 / 40%), transparent 60%), radial-gradient(1px 1px at 90% 48%, oklch(0.9 0.02 260 / 35%), transparent 60%), radial-gradient(ellipse at 50% 0%, oklch(0.25 0.08 280 / 35%), transparent 60%);
 }
 
 .omni-theme {
@@ -121,6 +131,7 @@
   --shadow-panel: none;
 }
 .omni-area { background: var(--background); }
+.omni-area:has(.omni-orb-dashboard) { --background: var(--orb-space); --card: oklch(0.12 0.02 275); --popover: oklch(0.12 0.02 275); --muted: oklch(0.18 0.025 275); --border: oklch(0.4 0.05 275 / 55%); --ring: var(--orb-blue); background: var(--orb-starfield), var(--orb-space); }
 .omni-area > .orbital-background, .omni-area > .site-cosmos { display: none; }
 .omni-area h1, .omni-area h2, .omni-area h3 { font-family: var(--font-sans); }
 .omni-area h1:not(.omni-area-header h1) { font-size: 1.875rem; line-height: 1.3; }

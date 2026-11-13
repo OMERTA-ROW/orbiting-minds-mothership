@@ -1,0 +1,79 @@
+/* Central OMNI orb. Colors come from tokens in src/styles.css. */
+.omni-orb-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.omni-orb {
+  --orb-size: clamp(170px, 26vw, 250px);
+  --orb-level: 0;
+  position: relative;
+  width: calc(var(--orb-size) * 1.45);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+.omni-orb__aura {
+  position: absolute;
+  width: var(--orb-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow:
+    0 0 calc(28px + var(--orb-level) * 40px) calc(4px + var(--orb-level) * 14px) var(--orb-glow-blue),
+    0 0 calc(70px + var(--orb-level) * 60px) calc(10px + var(--orb-level) * 20px) var(--orb-glow-violet);
+  transform: scale(calc(1 + var(--orb-level) * 0.04));
+  transition: box-shadow 120ms linear, transform 120ms linear;
+}
+.omni-orb[data-state="idle"] .omni-orb__aura,
+.omni-orb[data-state="thinking"] .omni-orb__aura { animation: omni-orb-breathe 7s ease-in-out infinite; }
+.omni-orb[data-state="thinking"] .omni-orb__aura { animation-duration: 3.2s; }
+.omni-orb[data-state="listening"] .omni-orb__aura,
+.omni-orb[data-state="speaking"] .omni-orb__aura { animation: omni-orb-breathe 2.4s ease-in-out infinite; }
+.omni-orb[data-state="unavailable"] .omni-orb__aura { box-shadow: 0 0 24px 2px var(--orb-glow-dim); }
+.omni-orb[data-state="unavailable"] .omni-orb__globe { filter: grayscale(0.85) brightness(0.6); }
+.omni-orb[data-muted="true"] .omni-orb__aura { opacity: 0.7; }
+.omni-orb__wave { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.omni-orb__globe {
+  position: relative;
+  width: var(--orb-size);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--orb-space);
+  isolation: isolate;
+}
+.omni-orb__tilt { position: absolute; inset: -12%; transform: rotate(-16deg); }
+.omni-orb__surface {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 400%;
+  height: 100%;
+  background-image: var(--orb-texture);
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  will-change: transform;
+  /* One full turn every ~6 minutes: a gentle planetary pivot. */
+  animation: omni-orb-turn 360s linear infinite;
+}
+.omni-orb[data-visible="false"] .omni-orb__surface,
+.omni-orb[data-visible="false"] .omni-orb__aura { animation-play-state: paused; }
+.omni-orb__shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, var(--orb-highlight) 0%, transparent 38%),
+    radial-gradient(circle at 40% 40%, transparent 46%, var(--orb-terminator) 86%);
+  box-shadow: inset 0 0 26px 4px var(--orb-rim), inset -18px -14px 40px var(--orb-terminator);
+}
+.omni-orb__name { margin-top: -0.75rem; font-size: 1.25rem; font-weight: 600; letter-spacing: 0.08em; color: var(--foreground); }
+.omni-orb__status { font-size: 0.75rem; color: var(--muted-foreground); }
+
+@keyframes omni-orb-turn { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+@keyframes omni-orb-breathe { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+@media (max-width: 640px), (pointer: coarse) {
+  .omni-orb { --orb-size: 150px; }
+  .omni-orb__surface { background-image: var(--orb-texture-small); }
+  .omni-orb__aura { transition: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .omni-orb__surface, .omni-orb__aura { animation: none !important; }
+  .omni-orb__aura { transition: none; transform: none; }
+}
