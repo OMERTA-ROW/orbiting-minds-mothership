@@ -11,8 +11,26 @@ const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const SCOPES = ["jobs.cancel", "jobs.read", "protocol.self-test"];
 const MAX_REPLY_BYTES = 32768;
 const TIMEOUT_MS = 5000;
-type Action = "handshake" | "submit" | "run" | "status" | "cancel" | "configuration";
+export type JackboyAction = "handshake" | "submit" | "run" | "status" | "cancel" | "configuration";
+type Action = JackboyAction;
 type JobAction = Exclude<Action, "handshake" | "configuration">;
+/**
+ * How long Jackboy itself waits for its Railway runner before answering (mirrors Jackboy's
+ * omni-remote-runner: 5 s for the configuration probe, runner limit + 1 s for a `run`).
+ */
+export const JACKBOY_RUNNER_WAIT_MS = { configuration: 5000, run: 6000 } as const;
+/** Room for Jackboy's own start-up, database authorization and reply signing. */
+export const JACKBOY_REPLY_HEADROOM_MS = 4000;
+/**
+ * Mothership's deadline per action. Actions where Jackboy waits on the runner get a longer
+ * deadline than Jackboy's own wait, so Jackboy's signed answer (for example "runner did not
+ * answer") arrives instead of Mothership giving up first with an unclassified timeout.
+ */
+export function linkTimeoutMs(action: JackboyAction): number {
+  if (action === "configuration" || action === "run")
+    return JACKBOY_RUNNER_WAIT_MS[action] + JACKBOY_REPLY_HEADROOM_MS;
+  return TIMEOUT_MS;
+}
 export type JackboyLinkConfig = {
   origin: string;
   clientId: string;
@@ -70,16 +88,29 @@ export class JackboyLinkError extends Error {
   readonly stage: JackboyFailureStage;
   readonly status: number | undefined;
   readonly code: JackboyRefusalCode | undefined;
+  /** Timeout only: the deadline that expired, how long was waited, and whether any reply had begun. */
+  readonly limitMs: number | undefined;
+  readonly waitedMs: number | undefined;
+  readonly phase: "reply" | "body" | undefined;
   constructor(
     message: string,
     stage: JackboyFailureStage,
-    extra: { status?: number; code?: JackboyRefusalCode } = {},
+    extra: {
+      status?: number;
+      code?: JackboyRefusalCode;
+      limitMs?: number;
+      waitedMs?: number;
+      phase?: "reply" | "body";
+    } = {},
   ) {
     super(message);
     this.name = "JackboyLinkError";
     this.stage = stage;
     this.status = extra.status;
     this.code = extra.code;
+    this.limitMs = extra.limitMs;
+    this.waitedMs = extra.waitedMs;
+    this.phase = extra.phase;
   }
 }
 
@@ -223,8 +254,17 @@ async function post(
   options: JackboyLinkOptions,
   headers: Record<string, string>,
   body: string,
+  action: Action,
 ) {
   const send: Fetch = options.fetch ?? ((input, init) => fetch(input, init));
+  const limitMs = options.timeoutMs ?? linkTimeoutMs(action);
+  const started = Date.now();
+  const timedOut = (phase: "reply" | "body") =>
+    new JackboyLinkError("Jackboy link timeout.", "timeout", {
+      limitMs,
+      waitedMs: Date.now() - started,
+      phase,
+    });
   let response: Response;
   try {
     response = await send(new URL(PATH, c.origin).href, {
@@ -232,11 +272,11 @@ async function post(
       headers,
       body,
       redirect: "manual",
-      signal: AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS),
+      signal: AbortSignal.timeout(limitMs),
     });
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
-      throw new JackboyLinkError("Jackboy link timeout.", "timeout");
+      throw timedOut("reply");
     throw new JackboyLinkError("Jackboy link connection failed.", "connection");
   }
   if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
@@ -249,7 +289,7 @@ async function post(
   } catch (error) {
     if (error instanceof JackboyLinkError) throw error;
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
-      throw new JackboyLinkError("Jackboy link timeout.", "timeout");
+      throw timedOut("body");
     throw new JackboyLinkError("Jackboy link connection failed.", "connection");
   }
   return { status: response.status, body: text, proof: response.headers.get("x-omni-proof") || "" };
@@ -283,6 +323,7 @@ async function sendSigned(
       "x-omni-signature": hmac(config.secret, message),
     },
     body,
+    action,
   );
   if (result.status !== 200 && result.status !== 202) {
     const code = refusalCode(result.body);
