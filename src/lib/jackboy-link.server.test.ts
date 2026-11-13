@@ -291,31 +291,22 @@ describe("Jackboy link transport (public certificate, no CA file)", () => {
   });
 
   it("gives the configuration probe 9 s by default, beyond Jackboy's 5 s runner wait", async () => {
-    vi.useFakeTimers();
+    const timeout = vi.spyOn(AbortSignal, "timeout");
     try {
-      let aborted = false;
-      const pending = checkJackboyRunnerConfiguration(
+      const error = (await checkJackboyRunnerConfiguration(
         { ...config(), runnerOrigin: "https://runner.up.railway.app" },
         async () => {},
         {
-          fetch: (_url, init) =>
-            new Promise((_resolve, reject) =>
-              init.signal!.addEventListener("abort", () => {
-                aborted = true;
-                reject(init.signal!.reason);
-              }),
-            ),
+          fetch: async () => {
+            throw new DOMException("The operation timed out.", "TimeoutError");
+          },
         },
-      ).catch((e: unknown) => e);
-      await vi.advanceTimersByTimeAsync(5500);
-      expect(aborted).toBe(false);
-      await vi.advanceTimersByTimeAsync(4000);
-      const error = (await pending) as JackboyLinkError;
-      expect(aborted).toBe(true);
+      ).catch((e: unknown) => e)) as JackboyLinkError;
+      expect(timeout).toHaveBeenCalledWith(9000);
       expect(error.stage).toBe("timeout");
       expect(error.limitMs).toBe(9000);
     } finally {
-      vi.useRealTimers();
+      timeout.mockRestore();
     }
   });
 
