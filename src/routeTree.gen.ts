@@ -101,6 +101,7 @@ import { Route as ApiPublicJobsKnowledgeCollectRouteImport } from './routes/api/
 import { Route as ApiPublicJobsRazulObserveRouteImport } from './routes/api/public/jobs/razul-observe'
 import { Route as ApiPublicOmniHealthRouteImport } from './routes/api/public/omni/health'
 import { Route as ApiPublicOmniJobsRouteImport } from './routes/api/public/omni/jobs'
+import { Route as ApiPublicOmniNoopWorkerRouteImport } from './routes/api/public/omni/noop-worker'
 import { Route as ApiPublicRazulSentinelReportRouteImport } from './routes/api/public/razul-sentinel/report'
 import { Route as ApiPublicOmniDockAuditRouteImport } from './routes/api/public/omni/dock/audit'
 import { Route as ApiPublicOmniDockCloudRouteImport } from './routes/api/public/omni/dock/cloud'
@@ -578,6 +579,11 @@ const ApiPublicOmniJobsRoute = ApiPublicOmniJobsRouteImport.update({
   path: '/api/public/omni/jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOmniNoopWorkerRoute = ApiPublicOmniNoopWorkerRouteImport.update({
+  id: '/api/public/omni/noop-worker',
+  path: '/api/public/omni/noop-worker',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicRazulSentinelReportRoute =
   ApiPublicRazulSentinelReportRouteImport.update({
     id: '/api/public/razul-sentinel/report',
@@ -720,6 +726,7 @@ export interface FileRoutesByFullPath {
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
+  '/api/public/omni/noop-worker': typeof ApiPublicOmniNoopWorkerRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
@@ -822,6 +829,7 @@ export interface FileRoutesByTo {
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
+  '/api/public/omni/noop-worker': typeof ApiPublicOmniNoopWorkerRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
@@ -926,6 +934,7 @@ export interface FileRoutesById {
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
+  '/api/public/omni/noop-worker': typeof ApiPublicOmniNoopWorkerRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
@@ -1030,6 +1039,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/razul-observe'
     | '/api/public/omni/health'
     | '/api/public/omni/jobs'
+    | '/api/public/omni/noop-worker'
     | '/api/public/razul-sentinel/report'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/cloud'
@@ -1132,6 +1142,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/razul-observe'
     | '/api/public/omni/health'
     | '/api/public/omni/jobs'
+    | '/api/public/omni/noop-worker'
     | '/api/public/razul-sentinel/report'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/cloud'
@@ -1235,6 +1246,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/razul-observe'
     | '/api/public/omni/health'
     | '/api/public/omni/jobs'
+    | '/api/public/omni/noop-worker'
     | '/api/public/razul-sentinel/report'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/cloud'
@@ -1333,6 +1345,7 @@ export interface RootRouteChildren {
   ApiPublicJobsRazulObserveRoute: typeof ApiPublicJobsRazulObserveRoute
   ApiPublicOmniHealthRoute: typeof ApiPublicOmniHealthRoute
   ApiPublicOmniJobsRoute: typeof ApiPublicOmniJobsRoute
+  ApiPublicOmniNoopWorkerRoute: typeof ApiPublicOmniNoopWorkerRoute
   ApiPublicRazulSentinelReportRoute: typeof ApiPublicRazulSentinelReportRoute
   ApiPublicOmniDockAuditRoute: typeof ApiPublicOmniDockAuditRoute
   ApiPublicOmniDockCloudRoute: typeof ApiPublicOmniDockCloudRoute
@@ -1990,6 +2003,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOmniJobsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/omni/noop-worker': {
+      id: '/api/public/omni/noop-worker'
+      path: '/api/public/omni/noop-worker'
+      fullPath: '/api/public/omni/noop-worker'
+      preLoaderRoute: typeof ApiPublicOmniNoopWorkerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/razul-sentinel/report': {
       id: '/api/public/razul-sentinel/report'
       path: '/api/public/razul-sentinel/report'
@@ -2164,6 +2184,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicJobsRazulObserveRoute: ApiPublicJobsRazulObserveRoute,
   ApiPublicOmniHealthRoute: ApiPublicOmniHealthRoute,
   ApiPublicOmniJobsRoute: ApiPublicOmniJobsRoute,
+  ApiPublicOmniNoopWorkerRoute: ApiPublicOmniNoopWorkerRoute,
   ApiPublicRazulSentinelReportRoute: ApiPublicRazulSentinelReportRoute,
   ApiPublicOmniDockAuditRoute: ApiPublicOmniDockAuditRoute,
   ApiPublicOmniDockCloudRoute: ApiPublicOmniDockCloudRoute,

@@ -3552,6 +3552,39 @@ export type Database = {
         Args: { _key_hash: string; _scope: string };
         Returns: string;
       };
+      omni_noop_worker_create: {
+        Args: { _name: string; _hash: string; _hours: number };
+        Returns: string;
+      };
+      omni_noop_worker_revoke: { Args: { _id: string }; Returns: undefined };
+      omni_noop_workers_list: {
+        Args: never;
+        Returns: {
+          id: string;
+          name: string;
+          created_at: string;
+          expires_at: string;
+          revoked_at: string | null;
+        }[];
+      };
+      omni_noop_jobs_list: {
+        Args: never;
+        Returns: {
+          id: string;
+          worker_id: string | null;
+          status: string;
+          created_at: string;
+          started_at: string | null;
+          ended_at: string | null;
+          reason: string | null;
+        }[];
+      };
+      omni_noop_enqueue: { Args: { _duration_ms: number }; Returns: string };
+      omni_noop_sweep: { Args: never; Returns: number };
+      omni_noop_worker_action: {
+        Args: { _hash: string; _op: string; _job?: string };
+        Returns: Json;
+      };
       omni_autonomy_end_all: {
         Args: { _agent: string; _reason: string };
         Returns: undefined;

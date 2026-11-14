@@ -5,6 +5,8 @@
  * Nothing here starts a job; the executor that runs jobs must call `usable()` before every step.
  */
 import type { JackboyPermit, PermitRequest } from "./jackboy-link.server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 export const PERMIT_RENEW_MS = 20_000;
 
@@ -163,12 +165,7 @@ export class PermitHolder {
 }
 
 /** Database-backed store for the permit mirror (service role only). */
-export function databasePermitStore(admin: {
-  rpc: (
-    fn: string,
-    args: Record<string, unknown>,
-  ) => PromiseLike<{ data: unknown; error: unknown }>;
-}): PermitStore {
+export function databasePermitStore(admin: SupabaseClient<Database>): PermitStore {
   return {
     async record(req, permit) {
       const { data, error } = await admin.rpc("jackboy_permit_record", {
