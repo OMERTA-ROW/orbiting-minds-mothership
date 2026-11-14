@@ -183,9 +183,11 @@ async function currentSelfTestReadiness(context: {
     stopReleased = false;
   }
   let identityValid = false;
+  let identityIssues: Awaited<ReturnType<typeof import("./jackboy-link.server").configuredLinkIdentityIssues>> = [];
   try {
-    const { configuredLinkIdentityValid } = await import("./jackboy-link.server");
+    const { configuredLinkIdentityValid, configuredLinkIdentityIssues } = await import("./jackboy-link.server");
     identityValid = configuredLinkIdentityValid();
+    identityIssues = identityValid ? [] : configuredLinkIdentityIssues();
   } catch {
     identityValid = false;
   }
@@ -197,6 +199,7 @@ async function currentSelfTestReadiness(context: {
     selfTestEnabled: process.env["JACKBOY_LINK_SELF_TEST_ENABLED"] === "true",
     approvalExpiresAt: Date.parse(process.env["OMNI_LINK_APPROVAL_EXPIRES_AT"] || ""),
     identityValid,
+    identityIssues,
     now: Date.now(),
   });
 }

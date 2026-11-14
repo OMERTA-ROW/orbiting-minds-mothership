@@ -221,6 +221,17 @@ export function configuredLinkIdentityValid(): boolean {
   }
 }
 
+/** Names (never values) of link identity settings that are missing or malformed here. */
+export function configuredLinkIdentityIssues() {
+  return linkIdentityIssues({
+    origin: process.env["JACKBOY_LINK_ORIGIN"] || "",
+    clientId: process.env["OMNI_LINK_CLIENT_ID"] || "",
+    projectId: process.env["OMNI_LINK_PROJECT_ID"] || "",
+    bootstrap: process.env["OMNI_LINK_BOOTSTRAP_KEY"] || "",
+    secret: process.env["OMNI_LINK_HMAC_SECRET"] || "",
+  });
+}
+
 export function configuredJackboyConfiguration(): JackboyConfigurationConfig {
   const c = {
     origin: process.env["JACKBOY_LINK_ORIGIN"] || "",
