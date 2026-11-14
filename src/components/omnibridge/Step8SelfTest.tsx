@@ -85,14 +85,16 @@ export function Step8SelfTest(props: {
       <p className="text-xs text-muted-foreground">
         One click asks Jackboy, through the signed link, to run its fixed restricted protocol
         self-test once, waits up to about 30 seconds, then verifies the signed result and records it
-        as Step 8 evidence. It runs no CODE, writes no files, changes no switches or limits and never
-        approves Step 8 for you.
+        as Step 8 evidence. It runs no CODE, writes no files, changes no switches or limits and
+        never approves Step 8 for you.
       </p>
 
       <div>
         <p className="text-xs font-medium">Before sending (read from the server)</p>
         {readiness.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Readiness could not be read; nothing can be sent.</p>
+          <p className="text-xs text-muted-foreground">
+            Readiness could not be read; nothing can be sent.
+          </p>
         ) : (
           <ul className="mt-1 space-y-1 text-xs" aria-label="Self-test readiness">
             {readiness.map((item) => (
@@ -111,8 +113,8 @@ export function Step8SelfTest(props: {
             <li className="flex gap-2 text-muted-foreground">
               <ShieldAlert size={14} aria-hidden className="mt-0.5 shrink-0" />
               <span>
-                <strong>Jackboy Kill Switch</strong>: checked by Jackboy when the test is sent. If it
-                is on, you will see a safety denial; it is never bypassed or released from here.
+                <strong>Jackboy Kill Switch</strong>: checked by Jackboy when the test is sent. If
+                it is on, you will see a safety denial; it is never bypassed or released from here.
               </span>
             </li>
           </ul>

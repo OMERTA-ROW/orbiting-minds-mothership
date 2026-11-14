@@ -11,7 +11,11 @@ export const APPROVAL_FLOW_SUMMARY =
   "Checks only record evidence; the owner approves separately with a fresh two-step code";
 
 export const LIVE_ORIGIN = "https://evoomni.tech";
-export const LIVE_HOSTS = ["evoomni.tech", "www.evoomni.tech", "orbiting-minds-mothership.lovable.app"];
+export const LIVE_HOSTS = [
+  "evoomni.tech",
+  "www.evoomni.tech",
+  "orbiting-minds-mothership.lovable.app",
+];
 export const MARKER_PATH = "/api/public/approval-flow";
 export const MARKER_MAX_BYTES = 2048;
 
@@ -21,7 +25,9 @@ export function siteKind(hostname: string): SiteKind {
   const host = hostname.trim().toLowerCase();
   if (LIVE_HOSTS.includes(host)) return "live";
   if (host === "localhost" || host === "127.0.0.1") return "local";
-  if (/^(?:id-preview|preview|project)--[a-z0-9-]+\.(?:lovable\.app|lovableproject\.com)$/.test(host))
+  if (
+    /^(?:id-preview|preview|project)--[a-z0-9-]+\.(?:lovable\.app|lovableproject\.com)$/.test(host)
+  )
     return "preview";
   return "other";
 }
@@ -103,7 +109,12 @@ export function buildNotice(input: {
       detail: `You are on the published site, running approval flow v${client}.`,
     };
   }
-  const where = input.site === "preview" ? "Preview build" : input.site === "local" ? "Local development build" : "Unrecognised address";
+  const where =
+    input.site === "preview"
+      ? "Preview build"
+      : input.site === "local"
+        ? "Local development build"
+        : "Unrecognised address";
   const base = `${where}: approval flow v${client}. Approvals are shared with the live site because both use the same database.`;
   if (!live) return { tone: "info", title: where, detail: `${base} Checking the live site…` };
   if (live.state === "outdated")

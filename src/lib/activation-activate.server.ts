@@ -53,14 +53,21 @@ export type ActivationFailureReason =
 
 export type ActivationOutcome =
   | { ok: true; already: boolean; message: string; blockers: string[] }
-  | { ok: false; reason: ActivationFailureReason; message: string; details: ActivationCheckDetail[] };
+  | {
+      ok: false;
+      reason: ActivationFailureReason;
+      message: string;
+      details: ActivationCheckDetail[];
+    };
 
 const BEGIN_TEXT: Record<string, string> = {
   busy: "Another activation attempt is in progress. Wait about 90 seconds, then refresh.",
-  step7_window_closed: "Step 7's approval window has ended or is invalid. Approve Step 7 again with a new expiry.",
+  step7_window_closed:
+    "Step 7's approval window has ended or is invalid. Approve Step 7 again with a new expiry.",
   step8_proof_not_fresh:
     "Step 8 needs a passing signed self-test from the current Step 7 window (within 24 hours). Run Step 8 again.",
-  mothership_stop_engaged: "Mothership's Emergency Stop is engaged, so nothing was sent. It was not released.",
+  mothership_stop_engaged:
+    "Mothership's Emergency Stop is engaged, so nothing was sent. It was not released.",
   live_link_not_active: "Activate the live link (Step 9) first.",
   caps_not_confirmed: "Step 10 must be approved with the $10 cap and $5 daily limit confirmed.",
   steps_missing: "Approval records are incomplete; refresh the page.",
@@ -188,7 +195,10 @@ export async function runActivation(
     handshakeAt,
     safety: snapshotEvidence(snapshot, safetyFailure),
     ...(kind === "autonomy"
-      ? { caps: { perCallUsd: 0.5, perTaskUsd: 1, dailyUsd: 5, openaiCapUsd: 10 }, executor: "none" }
+      ? {
+          caps: { perCallUsd: 0.5, perTaskUsd: 1, dailyUsd: 5, openaiCapUsd: 10 },
+          executor: "none",
+        }
       : {}),
   };
   let finished: FinishReply;

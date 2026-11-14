@@ -4,7 +4,11 @@
  * Neither starts work: execution also needs every stop released, a fresh Jackboy reading that
  * allows autonomy and a Jackboy permit per job, and no OMNI executor is connected in this build.
  */
-import { isEffectivelyApproved, type ActivationCheckDetail, type ApprovalRow } from "./activation-approvals";
+import {
+  isEffectivelyApproved,
+  type ActivationCheckDetail,
+  type ApprovalRow,
+} from "./activation-approvals";
 import type { ReadinessItem } from "./activation-self-test";
 import { probeFailure } from "./activation-probe";
 import type { SafetyView } from "./jackboy-safety";
@@ -48,7 +52,9 @@ export interface LiveLinkStatus {
 
 export function liveLinkStatus(input: LiveLinkInput): LiveLinkStatus {
   const row = (step: number) => input.rows.find((r) => r.step === step);
-  const earlier = input.rows.filter((r) => r.step <= 8).every((r) => isEffectivelyApproved(r, input.now));
+  const earlier = input.rows
+    .filter((r) => r.step <= 8)
+    .every((r) => isEffectivelyApproved(r, input.now));
   const step9 = row(9);
   const step9Approved = step9 ? isEffectivelyApproved(step9, input.now) : false;
   const items = input.readiness.filter((i) =>
@@ -61,7 +67,10 @@ export function liveLinkStatus(input: LiveLinkInput): LiveLinkStatus {
     (input.lastConnectedAt === null || input.lastConnectedAt < input.lastAttemptAt);
   const connectedAge = input.lastConnectedAt ? input.now - Date.parse(input.lastConnectedAt) : NaN;
   const recentlyVerified =
-    Number.isFinite(connectedAge) && connectedAge >= -60_000 && connectedAge <= LIVE_LINK_FRESH_MS && !lastAttemptFailed;
+    Number.isFinite(connectedAge) &&
+    connectedAge >= -60_000 &&
+    connectedAge <= LIVE_LINK_FRESH_MS &&
+    !lastAttemptFailed;
 
   let state: LiveLinkState;
   let blocker: string | null = null;
@@ -128,15 +137,28 @@ export interface SystemInput {
 /** Five separate, truthful states; unknown always counts as blocked. */
 export function systemStates(i: SystemInput): SystemStates {
   const pollAge =
-    i.safety.source === "poll" && i.safety.recordedAt ? i.now - Date.parse(i.safety.recordedAt) : NaN;
+    i.safety.source === "poll" && i.safety.recordedAt
+      ? i.now - Date.parse(i.safety.recordedAt)
+      : NaN;
   const recentExchange =
-    i.liveLink.state === "verified" || (Number.isFinite(pollAge) && pollAge >= -60_000 && pollAge <= LIVE_LINK_FRESH_MS);
+    i.liveLink.state === "verified" ||
+    (Number.isFinite(pollAge) && pollAge >= -60_000 && pollAge <= LIVE_LINK_FRESH_MS);
   const link: SystemStates["link"] = !i.linkEffective
-    ? { state: "not_configured", detail: "Step 9 live link is not activated for the current approvals." }
+    ? {
+        state: "not_configured",
+        detail: "Step 9 live link is not activated for the current approvals.",
+      }
     : recentExchange
-      ? { state: "connected", detail: "Activated; a signed exchange with Jackboy verified in the last 15 minutes." }
-      : { state: "configured", detail: "Activated; no signed exchange verified in the last 15 minutes." };
-  const mothership: StopState = i.mothershipStop === null ? "unknown" : i.mothershipStop ? "engaged" : "released";
+      ? {
+          state: "connected",
+          detail: "Activated; a signed exchange with Jackboy verified in the last 15 minutes.",
+        }
+      : {
+          state: "configured",
+          detail: "Activated; no signed exchange verified in the last 15 minutes.",
+        };
+  const mothership: StopState =
+    i.mothershipStop === null ? "unknown" : i.mothershipStop ? "engaged" : "released";
   const common: string[] = [];
   if (mothership !== "released") common.push(`Mothership Emergency Stop ${mothership}.`);
   if (!i.safety.clear) common.push(`Jackboy safety: ${i.safety.label}.`);
@@ -144,11 +166,21 @@ export function systemStates(i: SystemInput): SystemStates {
   if (i.running.readable === false) common.push("Running work could not be read here.");
   const autonomousGates = [...common];
   const codeGates = [...common];
-  if (i.safety.codeEnabled !== "on") codeGates.push(`Jackboy CODE setting ${i.safety.codeEnabled}.`);
+  if (i.safety.codeEnabled !== "on")
+    codeGates.push(`Jackboy CODE setting ${i.safety.codeEnabled}.`);
   const autonomousBlockers = [...autonomousGates, "No OMNI executor is connected."];
-  const codeBlockers = [...codeGates, "Each CODE job also needs its own Jackboy permit; no OMNI executor is connected."];
+  const codeBlockers = [
+    ...codeGates,
+    "Each CODE job also needs its own Jackboy permit; no OMNI executor is connected.",
+  ];
   const runState = (count: number, gates: string[]): RunState =>
-    count > 0 ? "running" : !i.autonomyEffective ? "not_configured" : gates.length === 0 ? "armed" : "configured_blocked";
+    count > 0
+      ? "running"
+      : !i.autonomyEffective
+        ? "not_configured"
+        : gates.length === 0
+          ? "armed"
+          : "configured_blocked";
   const autonomousState = runState(i.running.windows + i.running.agentJobs, autonomousGates);
   const notActivated = "Step 10 autonomy authorization is not activated.";
   let nextAction: string;
@@ -163,9 +195,11 @@ export function systemStates(i: SystemInput): SystemStates {
         : i.safety.authorizationExpiresAt === null
           ? "Authorize OMNI autonomy in Jackboy with your passkey, then click Activate autonomy authorization with a fresh two-step code."
           : "Click Activate autonomy authorization with a fresh two-step code. It authorizes only; nothing starts.";
-  else if (autonomousState === "running") nextAction = "Work is running. Use an Emergency Stop to halt it.";
+  else if (autonomousState === "running")
+    nextAction = "Work is running. Use an Emergency Stop to halt it.";
   else if (autonomousState === "armed")
-    nextAction = "Every gate passes now, but no OMNI executor is connected, so nothing can run. No owner action is needed.";
+    nextAction =
+      "Every gate passes now, but no OMNI executor is connected, so nothing can run. No owner action is needed.";
   else
     nextAction = `Nothing to activate. Execution stays blocked by: ${autonomousGates[0]} Releasing a stop is a separate owner decision.`;
   return {
@@ -184,7 +218,8 @@ export function systemStates(i: SystemInput): SystemStates {
   };
 }
 
-export type LiveLinkFailureKind = "safety_denial" | "timeout" | "refused" | "link_failure" | "invalid_reply";
+export type LiveLinkFailureKind =
+  "safety_denial" | "timeout" | "refused" | "link_failure" | "invalid_reply";
 
 const BY_CODE: Record<string, { kind: LiveLinkFailureKind; message: string }> = {
   grant_unavailable: {
@@ -209,7 +244,8 @@ const BY_CODE: Record<string, { kind: LiveLinkFailureKind; message: string }> = 
   },
   project_denied: {
     kind: "refused",
-    message: "Jackboy refused the project: OMNI_LINK_PROJECT_ID differs between Mothership and Jackboy.",
+    message:
+      "Jackboy refused the project: OMNI_LINK_PROJECT_ID differs between Mothership and Jackboy.",
   },
   project_or_action_denied: {
     kind: "refused",
@@ -217,7 +253,8 @@ const BY_CODE: Record<string, { kind: LiveLinkFailureKind; message: string }> = 
   },
   session_limit: {
     kind: "refused",
-    message: "Jackboy already holds its maximum of open link sessions. Wait about 5 minutes and retry.",
+    message:
+      "Jackboy already holds its maximum of open link sessions. Wait about 5 minutes and retry.",
   },
   session_expired_or_invalid: {
     kind: "refused",
