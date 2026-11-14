@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeRows } from "./activation-approvals";
 import { classifyLiveLinkError, codeStatus, liveLinkStatus, LIVE_LINK_FRESH_MS } from "./live-link";
+import { safetyView, type SafetyRow } from "./jackboy-safety";
 
 const NOW = Date.parse("2026-11-14T01:00:00Z");
 const rows = (approvedThrough: number, step7Ends = "2026-11-14T10:20:00Z") =>
@@ -77,13 +78,36 @@ describe("Step 9 live link permission", () => {
   });
 });
 
-describe("Step 10 CODE status", () => {
-  it("is always off, before and after Step 10", () => {
-    expect(codeStatus(rows(9), NOW).state).toBe("off");
-    const after = codeStatus(rows(10), NOW);
-    expect(after.state).toBe("off");
-    expect(after.step10Recorded).toBe(true);
-    expect(after.reasons.join(" ")).toMatch(/no CODE request path/);
+describe("Step 10 autonomy status", () => {
+  const row = (state: SafetyRow["state"], extra: Partial<SafetyRow> = {}): SafetyRow => ({
+    state,
+    paused: state === "paused",
+    code_stop: state === "engaged",
+    code_enabled: false,
+    cancellation: null,
+    observed_at: new Date(NOW - 10_000).toISOString(),
+    expires_at: new Date(NOW + 110_000).toISOString(),
+    source: "poll",
+    reason: "",
+    recorded_at: new Date(NOW - 10_000).toISOString(),
+    ...extra,
+  });
+  it("is not authorized before Step 10, and approving it never reads as running", () => {
+    const clear = safetyView(row("clear"), NOW);
+    expect(codeStatus(rows(9), NOW, clear).state).toBe("not_authorized");
+    const after = codeStatus(rows(10), NOW, clear);
+    expect(after.state).toBe("authorized_not_running");
+    expect(after.headline).toBe("No OMNI executor connected");
+  });
+  it("names the CODE Emergency Stop while it is engaged", () => {
+    const s = codeStatus(rows(10), NOW, safetyView(row("engaged"), NOW));
+    expect(s.state).toBe("authorized_not_running");
+    expect(s.safetyClear).toBe(false);
+    expect(s.headline).toBe("CODE Emergency Stop engaged");
+  });
+  it("lapses when Step 7's window has ended", () => {
+    const r = rows(10, "2026-11-14T00:59:00Z");
+    expect(codeStatus(r, NOW, safetyView(row("clear"), NOW)).state).toBe("not_authorized");
   });
 });
 

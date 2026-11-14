@@ -44,6 +44,7 @@ vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
 
 import { ActivationApprovals } from "@/components/omnibridge/ActivationApprovals";
 import { codeStatus, liveLinkStatus } from "@/lib/live-link";
+import { safetyView } from "@/lib/jackboy-safety";
 
 const owner = "11111111-1111-4111-8111-111111111111";
 
@@ -100,7 +101,8 @@ function snapshot(
       lastConnectedAt: null,
       lastAttemptAt: null,
     }),
-    code: codeStatus(rows as never, Date.now()),
+    safety: safetyView(null, Date.now()),
+    code: codeStatus(rows as never, Date.now(), safetyView(null, Date.now())),
     sandbox: { configured: false, enabled: false },
     mfaAgeSeconds: overrides.mfaAgeSeconds === undefined ? 0 : overrides.mfaAgeSeconds,
   };
