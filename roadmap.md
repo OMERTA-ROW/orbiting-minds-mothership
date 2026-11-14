@@ -1,5 +1,13 @@
 # Evolution — reconciled blueprint roadmap
 
+## Unified OMNI–Jackboy activation (omni.permit/v1) — 2026-11-14
+- [ ] Mothership: Step 9 "Activate live link" and Step 10 "Activate autonomy authorization" as audited, idempotent, revision-bound activations (fresh code; rollback on failed handshake/safety read).
+- [ ] Mothership: switch safety sync to Jackboy's real `safety` action (session-token signed) and record autonomousAllowed / manualDiagnosticsAllowed / blockedBy.
+- [ ] Mothership: Jackboy permits (request/renew/release, signature + caps check), CODE leasing and autonomous jobs need an active permit; lapse/stop halts jobs.
+- [ ] Manual terminal refused only while a verified Jackboy reading says diagnostics are not allowed (Kill Switch on).
+- [ ] Five separate statuses in the panel; SQL + app tests (concurrency, retries, expiry, partial failure, stop cancellation, stale network, rollback); publish with nothing activated; live endpoint/state check.
+- [ ] Waiting on owner/Jackboy: install Jackboy's staged permit database change, publish Jackboy, authorize OMNI autonomy in Jackboy with passkey.
+
 ## Cross-system CODE Emergency Stop enforcement — 2026-11-14 (register 07.07)
 - [x] Mothership: Jackboy safety record + database fail-closed guards (autonomy windows, CODE always-on, CODE leasing need a fresh signed clear reading and Step 10 in effect); non-clear/unknown/stale halts windows, CODE jobs and agent-initiated workspace jobs; manual terminal untouched. Migrations 0053/0054. SQL test 36 checks; 1,847 tests pass.
 - [x] Signed stop-notice receiver (`/api/public/jackboy/safety-event`), scheduled safety sync route, owner "Refresh safety state", Step 9 = live link activated, Step 10 = autonomy authorization shown "Authorized — not running". Flow marker 7.
