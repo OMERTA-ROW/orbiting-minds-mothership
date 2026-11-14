@@ -673,7 +673,7 @@ describe("Steps 9–10 live link and CODE panel", () => {
     expect(within(panel()).getByRole("checkbox", { name: /connection-only check/ })).not.toBeChecked();
     expect(mocks.decide).not.toHaveBeenCalled();
     // CODE stays off even with Step 9 approved.
-    expect(within(panel()).getByText("Off")).toBeInTheDocument();
+    expect(within(panel()).getByText("Not authorized")).toBeInTheDocument();
   });
 
   it("shows Jackboy's Kill Switch refusal as a safety denial", async () => {
