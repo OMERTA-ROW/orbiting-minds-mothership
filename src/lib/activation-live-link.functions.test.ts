@@ -82,7 +82,9 @@ function chain(result: () => unknown) {
   return q;
 }
 
-function invocation(opts: { approvedThrough?: number; mfaFresh?: boolean; step7Ends?: number } = {}) {
+function invocation(
+  opts: { approvedThrough?: number; mfaFresh?: boolean; step7Ends?: number } = {},
+) {
   const rpc = vi.fn(async () => ({ error: null }));
   const rows = Array.from({ length: 10 }, (_, i) => {
     const step = i + 1;
@@ -193,7 +195,11 @@ describe("Step 9 connection-only live link check", () => {
 
   it("reports Jackboy's paused-system refusal as a safety denial, distinct from a timeout", async () => {
     mocks.connect.mockRejectedValueOnce(
-      Object.assign(new Error("HTTP 403"), { stage: "http", status: 403, code: "grant_unavailable" }),
+      Object.assign(new Error("HTTP 403"), {
+        stage: "http",
+        status: 403,
+        code: "grant_unavailable",
+      }),
     );
     const denied = await checkLive()(invocation().input);
     expect(denied).toMatchObject({ ok: false, reason: "safety_denial" });

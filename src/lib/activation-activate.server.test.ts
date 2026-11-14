@@ -10,7 +10,10 @@ const snap = (o: Record<string, unknown> = {}) => ({
   killSwitch: false,
   emergencyStop: true,
   codeEnabled: true,
-  authorization: { id: "c0ffee00-0000-4000-8000-000000000001", expiresAt: new Date(Date.now() + 3600_000).toISOString() },
+  authorization: {
+    id: "c0ffee00-0000-4000-8000-000000000001",
+    expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+  },
   autonomousAllowed: false,
   blockedBy: "emergency_stop_engaged",
   manualDiagnosticsAllowed: true,
@@ -39,17 +42,37 @@ describe("Step 9/10 activation", () => {
     const r = await runActivation("live_link", ATTEMPT, d);
     expect(r).toMatchObject({ ok: true, already: false });
     expect(d.recordSafety).toHaveBeenCalledTimes(1);
-    expect(d.finish).toHaveBeenCalledWith("live_link", ATTEMPT, true, "verified", expect.objectContaining({ handshakeAt: expect.any(String) }));
+    expect(d.finish).toHaveBeenCalledWith(
+      "live_link",
+      ATTEMPT,
+      true,
+      "verified",
+      expect.objectContaining({ handshakeAt: expect.any(String) }),
+    );
   });
   it("rolls back (finishes failed) when the handshake fails, and reports Jackboy's refusal", async () => {
-    const d = deps({ connect: vi.fn().mockRejectedValue(new JackboyLinkError("x", "http", { status: 403, code: "grant_unavailable" })) });
+    const d = deps({
+      connect: vi
+        .fn()
+        .mockRejectedValue(
+          new JackboyLinkError("x", "http", { status: 403, code: "grant_unavailable" }),
+        ),
+    });
     const r = await runActivation("live_link", ATTEMPT, d);
     expect(r).toMatchObject({ ok: false, reason: "safety_denial" });
-    expect(d.finish).toHaveBeenCalledWith("live_link", ATTEMPT, false, "handshake_safety_denial", {});
+    expect(d.finish).toHaveBeenCalledWith(
+      "live_link",
+      ATTEMPT,
+      false,
+      "handshake_safety_denial",
+      {},
+    );
     expect(d.safety).not.toHaveBeenCalled();
   });
   it("rolls back on a handshake timeout (stale network)", async () => {
-    const d = deps({ connect: vi.fn().mockRejectedValue(new JackboyLinkError("t", "timeout", { limitMs: 5000 })) });
+    const d = deps({
+      connect: vi.fn().mockRejectedValue(new JackboyLinkError("t", "timeout", { limitMs: 5000 })),
+    });
     const r = await runActivation("live_link", ATTEMPT, d);
     expect(r).toMatchObject({ ok: false, reason: "timeout" });
     expect(vi.mocked(d.finish).mock.calls[0]![2]).toBe(false);
@@ -79,11 +102,29 @@ describe("Step 9/10 activation", () => {
   });
   it("autonomy: refused without a readable safety snapshot or without Jackboy's authorization", async () => {
     const a = deps({ safety: vi.fn().mockRejectedValue(new Error("x")) });
-    expect(await runActivation("autonomy", ATTEMPT, a)).toMatchObject({ ok: false, reason: "jackboy_safety" });
-    expect(a.finish).toHaveBeenCalledWith("autonomy", ATTEMPT, false, "jackboy_safety_unavailable", {});
+    expect(await runActivation("autonomy", ATTEMPT, a)).toMatchObject({
+      ok: false,
+      reason: "jackboy_safety",
+    });
+    expect(a.finish).toHaveBeenCalledWith(
+      "autonomy",
+      ATTEMPT,
+      false,
+      "jackboy_safety_unavailable",
+      {},
+    );
     const b = deps({ safety: vi.fn(async () => snap({ authorization: null })) });
-    expect(await runActivation("autonomy", ATTEMPT, b)).toMatchObject({ ok: false, reason: "jackboy_authorization" });
-    expect(b.finish).toHaveBeenCalledWith("autonomy", ATTEMPT, false, "jackboy_authorization_missing", {});
+    expect(await runActivation("autonomy", ATTEMPT, b)).toMatchObject({
+      ok: false,
+      reason: "jackboy_authorization",
+    });
+    expect(b.finish).toHaveBeenCalledWith(
+      "autonomy",
+      ATTEMPT,
+      false,
+      "jackboy_authorization_missing",
+      {},
+    );
   });
   it("autonomy: activates as authorization only while the CODE Emergency Stop is engaged, listing what blocks execution", async () => {
     const d = deps();
@@ -95,10 +136,17 @@ describe("Step 9/10 activation", () => {
       expect(r.blockers.join(" ")).toContain("No OMNI executor");
     }
     const evidence = vi.mocked(d.finish).mock.calls[0]![4] as Record<string, unknown>;
-    expect(evidence["caps"]).toEqual({ perCallUsd: 0.5, perTaskUsd: 1, dailyUsd: 5, openaiCapUsd: 10 });
+    expect(evidence["caps"]).toEqual({
+      perCallUsd: 0.5,
+      perTaskUsd: 1,
+      dailyUsd: 5,
+      openaiCapUsd: 10,
+    });
   });
   it("autonomy: Mothership cap/metering preflight blocks before anything is begun", async () => {
-    const d = deps({ preflight: async () => "today's recorded spend has reached the $5 daily limit." });
+    const d = deps({
+      preflight: async () => "today's recorded spend has reached the $5 daily limit.",
+    });
     const r = await runActivation("autonomy", ATTEMPT, d);
     expect(r).toMatchObject({ ok: false, reason: "rule" });
     expect(d.begin).not.toHaveBeenCalled();
@@ -107,7 +155,10 @@ describe("Step 9/10 activation", () => {
     const a = deps({ finish: vi.fn(async () => "superseded" as const) });
     expect(await runActivation("live_link", ATTEMPT, a)).toMatchObject({ ok: false });
     const b = deps({ finish: vi.fn().mockRejectedValue(new Error("db")) });
-    expect(await runActivation("live_link", ATTEMPT, b)).toMatchObject({ ok: false, reason: "not_recorded" });
+    expect(await runActivation("live_link", ATTEMPT, b)).toMatchObject({
+      ok: false,
+      reason: "not_recorded",
+    });
   });
 });
 

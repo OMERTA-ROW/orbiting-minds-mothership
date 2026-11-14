@@ -88,13 +88,15 @@ export function safetyFailureText(reason: string): string {
   if (r.includes("permit_service_unavailable"))
     return "Jackboy answered that its permit service is not installed yet (HTTP 503, unsigned). Install and publish Jackboy's permit database change";
   if (r.includes("kill_switch_on")) return "Jackboy refused the link because its Kill Switch is on";
-  if (r.includes("session_limit")) return "Jackboy has too many open link sessions; it clears them within 5 minutes";
+  if (r.includes("session_limit"))
+    return "Jackboy has too many open link sessions; it clears them within 5 minutes";
   if (r.startsWith("read_timeout")) return "Jackboy did not answer in time";
   if (r.startsWith("read_connection")) return "Jackboy could not be reached";
   if (r.startsWith("read_proof")) return "Jackboy's reply signature did not verify";
   if (r.startsWith("read_contract")) return "Jackboy's reply did not match the safety contract";
   if (r.startsWith("read_http_401")) return "Jackboy rejected the link session";
-  if (r === "mothership_stop_engaged") return "Mothership's Emergency Stop is engaged, so nothing was sent";
+  if (r === "mothership_stop_engaged")
+    return "Mothership's Emergency Stop is engaged, so nothing was sent";
   return r ? r.replace(/_/g, " ") : "check failed";
 }
 
@@ -103,7 +105,8 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
     return {
       state: "unknown",
       label: "Unknown",
-      detail: "Jackboy's safety state could not be read here, so OMNI autonomy and CODE stay halted.",
+      detail:
+        "Jackboy's safety state could not be read here, so OMNI autonomy and CODE stay halted.",
       clear: false,
       killSwitch: "unknown",
       codeStop: "unknown",
@@ -129,7 +132,13 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
   const known = row.source === "poll" || row.source === "event";
   const allowed = fresh && row.autonomous_allowed === true;
   const base = {
-    autonomousAllowed: (fresh ? (row.autonomous_allowed === true ? "yes" : row.autonomous_allowed === false ? "no" : "unknown") : "unknown") as SafetyView["autonomousAllowed"],
+    autonomousAllowed: (fresh
+      ? row.autonomous_allowed === true
+        ? "yes"
+        : row.autonomous_allowed === false
+          ? "no"
+          : "unknown"
+      : "unknown") as SafetyView["autonomousAllowed"],
     manualBlocked: row.paused === true || row.manual_allowed === false,
     blockedBy: fresh ? (row.blocked_by ?? null) : null,
     authorizationExpiresAt: row.authorization_expires_at ?? null,
