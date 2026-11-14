@@ -64,7 +64,7 @@ export interface SafetyView {
   clear: boolean;
   /** Jackboy's own verdict on OMNI autonomous work in the latest verified snapshot. */
   autonomousAllowed: "yes" | "no" | "unknown";
-  /** False only when a verified reading says manual diagnostics are not allowed (Kill Switch on). */
+  /** True only while the last verified reading says manual diagnostics are not allowed (Kill Switch on). */
   manualBlocked: boolean;
   blockedBy: string | null;
   authorizationExpiresAt: string | null;

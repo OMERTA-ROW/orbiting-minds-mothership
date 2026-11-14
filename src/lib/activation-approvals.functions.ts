@@ -47,7 +47,7 @@ import {
   latestSecurityReset,
   type SecurityEvent,
 } from "./activation-status";
-import { classifyLiveLinkError, codeStatus, liveLinkStatus } from "./live-link";
+import { classifyLiveLinkError, liveLinkStatus, systemStates } from "./live-link";
 
 /**
  * The check store (`activation_approval_checks`, `activation_approval_record_check`) comes from
@@ -196,7 +196,9 @@ async function jackboySafetyRow(
   try {
     const { data, error } = await db
       .from("jackboy_safety_state")
-      .select("state,paused,code_stop,code_enabled,cancellation,observed_at,expires_at,source,reason,recorded_at")
+      .select(
+        "state,paused,code_stop,code_enabled,cancellation,observed_at,expires_at,source,reason,recorded_at,autonomous_allowed,manual_allowed,blocked_by,authorization_expires_at,active_permits",
+      )
       .eq("id", 1)
       .maybeSingle();
     if (error || !data) return null;
@@ -204,6 +206,69 @@ async function jackboySafetyRow(
   } catch {
     return null;
   }
+}
+
+export type ActivationRowView = {
+  kind: "live_link" | "autonomy";
+  status: "inactive" | "activating" | "active" | "failed" | "revoked";
+  reason: string;
+  activatedAt: string | null;
+  updatedAt: string;
+  effective: boolean;
+};
+
+/** Step 9/10 activation rows plus the database's own "in effect" verdict (fails closed). */
+async function activationInfo(
+  db: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0],
+): Promise<ActivationRowView[]> {
+  try {
+    const [rows, link, auto] = await Promise.all([
+      db.from("activation_activations").select("kind,status,reason,activated_at,updated_at"),
+      db.rpc("activation_effective", { _kind: "live_link" }),
+      db.rpc("activation_effective", { _kind: "autonomy" }),
+    ]);
+    if (rows.error) return [];
+    return (rows.data ?? []).map((r) => ({
+      kind: r.kind as ActivationRowView["kind"],
+      status: r.status as ActivationRowView["status"],
+      reason: r.reason,
+      activatedAt: r.activated_at,
+      updatedAt: r.updated_at,
+      effective: r.kind === "live_link" ? link.data === true : auto.data === true,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** What is actually running and Mothership's own stop (service-role counts; owner already verified). */
+async function runtimeCounts(): Promise<{
+  windows: number;
+  agentJobs: number;
+  codeJobs: number;
+  mothershipStop: boolean | null;
+}> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [w, a, c, stop] = await Promise.all([
+    supabaseAdmin.from("omni_autonomy_windows").select("id", { count: "exact", head: true }).is("ended_at", null),
+    supabaseAdmin
+      .from("omni_agent_jobs")
+      .select("id", { count: "exact", head: true })
+      .neq("origin", "owner")
+      .in("status", ["queued", "running"]),
+    supabaseAdmin
+      .from("omni_code_jobs")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["leased", "running"]),
+    supabaseAdmin.from("omni_terminal_controls").select("emergency_stop").eq("id", 1).maybeSingle(),
+  ]);
+  // Unreadable counts are shown as running so nothing is claimed idle without evidence.
+  return {
+    windows: w.error ? 1 : (w.count ?? 0),
+    agentJobs: a.error ? 1 : (a.count ?? 0),
+    codeJobs: c.error ? 1 : (c.count ?? 0),
+    mothershipStop: stop.error || !stop.data ? null : stop.data.emergency_stop,
+  };
 }
 
 /** Cloud sandbox (manual OMNI Terminal workspace) settings: presence booleans only. */
@@ -544,7 +609,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       return { denied: true as const, reason };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [steps, audit, checks, selfTest, resetAt, readiness, linkEvents, safetyRow] = await Promise.all([
+    const [steps, audit, checks, selfTest, resetAt, readiness, linkEvents, safetyRow, activations, counts] = await Promise.all([
       context.supabase
         .from("activation_approvals")
         .select(
@@ -566,6 +631,8 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       currentSelfTestReadiness(context),
       latestLinkEvents(context.supabase),
       jackboySafetyRow(context.supabase),
+      activationInfo(context.supabase),
+      runtimeCounts(),
     ]);
     if (steps.error || audit.error) throw new Error("Approval records could not be read.");
     // The approvals stay visible even when the check store is missing or unreadable;
@@ -578,6 +645,14 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
     const checkRows = checks.error ? [] : (checks.data ?? []);
     const deployment = currentDeployment();
     const nowSeconds = Math.floor(Date.now() / 1000);
+    const liveLink = liveLinkStatus({
+      rows: effectiveRows(normalizeRows(steps.data), resetAt),
+      readiness,
+      now: Date.now(),
+      lastConnectedAt: linkEvents.lastConnectedAt,
+      lastAttemptAt: linkEvents.lastAttemptAt,
+    });
+    const safety = safetyView(safetyRow, Date.now());
     const latestSelfTest = selfTest
       ? {
           action: selfTest.action,
@@ -614,19 +689,18 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       deployment,
       selfTest: latestSelfTest,
       selfTestReadiness: readiness,
-      liveLink: liveLinkStatus({
-        rows: effectiveRows(normalizeRows(steps.data), resetAt),
-        readiness,
+      liveLink,
+      safety,
+      activations,
+      system: systemStates({
+        linkEffective: activations.some((a) => a.kind === "live_link" && a.effective),
+        autonomyEffective: activations.some((a) => a.kind === "autonomy" && a.effective),
+        liveLink,
+        safety,
+        mothershipStop: counts.mothershipStop,
+        running: counts,
         now: Date.now(),
-        lastConnectedAt: linkEvents.lastConnectedAt,
-        lastAttemptAt: linkEvents.lastAttemptAt,
       }),
-      safety: safetyView(safetyRow, Date.now()),
-      code: codeStatus(
-        effectiveRows(normalizeRows(steps.data), resetAt),
-        Date.now(),
-        safetyView(safetyRow, Date.now()),
-      ),
       sandbox: await sandboxPresence(),
       mfaAgeSeconds: mfaAgeSeconds(context.claims["amr"], nowSeconds),
     };
