@@ -66,6 +66,8 @@ const BEGIN_TEXT: Record<string, string> = {
   steps_missing: "Approval records are incomplete; refresh the page.",
   mfa: "Re-verify with your authenticator first. Nothing was sent or activated.",
   denied: "Owner access could not be confirmed, so nothing was activated.",
+  begin_error:
+    "The database did not start the activation, so nothing was sent or activated. Refresh and retry once; if it repeats, report the time.",
 };
 
 export function beginReasonText(reason: string | undefined): string {

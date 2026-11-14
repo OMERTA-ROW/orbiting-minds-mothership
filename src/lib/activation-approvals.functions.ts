@@ -1388,7 +1388,9 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
       });
       if (error) {
         if (error.message.includes("Fresh two-factor")) return { ok: false, reason: "mfa" };
-        return { ok: false, reason: "denied" };
+        // Nonsecret diagnostics only (database error class), so a silent refusal can be traced.
+        console.error("[activation] begin refused", k, error.code ?? "no_code");
+        return { ok: false, reason: error.code === "42501" ? "denied" : "begin_error" };
       }
       return data as { ok: boolean; duplicate?: boolean; resumed?: boolean; reason?: string };
     },
