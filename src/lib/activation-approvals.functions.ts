@@ -46,6 +46,7 @@ import {
   latestSecurityReset,
   type SecurityEvent,
 } from "./activation-status";
+import { classifyLiveLinkError, codeStatus, liveLinkStatus } from "./live-link";
 
 /**
  * The check store (`activation_approval_checks`, `activation_approval_record_check`) comes from
@@ -167,6 +168,35 @@ async function selfTestEvents(
     .limit(1);
   if (error) throw new Error("Protocol self-test evidence could not be read.");
   return data[0] ?? null;
+}
+
+/** Newest signed-link handshake attempt and verified connection; unreadable reads as none. */
+async function latestLinkEvents(
+  db: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0],
+): Promise<{ lastConnectedAt: string | null; lastAttemptAt: string | null }> {
+  const { data, error } = await db
+    .from("razul_control_audit")
+    .select("action,occurred_at")
+    .eq("record_type", "jackboy_link")
+    .in("action", ["connecting", "connected"])
+    .order("occurred_at", { ascending: false })
+    .limit(20);
+  if (error || !data) return { lastConnectedAt: null, lastAttemptAt: null };
+  return {
+    lastConnectedAt: data.find((r) => r.action === "connected")?.occurred_at ?? null,
+    lastAttemptAt: data.find((r) => r.action === "connecting")?.occurred_at ?? null,
+  };
+}
+
+/** Cloud sandbox (manual OMNI Terminal workspace) settings: presence booleans only. */
+async function sandboxPresence(): Promise<{ configured: boolean; enabled: boolean }> {
+  try {
+    const { sandboxSettings } = await import("./omni-sandbox-config.server");
+    const { state } = sandboxSettings();
+    return { configured: state.configured, enabled: state.enabled };
+  } catch {
+    return { configured: false, enabled: false };
+  }
 }
 
 /** Step 8 send preconditions: booleans only, never setting values. */
@@ -496,7 +526,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       return { denied: true as const, reason };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [steps, audit, checks, selfTest, resetAt, readiness] = await Promise.all([
+    const [steps, audit, checks, selfTest, resetAt, readiness, linkEvents] = await Promise.all([
       context.supabase
         .from("activation_approvals")
         .select(
@@ -516,6 +546,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       selfTestEvents(context.supabase),
       securityResetAt(context.supabase, context.userId),
       currentSelfTestReadiness(context),
+      latestLinkEvents(context.supabase),
     ]);
     if (steps.error || audit.error) throw new Error("Approval records could not be read.");
     // The approvals stay visible even when the check store is missing or unreadable;
@@ -564,6 +595,15 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       deployment,
       selfTest: latestSelfTest,
       selfTestReadiness: readiness,
+      liveLink: liveLinkStatus({
+        rows: effectiveRows(normalizeRows(steps.data), resetAt),
+        readiness,
+        now: Date.now(),
+        lastConnectedAt: linkEvents.lastConnectedAt,
+        lastAttemptAt: linkEvents.lastAttemptAt,
+      }),
+      code: codeStatus(effectiveRows(normalizeRows(steps.data), resetAt), Date.now()),
+      sandbox: await sandboxPresence(),
       mfaAgeSeconds: mfaAgeSeconds(context.claims["amr"], nowSeconds),
     };
   });
@@ -1032,5 +1072,102 @@ export const runStep8SelfTest = createServerFn({ method: "POST" })
       check: stored.check,
       approvalNeeded: stored.approvalNeeded,
       attemptFinal: true as const,
+    };
+  });
+
+const liveLinkInput = z.object({ confirm: z.literal(true) }).strict();
+
+type LiveLinkFailure = {
+  ok: false;
+  reason: "mfa" | "denied" | "not_ready" | "safety_denial" | "timeout" | "refused" | "link_failure" | "invalid_reply";
+  message: string;
+  details: Detail[];
+};
+
+/**
+ * Step 9: one connection-only signed handshake with Jackboy (no job, no self-test, no CODE).
+ * Needs owner + fresh MFA + per-click confirm, Steps 1–9 effectively approved and every
+ * Mothership link gate (Emergency Stop released, link switch, owner, approval window, identity).
+ * Changes no switch or approval; a refusal is reported, never worked around.
+ */
+export const checkLiveLinkConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => liveLinkInput.parse(input))
+  .handler(async ({ context }): Promise<LiveLinkFailure | { ok: true; verifiedAt: string; message: string }> => {
+    await ownerContext(context);
+    const fail = (reason: LiveLinkFailure["reason"], message: string, details: Detail[] = []): LiveLinkFailure => ({
+      ok: false,
+      reason,
+      message,
+      details,
+    });
+    if (!isMfaFresh(context.claims["amr"], Math.floor(Date.now() / 1000)))
+      return fail("mfa", "Re-verify with your authenticator first. Nothing was sent.");
+    const { data: rows, error } = await context.supabase
+      .from("activation_approvals")
+      .select(
+        "step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision",
+      )
+      .order("step");
+    if (error) return fail("denied", "Approval records could not be read; nothing was sent.");
+    let resetAt: string | null;
+    try {
+      resetAt = await securityResetAt(context.supabase, context.userId);
+    } catch {
+      return fail("denied", "Account security history could not be read; nothing was sent.");
+    }
+    const readiness = await currentSelfTestReadiness(context);
+    const status = liveLinkStatus({
+      rows: effectiveRows(normalizeRows(rows), resetAt),
+      readiness,
+      now: Date.now(),
+      lastConnectedAt: null,
+      lastAttemptAt: null,
+    });
+    if (!status.canCheck) {
+      const stop = status.items.some((i) => i.key === "stop" && !i.ok);
+      return fail(
+        stop ? "safety_denial" : "not_ready",
+        stop
+          ? "Safety denial: Mothership's Emergency Stop is engaged or unreadable, so nothing was sent. It was not released."
+          : `Not sent: ${status.blocker ?? "a requirement is not met."}`,
+        status.items
+          .filter((i) => !i.ok)
+          .map((i) => ({ label: i.label, status: "needs_attention" as const, detail: i.detail })),
+      );
+    }
+    const { configuredJackboyLink, JackboyLink, JackboyLinkError } = await import(
+      "./jackboy-link.server"
+    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let link;
+    try {
+      link = await configuredJackboyLink();
+    } catch {
+      return fail(
+        "not_ready",
+        "Not sent: the link settings are disabled, malformed or outside their approval window.",
+      );
+    }
+    const client = new JackboyLink(link, async (event) => {
+      const { error: auditError } = await supabaseAdmin.from("razul_control_audit").insert({
+        actor_id: context.userId,
+        action: event,
+        record_type: "jackboy_link",
+        record_id: process.env["OMNI_LINK_APPROVAL_ID"] || "live_link_check",
+      });
+      if (auditError) throw new JackboyLinkError("Live link audit failed.", "audit");
+    });
+    try {
+      await client.connect();
+    } catch (e) {
+      const c = classifyLiveLinkError(e);
+      return fail(c.kind, c.message, c.details);
+    }
+    return {
+      ok: true as const,
+      verifiedAt: new Date().toISOString(),
+      message:
+        "Live link verified: Jackboy answered a signed handshake with a ready session. No job, self-test or CODE request was sent.",
     };
   });
