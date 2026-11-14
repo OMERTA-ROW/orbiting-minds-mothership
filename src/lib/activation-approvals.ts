@@ -318,6 +318,12 @@ export const decisionInput = z
     expiresAt: z.iso.datetime({ offset: true }).nullable().default(null),
     capConfirmed: z.boolean().default(false),
     dailyConfirmed: z.boolean().default(false),
+    /** Steps 9–10 only: run the matching activation right after the approval is recorded. */
+    activate: z.object({ attemptId: z.string().uuid() }).strict().nullable().default(null),
   })
-  .strict();
+  .strict()
+  .refine((d) => d.activate === null || (d.action === "approve" && (d.step === 9 || d.step === 10)), {
+    message: "Only approving Step 9 or Step 10 can also activate.",
+    path: ["activate"],
+  });
 export type DecisionInput = z.infer<typeof decisionInput>;

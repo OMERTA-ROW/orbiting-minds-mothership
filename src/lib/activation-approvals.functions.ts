@@ -936,7 +936,15 @@ export const decideActivationApproval = createServerFn({ method: "POST" })
         message: "The decision was not recorded. Check owner access and refresh.",
       };
     }
-    return { ok: true as const };
+    if (!data.activate) return { ok: true as const, activation: null };
+    // Steps 9–10: the owner's approval click also runs the real activation (handshake / signed
+    // safety read). The approval stays recorded even if activation fails; activation fails closed.
+    const kind = data.step === 9 ? ("live_link" as const) : ("autonomy" as const);
+    const activation = await activationHandler(kind)({
+      context,
+      data: { confirm: true, attemptId: data.activate.attemptId },
+    });
+    return { ok: true as const, activation: { kind, ...activation } };
   });
 
 type Detail = ActivationCheckDetail;
