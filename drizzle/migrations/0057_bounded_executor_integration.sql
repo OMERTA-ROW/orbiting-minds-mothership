@@ -1,4 +1,4 @@
--- Extends the existing activation authority; no second approval/permit database or enabled switch.
+-- Follows upstream 0056 without replacing published history or adding a second activation authority.
 CREATE FUNCTION public.activation_attempt_outcome(_kind text,_attempt uuid) RETURNS text
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
 DECLARE a public.activation_activations%ROWTYPE;

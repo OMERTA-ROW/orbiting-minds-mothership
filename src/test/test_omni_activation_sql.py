@@ -63,7 +63,7 @@ def main():
             paths = list((ROOT / "drizzle/migrations").glob("*_omni_activation_permits.sql"))
             assert len(paths) == 1
             sql(paths[0].read_text())
-        sql((ROOT / "drizzle/migrations/0056_bounded_executor_integration.sql").read_text())
+        sql((ROOT / "drizzle/migrations/0057_bounded_executor_integration.sql").read_text())
         sql(f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()); INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner');")
 
         def deny(text):
