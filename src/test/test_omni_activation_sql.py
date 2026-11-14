@@ -67,6 +67,7 @@ def main():
         paths = [Path(halt_audit)] if halt_audit else list((ROOT / "drizzle/migrations").glob("*_jackboy_halt_audit.sql"))
         assert len(paths) == 1
         sql(paths[0].read_text())
+        sql((ROOT / "drizzle/migrations/0057_omni_noop_worker.sql").read_text())
         sql(f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()); INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner');")
 
         def deny(text):
@@ -162,6 +163,38 @@ def main():
         deny(always_on); deny(window)
         deny("SET ROLE service_role; " + permit(pre))
         # Jackboy allows: windows and CODE always-on admitted; leasing still needs a permit.
+        assert ok(poll()) == 'clear'
+        worker_hash = 'e' * 64
+        noop_digest = '9903e100e835979c05c1664f2eac28a97ba4884a56e0f62807a22e43b04d8633'
+        deny(owner(f"SELECT public.omni_noop_worker_create('test','{worker_hash}',1);", mfa=False))
+        worker_id = ok(owner(f"SELECT public.omni_noop_worker_create('test','{worker_hash}',1);"))
+        noop_id = ok(owner("SELECT public.omni_noop_enqueue(1000);"))
+        worker_call = lambda op, jid='NULL', h=worker_hash: (
+            f"SET ROLE service_role; SELECT public.omni_noop_worker_action('{h}','{op}',{jid});"
+        )
+        deny(f"SET ROLE authenticated; SELECT public.omni_noop_worker_action('{worker_hash}','claim');")
+        checks += 1; assert json.loads(ok(worker_call('inspect', h='f' * 64)))['reason'] == 'identity_invalid'
+        checks += 1; assert json.loads(ok(worker_call('claim')))['job'] == noop_id
+        assert ok(permit(noop_id, kind='autonomous', digest=noop_digest)) == 'issued'
+        checks += 1; assert json.loads(ok(worker_call('start', f"'{noop_id}'")))['ok'] is True
+        assert sql(f"SELECT status FROM public.omni_noop_jobs WHERE id='{noop_id}';") == 'running'
+        other_hash = 'd' * 64
+        ok(owner(f"SELECT public.omni_noop_worker_create('other','{other_hash}',1);"))
+        missing_id = ok(owner("SELECT public.omni_noop_enqueue(1000);"))
+        checks += 1; assert json.loads(ok(worker_call('claim', h=other_hash)))['job'] == missing_id
+        checks += 1; assert json.loads(ok(worker_call('start', f"'{missing_id}'", other_hash)))['reason'] == 'safety_or_permit'
+        assert sql(f"SELECT status FROM public.omni_noop_jobs WHERE id='{missing_id}';") == 'cancelled'
+        expired_id = ok(owner("SELECT public.omni_noop_enqueue(1000);"))
+        checks += 1; assert json.loads(ok(worker_call('claim', h=other_hash)))['job'] == expired_id
+        sql(f"UPDATE public.omni_noop_jobs SET lease_expires_at=now()-interval '1 second' WHERE id='{expired_id}';")
+        checks += 1; assert ok("SET ROLE service_role; SELECT public.omni_noop_sweep();") == '1'
+        assert sql(f"SELECT status FROM public.omni_noop_jobs WHERE id='{expired_id}';") == 'cancelled'
+        deny("SET ROLE authenticated; SELECT public.omni_noop_sweep();")
+        assert ok(event('e' * 32)) == 'engaged'
+        checks += 1; assert json.loads(ok(worker_call('heartbeat', f"'{noop_id}'")))['reason'] == 'safety_or_permit'
+        assert sql(f"SELECT status FROM public.omni_noop_jobs WHERE id='{noop_id}';") == 'cancelled'
+        ok(owner(f"SELECT public.omni_noop_worker_revoke('{worker_id}');"))
+        checks += 1; assert json.loads(ok(worker_call('inspect')))['reason'] == 'identity_invalid'
         assert ok(poll()) == 'clear'
         ok(window); ok(always_on)
         j = job(); k = job()

@@ -35,7 +35,34 @@ Jackboy Dev Control is the authority. This file records how Mothership (OMNI) fo
 - Mothership migration `0055` and its halt-audit follow-up `0056` require separate live-history and
   deployment verification. Check the existing history and prerequisites before any owner-approved
   migration; do not infer installation from this document.
-- No OMNI executor exists in this build. A standalone worker needs a scoped, revocable identity,
-  isolated execution, durable job admission and cancellation, and enforcement of permit, safety and
-  spending limits before it can process jobs. A permit or an isolated no-op test does not prove a live
-  job ran or was cancelled.
+- This branch adds an isolated worker for synthetic, 1–30 second timers only. It cannot execute CODE,
+  shell commands, provider requests or production work. It uses a separate, short-lived, revocable
+  identity; the broker retains the existing Jackboy and database credentials. Identity creation and
+  queue admission require an authenticated owner with fresh MFA. Each permit reserves $1 of Jackboy's
+  task and daily budget, even though the no-op has no provider cost.
+- The broker route is disabled unless `OMNI_NOOP_WORKER_ENABLED=true`. Do not enable it or provision
+  a worker without a separate owner decision. First reconcile the live Mothership migration history,
+  including `0055` and `0056`, and the proposed `0057` number, schema and prerequisites; approve the
+  migration separately. Do not duplicate Jackboy's owner-reported installed `0066`. Verify the
+  published Jackboy commit and signed permit service independently before any publication.
+- After approval, deploy the broker default-off, arrange the existing authenticated Jackboy safety
+  synchronization job and monitor its failures, then securely provision the worker-only token to
+  an isolated runtime. `OMNI_NOOP_BROKER_URL` identifies the HTTPS broker and
+  `OMNI_NOOP_WORKER_TOKEN` is displayed once when the owner creates an identity; never put the token
+  in logs or source control. The `scripts/omni-noop-worker.ts` entry point handles one job per
+  invocation, so an operator must separately provide and monitor its lifecycle.
+- A broker heartbeat rechecks signed Jackboy safety and renews the permit; cancellation occurs when
+  a refusal, stop, timeout or lease failure is detected, not necessarily when Jackboy's stop is
+  engaged. A crashed worker's database lease is swept on subsequent broker actions or safety-sync
+  runs; without either, the owner list reports an expired lease but persisted cancellation is delayed.
+  Revocation immediately cancels the identity's local jobs; remote permit release may wait for
+  expiry. A completed local job with an unconfirmed remote release is reported as unconfirmed by
+  the worker, not proof of remote cleanup.
+- To roll back, first disable the broker, revoke worker identities and stop the worker runtime; keep
+  Emergency Stop engaged and verify remote permits have expired or been revoked. Retain the job and
+  audit tables for investigation; any destructive schema rollback needs a separate reviewed recovery
+  plan. Never change existing approvals or credentials as part of this rollback.
+- The isolated cross-repository cancellation test runs with
+  `JACKBOY_TEST_ROOT=/path/to/installed/jackboy node --import tsx --test tests/jackboy-noop-worker-integration.test.mjs`.
+  It uses two disposable PGlite databases and in-process signed handlers, not live services or
+  production TLS. It is not evidence that a deployed worker or live job ran.

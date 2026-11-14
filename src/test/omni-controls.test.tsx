@@ -27,6 +27,13 @@ vi.mock("@/lib/omni-api-keys.functions", () => ({
   rotateOmniApiKey: mocks.rotate,
   revokeOmniApiKey: mocks.revoke,
 }));
+vi.mock("@/lib/omni-noop-owner.functions", () => ({
+  listNoopWorkers: vi.fn().mockResolvedValue([]),
+  listNoopJobs: vi.fn().mockResolvedValue([]),
+  createNoopWorker: vi.fn(),
+  revokeNoopWorker: vi.fn(),
+  enqueueNoopJob: vi.fn(),
+}));
 vi.mock("@/lib/jackboy-link.functions", () => ({ requestJackboyLink: vi.fn() }));
 vi.mock("@/lib/jackboy-dispatch.functions", () => ({
   approveJackboyReceipt: vi.fn(),
