@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { staged } from "./staged-rpc";
 
 const createInput = z
   .object({
@@ -24,7 +25,7 @@ export const listNoopWorkers = createServerFn({ method: "GET" })
     setResponseHeader("Cache-Control", "private, no-store");
     const { requireRazulOwner } = await import("./razul-owner.server");
     await requireRazulOwner(context.supabase, context.userId, context.claims);
-    const result = await context.supabase.rpc("omni_noop_workers_list");
+    const result = await staged(context.supabase).rpc("omni_noop_workers_list");
     if (result.error) throw new Error("Worker identities could not be read.");
     return result.data;
   });
@@ -35,7 +36,7 @@ export const listNoopJobs = createServerFn({ method: "GET" })
     setResponseHeader("Cache-Control", "private, no-store");
     const { requireRazulOwner } = await import("./razul-owner.server");
     await requireRazulOwner(context.supabase, context.userId, context.claims);
-    const result = await context.supabase.rpc("omni_noop_jobs_list");
+    const result = await staged(context.supabase).rpc("omni_noop_jobs_list");
     if (result.error) throw new Error("No-op jobs could not be read.");
     return result.data;
   });
@@ -50,7 +51,7 @@ export const createNoopWorker = createServerFn({ method: "POST" })
     const { randomBytes, createHash } = await import("node:crypto");
     const secret = `omni_worker_${randomBytes(32).toString("hex")}`;
     const hash = createHash("sha256").update(secret).digest("hex");
-    const result = await context.supabase.rpc("omni_noop_worker_create", {
+    const result = await staged(context.supabase).rpc("omni_noop_worker_create", {
       _name: data.name,
       _hash: hash,
       _hours: data.hours,
@@ -66,7 +67,7 @@ export const revokeNoopWorker = createServerFn({ method: "POST" })
     setResponseHeader("Cache-Control", "private, no-store");
     const { requireRazulOwner } = await import("./razul-owner.server");
     await requireRazulOwner(context.supabase, context.userId, context.claims);
-    const result = await context.supabase.rpc("omni_noop_worker_revoke", { _id: data.id });
+    const result = await staged(context.supabase).rpc("omni_noop_worker_revoke", { _id: data.id });
     if (result.error) throw new Error("Worker identity could not be revoked.");
     return { revoked: true };
   });
@@ -78,7 +79,7 @@ export const enqueueNoopJob = createServerFn({ method: "POST" })
     setResponseHeader("Cache-Control", "private, no-store");
     const { requireRazulOwner } = await import("./razul-owner.server");
     await requireRazulOwner(context.supabase, context.userId, context.claims);
-    const result = await context.supabase.rpc("omni_noop_enqueue", {
+    const result = await staged(context.supabase).rpc("omni_noop_enqueue", {
       _duration_ms: data.durationMs,
     });
     if (result.error || !result.data) throw new Error("No-op job could not be queued.");

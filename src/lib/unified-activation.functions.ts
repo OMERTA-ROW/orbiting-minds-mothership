@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isMfaFresh } from "./activation-approvals";
 import { latestSecurityReset } from "./activation-status";
 import { readExecutionState } from "./unified-activation.server";
+import { staged } from "./staged-rpc";
 
 type OwnerArgs = Parameters<typeof import("./razul-owner.server").requireRazulOwner>;
 type Context = { supabase: OwnerArgs[0]; userId: string; claims: OwnerArgs[2] };
@@ -109,7 +110,7 @@ export const controlUnifiedExecution = createServerFn({ method: "POST" })
           throw new Error("Remote rollback verified but upstream reconciliation was not recorded");
         if (attempt.attempt_id) {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const confirmed = await supabaseAdmin.rpc("activation_rollback_confirmed", {
+          const confirmed = await staged(supabaseAdmin).rpc("activation_rollback_confirmed", {
             _kind: kind,
             _attempt: attempt.attempt_id,
           });
@@ -142,7 +143,7 @@ export const controlUnifiedExecution = createServerFn({ method: "POST" })
       if (current.error) throw new Error("Current disarm scope is unavailable");
       if (current.data.attempt_id) {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const confirmed = await supabaseAdmin.rpc("activation_rollback_confirmed", {
+        const confirmed = await staged(supabaseAdmin).rpc("activation_rollback_confirmed", {
           _kind: "autonomy",
           _attempt: current.data.attempt_id,
         });
@@ -284,7 +285,7 @@ export const runAuthorizedPlan = createServerFn({ method: "POST" })
       await holder.acquire();
       if (!holder.usable()) throw new Error("Upstream job permit is not usable");
       const lease = async () => {
-        const local = await supabaseAdmin
+        const local = await staged(supabaseAdmin)
           .rpc("omni_execution_permit_live", { _job: data.jobId })
           .abortSignal(AbortSignal.timeout(750));
         if (local.error || local.data !== true || halted || !holder.usable())

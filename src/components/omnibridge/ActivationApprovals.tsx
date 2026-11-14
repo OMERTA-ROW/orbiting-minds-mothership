@@ -27,6 +27,7 @@ import {
   deactivateActivation,
 } from "@/lib/activation-approvals.functions";
 import { LiveLinkPanel, type LiveLinkOutcome } from "@/components/omnibridge/LiveLinkPanel";
+import { ReadinessEvidence } from "@/components/omnibridge/ReadinessEvidence";
 import { UnifiedExecutionStatus } from "@/components/omnibridge/UnifiedExecutionStatus";
 import { SELF_TEST_ATTEMPT_KEY } from "@/lib/activation-self-test";
 import { Step8SelfTest, type SelfTestOutcome } from "@/components/omnibridge/Step8SelfTest";
@@ -1250,6 +1251,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
       </ol>
 
       <UnifiedExecutionStatus />
+      {data.readinessEvidence && <ReadinessEvidence rows={data.readinessEvidence} now={now} />}
       <LiveLinkPanel
         liveLink={data.liveLink}
         system={data.system}
