@@ -22,7 +22,12 @@ function stamp(iso: string | null, now: number) {
   if (!Number.isFinite(t)) return { text: iso, rel: "" };
   const mins = Math.round((t - now) / 60_000);
   const abs = Math.abs(mins);
-  const span = abs < 120 ? `${abs} min` : abs < 2880 ? `${Math.round(abs / 60)} h` : `${Math.round(abs / 1440)} d`;
+  const span =
+    abs < 120
+      ? `${abs} min`
+      : abs < 2880
+        ? `${Math.round(abs / 60)} h`
+        : `${Math.round(abs / 1440)} d`;
   return {
     text: new Date(t).toLocaleString(undefined, { timeZoneName: "short" }),
     rel: mins === 0 ? "now" : mins < 0 ? `${span} ago` : `in ${span}`,
@@ -57,18 +62,32 @@ export function ReadinessEvidence({ rows, now }: { rows: EvidenceRow[]; now: num
               <table className="w-full text-left text-xs">
                 <thead className="bg-muted/40 text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-2 py-1.5 font-medium">Record</th>
-                    <th scope="col" className="px-2 py-1.5 font-medium">Value</th>
-                    <th scope="col" className="px-2 py-1.5 font-medium">Evidence</th>
-                    <th scope="col" className="px-2 py-1.5 font-medium">Time</th>
-                    <th scope="col" className="px-2 py-1.5 font-medium">Source</th>
+                    <th scope="col" className="px-2 py-1.5 font-medium">
+                      Record
+                    </th>
+                    <th scope="col" className="px-2 py-1.5 font-medium">
+                      Value
+                    </th>
+                    <th scope="col" className="px-2 py-1.5 font-medium">
+                      Evidence
+                    </th>
+                    <th scope="col" className="px-2 py-1.5 font-medium">
+                      Time
+                    </th>
+                    <th scope="col" className="px-2 py-1.5 font-medium">
+                      Source
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((r) => {
                     const t = stamp(r.at, now);
                     return (
-                      <tr key={r.id} data-testid={`evidence-${r.id}`} className="border-t align-top">
+                      <tr
+                        key={r.id}
+                        data-testid={`evidence-${r.id}`}
+                        className="border-t align-top"
+                      >
                         <th scope="row" className="px-2 py-1.5 font-medium">
                           {r.label}
                           <p className="font-normal text-muted-foreground">{r.detail}</p>

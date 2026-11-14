@@ -17,8 +17,20 @@ function base(over: Partial<EvidenceInput> = {}): EvidenceInput {
       { step: 10, status: "approved", decided_at: iso(-299), approval_expires_at: null },
     ],
     activations: [
-      { kind: "live_link", status: "inactive", activatedAt: null, updatedAt: iso(-500), effective: false },
-      { kind: "autonomy", status: "inactive", activatedAt: null, updatedAt: iso(-500), effective: false },
+      {
+        kind: "live_link",
+        status: "inactive",
+        activatedAt: null,
+        updatedAt: iso(-500),
+        effective: false,
+      },
+      {
+        kind: "autonomy",
+        status: "inactive",
+        activatedAt: null,
+        updatedAt: iso(-500),
+        effective: false,
+      },
     ],
     selfTest: { action: "self_test_passed", occurred_at: iso(-600) },
     mothershipStop: { engaged: false, changedAt: iso(-1000) },
@@ -30,14 +42,23 @@ const row = (i: EvidenceInput, id: string) => readinessEvidence(i).find((r) => r
 describe("readiness evidence", () => {
   it("handshake is current only within 30 minutes, stale after, missing when never", () => {
     expect(row(base(), "handshake").status).toBe("missing");
-    expect(row(base({ handshake: { lastConnectedAt: iso(-29), lastAttemptAt: iso(-29) } }), "handshake").status).toBe("current");
-    const stale = row(base({ handshake: { lastConnectedAt: iso(-31), lastAttemptAt: iso(-31) } }), "handshake");
+    expect(
+      row(base({ handshake: { lastConnectedAt: iso(-29), lastAttemptAt: iso(-29) } }), "handshake")
+        .status,
+    ).toBe("current");
+    const stale = row(
+      base({ handshake: { lastConnectedAt: iso(-31), lastAttemptAt: iso(-31) } }),
+      "handshake",
+    );
     expect(stale.status).toBe("stale");
     expect(stale.at).toBe(iso(-31));
   });
 
   it("reports a later failed handshake attempt", () => {
-    const r = row(base({ handshake: { lastConnectedAt: iso(-40), lastAttemptAt: iso(-2) } }), "handshake");
+    const r = row(
+      base({ handshake: { lastConnectedAt: iso(-40), lastAttemptAt: iso(-2) } }),
+      "handshake",
+    );
     expect(r.detail).toContain("did not complete");
   });
 
@@ -47,9 +68,20 @@ describe("readiness evidence", () => {
   });
 
   it("an active permit past its expiry counts as expired, not current", () => {
-    const p = { kind: "code", status: "active", issuedAt: iso(-2), expiresAt: iso(-1), closedAt: null, closedReason: null };
+    const p = {
+      kind: "code",
+      status: "active",
+      issuedAt: iso(-2),
+      expiresAt: iso(-1),
+      closedAt: null,
+      closedReason: null,
+    };
     expect(row(base({ permit: p }), "permit").status).toBe("expired");
-    expect(row(base({ permit: { ...p, expiresAt: iso(1) } }), "permit")).toMatchObject({ status: "current", signed: true, at: iso(-2) });
+    expect(row(base({ permit: { ...p, expiresAt: iso(1) } }), "permit")).toMatchObject({
+      status: "current",
+      signed: true,
+      at: iso(-2),
+    });
   });
 
   it("approved Steps 9–10 do not count as activation", () => {
@@ -68,7 +100,12 @@ describe("readiness evidence", () => {
     const r = row(base(), "step8_proof");
     expect(r.at).toBe(iso(-600 + 24 * 60));
     expect(r.status).toBe("current");
-    expect(row(base({ selfTest: { action: "self_test_passed", occurred_at: iso(-24 * 60 - 1) } }), "step8_proof").status).toBe("expired");
+    expect(
+      row(
+        base({ selfTest: { action: "self_test_passed", occurred_at: iso(-24 * 60 - 1) } }),
+        "step8_proof",
+      ).status,
+    ).toBe("expired");
   });
 
   it("without a signed Jackboy reading, stops and authorization are not current", () => {
@@ -81,7 +118,13 @@ describe("readiness evidence", () => {
   });
 
   it("an unreadable Mothership stop is unknown, not released", () => {
-    expect(row(base({ mothershipStop: { engaged: null, changedAt: null } }), "mothership_stop")).toMatchObject({ value: "unknown", status: "unreadable" });
-    expect(row(base(), "mothership_stop")).toMatchObject({ value: "released", status: "current", at: iso(-1000) });
+    expect(
+      row(base({ mothershipStop: { engaged: null, changedAt: null } }), "mothership_stop"),
+    ).toMatchObject({ value: "unknown", status: "unreadable" });
+    expect(row(base(), "mothership_stop")).toMatchObject({
+      value: "released",
+      status: "current",
+      at: iso(-1000),
+    });
   });
 });
