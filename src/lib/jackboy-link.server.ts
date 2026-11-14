@@ -73,6 +73,13 @@ export const JACKBOY_REFUSAL_CODES = [
   "kill_switch_on",
   "https_post_required",
   "invalid_request",
+  /** Jackboy session refusals (omni.link sessions): nonsecret, no reply contents kept. */
+  "grant_unavailable",
+  "project_denied",
+  "session_limit",
+  "session_expired_or_invalid",
+  "concurrency_limit",
+  "runner_unavailable",
 ] as const;
 export type JackboyRefusalCode = (typeof JACKBOY_REFUSAL_CODES)[number];
 export type JackboyFailureStage =

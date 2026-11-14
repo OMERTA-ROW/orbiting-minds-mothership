@@ -240,6 +240,8 @@ export type FailureKind = "safety_denial" | "timeout" | "refused" | "link_failur
 const DENIAL_BY_CODE: Record<string, string> = {
   kill_switch_on:
     "Safety denial: Jackboy's global Kill Switch is on, so it refused the self-test. Nothing ran. It stays on unless you release it in Jackboy yourself.",
+  grant_unavailable:
+    "Safety denial from Jackboy: its global Kill Switch is on, or its saved link approval / owner-project record is not valid. Nothing ran.",
   configuration_scope_denied:
     "Safety denial from Jackboy: its global pause/Kill Switch is on, its project/owner record does not match, or a rate limit was reached. Nothing ran.",
   project_or_action_denied:
