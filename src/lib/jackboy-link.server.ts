@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import { linkIdentityIssues } from "./activation-self-test";
 
 // Uses the hosting platform's standard fetch: the server certificate is checked
 // against public trust automatically. There is deliberately no option to supply a
