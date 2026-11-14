@@ -1197,7 +1197,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         activations={data.activations}
         safety={data.safety}
         sandbox={data.sandbox}
-        step10Approved={data.rows.some((r) => r.step === 10 && r.status === "approved")}
+        step10Approved={effective.some((r) => r.step === 10 && isEffectivelyApproved(r, now))}
         mfaFresh={mfaFresh}
         busy={busy}
         pending={
