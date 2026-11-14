@@ -63,11 +63,12 @@ export class FakeJackboy {
   }
 
   fetch = async (url: string, init: RequestInit): Promise<Response> => {
-    if (this.hang) return new Promise<Response>((_r, reject) => {
-      (init.signal as AbortSignal | undefined)?.addEventListener("abort", () =>
-        reject(Object.assign(new Error("aborted"), { name: "AbortError" })),
-      );
-    });
+    if (this.hang)
+      return new Promise<Response>((_r, reject) => {
+        (init.signal as AbortSignal | undefined)?.addEventListener("abort", () =>
+          reject(Object.assign(new Error("aborted"), { name: "AbortError" })),
+        );
+      });
     if (new URL(url).pathname !== PATH) return new Response("{}", { status: 404 });
     const h = new Headers(init.headers);
     const body = String(init.body);
@@ -79,7 +80,8 @@ export class FakeJackboy {
       new Response(JSON.stringify({ error }), { status });
     if (
       h.get("x-omni-client") !== FAKE.clientId ||
-      sig !== hmac(FAKE.secret, `${CONTRACT}\nPOST\n${PATH}\n${ts}\n${nonce}\n${sha256(token)}\n${body}`)
+      sig !==
+        hmac(FAKE.secret, `${CONTRACT}\nPOST\n${PATH}\n${ts}\n${nonce}\n${sha256(token)}\n${body}`)
     )
       return plain(401, "authentication_failed");
     if (this.nonces.has(nonce)) return plain(409, "replay");
@@ -92,7 +94,9 @@ export class FakeJackboy {
       const text = JSON.stringify({ contract: CONTRACT, requestNonce: nonce, ...payload });
       return new Response(text, {
         status,
-        headers: { "x-omni-proof": hmac(FAKE.secret, `${CONTRACT}\nresponse\n${nonce}\n${status}\n${text}`) },
+        headers: {
+          "x-omni-proof": hmac(FAKE.secret, `${CONTRACT}\nresponse\n${nonce}\n${status}\n${text}`),
+        },
       });
     };
     if (action === "handshake") {
@@ -107,7 +111,8 @@ export class FakeJackboy {
         capabilities: ["jobs.cancel", "jobs.read", "protocol.self-test"],
       });
     }
-    if (token === FAKE.bootstrap || !this.sessions.has(token)) return plain(401, "session_expired_or_invalid");
+    if (token === FAKE.bootstrap || !this.sessions.has(token))
+      return plain(401, "session_expired_or_invalid");
     for (const p of this.permits.values())
       if (p.status === "active" && Date.parse(p.expiresAt) <= Date.now()) p.status = "expired";
     const reason = this.reason();
@@ -123,7 +128,10 @@ export class FakeJackboy {
           emergencyStop: this.emergencyStop,
           codeEnabled: this.codeEnabled,
           authorization: this.authorized
-            ? { id: "c0ffee00-0000-4000-8000-000000000001", expiresAt: new Date(now + 3600_000).toISOString() }
+            ? {
+                id: "c0ffee00-0000-4000-8000-000000000001",
+                expiresAt: new Date(now + 3600_000).toISOString(),
+              }
             : null,
           autonomousAllowed: reason === null,
           blockedBy: reason,
@@ -136,14 +144,18 @@ export class FakeJackboy {
     const existing = this.permits.get(jobId);
     if (action === "permit.release") {
       if (existing && existing.status === "active") existing.status = "released";
-      return signed(200, { http: 200, permit: existing ? { id: existing.id, jobId, status: existing.status } : null });
+      return signed(200, {
+        http: 200,
+        permit: existing ? { id: existing.id, jobId, status: existing.status } : null,
+      });
     }
     // permit.request
     let refusal = reason;
     if (!refusal && existing) {
       if (existing.status === "expired") refusal = "permit_lapsed";
       else if (existing.status !== "active") refusal = "job_closed";
-      else if (existing.digest !== input["digest"] || existing.kind !== input["kind"]) refusal = "scope_mismatch";
+      else if (existing.digest !== input["digest"] || existing.kind !== input["kind"])
+        refusal = "scope_mismatch";
     }
     if (!refusal && !existing && [...this.permits.values()].some((p) => p.status === "active"))
       refusal = "concurrency_limit";
@@ -166,7 +178,15 @@ export class FakeJackboy {
     p.expiresAt = new Date(now + 60_000).toISOString();
     this.permits.set(jobId, p);
     const fields = [
-      "omni.permit/v1", p.id, p.jobId, p.kind, p.digest, FAKE.clientId, FAKE.projectId, FAKE.approvalId, p.expiresAt,
+      "omni.permit/v1",
+      p.id,
+      p.jobId,
+      p.kind,
+      p.digest,
+      FAKE.clientId,
+      FAKE.projectId,
+      FAKE.approvalId,
+      p.expiresAt,
     ].join("\n");
     return signed(200, {
       http: 200,

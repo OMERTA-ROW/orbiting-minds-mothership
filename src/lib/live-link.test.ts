@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { normalizeRows } from "./activation-approvals";
-import { classifyLiveLinkError, liveLinkStatus, LIVE_LINK_FRESH_MS, systemStates } from "./live-link";
+import {
+  classifyLiveLinkError,
+  liveLinkStatus,
+  LIVE_LINK_FRESH_MS,
+  systemStates,
+} from "./live-link";
 import { safetyView, type SafetyRow } from "./jackboy-safety";
 
 const NOW = Date.parse("2026-11-14T01:00:00Z");
@@ -129,15 +134,28 @@ describe("separate system states", () => {
   });
   it("names the exact next owner action before each activation", () => {
     const unknown = safetyView(null, NOW);
-    expect(states({ linkEffective: false, autonomyEffective: false, safety: unknown }).nextAction).toContain("Activate live link");
-    expect(states({ autonomyEffective: false, safety: unknown }).nextAction).toContain("permit service");
-    const noAuth = safetyView(row("clear", { autonomous_allowed: false, blocked_by: "not_authorized" }), NOW);
+    expect(
+      states({ linkEffective: false, autonomyEffective: false, safety: unknown }).nextAction,
+    ).toContain("Activate live link");
+    expect(states({ autonomyEffective: false, safety: unknown }).nextAction).toContain(
+      "permit service",
+    );
+    const noAuth = safetyView(
+      row("clear", { autonomous_allowed: false, blocked_by: "not_authorized" }),
+      NOW,
+    );
     expect(states({ autonomyEffective: false, safety: noAuth }).nextAction).toContain("passkey");
-    expect(states({ autonomyEffective: false, safety: noAuth }).autonomous.state).toBe("not_configured");
+    expect(states({ autonomyEffective: false, safety: noAuth }).autonomous.state).toBe(
+      "not_configured",
+    );
   });
   it("reports running only from database counts", () => {
-    expect(states({ running: { windows: 1, agentJobs: 0, codeJobs: 0 } }).autonomous.state).toBe("running");
-    expect(states({ running: { windows: 0, agentJobs: 0, codeJobs: 1 } }).code.state).toBe("running");
+    expect(states({ running: { windows: 1, agentJobs: 0, codeJobs: 0 } }).autonomous.state).toBe(
+      "running",
+    );
+    expect(states({ running: { windows: 0, agentJobs: 0, codeJobs: 1 } }).code.state).toBe(
+      "running",
+    );
   });
   it("keeps the CODE Emergency Stop, Mothership stop and Kill Switch as separate states", () => {
     const s = states({ safety: safetyView(row("engaged"), NOW), mothershipStop: null });
@@ -149,7 +167,10 @@ describe("separate system states", () => {
     expect(p.killSwitch).toBe("on");
   });
   it("treats stops released but Jackboy not allowing autonomy as blocked", () => {
-    const v = safetyView(row("clear", { autonomous_allowed: false, blocked_by: "code_disabled", code_enabled: false }), NOW);
+    const v = safetyView(
+      row("clear", { autonomous_allowed: false, blocked_by: "code_disabled", code_enabled: false }),
+      NOW,
+    );
     expect(v.clear).toBe(false);
     expect(v.label).toContain("autonomy blocked by Jackboy");
     const s = states({ safety: v });
@@ -157,7 +178,10 @@ describe("separate system states", () => {
   });
   it("shows connected only for a recent signed exchange", () => {
     expect(states().link.state).toBe("connected");
-    const old = safetyView(row("clear", { recorded_at: new Date(NOW - LIVE_LINK_FRESH_MS - 5000).toISOString() }), NOW);
+    const old = safetyView(
+      row("clear", { recorded_at: new Date(NOW - LIVE_LINK_FRESH_MS - 5000).toISOString() }),
+      NOW,
+    );
     expect(states({ safety: old }).link.state).toBe("configured");
   });
 });
@@ -176,8 +200,8 @@ describe("live link failure classification", () => {
     expect(classifyLiveLinkError(http(401, "authentication_failed")).kind).toBe("refused");
   });
   it("reports an unready session as invalid reply", () => {
-    expect(classifyLiveLinkError(new Error("Jackboy session is not ready or is invalid.")).kind).toBe(
-      "invalid_reply",
-    );
+    expect(
+      classifyLiveLinkError(new Error("Jackboy session is not ready or is invalid.")).kind,
+    ).toBe("invalid_reply");
   });
 });
