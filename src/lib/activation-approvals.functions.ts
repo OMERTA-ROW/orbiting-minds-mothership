@@ -47,7 +47,7 @@ import {
   latestSecurityReset,
   type SecurityEvent,
 } from "./activation-status";
-import { classifyLiveLinkError, codeStatus, liveLinkStatus } from "./live-link";
+import { classifyLiveLinkError, liveLinkStatus, systemStates } from "./live-link";
 
 /**
  * The check store (`activation_approval_checks`, `activation_approval_record_check`) comes from
@@ -196,7 +196,9 @@ async function jackboySafetyRow(
   try {
     const { data, error } = await db
       .from("jackboy_safety_state")
-      .select("state,paused,code_stop,code_enabled,cancellation,observed_at,expires_at,source,reason,recorded_at")
+      .select(
+        "state,paused,code_stop,code_enabled,cancellation,observed_at,expires_at,source,reason,recorded_at,autonomous_allowed,manual_allowed,blocked_by,authorization_expires_at,active_permits",
+      )
       .eq("id", 1)
       .maybeSingle();
     if (error || !data) return null;
@@ -204,6 +206,69 @@ async function jackboySafetyRow(
   } catch {
     return null;
   }
+}
+
+export type ActivationRowView = {
+  kind: "live_link" | "autonomy";
+  status: "inactive" | "activating" | "active" | "failed" | "revoked";
+  reason: string;
+  activatedAt: string | null;
+  updatedAt: string;
+  effective: boolean;
+};
+
+/** Step 9/10 activation rows plus the database's own "in effect" verdict (fails closed). */
+async function activationInfo(
+  db: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0],
+): Promise<ActivationRowView[]> {
+  try {
+    const [rows, link, auto] = await Promise.all([
+      db.from("activation_activations").select("kind,status,reason,activated_at,updated_at"),
+      db.rpc("activation_effective", { _kind: "live_link" }),
+      db.rpc("activation_effective", { _kind: "autonomy" }),
+    ]);
+    if (rows.error) return [];
+    return (rows.data ?? []).map((r) => ({
+      kind: r.kind as ActivationRowView["kind"],
+      status: r.status as ActivationRowView["status"],
+      reason: r.reason,
+      activatedAt: r.activated_at,
+      updatedAt: r.updated_at,
+      effective: r.kind === "live_link" ? link.data === true : auto.data === true,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** What is actually running and Mothership's own stop (service-role counts; owner already verified). */
+async function runtimeCounts(): Promise<{
+  windows: number;
+  agentJobs: number;
+  codeJobs: number;
+  mothershipStop: boolean | null;
+}> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [w, a, c, stop] = await Promise.all([
+    supabaseAdmin.from("omni_autonomy_windows").select("id", { count: "exact", head: true }).is("ended_at", null),
+    supabaseAdmin
+      .from("omni_agent_jobs")
+      .select("id", { count: "exact", head: true })
+      .neq("origin", "owner")
+      .in("status", ["queued", "running"]),
+    supabaseAdmin
+      .from("omni_code_jobs")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["leased", "running"]),
+    supabaseAdmin.from("omni_terminal_controls").select("emergency_stop").eq("id", 1).maybeSingle(),
+  ]);
+  // Unreadable counts are shown as running so nothing is claimed idle without evidence.
+  return {
+    windows: w.error ? 1 : (w.count ?? 0),
+    agentJobs: a.error ? 1 : (a.count ?? 0),
+    codeJobs: c.error ? 1 : (c.count ?? 0),
+    mothershipStop: stop.error || !stop.data ? null : stop.data.emergency_stop,
+  };
 }
 
 /** Cloud sandbox (manual OMNI Terminal workspace) settings: presence booleans only. */
@@ -544,7 +609,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       return { denied: true as const, reason };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [steps, audit, checks, selfTest, resetAt, readiness, linkEvents, safetyRow] = await Promise.all([
+    const [steps, audit, checks, selfTest, resetAt, readiness, linkEvents, safetyRow, activations, counts] = await Promise.all([
       context.supabase
         .from("activation_approvals")
         .select(
@@ -566,6 +631,8 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       currentSelfTestReadiness(context),
       latestLinkEvents(context.supabase),
       jackboySafetyRow(context.supabase),
+      activationInfo(context.supabase),
+      runtimeCounts(),
     ]);
     if (steps.error || audit.error) throw new Error("Approval records could not be read.");
     // The approvals stay visible even when the check store is missing or unreadable;
@@ -578,6 +645,14 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
     const checkRows = checks.error ? [] : (checks.data ?? []);
     const deployment = currentDeployment();
     const nowSeconds = Math.floor(Date.now() / 1000);
+    const liveLink = liveLinkStatus({
+      rows: effectiveRows(normalizeRows(steps.data), resetAt),
+      readiness,
+      now: Date.now(),
+      lastConnectedAt: linkEvents.lastConnectedAt,
+      lastAttemptAt: linkEvents.lastAttemptAt,
+    });
+    const safety = safetyView(safetyRow, Date.now());
     const latestSelfTest = selfTest
       ? {
           action: selfTest.action,
@@ -614,19 +689,18 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       deployment,
       selfTest: latestSelfTest,
       selfTestReadiness: readiness,
-      liveLink: liveLinkStatus({
-        rows: effectiveRows(normalizeRows(steps.data), resetAt),
-        readiness,
+      liveLink,
+      safety,
+      activations,
+      system: systemStates({
+        linkEffective: activations.some((a) => a.kind === "live_link" && a.effective),
+        autonomyEffective: activations.some((a) => a.kind === "autonomy" && a.effective),
+        liveLink,
+        safety,
+        mothershipStop: counts.mothershipStop,
+        running: counts,
         now: Date.now(),
-        lastConnectedAt: linkEvents.lastConnectedAt,
-        lastAttemptAt: linkEvents.lastAttemptAt,
       }),
-      safety: safetyView(safetyRow, Date.now()),
-      code: codeStatus(
-        effectiveRows(normalizeRows(steps.data), resetAt),
-        Date.now(),
-        safetyView(safetyRow, Date.now()),
-      ),
       sandbox: await sandboxPresence(),
       mfaAgeSeconds: mfaAgeSeconds(context.claims["amr"], nowSeconds),
     };
@@ -1197,8 +1271,8 @@ export const checkLiveLinkConnection = createServerFn({ method: "POST" })
   });
 
 /**
- * Owner refresh of Jackboy's safety state: freshness enforcement plus, once Step 9 is in effect,
- * one signed read-only safety-state request. Never releases a stop, turns a switch or starts work;
+ * Owner refresh of Jackboy's safety state: freshness and permit-lapse enforcement plus, once the
+ * Step 9 live link is activated, one handshake and one session-signed `safety` read. Never releases a stop, turns a switch or starts work;
  * any failure records "unknown", which keeps OMNI autonomy and CODE halted.
  */
 export const refreshJackboySafety = createServerFn({ method: "POST" })
@@ -1217,11 +1291,199 @@ export const refreshJackboySafety = createServerFn({ method: "POST" })
     const row = await jackboySafetyRow(context.supabase);
     const view = safetyView(row, Date.now());
     const message = !result.checked
-      ? result.reason === "step9_not_in_effect"
-        ? "Not sent: approve Step 9 to activate the live link and its safety sync. Freshness was enforced."
+      ? result.reason === "live_link_not_active"
+        ? "Not sent: activate the Step 9 live link first. Freshness and permit expiry were enforced."
         : "Not sent: Mothership's Emergency Stop is engaged or unreadable, so the state is recorded as unknown."
       : result.reason === "verified"
         ? `Verified signed reading recorded: ${view.label}.`
         : `Jackboy did not return a verified safety reading (${result.reason}); recorded as unknown, so autonomy and CODE stay halted.`;
     return { ok: true as const, checked: result.checked, message, safety: view };
+  });
+
+const activationInput = z
+  .object({
+    confirm: z.literal(true),
+    attemptId: z.string().uuid(),
+  })
+  .strict();
+
+/** Mothership-side cap and metering checks before Step 10 activation (values are owner caps). */
+async function autonomyPreflight(context: Ctx): Promise<string | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [agents, ledger] = await Promise.all([
+    context.supabase
+      .from("omni_agents")
+      .select("id,display_name,status,budget_task_cents,budget_day_cents,budget_total_cents"),
+    supabaseAdmin
+      .from("omni_spend_ledger")
+      .select("cents")
+      .gte("created_at", new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").toISOString())
+      .limit(5000),
+  ]);
+  if (agents.error) return "agent budgets could not be read.";
+  const over = (agents.data ?? []).find(
+    (a) =>
+      a.status === "enrolled" &&
+      (a.budget_task_cents > 100 || a.budget_day_cents > 500 || a.budget_total_cents > 1000),
+  );
+  if (over)
+    return `${over.display_name}'s budget exceeds the owner caps ($1 per task, $5 per day, $10 total).`;
+  if (ledger.error) return "the spend ledger (metering) could not be read.";
+  const today = (ledger.data ?? []).reduce((sum, r) => sum + (r.cents ?? 0), 0);
+  if (today >= 500) return "today's recorded spend has reached the $5 daily limit.";
+  return null;
+}
+
+async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", attemptId: string) {
+  const { runActivation } = await import("./activation-activate.server");
+  const { configuredJackboyLink, JackboyLink, JackboyLinkError } = await import("./jackboy-link.server");
+  const { recordSafetySnapshot, recordSafetyFailure, safetyFailureReason } = await import(
+    "./jackboy-safety.server"
+  );
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  let client: InstanceType<typeof JackboyLink> | null = null;
+  const linkClient = async () => {
+    if (client) return client;
+    const link = await configuredJackboyLink();
+    client = new JackboyLink(link, async (event) => {
+      const { error } = await supabaseAdmin.from("razul_control_audit").insert({
+        actor_id: context.userId,
+        action: event,
+        record_type: "jackboy_link",
+        record_id: process.env["OMNI_LINK_APPROVAL_ID"] || `activation_${kind}`,
+      });
+      if (error) throw new JackboyLinkError("Live link audit failed.", "audit");
+    });
+    return client;
+  };
+  return runActivation(kind, attemptId, {
+    preflight: kind === "autonomy" ? () => autonomyPreflight(context) : undefined,
+    begin: async (k, attempt) => {
+      const { data, error } = await context.supabase.rpc("activation_activation_begin", {
+        _kind: k,
+        _attempt: attempt,
+      });
+      if (error) {
+        if (error.message.includes("Fresh two-factor")) return { ok: false, reason: "mfa" };
+        return { ok: false, reason: "denied" };
+      }
+      return data as { ok: boolean; duplicate?: boolean; resumed?: boolean; reason?: string };
+    },
+    finish: async (k, attempt, ok, reason, evidence) => {
+      const { data, error } = await supabaseAdmin.rpc("activation_activation_finish", {
+        _kind: k,
+        _attempt: attempt,
+        _ok: ok,
+        _reason: reason,
+        _evidence: evidence as Json,
+      });
+      if (error) throw new Error("activation_not_recorded");
+      return data as "active" | "failed" | "superseded" | "expired";
+    },
+    connect: async () => {
+      let c;
+      try {
+        c = await linkClient();
+      } catch {
+        throw new JackboyLinkError("Link settings are disabled, malformed or outside their window.", "contract");
+      }
+      await c.connect();
+    },
+    safety: async () => (await linkClient()).safety(),
+    recordSafety: (snap) => recordSafetySnapshot(supabaseAdmin, snap),
+    recordSafetyFailure: (reason) => recordSafetyFailure(supabaseAdmin, reason),
+    safetyFailureReason,
+  });
+}
+
+function activationHandler(kind: "live_link" | "autonomy") {
+  return async ({ context, data }: { context: Ctx; data: z.infer<typeof activationInput> }) => {
+    setResponseHeader("Cache-Control", "private, no-store");
+    await ownerContext(context);
+    if (!isMfaFresh(context.claims["amr"], Math.floor(Date.now() / 1000)))
+      return {
+        ok: false as const,
+        reason: "mfa" as const,
+        message: "Re-verify with your authenticator first. Nothing was sent or activated.",
+        details: [] as Detail[],
+      };
+    // Approvals from before the owner's last security reset never count (TypeScript mirror).
+    const { data: rows, error } = await context.supabase
+      .from("activation_approvals")
+      .select("step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision")
+      .order("step");
+    let resetAt: string | null;
+    try {
+      resetAt = await securityResetAt(context.supabase, context.userId);
+    } catch {
+      resetAt = "unreadable";
+    }
+    if (error || resetAt === "unreadable")
+      return {
+        ok: false as const,
+        reason: "denied" as const,
+        message: "Approval records could not be read; nothing was sent or activated.",
+        details: [] as Detail[],
+      };
+    const last = kind === "live_link" ? 9 : 10;
+    const effective = effectiveRows(normalizeRows(rows), resetAt);
+    const missing = effective.find((r) => r.step <= last && !isEffectivelyApproved(r, Date.now()));
+    if (missing)
+      return {
+        ok: false as const,
+        reason: "rule" as const,
+        message: `Step ${missing.step} must be approved (after your last security reset) first. Nothing was activated.`,
+        details: [] as Detail[],
+      };
+    try {
+      return await runActivationFor(context, kind, data.attemptId);
+    } catch {
+      return {
+        ok: false as const,
+        reason: "not_recorded" as const,
+        message: "The activation did not complete and is not active. Retrying with the same attempt is safe.",
+        details: [] as Detail[],
+      };
+    }
+  };
+}
+
+/**
+ * Step 9 activation: owner + fresh MFA + per-click confirm. The database checks Steps 1–9, Step 7's
+ * window, a fresh Step 8 proof and Mothership's Emergency Stop; then one signed handshake and one
+ * signed Jackboy safety read. A failed handshake leaves nothing active. Sends no job or CODE request.
+ */
+export const activateLiveLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => activationInput.parse(input))
+  .handler(({ context, data }) => activationHandler("live_link")({ context, data }));
+
+/**
+ * Step 10 activation: owner + fresh MFA + per-click confirm; owner caps and metering checked here,
+ * the live link and cap confirmations in the database, and Jackboy's own authorization in its signed
+ * safety snapshot. Authorization only: execution stays blocked while any stop applies.
+ */
+export const activateAutonomy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => activationInput.parse(input))
+  .handler(({ context, data }) => activationHandler("autonomy")({ context, data }));
+
+/** Owner deactivation (safer, so no fresh code): ends the activation and halts autonomous work. */
+export const deactivateActivation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ kind: z.enum(["live_link", "autonomy"]) }).strict().parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    setResponseHeader("Cache-Control", "private, no-store");
+    await ownerContext(context);
+    const { error } = await context.supabase.rpc("activation_activation_revoke", { _kind: data.kind });
+    if (error) return { ok: false as const, message: "Deactivation was not recorded. Refresh and try again." };
+    return {
+      ok: true as const,
+      message:
+        data.kind === "live_link"
+          ? "Live link deactivated (autonomy authorization ended too). Autonomous work was halted."
+          : "Autonomy authorization deactivated. Autonomous work was halted.",
+    };
   });

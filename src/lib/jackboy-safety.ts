@@ -1,6 +1,6 @@
 /**
  * Jackboy safety state as seen by Mothership. Pure and client-safe.
- * "clear" is shown only for a fresh, signed reading with no pause and no CODE stop;
+ * "clear" is shown only for a fresh, signed reading with no pause, no CODE stop and Jackboy allowing autonomy;
  * everything else (engaged, paused, unknown, stale) means OMNI autonomy and CODE stay halted.
  */
 import { z } from "zod";
@@ -46,6 +46,12 @@ export type SafetyRow = {
   source: "none" | "poll" | "event" | "failure" | "stale";
   reason: string;
   recorded_at: string;
+  /** omni.safety/v1 fields (absent on rows recorded before they existed). */
+  autonomous_allowed?: boolean | null;
+  manual_allowed?: boolean | null;
+  blocked_by?: string | null;
+  authorization_expires_at?: string | null;
+  active_permits?: number | null;
 };
 
 export type SafetyViewState = "clear" | "engaged" | "paused" | "unknown" | "stale";
@@ -56,6 +62,12 @@ export interface SafetyView {
   detail: string;
   /** True only when OMNI may admit autonomy/CODE as far as Jackboy safety is concerned. */
   clear: boolean;
+  /** Jackboy's own verdict on OMNI autonomous work in the latest verified snapshot. */
+  autonomousAllowed: "yes" | "no" | "unknown";
+  /** True only while the last verified reading says manual diagnostics are not allowed (Kill Switch on). */
+  manualBlocked: boolean;
+  blockedBy: string | null;
+  authorizationExpiresAt: string | null;
   killSwitch: "on" | "off" | "unknown";
   codeStop: "engaged" | "released" | "unknown";
   codeEnabled: "on" | "off" | "unknown";
@@ -80,6 +92,10 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
       observedAt: null,
       recordedAt: null,
       source: "none",
+      autonomousAllowed: "unknown",
+      manualBlocked: false,
+      blockedBy: null,
+      authorizationExpiresAt: null,
     };
   }
   const expires = row.expires_at ? Date.parse(row.expires_at) : NaN;
@@ -92,7 +108,12 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
     Number.isFinite(observed) &&
     observed > now - 180_000;
   const known = row.source === "poll" || row.source === "event";
+  const allowed = fresh && row.autonomous_allowed === true;
   const base = {
+    autonomousAllowed: (fresh ? (row.autonomous_allowed === true ? "yes" : row.autonomous_allowed === false ? "no" : "unknown") : "unknown") as SafetyView["autonomousAllowed"],
+    manualBlocked: row.paused === true || row.manual_allowed === false,
+    blockedBy: fresh ? (row.blocked_by ?? null) : null,
+    authorizationExpiresAt: row.authorization_expires_at ?? null,
     killSwitch: known ? yn(row.paused, "on", "off") : ("unknown" as const),
     codeStop: known ? yn(row.code_stop, "engaged", "released") : ("unknown" as const),
     codeEnabled: known ? yn(row.code_enabled, "on", "off") : ("unknown" as const),
@@ -118,14 +139,22 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
         "Jackboy reports its global Kill Switch on. OMNI autonomy and CODE are halted; Jackboy also refuses link requests.",
       clear: false,
     };
-  if (row.state === "clear" && fresh)
+  if (row.state === "clear" && allowed)
     return {
       ...base,
       state: "clear",
       label: "Clear (verified)",
       detail:
-        "A fresh signed reading shows no Kill Switch and no CODE stop. This permits nothing by itself and starts nothing.",
+        "A fresh signed reading shows no Kill Switch, no CODE stop, and Jackboy allows OMNI autonomous work. This starts nothing; every job still needs its own Jackboy permit.",
       clear: true,
+    };
+  if (row.state === "clear" && fresh)
+    return {
+      ...base,
+      state: "clear",
+      label: "Stops released · autonomy blocked by Jackboy",
+      detail: `A fresh signed reading shows no stop, but Jackboy does not allow OMNI autonomous work${row.blocked_by ? ` (${row.blocked_by.replace(/_/g, " ")})` : ""}. OMNI autonomy and CODE stay halted.`,
+      clear: false,
     };
   if (row.state === "clear" || row.source === "stale")
     return {
@@ -141,7 +170,7 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
     label: "Unknown",
     detail:
       row.source === "none"
-        ? "No verified reading yet. Jackboy must support the signed safety-state request first."
+        ? "No verified reading yet. It is read after the Step 9 live link is activated (Jackboy's permit service must be installed)."
         : `No verified reading (${row.reason || "check failed"}), so OMNI autonomy and CODE stay halted.`,
     clear: false,
   };
