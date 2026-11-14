@@ -66,3 +66,32 @@ Jackboy Dev Control is the authority. This file records how Mothership (OMNI) fo
   `JACKBOY_TEST_ROOT=/path/to/installed/jackboy node --import tsx --test tests/jackboy-noop-worker-integration.test.mjs`.
   It uses two disposable PGlite databases and in-process signed handlers, not live services or
   production TLS. It is not evidence that a deployed worker or live job ran.
+
+## Owner-gated publication and verification
+- Identify each serving application's actual database, compare its complete migration history with
+  the reviewed journal, and check for concurrent Lovable migrations. Confirm a recoverable encrypted
+  backup and test restoration in isolation. Record the current permit functions and grants without
+  recording credentials. A Drizzle migration command applies every newer journal entry, so do not
+  run it unless the target and the entire pending set have been independently confirmed.
+- After separate approvals, merge the reviewed Jackboy synchronization and apply its reconciled
+  `0067` forward fix, without reapplying `0066`. Publish Jackboy's compatible service, then apply
+  the reconciled Mothership `0057` and publish its broker with the worker flag off. Check the
+  deployed versions and migration history after each action. No publication or migration releases a
+  stop, changes an approval, or enables the worker.
+- In an isolated environment with separately approved test controls, verify HTTPS and signed
+  handshake and safety replies, including rejection of tampered, expired and replayed requests.
+  Verify that a missing, expired or revoked permit is refused. A successful permit or synthetic job
+  requires all normal gates to be clear; it cannot be proved while a stop blocks authorization.
+- With a one-hour test identity and budget approval, queue a 10-second no-op, confirm its signed
+  permit and running state, engage Jackboy's test Emergency Stop and verify the timer stops, the job
+  is cancelled and audit records exist. Repeat for the test Kill Switch. A remote stop is detected
+  on the next verified poll or heartbeat, not necessarily instantly. Never log the worker token.
+- For restart recovery, terminate the specific test worker process while its no-op is running, allow
+  its lease to expire, and run the existing safety synchronization or a broker action to sweep it.
+  Confirm the job is cancelled, the permit is revoked or expires, and a restarted worker does not
+  resume it. Verify the manual terminal separately: CODE stop does not block owner diagnostics, but
+  a verified Jackboy Kill Switch does. Retain the audit evidence.
+- If publication must be reversed, disable the broker, revoke worker identities, stop the specific
+  worker runtime, and verify permit revocation or expiry. Preserve audit and job records. Restore or
+  repair database functions and grants only with a separately reviewed recovery procedure; never
+  restore stale approvals or relax safety controls as a shortcut.
