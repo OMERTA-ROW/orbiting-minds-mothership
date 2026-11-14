@@ -8,7 +8,8 @@
 - [x] Separate statuses in the panel; 76 SQL checks + app tests against a contract-following Jackboy stand-in (stop revokes → OMNI halts at next renewal); flow marker 8.
 - [ ] Waiting on owner/Jackboy: install Jackboy's staged permit database change, publish Jackboy, authorize OMNI autonomy in Jackboy with passkey. Until then permits answer "permit service unavailable" and the live kill path is unverified.
 - [x] Approving Step 9/10 now runs the activation in the same owner click ("Also activate" ticked by default; approval stays recorded if activation fails). Flow marker 9.
-- [ ] Waiting on owner: approve Step 9 (activates the live link), then Step 10 (activates autonomy authorization). No OMNI executor exists yet, so nothing can run.
+- [ ] Waiting on owner: Steps 9–10 were approved at 02:57 UTC but neither activation started (no attempt recorded). Click "Activate live link" (fresh code); after Jackboy authorizes, "Activate autonomy authorization". No OMNI executor exists yet, so nothing can run.
+- [x] Clearer reasons: a database start failure is no longer shown as an owner-access problem; "permit service not installed" from Jackboy is named in the safety status. Offline contract check against Jackboy's real permit code passed.
 
 ## Cross-system CODE Emergency Stop enforcement — 2026-11-14 (register 07.07)
 - [x] Mothership: Jackboy safety record + database fail-closed guards (autonomy windows, CODE always-on, CODE leasing need a fresh signed clear reading and Step 10 in effect); non-clear/unknown/stale halts windows, CODE jobs and agent-initiated workspace jobs; manual terminal untouched. Migrations 0053/0054. SQL test 36 checks; 1,847 tests pass.
