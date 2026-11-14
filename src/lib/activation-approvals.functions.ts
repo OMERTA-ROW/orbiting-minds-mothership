@@ -1436,10 +1436,7 @@ function activationHandler(kind: "live_link" | "autonomy") {
         details: [] as Detail[],
       };
     try {
-      const out = await runActivationFor(context, kind, data.attemptId);
-      if (!out.ok && out.message.includes("(mfa)"))
-        return { ...out, reason: "mfa" as const, message: "Re-verify with your authenticator first." };
-      return out;
+      return await runActivationFor(context, kind, data.attemptId);
     } catch {
       return {
         ok: false as const,
