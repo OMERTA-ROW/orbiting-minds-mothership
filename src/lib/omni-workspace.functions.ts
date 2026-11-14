@@ -415,6 +415,15 @@ async function submit(context: Ctx, sessionId: string, req: Submit) {
     }
     if (req.action === "pr.propose" && !session.repository)
       throw new Error("This session has no repository.");
+    // Jackboy's System Kill Switch (when a verified reading reports it) also stops manual work.
+    // Its CODE Emergency Stop does not: the manual terminal stays separate from CODE autonomy.
+    const { data: manualBlocked, error: manualError } = await db.rpc("jackboy_manual_blocked");
+    if (manualError || manualBlocked !== false)
+      throw new Error(
+        manualError
+          ? "Jackboy's Kill Switch state could not be read, so nothing was sent."
+          : "Jackboy reports its System Kill Switch on, so OMNI terminal work is refused. It is changed only in Jackboy.",
+      );
     const { data: job, error } = await admin
       .from("omni_agent_jobs")
       .insert({
