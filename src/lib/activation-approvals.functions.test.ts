@@ -133,7 +133,7 @@ describe("Step 2 trusted remote evidence", () => {
     const decision = invocation(true, true, {
       data: { step: 2, action: "approve", note: "", expiresAt: null },
     });
-    expect(await mocks.handlers[2]!(decision.input)).toEqual({ ok: true });
+    expect(await mocks.handlers[2]!(decision.input)).toEqual({ ok: true, activation: null });
     expect(decision.rpc).toHaveBeenCalledWith(
       "activation_approval_decide",
       expect.objectContaining({ _step: 2, _action: "approve" }),
@@ -345,5 +345,62 @@ describe("missing check store", () => {
       message: expect.stringMatching(/0051/),
     });
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("Step 9/10 approval triggers the real activation", () => {
+  const allApproved = (through: number) =>
+    Array.from({ length: 10 }, (_, i) => ({
+      step: i + 1,
+      status: i + 1 <= through ? "approved" : "pending",
+      decided_at: "2026-11-14T00:00:00Z",
+      approval_expires_at: i + 1 === 7 ? new Date(Date.now() + 6 * 3600_000).toISOString() : null,
+      revision: 1,
+    }));
+  function step9(approvedThrough: number, activate: boolean) {
+    const inv = invocation(true, true, {
+      data: {
+        step: 9,
+        action: "approve",
+        note: "",
+        expiresAt: null,
+        activate: activate ? { attemptId: "aaaaaaaa-0000-4000-8000-000000000009" } : null,
+      },
+    });
+    const rows = { data: allApproved(approvedThrough), error: null };
+    const from = inv.input.context.supabase.from;
+    inv.input.context.supabase.from = (t: string) =>
+      t === "activation_approvals" ? chain(() => rows) : from(t);
+    return { inv, rows };
+  }
+  it("records the approval only when the owner unticks activation", async () => {
+    const { inv } = step9(8, false);
+    expect(await mocks.handlers[2]!(inv.input)).toEqual({ ok: true, activation: null });
+    expect(inv.rpc).toHaveBeenCalledTimes(1);
+  });
+  it("records the approval, then runs the activation workflow and reports it fails closed when the link is unusable", async () => {
+    const { inv, rows } = step9(8, true);
+    inv.rpc.mockImplementation(async (fn: string) => {
+      if (fn === "activation_approval_decide") rows.data = allApproved(9);
+      return { error: null };
+    });
+    const result = (await mocks.handlers[2]!(inv.input)) as {
+      ok: boolean;
+      activation: { kind: string; ok: boolean };
+    };
+    expect(result.ok).toBe(true);
+    expect(result.activation).toMatchObject({ kind: "live_link", ok: false });
+    expect(inv.rpc).toHaveBeenCalledWith("activation_approval_decide", expect.objectContaining({ _step: 9 }));
+    expect(inv.rpc).not.toHaveBeenCalledWith(
+      "activation_activation_finish",
+      expect.objectContaining({ _ok: true }),
+    );
+  });
+  it("does not activate when the approval itself is refused", async () => {
+    const { inv } = step9(8, true);
+    inv.rpc.mockResolvedValueOnce({ error: { code: "22023", message: "Fresh two-factor needed" } } as never);
+    const result = await mocks.handlers[2]!(inv.input);
+    expect(result).toMatchObject({ ok: false, reason: "mfa" });
+    expect(inv.rpc).toHaveBeenCalledTimes(1);
   });
 });
