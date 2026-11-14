@@ -92,6 +92,10 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
       observedAt: null,
       recordedAt: null,
       source: "none",
+      autonomousAllowed: "unknown",
+      manualBlocked: false,
+      blockedBy: null,
+      authorizationExpiresAt: null,
     };
   }
   const expires = row.expires_at ? Date.parse(row.expires_at) : NaN;

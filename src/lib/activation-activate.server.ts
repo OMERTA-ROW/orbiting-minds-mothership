@@ -29,7 +29,7 @@ export type ActivationDeps = {
     evidence: Record<string, unknown>,
   ): Promise<FinishReply>;
   /** Autonomy only: Mothership-side cap and metering checks; a string blocks with that message. */
-  preflight?(): Promise<string | null>;
+  preflight?: (() => Promise<string | null>) | undefined;
   connect(): Promise<void>;
   safety(): Promise<JackboySafetySnapshot>;
   recordSafety(s: JackboySafetySnapshot): Promise<unknown>;
