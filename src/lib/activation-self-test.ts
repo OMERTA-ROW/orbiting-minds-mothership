@@ -69,7 +69,12 @@ export function linkIdentityIssues(v: {
   try {
     const u = new URL(v.origin);
     originOk =
-      u.protocol === "https:" && !u.username && !u.password && u.pathname === "/" && !u.search && !u.hash;
+      u.protocol === "https:" &&
+      !u.username &&
+      !u.password &&
+      u.pathname === "/" &&
+      !u.search &&
+      !u.hash;
   } catch {
     originOk = false;
   }
@@ -87,7 +92,10 @@ export function linkIdentityIssues(v: {
 
 function identityDetail(issues: LinkIdentityIssue[] | undefined): string {
   if (!issues || issues.length === 0)
-    return "OMNI_LINK_CLIENT_ID / PROJECT_ID / BOOTSTRAP_KEY / HMAC_SECRET are missing or malformed." + PUBLISH_NOTE;
+    return (
+      "OMNI_LINK_CLIENT_ID / PROJECT_ID / BOOTSTRAP_KEY / HMAC_SECRET are missing or malformed." +
+      PUBLISH_NOTE
+    );
   const list = issues.map((i) => `${i.name} is ${i.problem}`).join("; ");
   const client = issues.some((i) => i.name === "OMNI_LINK_CLIENT_ID")
     ? " Copy the exact client ID registered in Jackboy's own OMNI_LINK_CLIENT_ID secret; JACKBOY_HANDOFF_CLIENT_ID is a different identity and is not used here."
@@ -146,13 +154,13 @@ export function selfTestReadiness(input: ReadinessInput): ReadinessItem[] {
       ok: windowOk,
       detail:
         (windowOk
-        ? "Open (in the future, at most 24 hours ahead)."
-        : !Number.isFinite(exp)
-          ? "Missing or not a date: set it to a time at most 24 hours ahead, e.g. your Step 7 expiry."
-          : exp <= input.now
-            ? "Expired: set it to a new time at most 24 hours ahead, e.g. your Step 7 expiry."
-            : "More than 24 hours ahead: set a time at most 24 hours ahead.") +
-          (windowOk ? "" : PUBLISH_NOTE),
+          ? "Open (in the future, at most 24 hours ahead)."
+          : !Number.isFinite(exp)
+            ? "Missing or not a date: set it to a time at most 24 hours ahead, e.g. your Step 7 expiry."
+            : exp <= input.now
+              ? "Expired: set it to a new time at most 24 hours ahead, e.g. your Step 7 expiry."
+              : "More than 24 hours ahead: set a time at most 24 hours ahead.") +
+        (windowOk ? "" : PUBLISH_NOTE),
     },
     {
       key: "identity",
@@ -201,7 +209,9 @@ export type SelfTestJob = {
 };
 
 /** Only a proof-checked terminal job is self-test evidence; cancelled/unfinished are not. */
-export function selfTestAuditAction(job: SelfTestJob): "self_test_passed" | "self_test_failed" | null {
+export function selfTestAuditAction(
+  job: SelfTestJob,
+): "self_test_passed" | "self_test_failed" | null {
   if (job.status === "completed" && job.result?.passed === true) return "self_test_passed";
   if (
     (job.status === "completed" && job.result?.passed === false) ||
@@ -228,14 +238,21 @@ export function otherAttemptInFlight(
   }
   for (const [id, actions] of byAttempt) {
     if (!actions.includes("request_run")) continue;
-    if (actions.some((a) => a.startsWith("self_test_") || ["result_completed", "result_failed", "result_cancelled", "result_timed_out"].includes(a)))
+    if (
+      actions.some(
+        (a) =>
+          a.startsWith("self_test_") ||
+          ["result_completed", "result_failed", "result_cancelled", "result_timed_out"].includes(a),
+      )
+    )
       continue;
     return id;
   }
   return null;
 }
 
-export type FailureKind = "safety_denial" | "timeout" | "refused" | "link_failure" | "invalid_reply";
+export type FailureKind =
+  "safety_denial" | "timeout" | "refused" | "link_failure" | "invalid_reply";
 
 const DENIAL_BY_CODE: Record<string, string> = {
   kill_switch_on:
@@ -252,7 +269,8 @@ const REFUSED_BY_CODE: Record<string, string> = {
   authentication_failed:
     "Jackboy rejected the signature or session: client ID, bootstrap key or signing secret differ. Nothing ran.",
   https_post_required: "Jackboy did not receive an HTTPS POST on its link address.",
-  invalid_request: "Jackboy rejected the request format; its link version may differ from Mothership's.",
+  invalid_request:
+    "Jackboy rejected the request format; its link version may differ from Mothership's.",
 };
 
 /** Plain-language classification from a link error's safe stage/status/code only. */
