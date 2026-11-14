@@ -193,7 +193,7 @@ export function LiveLinkPanel(props: {
                 Cloud sandbox commands need their own settings and gates:{" "}
                 {sandbox.configured
                   ? sandbox.enabled
-                    ? "sandbox settings present and switch on; a passkey, Kill Switch on and a passing sandbox self-test are still required."
+                    ? "sandbox settings present and switch on; a fresh passkey, the terminal switch and a passing sandbox self-test are still required."
                     : "sandbox settings present, but OMNI_SANDBOX_ENABLED is off."
                   : "sandbox settings (OMNI_SANDBOX_ORIGIN, client ID and signing secret) are not set, so sandbox commands stay unavailable."}
               </li>

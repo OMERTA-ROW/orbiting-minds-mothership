@@ -20,7 +20,9 @@ import {
   listActivationApprovals,
   runActivationApprovalCheck,
   runStep8SelfTest,
+  checkLiveLinkConnection,
 } from "@/lib/activation-approvals.functions";
+import { LiveLinkPanel, type LiveLinkOutcome } from "@/components/omnibridge/LiveLinkPanel";
 import { SELF_TEST_ATTEMPT_KEY } from "@/lib/activation-self-test";
 import { Step8SelfTest, type SelfTestOutcome } from "@/components/omnibridge/Step8SelfTest";
 import {
@@ -70,7 +72,7 @@ const ACTION_LABEL: Record<string, string> = {
 const CHECK_LABEL = { passed: "Passed", failed: "Failed", needs_attention: "Needs attention" };
 
 type Pending = {
-  kind: "check" | "decide" | "refresh" | "reverify" | "selftest";
+  kind: "check" | "decide" | "refresh" | "reverify" | "selftest" | "livelink";
   step: number | null;
   since: number;
 };
@@ -91,6 +93,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const decide = useServerFn(decideActivationApproval);
   const runCheck = useServerFn(runActivationApprovalCheck);
   const runSelfTest = useServerFn(runStep8SelfTest);
+  const checkLiveLink = useServerFn(checkLiveLinkConnection);
   const [data, setData] = useState<Loaded | null>(null);
   const [access, setAccess] = useState<"checking" | "ok" | "denied">("checking");
   const [reason, setReason] = useState<AccessReason>("unreadable");
@@ -113,6 +116,9 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const [selfTestConfirmed, setSelfTestConfirmed] = useState(false);
   const [selfTestAttempt, setSelfTestAttempt] = useState<string | null>(null);
   const [selfTestResult, setSelfTestResult] = useState<SelfTestOutcome | null>(null);
+  // Step 9 live link: one connection-only handshake per explicit authorization.
+  const [liveConfirmed, setLiveConfirmed] = useState(false);
+  const [liveResult, setLiveResult] = useState<LiveLinkOutcome | null>(null);
 
   useEffect(() => {
     try {
@@ -425,6 +431,42 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
           : "The self-test ran and failed. Nothing was approved.",
         result.outcome === "passed" ? "ok" : "error",
       );
+    });
+  }
+
+  function liveLinkCheck() {
+    if (!liveConfirmed)
+      return setNotice({ step: 9, tone: "error", text: "Tick the authorization box first." });
+    return exclusive("livelink", null, async () => {
+      setLiveResult(null);
+      try {
+        const result = await withTimeout(
+          checkLiveLink({ data: { confirm: true } }),
+          limits.decide,
+        );
+        setLiveResult(
+          result.ok
+            ? { ok: true, message: result.message, at: result.verifiedAt }
+            : {
+                ok: false,
+                message: result.message,
+                details: result.details,
+                at: new Date().toISOString(),
+              },
+        );
+      } catch (error) {
+        setLiveResult({
+          ok: false,
+          message:
+            error instanceof FlowTimeoutError
+              ? `${error.message} Nothing else was sent; retrying sends one new handshake only.`
+              : "The check did not complete. Nothing else was sent; retrying is safe.",
+          at: new Date().toISOString(),
+        });
+      } finally {
+        setLiveConfirmed(false);
+      }
+      await refresh().catch(() => {});
     });
   }
 
@@ -878,6 +920,17 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
                     </p>
                   )}
 
+                  {(meta.step === 9 || meta.step === 10) && (
+                    <p className="text-xs text-muted-foreground">
+                      {meta.step === 9
+                        ? "Approving records your decision only. The link switches are already set in each project's settings and are not changed here. Afterwards, “Check live connection” in the panel below may send one signed handshake per click."
+                        : "Approving records the two cap confirmations only. CODE stays off: Mothership has no CODE request path, and CODE can only be turned on in Jackboy."}{" "}
+                      <a href="#live-link" className="underline">
+                        See live link and CODE status
+                      </a>
+                    </p>
+                  )}
+
                   {meta.step === 1 && (
                     <ul className="grid gap-1 text-xs sm:grid-cols-2">
                       {data.settings.map((s) => (
@@ -1043,6 +1096,22 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
           );
         })}
       </ol>
+
+      <LiveLinkPanel
+        liveLink={data.liveLink}
+        code={data.code}
+        sandbox={data.sandbox}
+        mfaFresh={mfaFresh}
+        busy={busy}
+        running={pending?.kind === "livelink"}
+        elapsedSeconds={
+          pending?.kind === "livelink" ? Math.max(0, Math.round((now - pending.since) / 1000)) : 0
+        }
+        confirmed={liveConfirmed}
+        onConfirmedChange={setLiveConfirmed}
+        onCheck={() => void liveLinkCheck()}
+        result={liveResult}
+      />
 
       <section aria-labelledby="audit" className="space-y-2">
         <h2 id="audit" className="text-lg">
