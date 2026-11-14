@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeRows } from "./activation-approvals";
-import { classifyLiveLinkError, codeStatus, liveLinkStatus, LIVE_LINK_FRESH_MS } from "./live-link";
+import { classifyLiveLinkError, liveLinkStatus, LIVE_LINK_FRESH_MS, systemStates } from "./live-link";
 import { safetyView, type SafetyRow } from "./jackboy-safety";
 
 const NOW = Date.parse("2026-11-14T01:00:00Z");
@@ -78,36 +78,69 @@ describe("Step 9 live link permission", () => {
   });
 });
 
-describe("Step 10 autonomy status", () => {
+describe("separate system states", () => {
   const row = (state: SafetyRow["state"], extra: Partial<SafetyRow> = {}): SafetyRow => ({
     state,
     paused: state === "paused",
     code_stop: state === "engaged",
-    code_enabled: false,
+    code_enabled: true,
     cancellation: null,
     observed_at: new Date(NOW - 10_000).toISOString(),
-    expires_at: new Date(NOW + 110_000).toISOString(),
+    expires_at: new Date(NOW + 20_000).toISOString(),
     source: "poll",
     reason: "",
     recorded_at: new Date(NOW - 10_000).toISOString(),
+    autonomous_allowed: state === "clear",
+    manual_allowed: state !== "paused",
     ...extra,
   });
-  it("is not authorized before Step 10, and approving it never reads as running", () => {
-    const clear = safetyView(row("clear"), NOW);
-    expect(codeStatus(rows(9), NOW, clear).state).toBe("not_authorized");
-    const after = codeStatus(rows(10), NOW, clear);
-    expect(after.state).toBe("authorized_not_running");
-    expect(after.headline).toBe("No OMNI executor connected");
+  const states = (o: Partial<Parameters<typeof systemStates>[0]> = {}) =>
+    systemStates({
+      linkEffective: true,
+      autonomyEffective: true,
+      liveLink: status(9),
+      safety: safetyView(row("clear"), NOW),
+      mothershipStop: false,
+      running: { windows: 0, agentJobs: 0, codeJobs: 0 },
+      now: NOW,
+      ...o,
+    });
+  it("is not configured before the activations, whatever the approvals say", () => {
+    const s = states({ linkEffective: false, autonomyEffective: false });
+    expect(s.link.state).toBe("not_configured");
+    expect(s.autonomous.state).toBe("not_configured");
+    expect(s.code.state).toBe("not_configured");
   });
-  it("names the CODE Emergency Stop while it is engaged", () => {
-    const s = codeStatus(rows(10), NOW, safetyView(row("engaged"), NOW));
-    expect(s.state).toBe("authorized_not_running");
-    expect(s.safetyClear).toBe(false);
-    expect(s.headline).toBe("CODE Emergency Stop engaged");
+  it("authorized never reads as running without running records", () => {
+    const s = states();
+    expect(s.autonomous.state).toBe("configured_blocked");
+    expect(s.code.state).toBe("configured_blocked");
+    expect(s.autonomous.blockers).toContain("No OMNI executor is connected.");
   });
-  it("lapses when Step 7's window has ended", () => {
-    const r = rows(10, "2026-11-14T00:59:00Z");
-    expect(codeStatus(r, NOW, safetyView(row("clear"), NOW)).state).toBe("not_authorized");
+  it("reports running only from database counts", () => {
+    expect(states({ running: { windows: 1, agentJobs: 0, codeJobs: 0 } }).autonomous.state).toBe("running");
+    expect(states({ running: { windows: 0, agentJobs: 0, codeJobs: 1 } }).code.state).toBe("running");
+  });
+  it("keeps the CODE Emergency Stop, Mothership stop and Kill Switch as separate states", () => {
+    const s = states({ safety: safetyView(row("engaged"), NOW), mothershipStop: null });
+    expect(s.emergencyStop).toEqual({ jackboy: "engaged", mothership: "unknown" });
+    expect(s.killSwitch).toBe("off");
+    expect(s.autonomous.blockers.join(" ")).toContain("CODE Emergency Stop engaged");
+    expect(s.autonomous.blockers.join(" ")).toContain("Mothership Emergency Stop unknown");
+    const p = states({ safety: safetyView(row("paused"), NOW) });
+    expect(p.killSwitch).toBe("on");
+  });
+  it("treats stops released but Jackboy not allowing autonomy as blocked", () => {
+    const v = safetyView(row("clear", { autonomous_allowed: false, blocked_by: "code_disabled", code_enabled: false }), NOW);
+    expect(v.clear).toBe(false);
+    expect(v.label).toContain("autonomy blocked by Jackboy");
+    const s = states({ safety: v });
+    expect(s.code.blockers.join(" ")).toContain("Jackboy CODE setting off");
+  });
+  it("shows connected only for a recent signed exchange", () => {
+    expect(states().link.state).toBe("connected");
+    const old = safetyView(row("clear", { recorded_at: new Date(NOW - LIVE_LINK_FRESH_MS - 5000).toISOString() }), NOW);
+    expect(states({ safety: old }).link.state).toBe("configured");
   });
 });
 
