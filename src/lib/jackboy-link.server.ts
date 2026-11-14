@@ -205,6 +205,22 @@ export async function configuredJackboyLink(): Promise<JackboyLinkConfig> {
   return c;
 }
 
+/** Whether the configured link identity settings are present and well-formed; values never leave. */
+export function configuredLinkIdentityValid(): boolean {
+  try {
+    assertIdentity({
+      origin: process.env["JACKBOY_LINK_ORIGIN"] || "",
+      clientId: process.env["OMNI_LINK_CLIENT_ID"] || "",
+      projectId: process.env["OMNI_LINK_PROJECT_ID"] || "",
+      bootstrap: process.env["OMNI_LINK_BOOTSTRAP_KEY"] || "",
+      secret: process.env["OMNI_LINK_HMAC_SECRET"] || "",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function configuredJackboyConfiguration(): JackboyConfigurationConfig {
   const c = {
     origin: process.env["JACKBOY_LINK_ORIGIN"] || "",
