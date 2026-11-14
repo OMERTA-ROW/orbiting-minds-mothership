@@ -552,7 +552,8 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         >
           Owner approvals only record decisions. Run check may read server configuration, verify the
           signed Jackboy link, or inspect a self-test result; it never approves, flips switches,
-          sets secrets, deploys, runs the self-test, or makes paid calls.
+          sets secrets, deploys, or makes paid calls. Only Step 8&apos;s separately authorized
+          button runs the fixed protocol self-test, once per click.
         </p>
       </header>
 
@@ -571,7 +572,23 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
             fresh approval; ordinary sign-ins never reset them.
           </p>
         )}
-        {next.kind === "run_check" && next.step !== null && (
+        {next.kind === "run_check" && next.step === 8 && (
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => {
+              setExpanded((e) => ({ ...e, 8: true }));
+              window.setTimeout(() => {
+                const el = document.getElementById("step-8-selftest-title");
+                el?.scrollIntoView?.({ block: "center" });
+                document.querySelector<HTMLInputElement>("#step-8 input[type=checkbox]")?.focus();
+              }, 0);
+            }}
+          >
+            Go to Step 8: run protocol self-test &amp; verify
+          </Button>
+        )}
+        {next.kind === "run_check" && next.step !== null && next.step !== 8 && (
           <Button size="sm" disabled={busy} onClick={() => void checkStep(next.step!)}>
             {views.find((v) => v.step === next.step)?.checkLabel === "Retry check"
               ? `Retry check for step ${next.step}`
