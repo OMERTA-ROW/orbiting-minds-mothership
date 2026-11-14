@@ -126,6 +126,8 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [expiry, setExpiry] = useState(() => toLocalInput(Date.now() + 12 * 3600_000));
   const [cap, setCap] = useState(false);
+  // Steps 9–10: approving also activates (owner can untick to record the approval only).
+  const [activateOnApprove, setActivateOnApprove] = useState<Record<number, boolean>>({ 9: true, 10: true });
   const [daily, setDaily] = useState(false);
   const [code, setCode] = useState("");
   const [now, setNow] = useState(() => Date.now());
@@ -335,8 +337,13 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
       !window.confirm("This also resets every later step to Pending. Continue?")
     )
       return;
+    const alsoActivate =
+      action === "approve" && (row.step === 9 || row.step === 10) && activateOnApprove[row.step] === true;
     return exclusive("decide", row.step, async () => {
-      setNotice({ step: row.step, text: "Recording your decision…" });
+      setNotice({
+        step: row.step,
+        text: alsoActivate ? "Recording your approval, then activating…" : "Recording your decision…",
+      });
       let result: Awaited<ReturnType<typeof decide>>;
       try {
         result = await withTimeout(
@@ -348,6 +355,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
               expiresAt,
               capConfirmed: row.step === 10 && cap,
               dailyConfirmed: row.step === 10 && daily,
+              activate: alsoActivate ? { attemptId: crypto.randomUUID() } : null,
             },
           }),
           limits.decide,
@@ -370,6 +378,17 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
       if (row.step === 10) {
         setCap(false);
         setDaily(false);
+      }
+      const activation = "activation" in result ? result.activation : null;
+      if (activation) {
+        const what = activation.kind === "live_link" ? "Live link" : "Autonomy authorization";
+        const text = activation.ok
+          ? `Approved. ${activation.message}${
+              activation.blockers.length ? ` Still blocking execution: ${activation.blockers.join(" ")}` : ""
+            }`
+          : `Approved, but ${what.toLowerCase()} was not activated: ${activation.message} You can retry from the panel below.`;
+        await refreshAfter(row.step, text, activation.ok ? "ok" : "error");
+        return;
       }
       await refreshAfter(
         row.step,
@@ -1083,6 +1102,23 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
                             I confirm the $5 daily limit is set.
                           </label>
                         </fieldset>
+                      )}
+                      {(meta.step === 9 || meta.step === 10) && view.canApprove && (
+                        <label className="flex items-start gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            className="mt-1"
+                            checked={activateOnApprove[meta.step] === true}
+                            onChange={(e) =>
+                              setActivateOnApprove((a) => ({ ...a, [meta.step]: e.target.checked }))
+                            }
+                          />
+                          <span>
+                            {meta.step === 9
+                              ? "Also activate the live link now: one signed handshake and one signed safety read with Jackboy. No job, CODE or stop change."
+                              : "Also activate autonomy authorization now (needs the live link active and Jackboy's own authorization). Starts nothing and releases no stop."}
+                          </span>
+                        </label>
                       )}
                       {!view.technical && !view.complete && (
                         <Input

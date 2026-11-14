@@ -762,6 +762,50 @@ describe("Steps 9–10 activation panel", () => {
     expect(ids[0]).toBe(ids[1]);
   });
 
+  it("approving Step 9 also activates the live link by default, and can record the approval only", async () => {
+    mocks.list.mockResolvedValue(live(8));
+    mocks.decide.mockResolvedValue({
+      ok: true,
+      activation: {
+        kind: "live_link",
+        ok: true,
+        already: false,
+        message: "Live link activated: Jackboy answered a signed handshake.",
+        blockers: [],
+      },
+    });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    const box = within(stepItem(9)).getByRole("checkbox", { name: /Also activate the live link now/ });
+    expect(box).toBeChecked();
+    fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
+    await waitFor(() => expect(mocks.decide).toHaveBeenCalledTimes(1));
+    const arg = mocks.decide.mock.calls[0]![0] as { data: { step: number; activate: { attemptId: string } | null } };
+    expect(arg.data.step).toBe(9);
+    expect(arg.data.activate?.attemptId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await screen.findByText(/Approved\. Live link activated/)).toBeInTheDocument();
+    expect(mocks.activateLink).not.toHaveBeenCalled();
+    mocks.decide.mockReset().mockResolvedValue({ ok: true, activation: null });
+    fireEvent.click(within(stepItem(9)).getByRole("checkbox", { name: /Also activate the live link now/ }));
+    fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
+    await waitFor(() => expect(mocks.decide).toHaveBeenCalledTimes(1));
+    expect((mocks.decide.mock.calls[0]![0] as { data: { activate: unknown } }).data.activate).toBeNull();
+  });
+
+  it("reports a recorded approval whose activation failed, without claiming activation", async () => {
+    mocks.list.mockResolvedValue(live(8));
+    mocks.decide.mockResolvedValue({
+      ok: true,
+      activation: { kind: "live_link", ok: false, reason: "timeout", message: "Jackboy did not answer in time.", details: [] },
+    });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
+    expect(
+      await screen.findByText(/Approved, but live link was not activated: Jackboy did not answer in time/),
+    ).toBeInTheDocument();
+  });
+
   it("keeps activation disabled without a fresh two-step code or while Mothership's stop is engaged", async () => {
     mocks.list.mockResolvedValue({ ...live(9), mfaAgeSeconds: null });
     const { unmount } = render(<ActivationApprovals />);
