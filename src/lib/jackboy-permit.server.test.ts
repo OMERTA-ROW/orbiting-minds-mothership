@@ -174,4 +174,53 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     expect(store.close).toHaveBeenCalledWith(JOB, "released", "released_by_omni");
     expect(holder.usable()).toBe(false);
   });
+
+  // Synthetic no-op jobs only: nothing here runs code; the "job" is a UUID and a payload digest.
+  it("records only a fresh, signed, capped permit decision (signature digest and ≤65 s expiry)", async () => {
+    const { holder, store } = setup();
+    const before = Date.now();
+    const p = await holder.acquire();
+    const [, recorded] = store.record.mock.calls[0]!;
+    expect(recorded.signatureDigest).toMatch(/^[a-f0-9]{64}$/);
+    expect(Date.parse(p.expiresAt) - before).toBeLessThanOrEqual(65_000);
+    expect(p.jobId).toBe(JOB);
+    expect(p.limits).toEqual({ perCallUsd: 0.5, perTaskUsd: 1, dailyUsd: 5 });
+  });
+
+  it("refuses a permit while Jackboy's CODE setting is off, and halts a running one at renewal", async () => {
+    const off = new FakeJackboy();
+    off.codeEnabled = false;
+    const a = setup(off);
+    await expect(a.holder.acquire()).rejects.toMatchObject({ code: "permit_denied", reason: "code_disabled", signed: true });
+    expect(a.store.record).not.toHaveBeenCalled();
+
+    const b = setup();
+    await b.holder.acquire();
+    b.fake.codeEnabled = false;
+    b.t.renewNow();
+    await vi.waitFor(() => expect(b.onHalt).toHaveBeenCalled());
+    expect(b.holder.usable()).toBe(false);
+    expect(b.fake.permits.get(JOB)?.status).toBe("revoked");
+  });
+
+  it("rejects a stale (lapsed) permit and a revoked one; neither job can get a new permit", async () => {
+    const lapsed = setup();
+    await lapsed.holder.acquire();
+    lapsed.fake.permits.get(JOB)!.expiresAt = new Date(Date.now() - 1000).toISOString();
+    const again = new PermitHolder(REQ, {
+      link: lapsed.link, store: lapsed.store, approvalId: FAKE.approvalId, onHalt: vi.fn(), timers: manualTimers().timers,
+    });
+    await expect(again.acquire()).rejects.toMatchObject({ reason: "permit_lapsed" });
+
+    const revoked = setup();
+    await revoked.holder.acquire();
+    revoked.fake.engageStop();
+    revoked.fake.releaseStop();
+    const retry = new PermitHolder(REQ, {
+      link: revoked.link, store: revoked.store, approvalId: FAKE.approvalId, onHalt: vi.fn(), timers: manualTimers().timers,
+    });
+    await expect(retry.acquire()).rejects.toMatchObject({ reason: "job_closed" });
+    expect(revoked.store.record).toHaveBeenCalledTimes(1); // only the original issue
+  });
 });
+
