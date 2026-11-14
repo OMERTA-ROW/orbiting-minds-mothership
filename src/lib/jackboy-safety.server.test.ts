@@ -8,29 +8,18 @@ import { safetyEventMessage } from "./jackboy-safety";
 const SECRET = "s".repeat(40);
 const PROJECT = "4f9a3c1e-2b7d-4e8f-9a1b-3c5d7e9f0a2b";
 
-function fakeAdmin(opts: {
-  linkActive?: boolean;
-  stop?: boolean | null;
-  rpcError?: { code: string } | null;
-}) {
+function fakeAdmin(opts: { linkActive?: boolean; stop?: boolean | null; rpcError?: { code: string } | null }) {
   const calls: Array<{ fn: string; args: Record<string, unknown> | undefined }> = [];
   const admin = {
     rpc: vi.fn(async (fn: string, args?: Record<string, unknown>) => {
       calls.push({ fn, args });
-      if (fn.startsWith("jackboy_safety_record") && opts.rpcError)
-        return { data: null, error: opts.rpcError };
+      if (fn.startsWith("jackboy_safety_record") && opts.rpcError) return { data: null, error: opts.rpcError };
       if (fn === "activation_effective") return { data: opts.linkActive ?? false, error: null };
       if (fn === "jackboy_permits_enforce") return { data: 0, error: null };
       if (fn.startsWith("jackboy_safety_record")) {
         const a = args!;
         const state =
-          a["_source"] === "failure"
-            ? "unknown"
-            : a["_code_stop"]
-              ? "engaged"
-              : a["_paused"]
-                ? "paused"
-                : "clear";
+          a["_source"] === "failure" ? "unknown" : a["_code_stop"] ? "engaged" : a["_paused"] ? "paused" : "clear";
         return { data: state, error: null };
       }
       return { data: "unknown", error: null };
@@ -41,10 +30,7 @@ function fakeAdmin(opts: {
         eq: () => chain,
         maybeSingle: async () =>
           table === "omni_terminal_controls"
-            ? {
-                data: opts.stop === null ? null : { emergency_stop: opts.stop ?? false },
-                error: null,
-              }
+            ? { data: opts.stop === null ? null : { emergency_stop: opts.stop ?? false }, error: null }
             : { data: null, error: null },
       };
       return chain;
@@ -91,9 +77,7 @@ describe("scheduled/owner safety sync", () => {
     expect(calls.at(-1)?.args?.["_source"]).toBe("failure");
   });
   it("records a failed or refused read as unknown (fail closed)", async () => {
-    const read = vi
-      .fn()
-      .mockRejectedValue({ stage: "http", status: 503, code: "permit_service_unavailable" });
+    const read = vi.fn().mockRejectedValue({ stage: "http", status: 503, code: "permit_service_unavailable" });
     const { admin, calls } = fakeAdmin({ linkActive: true });
     const r = await syncJackboySafety(admin, { read });
     expect(r.state).toBe("unknown");
@@ -107,12 +91,7 @@ describe("scheduled/owner safety sync", () => {
     expect(r).toMatchObject({ checked: true, state: "engaged", reason: "verified" });
     expect(calls.at(-1)).toMatchObject({
       fn: "jackboy_safety_record_v2",
-      args: {
-        _source: "poll",
-        _code_stop: true,
-        _autonomous_allowed: false,
-        _blocked_by: "emergency_stop_engaged",
-      },
+      args: { _source: "poll", _code_stop: true, _autonomous_allowed: false, _blocked_by: "emergency_stop_engaged" },
     });
   });
 });
@@ -138,9 +117,7 @@ describe("signed stop notice receiver", () => {
   const request = (b: string, o: { ts?: string; nonce?: string; secret?: string } = {}) => {
     const ts = o.ts ?? String(Math.floor(Date.now() / 1000));
     const nonce = o.nonce ?? "1".repeat(32);
-    const sig = createHmac("sha256", o.secret ?? SECRET)
-      .update(safetyEventMessage(ts, nonce, b))
-      .digest("hex");
+    const sig = createHmac("sha256", o.secret ?? SECRET).update(safetyEventMessage(ts, nonce, b)).digest("hex");
     return new Request("https://evoomni.tech/api/public/jackboy/safety-event", {
       method: "POST",
       headers: { "x-jackboy-timestamp": ts, "x-jackboy-nonce": nonce, "x-jackboy-signature": sig },
@@ -151,58 +128,33 @@ describe("signed stop notice receiver", () => {
     const { admin, calls } = fakeAdmin({});
     const res = await handleSafetyEvent(request(body()), { admin: async () => admin });
     expect(res.status).toBe(200);
-    expect(calls[0]?.args).toMatchObject({
-      _source: "event",
-      _code_stop: true,
-      _nonce: "1".repeat(32),
-    });
+    expect(calls[0]?.args).toMatchObject({ _source: "event", _code_stop: true, _nonce: "1".repeat(32) });
   });
   it("refuses a wrong signature, stale clock or altered body without recording", async () => {
     const { admin, calls } = fakeAdmin({});
-    expect(
-      (
-        await handleSafetyEvent(request(body(), { secret: "x".repeat(40) }), {
-          admin: async () => admin,
-        })
-      ).status,
-    ).toBe(401);
+    expect((await handleSafetyEvent(request(body(), { secret: "x".repeat(40) }), { admin: async () => admin })).status).toBe(401);
     const old = String(Math.floor(Date.now() / 1000) - 120);
-    expect(
-      (await handleSafetyEvent(request(body(), { ts: old }), { admin: async () => admin })).status,
-    ).toBe(401);
+    expect((await handleSafetyEvent(request(body(), { ts: old }), { admin: async () => admin })).status).toBe(401);
     const signed = request(body());
-    const tampered = new Request(signed.url, {
-      method: "POST",
-      headers: signed.headers,
-      body: body({ codeEnabled: true }),
-    });
+    const tampered = new Request(signed.url, { method: "POST", headers: signed.headers, body: body({ codeEnabled: true }) });
     expect((await handleSafetyEvent(tampered, { admin: async () => admin })).status).toBe(401);
     expect(calls).toHaveLength(0);
   });
   it("refuses another project and a notice that reports no stop", async () => {
     const { admin, calls } = fakeAdmin({});
     const other = body({ projectId: "0f9a3c1e-2b7d-4e8f-9a1b-3c5d7e9f0a2b" });
-    expect((await handleSafetyEvent(request(other), { admin: async () => admin })).status).toBe(
-      403,
-    );
-    expect(
-      (await handleSafetyEvent(request(body({ codeStop: false })), { admin: async () => admin }))
-        .status,
-    ).toBe(400);
+    expect((await handleSafetyEvent(request(other), { admin: async () => admin })).status).toBe(403);
+    expect((await handleSafetyEvent(request(body({ codeStop: false })), { admin: async () => admin })).status).toBe(400);
     expect(calls).toHaveLength(0);
   });
   it("reports a replayed nonce as 409", async () => {
     const { admin } = fakeAdmin({ rpcError: { code: "23505" } });
-    expect((await handleSafetyEvent(request(body()), { admin: async () => admin })).status).toBe(
-      409,
-    );
+    expect((await handleSafetyEvent(request(body()), { admin: async () => admin })).status).toBe(409);
   });
   it("is unavailable until its signing secret is configured", async () => {
     vi.stubEnv("JACKBOY_SAFETY_EVENT_HMAC_SECRET", "");
     const { admin } = fakeAdmin({});
-    expect((await handleSafetyEvent(request(body()), { admin: async () => admin })).status).toBe(
-      503,
-    );
+    expect((await handleSafetyEvent(request(body()), { admin: async () => admin })).status).toBe(503);
   });
 });
 
@@ -220,20 +172,12 @@ describe("session-signed safety snapshot (omni.safety/v1)", () => {
     const fake = new FakeJackboy();
     fake.engageStop();
     const s = await link(fake).safety();
-    expect(s).toMatchObject({
-      emergencyStop: true,
-      autonomousAllowed: false,
-      blockedBy: "emergency_stop_engaged",
-    });
+    expect(s).toMatchObject({ emergencyStop: true, autonomousAllowed: false, blockedBy: "emergency_stop_engaged" });
   });
   it("cannot read anything while Jackboy's Kill Switch is on (handshake refused)", async () => {
     const fake = new FakeJackboy();
     fake.killSwitch = true;
-    await expect(link(fake).safety()).rejects.toMatchObject({
-      stage: "http",
-      status: 403,
-      code: "grant_unavailable",
-    });
+    await expect(link(fake).safety()).rejects.toMatchObject({ stage: "http", status: 403, code: "grant_unavailable" });
   });
   it("refuses an unsigned or tampered snapshot", async () => {
     const fake = new FakeJackboy();

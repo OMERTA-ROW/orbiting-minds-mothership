@@ -26,12 +26,7 @@ describe("Jackboy safety view (fail closed)", () => {
     expect(v.detail).toContain("not authorized");
   });
   it("keeps a verified Kill Switch reading as a manual-terminal block even after a failed read", () => {
-    expect(
-      safetyView(
-        row({ state: "unknown", source: "failure", paused: true, manual_allowed: false }),
-        NOW,
-      ).manualBlocked,
-    ).toBe(true);
+    expect(safetyView(row({ state: "unknown", source: "failure", paused: true, manual_allowed: false }), NOW).manualBlocked).toBe(true);
     expect(safetyView(row({}), NOW).manualBlocked).toBe(false);
   });
   it("is clear only for a fresh signed poll reading", () => {
@@ -61,10 +56,7 @@ describe("Jackboy safety view (fail closed)", () => {
     expect(v.codeStop).toBe("released");
   });
   it("never reports switch values from a failed check", () => {
-    const v = safetyView(
-      row({ state: "unknown", source: "failure", reason: "read_http_400" }),
-      NOW,
-    );
+    const v = safetyView(row({ state: "unknown", source: "failure", reason: "read_http_400" }), NOW);
     expect(v.state).toBe("unknown");
     expect(v.killSwitch).toBe("unknown");
     expect(v.codeStop).toBe("unknown");
@@ -88,9 +80,7 @@ describe("Jackboy stop notice contract", () => {
     expect(
       safetyEventSchema.safeParse({ ...base, event: "code_stop_engaged", codeStop: false }).success,
     ).toBe(false);
-    expect(safetyEventSchema.safeParse({ ...base, event: "global_pause_engaged" }).success).toBe(
-      false,
-    );
+    expect(safetyEventSchema.safeParse({ ...base, event: "global_pause_engaged" }).success).toBe(false);
   });
   it("refuses extra fields", () => {
     expect(
@@ -99,12 +89,7 @@ describe("Jackboy stop notice contract", () => {
   });
   it("explains an uninstalled Jackboy permit service without treating it as clear", () => {
     const v = safetyView(
-      row({
-        state: "unknown",
-        source: "failure",
-        reason: "read_http_503_permit_service_unavailable",
-        autonomous_allowed: null,
-      }),
+      row({ state: "unknown", source: "failure", reason: "read_http_503_permit_service_unavailable", autonomous_allowed: null }),
       NOW,
     );
     expect(v.clear).toBe(false);

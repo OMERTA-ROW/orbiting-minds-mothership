@@ -24,10 +24,7 @@ export type JackboyAction =
   | "permit.request"
   | "permit.release";
 type Action = JackboyAction;
-type JobAction = Exclude<
-  Action,
-  "handshake" | "configuration" | "safety" | "permit.request" | "permit.release"
->;
+type JobAction = Exclude<Action, "handshake" | "configuration" | "safety" | "permit.request" | "permit.release">;
 /**
  * How long Jackboy itself waits for its Railway runner before answering (mirrors Jackboy's
  * omni-remote-runner: 5 s for the configuration probe, runner limit + 1 s for a `run`).
@@ -175,9 +172,7 @@ export function permitReason(body: string): string | undefined {
   try {
     const parsed: unknown = JSON.parse(body);
     const reason = (parsed as { reason?: unknown } | null)?.reason;
-    return (PERMIT_REFUSAL_REASONS as readonly unknown[]).includes(reason)
-      ? (reason as string)
-      : undefined;
+    return (PERMIT_REFUSAL_REASONS as readonly unknown[]).includes(reason) ? (reason as string) : undefined;
   } catch {
     return undefined;
   }
@@ -377,7 +372,8 @@ async function post(
       signal: AbortSignal.timeout(limitMs),
     });
   } catch (error) {
-    if (isAbort(error)) throw timedOut("reply");
+    if (isAbort(error))
+      throw timedOut("reply");
     throw new JackboyLinkError("Jackboy link connection failed.", "connection");
   }
   if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
@@ -389,7 +385,8 @@ async function post(
     text = await readCapped(response);
   } catch (error) {
     if (error instanceof JackboyLinkError) throw error;
-    if (isAbort(error)) throw timedOut("body");
+    if (isAbort(error))
+      throw timedOut("body");
     throw new JackboyLinkError("Jackboy link connection failed.", "connection");
   }
   return { status: response.status, body: text, proof: response.headers.get("x-omni-proof") || "" };
@@ -534,10 +531,7 @@ const safetySnapshotSchema = z
     codeEnabled: z.boolean(),
     authorization: z.object({ id: UUID_S, expiresAt: ISO }).strict().nullable(),
     autonomousAllowed: z.boolean(),
-    blockedBy: z
-      .string()
-      .regex(/^[a-z0-9_]{1,40}$/)
-      .nullable(),
+    blockedBy: z.string().regex(/^[a-z0-9_]{1,40}$/).nullable(),
     manualDiagnosticsAllowed: z.boolean(),
     activePermits: z.number().int().min(0).max(1000),
   })
@@ -589,23 +583,12 @@ export function permitSigningMessage(p: {
   approvalId: string;
   expiresAt: string;
 }): string {
-  return [
-    PERMIT_CONTRACT,
-    p.id,
-    p.jobId,
-    p.kind,
-    p.digest,
-    p.clientId,
-    p.projectId,
-    p.approvalId,
-    p.expiresAt,
-  ].join("\n");
+  return [PERMIT_CONTRACT, p.id, p.jobId, p.kind, p.digest, p.clientId, p.projectId, p.approvalId, p.expiresAt].join("\n");
 }
 
 function verifySnapshot(raw: unknown, now: number, proofDigest: string): JackboySafetySnapshot {
   const parsed = safetySnapshotSchema.safeParse(raw);
-  if (!parsed.success)
-    throw new JackboyLinkError("Jackboy safety snapshot is invalid.", "contract");
+  if (!parsed.success) throw new JackboyLinkError("Jackboy safety snapshot is invalid.", "contract");
   const checked = Date.parse(parsed.data.checkedAt);
   const valid = Date.parse(parsed.data.validUntil);
   if (!(Math.abs(checked - now) <= 60_000) || !(valid > now && valid <= checked + 60_000))
@@ -649,11 +632,7 @@ function assertPermitRequest(r: PermitRequest) {
     !UUID.test(r.jobId) ||
     !["autonomous", "code"].includes(r.kind) ||
     !/^[a-f0-9]{64}$/.test(r.digest) ||
-    !(
-      Number.isFinite(r.estimateUsd) &&
-      r.estimateUsd > 0 &&
-      r.estimateUsd <= OMNI_PERMIT_LIMITS.perTaskUsd
-    )
+    !(Number.isFinite(r.estimateUsd) && r.estimateUsd > 0 && r.estimateUsd <= OMNI_PERMIT_LIMITS.perTaskUsd)
   )
     throw new Error("Invalid permit request.");
 }
@@ -703,12 +682,7 @@ export class JackboyLink {
   async safety(): Promise<JackboySafetySnapshot> {
     await this.connect();
     await this.audit("request_safety");
-    const { reply, proofDigest } = await sendSignedRaw(
-      this.config,
-      this.options,
-      "safety",
-      this.session,
-    );
+    const { reply, proofDigest } = await sendSignedRaw(this.config, this.options, "safety", this.session);
     const snapshot = verifySnapshot(reply.safety, Date.now(), proofDigest);
     await this.audit(snapshot.autonomousAllowed ? "safety_allowed" : `safety_blocked`);
     return snapshot;
@@ -718,18 +692,11 @@ export class JackboyLink {
   async requestPermit(req: PermitRequest, approvalId: string | null): Promise<JackboyPermit> {
     assertPermitRequest(req);
     await this.connect();
-    const { reply } = await sendSignedRaw(
-      this.config,
-      this.options,
-      "permit.request",
-      this.session,
-      req.jobId,
-      {
-        kind: req.kind,
-        digest: req.digest,
-        estimateUsd: req.estimateUsd,
-      },
-    );
+    const { reply } = await sendSignedRaw(this.config, this.options, "permit.request", this.session, req.jobId, {
+      kind: req.kind,
+      digest: req.digest,
+      estimateUsd: req.estimateUsd,
+    });
     return verifyPermit(reply.permit, this.config, req, Date.now(), approvalId);
   }
 

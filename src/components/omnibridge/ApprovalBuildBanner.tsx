@@ -83,11 +83,7 @@ export function ApprovalBuildBanner() {
         )}
       </div>
       <h2 id="build-label-title" className="flex items-center gap-2 font-medium">
-        <Icon
-          size={16}
-          aria-hidden
-          className={notice.tone === "warn" ? "text-warning" : undefined}
-        />
+        <Icon size={16} aria-hidden className={notice.tone === "warn" ? "text-warning" : undefined} />
         {notice.title}
       </h2>
       <p role={notice.tone === "warn" ? "alert" : undefined} className="text-muted-foreground">
@@ -101,11 +97,7 @@ export function ApprovalBuildBanner() {
           </Button>
         ) : null}
         <Button size="sm" variant="ghost" disabled={checking} onClick={() => void check()}>
-          <RefreshCw
-            size={14}
-            aria-hidden
-            className={checking ? "animate-spin motion-reduce:animate-none" : undefined}
-          />
+          <RefreshCw size={14} aria-hidden className={checking ? "animate-spin motion-reduce:animate-none" : undefined} />
           {checking ? "Checking live site…" : "Check live site again"}
         </Button>
       </div>

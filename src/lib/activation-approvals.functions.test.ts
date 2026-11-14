@@ -390,10 +390,7 @@ describe("Step 9/10 approval triggers the real activation", () => {
     };
     expect(result.ok).toBe(true);
     expect(result.activation).toMatchObject({ kind: "live_link", ok: false });
-    expect(inv.rpc).toHaveBeenCalledWith(
-      "activation_approval_decide",
-      expect.objectContaining({ _step: 9 }),
-    );
+    expect(inv.rpc).toHaveBeenCalledWith("activation_approval_decide", expect.objectContaining({ _step: 9 }));
     expect(inv.rpc).not.toHaveBeenCalledWith(
       "activation_activation_finish",
       expect.objectContaining({ _ok: true }),
@@ -401,9 +398,7 @@ describe("Step 9/10 approval triggers the real activation", () => {
   });
   it("does not activate when the approval itself is refused", async () => {
     const { inv } = step9(8, true);
-    inv.rpc.mockResolvedValueOnce({
-      error: { code: "22023", message: "Fresh two-factor needed" },
-    } as never);
+    inv.rpc.mockResolvedValueOnce({ error: { code: "22023", message: "Fresh two-factor needed" } } as never);
     const result = await mocks.handlers[2]!(inv.input);
     expect(result).toMatchObject({ ok: false, reason: "mfa" });
     expect(inv.rpc).toHaveBeenCalledTimes(1);

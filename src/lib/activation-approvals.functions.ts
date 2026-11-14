@@ -252,10 +252,7 @@ async function runtimeCounts(): Promise<{
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [w, a, c, stop] = await Promise.all([
-      supabaseAdmin
-        .from("omni_autonomy_windows")
-        .select("id", { count: "exact", head: true })
-        .is("ended_at", null),
+      supabaseAdmin.from("omni_autonomy_windows").select("id", { count: "exact", head: true }).is("ended_at", null),
       supabaseAdmin
         .from("omni_agent_jobs")
         .select("id", { count: "exact", head: true })
@@ -265,11 +262,7 @@ async function runtimeCounts(): Promise<{
         .from("omni_code_jobs")
         .select("id", { count: "exact", head: true })
         .in("status", ["leased", "running"]),
-      supabaseAdmin
-        .from("omni_terminal_controls")
-        .select("emergency_stop")
-        .eq("id", 1)
-        .maybeSingle(),
+      supabaseAdmin.from("omni_terminal_controls").select("emergency_stop").eq("id", 1).maybeSingle(),
     ]);
     return {
       windows: w.count ?? 0,
@@ -308,9 +301,7 @@ async function currentSelfTestReadiness(context: {
     stopReleased = false;
   }
   let identityValid = false;
-  let identityIssues: Awaited<
-    ReturnType<typeof import("./jackboy-link.server").configuredLinkIdentityIssues>
-  > = [];
+  let identityIssues: Awaited<ReturnType<typeof import("./jackboy-link.server").configuredLinkIdentityIssues>> = [];
   try {
     const { configuredLinkIdentityValid } = await import("./jackboy-link.server");
     identityValid = configuredLinkIdentityValid();
@@ -623,18 +614,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       return { denied: true as const, reason };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [
-      steps,
-      audit,
-      checks,
-      selfTest,
-      resetAt,
-      readiness,
-      linkEvents,
-      safetyRow,
-      activations,
-      counts,
-    ] = await Promise.all([
+    const [steps, audit, checks, selfTest, resetAt, readiness, linkEvents, safetyRow, activations, counts] = await Promise.all([
       context.supabase
         .from("activation_approvals")
         .select(
@@ -1092,8 +1072,9 @@ export const runStep8SelfTest = createServerFn({ method: "POST" })
         "Another protocol self-test was asked to run in the last few minutes and has no result yet. Nothing new was sent; wait, then use Refresh status.",
       );
 
-    const { configuredJackboyLink, JackboyLink, JackboyLinkError } =
-      await import("./jackboy-link.server");
+    const { configuredJackboyLink, JackboyLink, JackboyLinkError } = await import(
+      "./jackboy-link.server"
+    );
     const { driveSelfTest } = await import("./activation-self-test.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let link;
@@ -1119,12 +1100,17 @@ export const runStep8SelfTest = createServerFn({ method: "POST" })
     let runSent = stage === "run_requested";
     let job;
     try {
-      ({ job } = await driveSelfTest(client, stage, data.attemptId, {
-        deadline: started + SELF_TEST_SERVER_BUDGET_MS,
-        onRunSent: () => {
-          runSent = true;
+      ({ job } = await driveSelfTest(
+        client,
+        stage,
+        data.attemptId,
+        {
+          deadline: started + SELF_TEST_SERVER_BUDGET_MS,
+          onRunSent: () => {
+            runSent = true;
+          },
         },
-      }));
+      ));
     } catch (error) {
       const c = classifySelfTestError(error, runSent);
       return fail(c.kind, c.message, { details: c.details, sent: true });
@@ -1164,9 +1150,7 @@ export const runStep8SelfTest = createServerFn({ method: "POST" })
         label: "Signed runner proof",
         status: passed ? "passed" : "failed",
         detail: `Job ${job.id} · ${job.status}${
-          result
-            ? ` · ${result.passed ? "passed" : "failed"} ${result.checks} check(s) · ${result.runner}`
-            : " · no result"
+          result ? ` · ${result.passed ? "passed" : "failed"} ${result.checks} check(s) · ${result.runner}` : " · no result"
         } · reply signature verified.`,
       },
       {
@@ -1206,15 +1190,7 @@ const liveLinkInput = z.object({ confirm: z.literal(true) }).strict();
 
 type LiveLinkFailure = {
   ok: false;
-  reason:
-    | "mfa"
-    | "denied"
-    | "not_ready"
-    | "safety_denial"
-    | "timeout"
-    | "refused"
-    | "link_failure"
-    | "invalid_reply";
+  reason: "mfa" | "denied" | "not_ready" | "safety_denial" | "timeout" | "refused" | "link_failure" | "invalid_reply";
   message: string;
   details: Detail[];
 };
@@ -1228,91 +1204,84 @@ type LiveLinkFailure = {
 export const checkLiveLinkConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => liveLinkInput.parse(input))
-  .handler(
-    async ({
-      context,
-    }): Promise<LiveLinkFailure | { ok: true; verifiedAt: string; message: string }> => {
-      await ownerContext(context);
-      const fail = (
-        reason: LiveLinkFailure["reason"],
-        message: string,
-        details: Detail[] = [],
-      ): LiveLinkFailure => ({
-        ok: false,
-        reason,
-        message,
-        details,
+  .handler(async ({ context }): Promise<LiveLinkFailure | { ok: true; verifiedAt: string; message: string }> => {
+    await ownerContext(context);
+    const fail = (reason: LiveLinkFailure["reason"], message: string, details: Detail[] = []): LiveLinkFailure => ({
+      ok: false,
+      reason,
+      message,
+      details,
+    });
+    if (!isMfaFresh(context.claims["amr"], Math.floor(Date.now() / 1000)))
+      return fail("mfa", "Re-verify with your authenticator first. Nothing was sent.");
+    const { data: rows, error } = await context.supabase
+      .from("activation_approvals")
+      .select(
+        "step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision",
+      )
+      .order("step");
+    if (error) return fail("denied", "Approval records could not be read; nothing was sent.");
+    let resetAt: string | null;
+    try {
+      resetAt = await securityResetAt(context.supabase, context.userId);
+    } catch {
+      return fail("denied", "Account security history could not be read; nothing was sent.");
+    }
+    const readiness = await currentSelfTestReadiness(context);
+    const status = liveLinkStatus({
+      rows: effectiveRows(normalizeRows(rows), resetAt),
+      readiness,
+      now: Date.now(),
+      lastConnectedAt: null,
+      lastAttemptAt: null,
+    });
+    if (!status.canCheck) {
+      const stop = status.items.some((i) => i.key === "stop" && !i.ok);
+      return fail(
+        stop ? "safety_denial" : "not_ready",
+        stop
+          ? "Safety denial: Mothership's Emergency Stop is engaged or unreadable, so nothing was sent. It was not released."
+          : `Not sent: ${status.blocker ?? "a requirement is not met."}`,
+        status.items
+          .filter((i) => !i.ok)
+          .map((i) => ({ label: i.label, status: "needs_attention" as const, detail: i.detail })),
+      );
+    }
+    const { configuredJackboyLink, JackboyLink, JackboyLinkError } = await import(
+      "./jackboy-link.server"
+    );
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let link;
+    try {
+      link = await configuredJackboyLink();
+    } catch {
+      return fail(
+        "not_ready",
+        "Not sent: the link settings are disabled, malformed or outside their approval window.",
+      );
+    }
+    const client = new JackboyLink(link, async (event) => {
+      const { error: auditError } = await supabaseAdmin.from("razul_control_audit").insert({
+        actor_id: context.userId,
+        action: event,
+        record_type: "jackboy_link",
+        record_id: process.env["OMNI_LINK_APPROVAL_ID"] || "live_link_check",
       });
-      if (!isMfaFresh(context.claims["amr"], Math.floor(Date.now() / 1000)))
-        return fail("mfa", "Re-verify with your authenticator first. Nothing was sent.");
-      const { data: rows, error } = await context.supabase
-        .from("activation_approvals")
-        .select(
-          "step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision",
-        )
-        .order("step");
-      if (error) return fail("denied", "Approval records could not be read; nothing was sent.");
-      let resetAt: string | null;
-      try {
-        resetAt = await securityResetAt(context.supabase, context.userId);
-      } catch {
-        return fail("denied", "Account security history could not be read; nothing was sent.");
-      }
-      const readiness = await currentSelfTestReadiness(context);
-      const status = liveLinkStatus({
-        rows: effectiveRows(normalizeRows(rows), resetAt),
-        readiness,
-        now: Date.now(),
-        lastConnectedAt: null,
-        lastAttemptAt: null,
-      });
-      if (!status.canCheck) {
-        const stop = status.items.some((i) => i.key === "stop" && !i.ok);
-        return fail(
-          stop ? "safety_denial" : "not_ready",
-          stop
-            ? "Safety denial: Mothership's Emergency Stop is engaged or unreadable, so nothing was sent. It was not released."
-            : `Not sent: ${status.blocker ?? "a requirement is not met."}`,
-          status.items
-            .filter((i) => !i.ok)
-            .map((i) => ({ label: i.label, status: "needs_attention" as const, detail: i.detail })),
-        );
-      }
-      const { configuredJackboyLink, JackboyLink, JackboyLinkError } =
-        await import("./jackboy-link.server");
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      let link;
-      try {
-        link = await configuredJackboyLink();
-      } catch {
-        return fail(
-          "not_ready",
-          "Not sent: the link settings are disabled, malformed or outside their approval window.",
-        );
-      }
-      const client = new JackboyLink(link, async (event) => {
-        const { error: auditError } = await supabaseAdmin.from("razul_control_audit").insert({
-          actor_id: context.userId,
-          action: event,
-          record_type: "jackboy_link",
-          record_id: process.env["OMNI_LINK_APPROVAL_ID"] || "live_link_check",
-        });
-        if (auditError) throw new JackboyLinkError("Live link audit failed.", "audit");
-      });
-      try {
-        await client.connect();
-      } catch (e) {
-        const c = classifyLiveLinkError(e);
-        return fail(c.kind, c.message, c.details);
-      }
-      return {
-        ok: true as const,
-        verifiedAt: new Date().toISOString(),
-        message:
-          "Live link verified: Jackboy answered a signed handshake with a ready session. No job, self-test or CODE request was sent.",
-      };
-    },
-  );
+      if (auditError) throw new JackboyLinkError("Live link audit failed.", "audit");
+    });
+    try {
+      await client.connect();
+    } catch (e) {
+      const c = classifyLiveLinkError(e);
+      return fail(c.kind, c.message, c.details);
+    }
+    return {
+      ok: true as const,
+      verifiedAt: new Date().toISOString(),
+      message:
+        "Live link verified: Jackboy answered a signed handshake with a ready session. No job, self-test or CODE request was sent.",
+    };
+  });
 
 /**
  * Owner refresh of Jackboy's safety state: freshness and permit-lapse enforcement plus, once the
@@ -1330,10 +1299,7 @@ export const refreshJackboySafety = createServerFn({ method: "POST" })
     try {
       result = await syncJackboySafety(supabaseAdmin);
     } catch {
-      return {
-        ok: false as const,
-        message: "The safety state could not be refreshed; autonomy and CODE stay halted.",
-      };
+      return { ok: false as const, message: "The safety state could not be refreshed; autonomy and CODE stay halted." };
     }
     const row = await jackboySafetyRow(context.supabase);
     const view = safetyView(row, Date.now());
@@ -1367,10 +1333,7 @@ async function autonomyPreflight(context: Ctx): Promise<string | null> {
     supabaseAdmin
       .from("omni_spend_ledger")
       .select("cents")
-      .gte(
-        "created_at",
-        new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").toISOString(),
-      )
+      .gte("created_at", new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").toISOString())
       .limit(LEDGER_ROWS + 1),
   ]);
   if (agents.error) return "agent budgets could not be read.";
@@ -1384,10 +1347,8 @@ async function autonomyPreflight(context: Ctx): Promise<string | null> {
   const enrolled = (agents.data ?? []).filter((a) => a.status === "enrolled");
   const combinedDay = enrolled.reduce((sum, a) => sum + (a.budget_day_cents ?? 0), 0);
   const combinedTotal = enrolled.reduce((sum, a) => sum + (a.budget_total_cents ?? 0), 0);
-  if (combinedDay > 500)
-    return "the enrolled agents' combined daily budgets exceed the $5 daily cap.";
-  if (combinedTotal > 1000)
-    return "the enrolled agents' combined total budgets exceed the $10 cap.";
+  if (combinedDay > 500) return "the enrolled agents' combined daily budgets exceed the $5 daily cap.";
+  if (combinedTotal > 1000) return "the enrolled agents' combined total budgets exceed the $10 cap.";
   if (ledger.error) return "the spend ledger (metering) could not be read.";
   if ((ledger.data ?? []).length > LEDGER_ROWS)
     return "today's spend ledger is too long to total safely here.";
@@ -1398,10 +1359,10 @@ async function autonomyPreflight(context: Ctx): Promise<string | null> {
 
 async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", attemptId: string) {
   const { runActivation } = await import("./activation-activate.server");
-  const { configuredJackboyLink, JackboyLink, JackboyLinkError } =
-    await import("./jackboy-link.server");
-  const { recordSafetySnapshot, recordSafetyFailure, safetyFailureReason } =
-    await import("./jackboy-safety.server");
+  const { configuredJackboyLink, JackboyLink, JackboyLinkError } = await import("./jackboy-link.server");
+  const { recordSafetySnapshot, recordSafetyFailure, safetyFailureReason } = await import(
+    "./jackboy-safety.server"
+  );
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   let client: InstanceType<typeof JackboyLink> | null = null;
   const linkClient = async () => {
@@ -1449,10 +1410,7 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
       try {
         c = await linkClient();
       } catch {
-        throw new JackboyLinkError(
-          "Link settings are disabled, malformed or outside their window.",
-          "contract",
-        );
+        throw new JackboyLinkError("Link settings are disabled, malformed or outside their window.", "contract");
       }
       await c.connect();
     },
@@ -1477,9 +1435,7 @@ function activationHandler(kind: "live_link" | "autonomy") {
     // Approvals from before the owner's last security reset never count (TypeScript mirror).
     const { data: rows, error } = await context.supabase
       .from("activation_approvals")
-      .select(
-        "step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision",
-      )
+      .select("step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision")
       .order("step");
     let resetAt: string | null;
     try {
@@ -1510,8 +1466,7 @@ function activationHandler(kind: "live_link" | "autonomy") {
       return {
         ok: false as const,
         reason: "not_recorded" as const,
-        message:
-          "The activation did not complete and is not active. Retrying with the same attempt is safe.",
+        message: "The activation did not complete and is not active. Retrying with the same attempt is safe.",
         details: [] as Detail[],
       };
     }
@@ -1542,22 +1497,13 @@ export const activateAutonomy = createServerFn({ method: "POST" })
 export const deactivateActivation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z
-      .object({ kind: z.enum(["live_link", "autonomy"]) })
-      .strict()
-      .parse(input),
+    z.object({ kind: z.enum(["live_link", "autonomy"]) }).strict().parse(input),
   )
   .handler(async ({ context, data }) => {
     setResponseHeader("Cache-Control", "private, no-store");
     await ownerContext(context);
-    const { error } = await context.supabase.rpc("activation_activation_revoke", {
-      _kind: data.kind,
-    });
-    if (error)
-      return {
-        ok: false as const,
-        message: "Deactivation was not recorded. Refresh and try again.",
-      };
+    const { error } = await context.supabase.rpc("activation_activation_revoke", { _kind: data.kind });
+    if (error) return { ok: false as const, message: "Deactivation was not recorded. Refresh and try again." };
     return {
       ok: true as const,
       message:

@@ -132,17 +132,11 @@ export class PermitHolder {
     this.permit = permit;
     this.clearTimers();
     const ttl = Date.parse(permit.expiresAt) - this.now();
-    this.renewTimer = this.timers.set(
-      () => void this.renew(),
-      Math.min(PERMIT_RENEW_MS, Math.max(0, ttl - 5_000)),
-    );
+    this.renewTimer = this.timers.set(() => void this.renew(), Math.min(PERMIT_RENEW_MS, Math.max(0, ttl - 5_000)));
     // Hard deadline: even if the renewal call hangs, the job halts when the permit expires.
-    this.deadlineTimer = this.timers.set(
-      () => {
-        if (!this.halted && !this.usable()) void this.halt("permit_lapsed", "lapsed");
-      },
-      Math.max(0, ttl),
-    );
+    this.deadlineTimer = this.timers.set(() => {
+      if (!this.halted && !this.usable()) void this.halt("permit_lapsed", "lapsed");
+    }, Math.max(0, ttl));
   }
 
   private clearTimers() {
@@ -164,10 +158,7 @@ export class PermitHolder {
 
 /** Database-backed store for the permit mirror (service role only). */
 export function databasePermitStore(admin: {
-  rpc: (
-    fn: string,
-    args: Record<string, unknown>,
-  ) => PromiseLike<{ data: unknown; error: unknown }>;
+  rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
 }): PermitStore {
   return {
     async record(req, permit) {
@@ -183,8 +174,7 @@ export function databasePermitStore(admin: {
         _daily: permit.limits.dailyUsd,
         _signature_digest: permit.signatureDigest,
       });
-      if (error || (data !== "issued" && data !== "renewed"))
-        throw new Error("permit_not_recorded");
+      if (error || (data !== "issued" && data !== "renewed")) throw new Error("permit_not_recorded");
       return data;
     },
     async close(jobId, status, reason) {
