@@ -120,6 +120,8 @@ export async function runIsolated(command, signal, workspace) {
   ];
   return new Promise((resolve, reject) => {
     const process = spawn("prlimit", argv, {
+      uid: 65534,
+      gid: 65534,
       env: { PATH: "/usr/bin:/bin" },
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
