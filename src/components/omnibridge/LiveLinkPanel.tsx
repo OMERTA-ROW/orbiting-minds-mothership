@@ -357,9 +357,10 @@ export function LiveLinkPanel(props: {
           <Result result={props.safetyResult} />
           <p className="text-xs text-muted-foreground">
             The CODE Emergency Stop and Kill Switch are controlled only in Jackboy (passkey) and are never
-            changed here. Stopping in Jackboy revokes OMNI's permits at once; OMNI then halts its job within
-            one 20-second renewal, and this page records the stop on the next safety read (about every 2
-            minutes, or when you refresh). Unknown or stale counts as stopped.
+            changed here. Under Jackboy's permit contract a stop there revokes OMNI's permits, and an OMNI
+            job holding one halts at its next 20-second renewal; this page records the stop on the next
+            scheduled safety read or when you refresh. Unknown or stale counts as stopped. Not yet proven
+            live: Jackboy's permit service must be installed and no OMNI executor is connected.
           </p>
         </article>
 
