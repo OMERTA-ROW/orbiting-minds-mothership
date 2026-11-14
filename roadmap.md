@@ -1,8 +1,12 @@
 # Evolution — reconciled blueprint roadmap
 
+## Activation Steps 9–10 live link vs CODE — 2026-11-14
+- [x] Approvals page gains a "Live link, terminal and CODE — separate controls" panel: Step 9 permits only a connection-only signed handshake ("Check live connection", per-click authorization + fresh code, Steps 1–9 + Mothership gates incl. Emergency Stop); CODE shown always Off (no Mothership CODE path; Step 10 records caps only); Jackboy paused refusal (`grant_unavailable`) reported as a safety denial. Approval flow marker 6. 1,822 tests pass.
+- [ ] Waiting on owner: approve Step 9, run "Check live connection" once; Jackboy's Kill Switch must be off for any link request (Jackboy-side decision). Step 10/CODE remain separate later decisions in Jackboy.
+
 ## Activation Approvals Step 8 self-test — 2026-11-14
 - [x] Step 8 "Run protocol self-test & verify": explicit per-click authorization + fresh two-step code, fail-closed readiness, bounded run (~28 s server / 40 s page), signed result verified and recorded as evidence only; safety denial/timeout/pending shown distinctly; retry continues the same job (status only). Approval flow marker 4. Tests pass.
-- [ ] Waiting on owner: turn on `JACKBOY_LINK_SELF_TEST_ENABLED` (exactly `true`) and renew `OMNI_LINK_APPROVAL_EXPIRES_AT` (≤24 h ahead) in settings, then run Step 8 on evoomni.tech and approve it yourself if it passes. Step 7's window ends 2026-11-14 10:20 UTC.
+- [x] Owner ran Step 8 on 2026-11-14 00:50 UTC: signed self-test passed and was verified; owner approved Step 8 at 00:51 UTC.
 
 ## Activation Approvals Step 2 timeout — 2026-11-13
 - [x] Runner check now waits 9 s (longer than Jackboy's own 5 s wait on the Railway runner; self-test run 10 s vs Jackboy's 6 s); timeouts show the actual deadline and whether a reply had started. Approval flow marker bumped to 3. Tests pass.

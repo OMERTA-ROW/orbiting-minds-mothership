@@ -129,13 +129,15 @@ export const ACTIVATION_STEPS = [
   {
     step: 9,
     title: "Live link switches approved",
-    detail: "Owner decision only; no switch is changed here",
+    detail:
+      "Allows connection-only checks of the live signed link (handshake, no job). Changes no switch; CODE stays off",
     kind: "owner",
   },
   {
     step: 10,
     title: "CODE production switch",
-    detail: "$10 OpenAI cap and $5 daily limit confirmed",
+    detail:
+      "Records your $10 OpenAI cap and $5 daily limit confirmation only. Does not turn CODE on; that happens only in Jackboy",
     kind: "owner",
   },
 ] as const;
