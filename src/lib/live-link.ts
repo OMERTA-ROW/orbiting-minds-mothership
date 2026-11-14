@@ -1,9 +1,8 @@
 /**
- * Activation Steps 9–10: live signed link vs CODE, as two separate statuses.
- * Pure and client-safe. Step 9 permits only a connection-only signed handshake
- * (no job, no self-test, no CODE). CODE is never turned on from Mothership:
- * there is no CODE request path here, and CODE runs only inside Jackboy behind
- * its own Kill Switch, CODE Emergency Stop, saved CODE switch, passkey and caps.
+ * Activation Steps 9–10 status. Pure and client-safe. Step 9 activates the signed live link
+ * (connection checks and Jackboy safety reads only); Step 10 activates autonomy authorization.
+ * Neither starts work: execution also needs every stop released, a fresh Jackboy reading that
+ * allows autonomy and a Jackboy permit per job, and no OMNI executor is connected in this build.
  */
 import { isEffectivelyApproved, type ActivationCheckDetail, type ApprovalRow } from "./activation-approvals";
 import type { ReadinessItem } from "./activation-self-test";
@@ -93,45 +92,68 @@ export function liveLinkStatus(input: LiveLinkInput): LiveLinkStatus {
   };
 }
 
-export interface CodeStatus {
-  /**
-   * Never "running": Mothership has no connected executor and no path that starts Jackboy CODE.
-   * "authorized_not_running" = Step 10 in effect (every step approved, Step 7 window open).
-   */
-  state: "not_authorized" | "authorized_not_running";
-  step10Recorded: boolean;
-  /** Whether Jackboy safety currently permits admission (fresh signed clear reading). */
-  safetyClear: boolean;
-  /** Short reason shown next to the state, e.g. "CODE Emergency Stop engaged". */
-  headline: string;
-  reasons: string[];
+export type OnOff = "on" | "off" | "unknown";
+export type StopState = "engaged" | "released" | "unknown";
+
+export interface SystemStates {
+  /** Step 9 activation: configured = in effect; connected = also a signed exchange in the last 15 min. */
+  link: { state: "not_configured" | "configured" | "connected"; detail: string };
+  /** Step 10 activation. "running" only when the database shows open autonomy windows or agent jobs. */
+  autonomous: { state: "not_configured" | "configured_blocked" | "running"; blockers: string[] };
+  /** CODE through OMNI. "running" only when the database shows leased/running CODE jobs. */
+  code: { state: "not_configured" | "configured_blocked" | "running"; blockers: string[] };
+  emergencyStop: { jackboy: StopState; mothership: StopState };
+  killSwitch: OnOff;
 }
 
-export function codeStatus(rows: ApprovalRow[], now: number, safety: SafetyView): CodeStatus {
-  const step10 = rows.find((r) => r.step === 10);
-  const allApproved =
-    rows.filter((r) => r.step >= 1 && r.step <= 10).length === 10 &&
-    rows.every((r) => r.step > 10 || isEffectivelyApproved(r, now));
-  const step10Recorded = Boolean(step10 && allApproved);
-  const headline = !step10Recorded
-    ? "Step 10 not in effect"
-    : !safety.clear
-      ? safety.label
-      : "No OMNI executor connected";
+export interface SystemInput {
+  linkEffective: boolean;
+  autonomyEffective: boolean;
+  liveLink: LiveLinkStatus;
+  safety: SafetyView;
+  /** Mothership's own Emergency Stop: true engaged, false released, null unreadable. */
+  mothershipStop: boolean | null;
+  running: { windows: number; agentJobs: number; codeJobs: number };
+  now: number;
+}
+
+/** Five separate, truthful states; unknown always counts as blocked. */
+export function systemStates(i: SystemInput): SystemStates {
+  const pollAge =
+    i.safety.source === "poll" && i.safety.recordedAt ? i.now - Date.parse(i.safety.recordedAt) : NaN;
+  const recentExchange =
+    i.liveLink.state === "verified" || (Number.isFinite(pollAge) && pollAge >= -60_000 && pollAge <= LIVE_LINK_FRESH_MS);
+  const link: SystemStates["link"] = !i.linkEffective
+    ? { state: "not_configured", detail: "Step 9 live link is not activated for the current approvals." }
+    : recentExchange
+      ? { state: "connected", detail: "Activated; a signed exchange with Jackboy verified in the last 15 minutes." }
+      : { state: "configured", detail: "Activated; no signed exchange verified in the last 15 minutes." };
+  const mothership: StopState = i.mothershipStop === null ? "unknown" : i.mothershipStop ? "engaged" : "released";
+  const common: string[] = [];
+  if (mothership !== "released") common.push(`Mothership Emergency Stop ${mothership}.`);
+  if (!i.safety.clear) common.push(`Jackboy safety: ${i.safety.label}.`);
+  if (!i.linkEffective) common.push("Live link (Step 9) not activated.");
+  const autonomousBlockers = [...common, "No OMNI executor is connected."];
+  const codeBlockers = [...common];
+  if (i.safety.codeEnabled !== "on") codeBlockers.push(`Jackboy CODE setting ${i.safety.codeEnabled}.`);
+  codeBlockers.push("Each CODE job also needs its own Jackboy permit; no OMNI executor is connected.");
   return {
-    state: step10Recorded ? "authorized_not_running" : "not_authorized",
-    step10Recorded,
-    safetyClear: safety.clear,
-    headline,
-    reasons: [
-      step10Recorded
-        ? "Step 10 is in effect: autonomy is authorized while Step 7's window is open. Approving it started nothing."
-        : "Step 10 is not in effect. Approving it records autonomy authorization (with your cap confirmations); it starts nothing.",
-      `Jackboy safety: ${safety.label}. ${safety.detail}`,
-      "The database refuses every autonomy window and CODE job unless Step 10 is in effect, every stop is released and a fresh signed Jackboy reading is clear.",
-      "No OMNI executor is connected and autonomy windows are disabled in this build, so nothing can run yet.",
-      "Mothership has no path that starts Jackboy CODE; CODE runs only inside Jackboy behind its own Kill Switch, CODE Emergency Stop, passkey and spending limits.",
-    ],
+    link,
+    autonomous: {
+      state:
+        i.running.windows + i.running.agentJobs > 0
+          ? "running"
+          : i.autonomyEffective
+            ? "configured_blocked"
+            : "not_configured",
+      blockers: i.autonomyEffective ? autonomousBlockers : ["Step 10 autonomy authorization is not activated.", ...autonomousBlockers],
+    },
+    code: {
+      state: i.running.codeJobs > 0 ? "running" : i.autonomyEffective ? "configured_blocked" : "not_configured",
+      blockers: i.autonomyEffective ? codeBlockers : ["Step 10 autonomy authorization is not activated.", ...codeBlockers],
+    },
+    emergencyStop: { jackboy: i.safety.codeStop, mothership },
+    killSwitch: i.safety.killSwitch,
   };
 }
 
