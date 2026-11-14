@@ -712,6 +712,15 @@ describe("Steps 9–10 live link and CODE panel", () => {
 });
 
 describe("Jackboy safety sync and Step 10 status", () => {
+  const gates = () =>
+    ["stop", "owner", "link", "window", "identity"].map((key) => ({ key, label: key, ok: true, detail: "ok" }));
+  const live = (approvedThrough: number) =>
+    snapshot("runner_only", {
+      approvedThrough,
+      liveReadiness: gates(),
+      step7ExpiresAt: new Date(Date.now() + 6 * 3600_000).toISOString(),
+    });
+  beforeEach(() => mocks.safety.mockReset());
   const panel = () => screen.getByRole("region", { name: /Live link, terminal and CODE/ });
   const allApproved = (safety: ReturnType<typeof safetyView>) => {
     const base = live(10);
