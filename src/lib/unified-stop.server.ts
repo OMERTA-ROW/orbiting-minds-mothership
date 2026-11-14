@@ -10,6 +10,8 @@ export async function reconcileTerminalStop() {
   const state = await readExecutionState("disarm");
   if (state.armed || state.running || state.cancellationPending)
     throw new Error("Remote cancellation remains unverified");
-  const delivered = await staged(supabaseAdmin).rpc("omni_stop_delivered", { _revision: pending.data });
+  const delivered = await staged(supabaseAdmin).rpc("omni_stop_delivered", {
+    _revision: pending.data,
+  });
   if (delivered.error) throw new Error("Verified Stop delivery could not be recorded");
 }

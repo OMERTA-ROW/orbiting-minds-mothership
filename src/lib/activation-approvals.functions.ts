@@ -773,7 +773,10 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
         approvals: effectiveRows(normalizeRows(steps.data), resetAt),
         activations: activations.length ? activations : null,
         selfTest: selfTest ? { action: selfTest.action, occurred_at: selfTest.occurred_at } : null,
-        mothershipStop: { engaged: counts.mothershipStop, changedAt: counts.mothershipStopChangedAt },
+        mothershipStop: {
+          engaged: counts.mothershipStop,
+          changedAt: counts.mothershipStopChangedAt,
+        },
       }),
       sandbox: await sandboxPresence(),
       mfaAgeSeconds: mfaAgeSeconds(context.claims["amr"], nowSeconds),

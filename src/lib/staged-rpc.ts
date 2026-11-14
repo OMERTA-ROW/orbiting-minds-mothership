@@ -60,6 +60,8 @@ export type StagedDatabase = Omit<Database, "public"> & {
 };
 
 /** Same client, typed to also accept the staged functions above. */
-export function staged(client: Pick<SupabaseClient<Database>, "rpc">): SupabaseClient<StagedDatabase> {
+export function staged(
+  client: Pick<SupabaseClient<Database>, "rpc">,
+): SupabaseClient<StagedDatabase> {
   return client as unknown as SupabaseClient<StagedDatabase>;
 }
