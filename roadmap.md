@@ -1,5 +1,11 @@
 # Evolution — reconciled blueprint roadmap
 
+## Cross-system CODE Emergency Stop enforcement — 2026-11-14 (register 07.07)
+- [x] Mothership: Jackboy safety record + database fail-closed guards (autonomy windows, CODE always-on, CODE leasing need a fresh signed clear reading and Step 10 in effect); non-clear/unknown/stale halts windows, CODE jobs and agent-initiated workspace jobs; manual terminal untouched. Migrations 0053/0054. SQL test 36 checks; 1,847 tests pass.
+- [x] Signed stop-notice receiver (`/api/public/jackboy/safety-event`), scheduled safety sync route, owner "Refresh safety state", Step 9 = live link activated, Step 10 = autonomy authorization shown "Authorized — not running". Flow marker 7.
+- [ ] Waiting on owner: shared secret `JACKBOY_SAFETY_EVENT_HMAC_SECRET` in both projects; apply `docs/JACKBOY-SAFETY-STATE-SPEC.md` in Jackboy and publish it.
+- [ ] Waiting on Jackboy change: end-to-end stop-notice check. Until it passes the kill mechanism is unverified.
+
 ## Activation Steps 9–10 live link vs CODE — 2026-11-14
 - [x] Approvals page gains a "Live link, terminal and CODE — separate controls" panel: Step 9 permits only a connection-only signed handshake ("Check live connection", per-click authorization + fresh code, Steps 1–9 + Mothership gates incl. Emergency Stop); CODE shown always Off (no Mothership CODE path; Step 10 records caps only); Jackboy paused refusal (`grant_unavailable`) reported as a safety denial. Approval flow marker 6. 1,822 tests pass.
 - [ ] Waiting on owner: approve Step 9, run "Check live connection" once; Jackboy's Kill Switch must be off for any link request (Jackboy-side decision). Step 10/CODE remain separate later decisions in Jackboy.
