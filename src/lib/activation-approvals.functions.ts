@@ -5,6 +5,7 @@
  * self-test, after the owner's explicit confirmation and fresh two-step code.
  */
 import { createServerFn } from "@tanstack/react-start";
+import { readinessEvidence, type PermitRecord } from "./readiness-evidence";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -248,6 +249,7 @@ async function runtimeCounts(): Promise<{
   codeJobs: number;
   readable: boolean;
   mothershipStop: boolean | null;
+  mothershipStopChangedAt: string | null;
 }> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -267,7 +269,7 @@ async function runtimeCounts(): Promise<{
         .in("status", ["leased", "running"]),
       supabaseAdmin
         .from("omni_terminal_controls")
-        .select("emergency_stop")
+        .select("emergency_stop,changed_at")
         .eq("id", 1)
         .maybeSingle(),
     ]);
@@ -277,9 +279,43 @@ async function runtimeCounts(): Promise<{
       codeJobs: c.count ?? 0,
       readable: !w.error && !a.error && !c.error,
       mothershipStop: stop.error || !stop.data ? null : stop.data.emergency_stop,
+      mothershipStopChangedAt: stop.error || !stop.data ? null : stop.data.changed_at,
     };
   } catch {
-    return { windows: 0, agentJobs: 0, codeJobs: 0, readable: false, mothershipStop: null };
+    return {
+      windows: 0,
+      agentJobs: 0,
+      codeJobs: 0,
+      readable: false,
+      mothershipStop: null,
+      mothershipStopChangedAt: null,
+    };
+  }
+}
+
+/** Latest mirrored Jackboy permit (owner-readable); null = none, "unreadable" = read failed. */
+async function latestPermit(
+  db: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0],
+): Promise<PermitRecord | null | "unreadable"> {
+  try {
+    const { data, error } = await db
+      .from("jackboy_permits")
+      .select("kind,status,issued_at,expires_at,closed_at,closed_reason")
+      .order("issued_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return "unreadable";
+    if (!data) return null;
+    return {
+      kind: data.kind,
+      status: data.status,
+      issuedAt: data.issued_at,
+      expiresAt: data.expires_at,
+      closedAt: data.closed_at,
+      closedReason: data.closed_reason,
+    };
+  } catch {
+    return "unreadable";
   }
 }
 
@@ -634,6 +670,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       safetyRow,
       activations,
       counts,
+      permit,
     ] = await Promise.all([
       context.supabase
         .from("activation_approvals")
@@ -658,6 +695,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       jackboySafetyRow(context.supabase),
       activationInfo(context.supabase),
       runtimeCounts(),
+      latestPermit(context.supabase),
     ]);
     if (steps.error || audit.error) throw new Error("Approval records could not be read.");
     // The approvals stay visible even when the check store is missing or unreadable;
@@ -725,6 +763,16 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
         mothershipStop: counts.mothershipStop,
         running: counts,
         now: Date.now(),
+      }),
+      readinessEvidence: readinessEvidence({
+        now: Date.now(),
+        handshake: linkEvents,
+        safety,
+        permit,
+        approvals: effectiveRows(normalizeRows(steps.data), resetAt),
+        activations: activations.length ? activations : null,
+        selfTest: selfTest ? { action: selfTest.action, occurred_at: selfTest.occurred_at } : null,
+        mothershipStop: { engaged: counts.mothershipStop, changedAt: counts.mothershipStopChangedAt },
       }),
       sandbox: await sandboxPresence(),
       mfaAgeSeconds: mfaAgeSeconds(context.claims["amr"], nowSeconds),
