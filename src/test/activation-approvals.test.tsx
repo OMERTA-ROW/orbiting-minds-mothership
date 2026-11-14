@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   decide: vi.fn(),
   check: vi.fn(),
   selfTest: vi.fn(),
+  liveLink: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-start", () => ({
@@ -34,6 +35,7 @@ vi.mock("@/lib/activation-approvals.functions", () => ({
   decideActivationApproval: "decide",
   runActivationApprovalCheck: "check",
   runStep8SelfTest: "selfTest",
+  checkLiveLinkConnection: "liveLink",
 }));
 
 vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
@@ -41,6 +43,7 @@ vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
 }));
 
 import { ActivationApprovals } from "@/components/omnibridge/ActivationApprovals";
+import { codeStatus, liveLinkStatus } from "@/lib/live-link";
 
 const owner = "11111111-1111-4111-8111-111111111111";
 
@@ -54,6 +57,8 @@ function snapshot(
     securityResetAt?: string | null;
     audit?: unknown[];
     mfaAgeSeconds?: number | null;
+    liveReadiness?: Array<{ key: string; label: string; ok: boolean; detail: string }>;
+    step7ExpiresAt?: string;
   } = {},
 ) {
   const rows = Array.from({ length: 10 }, (_, index) => {
@@ -65,7 +70,10 @@ function snapshot(
       approver_id: status === "approved" ? owner : null,
       decided_at: status === "approved" ? "2026-11-12T12:00:00.000Z" : null,
       note: "",
-      approval_expires_at: step === 7 && status === "approved" ? "2026-11-13T12:00:00.000Z" : null,
+      approval_expires_at:
+        step === 7 && status === "approved"
+          ? (overrides.step7ExpiresAt ?? "2026-11-13T12:00:00.000Z")
+          : null,
       spend_confirmations: null,
       revision: 1,
     };
@@ -85,6 +93,15 @@ function snapshot(
       attention: [],
     },
     selfTest: null,
+    liveLink: liveLinkStatus({
+      rows: rows as never,
+      readiness: overrides.liveReadiness ?? [],
+      now: Date.now(),
+      lastConnectedAt: null,
+      lastAttemptAt: null,
+    }),
+    code: codeStatus(rows as never, Date.now()),
+    sandbox: { configured: false, enabled: false },
     mfaAgeSeconds: overrides.mfaAgeSeconds === undefined ? 0 : overrides.mfaAgeSeconds,
   };
 }
@@ -599,5 +616,92 @@ describe("Step 8 run protocol self-test & verify", () => {
     await screen.findByRole("heading", { name: /^8\. / });
     expect(within(stepItem(8)).queryByRole("button", { name: /protocol self-test/ })).toBeNull();
     expect(within(stepItem(8)).getByText(/waiting on step 7/)).toBeInTheDocument();
+  });
+});
+
+describe("Steps 9–10 live link and CODE panel", () => {
+  const gates = (stopOk = true) => [
+    { key: "stop", label: "Mothership Emergency Stop", ok: stopOk, detail: stopOk ? "Released." : "Engaged." },
+    { key: "owner", label: "Link owner", ok: true, detail: "Matches you." },
+    { key: "link", label: "Link switch (JACKBOY_LINK_ENABLED)", ok: true, detail: "On." },
+    { key: "window", label: "Link approval window", ok: true, detail: "Open." },
+    { key: "identity", label: "Link identity settings", ok: true, detail: "Present." },
+  ];
+  const live = (approvedThrough: number, stopOk = true) =>
+    snapshot("runner_only", {
+      approvedThrough,
+      liveReadiness: gates(stopOk),
+      step7ExpiresAt: new Date(Date.now() + 6 * 3600_000).toISOString(),
+    });
+  const panel = () => screen.getByRole("region", { name: /Live link, terminal and CODE/ });
+  const checkButton = () => within(panel()).getByRole("button", { name: "Check live connection" });
+
+  beforeEach(() => mocks.liveLink.mockReset());
+
+  it("keeps the connection check disabled until Step 9 is approved, and shows CODE off", async () => {
+    mocks.list.mockResolvedValue(live(8));
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    expect(within(panel()).getByText("Waiting for your Step 9 approval")).toBeInTheDocument();
+    expect(within(panel()).getByRole("checkbox", { name: /connection-only check/ })).toBeDisabled();
+    expect(checkButton()).toBeDisabled();
+    expect(within(panel()).getByText(/Mothership has no CODE request path/)).toBeInTheDocument();
+    expect(mocks.liveLink).not.toHaveBeenCalled();
+  });
+
+  it("after Step 9, sends one connection-only check per authorization and reports the verified reply", async () => {
+    mocks.list.mockResolvedValue(live(9));
+    mocks.liveLink.mockResolvedValue({
+      ok: true,
+      verifiedAt: "2026-11-14T01:00:00.000Z",
+      message: "Live link verified: Jackboy answered a signed handshake with a ready session. No job, self-test or CODE request was sent.",
+    });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    expect(checkButton()).toBeDisabled();
+    fireEvent.click(within(panel()).getByRole("checkbox", { name: /connection-only check/ }));
+    fireEvent.click(checkButton());
+    fireEvent.click(checkButton());
+    await waitFor(() => expect(mocks.liveLink).toHaveBeenCalledTimes(1));
+    expect(mocks.liveLink.mock.calls[0]![0]).toEqual({ data: { confirm: true } });
+    expect(await within(panel()).findByText(/Live link verified/)).toBeInTheDocument();
+    expect(within(panel()).getByRole("checkbox", { name: /connection-only check/ })).not.toBeChecked();
+    expect(mocks.decide).not.toHaveBeenCalled();
+    // CODE stays off even with Step 9 approved.
+    expect(within(panel()).getByText("Off")).toBeInTheDocument();
+  });
+
+  it("shows Jackboy's Kill Switch refusal as a safety denial", async () => {
+    mocks.list.mockResolvedValue(live(9));
+    mocks.liveLink.mockResolvedValue({
+      ok: false,
+      reason: "safety_denial",
+      message: "Safety denial from Jackboy: its global Kill Switch is on. Nothing ran and nothing was changed.",
+      details: [{ label: "Jackboy reply", status: "needs_attention", detail: "HTTP 403 · grant_unavailable" }],
+    });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    fireEvent.click(within(panel()).getByRole("checkbox", { name: /connection-only check/ }));
+    fireEvent.click(checkButton());
+    expect(await within(panel()).findByText(/Safety denial from Jackboy/)).toBeInTheDocument();
+    expect(within(panel()).getByText(/grant_unavailable/)).toBeInTheDocument();
+  });
+
+  it("blocks the check while Mothership's Emergency Stop is engaged and never offers to release it", async () => {
+    mocks.list.mockResolvedValue(live(9, false));
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    expect(within(panel()).getByText("Blocked on Mothership")).toBeInTheDocument();
+    expect(checkButton()).toBeDisabled();
+    expect(within(panel()).queryByRole("button", { name: /release/i })).toBeNull();
+  });
+
+  it("keeps the check disabled without a fresh two-step code", async () => {
+    mocks.list.mockResolvedValue({ ...live(9), mfaAgeSeconds: null });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    fireEvent.click(within(panel()).getByRole("checkbox", { name: /connection-only check/ }));
+    expect(checkButton()).toBeDisabled();
+    expect(within(panel()).getByText(/fresh two-step code/)).toBeInTheDocument();
   });
 });
