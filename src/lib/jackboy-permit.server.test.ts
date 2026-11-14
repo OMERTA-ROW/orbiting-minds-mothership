@@ -212,7 +212,11 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     const off = new FakeJackboy();
     off.codeEnabled = false;
     const a = setup(off);
-    await expect(a.holder.acquire()).rejects.toMatchObject({ code: "permit_denied", reason: "code_disabled", signed: true });
+    await expect(a.holder.acquire()).rejects.toMatchObject({
+      code: "permit_denied",
+      reason: "code_disabled",
+      signed: true,
+    });
     expect(a.store.record).not.toHaveBeenCalled();
 
     const b = setup();
@@ -229,7 +233,11 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     await lapsed.holder.acquire();
     lapsed.fake.permits.get(JOB)!.expiresAt = new Date(Date.now() - 1000).toISOString();
     const again = new PermitHolder(REQ, {
-      link: lapsed.link, store: lapsed.store, approvalId: FAKE.approvalId, onHalt: vi.fn(), timers: manualTimers().timers,
+      link: lapsed.link,
+      store: lapsed.store,
+      approvalId: FAKE.approvalId,
+      onHalt: vi.fn(),
+      timers: manualTimers().timers,
     });
     await expect(again.acquire()).rejects.toMatchObject({ reason: "permit_lapsed" });
 
@@ -238,10 +246,13 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     revoked.fake.engageStop();
     revoked.fake.releaseStop();
     const retry = new PermitHolder(REQ, {
-      link: revoked.link, store: revoked.store, approvalId: FAKE.approvalId, onHalt: vi.fn(), timers: manualTimers().timers,
+      link: revoked.link,
+      store: revoked.store,
+      approvalId: FAKE.approvalId,
+      onHalt: vi.fn(),
+      timers: manualTimers().timers,
     });
     await expect(retry.acquire()).rejects.toMatchObject({ reason: "job_closed" });
     expect(revoked.store.record).toHaveBeenCalledTimes(1); // only the original issue
   });
 });
-

@@ -901,7 +901,9 @@ describe("Steps 9–10 activation panel", () => {
         .getAllByText(/fresh two-step code/)
         .some((el) => !el.closest('[aria-label="Next owner action"]')),
     ).toBe(true);
-    expect(within(panel()).getByLabelText("Next owner action")).toHaveTextContent(/Activate live link/);
+    expect(within(panel()).getByLabelText("Next owner action")).toHaveTextContent(
+      /Activate live link/,
+    );
     unmount();
     mocks.list.mockResolvedValue(live(9, {}, false));
     render(<ActivationApprovals />);
