@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   decide: vi.fn(),
   check: vi.fn(),
+  selfTest: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-start", () => ({
@@ -32,6 +33,7 @@ vi.mock("@/lib/activation-approvals.functions", () => ({
   listActivationApprovals: "list",
   decideActivationApproval: "decide",
   runActivationApprovalCheck: "check",
+  runStep8SelfTest: "selfTest",
 }));
 
 vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
