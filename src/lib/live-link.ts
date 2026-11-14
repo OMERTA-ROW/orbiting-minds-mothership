@@ -113,7 +113,8 @@ export interface SystemInput {
   safety: SafetyView;
   /** Mothership's own Emergency Stop: true engaged, false released, null unreadable. */
   mothershipStop: boolean | null;
-  running: { windows: number; agentJobs: number; codeJobs: number };
+  /** `readable: false` means the counts could not be read: shown as a blocker, never as idle proof. */
+  running: { windows: number; agentJobs: number; codeJobs: number; readable?: boolean };
   now: number;
 }
 
@@ -133,6 +134,7 @@ export function systemStates(i: SystemInput): SystemStates {
   if (mothership !== "released") common.push(`Mothership Emergency Stop ${mothership}.`);
   if (!i.safety.clear) common.push(`Jackboy safety: ${i.safety.label}.`);
   if (!i.linkEffective) common.push("Live link (Step 9) not activated.");
+  if (i.running.readable === false) common.push("Running work could not be read here.");
   const autonomousBlockers = [...common, "No OMNI executor is connected."];
   const codeBlockers = [...common];
   if (i.safety.codeEnabled !== "on") codeBlockers.push(`Jackboy CODE setting ${i.safety.codeEnabled}.`);

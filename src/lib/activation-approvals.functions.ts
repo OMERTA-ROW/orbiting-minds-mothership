@@ -246,29 +246,34 @@ async function runtimeCounts(): Promise<{
   windows: number;
   agentJobs: number;
   codeJobs: number;
+  readable: boolean;
   mothershipStop: boolean | null;
 }> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const [w, a, c, stop] = await Promise.all([
-    supabaseAdmin.from("omni_autonomy_windows").select("id", { count: "exact", head: true }).is("ended_at", null),
-    supabaseAdmin
-      .from("omni_agent_jobs")
-      .select("id", { count: "exact", head: true })
-      .neq("origin", "owner")
-      .in("status", ["queued", "running"]),
-    supabaseAdmin
-      .from("omni_code_jobs")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["leased", "running"]),
-    supabaseAdmin.from("omni_terminal_controls").select("emergency_stop").eq("id", 1).maybeSingle(),
-  ]);
-  // Unreadable counts are shown as running so nothing is claimed idle without evidence.
-  return {
-    windows: w.error ? 1 : (w.count ?? 0),
-    agentJobs: a.error ? 1 : (a.count ?? 0),
-    codeJobs: c.error ? 1 : (c.count ?? 0),
-    mothershipStop: stop.error || !stop.data ? null : stop.data.emergency_stop,
-  };
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [w, a, c, stop] = await Promise.all([
+      supabaseAdmin.from("omni_autonomy_windows").select("id", { count: "exact", head: true }).is("ended_at", null),
+      supabaseAdmin
+        .from("omni_agent_jobs")
+        .select("id", { count: "exact", head: true })
+        .neq("origin", "owner")
+        .in("status", ["queued", "running"]),
+      supabaseAdmin
+        .from("omni_code_jobs")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["leased", "running"]),
+      supabaseAdmin.from("omni_terminal_controls").select("emergency_stop").eq("id", 1).maybeSingle(),
+    ]);
+    return {
+      windows: w.count ?? 0,
+      agentJobs: a.count ?? 0,
+      codeJobs: c.count ?? 0,
+      readable: !w.error && !a.error && !c.error,
+      mothershipStop: stop.error || !stop.data ? null : stop.data.emergency_stop,
+    };
+  } catch {
+    return { windows: 0, agentJobs: 0, codeJobs: 0, readable: false, mothershipStop: null };
+  }
 }
 
 /** Cloud sandbox (manual OMNI Terminal workspace) settings: presence booleans only. */

@@ -70,7 +70,8 @@ vi.mock("@/integrations/supabase/client.server", () => ({
 
 import "./activation-approvals.functions";
 // Registration order: ..., checkLiveLinkConnection, refreshJackboySafety (last).
-const checkLive = () => mocks.handlers[mocks.handlers.length - 2]!;
+// Registration order: …, checkLiveLinkConnection, refreshJackboySafety, activateLiveLink, activateAutonomy, deactivateActivation.
+const checkLive = () => mocks.handlers[mocks.handlers.length - 5]!;
 const OWNER = "11111111-1111-4111-8111-111111111111";
 
 function chain(result: () => unknown) {
