@@ -6,12 +6,13 @@ import {
   otherAttemptInFlight,
   selfTestAuditAction,
   selfTestReadiness,
+  type ReadinessInput,
 } from "./activation-self-test";
 import { driveSelfTest } from "./activation-self-test.server";
 
 const NOW = Date.parse("2026-11-14T00:00:00Z");
-const ready = {
-  deploymentMode: "runner_only" as const,
+const ready: ReadinessInput = {
+  deploymentMode: "runner_only",
   stopReleased: true,
   ownerMatches: true,
   linkEnabled: true,
@@ -20,7 +21,7 @@ const ready = {
   identityValid: true,
   now: NOW,
 };
-const blockers = (input: Partial<typeof ready>) =>
+const blockers = (input: Partial<ReadinessInput>) =>
   selfTestReadiness({ ...ready, ...input })
     .filter((i) => !i.ok)
     .map((i) => i.key);
@@ -141,7 +142,7 @@ describe("driveSelfTest", () => {
     expect(out.job.status).toBe("completed");
   });
   it("retry after a run was sent: reads status only, never runs again", async () => {
-    const execute = vi.fn(async () => job("completed"));
+    const execute = vi.fn(async (_action: string) => job("completed"));
     await driveSelfTest({ execute }, "run_requested", "id", opts());
     expect(execute.mock.calls.map((c) => c[0])).toEqual(["status"]);
   });
