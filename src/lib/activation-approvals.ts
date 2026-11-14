@@ -322,8 +322,11 @@ export const decisionInput = z
     activate: z.object({ attemptId: z.string().uuid() }).strict().nullable().default(null),
   })
   .strict()
-  .refine((d) => d.activate === null || (d.action === "approve" && (d.step === 9 || d.step === 10)), {
-    message: "Only approving Step 9 or Step 10 can also activate.",
-    path: ["activate"],
-  });
+  .refine(
+    (d) => d.activate === null || (d.action === "approve" && (d.step === 9 || d.step === 10)),
+    {
+      message: "Only approving Step 9 or Step 10 can also activate.",
+      path: ["activate"],
+    },
+  );
 export type DecisionInput = z.infer<typeof decisionInput>;

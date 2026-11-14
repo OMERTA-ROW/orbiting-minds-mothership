@@ -30,14 +30,24 @@ function manualTimers() {
 }
 
 function setup(fake = new FakeJackboy()) {
-  const link = new JackboyLink(fakeLinkConfig(), async () => {}, { fetch: fake.fetch, timeoutMs: 200 });
-  const store: PermitStore & { record: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> } = {
-    record: vi.fn(async (_req, p) => (p.renewals === 0 ? "issued" : "renewed")),
-    close: vi.fn(async () => {}),
-  };
+  const link = new JackboyLink(fakeLinkConfig(), async () => {}, {
+    fetch: fake.fetch,
+    timeoutMs: 200,
+  });
+  const store: PermitStore & { record: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> } =
+    {
+      record: vi.fn(async (_req, p) => (p.renewals === 0 ? "issued" : "renewed")),
+      close: vi.fn(async () => {}),
+    };
   const onHalt = vi.fn();
   const t = manualTimers();
-  const holder = new PermitHolder(REQ, { link, store, approvalId: FAKE.approvalId, onHalt, timers: t.timers });
+  const holder = new PermitHolder(REQ, {
+    link,
+    store,
+    approvalId: FAKE.approvalId,
+    onHalt,
+    timers: t.timers,
+  });
   return { fake, link, store, onHalt, t, holder };
 }
 
@@ -69,7 +79,12 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     await recordSafetySnapshot({ rpc } as never, await link.safety());
     expect(rpc).toHaveBeenCalledWith(
       "jackboy_safety_record_v2",
-      expect.objectContaining({ _source: "poll", _code_stop: true, _autonomous_allowed: false, _manual_allowed: true }),
+      expect.objectContaining({
+        _source: "poll",
+        _code_stop: true,
+        _autonomous_allowed: false,
+        _manual_allowed: true,
+      }),
     );
     // Releasing the stop in Jackboy never resumes the halted job.
     fake.releaseStop();
@@ -160,7 +175,11 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
       return new Response(await res.text(), { status: 403 }); // proof stripped
     };
     const { holder } = setup(fake);
-    const err = (await holder.acquire().catch((e: unknown) => e)) as { reason?: string; signed?: boolean; code?: string };
+    const err = (await holder.acquire().catch((e: unknown) => e)) as {
+      reason?: string;
+      signed?: boolean;
+      code?: string;
+    };
     expect(err.code).toBe("permit_denied");
     expect(err.signed).toBe(false);
     expect(err.reason).toBeUndefined();
@@ -191,7 +210,11 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     const off = new FakeJackboy();
     off.codeEnabled = false;
     const a = setup(off);
-    await expect(a.holder.acquire()).rejects.toMatchObject({ code: "permit_denied", reason: "code_disabled", signed: true });
+    await expect(a.holder.acquire()).rejects.toMatchObject({
+      code: "permit_denied",
+      reason: "code_disabled",
+      signed: true,
+    });
     expect(a.store.record).not.toHaveBeenCalled();
 
     const b = setup();
@@ -208,7 +231,11 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     await lapsed.holder.acquire();
     lapsed.fake.permits.get(JOB)!.expiresAt = new Date(Date.now() - 1000).toISOString();
     const again = new PermitHolder(REQ, {
-      link: lapsed.link, store: lapsed.store, approvalId: FAKE.approvalId, onHalt: vi.fn(), timers: manualTimers().timers,
+      link: lapsed.link,
+      store: lapsed.store,
+      approvalId: FAKE.approvalId,
+      onHalt: vi.fn(),
+      timers: manualTimers().timers,
     });
     await expect(again.acquire()).rejects.toMatchObject({ reason: "permit_lapsed" });
 
@@ -217,10 +244,13 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     revoked.fake.engageStop();
     revoked.fake.releaseStop();
     const retry = new PermitHolder(REQ, {
-      link: revoked.link, store: revoked.store, approvalId: FAKE.approvalId, onHalt: vi.fn(), timers: manualTimers().timers,
+      link: revoked.link,
+      store: revoked.store,
+      approvalId: FAKE.approvalId,
+      onHalt: vi.fn(),
+      timers: manualTimers().timers,
     });
     await expect(retry.acquire()).rejects.toMatchObject({ reason: "job_closed" });
     expect(revoked.store.record).toHaveBeenCalledTimes(1); // only the original issue
   });
 });
-
