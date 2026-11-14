@@ -400,6 +400,20 @@
       "when": 1794625979388,
       "tag": "0056_jackboy_halt_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1794628500000,
+      "tag": "0057_bounded_executor_integration",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1794630000000,
+      "tag": "0058_omni_stop_propagation",
+      "breakpoints": true
     }
   ]
 }

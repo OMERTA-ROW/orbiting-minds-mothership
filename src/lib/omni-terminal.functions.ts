@@ -1,8 +1,8 @@
 /**
  * OMNI Terminal server functions. Owner-only (verified email, owner role, aal2).
  * They read status, record commands, hold tasks and engage/release the
- * Emergency Stop. Nothing here executes code, dispatches tasks, flips
- * switches, writes secrets, deploys or calls CODE/Jackboy with credentials.
+ * Emergency Stop. Engaging Stop propagates only a signed safety reduction;
+ * nothing here dispatches jobs, releases Jackboy Stop or enables execution.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
@@ -59,10 +59,22 @@ export const runTerminalCommand = createServerFn({ method: "POST" })
       const { error } = await context.supabase.rpc("omni_terminal_engage_stop", {
         _reason: "Engaged from terminal",
       });
-      result = error
+      let remoteConfirmed = !error;
+      if (!error) {
+        try {
+          await (await import("./unified-stop.server")).reconcileTerminalStop();
+        } catch {
+          remoteConfirmed = false;
+        }
+      }
+      result = !remoteConfirmed
         ? {
             outcome: "error",
-            lines: ["Emergency Stop could not be confirmed. Use the button and refresh."],
+            lines: [
+              error
+                ? "Emergency Stop could not be recorded. Use the button and refresh."
+                : "Local Stop is engaged. Remote cancellation remains unverified; keep Stop engaged and reconcile.",
+            ],
           }
         : {
             outcome: "ok",
@@ -108,6 +120,17 @@ export const setTerminalEmergencyStop = createServerFn({ method: "POST" })
       "The Emergency Stop change was not recorded. Refresh and retry.",
     );
     if (message) return { ok: false as const, message };
+    if (data.engaged) {
+      try {
+        await (await import("./unified-stop.server")).reconcileTerminalStop();
+      } catch {
+        return {
+          ok: false as const,
+          message:
+            "Local Stop is engaged. Remote cancellation remains unverified; keep Stop engaged and reconcile.",
+        };
+      }
+    }
     return { ok: true as const };
   });
 

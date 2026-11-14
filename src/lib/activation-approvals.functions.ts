@@ -1444,6 +1444,83 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
       if (error) throw new Error("activation_not_recorded");
       return data as "active" | "failed" | "superseded" | "expired";
     },
+    outcome: async (k, attempt) => {
+      const result = await supabaseAdmin.rpc("activation_attempt_outcome", {
+        _kind: k,
+        _attempt: attempt,
+      });
+      if (result.error) throw new Error("Activation outcome could not be read");
+      return result.data;
+    },
+    actuate: async (k, attempt) => {
+      const { readExecutionState } = await import("./unified-activation.server");
+      const window = await context.supabase
+        .from("activation_approvals")
+        .select("approval_expires_at")
+        .eq("step", 7)
+        .single();
+      if (window.error || !window.data.approval_expires_at)
+        throw new Error("Current approval window is unavailable");
+      const state = await readExecutionState(
+        k === "live_link" ? "connect" : "configure",
+        k === "live_link"
+          ? { operationId: attempt, expiresAt: window.data.approval_expires_at }
+          : {},
+      );
+      if (
+        !state.connected ||
+        (k === "live_link" && state.operationId !== attempt) ||
+        (k === "autonomy" && (!state.configured || state.armed))
+      )
+        throw new Error("Backend actuation did not verify");
+      if (k === "autonomy") {
+        const live = await context.supabase
+          .from("activation_activations")
+          .select("attempt_id")
+          .eq("kind", "live_link")
+          .single();
+        if (live.error || state.operationId !== live.data.attempt_id)
+          throw new Error("Backend connection identity changed");
+      }
+      return { executorRelease: state.executorRelease };
+    },
+    rollback: async (k) => {
+      const state = await (
+        await import("./unified-activation.server")
+      ).readExecutionState(k === "live_link" ? "revoke" : "unconfigure");
+      if (
+        state.armed ||
+        state.cancellationPending ||
+        (k === "live_link" ? state.connected : state.configured)
+      )
+        throw new Error("Remote rollback is unverified");
+      const outcome = await supabaseAdmin.rpc("activation_attempt_outcome", {
+        _kind: k,
+        _attempt: attemptId,
+      });
+      if (outcome.error) throw new Error("Local rollback outcome is unavailable");
+      if (outcome.data === "active" || outcome.data === "expired") {
+        const revoked = await context.supabase.rpc("activation_activation_revoke", { _kind: k });
+        if (revoked.error) throw new Error("Remote rollback verified but local revocation failed");
+      }
+      const confirmed = await supabaseAdmin.rpc("activation_rollback_confirmed", {
+        _kind: k,
+        _attempt: attemptId,
+      });
+      if (confirmed.error) throw new Error("Verified rollback could not be recorded");
+    },
+    verifyCurrent: async (k) => {
+      const state = await (await import("./unified-activation.server")).readExecutionState();
+      const live = await context.supabase
+        .from("activation_activations")
+        .select("attempt_id")
+        .eq("kind", "live_link")
+        .single();
+      if (!state.connected || state.cancellationPending || (k === "autonomy" && !state.configured))
+        throw new Error("Current backend activation is unverified");
+      if (live.error || state.operationId !== live.data.attempt_id)
+        throw new Error("Current backend connection identity changed");
+    },
     connect: async () => {
       let c;
       try {
@@ -1511,7 +1588,7 @@ function activationHandler(kind: "live_link" | "autonomy") {
         ok: false as const,
         reason: "not_recorded" as const,
         message:
-          "The activation did not complete and is not active. Retrying with the same attempt is safe.",
+          "Activation or rollback could not be verified. Keep Stop engaged; refresh and reconcile the existing attempt before another activation.",
         details: [] as Detail[],
       };
     }
@@ -1558,6 +1635,37 @@ export const deactivateActivation = createServerFn({ method: "POST" })
         ok: false as const,
         message: "Deactivation was not recorded. Refresh and try again.",
       };
+    try {
+      const state = await (
+        await import("./unified-activation.server")
+      ).readExecutionState(data.kind === "live_link" ? "revoke" : "unconfigure");
+      if (
+        state.armed ||
+        state.cancellationPending ||
+        (data.kind === "live_link" ? state.connected : state.configured)
+      )
+        throw new Error("Cancellation remains pending");
+      const current = await context.supabase
+        .from("activation_activations")
+        .select("attempt_id")
+        .eq("kind", data.kind)
+        .single();
+      if (current.error) throw new Error("Current deactivation scope is unavailable");
+      if (current.data.attempt_id) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const confirmed = await supabaseAdmin.rpc("activation_rollback_confirmed", {
+          _kind: data.kind,
+          _attempt: current.data.attempt_id,
+        });
+        if (confirmed.error) throw new Error("Verified deactivation could not be recorded");
+      }
+    } catch {
+      return {
+        ok: false as const,
+        message:
+          "Local activation was revoked, but remote cancellation is unverified. Keep Stop engaged and reconcile Jackboy.",
+      };
+    }
     return {
       ok: true as const,
       message:

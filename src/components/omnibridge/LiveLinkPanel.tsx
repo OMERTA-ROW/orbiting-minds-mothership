@@ -389,8 +389,9 @@ export function LiveLinkPanel(props: {
             never changed here. Under Jackboy's permit contract a stop there revokes OMNI's permits,
             and an OMNI job holding one halts at its next 20-second renewal; this page records the
             stop on the next scheduled safety read or when you refresh. Unknown or stale counts as
-            stopped. Not yet proven live: Jackboy's permit service must be installed and no OMNI
-            executor is connected.
+            stopped. Not yet proven live: the bounded executor and Jackboy permit service require
+            separate deployment and verification. The bounded-plan controls above do not enable the
+            general CODE/windowed queues.
           </p>
         </article>
 

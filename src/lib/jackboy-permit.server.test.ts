@@ -118,6 +118,8 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     const t = manualTimers();
     const h = new PermitHolder(REQ, { link, store, approvalId: null, onHalt, timers: t.timers });
     await h.acquire();
+    expect(t.pending.filter((x) => !x.cleared)).toHaveLength(1);
+    expect(t.pending.some((x) => x.ms === 0)).toBe(false); // Hard-bounded plans cannot extend their final deadline.
     await new Promise((r) => setTimeout(r, 40));
     t.pending.filter((x) => !x.cleared).forEach((x) => x.fn());
     await flush();

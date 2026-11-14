@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: OMERTA-ROW/jackboy-dev-control
-          ref: 9f309696a30d6fc4e6f0a66d1e89d4e63a01f8c2
+          ref: d5b9ab213cf6313a81d20f8f351a6caffc26450c
           path: jackboy-interop
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
