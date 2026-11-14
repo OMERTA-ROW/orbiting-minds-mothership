@@ -178,7 +178,7 @@ def main():
         deny(window); deny(always_on)
         # Releasing in Jackboy and a new clear reading restarts nothing.
         assert ok(poll()) == 'clear'
-        assert status(j) == 'stopped' and status(k) == 'queued'
+        assert status(j) == 'stopped' and status(k) == 'paused'  # held, not resumed
         assert sql("SELECT count(*) FROM public.omni_autonomy_windows WHERE ended_at IS NULL;") == '0'
         assert sql("SELECT always_on FROM public.omni_code_service WHERE id=1;") == 'f'
         deny(permit(j))  # the stopped job cannot get a new permit under the same id
