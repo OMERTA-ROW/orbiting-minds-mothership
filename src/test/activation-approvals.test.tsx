@@ -482,11 +482,17 @@ describe("Step 8 run protocol self-test & verify", () => {
     { key: "stop", label: "Mothership Emergency Stop", ok: true, detail: "Released." },
     { key: "self_test", label: "Self-test switch (JACKBOY_LINK_SELF_TEST_ENABLED)", ok: true, detail: "On." },
   ];
-  const step8 = (readiness = readyItems, extra: Record<string, unknown> = {}) => ({
-    ...snapshot("runner_only", { approvedThrough: 7 }),
-    selfTestReadiness: readiness,
-    ...extra,
-  });
+  const step8 = (readiness = readyItems, extra: Record<string, unknown> = {}) => {
+    const base = snapshot("runner_only", { approvedThrough: 7 });
+    // Step 7's approval window must still be open for Step 8 to unlock.
+    const future = new Date(Date.now() + 6 * 3600_000).toISOString();
+    return {
+      ...base,
+      rows: base.rows.map((r) => (r.step === 7 ? { ...r, approval_expires_at: future } : r)),
+      selfTestReadiness: readiness,
+      ...extra,
+    };
+  };
   const runButton = () =>
     within(stepItem(8)).getByRole("button", { name: /protocol self-test & verify|Continue pending/ });
 
