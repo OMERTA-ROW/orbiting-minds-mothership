@@ -5,6 +5,7 @@ CREATE TABLE public.activation_operations (
   step integer NOT NULL CHECK (step IN (9,10)),
   approval_revision integer NOT NULL,
   target_revision integer NOT NULL,
+  prerequisite_revisions jsonb NOT NULL,
   state text NOT NULL CHECK (state IN ('pending','completed','failed')),
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -57,8 +58,9 @@ BEGIN
       AND evidence_version=2 AND checked_at>now()-interval '15 minutes' AND checked_at<=now()
   ) THEN RAISE EXCEPTION 'Approval window or signed Step 8 evidence is not fresh'; END IF;
   SELECT a.revision INTO revision FROM public.activation_approvals a WHERE a.step=7;
-  INSERT INTO public.activation_operations(id,actor_id,step,approval_revision,target_revision,state)
-    VALUES(_id,auth.uid(),_step,revision,(SELECT a.revision FROM public.activation_approvals a WHERE a.step=_step),'pending');
+  INSERT INTO public.activation_operations(id,actor_id,step,approval_revision,target_revision,prerequisite_revisions,state)
+    VALUES(_id,auth.uid(),_step,revision,(SELECT a.revision FROM public.activation_approvals a WHERE a.step=_step),
+      (SELECT jsonb_object_agg(a.step::text,a.revision) FROM public.activation_approvals a WHERE a.step<_step),'pending');
   INSERT INTO public.razul_control_audit(actor_id,action,record_type,record_id)
     VALUES(auth.uid(),'activation_begin','activation_operation',_id::text);
   RETURN jsonb_build_object('state','pending','id',_id,'expiresAt',expiry);
@@ -82,6 +84,10 @@ BEGIN
         AND evidence_version=2 AND checked_at>now()-interval '15 minutes' AND checked_at<=now())
       OR (operation.step=10 AND (_cap IS DISTINCT FROM true OR _daily IS DISTINCT FROM true))
       OR NOT EXISTS (SELECT 1 FROM public.activation_approvals WHERE step=operation.step AND revision=operation.target_revision)
+      OR operation.prerequisite_revisions IS DISTINCT FROM
+        (SELECT jsonb_object_agg(a.step::text,a.revision) FROM public.activation_approvals a WHERE a.step<operation.step)
+      OR EXISTS (SELECT 1 FROM public.owner_mfa_recovery_events
+        WHERE user_id=_actor AND event='recovery_completed' AND created_at>=operation.created_at)
     THEN RAISE EXCEPTION 'Approval changed while activation was in flight'; END IF;
     UPDATE public.activation_operations SET state='completed' WHERE id=_id;
     UPDATE public.activation_approvals SET status='approved',approver_id=_actor,decided_at=now(),
@@ -99,3 +105,19 @@ REVOKE ALL ON FUNCTION public.activation_begin(uuid,integer),
   FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.activation_begin(uuid,integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.activation_finalize(uuid,uuid,text,text,boolean,boolean) TO service_role;
+
+CREATE FUNCTION public.activation_operation_status(_actor uuid,_id uuid) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
+DECLARE operation public.activation_operations%ROWTYPE;
+BEGIN
+  SELECT * INTO operation FROM public.activation_operations WHERE id=_id AND actor_id=_actor;
+  IF operation.id IS NULL THEN RAISE EXCEPTION 'Operation scope denied'; END IF;
+  RETURN jsonb_build_object('state',operation.state,'effective',
+    operation.state='completed'
+    AND EXISTS (SELECT 1 FROM public.activation_approvals WHERE step=operation.step AND status='approved'
+      AND approver_id=_actor AND revision=operation.target_revision+1)
+    AND EXISTS (SELECT 1 FROM public.activation_approvals WHERE step=7
+      AND revision=operation.approval_revision AND approval_expires_at>now()));
+END $$;
+REVOKE ALL ON FUNCTION public.activation_operation_status(uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.activation_operation_status(uuid,uuid) TO service_role;

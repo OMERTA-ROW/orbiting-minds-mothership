@@ -2,25 +2,49 @@ import { expect, it, vi } from "vitest";
 import { actuateApproval } from "@/lib/unified-activation.server";
 
 const state = {
-  allowed: false, checkedAt: new Date().toISOString(), projectId: "11111111-1111-4111-8111-111111111111",
-  connected: true, configured: true, armed: false, emergencyStop: true, killSwitch: false,
-  expiresAt: new Date(Date.now() + 60_000).toISOString(), operationId: "22222222-2222-4222-8222-222222222222",
-  executorRelease: null, running: false, cancellationPending: false,
+  allowed: false,
+  checkedAt: new Date().toISOString(),
+  projectId: "11111111-1111-4111-8111-111111111111",
+  connected: true,
+  configured: true,
+  armed: false,
+  emergencyStop: true,
+  killSwitch: false,
+  expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  operationId: "22222222-2222-4222-8222-222222222222",
+  executorRelease: null,
+  running: false,
+  cancellationPending: false,
+  executionReady: false,
 };
 function input(step: 9 | 10) {
   return {
-    owner: "owner", step, operationId: state.operationId, expiresAt: state.expiresAt,
-    cap: true, daily: true,
+    owner: "owner",
+    step,
+    operationId: state.operationId,
+    expiresAt: state.expiresAt,
+    cap: true,
+    daily: true,
     caller: { rpc: vi.fn(async () => ({ data: { state: "pending" }, error: null })) },
-    admin: { rpc: vi.fn(async () => ({ data: null, error: null as unknown })) },
+    admin: {
+      rpc: vi.fn(async () => ({
+        data: { state: "pending", effective: false } as unknown,
+        error: null as unknown,
+      })),
+    },
   };
 }
 it("Step 9 persists a connection, checks live state, and finalizes only afterward", async () => {
   const args = input(9);
-  const control = vi.fn(async () => state);
+  const control = vi.fn(async (operation?: string) =>
+    operation === "revoke" ? { ...state, connected: false, configured: false } : state,
+  );
   await actuateApproval(args, control);
   expect(control.mock.calls).toHaveLength(2);
-  expect(args.admin.rpc).toHaveBeenCalledWith("activation_finalize", expect.objectContaining({ _state: "completed" }));
+  expect(args.admin.rpc).toHaveBeenCalledWith(
+    "activation_finalize",
+    expect.objectContaining({ _state: "completed" }),
+  );
 });
 it("Step 10 configures while Stop is engaged without arming or starting work", async () => {
   const args = input(10);
@@ -32,13 +56,43 @@ it("Step 10 configures while Stop is engaged without arming or starting work", a
 it("failed finalization compensates and never turns failure into approval", async () => {
   const args = input(9);
   args.admin.rpc.mockResolvedValueOnce({ data: null, error: "audit unavailable" });
-  const control = vi.fn(async () => state);
+  const control = vi.fn(async (operation?: string) =>
+    operation === "revoke" ? { ...state, connected: false, configured: false } : state,
+  );
   await expect(actuateApproval(args, control)).rejects.toThrow("Nothing was approved");
   expect(control).toHaveBeenCalledWith("revoke");
 });
 it("lost peer keeps the activation pending for reconciliation, not blind retry", async () => {
   const args = input(9);
-  const control = vi.fn(async () => { throw new Error("connection failed"); });
+  const control = vi.fn(async () => {
+    throw new Error("connection failed");
+  });
   await expect(actuateApproval(args, control)).rejects.toThrow("reconciliation");
   expect(args.admin.rpc).not.toHaveBeenCalled();
+});
+it("Step 10 rolls back configuration, not merely its armed flag", async () => {
+  const args = input(10);
+  args.admin.rpc.mockResolvedValueOnce({ data: null, error: "audit unavailable" });
+  const control = vi.fn(async (operation?: string) =>
+    operation === "unconfigure" ? { ...state, configured: false } : state,
+  );
+  await expect(actuateApproval(args, control)).rejects.toMatchObject({ attemptFinal: true });
+  expect(control).toHaveBeenCalledWith("unconfigure");
+});
+it("a cancellation still pending cannot finalize a compensated failure", async () => {
+  const args = input(9);
+  args.admin.rpc.mockResolvedValueOnce({ data: null, error: "audit unavailable" });
+  const control = vi.fn(async () => ({ ...state, cancellationPending: true }));
+  await expect(actuateApproval(args, control)).rejects.toMatchObject({ attemptFinal: false });
+  expect(args.admin.rpc).toHaveBeenCalledTimes(2);
+});
+it("a lost finalization acknowledgement reads the persisted outcome without reconnecting or revoking", async () => {
+  const args = input(9);
+  args.admin.rpc
+    .mockResolvedValueOnce({ data: null, error: "ack lost" })
+    .mockResolvedValueOnce({ data: { state: "completed", effective: true }, error: null });
+  const control = vi.fn(async () => state);
+  await actuateApproval(args, control);
+  expect(control).not.toHaveBeenCalledWith("revoke");
+  expect(args.admin.rpc).toHaveBeenCalledWith("activation_operation_status", expect.anything());
 });

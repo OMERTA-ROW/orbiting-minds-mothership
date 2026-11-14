@@ -4,42 +4,44 @@ Status audited 2026-11-12 (read-only checks; no secret values read, nothing sent
 
 ## 1. Who owns what
 
-| Part | Holds | Never holds |
-|---|---|---|
-| **GitHub** (source) | Code for Mothership (synced by Lovable Git sync, one branch), and separately the OMNI/Jackboy repositories. | Running state, approvals, secrets. Mothership cannot see whether Git sync is connected; check Project settings → Git. |
-| **Railway** (backend) | The OMNI service and Jackboy CODE, their own secrets (for example `CODE_PROVIDER_API_KEY`), and — later — the isolated sandbox. | Mothership's database credentials or owner sessions. |
-| **Lovable / Mothership** (UI + control plane) | Owner sign-in and two-step codes, passkeys, Activation Approvals, Emergency Stop, kill switch, held tasks, Docking Bay, audit, per-agent memory records, the secure-link settings (names listed in §3). | Any provider API key for CODE, any shell or executor. |
+| Part                                          | Holds                                                                                                                                                                                                   | Never holds                                                                                                           |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **GitHub** (source)                           | Code for Mothership (synced by Lovable Git sync, one branch), and separately the OMNI/Jackboy repositories.                                                                                             | Running state, approvals, secrets. Mothership cannot see whether Git sync is connected; check Project settings → Git. |
+| **Railway** (backend)                         | The OMNI service and Jackboy CODE, their own secrets (for example `CODE_PROVIDER_API_KEY`), and — later — the isolated sandbox.                                                                         | Mothership's database credentials or owner sessions.                                                                  |
+| **Lovable / Mothership** (UI + control plane) | Owner sign-in and two-step codes, passkeys, Activation Approvals, Emergency Stop, kill switch, held tasks, Docking Bay, audit, per-agent memory records, the secure-link settings (names listed in §3). | Any provider API key for CODE, any shell or executor.                                                                 |
 
 Each counterpart keeps its own knowledge: Mothership keeps owner-saved per-agent memory (§5); OMNI and Jackboy keep whatever they store on Railway. Nothing is shared between them today.
 
 ## 2. Audited state (2026-11-12 18:30 UTC)
 
-| Check | Result |
-|---|---|
-| Preview typecheck | Passes. |
-| Owner account | One owner; one confirmed authenticator (enrolled 2026-11-12 17:45 UTC); one OMNI passkey. |
-| Emergency Stop | **Released** by the owner at 18:13 UTC. Releasing turns nothing on. |
-| Terminal kill switch | Enabled by the owner (passkey) at 18:11 UTC. |
-| Activation Approvals | **0 of 10** recorded. |
-| `JACKBOY_LINK_SELF_TEST_ENABLED` | **Not set** (off). |
-| Verified handshake / self-test with Railway | **Never recorded.** A ping only proved the Railway address answers. |
-| Docking Bay | No pair codes issued, no devices. |
-| Executor / sandbox | None. `EXECUTOR_AVAILABLE = false`. |
-| CODE, autonomy | Off. Agent budgets are $0. |
+| Check                                       | Result                                                                                    |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Preview typecheck                           | Passes.                                                                                   |
+| Owner account                               | One owner; one confirmed authenticator (enrolled 2026-11-12 17:45 UTC); one OMNI passkey. |
+| Emergency Stop                              | **Released** by the owner at 18:13 UTC. Releasing turns nothing on.                       |
+| Terminal kill switch                        | Enabled by the owner (passkey) at 18:11 UTC.                                              |
+| Activation Approvals                        | **0 of 10** recorded.                                                                     |
+| `JACKBOY_LINK_SELF_TEST_ENABLED`            | **Not set** (off).                                                                        |
+| Verified handshake / self-test with Railway | **Never recorded.** A ping only proved the Railway address answers.                       |
+| Docking Bay                                 | No pair codes issued, no devices.                                                         |
+| Executor / sandbox                          | None. `EXECUTOR_AVAILABLE = false`.                                                       |
+| CODE, autonomy                              | Off. Agent budgets are $0.                                                                |
 
-**Why `/omni-terminal` looks locked:** the page itself opens for the owner at two-step level; the *agent workspace* stays locked because the self-test has never passed (and approvals 1–10 are not recorded). The page now shows a numbered checklist and one of five states: Stopped, Not authorized, Not connected, No device docked, Read-only.
+**Why `/omni-terminal` looks locked:** the page itself opens for the owner at two-step level; the _agent workspace_ stays locked because the self-test has never passed (and approvals 1–10 are not recorded). The page now shows a numbered checklist and one of five states: Stopped, Not authorized, Not connected, No device docked, Read-only.
 
 ## 3. Existing signed contracts (all built on the Mothership side)
 
 All use HTTPS POST, platform certificate checks, refused redirects, a 5-second timeout, a 32 KB reply cap, 32-hex single-use nonces and Unix-second timestamps. The link secret stays on the server.
 
 ### `omni.link/v2` — handshake and protocol self-test (`POST {JACKBOY_LINK_ORIGIN}/api/public/omni/link`)
+
 - Headers: `authorization: Bearer <session or bootstrap token>`, `x-omni-client`, `x-omni-timestamp`, `x-omni-nonce`, `x-omni-signature`.
 - Signature: HMAC-SHA256(`OMNI_LINK_HMAC_SECRET`, `omni.link/v2\nPOST\n/api/public/omni/link\n<ts>\n<nonce>\n<sha256(token)>\n<body>`).
 - Body: `{ action: "handshake"|"submit"|"run"|"status"|"cancel", projectId, jobId?, kind?: "protocol.self-test" }`.
 - Reply must carry `x-omni-proof` and echo the nonce. Only a completed job whose runner is `restricted-protocol-self-test` with `result.passed === true` records `self_test_passed`.
 
 ### `omni.workspace/v1` — cloud shell relay (`POST {OMNI_SANDBOX_ORIGIN}/api/public/omni/workspace`) — **reference service in `services/omni-sandbox/`, not deployed**
+
 - Goes to a **separate** sandbox service with its own `OMNI_SANDBOX_*` settings. Mothership refuses a sandbox address equal to the Jackboy host or a secret reused from the Jackboy link.
 - Headers: `x-omni-client`, `x-omni-timestamp`, `x-omni-nonce`, `x-omni-signature`, `content-type: application/json`.
 - Signature: HMAC-SHA256(secret, `omni.workspace/v1\nPOST\n/api/public/omni/workspace\n<ts>\n<nonce>\n<sha256(body)>`).
@@ -48,6 +50,7 @@ All use HTTPS POST, platform certificate checks, refused redirects, a 5-second t
 - `command.run` never executes on arrival: it returns a `command` step with `pending_approval`; only `step.decide {stepId:"cmd", approve:true}` runs it. Output comes back through `events.poll` as `output` steps (`stdout`/`stderr`/`system`) and a final `result` step with `exitCode`.
 
 ### `omni.dock/v1` and `jackboy.omni-handoff/v1`
+
 See `docs/OMNI-DOCK-PROTOCOL.md`. Docked devices get status, held proposals and stop-engage only.
 
 ## 4. Isolated sandbox prerequisites (Railway side, before any command can run)
@@ -89,23 +92,22 @@ If a local OMNI/Evolution terminal seems stuck:
 5. Check the companion: `evolution doctor` (or `omni doctor` if you installed it under that name). It reports problems and changes nothing.
 6. Never paste keys, recovery codes or authenticator codes into a terminal or chat while troubleshooting.
 
-
 ## Autonomous Mode readiness (contract v0.2 — designed, not active)
 
 Autonomous Mode is **OFF** and cannot be turned on in this build. The Mothership turns it on for one agent only when every gate below is met **at that moment**, from recorded, proof-checked evidence (missing or unreadable evidence counts as not met):
 
-| Gate | Evidence the Mothership checks | Status today |
-|---|---|---|
-| Reviewed live verification | `AUTONOMY_VERIFIED_RELEASE` set in code after a reviewed live Railway run of every gate | **Missing** (null) |
-| Signed connection + self-test | A `sandbox_self_test_passed` audit row from a signed, proof-checked reply, last 24 h, `OMNI_SANDBOX_*` configured and enabled | **Missing** (not configured) |
-| Isolated shell | Self-test health: network `isolated`, per-session user, non-root, only allowed env names, limits within ceilings | **Missing** |
-| Sandbox supports windows | Health reports `autonomy: "windowed"` (reference service v0.1 reports `"off"` and always waits for approval) | **Missing** |
-| Live stop drill | `autonomy_stop_drill_passed`: owner-passkey run of `sleep 30`, sandbox reported `running`, then `stopped` within 3 s, last 24 h | **Missing** |
-| Spend meter | Agent task/day/total budgets above $0 and a verified provider with prices; overall caps stay $1/task, $5/day, $10 total | **Missing** (agent budgets $0) |
-| Agent | Enrolled, not paused, not Jackboy | **Missing** (agents paused; Jackboy never) |
-| Approval gates | Merge, deploy, publish, secrets, GitHub permissions, network and pull requests stay owner-gated; sandbox reports `merge: "never"` | Code ready; health not reported |
-| Controls | Emergency Stop released, terminal kill switch on | Depends on owner settings |
-| Passkey | Fresh single-use passkey check for purpose `autonomy` | Asked at the moment of turning on |
+| Gate                          | Evidence the Mothership checks                                                                                                    | Status today                               |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Reviewed live verification    | `AUTONOMY_VERIFIED_RELEASE` set in code after a reviewed live Railway run of every gate                                           | **Missing** (null)                         |
+| Signed connection + self-test | A `sandbox_self_test_passed` audit row from a signed, proof-checked reply, last 24 h, `OMNI_SANDBOX_*` configured and enabled     | **Missing** (not configured)               |
+| Isolated shell                | Self-test health: network `isolated`, per-session user, non-root, only allowed env names, limits within ceilings                  | **Missing**                                |
+| Sandbox supports windows      | Health reports `autonomy: "windowed"` (reference service v0.1 reports `"off"` and always waits for approval)                      | **Missing**                                |
+| Live stop drill               | `autonomy_stop_drill_passed`: owner-passkey run of `sleep 30`, sandbox reported `running`, then `stopped` within 3 s, last 24 h   | **Missing**                                |
+| Spend meter                   | Agent task/day/total budgets above $0 and a verified provider with prices; overall caps stay $1/task, $5/day, $10 total           | **Missing** (agent budgets $0)             |
+| Agent                         | Enrolled, not paused, not Jackboy                                                                                                 | **Missing** (agents paused; Jackboy never) |
+| Approval gates                | Merge, deploy, publish, secrets, GitHub permissions, network and pull requests stay owner-gated; sandbox reports `merge: "never"` | Code ready; health not reported            |
+| Controls                      | Emergency Stop released, terminal kill switch on                                                                                  | Depends on owner settings                  |
+| Passkey                       | Fresh single-use passkey check for purpose `autonomy`                                                                             | Asked at the moment of turning on          |
 
 Windows are 15, 30 or 60 minutes. The database (migration 0047) also refuses any other length, refuses Jackboy, refuses opening while Emergency Stop is engaged/unreadable, the kill switch is off or the agent is not enrolled, forbids extending/reassigning/reopening, and ends every open window when Emergency Stop is engaged, the kill switch is turned off, or the agent is paused. Per-agent Stop and global STOP also end windows.
 
@@ -120,12 +122,12 @@ Windows are 15, 30 or 60 minutes. The database (migration 0047) also refuses any
 
 Until then the Mothership always sends `autonomous: false`.
 
-
 ## OMNI CODE supervised queue and Mac companion (designed; nothing connected)
 
 OMNI is the motor; CODE is its terminal/coding engine. **Always-on** = the service may pick up jobs the owner already authorized, continuously, inside these limits. It is not unlimited shell privilege and not standing approval of destructive work. Jackboy's autonomous mode stays OFF independently and Jackboy jobs are refused by the queue.
 
 **Queue (`omni_code_jobs`, migration 0048)** — states `queued → leased → running → succeeded`, with `awaiting_approval`, `retry_wait`, `paused`, `failed`, `stopped`, `cancelled`.
+
 - Bounded concurrency: default 3 at once (max 5), 2 per agent (max 3), 20 starts per agent per hour (max 60).
 - Leases last 120 s and are renewed by checkpoints. An expired lease returns the job to `queued` and it resumes from its last checkpoint. An interrupted destructive job goes back to the owner instead of resuming.
 - Retries: retryable failures back off 30 s, 60 s, 120 s… (max 15 min), at most 3 attempts (max 5). Destructive jobs are never retried automatically.
@@ -136,6 +138,7 @@ OMNI is the motor; CODE is its terminal/coding engine. **Always-on** = the servi
 - Per-agent memory stays in the existing owner-only per-agent store; a worker receives only the memory the owner attaches to that job.
 
 **Mac companion contract `omni.files/v1` (to be built in the companion, e.g. `omni_desktop`)**
+
 1. Docks through `omni.dock/v1` (device key, owner approval). No full disk access by default; it reads only owner-granted folders (`omni_mac_folder_grants`: a folder inside `/Users/<you>/`, never the home folder itself, `Library`, `Applications`, `.ssh`, `.gnupg`, `.aws`, `.config`, `.Trash` and similar; read-only or organize; 1–30 days; never widened; revocation permanent).
 2. Signed heartbeat at least every 60 s including idle seconds. No heartbeat = disconnected = no Mac jobs (fail closed).
 3. `inventory`: metadata only (path, size, modified time, folder/symlink flags) for one grant; never file contents.
@@ -144,3 +147,99 @@ OMNI is the motor; CODE is its terminal/coding engine. **Always-on** = the servi
 6. `apply`: the companion recomputes the digest, re-checks each file's size and modified time before each step (changed → skipped), stays inside the grant, refuses symlinks, and journals every step (`omni_file_journal`, append-only).
 7. `undo`: inverse steps newest-first (moves back, backups restored, Trash items put back, created folders removed only if empty), each re-checked first.
 8. Pause/Stop/Emergency Stop are honoured between every step.
+
+## Unified activation and separate bounded executor (feature branch; not deployed)
+
+`feat/unified-activation` rebases onto Mothership main `6ea3619` and integrates its
+connection-only Step 9 diagnostics. Approval flow **v7** changes approval semantics:
+Step 9 now persists an authorized connection in Jackboy and verifies a signed,
+fresh reply before completing the approval. Step 10 verifies CODE gateway/workflow
+identity, spending enforcement and the separate executor's signed configuration,
+then persists configuration. Neither approval releases Emergency Stop, enables
+CODE, arms the executor or starts a plan.
+
+Mothership migration `0054_unified_activation.sql` stores owner-bound operation IDs,
+locked prerequisite revisions, expiration and audit evidence. Only the service
+finalizer can complete Steps 9/10 after actuation. Expiration, a concurrent
+prerequisite change, recovery during activation or failed auditing prevents
+completion. Lost finalization acknowledgements read the persisted result instead
+of blindly reconnecting. Failed Step 9 revokes the connection; failed Step 10
+unconfigures it. An unverified rollback stays unresolved. Use **Reconcile pending
+activation** with fresh authentication; this rolls back and closes a failed
+attempt, never approves it. If an approval was recorded but is no longer effective,
+refresh and explicitly revoke that step before requesting a new approval.
+
+Jackboy migration `0064_omni_execution_authority.sql` is the durable admission and
+safety authority. CODE Stop and global pause disarm and request cancellation
+transactionally. The cancellation outbox retains failures; acknowledgement is
+atomic with audit. Both dashboards show configuration separately from the
+effective **Blocked / Configured / Running** state. A stale/unreadable signed reply
+is Blocked, never an invented live state. Cancellation pending is not confirmed
+termination. Disarm, Stop and reconciliation never auto-release either Stop.
+
+### Executor scope and trust boundary
+
+`services/omni-autonomous/executor.mjs` is a new, separate Node 26/Linux service
+(`omni.autonomous/v1`, release `omni-bounded-plan-1`), default disabled. It is **not**
+a model-driven agent, general shell, repository worker, existing CODE runner,
+manual sandbox or the designed windowed/mac queues described above. It executes
+only an exact owner-authorized plan: at most five allowlisted argv commands,
+10 seconds each, 30 seconds total and a 60-second authorization. Jobs are hash-bound,
+claimed durably once in Jackboy, and never resumed or retried automatically.
+
+Bubblewrap namespaces isolate network, process IDs, filesystem and scratch; the
+worker is non-root with scrubbed environment and CPU/memory/process/file/output
+ceilings. Before each command and every 250 ms during a command, authenticated
+Jackboy permission is rechecked (1.5-second transport deadline; replies older than
+2 seconds are refused). Unknown safety aborts; cancellation waits for process
+termination, including descendants. Thus remote loss detection is bounded, not
+instantaneous propagation. No network/model/provider calls are supported inside
+plans. `providerCostUsd: 0` measures that absence, **not** infrastructure cost.
+The executor receives no Supabase, production link, GitHub, provider or manual
+sandbox credentials. Manual diagnostics keep their existing independent policy;
+no manual terminal gate is relaxed by this feature.
+
+### Exact remaining owner actions (none performed by this branch)
+
+1. Review both branches, migration journals and backup/rollback plans. Separately
+   authorize isolated staging deployment and migrations before any production work.
+   Mothership 0053 is reserved for the intelligence branch and is not applied or
+   added here; reconcile that branch's journal ordering before combining migrations.
+2. Provision the dedicated Linux executor using its Dockerfile, initially
+   `OMNI_AUTONOMOUS_ENABLED=false`. Do not reuse the legacy protocol/manual service.
+   Configure `OMNI_EXECUTOR_ORIGIN` and `OMNI_EXECUTOR_CONTROL_SECRET` on Mothership
+   and Jackboy; control secret on the executor. Configure separate
+   `OMNI_EXECUTOR_PERMISSION_SECRET` / `OMNI_EXECUTOR_PERMISSION_TOKEN` on Jackboy
+   and the executor, plus executor `JACKBOY_LINK_ORIGIN` and `OMNI_LINK_CLIENT_ID`.
+   Existing production credentials must not be rotated or copied into tests.
+3. Independently prove Linux isolation/resource/descendant cancellation on the
+   exact staging image:
+   `OMNI_LINUX_ISOLATION_TEST=true node --test tests/omni-autonomous-linux.test.mjs`.
+   Test signed cross-system Stop, expiry, network loss and restart against staging.
+   Never use privileged containers or weaken isolation to make verification pass.
+4. On Mothership, authenticate freshly and approve Steps 1-8 using the real signed
+   Step 8 proof and current approval window; approve Step 9. Confirm the live
+   connection in both dashboards. Run **Verify executor** explicitly; this performs
+   a diagnostic self-test/cancellation drill, not an autonomous plan.
+5. Only after independent review, manually set
+   `OMNI_AUTONOMY_REVIEWED_RELEASE=omni-bounded-plan-1` on all three services.
+   Confirm the existing $10 cap/$5 daily controls and approve Step 10. Configuration
+   may be present while effective execution remains Blocked.
+6. If execution is separately authorized, explicitly release global pause and
+   enable CODE through Jackboy's existing fresh-passkey gates; no Step 9/10 action
+   does this. Separately authorize enabling the dedicated executor and set
+   `OMNI_AUTONOMOUS_ENABLED=true` there. Click **Authorize autonomous capability**
+   with fresh Mothership authentication. Arming starts nothing.
+7. Enter one reviewed JSON command array and explicitly press **Authorize and run
+   this plan once**. Fresh owner approval and live Jackboy permission are required.
+   Verify the result and Stop cancellation before any broader activation decision.
+
+### Evidence and deployment boundary
+
+All implementation and disposable tests remain on isolated feature branches.
+Neither migration is applied to a hosted database. No merge, push, deployment,
+owner approval, Stop release or production activation occurred. Docker's daemon is
+unavailable in this macOS environment; real Linux isolation and live cross-system
+connection/cancellation remain **unverified**, and the new executor remains disabled.
+Public build markers identify deployed screens only, not authenticated safety or
+our uncommitted branch. Verification results below are local fixture evidence.
