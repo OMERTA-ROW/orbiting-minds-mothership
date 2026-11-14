@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   check: vi.fn(),
   selfTest: vi.fn(),
   liveLink: vi.fn(),
+  safety: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-start", () => ({
@@ -36,6 +37,7 @@ vi.mock("@/lib/activation-approvals.functions", () => ({
   runActivationApprovalCheck: "check",
   runStep8SelfTest: "selfTest",
   checkLiveLinkConnection: "liveLink",
+  refreshJackboySafety: "safety",
 }));
 
 vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
@@ -640,14 +642,15 @@ describe("Steps 9–10 live link and CODE panel", () => {
 
   beforeEach(() => mocks.liveLink.mockReset());
 
-  it("keeps the connection check disabled until Step 9 is approved, and shows CODE off", async () => {
+  it("keeps the connection check disabled until Step 9 is approved, and shows autonomy not authorized", async () => {
     mocks.list.mockResolvedValue(live(8));
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
     expect(within(panel()).getByText("Waiting for your Step 9 approval")).toBeInTheDocument();
     expect(within(panel()).getByRole("checkbox", { name: /connection-only check/ })).toBeDisabled();
     expect(checkButton()).toBeDisabled();
-    expect(within(panel()).getByText(/Mothership has no CODE request path/)).toBeInTheDocument();
+    expect(within(panel()).getByText("Not authorized")).toBeInTheDocument();
+    expect(within(panel()).getByText(/Mothership has no path that starts Jackboy CODE/)).toBeInTheDocument();
     expect(mocks.liveLink).not.toHaveBeenCalled();
   });
 
@@ -705,5 +708,54 @@ describe("Steps 9–10 live link and CODE panel", () => {
     fireEvent.click(within(panel()).getByRole("checkbox", { name: /connection-only check/ }));
     expect(checkButton()).toBeDisabled();
     expect(within(panel()).getByText(/fresh two-step code/)).toBeInTheDocument();
+  });
+});
+
+describe("Jackboy safety sync and Step 10 status", () => {
+  const panel = () => screen.getByRole("region", { name: /Live link, terminal and CODE/ });
+  const allApproved = (safety: ReturnType<typeof safetyView>) => {
+    const base = live(10);
+    return { ...base, safety, code: codeStatus(base.rows as never, Date.now(), safety) };
+  };
+  const engaged = () =>
+    safetyView(
+      {
+        state: "engaged",
+        paused: false,
+        code_stop: true,
+        code_enabled: false,
+        cancellation: "requested",
+        observed_at: new Date().toISOString(),
+        expires_at: null,
+        source: "event",
+        reason: "code_stop_engaged",
+        recorded_at: new Date().toISOString(),
+      },
+      Date.now(),
+    );
+  it("shows Authorized — not running while the CODE Emergency Stop is engaged", async () => {
+    mocks.list.mockResolvedValue(allApproved(engaged()));
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^10\. / });
+    expect(within(panel()).getByText("Authorized — not running")).toBeInTheDocument();
+    expect(within(panel()).getAllByText(/CODE Emergency Stop engaged/).length).toBeGreaterThan(0);
+    expect(within(panel()).queryByText(/^Running$/)).toBeNull();
+  });
+  it("shows an unknown safety state as halting, and refreshes it without changing anything else", async () => {
+    mocks.list.mockResolvedValue(live(9));
+    mocks.safety.mockResolvedValue({
+      ok: true,
+      checked: true,
+      message: "Jackboy did not return a verified safety reading (read_http_400); recorded as unknown, so autonomy and CODE stay halted.",
+      safety: safetyView(null, Date.now()),
+    });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    expect(within(panel()).getByText("Unknown")).toBeInTheDocument();
+    fireEvent.click(within(panel()).getByRole("button", { name: "Refresh safety state" }));
+    await waitFor(() => expect(mocks.safety).toHaveBeenCalledTimes(1));
+    expect(await within(panel()).findByText(/recorded as unknown/)).toBeInTheDocument();
+    expect(mocks.decide).not.toHaveBeenCalled();
+    expect(mocks.liveLink).not.toHaveBeenCalled();
   });
 });
