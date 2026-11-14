@@ -1,6 +1,6 @@
 /**
- * Jackboy safety sync (server only). Reads Jackboy's signed safety state and records it, or
- * records a verified signed stop notice. Every failure records "unknown", which halts OMNI
+ * Jackboy safety sync (server only). Reads Jackboy's session-signed `omni.safety/v1` snapshot and
+ * records it, or records a verified signed stop notice. Every failure records "unknown", which halts OMNI
  * autonomy windows and CODE jobs in the database. Nothing here releases a stop, turns a
  * switch, starts a job or sends a CODE request.
  */
@@ -13,7 +13,7 @@ import {
   safetyEventMessage,
   safetyEventSchema,
 } from "./jackboy-safety";
-import type { JackboyLinkOptions, JackboySafetyReading } from "./jackboy-link.server";
+import type { JackboyLinkOptions, JackboySafetySnapshot } from "./jackboy-link.server";
 
 type Admin = SupabaseClient<Database>;
 type Recorded = "clear" | "engaged" | "paused" | "unknown" | "ignored_older";
@@ -26,8 +26,8 @@ export type SafetySyncResult = {
 
 export type SafetyDeps = {
   now?: () => number;
-  /** Test seam: replaces the signed read. */
-  read?: () => Promise<JackboySafetyReading>;
+  /** Test seam: replaces the session-signed `safety` read. */
+  read?: () => Promise<JackboySafetySnapshot>;
   linkOptions?: JackboyLinkOptions;
 };
 
@@ -40,7 +40,7 @@ async function record(
   return data as Recorded;
 }
 
-const failure = (admin: Admin, reason: string) =>
+export const recordSafetyFailure = (admin: Admin, reason: string) =>
   record(admin, {
     _source: "failure",
     _paused: null as never,
@@ -54,73 +54,77 @@ const failure = (admin: Admin, reason: string) =>
     _reason: reason.slice(0, 120),
   });
 
-/** Steps 1–9 approved and Step 7's window open (Step 9 = live link activated). */
-async function step9InEffect(admin: Admin, now: number): Promise<boolean> {
-  const { data, error } = await admin
-    .from("activation_approvals")
-    .select("step,status,approval_expires_at")
-    .lte("step", 9);
-  if (error || !data || data.length !== 9) return false;
-  return data.every(
-    (r) =>
-      r.status === "approved" &&
-      (r.step !== 7 || (r.approval_expires_at !== null && Date.parse(r.approval_expires_at) > now)),
-  );
+/** Records one verified `omni.safety/v1` snapshot (the only way "clear" can be recorded). */
+export async function recordSafetySnapshot(admin: Admin, s: JackboySafetySnapshot): Promise<Recorded> {
+  const { data, error } = await admin.rpc("jackboy_safety_record_v2", {
+    _source: "poll",
+    _paused: s.killSwitch,
+    _code_stop: s.emergencyStop,
+    _code_enabled: s.codeEnabled,
+    _autonomous_allowed: s.autonomousAllowed,
+    _manual_allowed: s.manualDiagnosticsAllowed,
+    _blocked_by: s.blockedBy as string,
+    _authorization_expires_at: (s.authorization?.expiresAt ?? null) as string,
+    _active_permits: s.activePermits,
+    _cancellation: null as never,
+    _observed_at: s.checkedAt,
+    _expires_at: s.validUntil,
+    _proof_digest: s.proofDigest,
+    _nonce: null as never,
+    _reason: "signed omni.safety/v1 snapshot",
+  });
+  if (error) throw new Error("Safety state could not be recorded.");
+  return data as Recorded;
 }
 
-function failureReason(error: unknown): string {
+/** Nonsecret reason from a link failure (stage, status, refusal code). */
+export function safetyFailureReason(error: unknown): string {
   const e = error as { stage?: string; status?: number; code?: string };
   if (e && typeof e.stage === "string")
     return ["read", e.stage, e.status ? String(e.status) : "", e.code ?? ""].filter(Boolean).join("_");
   return "read_failed";
 }
 
-/** One safety sync: freshness enforcement, then (if allowed) one signed read. */
+/** The live signed `safety` read with Mothership's configured link (handshake, then snapshot). */
+export async function readLiveSafety(options?: JackboyLinkOptions): Promise<JackboySafetySnapshot> {
+  const { configuredJackboyLink, JackboyLink } = await import("./jackboy-link.server");
+  const link = await configuredJackboyLink();
+  // Scheduled reads are not owner actions; their outcome is audited through the safety record.
+  const client = new JackboyLink(link, async () => {}, options);
+  return client.safety();
+}
+
+/**
+ * One safety sync: permit lapse + freshness enforcement, then (only while the Step 9 live-link
+ * activation is in effect and Mothership's Emergency Stop is released) one signed read.
+ */
 export async function syncJackboySafety(admin: Admin, deps: SafetyDeps = {}): Promise<SafetySyncResult> {
-  const now = (deps.now ?? Date.now)();
+  const lapsed = await admin.rpc("jackboy_permits_enforce");
+  if (lapsed.error) throw new Error("Permit lapse could not be enforced.");
   const fresh = await admin.rpc("jackboy_safety_enforce_freshness");
   if (fresh.error) throw new Error("Safety freshness could not be enforced.");
-  if (!(await step9InEffect(admin, now)))
-    return { checked: false, state: (fresh.data as Recorded) ?? "unknown", reason: "step9_not_in_effect" };
+  const link = await admin.rpc("activation_effective", { _kind: "live_link" });
+  if (link.error || link.data !== true)
+    return { checked: false, state: (fresh.data as Recorded) ?? "unknown", reason: "live_link_not_active" };
   const controls = await admin
     .from("omni_terminal_controls")
     .select("emergency_stop")
     .eq("id", 1)
     .maybeSingle();
   if (controls.error || controls.data?.emergency_stop !== false)
-    return { checked: false, state: await failure(admin, "mothership_stop_engaged"), reason: "mothership_stop_engaged" };
-  let reading: JackboySafetyReading;
+    return {
+      checked: false,
+      state: await recordSafetyFailure(admin, "mothership_stop_engaged"),
+      reason: "mothership_stop_engaged",
+    };
+  let reading: JackboySafetySnapshot;
   try {
-    if (deps.read) reading = await deps.read();
-    else {
-      if (process.env["JACKBOY_LINK_ENABLED"] !== "true") throw { stage: "link_disabled" };
-      const { readJackboySafetyState, assertPublicLinkOrigin } = await import("./jackboy-link.server");
-      const c = {
-        origin: process.env["JACKBOY_LINK_ORIGIN"] || "",
-        clientId: process.env["OMNI_LINK_CLIENT_ID"] || "",
-        projectId: process.env["OMNI_LINK_PROJECT_ID"] || "",
-        bootstrap: process.env["OMNI_LINK_BOOTSTRAP_KEY"] || "",
-        secret: process.env["OMNI_LINK_HMAC_SECRET"] || "",
-      };
-      assertPublicLinkOrigin(c.origin);
-      reading = await readJackboySafetyState(c, deps.linkOptions);
-    }
+    reading = deps.read ? await deps.read() : await readLiveSafety(deps.linkOptions);
   } catch (error) {
-    const reason = failureReason(error);
-    return { checked: true, state: await failure(admin, reason), reason };
+    const reason = safetyFailureReason(error);
+    return { checked: true, state: await recordSafetyFailure(admin, reason), reason };
   }
-  const state = await record(admin, {
-    _source: "poll",
-    _paused: reading.paused as boolean,
-    _code_stop: reading.codeStop as boolean,
-    _code_enabled: reading.codeEnabled as boolean,
-    _cancellation: reading.cancellation as string,
-    _observed_at: reading.observedAt,
-    _expires_at: reading.expiresAt,
-    _proof_digest: reading.proofDigest,
-    _nonce: null as never,
-    _reason: "signed safety-state read",
-  });
+  const state = await recordSafetySnapshot(admin, reading);
   return { checked: true, state, reason: "verified" };
 }
 
