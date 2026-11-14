@@ -1312,6 +1312,9 @@ const activationInput = z
   })
   .strict();
 
+/** Ledger rows read for today's total; more than this fails closed rather than undercounting. */
+const LEDGER_ROWS = 5000;
+
 /** Mothership-side cap and metering checks before Step 10 activation (values are owner caps). */
 async function autonomyPreflight(context: Ctx): Promise<string | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -1323,7 +1326,7 @@ async function autonomyPreflight(context: Ctx): Promise<string | null> {
       .from("omni_spend_ledger")
       .select("cents")
       .gte("created_at", new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").toISOString())
-      .limit(5000),
+      .limit(LEDGER_ROWS + 1),
   ]);
   if (agents.error) return "agent budgets could not be read.";
   const over = (agents.data ?? []).find(
@@ -1333,7 +1336,14 @@ async function autonomyPreflight(context: Ctx): Promise<string | null> {
   );
   if (over)
     return `${over.display_name}'s budget exceeds the owner caps ($1 per task, $5 per day, $10 total).`;
+  const enrolled = (agents.data ?? []).filter((a) => a.status === "enrolled");
+  const combinedDay = enrolled.reduce((sum, a) => sum + (a.budget_day_cents ?? 0), 0);
+  const combinedTotal = enrolled.reduce((sum, a) => sum + (a.budget_total_cents ?? 0), 0);
+  if (combinedDay > 500) return "the enrolled agents' combined daily budgets exceed the $5 daily cap.";
+  if (combinedTotal > 1000) return "the enrolled agents' combined total budgets exceed the $10 cap.";
   if (ledger.error) return "the spend ledger (metering) could not be read.";
+  if ((ledger.data ?? []).length > LEDGER_ROWS)
+    return "today's spend ledger is too long to total safely here.";
   const today = (ledger.data ?? []).reduce((sum, r) => sum + (r.cents ?? 0), 0);
   if (today >= 500) return "today's recorded spend has reached the $5 daily limit.";
   return null;
