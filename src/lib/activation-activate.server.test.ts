@@ -52,7 +52,7 @@ describe("Step 9/10 activation", () => {
     const d = deps({ connect: vi.fn().mockRejectedValue(new JackboyLinkError("t", "timeout", { limitMs: 5000 })) });
     const r = await runActivation("live_link", ATTEMPT, d);
     expect(r).toMatchObject({ ok: false, reason: "timeout" });
-    expect(d.finish.mock.calls[0]![2]).toBe(false);
+    expect(vi.mocked(d.finish).mock.calls[0]![2]).toBe(false);
   });
   it("still activates the link when the safety read fails, recording unknown (fail closed)", async () => {
     const d = deps({ safety: vi.fn().mockRejectedValue(new Error("503")) });
@@ -94,7 +94,7 @@ describe("Step 9/10 activation", () => {
       expect(r.blockers).toContain("Jackboy CODE Emergency Stop is engaged.");
       expect(r.blockers.join(" ")).toContain("No OMNI executor");
     }
-    const evidence = d.finish.mock.calls[0]![4] as Record<string, unknown>;
+    const evidence = vi.mocked(d.finish).mock.calls[0]![4] as Record<string, unknown>;
     expect(evidence["caps"]).toEqual({ perCallUsd: 0.5, perTaskUsd: 1, dailyUsd: 5, openaiCapUsd: 10 });
   });
   it("autonomy: Mothership cap/metering preflight blocks before anything is begun", async () => {
