@@ -185,11 +185,18 @@ async function currentSelfTestReadiness(context: {
   let identityValid = false;
   let identityIssues: Awaited<ReturnType<typeof import("./jackboy-link.server").configuredLinkIdentityIssues>> = [];
   try {
-    const { configuredLinkIdentityValid, configuredLinkIdentityIssues } = await import("./jackboy-link.server");
+    const { configuredLinkIdentityValid } = await import("./jackboy-link.server");
     identityValid = configuredLinkIdentityValid();
-    identityIssues = identityValid ? [] : configuredLinkIdentityIssues();
   } catch {
     identityValid = false;
+  }
+  if (!identityValid) {
+    try {
+      const { configuredLinkIdentityIssues } = await import("./jackboy-link.server");
+      identityIssues = configuredLinkIdentityIssues();
+    } catch {
+      identityIssues = [];
+    }
   }
   return selfTestReadiness({
     deploymentMode: currentDeployment().mode,
