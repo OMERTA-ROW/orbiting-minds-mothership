@@ -243,7 +243,7 @@ def main():
         assert ok(finish('live_link', A2)) == 'active'
         sql(decide(10, 'approved', ", spend_confirmations=jsonb_build_object('openai_cap_usd',10,'daily_limit_usd',5)"))
         checks += 1; assert json.loads(begin('autonomy', A3))["ok"] is True
-        # Link fails during the autonomy attempt -> autonomy rolled back.
+        # Re-activating an active link is a no-op (no second record).
         checks += 1; assert json.loads(begin('live_link', A1))["duplicate"] is True
         assert ok(finish('autonomy', A3)) == 'active'
         assert sql("SELECT public.activation_autonomy_authorized();") == 't'
