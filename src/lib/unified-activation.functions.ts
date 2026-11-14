@@ -55,6 +55,7 @@ export const getUnifiedExecutionState = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await owner(context);
     try {
+      await (await import("./unified-stop.server")).reconcileTerminalStop();
       const state = await readExecutionState();
       const active = await context.supabase.rpc("activation_effective", { _kind: "autonomy" });
       const ready = !active.error && active.data === true && state.executionReady;
@@ -252,19 +253,24 @@ export const runAuthorizedPlan = createServerFn({ method: "POST" })
       typeof databasePermitStore
     >[0]["rpc"];
     let cancellation: Promise<unknown> | null = null;
+    let halted = false;
+    let monitor: ReturnType<typeof setInterval> | undefined;
+    const halt = () => {
+      if (halted) return;
+      halted = true;
+      cancellation = readExecutionState("disarm").then((state) => {
+        if (state.armed || state.running || state.cancellationPending)
+          throw new Error("Cancellation remains unverified");
+      });
+      void cancellation.catch(() => {});
+    };
     const holder = new PermitHolder(
       { jobId: data.jobId, kind: "autonomous", digest, estimateUsd: 0.01 },
       {
         link,
         store: databasePermitStore({ rpc }),
         approvalId: process.env["OMNI_LINK_APPROVAL_ID"] ?? null,
-        onHalt: () => {
-          cancellation = signedExecutorRequest(origin, secret, "cancel", {
-            jobId: data.jobId,
-            planSha256: digest,
-          });
-          void cancellation.catch(() => {});
-        },
+        onHalt: halt,
       },
     );
     try {
@@ -277,6 +283,30 @@ export const runAuthorizedPlan = createServerFn({ method: "POST" })
       await recordSafetySnapshot(supabaseAdmin, await link.safety());
       await holder.acquire();
       if (!holder.usable()) throw new Error("Upstream job permit is not usable");
+      const lease = async () => {
+        const local = await supabaseAdmin
+          .rpc("omni_execution_permit_live", { _job: data.jobId })
+          .abortSignal(AbortSignal.timeout(750));
+        if (local.error || local.data !== true || halted || !holder.usable())
+          throw new Error("Mothership Stop or permit blocks execution");
+        const state = await readExecutionState("lease", {
+          jobId: data.jobId,
+          planSha256: digest,
+        });
+        if (!state.allowed || !state.executionReady)
+          throw new Error("Mothership execution lease was refused");
+      };
+      await lease();
+      let checking = false;
+      monitor = setInterval(() => {
+        if (checking || halted) return;
+        checking = true;
+        void lease()
+          .catch(halt)
+          .finally(() => {
+            checking = false;
+          });
+      }, 250);
       const result = z
         .object({
           jobId: z.literal(data.jobId),
@@ -294,6 +324,8 @@ export const runAuthorizedPlan = createServerFn({ method: "POST" })
             .max(5),
         })
         .parse(await signedExecutorRequest(origin, secret, "run", plan));
+      clearInterval(monitor);
+      halted = true;
       if (cancellation) await cancellation;
       await holder.release();
       return result;
@@ -311,5 +343,9 @@ export const runAuthorizedPlan = createServerFn({ method: "POST" })
       throw new Error(
         "Plan response was not verified. Autonomy was disarmed and cancellation confirmed; no automatic retry.",
       );
+    } finally {
+      clearInterval(monitor);
+      halted = true;
+      await holder.release();
     }
   });

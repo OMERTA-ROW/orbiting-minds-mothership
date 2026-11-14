@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -68,6 +69,7 @@ def main():
         assert len(paths) == 1
         sql(paths[0].read_text())
         sql((ROOT / "drizzle/migrations/0057_bounded_executor_integration.sql").read_text())
+        sql((ROOT / "drizzle/migrations/0058_omni_stop_propagation.sql").read_text())
         sql(f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()); INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner');")
 
         def deny(text):
@@ -285,6 +287,47 @@ def main():
         checks += 1; assert json.loads(begin('live_link', A1))["duplicate"] is True
         assert ok(finish('autonomy', A3)) == 'active'
         assert sql("SELECT public.activation_autonomy_authorized();") == 't'
+        # Disposable fixture only: these acknowledgements stand in for authenticated peer proofs,
+        # never evidence that a deployed worker was actually cancelled.
+        ok(poll())
+        assert ok("SET ROLE service_role; " + permit(A1, kind="autonomous", pid=A2)) == 'issued'
+        checks += 1; assert sql(f"SET ROLE service_role; SELECT public.omni_execution_permit_live('{A1}');") == 't'
+        ok(owner("SELECT public.omni_terminal_engage_stop('Synthetic fixture Stop');"))
+        checks += 1; assert sql(f"SELECT status FROM public.jackboy_permits WHERE job_id='{A1}';") == 'revoked'
+        checks += 1; assert sql(f"SET ROLE service_role; SELECT public.omni_execution_permit_live('{A1}');") == 'f'
+        pending = sql("SET ROLE service_role; SELECT public.omni_stop_pending();")
+        checks += 1; assert pending
+        deny(owner("SELECT public.omni_terminal_release_stop('Unverified cancellation');"))
+        deny("SET ROLE service_role; " + permit(A1, kind="autonomous", pid=A2, renewals=1))
+        ok(owner("SELECT public.omni_terminal_engage_stop('Second synthetic fixture Stop');"))
+        ok(f"SET ROLE service_role; SELECT public.omni_stop_delivered({pending});")
+        checks += 1; assert sql("SET ROLE service_role; SELECT public.omni_stop_pending();") != ''
+        deny(owner("SELECT public.omni_terminal_release_stop('Older acknowledgement');"))
+        ok("SET ROLE service_role; SELECT public.omni_stop_delivered(public.omni_stop_pending());")
+        ok(owner("SELECT public.omni_terminal_release_stop('Synthetic verified peer acknowledgement');"))
+        checks += 1; assert sql(f"SET ROLE service_role; SELECT public.omni_execution_permit_live('{A1}');") == 'f'
+        deny("SET ROLE anon; SELECT public.omni_stop_delivered(1);")
+        deny("SET ROLE authenticated; SELECT public.omni_execution_permit_live(NULL);")
+        deny("SET ROLE authenticated; SELECT * FROM public.omni_stop_outbox;")
+        # Two actual connections: Stop holds its control lock while a new permit is requested.
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            stopped = workers.submit(sql, "BEGIN; " + owner(
+                "SELECT public.omni_terminal_engage_stop('Concurrent fixture Stop'); SELECT pg_sleep(0.5);"
+            ) + " COMMIT;")
+            for _ in range(100):
+                sleeping = sql("SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE pid<>pg_backend_pid() "
+                               "AND query LIKE '%Concurrent fixture Stop%' AND wait_event='PgSleep');")
+                if sleeping == 't':
+                    break
+                time.sleep(0.01)
+            else:
+                raise AssertionError("Concurrent Stop transaction did not acquire its lock")
+            refused = workers.submit(sql, "SET ROLE service_role; " + permit(A2, kind="autonomous", pid=A3), False)
+            stopped.result()
+            refused.result()
+        checks += 1; assert sql(f"SELECT count(*) FROM public.jackboy_permits WHERE job_id='{A2}';") == '0'
+        ok("SET ROLE service_role; SELECT public.omni_stop_delivered(public.omni_stop_pending());")
+        ok(owner("SELECT public.omni_terminal_release_stop('Synthetic concurrent peer acknowledgement');"))
         sql("UPDATE public.activation_approvals SET approval_expires_at=now()-interval '1 second' WHERE step=7;")
         assert eff('live_link') == 'f' and sql("SELECT public.activation_autonomy_authorized();") == 'f'
         deny(window)

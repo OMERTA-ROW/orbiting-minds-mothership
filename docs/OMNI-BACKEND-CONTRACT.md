@@ -150,9 +150,12 @@ OMNI is the motor; CODE is its terminal/coding engine. **Always-on** = the servi
 
 ## Unified activation and separate bounded executor (feature branch; not deployed)
 
-`feat/unified-activation` uses Mothership main **`ebd1b63`** as its immutable
-integration baseline and sole activation/permit authority. Approval flow **v10**
-extends upstream v9: approval records remain separate from effective activation.
+`feat/unified-activation` integrates Mothership main
+**`4c3094866722036ffe542568f1c25519a8e767da`** without rewriting the starting
+`fda80c5` history. Jackboy starts at `3f19d2e`, with main `9f30969` unchanged.
+Upstream activation/permits remain the sole authority. Approval flow **v11**
+distinguishes this integrated safety revision from upstream v10; approval records
+remain separate from effective activation.
 The default-on "Also activate" or explicit activation button invokes the backend;
 unticking it records an approval only and grants no effective execution authority.
 Step 9 persists an authorized connection in Jackboy and verifies its signed,
@@ -161,8 +164,9 @@ identity, spending enforcement and the separate executor's signed configuration,
 then persists configuration. Neither approval releases Emergency Stop, enables
 CODE, arms the executor or starts a plan.
 
-Upstream Mothership migrations **0053–0055** retain safety, activation and permit
-records; additive **0056_bounded_executor_integration.sql** prevents replacing an
+Upstream Mothership migrations **0053–0056** retain safety, activation, permit and
+per-job halt audit records. Published 0056 bytes and timestamp are unchanged; the
+unapplied feature migration is now **0057_bounded_executor_integration.sql**, preventing replacement of an
 unresolved remote attempt after 90 seconds and supplies service-only outcome
 recovery. There is no second Mothership activation table or finalizer. Only the service
 finalizer completes activation after actuation. Expiration, a concurrent
@@ -185,6 +189,18 @@ effective **Blocked / Configured / Running** state. A stale/unreadable signed re
 is Blocked, never an invented live state. Cancellation pending is not confirmed
 termination. Disarm, Stop and reconciliation never auto-release either Stop.
 
+Mothership **0058_omni_stop_propagation.sql** serializes permit admission with
+local Stop, revokes local permits and queues a durable, generation-bound remote
+disarm. Stop buttons/commands await verified cancellation before reporting success;
+unverified delivery stays pending and blocks Stop release. Authenticated status
+reads retry only that safety reduction, never a plan. Jackboy **0065** additionally
+requires a one-second exact-job Mothership liveness lease. Every 250 ms Mothership
+rechecks its local Stop/permit before renewing it. Missing/lapsed leases cancel
+admission/permission and cannot resume. Thus process/network loss cannot leave a
+previously acquired permit executing until its 20-second renewal. Detection is
+bounded by lease expiry, polling and transport deadlines, not instantaneous
+distributed delivery.
+
 ### Executor scope and trust boundary
 
 `services/omni-autonomous/executor.mjs` is a new, separate Node 26/Linux service
@@ -197,12 +213,17 @@ claimed durably once in Jackboy, and never resumed or retried automatically.
 
 The implementation requests bubblewrap network/process/filesystem isolation,
 non-root execution, a scrubbed environment and CPU/memory/process/file/output
-ceilings. Actual Linux enforcement remains an independent verification prerequisite.
+ceilings. Per-process ceilings do not replace a staging service/container memory
+budget. The launcher drops host UID/GID to 65534 before bubblewrap; scratch remains
+private to that UID, not world-writable. Actual Linux enforcement on the exact
+staging image/kernel remains an independent verification prerequisite.
 Before each command and every 250 ms during a command, authenticated
 Jackboy permission is rechecked (1.5-second transport deadline; replies older than
 2 seconds are refused). Unknown safety aborts; cancellation waits for process
 termination, including descendants. Thus remote loss detection is bounded, not
-instantaneous propagation. No network/model/provider calls are supported inside
+instantaneous propagation. An instance with no matching active job refuses an
+acknowledgement; it cannot prove termination on another instance or after restart.
+No network/model/provider calls are supported inside
 plans. `providerCostUsd: 0` measures that absence, **not** infrastructure cost.
 The executor receives no Supabase, production link bootstrap, GitHub, provider or manual
 sandbox credentials. Manual diagnostics keep their existing independent policy;
@@ -211,7 +232,7 @@ no manual terminal gate is relaxed by this feature.
 Before dispatch Mothership records fresh session-signed safety and acquires an
 upstream `PermitHolder` permit, mirrored by `databasePermitStore`. The executor
 additionally needs Jackboy's durable single-use claim of the exact plan hash.
-The lease renews every 20 seconds, cannot extend the plan's deadline, and never
+The permit renews every 20 seconds, cannot extend the plan's deadline, and never
 resumes after lapse. The $0.01 permit estimate is an authorization reservation,
 not measured spend; plans have no provider capability. CODE permits are explicitly
 refused by this bounded lane rather than rerouted around existing CODE gates.
@@ -220,11 +241,26 @@ endpoint that differs from Jackboy's signed current configuration. Any endpoint,
 image or settings change requires disarming and repeating independent verification;
 release labels are not deployment SHA/image attestations.
 
+### Railway staging dependencies (preparation only)
+
+Use distinct staging databases/projects and managed staging secrets; do not copy
+production keys into a test or the worker. Values are intentionally not recorded.
+
+| Service                  | Required configuration / dependency                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Both web apps            | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`; matching build-time `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`; Railway Node-server artifact (`NITRO_PRESET=node-server`), `PORT`, existing owner/MFA/passkey enrollment.                                                                                                                                                                                                                            |
+| Shared signed link       | Matching `OMNI_LINK_CLIENT_ID`, `OMNI_LINK_PROJECT_ID`, `OMNI_LINK_BOOTSTRAP_KEY`, `OMNI_LINK_HMAC_SECRET`; current `OMNI_LINK_APPROVAL_ID` and approval expiry covering Step 7. Jackboy also requires `OMNI_LINK_OWNER_ID`, `OMNI_LINK_ENABLED=true` and its saved owned-project approval. Mothership requires `JACKBOY_LINK_ENABLED=true`, `JACKBOY_LINK_ORIGIN`, `OMNI_LINK_APPROVAL_EXPIRES_AT`. Existing protocol-runner settings and signed Step 8 self-test remain prerequisites. |
+| Mothership + Jackboy     | Dedicated public HTTPS `.up.railway.app` `OMNI_EXECUTOR_ORIGIN`, `OMNI_EXECUTOR_CONTROL_SECRET`, reviewed `OMNI_AUTONOMY_REVIEWED_RELEASE`. Never reuse protocol-runner/manual origins.                                                                                                                                                                                                                                                                                                  |
+| Jackboy + bounded worker | Separate matching `OMNI_EXECUTOR_PERMISSION_SECRET` / `OMNI_EXECUTOR_PERMISSION_TOKEN`; worker additionally needs `OMNI_EXECUTOR_CONTROL_SECRET`, `JACKBOY_LINK_ORIGIN`, `OMNI_LINK_CLIENT_ID`, `OMNI_AUTONOMY_REVIEWED_RELEASE`, `PORT` and initially `OMNI_AUTONOMOUS_ENABLED=false`. No Supabase, bootstrap, provider, GitHub or manual-sandbox keys on the worker.                                                                                                                   |
+| Existing CODE dependency | Preserve owner-approved workflow/repository SHA pins, runner and CODE environment policy, enrollment/passkeys, gateway verification, pricing, spend meter and provider hard-cap proof. Exact existing gateway configuration is specified in Jackboy `docs/CODE-PROVIDER-GATEWAY.md` and `docs/CODE-LIVE-ACCEPTANCE.md`; Step 10 refuses missing prerequisites and does not enable these lanes.                                                                                           |
+| Database history         | Owner inspects actual hosted journals first. Apply only missing, reviewed Mothership 0053–0058 and Jackboy 0064–0065 after explicit authorization and backups. Never reapply, edit or overwrite published migration history. All new migrations remain unapplied here.                                                                                                                                                                                                                   |
+| Linux worker             | Build the dedicated Dockerfile; Node 26, Python3, bubblewrap, util-linux/prlimit, host UID/GID transition and permitted unprivileged user/PID/mount/network namespaces. No privileged container or weakened host policy. Railway namespace support, exact image identity, resource sizing, service TLS, secret separation and sub-second lease-renewal latency must be verified on staging; otherwise execution stays blocked.                                                           |
+
 ### Exact remaining owner actions (none performed by this branch)
 
 1. Review both branches, migration journals and backup/rollback plans. Separately
    authorize isolated staging deployment and migrations before any production work.
-   Review the selected upstream 0053–0055 plus additive 0056 and Jackboy 0064.
+   Review upstream 0053–0056 plus additive 0057–0058 and Jackboy 0064–0065.
    The separate intelligence branch also has a historical 0053: reconcile that
    branch's migration ordering before combining it; none is applied here.
 2. Provision the dedicated Linux executor using its Dockerfile, initially
@@ -263,25 +299,29 @@ release labels are not deployment SHA/image attestations.
 ### Evidence and deployment boundary
 
 All implementation and disposable tests remain on isolated feature branches.
-Neither new migration was applied to a hosted database by this work. No merge, push, deployment,
-owner approval, Stop release or production activation occurred. Docker's daemon is
-unavailable in this macOS environment; real Linux isolation and live cross-system
-connection/cancellation remain **unverified**, and the new executor remains disabled.
+No migration was applied to a hosted database by this work. Feature branches are
+pushed for review; no main-branch merge, deployment, owner approval, Stop release
+or production activation occurred. Docker's daemon is unavailable on this macOS
+host; real Linux checks run instead in a credential-free ephemeral GitHub-hosted VM,
+never a mocked replacement. Live cross-system connection/cancellation and the
+exact Railway worker image remain **unverified**; the executor stays disabled.
 Public build markers identify deployed screens only, not authenticated safety or
-our uncommitted branch. Verification results below are local fixture evidence.
+feature-branch runtime. Verification results below distinguish local and Linux evidence.
 
 | Verification                                                    | Result                                                                              |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Mothership focused Vitest, Node 24.22.3                         | **210 passed**, 11 files                                                            |
-| Mothership activation / safety / approval disposable SQL        | **89 / 36 / 47 passed**                                                             |
-| Bounded executor fixtures, Node 26.13.1                         | **7 passed**                                                                        |
-| Actual Linux isolation/resource/descendant cancellation         | **1 skipped**, not verified                                                         |
+| Mothership focused Vitest, Node 24.22.3                         | **224 passed**, 13 files                                                            |
+| Mothership activation / safety / approval disposable SQL        | **134 / 36 / 47 passed**                                                            |
+| Bounded executor fixtures, Node 26.13.1                         | **8 passed**                                                                        |
+| Actual Linux isolation/resource/descendant cancellation         | Final CI evidence pending; never count macOS skips as a pass                        |
 | Jackboy focused Vitest, Node 26.13.1                            | **113 passed**, 8 files                                                             |
-| Jackboy full-chain disposable PostgreSQL authority/permit tests | **9 passed**                                                                        |
+| Jackboy full-chain disposable PostgreSQL authority/permit tests | **12 passed**                                                                       |
 | Both apps                                                       | Typecheck, changed-file lint/format, whitespace and Railway Node-server builds pass |
 
-Generated Supabase types retain their existing generator formatting; their lint
-check disables only the pre-existing formatting rule, and typecheck includes them.
+CI exposed 3,717 formatting-only lint errors, including upstream activation
+regressions and generated Supabase types. The existing formatter repairs exactly
+those files; no lint rule or CI gate is disabled. Local repository lint now has
+zero errors (36 pre-existing warnings); typecheck includes generated types.
 Checks cover concurrent claims/admission, expired approvals/plans/verification,
 session scope, signed stale replies, immutable jobs, lease lapse/release, audit
 rollback, unverified compensation, lost finalization acknowledgements and Stop
@@ -291,7 +331,7 @@ Exact focused Mothership commands (use Node 24 for Vitest/typecheck/build, Node 
 for the separate executor):
 
 ```sh
-node node_modules/vitest/vitest.mjs run src/lib/{activation-activate.server,unified-activation.functions,activation-approvals.functions,jackboy-permit.server,jackboy-safety.server,jackboy-link.server,live-link,omni-sandbox,omni-terminal}.test.ts src/test/{activation-approvals,approval-flow-build}.test.tsx
+node node_modules/vitest/vitest.mjs run src/lib/{activation-activate.server,unified-activation.functions,unified-stop.server,omni-terminal.functions,activation-approvals.functions,jackboy-permit.server,jackboy-safety.server,jackboy-link.server,live-link,omni-sandbox,omni-terminal}.test.ts src/test/{activation-approvals,approval-flow-build}.test.tsx
 python3 src/test/test_omni_activation_sql.py
 python3 src/test/test_jackboy_safety_sql.py
 python3 src/test/test_activation_approvals_sql.py
@@ -306,8 +346,21 @@ superuser is `postgres`, never a hosted database:
 `STAGING_PG_URL=postgresql://postgres@127.0.0.1:55483/postgres STAGING_PG_MODULE_FROM=/path/to/local/pg-tests/package.json node --test tests/omni-execution-pg.test.mjs`.
 The helper replays migrations into throwaway databases and drops only those fixtures.
 
-Read-only public deployment snapshot: Mothership serves approval flow **v9**, not
-this branch's **v10**. Jackboy's `/api/public/version` reports null commit/tree/dirty
+Read-only public deployment snapshot **2026-11-14T04:49:16Z**: Mothership serves approval flow **v9**, not
+this branch's **v11**. Jackboy's `/api/public/version` reports null commit/tree/dirty
 fields, so its deployed source SHA cannot be proven. Neither marker verifies
 authenticated connection, configuration, running state or cancellation. No live
 activation or execution-control state was inferred from them.
+
+### Independent security review and disposition
+
+The independent read-only review of starting commits `fda80c5` / `3f19d2e`
+reported two medium findings (both confidence 10/10): Mothership Stop could leave
+an acquired permit executing until renewal; an unowned executor instance could
+falsely acknowledge cancellation. The owner selected fixing both.
+The durable Stop outbox/serialized admission/one-second lease and the
+unknown-instance refusal address them. Tests cover two real concurrent PostgreSQL
+connections for local Stop versus initial permit admission, concurrent Jackboy
+permit/lease/Stop and issuance/release, actual lease lapse, and a two-instance
+worker regression. This is not an independent certification of all revised code
+and does not substitute for the first authenticated staging execution/Stop drill.

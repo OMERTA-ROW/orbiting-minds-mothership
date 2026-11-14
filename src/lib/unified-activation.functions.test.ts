@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   signed: vi.fn(),
   owner: vi.fn(),
   approvalMs: 3_600_000,
+  localAllowed: true,
 }));
 vi.mock("@tanstack/react-start", () => ({
   createServerFn: () => {
@@ -96,14 +97,24 @@ const plan = () => ({
 beforeEach(() => {
   mocks.calls.length = 0;
   mocks.approvalMs = 3_600_000;
+  mocks.localAllowed = true;
   vi.stubEnv("OMNI_AUTONOMY_REVIEWED_RELEASE", "omni-bounded-plan-1");
   vi.stubEnv("OMNI_EXECUTOR_ORIGIN", "https://executor.fixture.invalid");
   vi.stubEnv("OMNI_EXECUTOR_CONTROL_SECRET", "c".repeat(32));
-  mocks.rpc.mockImplementation(async (name: string) => ({
-    error: null,
-    data:
-      name === "activation_effective" ? true : name === "jackboy_permit_record" ? "issued" : null,
-  }));
+  mocks.rpc.mockImplementation((name: string) => {
+    const result = Promise.resolve({
+      error: null,
+      data:
+        name === "activation_effective"
+          ? true
+          : name === "jackboy_permit_record"
+            ? "issued"
+            : name === "omni_execution_permit_live"
+              ? mocks.localAllowed
+              : null,
+    });
+    return Object.assign(result, { abortSignal: () => result });
+  });
   mocks.state.mockImplementation(async (operation = "safety") => {
     mocks.calls.push(operation);
     return {
@@ -111,6 +122,7 @@ beforeEach(() => {
       executorRelease: "omni-bounded-plan-1",
       executorOrigin: "https://executor.fixture.invalid",
       executionReady: true,
+      allowed: true,
       cancellationPending: false,
       armed: operation !== "disarm",
     };
@@ -143,11 +155,51 @@ afterEach(() => {
 
 it("authorizes the exact hash, records fresh safety and acquires the upstream permit before dispatch", async () => {
   expect(await invoke(plan())).toMatchObject({ jobId, outcome: "completed", providerCostUsd: 0 });
-  expect(mocks.calls).toEqual(["safety", "authorize", "safety", "permit", "run", "release"]);
+  expect(mocks.calls).toEqual([
+    "safety",
+    "authorize",
+    "safety",
+    "permit",
+    "lease",
+    "run",
+    "release",
+  ]);
   expect(mocks.rpc).toHaveBeenCalledWith(
     "jackboy_permit_record",
     expect.objectContaining({ _job: jobId, _kind: "autonomous" }),
   );
+});
+it("a Stop after permit acquisition refuses the initial lease and dispatch", async () => {
+  mocks.localAllowed = false;
+  await expect(invoke(plan())).rejects.toThrow("no automatic retry");
+  expect(mocks.calls).toContain("disarm");
+  expect(mocks.calls).not.toContain("lease");
+  expect(mocks.signed).not.toHaveBeenCalled();
+});
+it("an active plan observes local Stop without waiting for the 20-second permit renewal", async () => {
+  vi.useFakeTimers();
+  let started!: () => void;
+  let complete!: (result: unknown) => void;
+  const dispatched = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  mocks.signed.mockImplementation(() => {
+    started();
+    return new Promise((resolve) => {
+      complete = resolve;
+    });
+  });
+  const running = invoke(plan());
+  try {
+    await dispatched;
+    mocks.localAllowed = false;
+    await vi.advanceTimersByTimeAsync(300);
+    expect(mocks.calls).toContain("disarm");
+    complete({ jobId, outcome: "cancelled", providerCostUsd: 0, outputs: [] });
+    expect(await running).toMatchObject({ outcome: "cancelled" });
+  } finally {
+    vi.useRealTimers();
+  }
 });
 it("stale owner authentication and ineffective upstream activation start nothing", async () => {
   await expect(invoke(plan(), false)).rejects.toThrow("Fresh owner");

@@ -30,7 +30,9 @@ test(
           "-c",
           `import os,socket,errno,sys
 assert os.getuid()==65534 and os.getgid()==65534
-assert set(os.environ).issubset({'PATH','LC_CTYPE'})
+assert set(os.environ).issubset({'PATH','LC_CTYPE','PWD'}),sorted(os.environ)
+assert os.environ['PATH']=='/usr/bin:/bin'
+assert os.environ.get('PWD','/workspace')=='/workspace'
 for kind,host in zip(['pid','mnt','net'],sys.argv[1:]):
  assert os.readlink('/proc/self/ns/'+kind)!=host
 for path in ['/app','/root','/home/runner','/etc']:
@@ -66,7 +68,9 @@ test(
 try: bytearray(600*1024*1024); raise AssertionError('memory limit missing')
 except MemoryError: pass
 try:
- with open('/workspace/oversize','wb',buffering=0) as f: f.write(b'x'*(1048576+4096))
+ with open('/workspace/oversize','wb',buffering=0) as f:
+  assert f.write(b'x'*1048576)==1048576
+  f.write(b'x')
  raise AssertionError('file size limit missing')
 except OSError as e: assert e.errno==errno.EFBIG
 assert os.stat('/workspace/oversize').st_size<=1048576
