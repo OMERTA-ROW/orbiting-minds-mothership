@@ -193,13 +193,17 @@ async function latestLinkEvents(
 async function jackboySafetyRow(
   db: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0],
 ): Promise<SafetyRow | null> {
-  const { data, error } = await db
-    .from("jackboy_safety_state")
-    .select("state,paused,code_stop,code_enabled,cancellation,observed_at,expires_at,source,reason,recorded_at")
-    .eq("id", 1)
-    .maybeSingle();
-  if (error || !data) return null;
-  return data as SafetyRow;
+  try {
+    const { data, error } = await db
+      .from("jackboy_safety_state")
+      .select("state,paused,code_stop,code_enabled,cancellation,observed_at,expires_at,source,reason,recorded_at")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data as SafetyRow;
+  } catch {
+    return null;
+  }
 }
 
 /** Cloud sandbox (manual OMNI Terminal workspace) settings: presence booleans only. */
