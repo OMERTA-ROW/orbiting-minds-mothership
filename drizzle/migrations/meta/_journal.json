@@ -393,6 +393,13 @@
       "when": 1794621273090,
       "tag": "0055_omni_activation_permits",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1794625979388,
+      "tag": "0056_jackboy_halt_audit",
+      "breakpoints": true
     }
   ]
 }

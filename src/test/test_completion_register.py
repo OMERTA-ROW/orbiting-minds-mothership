@@ -46,8 +46,8 @@ class CompletionRegisterTests(unittest.TestCase):
     def setUp(self):
         self.register = json.loads((ROOT / "completion-register.json").read_text())
 
-    def test_all_fifteen_milestones_and_ninety_three_requirements_have_evidence_fields(self):
-        self.assertEqual(validate(self.register), 93)
+    def test_all_fifteen_milestones_and_ninety_five_requirements_have_evidence_fields(self):
+        self.assertEqual(validate(self.register), 95)
         self.assertEqual(len(self.register["blueprint_crosswalk"]), 26)
 
     def test_demo_or_blocked_item_prevents_whole_step_verification(self):

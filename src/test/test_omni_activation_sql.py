@@ -63,6 +63,10 @@ def main():
             paths = list((ROOT / "drizzle/migrations").glob("*_omni_activation_permits.sql"))
             assert len(paths) == 1
             sql(paths[0].read_text())
+        halt_audit = os.environ.get("OMNI_HALT_AUDIT_SQL")
+        paths = [Path(halt_audit)] if halt_audit else list((ROOT / "drizzle/migrations").glob("*_jackboy_halt_audit.sql"))
+        assert len(paths) == 1
+        sql(paths[0].read_text())
         sql(f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()); INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner');")
 
         def deny(text):
@@ -83,8 +87,8 @@ def main():
             return f"SET ROLE service_role; SELECT public.activation_activation_finish('{kind}','{attempt}',{str(good).lower()},'{reason}','{{}}'::jsonb);"
         def eff(kind):
             return sql(f"SELECT public.activation_effective('{kind}');")
-        def poll(paused="false", stop="false", allowed="true", manual="true", observed="now()", expires="now()+interval '30 seconds'"):
-            return (f"SELECT public.jackboy_safety_record_v2('poll',{paused},{stop},true,{allowed},{manual},NULL,now()+interval '1 hour',0,NULL,"
+        def poll(paused="false", stop="false", allowed="true", manual="true", observed="now()", expires="now()+interval '30 seconds'", code="true", blocked="NULL"):
+            return (f"SELECT public.jackboy_safety_record_v2('poll',{paused},{stop},{code},{allowed},{manual},{blocked},now()+interval '1 hour',0,NULL,"
                     f"{observed},{expires},'{D}',NULL,'t');")
         def event(nonce, paused="false", stop="true"):
             return f"SELECT public.jackboy_safety_record('event',{paused},{stop},true,NULL,now(),NULL,'{D}','{nonce}','t');"
@@ -126,6 +130,16 @@ def main():
         assert ok(finish('live_link', A1)) == 'superseded'  # idempotent, no double record
         checks += 1; assert json.loads(begin('live_link', A3))["duplicate"] is True
 
+        # CODE needs persisted Step 10 proof first: link active + fresh clear Jackboy reading
+        # still admits nothing autonomous (no always-on, window, permit or agent job).
+        assert ok(poll()) == 'clear'
+        assert sql("SELECT public.jackboy_safety_clear();") == 't'
+        deny(always_on); deny(window)
+        pre = job()
+        deny("SET ROLE service_role; " + permit(pre))
+        assert sql("SELECT count(*) FROM public.jackboy_permits;") == '0'
+        assert ok("SET ROLE service_role; SELECT public.jackboy_safety_record('failure',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'test_reset');") == 'unknown'
+
         # Step 10: needs approval with cap confirmations, then activation; starts nothing.
         checks += 1; assert json.loads(begin('autonomy', A1))["reason"] == "step10_not_approved"
         sql(decide(10, 'approved', ", spend_confirmations=jsonb_build_object('openai_cap_usd',10,'daily_limit_usd',5,'confirmed_at',now())"))
@@ -142,6 +156,11 @@ def main():
         assert ok(poll(allowed="false")) == 'clear'
         assert sql("SELECT public.jackboy_safety_clear();") == 'f'
         deny(window)
+        # Jackboy CODE setting off (signed reading, blockedBy code_disabled): CODE and permits refused.
+        assert ok(poll(code="false", allowed="false", blocked="'code_disabled'")) == 'clear'
+        assert sql("SELECT code_enabled::text||'/'||blocked_by FROM public.jackboy_safety_state WHERE id=1;") == 'false/code_disabled'
+        deny(always_on); deny(window)
+        deny("SET ROLE service_role; " + permit(pre))
         # Jackboy allows: windows and CODE always-on admitted; leasing still needs a permit.
         assert ok(poll()) == 'clear'
         ok(window); ok(always_on)
@@ -175,6 +194,7 @@ def main():
         assert sql(f"SELECT status FROM public.omni_agent_jobs WHERE id='{mj}';") == 'running'  # manual untouched
         ok(manual_job)  # CODE stop does not block the manual terminal
         deny(permit(j, renewals=2))  # a revoked permit is never renewed
+        deny(permit(job()))  # no new permit while the CODE Emergency Stop is engaged
         deny(window); deny(always_on)
         # Releasing in Jackboy and a new clear reading restarts nothing.
         assert ok(poll()) == 'clear'
@@ -260,10 +280,20 @@ def main():
         deny("SET ROLE anon; SELECT public.activation_activation_revoke('live_link');")
         # Audit trail present; owner can read activations and permits, anon cannot.
         assert int(sql("SELECT count(*) FROM public.razul_control_audit WHERE record_type IN ('activation','jackboy_permit');")) >= 10
+        # Per-job audit evidence: activations, permit issue/lapse, the stop, and each halt-revoked permit.
+        actions = set(sql("SELECT string_agg(DISTINCT action, ',') FROM public.razul_control_audit;").split(","))
+        for a in ["activation_begin", "activation_active", "activation_failed", "activation_revoked",
+                  "activation_refused_step10_not_approved", "permit_issued", "permit_lapsed",
+                  "permit_revoked_by_halt", "omni_halt_stopped_work", "jackboy_safety_engaged"]:
+            checks += 1; assert a in actions, a
+        checks += 1; assert sql(f"SELECT count(*) FROM public.razul_control_audit WHERE action='permit_revoked_by_halt' AND record_id='{j}';") == '1'
+        checks += 1; assert sql("SELECT count(*) FROM public.razul_control_audit WHERE action='omni_halt_stopped_work' AND record_id LIKE 'code=1 %';") == '1'
+        checks += 1; assert sql("SELECT count(*) FROM public.razul_control_audit WHERE actor_id IS NULL AND action LIKE 'permit_%' AND record_type <> 'jackboy_permit';") == '0'
+
         checks += 1; assert sql(owner("SELECT count(*) FROM public.activation_activations;")) == '2'
         deny("SET ROLE anon; SELECT * FROM public.jackboy_permits;")
 
-        print(f"PASS: {checks} isolated SQL checks: Step 9/10 activation (fresh MFA, single attempt, idempotent, revision-bound, rollback on failure/expiry/approval change), Jackboy safety admission, permits (caps, expiry, single job, no resume), stop/lapse/stale halts, manual terminal only refused by a verified Kill Switch. No hosted fixtures.")
+        print(f"PASS: {checks} isolated SQL checks: Step 9/10 activation (fresh MFA, single attempt, idempotent, revision-bound, rollback on failure/expiry/approval change), Jackboy safety admission, permits (caps, expiry, single job, no resume), stop/lapse/stale halts with per-job audit, CODE refused without Step 10 proof or with Jackboy CODE off, manual terminal only refused by a verified Kill Switch. No hosted fixtures.")
     finally:
         if started: command(["pg_ctl", "-D", str(base / "db"), "-m", "immediate", "-w", "stop"])
         shutil.rmtree(base)

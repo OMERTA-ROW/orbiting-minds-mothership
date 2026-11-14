@@ -93,15 +93,22 @@ export function liveLinkStatus(input: LiveLinkInput): LiveLinkStatus {
 }
 
 export type OnOff = "on" | "off" | "unknown";
+export type RunState = "not_configured" | "configured_blocked" | "armed" | "running";
 export type StopState = "engaged" | "released" | "unknown";
 
 export interface SystemStates {
   /** Step 9 activation: configured = in effect; connected = also a signed exchange in the last 15 min. */
   link: { state: "not_configured" | "configured" | "connected"; detail: string };
-  /** Step 10 activation. "running" only when the database shows open autonomy windows or agent jobs. */
-  autonomous: { state: "not_configured" | "configured_blocked" | "running"; blockers: string[] };
+  /**
+   * Step 10 activation. configured = persisted owner activation in effect; armed = configured and
+   * every database/signed gate passes now (still needs an executor and a per-job permit);
+   * "running" only when the database shows open autonomy windows or agent jobs.
+   */
+  autonomous: { state: RunState; blockers: string[] };
   /** CODE through OMNI. "running" only when the database shows leased/running CODE jobs. */
-  code: { state: "not_configured" | "configured_blocked" | "running"; blockers: string[] };
+  code: { state: RunState; blockers: string[] };
+  /** The single next owner action (or why none exists), in plain language. */
+  nextAction: string;
   emergencyStop: { jackboy: StopState; mothership: StopState };
   killSwitch: OnOff;
 }
@@ -135,25 +142,43 @@ export function systemStates(i: SystemInput): SystemStates {
   if (!i.safety.clear) common.push(`Jackboy safety: ${i.safety.label}.`);
   if (!i.linkEffective) common.push("Live link (Step 9) not activated.");
   if (i.running.readable === false) common.push("Running work could not be read here.");
-  const autonomousBlockers = [...common, "No OMNI executor is connected."];
-  const codeBlockers = [...common];
-  if (i.safety.codeEnabled !== "on") codeBlockers.push(`Jackboy CODE setting ${i.safety.codeEnabled}.`);
-  codeBlockers.push("Each CODE job also needs its own Jackboy permit; no OMNI executor is connected.");
+  const autonomousGates = [...common];
+  const codeGates = [...common];
+  if (i.safety.codeEnabled !== "on") codeGates.push(`Jackboy CODE setting ${i.safety.codeEnabled}.`);
+  const autonomousBlockers = [...autonomousGates, "No OMNI executor is connected."];
+  const codeBlockers = [...codeGates, "Each CODE job also needs its own Jackboy permit; no OMNI executor is connected."];
+  const runState = (count: number, gates: string[]): RunState =>
+    count > 0 ? "running" : !i.autonomyEffective ? "not_configured" : gates.length === 0 ? "armed" : "configured_blocked";
+  const autonomousState = runState(i.running.windows + i.running.agentJobs, autonomousGates);
+  const notActivated = "Step 10 autonomy authorization is not activated.";
+  let nextAction: string;
+  if (!i.linkEffective)
+    nextAction = i.liveLink.canCheck
+      ? "Click Activate live link (Step 9) with a fresh two-step code. It sends one signed handshake and one safety read; nothing runs."
+      : `Activate live link is not available yet: ${i.liveLink.blocker ?? "a Mothership requirement is not met."}`;
+  else if (!i.autonomyEffective)
+    nextAction =
+      i.safety.state === "unknown" || i.safety.state === "stale"
+        ? "Jackboy's safety state is not verified yet (its permit service must be installed and published). Then authorize OMNI autonomy in Jackboy with your passkey and click Activate autonomy authorization with a fresh code."
+        : i.safety.authorizationExpiresAt === null
+          ? "Authorize OMNI autonomy in Jackboy with your passkey, then click Activate autonomy authorization with a fresh two-step code."
+          : "Click Activate autonomy authorization with a fresh two-step code. It authorizes only; nothing starts.";
+  else if (autonomousState === "running") nextAction = "Work is running. Use an Emergency Stop to halt it.";
+  else if (autonomousState === "armed")
+    nextAction = "Every gate passes now, but no OMNI executor is connected, so nothing can run. No owner action is needed.";
+  else
+    nextAction = `Nothing to activate. Execution stays blocked by: ${autonomousGates[0]} Releasing a stop is a separate owner decision.`;
   return {
     link,
     autonomous: {
-      state:
-        i.running.windows + i.running.agentJobs > 0
-          ? "running"
-          : i.autonomyEffective
-            ? "configured_blocked"
-            : "not_configured",
-      blockers: i.autonomyEffective ? autonomousBlockers : ["Step 10 autonomy authorization is not activated.", ...autonomousBlockers],
+      state: autonomousState,
+      blockers: i.autonomyEffective ? autonomousBlockers : [notActivated, ...autonomousBlockers],
     },
     code: {
-      state: i.running.codeJobs > 0 ? "running" : i.autonomyEffective ? "configured_blocked" : "not_configured",
-      blockers: i.autonomyEffective ? codeBlockers : ["Step 10 autonomy authorization is not activated.", ...codeBlockers],
+      state: runState(i.running.codeJobs, codeGates),
+      blockers: i.autonomyEffective ? codeBlockers : [notActivated, ...codeBlockers],
     },
+    nextAction,
     emergencyStop: { jackboy: i.safety.codeStop, mothership },
     killSwitch: i.safety.killSwitch,
   };

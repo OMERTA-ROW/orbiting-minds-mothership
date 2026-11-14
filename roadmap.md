@@ -11,6 +11,13 @@
 - [ ] Waiting on owner: Steps 9–10 were approved at 02:57 UTC but neither activation started (no attempt recorded). Click "Activate live link" (fresh code); after Jackboy authorizes, "Activate autonomy authorization". No OMNI executor exists yet, so nothing can run.
 - [x] Clearer reasons: a database start failure is no longer shown as an owner-access problem; "permit service not installed" from Jackboy is named in the safety status. Offline contract check against Jackboy's real permit code passed.
 
+## Autonomy proof before CODE — 2026-11-14 (register 07.08)
+- [x] Isolated database test (99 checks): CODE always-on, windows, permits and agent jobs refused until Step 10's activation is in effect, even with the link active and a fresh clear reading; refused with Jackboy CODE off or the stop engaged; lapsed/revoked permits never renew or reissue; per-job audit.
+- [x] Database: halts now audit each revoked permit and what work they stopped (migration 0056, applied).
+- [x] Signed permit tests (no-op synthetic jobs): fresh signed capped decision recorded; CODE off refused and halts at renewal; stale/revoked permits rejected.
+- [x] Panel: separate configured / armed / running states and one "Next owner action". Flow marker 10 (preview).
+- [ ] Waiting on owner: Activate live link (fresh code); Jackboy permit install/publish + passkey authorization; then Activate autonomy authorization.
+
 ## Cross-system CODE Emergency Stop enforcement — 2026-11-14 (register 07.07)
 - [x] Mothership: Jackboy safety record + database fail-closed guards (autonomy windows, CODE always-on, CODE leasing need a fresh signed clear reading and Step 10 in effect); non-clear/unknown/stale halts windows, CODE jobs and agent-initiated workspace jobs; manual terminal untouched. Migrations 0053/0054. SQL test 36 checks; 1,847 tests pass.
 - [x] Signed stop-notice receiver (`/api/public/jackboy/safety-event`), scheduled safety sync route, owner "Refresh safety state", Step 9 = live link activated, Step 10 = autonomy authorization shown "Authorized — not running". Flow marker 7.

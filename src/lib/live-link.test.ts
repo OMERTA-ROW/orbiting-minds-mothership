@@ -113,9 +113,27 @@ describe("separate system states", () => {
   });
   it("authorized never reads as running without running records", () => {
     const s = states();
-    expect(s.autonomous.state).toBe("configured_blocked");
-    expect(s.code.state).toBe("configured_blocked");
+    expect(s.autonomous.state).toBe("armed");
+    expect(s.code.state).toBe("armed");
     expect(s.autonomous.blockers).toContain("No OMNI executor is connected.");
+    expect(s.nextAction).toContain("no OMNI executor");
+  });
+  it("configured is not armed while the CODE Emergency Stop is engaged or CODE is off", () => {
+    const engaged = states({ safety: safetyView(row("engaged"), NOW) });
+    expect(engaged.autonomous.state).toBe("configured_blocked");
+    expect(engaged.code.state).toBe("configured_blocked");
+    expect(engaged.nextAction).toContain("separate owner decision");
+    const codeOff = states({ safety: safetyView(row("clear", { code_enabled: false }), NOW) });
+    expect(codeOff.autonomous.state).toBe("armed");
+    expect(codeOff.code.state).toBe("configured_blocked");
+  });
+  it("names the exact next owner action before each activation", () => {
+    const unknown = safetyView(null, NOW);
+    expect(states({ linkEffective: false, autonomyEffective: false, safety: unknown }).nextAction).toContain("Activate live link");
+    expect(states({ autonomyEffective: false, safety: unknown }).nextAction).toContain("permit service");
+    const noAuth = safetyView(row("clear", { autonomous_allowed: false, blocked_by: "not_authorized" }), NOW);
+    expect(states({ autonomyEffective: false, safety: noAuth }).nextAction).toContain("passkey");
+    expect(states({ autonomyEffective: false, safety: noAuth }).autonomous.state).toBe("not_configured");
   });
   it("reports running only from database counts", () => {
     expect(states({ running: { windows: 1, agentJobs: 0, codeJobs: 0 } }).autonomous.state).toBe("running");
