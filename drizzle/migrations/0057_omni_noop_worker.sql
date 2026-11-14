@@ -160,12 +160,12 @@ BEGIN
   IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'reason', 'identity_invalid'); END IF;
   IF _op = 'inspect' THEN RETURN jsonb_build_object('ok', true); END IF;
 
-  PERFORM public.omni_noop_sweep();
-
   PERFORM 1 FROM public.activation_approvals ORDER BY step FOR SHARE;
   PERFORM 1 FROM public.omni_terminal_controls WHERE id = 1 FOR SHARE;
   PERFORM 1 FROM public.activation_activations ORDER BY kind FOR SHARE;
   PERFORM 1 FROM public.jackboy_safety_state WHERE id = 1 FOR SHARE;
+
+  PERFORM public.omni_noop_sweep();
   SELECT COALESCE((SELECT emergency_stop = false FROM public.omni_terminal_controls WHERE id = 1), false)
     AND public.activation_effective('autonomy') AND public.jackboy_safety_clear() INTO _allowed;
   IF _op = 'claim' THEN
