@@ -3,6 +3,7 @@ import {
   SELF_TEST_MAX_POLLS,
   attemptStage,
   classifySelfTestError,
+  linkIdentityIssues,
   otherAttemptInFlight,
   selfTestAuditAction,
   selfTestReadiness,
@@ -161,5 +162,43 @@ describe("driveSelfTest", () => {
     const execute = vi.fn(async (action: string) => (action === "submit" ? job("queued") : job("running")));
     const out = await driveSelfTest({ execute }, "new", "id", { deadline: Date.now() + 3_000, sleep: async () => {} });
     expect(out.polls).toBe(0);
+  });
+});
+
+describe("linkIdentityIssues (names only, no aliases)", () => {
+  const good = {
+    origin: "https://jackboy.example.com",
+    clientId: "mothership_1",
+    projectId: "3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e",
+    bootstrap: "b".repeat(40),
+    secret: "s".repeat(40),
+  };
+  it("accepts a complete, well-formed identity", () => {
+    expect(linkIdentityIssues(good)).toEqual([]);
+  });
+  it("reports a missing client ID by name, even when a handoff client ID exists elsewhere", () => {
+    expect(linkIdentityIssues({ ...good, clientId: "" })).toEqual([
+      { name: "OMNI_LINK_CLIENT_ID", problem: "missing" },
+    ]);
+  });
+  it("distinguishes malformed from missing and never includes values", () => {
+    const issues = linkIdentityIssues({ ...good, clientId: "has space", projectId: "nope", secret: "b".repeat(40) });
+    expect(issues).toEqual([
+      { name: "OMNI_LINK_CLIENT_ID", problem: "malformed" },
+      { name: "OMNI_LINK_PROJECT_ID", problem: "malformed" },
+      { name: "OMNI_LINK_HMAC_SECRET", problem: "malformed" },
+    ]);
+    expect(JSON.stringify(issues)).not.toContain("has space");
+  });
+  it("names the failing setting and the publish rule in the readiness detail", () => {
+    const item = selfTestReadiness({
+      ...ready,
+      identityValid: false,
+      identityIssues: [{ name: "OMNI_LINK_CLIENT_ID", problem: "missing" }],
+    }).find((i) => i.key === "identity")!;
+    expect(item.ok).toBe(false);
+    expect(item.detail).toContain("OMNI_LINK_CLIENT_ID is missing");
+    expect(item.detail).toContain("JACKBOY_HANDOFF_CLIENT_ID is a different identity");
+    expect(item.detail).toContain("published again");
   });
 });
