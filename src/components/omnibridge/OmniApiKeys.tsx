@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { JackboyLinkPanel } from "./JackboyLinkPanel";
 import { JackboyDispatchReview } from "./JackboyDispatchReview";
+import { OmniNoopWorker } from "./OmniNoopWorker";
 import {
   createOmniApiKey,
   listOmniApiKeyAudit,
@@ -131,6 +132,7 @@ export function OmniApiKeys() {
 
       <JackboyLinkPanel />
       <JackboyDispatchReview />
+      <OmniNoopWorker />
 
       {shownSecret && (
         <section

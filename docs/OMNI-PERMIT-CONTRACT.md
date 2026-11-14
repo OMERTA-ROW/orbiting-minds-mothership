@@ -40,6 +40,73 @@ Jackboy's wins and this side must be fixed.
 - Mothership migration `0055` and its halt-audit follow-up `0056` require separate live-history and
   deployment verification. Check the existing history and prerequisites before any owner-approved
   migration; do not infer installation from this document.
+- Main's bounded executor and Stop propagation retain migrations `0057` and `0058`.
+  The no-op migration is now `0059`; its former proposed `0057` label must not be treated as
+  database identity. If any serving database already applied the former no-op migration, stop
+  and reconcile its recorded hash/history separately before running the merged journal.
+- This branch adds an isolated worker for synthetic, 1–30 second timers only. It cannot execute CODE,
+  shell commands, provider requests or production work. It uses a separate, short-lived, revocable
+  identity; the broker retains the existing Jackboy and database credentials. Identity creation and
+  queue admission require an authenticated owner with fresh MFA. Each permit reserves $1 of Jackboy's
+  task and daily budget, even though the no-op has no provider cost.
+- The broker route is disabled unless `OMNI_NOOP_WORKER_ENABLED=true`. Do not enable it or provision
+  a worker without a separate owner decision. First reconcile the live Mothership migration history,
+  including `0055`–`0058`, and the proposed no-op `0059` schema and prerequisites; approve the
+  migration separately. Do not duplicate Jackboy's owner-reported installed `0066`. Verify the
+  published Jackboy commit and signed permit service independently before any publication.
+- After approval, deploy the broker default-off, arrange the existing authenticated Jackboy safety
+  synchronization job and monitor its failures, then securely provision the worker-only token to
+  an isolated runtime. `OMNI_NOOP_BROKER_URL` identifies the HTTPS broker and
+  `OMNI_NOOP_WORKER_TOKEN` is displayed once when the owner creates an identity; never put the token
+  in logs or source control. The `scripts/omni-noop-worker.ts` entry point handles one job per
+  invocation, so an operator must separately provide and monitor its lifecycle.
+- A broker heartbeat rechecks signed Jackboy safety and renews the permit; cancellation occurs when
+  a refusal, stop, timeout or lease failure is detected, not necessarily when Jackboy's stop is
+  engaged. A crashed worker's database lease is swept on subsequent broker actions or safety-sync
+  runs; without either, the owner list reports an expired lease but persisted cancellation is delayed.
+  Revocation immediately cancels the identity's local jobs; remote permit release may wait for
+  expiry. A completed local job with an unconfirmed remote release is reported as unconfirmed by
+  the worker, not proof of remote cleanup.
+- To roll back, first disable the broker, revoke worker identities and stop the worker runtime; keep
+  Emergency Stop engaged and verify remote permits have expired or been revoked. Retain the job and
+  audit tables for investigation; any destructive schema rollback needs a separate reviewed recovery
+  plan. Never change existing approvals or credentials as part of this rollback.
+- The isolated cross-repository cancellation test runs with
+  `JACKBOY_TEST_ROOT=/path/to/installed/jackboy node --import tsx --test tests/jackboy-noop-worker-integration.test.mjs`.
+  It uses two disposable PGlite databases and in-process signed handlers, not live services or
+  production TLS. It is not evidence that a deployed worker or live job ran.
+
+## Owner-gated publication and verification
+- Identify each serving application's actual database, compare its complete migration history with
+  the reviewed journal, and check for concurrent Lovable migrations. Confirm a recoverable encrypted
+  backup and test restoration in isolation. Record the current permit functions and grants without
+  recording credentials. A Drizzle migration command applies every newer journal entry, so do not
+  run it unless the target and the entire pending set have been independently confirmed.
+- After separate approvals, merge the reviewed Jackboy synchronization and apply its reconciled
+  `0067` forward fix, without reapplying `0066`. Publish Jackboy's compatible service, then apply
+  the reconciled Mothership no-op `0059` and publish its broker with the worker flag off. Check the
+  deployed versions and migration history after each action. No publication or migration releases a
+  stop, changes an approval, or enables the worker.
+- In an isolated environment with separately approved test controls, verify HTTPS and signed
+  handshake and safety replies, including rejection of tampered, expired and replayed requests.
+  Verify that a missing, expired or revoked permit is refused. A successful permit or synthetic job
+  requires all normal gates to be clear; it cannot be proved while a stop blocks authorization.
+- With a one-hour test identity and budget approval, queue a 10-second no-op, confirm its signed
+  permit and running state, engage Jackboy's test Emergency Stop and verify the timer stops, the job
+  is cancelled and audit records exist. Repeat for the test Kill Switch. A remote stop is detected
+  on the next verified poll or heartbeat, not necessarily instantly. Never log the worker token.
+- For restart recovery, terminate the specific test worker process while its no-op is running, allow
+  its lease to expire, and run the existing safety synchronization or a broker action to sweep it.
+  Confirm the job is cancelled, the permit is revoked or expires, and a restarted worker does not
+  resume it. Verify the manual terminal separately: CODE stop does not block owner diagnostics, but
+  a verified Jackboy Kill Switch does. Retain the audit evidence.
+- If publication must be reversed, disable the broker, revoke worker identities, stop the specific
+  worker runtime, and verify permit revocation or expiry. Preserve audit and job records. Restore or
+  repair database functions and grants only with a separately reviewed recovery procedure; never
+  restore stale approvals or relax safety controls as a shortcut.
+
+## Separate bounded executor
+
 - This feature branch adds a disabled, separate bounded executor and unapplied
   Jackboy 0068–0070 integration, reusing native 0066/0067 authorization/permits.
   It accepts autonomous exact plans only; native CODE permits remain supported

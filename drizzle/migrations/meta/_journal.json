@@ -414,6 +414,13 @@
       "when": 1794630000000,
       "tag": "0058_omni_stop_propagation",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1794630100000,
+      "tag": "0059_omni_noop_worker",
+      "breakpoints": true
     }
   ]
 }

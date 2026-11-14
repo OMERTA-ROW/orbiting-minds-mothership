@@ -107,6 +107,15 @@ export async function syncJackboySafety(
   admin: Admin,
   deps: SafetyDeps = {},
 ): Promise<SafetySyncResult> {
+  const result = await syncSafety(admin, deps);
+  if (process.env["OMNI_NOOP_WORKER_ENABLED"] === "true") {
+    const swept = await admin.rpc("omni_noop_sweep");
+    if (swept.error) throw new Error("No-op worker leases could not be enforced.");
+  }
+  return result;
+}
+
+async function syncSafety(admin: Admin, deps: SafetyDeps): Promise<SafetySyncResult> {
   const lapsed = await admin.rpc("jackboy_permits_enforce");
   if (lapsed.error) throw new Error("Permit lapse could not be enforced.");
   const fresh = await admin.rpc("jackboy_safety_enforce_freshness");
