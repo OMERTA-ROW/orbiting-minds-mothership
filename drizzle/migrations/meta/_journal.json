@@ -386,6 +386,13 @@
       "when": 1794618958800,
       "tag": "0054_jackboy_safety_halt_agent_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1794621273090,
+      "tag": "0055_omni_activation_permits",
+      "breakpoints": true
     }
   ]
 }

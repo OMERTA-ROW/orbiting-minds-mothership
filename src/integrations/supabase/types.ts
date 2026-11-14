@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_activations: {
+        Row: {
+          activated_at: string | null
+          actor_id: string | null
+          attempt_id: string | null
+          evidence: Json
+          kind: string
+          reason: string
+          started_at: string | null
+          status: string
+          step_revision: number | null
+          step7_revision: number | null
+          updated_at: string
+          window_ends_at: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          actor_id?: string | null
+          attempt_id?: string | null
+          evidence?: Json
+          kind: string
+          reason?: string
+          started_at?: string | null
+          status?: string
+          step_revision?: number | null
+          step7_revision?: number | null
+          updated_at?: string
+          window_ends_at?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          actor_id?: string | null
+          attempt_id?: string | null
+          evidence?: Json
+          kind?: string
+          reason?: string
+          started_at?: string | null
+          status?: string
+          step_revision?: number | null
+          step7_revision?: number | null
+          updated_at?: string
+          window_ends_at?: string | null
+        }
+        Relationships: []
+      }
       activation_approval_checks: {
         Row: {
           checked_at: string
@@ -538,6 +583,60 @@ export type Database = {
         }
         Relationships: []
       }
+      jackboy_permits: {
+        Row: {
+          closed_at: string | null
+          closed_reason: string | null
+          daily_usd: number
+          digest: string
+          expires_at: string
+          issued_at: string
+          job_id: string
+          kind: string
+          per_call_usd: number
+          per_task_usd: number
+          permit_id: string
+          renewals: number
+          signature_digest: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_reason?: string | null
+          daily_usd: number
+          digest: string
+          expires_at: string
+          issued_at?: string
+          job_id: string
+          kind: string
+          per_call_usd: number
+          per_task_usd: number
+          permit_id: string
+          renewals?: number
+          signature_digest: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_reason?: string | null
+          daily_usd?: number
+          digest?: string
+          expires_at?: string
+          issued_at?: string
+          job_id?: string
+          kind?: string
+          per_call_usd?: number
+          per_task_usd?: number
+          permit_id?: string
+          renewals?: number
+          signature_digest?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       jackboy_safety_nonces: {
         Row: {
           nonce: string
@@ -555,11 +654,16 @@ export type Database = {
       }
       jackboy_safety_state: {
         Row: {
+          active_permits: number | null
+          authorization_expires_at: string | null
+          autonomous_allowed: boolean | null
+          blocked_by: string | null
           cancellation: string | null
           code_enabled: boolean | null
           code_stop: boolean | null
           expires_at: string | null
           id: number
+          manual_allowed: boolean | null
           observed_at: string | null
           paused: boolean | null
           proof_digest: string | null
@@ -569,11 +673,16 @@ export type Database = {
           state: string
         }
         Insert: {
+          active_permits?: number | null
+          authorization_expires_at?: string | null
+          autonomous_allowed?: boolean | null
+          blocked_by?: string | null
           cancellation?: string | null
           code_enabled?: boolean | null
           code_stop?: boolean | null
           expires_at?: string | null
           id: number
+          manual_allowed?: boolean | null
           observed_at?: string | null
           paused?: boolean | null
           proof_digest?: string | null
@@ -583,11 +692,16 @@ export type Database = {
           state?: string
         }
         Update: {
+          active_permits?: number | null
+          authorization_expires_at?: string | null
+          autonomous_allowed?: boolean | null
+          blocked_by?: string | null
           cancellation?: string | null
           code_enabled?: boolean | null
           code_stop?: boolean | null
           expires_at?: string | null
           id?: number
+          manual_allowed?: boolean | null
           observed_at?: string | null
           paused?: boolean | null
           proof_digest?: string | null
@@ -3117,6 +3231,21 @@ export type Database = {
         Args: { _hashes: string[] }
         Returns: number
       }
+      activation_activation_begin: {
+        Args: { _attempt: string; _kind: string }
+        Returns: Json
+      }
+      activation_activation_finish: {
+        Args: {
+          _attempt: string
+          _evidence: Json
+          _kind: string
+          _ok: boolean
+          _reason: string
+        }
+        Returns: string
+      }
+      activation_activation_revoke: { Args: { _kind: string }; Returns: string }
       activation_approval_decide: {
         Args: {
           _action: string
@@ -3156,6 +3285,8 @@ export type Database = {
         Returns: undefined
       }
       activation_autonomy_authorized: { Args: never; Returns: boolean }
+      activation_effective: { Args: { _kind: string }; Returns: boolean }
+      activation_prereq_blocker: { Args: { _kind: string }; Returns: string }
       assert_fresh_mfa: {
         Args: { _max_age_seconds?: number }
         Returns: undefined
@@ -3284,6 +3415,35 @@ export type Database = {
         }
         Returns: Json
       }
+      jackboy_manual_blocked: { Args: never; Returns: boolean }
+      jackboy_permit_active: {
+        Args: { _job: string; _kind: string }
+        Returns: boolean
+      }
+      jackboy_permit_close: {
+        Args: { _job: string; _reason: string; _status: string }
+        Returns: string
+      }
+      jackboy_permit_record: {
+        Args: {
+          _daily: number
+          _digest: string
+          _expires_at: string
+          _job: string
+          _kind: string
+          _per_call: number
+          _per_task: number
+          _permit_id: string
+          _renewals: number
+          _signature_digest: string
+        }
+        Returns: string
+      }
+      jackboy_permit_stop_job: {
+        Args: { _job: string; _kind: string; _reason: string }
+        Returns: undefined
+      }
+      jackboy_permits_enforce: { Args: never; Returns: number }
       jackboy_safety_clear: { Args: never; Returns: boolean }
       jackboy_safety_enforce_freshness: { Args: never; Returns: string }
       jackboy_safety_halt: { Args: never; Returns: undefined }
@@ -3293,6 +3453,26 @@ export type Database = {
           _code_enabled: boolean
           _code_stop: boolean
           _expires_at: string
+          _nonce: string
+          _observed_at: string
+          _paused: boolean
+          _proof_digest: string
+          _reason: string
+          _source: string
+        }
+        Returns: string
+      }
+      jackboy_safety_record_v2: {
+        Args: {
+          _active_permits: number
+          _authorization_expires_at: string
+          _autonomous_allowed: boolean
+          _blocked_by: string
+          _cancellation: string
+          _code_enabled: boolean
+          _code_stop: boolean
+          _expires_at: string
+          _manual_allowed: boolean
           _nonce: string
           _observed_at: string
           _paused: boolean
