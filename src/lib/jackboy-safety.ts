@@ -79,6 +79,25 @@ export interface SafetyView {
 const yn = <T extends string>(v: boolean | null, t: T, f: T): T | "unknown" =>
   v === null ? "unknown" : v ? t : f;
 
+/**
+ * Plain wording for a recorded failed safety read (`read_<stage>[_<status>][_<code>]`). Refusal codes
+ * on unsigned replies are Jackboy's claim only, so they are described, never treated as verified.
+ */
+export function safetyFailureText(reason: string): string {
+  const r = reason || "";
+  if (r.includes("permit_service_unavailable"))
+    return "Jackboy answered that its permit service is not installed yet (HTTP 503, unsigned). Install and publish Jackboy's permit database change";
+  if (r.includes("kill_switch_on")) return "Jackboy refused the link because its Kill Switch is on";
+  if (r.includes("session_limit")) return "Jackboy has too many open link sessions; it clears them within 5 minutes";
+  if (r.startsWith("read_timeout")) return "Jackboy did not answer in time";
+  if (r.startsWith("read_connection")) return "Jackboy could not be reached";
+  if (r.startsWith("read_proof")) return "Jackboy's reply signature did not verify";
+  if (r.startsWith("read_contract")) return "Jackboy's reply did not match the safety contract";
+  if (r.startsWith("read_http_401")) return "Jackboy rejected the link session";
+  if (r === "mothership_stop_engaged") return "Mothership's Emergency Stop is engaged, so nothing was sent";
+  return r ? r.replace(/_/g, " ") : "check failed";
+}
+
 export function safetyView(row: SafetyRow | null, now: number): SafetyView {
   if (!row) {
     return {
@@ -171,7 +190,7 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
     detail:
       row.source === "none"
         ? "No verified reading yet. It is read after the Step 9 live link is activated (Jackboy's permit service must be installed)."
-        : `No verified reading (${row.reason || "check failed"}), so OMNI autonomy and CODE stay halted.`,
+        : `No verified reading: ${safetyFailureText(row.reason)}. OMNI autonomy and CODE stay halted.`,
     clear: false,
   };
 }
