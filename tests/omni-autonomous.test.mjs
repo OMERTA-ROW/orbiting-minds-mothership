@@ -106,6 +106,39 @@ test("permission polling loss cancels active work before another command", async
   assert.equal((await executor.runPlan(value)).outcome, "cancelled");
   assert.equal(commands, 1);
 });
+test("another instance or a restarted instance cannot acknowledge an unknown job's cancellation", async () => {
+  const value = plan();
+  let notify;
+  const started = new Promise((resolve) => {
+    notify = resolve;
+  });
+  let exited = false;
+  const active = createExecutor(config, {
+    workspace,
+    permission: async () => true,
+    run: async (_command, signal) => {
+      notify();
+      await new Promise((resolve) => signal.addEventListener("abort", resolve, { once: true }));
+      exited = true;
+      return { exitCode: null, output: "", cancelled: true, exceeded: false };
+    },
+  });
+  const other = createExecutor(config);
+  const running = active.runPlan(value);
+  const args = { jobId: value.jobId, planSha256: planHash(value) };
+  try {
+    await started;
+    await assert.rejects(other.cancel(args), /unverified/);
+    assert.equal(exited, false);
+    assert.deepEqual(await active.cancel(args), { cancelled: true });
+    assert.equal((await running).outcome, "cancelled");
+    assert.equal(exited, true);
+    await assert.rejects(active.cancel(args), /unverified/);
+  } finally {
+    await active.close();
+    await other.close();
+  }
+});
 test("completed plans report zero paid-provider spend and durable completion", async () => {
   const calls = [];
   const executor = createExecutor(config, {
@@ -123,8 +156,7 @@ test("completed plans report zero paid-provider spend and durable completion", a
 });
 test("signed executor requests deny tampering and replay", async () => {
   const executor = createExecutor(config, { run: complete, permission: async () => true });
-  const args = { jobId: randomUUID(), planSha256: "a".repeat(64) };
-  const body = JSON.stringify({ operation: "cancel", args });
+  const body = JSON.stringify({ operation: "inspect", args: {} });
   const ts = String(Math.floor(Date.now() / 1000));
   const nonce = randomUUID().replaceAll("-", "");
   const signature = createHmac("sha256", config.controlSecret)

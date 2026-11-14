@@ -126,6 +126,7 @@ export async function runIsolated(command, signal, workspace) {
     });
     let output = "";
     let exceeded = false;
+    let timedOut = false;
     const stop = () => {
       if (process.pid) {
         try {
@@ -141,15 +142,25 @@ export async function runIsolated(command, signal, workspace) {
         stop();
       } else output += chunk.toString("utf8");
     };
-    const timer = setTimeout(stop, command.timeoutMs);
+    const timer = setTimeout(() => {
+      timedOut = true;
+      stop();
+    }, command.timeoutMs);
     signal.addEventListener("abort", stop, { once: true });
     process.stdout.on("data", capture);
     process.stderr.on("data", capture);
     process.on("error", reject);
-    process.on("close", (code) => {
+    process.on("close", (code, terminationSignal) => {
       clearTimeout(timer);
       signal.removeEventListener("abort", stop);
-      resolve({ exitCode: code, output, exceeded, cancelled: signal.aborted });
+      resolve({
+        exitCode: code,
+        signal: terminationSignal,
+        output,
+        exceeded,
+        timedOut,
+        cancelled: signal.aborted,
+      });
     });
     if (signal.aborted) stop();
   });
@@ -386,12 +397,10 @@ export function createExecutor(
     if (!UUID.test(args.jobId) || !/^[a-f0-9]{64}$/.test(args.planSha256))
       throw new Error("Invalid cancellation");
     const job = jobs.get(args.jobId);
-    if (job && job.hash !== args.planSha256) throw new Error("Cancellation scope mismatch");
-    if (job) {
-      job.abort.abort();
-      await job.done.catch(() => {});
-    }
-    // The durable Jackboy claim denies any later run after this cancellation.
+    if (!job) throw new Error("Cancellation is unverified on this executor instance");
+    if (job.hash !== args.planSha256) throw new Error("Cancellation scope mismatch");
+    job.abort.abort();
+    await job.done;
     return { cancelled: true };
   }
   async function handle(request) {
