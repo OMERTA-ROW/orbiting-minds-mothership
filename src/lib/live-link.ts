@@ -8,6 +8,7 @@
 import { isEffectivelyApproved, type ActivationCheckDetail, type ApprovalRow } from "./activation-approvals";
 import type { ReadinessItem } from "./activation-self-test";
 import { probeFailure } from "./activation-probe";
+import type { SafetyView } from "./jackboy-safety";
 
 /** Readiness keys (from Step 8's readiness list) that also gate a connection-only handshake. */
 export const LIVE_LINK_READINESS_KEYS = ["stop", "owner", "link", "window", "identity"] as const;
@@ -93,24 +94,43 @@ export function liveLinkStatus(input: LiveLinkInput): LiveLinkStatus {
 }
 
 export interface CodeStatus {
-  /** Always "off": Mothership has no CODE request path and never turns CODE on. */
-  state: "off";
+  /**
+   * Never "running": Mothership has no connected executor and no path that starts Jackboy CODE.
+   * "authorized_not_running" = Step 10 in effect (every step approved, Step 7 window open).
+   */
+  state: "not_authorized" | "authorized_not_running";
   step10Recorded: boolean;
+  /** Whether Jackboy safety currently permits admission (fresh signed clear reading). */
+  safetyClear: boolean;
+  /** Short reason shown next to the state, e.g. "CODE Emergency Stop engaged". */
+  headline: string;
   reasons: string[];
 }
 
-export function codeStatus(rows: ApprovalRow[], now: number): CodeStatus {
+export function codeStatus(rows: ApprovalRow[], now: number, safety: SafetyView): CodeStatus {
   const step10 = rows.find((r) => r.step === 10);
-  const step10Recorded = step10 ? isEffectivelyApproved(step10, now) : false;
+  const allApproved =
+    rows.filter((r) => r.step >= 1 && r.step <= 10).length === 10 &&
+    rows.every((r) => r.step > 10 || isEffectivelyApproved(r, now));
+  const step10Recorded = Boolean(step10 && allApproved);
+  const headline = !step10Recorded
+    ? "Step 10 not in effect"
+    : !safety.clear
+      ? safety.label
+      : "No OMNI executor connected";
   return {
-    state: "off",
+    state: step10Recorded ? "authorized_not_running" : "not_authorized",
     step10Recorded,
+    safetyClear: safety.clear,
+    headline,
     reasons: [
       step10Recorded
-        ? "Step 10 is recorded (cap confirmations only). It did not turn CODE on."
-        : "Step 10 is not recorded. Approving it records your cap confirmations only; it does not turn CODE on.",
-      "Mothership has no CODE request path: nothing here can start CODE or spend on OpenAI.",
-      "CODE runs only inside Jackboy, behind its own Kill Switch, CODE Emergency Stop, saved CODE switch, passkey and $5 daily / $10 total limits.",
+        ? "Step 10 is in effect: autonomy is authorized while Step 7's window is open. Approving it started nothing."
+        : "Step 10 is not in effect. Approving it records autonomy authorization (with your cap confirmations); it starts nothing.",
+      `Jackboy safety: ${safety.label}. ${safety.detail}`,
+      "The database refuses every autonomy window and CODE job unless Step 10 is in effect, every stop is released and a fresh signed Jackboy reading is clear.",
+      "No OMNI executor is connected and autonomy windows are disabled in this build, so nothing can run yet.",
+      "Mothership has no path that starts Jackboy CODE; CODE runs only inside Jackboy behind its own Kill Switch, CODE Emergency Stop, passkey and spending limits.",
     ],
   };
 }

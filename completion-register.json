@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-10-22",
-  "updated_at": "2026-10-31",
+  "updated_at": "2026-11-14",
   "project_name": "Evolution Mothership",
   "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
   "source_note_urls": [
@@ -1013,7 +1013,15 @@
             "recorded_at": "2026-10-31",
             "status": "Deferred",
             "scope": "Future staged implementation only; extends existing Passport/Sentinel/memory/front-door/Jackboy work, not a new duplicate network or activation.",
-            "related_items": ["05.08", "05.10", "07.06", "04.02", "03.01", "03.02", "06.02"],
+            "related_items": [
+              "05.08",
+              "05.10",
+              "07.06",
+              "04.02",
+              "03.01",
+              "03.02",
+              "06.02"
+            ],
             "resident_role": "Every explicitly owner-enrolled project gets a resident Operations Agent separate from creative/specialized agents, with Project Knowledge Passport, scoped telemetry/health, redacted logs, change history, authorized app integrations, incident triage, scheduled checks, approved routine maintenance and structured issue reports.",
             "project_requirements": {
               "Itanimulli: The Rise of Kings": "Game Ops Agent covers game service/server monitoring, cloud storage/database sync health, world-event operations, player-data integrity, backup/restore verification, safe migrations and rollbacks; never autonomous destructive player-world changes.",
@@ -1031,10 +1039,27 @@
             "pilot": {
               "status": "Deferred",
               "project": null,
-              "flow": ["Ops Agent", "Ra'sul", "Jackboy", "OMNI isolated test", "Guardian approval"],
+              "flow": [
+                "Ops Agent",
+                "Ra'sul",
+                "Jackboy",
+                "OMNI isolated test",
+                "Guardian approval"
+              ],
               "pre_execution_gate": "Guardian must authorize the exact isolated test scope before OMNI runs it; the post-test verdict is not permission to execute retroactively.",
               "acceptance": "One harmless real diagnostic/fixture issue, versioned attributed Passport/event persistence, authenticated Jackboy readback, bounded proposal, actual isolated test commands/logs/exit/results and rollback evidence, real authenticated evidence-bound Guardian verdict and a correlated chain. Owner approval still required for merge/deploy/high-impact/external or player-world changes.",
-              "denial_recovery_checks": ["cross-project/unauthorized access", "forged/expired/revoked identities", "secrets isolation", "stale/missing telemetry", "duplicate/offline restart recovery", "bounded retries", "pause/stop/revoke", "failed tests", "missing/denying Guardian", "fixture backup/restore/rollback"],
+              "denial_recovery_checks": [
+                "cross-project/unauthorized access",
+                "forged/expired/revoked identities",
+                "secrets isolation",
+                "stale/missing telemetry",
+                "duplicate/offline restart recovery",
+                "bounded retries",
+                "pause/stop/revoke",
+                "failed tests",
+                "missing/denying Guardian",
+                "fixture backup/restore/rollback"
+              ],
               "test_command": null,
               "test_result": "Not run; architecture clarification only",
               "runtime_evidence": "No resident Ops lifecycle or Ops-to-Guardian pilot verified"
@@ -1075,7 +1100,13 @@
           "all_seeing_eye": {
             "status": "Implemented awaiting test",
             "scope": "Owner infrastructure and exact-confirmation controls embedded in /omni-razul, not a duplicate dashboard. Fresh verified user/email+owner+aal2; caller RLS/no-store, NULL-safe SQL controls and restrictive private-read boundary. Public-feed records remain separately readable to approved readers; no machine read grant assumed.",
-            "changed_files": ["src/lib/razul-eye.ts", "src/lib/razul-eye.test.ts", "src/lib/razul-eye.functions.ts", "src/components/razul/AllSeeingEye.tsx", "src/routes/omni-razul.tsx"],
+            "changed_files": [
+              "src/lib/razul-eye.ts",
+              "src/lib/razul-eye.test.ts",
+              "src/lib/razul-eye.functions.ts",
+              "src/components/razul/AllSeeingEye.tsx",
+              "src/routes/omni-razul.tsx"
+            ],
             "implemented": "Bounded recent ingestion runs, job pause/lease/retention metadata, sources, sourced findings and timestamps, Sentinel scopes/expiry/last-report, dispatch/Guardian recorded state, Passport declarations, subscription configuration, searchable newest-first metadata chronology. No jobs or monitoring started by inspection.",
             "test_command": "bunx vitest run src/lib/razul-eye.test.ts src/lib/rasul-chat.test.ts src/lib/omni-razul.test.ts src/lib/razul-sentinel.test.ts src/lib/razul-ask.test.ts src/lib/razul-passport.test.ts src/test/omni-assistant.test.ts src/test/omni-agents.test.ts src/test/app-routing.test.tsx",
             "test_result": "137 tests PASS (12 new owner/MFA/identity denial and metadata tests). Browser signed-out view and anonymous server-function denial PASS; default Razul preserved, mobile no horizontal overflow/page errors. Preview build OK.",
@@ -1471,6 +1502,39 @@
           "next_action": "Blocked: owner-approved backend job schema, least-privilege service identity, isolated sandbox runner and activated model inference; owner-approved repository write path. Auto-merge/deploy stay disabled by design.",
           "release_status": "Not released; private prototype only.",
           "test_command": "bunx vitest run src/test/omni-gateway.test.ts"
+        },
+        {
+          "id": "07.07",
+          "requirement": "Cross-system CODE Emergency Stop enforcement: Jackboy's signed safety state (Kill Switch / CODE Emergency Stop) halts OMNI autonomy and CODE, fails closed on stale or unknown state, keeps the manual terminal usable, and Step 10 authorizes autonomy without claiming it runs.",
+          "status": "Implemented awaiting test",
+          "owner": "Lovable implementation (Mothership); Jackboy project change and shared secret by owner",
+          "dependencies": [
+            "07.06"
+          ],
+          "changed_files": [
+            "drizzle/migrations/0053_jackboy_safety_state.sql",
+            "drizzle/migrations/0054_jackboy_safety_halt_agent_jobs.sql",
+            "src/lib/jackboy-safety.ts",
+            "src/lib/jackboy-safety.server.ts",
+            "src/lib/jackboy-link.server.ts",
+            "src/routes/api/public/jackboy/safety-event.ts",
+            "src/routes/api/public/jobs/jackboy-safety.ts",
+            "src/lib/activation-approvals.functions.ts",
+            "src/lib/live-link.ts",
+            "src/components/omnibridge/LiveLinkPanel.tsx",
+            "src/components/omnibridge/ActivationApprovals.tsx",
+            "docs/JACKBOY-SAFETY-STATE-SPEC.md"
+          ],
+          "commit": null,
+          "commit_note": "Lovable-managed work; no external commit verified.",
+          "evidence": "Disposable-database SQL test (36 checks) plus unit/server/UI tests; migrations 0053/0054 applied to the shared database.",
+          "verified_at": "2026-11-14",
+          "verified_scope": "Mothership enforcement only. End-to-end kill mechanism NOT verified: Jackboy does not yet implement the signed safety-state read or stop notices, so the state reads Unknown (halting).",
+          "test_result": "Passed: python3 src/test/test_jackboy_safety_sql.py (36 checks); bunx vitest run 1,847 tests / 127 files, 2026-11-14",
+          "runtime_evidence": "Live database: safety state unknown, 0 autonomy windows, 0 CODE jobs; Steps 1–8 approved, 9–10 pending.",
+          "next_action": "Owner applies docs/JACKBOY-SAFETY-STATE-SPEC.md in Jackboy, adds the shared JACKBOY_SAFETY_EVENT_HMAC_SECRET in both projects, publishes Jackboy, approves Step 9, then runs the stop-notice end-to-end check.",
+          "release_status": "Mothership code published only if the publish step in this turn is confirmed",
+          "test_command": "python3 src/test/test_jackboy_safety_sql.py && bunx vitest run"
         }
       ]
     },

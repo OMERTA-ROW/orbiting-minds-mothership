@@ -26,6 +26,7 @@ import {
 } from "./activation-approvals";
 import type { Json } from "@/integrations/supabase/types";
 import { probeFailureDetails } from "./activation-probe";
+import { safetyView, type SafetyRow } from "./jackboy-safety";
 import {
   SELF_TEST_IN_FLIGHT_MS,
   SELF_TEST_SERVER_BUDGET_MS,
@@ -186,6 +187,23 @@ async function latestLinkEvents(
     lastConnectedAt: data.find((r) => r.action === "connected")?.occurred_at ?? null,
     lastAttemptAt: data.find((r) => r.action === "connecting")?.occurred_at ?? null,
   };
+}
+
+/** Latest recorded Jackboy safety state (owner-readable row); unreadable reads as unknown. */
+async function jackboySafetyRow(
+  db: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0],
+): Promise<SafetyRow | null> {
+  try {
+    const { data, error } = await db
+      .from("jackboy_safety_state")
+      .select("state,paused,code_stop,code_enabled,cancellation,observed_at,expires_at,source,reason,recorded_at")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data as SafetyRow;
+  } catch {
+    return null;
+  }
 }
 
 /** Cloud sandbox (manual OMNI Terminal workspace) settings: presence booleans only. */
@@ -526,7 +544,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       return { denied: true as const, reason };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [steps, audit, checks, selfTest, resetAt, readiness, linkEvents] = await Promise.all([
+    const [steps, audit, checks, selfTest, resetAt, readiness, linkEvents, safetyRow] = await Promise.all([
       context.supabase
         .from("activation_approvals")
         .select(
@@ -547,6 +565,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       securityResetAt(context.supabase, context.userId),
       currentSelfTestReadiness(context),
       latestLinkEvents(context.supabase),
+      jackboySafetyRow(context.supabase),
     ]);
     if (steps.error || audit.error) throw new Error("Approval records could not be read.");
     // The approvals stay visible even when the check store is missing or unreadable;
@@ -602,7 +621,12 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
         lastConnectedAt: linkEvents.lastConnectedAt,
         lastAttemptAt: linkEvents.lastAttemptAt,
       }),
-      code: codeStatus(effectiveRows(normalizeRows(steps.data), resetAt), Date.now()),
+      safety: safetyView(safetyRow, Date.now()),
+      code: codeStatus(
+        effectiveRows(normalizeRows(steps.data), resetAt),
+        Date.now(),
+        safetyView(safetyRow, Date.now()),
+      ),
       sandbox: await sandboxPresence(),
       mfaAgeSeconds: mfaAgeSeconds(context.claims["amr"], nowSeconds),
     };
@@ -1170,4 +1194,34 @@ export const checkLiveLinkConnection = createServerFn({ method: "POST" })
       message:
         "Live link verified: Jackboy answered a signed handshake with a ready session. No job, self-test or CODE request was sent.",
     };
+  });
+
+/**
+ * Owner refresh of Jackboy's safety state: freshness enforcement plus, once Step 9 is in effect,
+ * one signed read-only safety-state request. Never releases a stop, turns a switch or starts work;
+ * any failure records "unknown", which keeps OMNI autonomy and CODE halted.
+ */
+export const refreshJackboySafety = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    setResponseHeader("Cache-Control", "private, no-store");
+    await ownerContext(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { syncJackboySafety } = await import("./jackboy-safety.server");
+    let result;
+    try {
+      result = await syncJackboySafety(supabaseAdmin);
+    } catch {
+      return { ok: false as const, message: "The safety state could not be refreshed; autonomy and CODE stay halted." };
+    }
+    const row = await jackboySafetyRow(context.supabase);
+    const view = safetyView(row, Date.now());
+    const message = !result.checked
+      ? result.reason === "step9_not_in_effect"
+        ? "Not sent: approve Step 9 to activate the live link and its safety sync. Freshness was enforced."
+        : "Not sent: Mothership's Emergency Stop is engaged or unreadable, so the state is recorded as unknown."
+      : result.reason === "verified"
+        ? `Verified signed reading recorded: ${view.label}.`
+        : `Jackboy did not return a verified safety reading (${result.reason}); recorded as unknown, so autonomy and CODE stay halted.`;
+    return { ok: true as const, checked: result.checked, message, safety: view };
   });

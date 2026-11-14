@@ -12,9 +12,16 @@ const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const SCOPES = ["jobs.cancel", "jobs.read", "protocol.self-test"];
 const MAX_REPLY_BYTES = 32768;
 const TIMEOUT_MS = 5000;
-export type JackboyAction = "handshake" | "submit" | "run" | "status" | "cancel" | "configuration";
+export type JackboyAction =
+  | "handshake"
+  | "submit"
+  | "run"
+  | "status"
+  | "cancel"
+  | "configuration"
+  | "safety-state";
 type Action = JackboyAction;
-type JobAction = Exclude<Action, "handshake" | "configuration">;
+type JobAction = Exclude<Action, "handshake" | "configuration" | "safety-state">;
 /**
  * How long Jackboy itself waits for its Railway runner before answering (mirrors Jackboy's
  * omni-remote-runner: 5 s for the configuration probe, runner limit + 1 s for a `run`).
@@ -56,6 +63,7 @@ type Reply = {
   projectId?: string;
   execution?: string;
   configuration?: unknown;
+  safety?: unknown;
   job?: {
     id: string;
     status: string;
@@ -345,6 +353,17 @@ async function sendSigned(
   token: string,
   jobId?: string,
 ): Promise<Reply> {
+  return (await sendSignedRaw(config, options, action, token, jobId)).reply;
+}
+
+/** Like sendSigned, also returning a digest of the verified reply proof (for evidence records). */
+async function sendSignedRaw(
+  config: LinkIdentity,
+  options: JackboyLinkOptions,
+  action: Action,
+  token: string,
+  jobId?: string,
+): Promise<{ reply: Reply; proofDigest: string }> {
   const nonce = randomBytes(16).toString("hex");
   const ts = String(Math.floor(Date.now() / 1000));
   const body = JSON.stringify({
@@ -401,7 +420,7 @@ async function sendSigned(
       ))
   )
     throw new Error("Jackboy returned an invalid job.");
-  return reply;
+  return { reply, proofDigest: sha256(result.proof) };
 }
 
 const runnerConfigurationSchema = z
@@ -437,6 +456,46 @@ export async function checkJackboyRunnerConfiguration(
     );
   await audit(parsed.data ? "configuration_verified" : "configuration_unavailable");
   return parsed.data;
+}
+
+const safetyStateSchema = z
+  .object({
+    paused: z.boolean().nullable(),
+    codeStop: z.boolean().nullable(),
+    codeEnabled: z.boolean().nullable(),
+    cancellation: z
+      .enum(["not_needed", "pending", "requested", "confirmed", "completed", "unverified"])
+      .nullable(),
+    observedAt: z.string().datetime({ offset: true }),
+    expiresAt: z.string().datetime({ offset: true }),
+  })
+  .strict();
+export type JackboySafetyReading = z.infer<typeof safetyStateSchema> & { proofDigest: string };
+
+/**
+ * Read-only signed safety state (Jackboy global pause / Kill Switch, CODE Emergency Stop).
+ * Bootstrap-authenticated like the configuration probe; sends no job and changes nothing.
+ * Only an exact, signed, project-bound, fresh reply is returned; anything else throws.
+ */
+export async function readJackboySafetyState(
+  c: Omit<JackboyLinkConfig, "approvalExpiresAt">,
+  options: JackboyLinkOptions = {},
+): Promise<JackboySafetyReading> {
+  assertIdentity(c);
+  assertPublicLinkOrigin(c.origin);
+  const { reply, proofDigest } = await sendSignedRaw(c, options, "safety-state", c.bootstrap);
+  const parsed = safetyStateSchema.safeParse(reply.safety);
+  if (!parsed.success || reply.execution !== "none" || reply.projectId !== c.projectId)
+    throw new JackboyLinkError("Jackboy safety-state response is invalid.", "contract");
+  const now = Date.now();
+  const observed = Date.parse(parsed.data.observedAt);
+  const expires = Date.parse(parsed.data.expiresAt);
+  if (
+    !(observed <= now + 60_000 && observed >= now - 60_000) ||
+    !(expires > now && expires <= observed + 180_000)
+  )
+    throw new JackboyLinkError("Jackboy safety-state timing is invalid.", "contract");
+  return { ...parsed.data, proofDigest };
 }
 
 export class JackboyLink {

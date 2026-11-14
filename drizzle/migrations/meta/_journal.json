@@ -372,6 +372,20 @@
       "when": 1794597401216,
       "tag": "0052_activation_approval_checks_comment",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1794618854799,
+      "tag": "0053_jackboy_safety_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1794618958800,
+      "tag": "0054_jackboy_safety_halt_agent_jobs",
+      "breakpoints": true
     }
   ]
 }

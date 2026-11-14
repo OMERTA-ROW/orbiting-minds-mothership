@@ -538,6 +538,66 @@ export type Database = {
         }
         Relationships: []
       }
+      jackboy_safety_nonces: {
+        Row: {
+          nonce: string
+          seen_at: string
+        }
+        Insert: {
+          nonce: string
+          seen_at?: string
+        }
+        Update: {
+          nonce?: string
+          seen_at?: string
+        }
+        Relationships: []
+      }
+      jackboy_safety_state: {
+        Row: {
+          cancellation: string | null
+          code_enabled: boolean | null
+          code_stop: boolean | null
+          expires_at: string | null
+          id: number
+          observed_at: string | null
+          paused: boolean | null
+          proof_digest: string | null
+          reason: string
+          recorded_at: string
+          source: string
+          state: string
+        }
+        Insert: {
+          cancellation?: string | null
+          code_enabled?: boolean | null
+          code_stop?: boolean | null
+          expires_at?: string | null
+          id: number
+          observed_at?: string | null
+          paused?: boolean | null
+          proof_digest?: string | null
+          reason?: string
+          recorded_at?: string
+          source?: string
+          state?: string
+        }
+        Update: {
+          cancellation?: string | null
+          code_enabled?: boolean | null
+          code_stop?: boolean | null
+          expires_at?: string | null
+          id?: number
+          observed_at?: string | null
+          paused?: boolean | null
+          proof_digest?: string | null
+          reason?: string
+          recorded_at?: string
+          source?: string
+          state?: string
+        }
+        Relationships: []
+      }
       knowledge_briefs: {
         Row: {
           brief_date: string
@@ -3095,6 +3155,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      activation_autonomy_authorized: { Args: never; Returns: boolean }
       assert_fresh_mfa: {
         Args: { _max_age_seconds?: number }
         Returns: undefined
@@ -3222,6 +3283,24 @@ export type Database = {
           _repo: string
         }
         Returns: Json
+      }
+      jackboy_safety_clear: { Args: never; Returns: boolean }
+      jackboy_safety_enforce_freshness: { Args: never; Returns: string }
+      jackboy_safety_halt: { Args: never; Returns: undefined }
+      jackboy_safety_record: {
+        Args: {
+          _cancellation: string
+          _code_enabled: boolean
+          _code_stop: boolean
+          _expires_at: string
+          _nonce: string
+          _observed_at: string
+          _paused: boolean
+          _proof_digest: string
+          _reason: string
+          _source: string
+        }
+        Returns: string
       }
       list_invitations: {
         Args: never

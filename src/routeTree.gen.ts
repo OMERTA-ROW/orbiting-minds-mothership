@@ -95,6 +95,8 @@ import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archiv
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 import { Route as ApiPublicApprovalFlowRouteImport } from './routes/api/public/approval-flow'
 import { Route as ApiPublicJackboyDispatchRouteImport } from './routes/api/public/jackboy/dispatch'
+import { Route as ApiPublicJackboySafetyEventRouteImport } from './routes/api/public/jackboy/safety-event'
+import { Route as ApiPublicJobsJackboySafetyRouteImport } from './routes/api/public/jobs/jackboy-safety'
 import { Route as ApiPublicJobsKnowledgeCollectRouteImport } from './routes/api/public/jobs/knowledge-collect'
 import { Route as ApiPublicJobsRazulObserveRouteImport } from './routes/api/public/jobs/razul-observe'
 import { Route as ApiPublicOmniHealthRouteImport } from './routes/api/public/omni/health'
@@ -542,6 +544,18 @@ const ApiPublicJackboyDispatchRoute =
     path: '/api/public/jackboy/dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicJackboySafetyEventRoute =
+  ApiPublicJackboySafetyEventRouteImport.update({
+    id: '/api/public/jackboy/safety-event',
+    path: '/api/public/jackboy/safety-event',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicJobsJackboySafetyRoute =
+  ApiPublicJobsJackboySafetyRouteImport.update({
+    id: '/api/public/jobs/jackboy-safety',
+    path: '/api/public/jobs/jackboy-safety',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicJobsKnowledgeCollectRoute =
   ApiPublicJobsKnowledgeCollectRouteImport.update({
     id: '/api/public/jobs/knowledge-collect',
@@ -700,6 +714,8 @@ export interface FileRoutesByFullPath {
   '/robotics/$id': typeof RoboticsIdRoute
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
+  '/api/public/jackboy/safety-event': typeof ApiPublicJackboySafetyEventRoute
+  '/api/public/jobs/jackboy-safety': typeof ApiPublicJobsJackboySafetyRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
@@ -800,6 +816,8 @@ export interface FileRoutesByTo {
   '/robotics/$id': typeof RoboticsIdRoute
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
+  '/api/public/jackboy/safety-event': typeof ApiPublicJackboySafetyEventRoute
+  '/api/public/jobs/jackboy-safety': typeof ApiPublicJobsJackboySafetyRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
@@ -902,6 +920,8 @@ export interface FileRoutesById {
   '/robotics_/$id': typeof RoboticsIdRoute
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
+  '/api/public/jackboy/safety-event': typeof ApiPublicJackboySafetyEventRoute
+  '/api/public/jobs/jackboy-safety': typeof ApiPublicJobsJackboySafetyRoute
   '/api/public/jobs/knowledge-collect': typeof ApiPublicJobsKnowledgeCollectRoute
   '/api/public/jobs/razul-observe': typeof ApiPublicJobsRazulObserveRoute
   '/api/public/omni/health': typeof ApiPublicOmniHealthRoute
@@ -1004,6 +1024,8 @@ export interface FileRouteTypes {
     | '/robotics/$id'
     | '/api/public/approval-flow'
     | '/api/public/jackboy/dispatch'
+    | '/api/public/jackboy/safety-event'
+    | '/api/public/jobs/jackboy-safety'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
     | '/api/public/omni/health'
@@ -1104,6 +1126,8 @@ export interface FileRouteTypes {
     | '/robotics/$id'
     | '/api/public/approval-flow'
     | '/api/public/jackboy/dispatch'
+    | '/api/public/jackboy/safety-event'
+    | '/api/public/jobs/jackboy-safety'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
     | '/api/public/omni/health'
@@ -1205,6 +1229,8 @@ export interface FileRouteTypes {
     | '/robotics_/$id'
     | '/api/public/approval-flow'
     | '/api/public/jackboy/dispatch'
+    | '/api/public/jackboy/safety-event'
+    | '/api/public/jobs/jackboy-safety'
     | '/api/public/jobs/knowledge-collect'
     | '/api/public/jobs/razul-observe'
     | '/api/public/omni/health'
@@ -1301,6 +1327,8 @@ export interface RootRouteChildren {
   RoboticsIdRoute: typeof RoboticsIdRoute
   ApiPublicApprovalFlowRoute: typeof ApiPublicApprovalFlowRoute
   ApiPublicJackboyDispatchRoute: typeof ApiPublicJackboyDispatchRoute
+  ApiPublicJackboySafetyEventRoute: typeof ApiPublicJackboySafetyEventRoute
+  ApiPublicJobsJackboySafetyRoute: typeof ApiPublicJobsJackboySafetyRoute
   ApiPublicJobsKnowledgeCollectRoute: typeof ApiPublicJobsKnowledgeCollectRoute
   ApiPublicJobsRazulObserveRoute: typeof ApiPublicJobsRazulObserveRoute
   ApiPublicOmniHealthRoute: typeof ApiPublicOmniHealthRoute
@@ -1920,6 +1948,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicJackboyDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/jackboy/safety-event': {
+      id: '/api/public/jackboy/safety-event'
+      path: '/api/public/jackboy/safety-event'
+      fullPath: '/api/public/jackboy/safety-event'
+      preLoaderRoute: typeof ApiPublicJackboySafetyEventRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/jobs/jackboy-safety': {
+      id: '/api/public/jobs/jackboy-safety'
+      path: '/api/public/jobs/jackboy-safety'
+      fullPath: '/api/public/jobs/jackboy-safety'
+      preLoaderRoute: typeof ApiPublicJobsJackboySafetyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/jobs/knowledge-collect': {
       id: '/api/public/jobs/knowledge-collect'
       path: '/api/public/jobs/knowledge-collect'
@@ -2116,6 +2158,8 @@ const rootRouteChildren: RootRouteChildren = {
   RoboticsIdRoute: RoboticsIdRoute,
   ApiPublicApprovalFlowRoute: ApiPublicApprovalFlowRoute,
   ApiPublicJackboyDispatchRoute: ApiPublicJackboyDispatchRoute,
+  ApiPublicJackboySafetyEventRoute: ApiPublicJackboySafetyEventRoute,
+  ApiPublicJobsJackboySafetyRoute: ApiPublicJobsJackboySafetyRoute,
   ApiPublicJobsKnowledgeCollectRoute: ApiPublicJobsKnowledgeCollectRoute,
   ApiPublicJobsRazulObserveRoute: ApiPublicJobsRazulObserveRoute,
   ApiPublicOmniHealthRoute: ApiPublicOmniHealthRoute,

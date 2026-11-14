@@ -2,6 +2,7 @@ import { CheckCircle2, CircleDashed, Loader2, Power, XCircle } from "lucide-reac
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import type { CodeStatus, LiveLinkStatus } from "@/lib/live-link";
+import type { SafetyView } from "@/lib/jackboy-safety";
 
 export type LiveLinkOutcome = {
   ok: boolean;
@@ -34,8 +35,12 @@ export function LiveLinkPanel(props: {
   onConfirmedChange: (value: boolean) => void;
   onCheck: () => void;
   result: LiveLinkOutcome | null;
+  safety: SafetyView;
+  safetyBusy: boolean;
+  onRefreshSafety: () => void;
+  safetyResult: LiveLinkOutcome | null;
 }) {
-  const { liveLink, code, sandbox } = props;
+  const { liveLink, code, sandbox, safety } = props;
   const stop = liveLink.items.find((i) => i.key === "stop");
   const canClick = liveLink.canCheck && props.mfaFresh && props.confirmed && !props.busy;
   return (
@@ -91,7 +96,7 @@ export function LiveLinkPanel(props: {
           )}
           <p className="text-xs text-muted-foreground">
             Jackboy also refuses every link request while its own global Kill Switch is on. That
-            switch is controlled only in Jackboy and is not read or changed here.
+            switch is controlled only in Jackboy and is never changed here.
           </p>
           <label className="flex items-start gap-2 text-sm">
             <input
@@ -143,12 +148,61 @@ export function LiveLinkPanel(props: {
         </article>
 
         <div className="space-y-4">
-          <article aria-labelledby="code-sub" className="space-y-2 rounded border p-3">
-            <h3 id="code-sub" className="flex items-center gap-1.5 font-medium">
-              <Power size={14} aria-hidden /> CODE (Step 10)
+          <article aria-labelledby="safety-sub" className="space-y-2 rounded border p-3">
+            <h3 id="safety-sub" className="font-medium">
+              Jackboy safety state (synced)
             </h3>
             <p className="text-sm">
-              Status: <strong>Off</strong>
+              Status:{" "}
+              <strong className={safety.clear ? "" : "text-destructive"}>{safety.label}</strong>
+            </p>
+            <p className="text-xs text-muted-foreground">{safety.detail}</p>
+            <ul className="space-y-1 text-xs text-muted-foreground" aria-label="Jackboy safety details">
+              <li>
+                Jackboy Kill Switch: <strong>{safety.killSwitch}</strong>
+              </li>
+              <li>
+                Jackboy CODE Emergency Stop: <strong>{safety.codeStop}</strong>
+              </li>
+              <li>
+                Jackboy CODE switch: <strong>{safety.codeEnabled}</strong>
+              </li>
+              <li>Observed by Jackboy: {when(safety.observedAt)}</li>
+              <li>
+                Recorded here: {when(safety.recordedAt)} ({safety.source})
+              </li>
+            </ul>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={props.safetyBusy}
+              onClick={props.onRefreshSafety}
+            >
+              {props.safetyBusy && (
+                <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
+              )}
+              Refresh safety state
+            </Button>
+            {props.safetyResult && (
+              <p
+                role="status"
+                className={`text-xs ${props.safetyResult.ok ? "text-muted-foreground" : "text-destructive"}`}
+              >
+                {props.safetyResult.message}
+              </p>
+            )}
+          </article>
+
+          <article aria-labelledby="code-sub" className="space-y-2 rounded border p-3">
+            <h3 id="code-sub" className="flex items-center gap-1.5 font-medium">
+              <Power size={14} aria-hidden /> Autonomy &amp; CODE (Step 10)
+            </h3>
+            <p className="text-sm">
+              Status:{" "}
+              <strong>
+                {code.state === "authorized_not_running" ? "Authorized — not running" : "Not authorized"}
+              </strong>{" "}
+              <span className="text-xs text-muted-foreground">· {code.headline}</span>
             </p>
             <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
               {code.reasons.map((r) => (
@@ -174,8 +228,10 @@ export function LiveLinkPanel(props: {
               </li>
               <li>
                 <strong>Jackboy CODE Emergency Stop</strong> and <strong>Jackboy Kill Switch</strong>
-                : separate controls in Jackboy's Settings, each needing Jackboy's passkey. Not read
-                or changed from here.
+                : separate controls in Jackboy's Settings, each needing Jackboy's passkey. Mothership
+                only reads their signed state (above) and never changes them. While either is on, or
+                the reading is missing or stale, OMNI autonomy and CODE are halted; the manual
+                terminal's local commands keep working.
               </li>
             </ul>
           </article>

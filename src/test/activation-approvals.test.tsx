@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   check: vi.fn(),
   selfTest: vi.fn(),
   liveLink: vi.fn(),
+  safety: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-start", () => ({
@@ -36,6 +37,7 @@ vi.mock("@/lib/activation-approvals.functions", () => ({
   runActivationApprovalCheck: "check",
   runStep8SelfTest: "selfTest",
   checkLiveLinkConnection: "liveLink",
+  refreshJackboySafety: "safety",
 }));
 
 vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
@@ -44,6 +46,7 @@ vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
 
 import { ActivationApprovals } from "@/components/omnibridge/ActivationApprovals";
 import { codeStatus, liveLinkStatus } from "@/lib/live-link";
+import { safetyView } from "@/lib/jackboy-safety";
 
 const owner = "11111111-1111-4111-8111-111111111111";
 
@@ -100,7 +103,8 @@ function snapshot(
       lastConnectedAt: null,
       lastAttemptAt: null,
     }),
-    code: codeStatus(rows as never, Date.now()),
+    safety: safetyView(null, Date.now()),
+    code: codeStatus(rows as never, Date.now(), safetyView(null, Date.now())),
     sandbox: { configured: false, enabled: false },
     mfaAgeSeconds: overrides.mfaAgeSeconds === undefined ? 0 : overrides.mfaAgeSeconds,
   };
@@ -638,14 +642,15 @@ describe("Steps 9–10 live link and CODE panel", () => {
 
   beforeEach(() => mocks.liveLink.mockReset());
 
-  it("keeps the connection check disabled until Step 9 is approved, and shows CODE off", async () => {
+  it("keeps the connection check disabled until Step 9 is approved, and shows autonomy not authorized", async () => {
     mocks.list.mockResolvedValue(live(8));
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
     expect(within(panel()).getByText("Waiting for your Step 9 approval")).toBeInTheDocument();
     expect(within(panel()).getByRole("checkbox", { name: /connection-only check/ })).toBeDisabled();
     expect(checkButton()).toBeDisabled();
-    expect(within(panel()).getByText(/Mothership has no CODE request path/)).toBeInTheDocument();
+    expect(within(panel()).getByText("Not authorized")).toBeInTheDocument();
+    expect(within(panel()).getByText(/Mothership has no path that starts Jackboy CODE/)).toBeInTheDocument();
     expect(mocks.liveLink).not.toHaveBeenCalled();
   });
 
@@ -668,7 +673,7 @@ describe("Steps 9–10 live link and CODE panel", () => {
     expect(within(panel()).getByRole("checkbox", { name: /connection-only check/ })).not.toBeChecked();
     expect(mocks.decide).not.toHaveBeenCalled();
     // CODE stays off even with Step 9 approved.
-    expect(within(panel()).getByText("Off")).toBeInTheDocument();
+    expect(within(panel()).getByText("Not authorized")).toBeInTheDocument();
   });
 
   it("shows Jackboy's Kill Switch refusal as a safety denial", async () => {
@@ -703,5 +708,67 @@ describe("Steps 9–10 live link and CODE panel", () => {
     fireEvent.click(within(panel()).getByRole("checkbox", { name: /connection-only check/ }));
     expect(checkButton()).toBeDisabled();
     expect(within(panel()).getByText(/fresh two-step code/)).toBeInTheDocument();
+  });
+});
+
+describe("Jackboy safety sync and Step 10 status", () => {
+  const gates = () =>
+    ["stop", "owner", "link", "window", "identity"].map((key) => ({ key, label: key, ok: true, detail: "ok" }));
+  const live = (approvedThrough: number) =>
+    snapshot("runner_only", {
+      approvedThrough,
+      liveReadiness: gates(),
+      step7ExpiresAt: new Date(Date.now() + 6 * 3600_000).toISOString(),
+    });
+  beforeEach(() => {
+    mocks.safety.mockReset();
+    mocks.liveLink.mockReset();
+    mocks.decide.mockReset();
+  });
+  const panel = () => screen.getByRole("region", { name: /Live link, terminal and CODE/ });
+  const allApproved = (safety: ReturnType<typeof safetyView>) => {
+    const base = live(10);
+    return { ...base, safety, code: codeStatus(base.rows as never, Date.now(), safety) };
+  };
+  const engaged = () =>
+    safetyView(
+      {
+        state: "engaged",
+        paused: false,
+        code_stop: true,
+        code_enabled: false,
+        cancellation: "requested",
+        observed_at: new Date().toISOString(),
+        expires_at: null,
+        source: "event",
+        reason: "code_stop_engaged",
+        recorded_at: new Date().toISOString(),
+      },
+      Date.now(),
+    );
+  it("shows Authorized — not running while the CODE Emergency Stop is engaged", async () => {
+    mocks.list.mockResolvedValue(allApproved(engaged()));
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^10\. / });
+    expect(within(panel()).getByText("Authorized — not running")).toBeInTheDocument();
+    expect(within(panel()).getAllByText(/CODE Emergency Stop engaged/).length).toBeGreaterThan(0);
+    expect(within(panel()).queryByText(/^Running$/)).toBeNull();
+  });
+  it("shows an unknown safety state as halting, and refreshes it without changing anything else", async () => {
+    mocks.list.mockResolvedValue(live(9));
+    mocks.safety.mockResolvedValue({
+      ok: true,
+      checked: true,
+      message: "Jackboy did not return a verified safety reading (read_http_400); recorded as unknown, so autonomy and CODE stay halted.",
+      safety: safetyView(null, Date.now()),
+    });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    expect(within(panel()).getByText("Unknown")).toBeInTheDocument();
+    fireEvent.click(within(panel()).getByRole("button", { name: "Refresh safety state" }));
+    await waitFor(() => expect(mocks.safety).toHaveBeenCalledTimes(1));
+    expect(await within(panel()).findByText(/recorded as unknown/)).toBeInTheDocument();
+    expect(mocks.decide).not.toHaveBeenCalled();
+    expect(mocks.liveLink).not.toHaveBeenCalled();
   });
 });
