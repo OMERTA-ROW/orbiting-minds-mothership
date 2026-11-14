@@ -38,6 +38,7 @@ const LINK_TEXT: Record<SystemStates["link"]["state"], string> = {
 const RUN_TEXT: Record<SystemStates["autonomous"]["state"], string> = {
   not_configured: "Not authorized",
   configured_blocked: "Authorized — blocked",
+  armed: "Armed — not running (no executor)",
   running: "Running",
 };
 
