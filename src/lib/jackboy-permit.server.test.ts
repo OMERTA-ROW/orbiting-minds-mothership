@@ -30,14 +30,24 @@ function manualTimers() {
 }
 
 function setup(fake = new FakeJackboy()) {
-  const link = new JackboyLink(fakeLinkConfig(), async () => {}, { fetch: fake.fetch, timeoutMs: 200 });
-  const store: PermitStore & { record: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> } = {
-    record: vi.fn(async (_req, p) => (p.renewals === 0 ? "issued" : "renewed")),
-    close: vi.fn(async () => {}),
-  };
+  const link = new JackboyLink(fakeLinkConfig(), async () => {}, {
+    fetch: fake.fetch,
+    timeoutMs: 200,
+  });
+  const store: PermitStore & { record: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> } =
+    {
+      record: vi.fn(async (_req, p) => (p.renewals === 0 ? "issued" : "renewed")),
+      close: vi.fn(async () => {}),
+    };
   const onHalt = vi.fn();
   const t = manualTimers();
-  const holder = new PermitHolder(REQ, { link, store, approvalId: FAKE.approvalId, onHalt, timers: t.timers });
+  const holder = new PermitHolder(REQ, {
+    link,
+    store,
+    approvalId: FAKE.approvalId,
+    onHalt,
+    timers: t.timers,
+  });
   return { fake, link, store, onHalt, t, holder };
 }
 
@@ -69,7 +79,12 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     await recordSafetySnapshot({ rpc } as never, await link.safety());
     expect(rpc).toHaveBeenCalledWith(
       "jackboy_safety_record_v2",
-      expect.objectContaining({ _source: "poll", _code_stop: true, _autonomous_allowed: false, _manual_allowed: true }),
+      expect.objectContaining({
+        _source: "poll",
+        _code_stop: true,
+        _autonomous_allowed: false,
+        _manual_allowed: true,
+      }),
     );
     // Releasing the stop in Jackboy never resumes the halted job.
     fake.releaseStop();
@@ -103,6 +118,8 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     const t = manualTimers();
     const h = new PermitHolder(REQ, { link, store, approvalId: null, onHalt, timers: t.timers });
     await h.acquire();
+    expect(t.pending.filter((x) => !x.cleared)).toHaveLength(1);
+    expect(t.pending.some((x) => x.ms === 0)).toBe(false); // Hard-bounded plans cannot extend their final deadline.
     await new Promise((r) => setTimeout(r, 40));
     t.pending.filter((x) => !x.cleared).forEach((x) => x.fn());
     await flush();
@@ -160,7 +177,11 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
       return new Response(await res.text(), { status: 403 }); // proof stripped
     };
     const { holder } = setup(fake);
-    const err = (await holder.acquire().catch((e: unknown) => e)) as { reason?: string; signed?: boolean; code?: string };
+    const err = (await holder.acquire().catch((e: unknown) => e)) as {
+      reason?: string;
+      signed?: boolean;
+      code?: string;
+    };
     expect(err.code).toBe("permit_denied");
     expect(err.signed).toBe(false);
     expect(err.reason).toBeUndefined();

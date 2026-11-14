@@ -63,6 +63,7 @@ def main():
             paths = list((ROOT / "drizzle/migrations").glob("*_omni_activation_permits.sql"))
             assert len(paths) == 1
             sql(paths[0].read_text())
+        sql((ROOT / "drizzle/migrations/0056_bounded_executor_integration.sql").read_text())
         sql(f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()); INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner');")
 
         def deny(text):
@@ -83,6 +84,8 @@ def main():
             return f"SET ROLE service_role; SELECT public.activation_activation_finish('{kind}','{attempt}',{str(good).lower()},'{reason}','{{}}'::jsonb);"
         def eff(kind):
             return sql(f"SELECT public.activation_effective('{kind}');")
+        def confirmed(kind, attempt):
+            return f"SET ROLE service_role; SELECT public.activation_rollback_confirmed('{kind}','{attempt}');"
         def poll(paused="false", stop="false", allowed="true", manual="true", observed="now()", expires="now()+interval '30 seconds'"):
             return (f"SELECT public.jackboy_safety_record_v2('poll',{paused},{stop},true,{allowed},{manual},NULL,now()+interval '1 hour',0,NULL,"
                     f"{observed},{expires},'{D}',NULL,'t');")
@@ -116,12 +119,17 @@ def main():
         # One attempt at a time: a second attempt is busy, the same attempt resumes.
         checks += 1; assert json.loads(begin('live_link', A2))["reason"] == "busy"
         checks += 1; assert json.loads(begin('live_link', A1))["resumed"] is True
+        sql("UPDATE public.activation_activations SET started_at=now()-interval '2 minutes' WHERE kind='live_link';")
+        deny(owner(f"SELECT public.activation_activation_begin('live_link','{A2}');"))
+        sql("UPDATE public.activation_activations SET started_at=now() WHERE kind='live_link';")
         # Only the server (service role) finishes, and only the current attempt.
         deny(owner(f"SELECT public.activation_activation_finish('live_link','{A1}',true,'x','{{}}'::jsonb);"))
         deny(owner("UPDATE public.activation_activations SET status='active';"))
         assert ok(finish('live_link', A2)) == 'superseded'
         assert eff('live_link') == 'f'
         assert ok(finish('live_link', A1)) == 'active'
+        assert ok(f"SET ROLE service_role; SELECT public.activation_attempt_outcome('live_link','{A1}');") == 'active'
+        deny(owner(f"SELECT public.activation_attempt_outcome('live_link','{A1}');"))
         assert eff('live_link') == 't'
         assert ok(finish('live_link', A1)) == 'superseded'  # idempotent, no double record
         checks += 1; assert json.loads(begin('live_link', A3))["duplicate"] is True
@@ -216,20 +224,30 @@ def main():
         assert sql("SELECT count(*) FROM public.omni_autonomy_windows WHERE ended_at IS NULL;") == '0'
         sql(decide(9, 'approved'))
         assert eff('live_link') == 'f'
+        deny(owner(f"SELECT public.activation_activation_begin('live_link','{A2}');"))
+        deny(owner(f"SELECT public.activation_rollback_confirmed('live_link','{A1}');"))
+        ok(confirmed('live_link', A1))  # Synthetic peer rollback acknowledgement, never live proof.
         checks += 1; assert json.loads(begin('live_link', A2))["ok"] is True
         # Approval changed during the attempt: finish rolls back to failed.
         sql(decide(8, 'approved'))
         assert ok(finish('live_link', A2)) == 'superseded'
         assert act('live_link') == 'revoked/step8_changed'
+        ok(confirmed('live_link', A2))
         # Attempt expiry: a finish after 90 seconds fails.
         checks += 1; assert json.loads(begin('live_link', A3))["ok"] is True
         sql("UPDATE public.activation_activations SET started_at=now()-interval '2 minutes' WHERE kind='live_link';")
         assert ok(finish('live_link', A3)) == 'failed'
         assert act('live_link') == 'failed/attempt_expired'
+        deny(owner(f"SELECT public.activation_activation_begin('live_link','{A1}');"))
+        ok(owner("SELECT public.activation_activation_revoke('live_link');"))
+        deny(owner(f"SELECT public.activation_activation_begin('live_link','{A1}');"))
+        ok(confirmed('live_link', A3))
         # A failed handshake/safety read never activates.
         checks += 1; assert json.loads(begin('live_link', A1))["ok"] is True
         assert ok(finish('live_link', A1, good=False, reason="handshake_failed")) == 'failed'
         assert eff('live_link') == 'f'
+        ok(owner("SELECT public.activation_activation_revoke('live_link');"))
+        ok(confirmed('live_link', A1))
         # Stale Step 8 proof blocks activation.
         sql("UPDATE public.activation_approval_checks SET checked_at=now()-interval '25 hours' WHERE step=8;")
         checks += 1; assert json.loads(begin('live_link', A2))["reason"] == "step8_proof_not_fresh"

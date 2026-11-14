@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   insert: vi.fn(),
   record: vi.fn(),
   checks: vi.fn(),
+  execution: vi.fn(),
 }));
 vi.mock("@tanstack/react-start", () => ({
   createServerFn: () => {
@@ -29,7 +30,35 @@ vi.mock("./omni-terminal.server", () => ({ assertEmergencyStopReleased: mocks.st
 vi.mock("./jackboy-link.server", () => ({
   configuredJackboyConfiguration: () => ({}),
   checkJackboyRunnerConfiguration: mocks.probe,
+  configuredJackboyLink: async () => ({}),
+  JackboyLinkError: class extends Error {
+    constructor(
+      message: string,
+      public stage: string,
+    ) {
+      super(message);
+    }
+  },
+  JackboyLink: class {
+    async connect() {}
+    async safety() {
+      return {
+        checkedAt: new Date().toISOString(),
+        validUntil: new Date(Date.now() + 30_000).toISOString(),
+        killSwitch: false,
+        emergencyStop: true,
+        codeEnabled: false,
+        autonomousAllowed: false,
+        manualDiagnosticsAllowed: true,
+        authorization: null,
+        blockedBy: "code_disabled",
+        activePermits: 0,
+        proofDigest: "d".repeat(64),
+      };
+    }
+  },
 }));
+vi.mock("./unified-activation.server", () => ({ readExecutionState: mocks.execution }));
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: {
     from: (table: string) =>
@@ -110,6 +139,7 @@ beforeEach(() => {
   mocks.insert.mockReset().mockResolvedValue({ error: null });
   mocks.record.mockReset().mockResolvedValue({ error: null });
   mocks.checks.mockReset().mockReturnValue({ data: [], error: null });
+  mocks.execution.mockReset();
   vi.stubEnv("JACKBOY_LINK_ORIGIN", "https://jackboy.lovable.app");
   vi.stubEnv("JACKBOY_LINK_RUNNER_ORIGIN", "https://runner.up.railway.app");
   vi.stubEnv("JACKBOY_LINK_MOTHERSHIP_OWNER_ID", OWNER);
@@ -390,7 +420,10 @@ describe("Step 9/10 approval triggers the real activation", () => {
     };
     expect(result.ok).toBe(true);
     expect(result.activation).toMatchObject({ kind: "live_link", ok: false });
-    expect(inv.rpc).toHaveBeenCalledWith("activation_approval_decide", expect.objectContaining({ _step: 9 }));
+    expect(inv.rpc).toHaveBeenCalledWith(
+      "activation_approval_decide",
+      expect.objectContaining({ _step: 9 }),
+    );
     expect(inv.rpc).not.toHaveBeenCalledWith(
       "activation_activation_finish",
       expect.objectContaining({ _ok: true }),
@@ -398,9 +431,63 @@ describe("Step 9/10 approval triggers the real activation", () => {
   });
   it("does not activate when the approval itself is refused", async () => {
     const { inv } = step9(8, true);
-    inv.rpc.mockResolvedValueOnce({ error: { code: "22023", message: "Fresh two-factor needed" } } as never);
+    inv.rpc.mockResolvedValueOnce({
+      error: { code: "22023", message: "Fresh two-factor needed" },
+    } as never);
     const result = await mocks.handlers[2]!(inv.input);
     expect(result).toMatchObject({ ok: false, reason: "mfa" });
     expect(inv.rpc).toHaveBeenCalledTimes(1);
+  });
+  it("completes Step 9 only after the backend connect operation and signed safety record", async () => {
+    const { inv, rows } = step9(8, true);
+    inv.rpc.mockImplementation(async (fn = "") => {
+      if (fn === "activation_approval_decide") rows.data = allApproved(9);
+      return {
+        error: null,
+        data: fn === "activation_activation_begin" ? { ok: true, duplicate: false } : null,
+      };
+    });
+    const from = inv.input.context.supabase.from;
+    inv.input.context.supabase.from = (table: string) => {
+      const q = from(table);
+      if (table === "activation_approvals")
+        q["single"] = async () => ({
+          data: { approval_expires_at: rows.data[6]!.approval_expires_at },
+          error: null,
+        });
+      return q;
+    };
+    mocks.record.mockImplementation(async (fn: string) => ({
+      error: null,
+      data: fn === "activation_activation_finish" ? "active" : "clear",
+    }));
+    mocks.execution.mockResolvedValue({
+      connected: true,
+      operationId: "aaaaaaaa-0000-4000-8000-000000000009",
+      executorRelease: null,
+    });
+    const result = await mocks.handlers[2]!(inv.input);
+    expect(result).toEqual({
+      ok: true,
+      activation: {
+        kind: "live_link",
+        ok: true,
+        already: false,
+        message:
+          "Live link activated and its signed backend state verified. No job started or Stop released.",
+        blockers: [],
+      },
+    });
+    expect(mocks.execution).toHaveBeenCalledWith(
+      "connect",
+      expect.objectContaining({
+        operationId: "aaaaaaaa-0000-4000-8000-000000000009",
+        expiresAt: rows.data[6]!.approval_expires_at,
+      }),
+    );
+    expect(mocks.record).toHaveBeenCalledWith(
+      "activation_activation_finish",
+      expect.objectContaining({ _ok: true }),
+    );
   });
 });

@@ -11,6 +11,9 @@ const mocks = vi.hoisted(() => ({
   activateLink: vi.fn(),
   activateAuto: vi.fn(),
   deactivate: vi.fn(),
+  unifiedState: vi.fn(async () => ({ state: null, label: "Blocked" })),
+  unifiedControl: vi.fn(),
+  unifiedPlan: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-start", () => ({
@@ -44,6 +47,11 @@ vi.mock("@/lib/activation-approvals.functions", () => ({
   activateLiveLink: "activateLink",
   activateAutonomy: "activateAuto",
   deactivateActivation: "deactivate",
+}));
+vi.mock("@/lib/unified-activation.functions", () => ({
+  getUnifiedExecutionState: "unifiedState",
+  controlUnifiedExecution: "unifiedControl",
+  runAuthorizedPlan: "unifiedPlan",
 }));
 
 vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
@@ -533,7 +541,12 @@ describe("Activation Approvals workflow", () => {
 describe("Step 8 run protocol self-test & verify", () => {
   const readyItems = [
     { key: "stop", label: "Mothership Emergency Stop", ok: true, detail: "Released." },
-    { key: "self_test", label: "Self-test switch (JACKBOY_LINK_SELF_TEST_ENABLED)", ok: true, detail: "On." },
+    {
+      key: "self_test",
+      label: "Self-test switch (JACKBOY_LINK_SELF_TEST_ENABLED)",
+      ok: true,
+      detail: "On.",
+    },
   ];
   const step8 = (readiness = readyItems, extra: Record<string, unknown> = {}) => {
     const base = snapshot("runner_only", { approvedThrough: 7 });
@@ -547,7 +560,9 @@ describe("Step 8 run protocol self-test & verify", () => {
     };
   };
   const runButton = () =>
-    within(stepItem(8)).getByRole("button", { name: /protocol self-test & verify|Continue pending/ });
+    within(stepItem(8)).getByRole("button", {
+      name: /protocol self-test & verify|Continue pending/,
+    });
 
   beforeEach(() => {
     mocks.selfTest.mockReset();
@@ -560,7 +575,12 @@ describe("Step 8 run protocol self-test & verify", () => {
       ok: true,
       outcome: "passed",
       resumed: false,
-      job: { id: "22222222-2222-4222-8222-222222222222", status: "completed", checks: 3, runner: "restricted-protocol-self-test" },
+      job: {
+        id: "22222222-2222-4222-8222-222222222222",
+        status: "completed",
+        checks: 3,
+        runner: "restricted-protocol-self-test",
+      },
       startedAt: "2026-11-14T00:00:00.000Z",
       finishedAt: "2026-11-14T00:00:04.000Z",
       check: passingCheck,
@@ -583,13 +603,20 @@ describe("Step 8 run protocol self-test & verify", () => {
     expect(result).toHaveTextContent(/Not approved yet/);
     expect(mocks.decide).not.toHaveBeenCalled();
     // The authorization is per click.
-    expect(within(stepItem(8)).getByRole("checkbox", { name: /I authorize Mothership/ })).not.toBeChecked();
+    expect(
+      within(stepItem(8)).getByRole("checkbox", { name: /I authorize Mothership/ }),
+    ).not.toBeChecked();
   });
 
   it("keeps the button disabled and lists the next step when a setting blocks sending", async () => {
     mocks.list.mockResolvedValue(
       step8([
-        { key: "self_test", label: "Self-test switch (JACKBOY_LINK_SELF_TEST_ENABLED)", ok: false, detail: "Off or missing: set it to exactly true." },
+        {
+          key: "self_test",
+          label: "Self-test switch (JACKBOY_LINK_SELF_TEST_ENABLED)",
+          ok: false,
+          detail: "Off or missing: set it to exactly true.",
+        },
       ]),
     );
     render(<ActivationApprovals />);
@@ -605,31 +632,40 @@ describe("Step 8 run protocol self-test & verify", () => {
     mocks.selfTest.mockResolvedValueOnce({
       ok: false,
       reason: "timeout",
-      message: "Timeout: Jackboy sent no usable reply within 10 s. Retrying only reads this job's status; it never runs it again.",
+      message:
+        "Timeout: Jackboy sent no usable reply within 10 s. Retrying only reads this job's status; it never runs it again.",
       details: [],
       attemptFinal: false,
       sent: true,
     });
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^8\. / });
-    const tick = () => fireEvent.click(within(stepItem(8)).getByRole("checkbox", { name: /I authorize Mothership/ }));
+    const tick = () =>
+      fireEvent.click(
+        within(stepItem(8)).getByRole("checkbox", { name: /I authorize Mothership/ }),
+      );
     tick();
     fireEvent.click(runButton());
-    expect(await within(stepItem(8)).findByText(/Timeout — no usable reply in time/)).toBeInTheDocument();
+    expect(
+      await within(stepItem(8)).findByText(/Timeout — no usable reply in time/),
+    ).toBeInTheDocument();
     expect(runButton()).toHaveTextContent("Continue pending self-test (status only)");
     const firstId = mocks.selfTest.mock.calls[0]![0].data.attemptId;
 
     mocks.selfTest.mockResolvedValueOnce({
       ok: false,
       reason: "safety_denial",
-      message: "Safety denial: Jackboy's global Kill Switch is on, so it refused the self-test. Nothing ran.",
+      message:
+        "Safety denial: Jackboy's global Kill Switch is on, so it refused the self-test. Nothing ran.",
       details: [],
       attemptFinal: true,
       sent: true,
     });
     tick();
     fireEvent.click(runButton());
-    expect(await within(stepItem(8)).findByText(/Safety denial — nothing was run/)).toBeInTheDocument();
+    expect(
+      await within(stepItem(8)).findByText(/Safety denial — nothing was run/),
+    ).toBeInTheDocument();
     expect(mocks.selfTest.mock.calls[1]![0].data.attemptId).toBe(firstId);
     expect(runButton()).toHaveTextContent("Run protocol self-test & verify");
   });
@@ -647,7 +683,10 @@ describe("Step 8 run protocol self-test & verify", () => {
   });
 
   it("is locked while an earlier step is not approved", async () => {
-    mocks.list.mockResolvedValue({ ...snapshot("runner_only", { approvedThrough: 6 }), selfTestReadiness: readyItems });
+    mocks.list.mockResolvedValue({
+      ...snapshot("runner_only", { approvedThrough: 6 }),
+      selfTestReadiness: readyItems,
+    });
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^8\. / });
     expect(within(stepItem(8)).queryByRole("button", { name: /protocol self-test/ })).toBeNull();
@@ -657,13 +696,22 @@ describe("Step 8 run protocol self-test & verify", () => {
 
 describe("Steps 9–10 activation panel", () => {
   const gates = (stopOk = true) => [
-    { key: "stop", label: "Mothership Emergency Stop", ok: stopOk, detail: stopOk ? "Released." : "Engaged." },
+    {
+      key: "stop",
+      label: "Mothership Emergency Stop",
+      ok: stopOk,
+      detail: stopOk ? "Released." : "Engaged.",
+    },
     { key: "owner", label: "Link owner", ok: true, detail: "Matches you." },
     { key: "link", label: "Link switch (JACKBOY_LINK_ENABLED)", ok: true, detail: "On." },
     { key: "window", label: "Link approval window", ok: true, detail: "Open." },
     { key: "identity", label: "Link identity settings", ok: true, detail: "Present." },
   ];
-  const live = (approvedThrough: number, extra: Parameters<typeof snapshot>[1] = {}, stopOk = true) =>
+  const live = (
+    approvedThrough: number,
+    extra: Parameters<typeof snapshot>[1] = {},
+    stopOk = true,
+  ) =>
     snapshot("runner_only", {
       approvedThrough,
       liveReadiness: gates(stopOk),
@@ -672,7 +720,8 @@ describe("Steps 9–10 activation panel", () => {
     });
   const panel = () => screen.getByRole("region", { name: /Live link, autonomy, CODE and stops/ });
   const states = () => within(panel()).getByRole("list", { name: "System states" });
-  const activateLinkButton = () => within(panel()).getByRole("button", { name: "Activate live link" });
+  const activateLinkButton = () =>
+    within(panel()).getByRole("button", { name: "Activate live link" });
   const activateAutoButton = () =>
     within(panel()).getByRole("button", { name: "Activate autonomy authorization" });
   const engaged = () =>
@@ -693,7 +742,14 @@ describe("Steps 9–10 activation panel", () => {
     );
 
   beforeEach(() => {
-    for (const m of [mocks.liveLink, mocks.activateLink, mocks.activateAuto, mocks.deactivate, mocks.safety, mocks.decide])
+    for (const m of [
+      mocks.liveLink,
+      mocks.activateLink,
+      mocks.activateAuto,
+      mocks.deactivate,
+      mocks.safety,
+      mocks.decide,
+    ])
       m.mockReset();
   });
 
@@ -701,7 +757,9 @@ describe("Steps 9–10 activation panel", () => {
     mocks.list.mockResolvedValue(live(8));
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
-    expect(within(panel()).getByText("Waiting for your Step 9 approval", { exact: false })).toBeInTheDocument();
+    expect(
+      within(panel()).getByText("Waiting for your Step 9 approval", { exact: false }),
+    ).toBeInTheDocument();
     expect(activateLinkButton()).toBeDisabled();
     expect(activateAutoButton()).toBeDisabled();
     const s = within(states());
@@ -727,7 +785,9 @@ describe("Steps 9–10 activation panel", () => {
     fireEvent.click(activateLinkButton());
     fireEvent.click(activateLinkButton());
     await waitFor(() => expect(mocks.activateLink).toHaveBeenCalledTimes(1));
-    const arg = mocks.activateLink.mock.calls[0]![0] as { data: { confirm: boolean; attemptId: string } };
+    const arg = mocks.activateLink.mock.calls[0]![0] as {
+      data: { confirm: boolean; attemptId: string };
+    };
     expect(arg.data.confirm).toBe(true);
     expect(arg.data.attemptId).toMatch(/^[0-9a-f-]{36}$/);
     expect(await within(panel()).findByText(/Live link activated/)).toBeInTheDocument();
@@ -747,7 +807,13 @@ describe("Steps 9–10 activation panel", () => {
       ok: false,
       reason: "safety_denial",
       message: "Not activated: Safety denial from Jackboy.",
-      details: [{ label: "Jackboy reply", status: "needs_attention", detail: "HTTP 403 · grant_unavailable" }],
+      details: [
+        {
+          label: "Jackboy reply",
+          status: "needs_attention",
+          detail: "HTTP 403 · grant_unavailable",
+        },
+      ],
     });
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
@@ -758,7 +824,9 @@ describe("Steps 9–10 activation panel", () => {
     fireEvent.click(box());
     fireEvent.click(activateLinkButton());
     expect(await within(panel()).findByText(/Safety denial from Jackboy/)).toBeInTheDocument();
-    const ids = mocks.activateLink.mock.calls.map((c) => (c[0] as { data: { attemptId: string } }).data.attemptId);
+    const ids = mocks.activateLink.mock.calls.map(
+      (c) => (c[0] as { data: { attemptId: string } }).data.attemptId,
+    );
     expect(ids[0]).toBe(ids[1]);
   });
 
@@ -776,33 +844,49 @@ describe("Steps 9–10 activation panel", () => {
     });
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
-    const box = within(stepItem(9)).getByRole("checkbox", { name: /Also activate the live link now/ });
+    const box = within(stepItem(9)).getByRole("checkbox", {
+      name: /Also activate the live link now/,
+    });
     expect(box).toBeChecked();
     fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
     await waitFor(() => expect(mocks.decide).toHaveBeenCalledTimes(1));
-    const arg = mocks.decide.mock.calls[0]![0] as { data: { step: number; activate: { attemptId: string } | null } };
+    const arg = mocks.decide.mock.calls[0]![0] as {
+      data: { step: number; activate: { attemptId: string } | null };
+    };
     expect(arg.data.step).toBe(9);
     expect(arg.data.activate?.attemptId).toMatch(/^[0-9a-f-]{36}$/);
     expect(await screen.findByText(/Approved\. Live link activated/)).toBeInTheDocument();
     expect(mocks.activateLink).not.toHaveBeenCalled();
     mocks.decide.mockReset().mockResolvedValue({ ok: true, activation: null });
-    fireEvent.click(within(stepItem(9)).getByRole("checkbox", { name: /Also activate the live link now/ }));
+    fireEvent.click(
+      within(stepItem(9)).getByRole("checkbox", { name: /Also activate the live link now/ }),
+    );
     fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
     await waitFor(() => expect(mocks.decide).toHaveBeenCalledTimes(1));
-    expect((mocks.decide.mock.calls[0]![0] as { data: { activate: unknown } }).data.activate).toBeNull();
+    expect(
+      (mocks.decide.mock.calls[0]![0] as { data: { activate: unknown } }).data.activate,
+    ).toBeNull();
   });
 
   it("reports a recorded approval whose activation failed, without claiming activation", async () => {
     mocks.list.mockResolvedValue(live(8));
     mocks.decide.mockResolvedValue({
       ok: true,
-      activation: { kind: "live_link", ok: false, reason: "timeout", message: "Jackboy did not answer in time.", details: [] },
+      activation: {
+        kind: "live_link",
+        ok: false,
+        reason: "timeout",
+        message: "Jackboy did not answer in time.",
+        details: [],
+      },
     });
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
     fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
     expect(
-      await screen.findByText(/Approved, but live link was not activated: Jackboy did not answer in time/),
+      await screen.findByText(
+        /Approved, but live link was not activated: Jackboy did not answer in time/,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -817,13 +901,17 @@ describe("Steps 9–10 activation panel", () => {
     mocks.list.mockResolvedValue(live(9, {}, false));
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
-    expect(within(panel()).getByRole("checkbox", { name: /activating the live link/ })).toBeDisabled();
+    expect(
+      within(panel()).getByRole("checkbox", { name: /activating the live link/ }),
+    ).toBeDisabled();
     expect(activateLinkButton()).toBeDisabled();
     expect(within(panel()).queryByRole("button", { name: /release/i })).toBeNull();
   });
 
   it("after the link is active, Step 10 activation is offered and shows Authorized — blocked, never running", async () => {
-    mocks.list.mockResolvedValue(live(10, { linkActive: true, autonomyActive: true, safety: engaged() }));
+    mocks.list.mockResolvedValue(
+      live(10, { linkActive: true, autonomyActive: true, safety: engaged() }),
+    );
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^10\. / });
     const s = within(states());
@@ -831,7 +919,9 @@ describe("Steps 9–10 activation panel", () => {
     expect(s.getByText("engaged")).toBeInTheDocument();
     expect(s.queryByText("Running")).toBeNull();
     expect(within(panel()).getAllByText(/CODE Emergency Stop engaged/).length).toBeGreaterThan(0);
-    expect(within(panel()).getByRole("button", { name: "Deactivate autonomy authorization" })).toBeEnabled();
+    expect(
+      within(panel()).getByRole("button", { name: "Deactivate autonomy authorization" }),
+    ).toBeEnabled();
   });
 
   it("activates autonomy authorization only with its own checkbox and reports what still blocks execution", async () => {
@@ -840,29 +930,48 @@ describe("Steps 9–10 activation panel", () => {
       ok: true,
       already: false,
       message: "Autonomy authorization activated — not running.",
-      blockers: ["Jackboy CODE Emergency Stop is engaged.", "No OMNI executor is connected, so no autonomous job can run."],
+      blockers: [
+        "Jackboy CODE Emergency Stop is engaged.",
+        "No OMNI executor is connected, so no autonomous job can run.",
+      ],
     });
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^10\. / });
     expect(activateAutoButton()).toBeDisabled();
-    fireEvent.click(within(panel()).getByRole("checkbox", { name: /activating OMNI autonomy authorization/ }));
+    fireEvent.click(
+      within(panel()).getByRole("checkbox", { name: /activating OMNI autonomy authorization/ }),
+    );
     fireEvent.click(activateAutoButton());
     await waitFor(() => expect(mocks.activateAuto).toHaveBeenCalledTimes(1));
-    expect(await within(panel()).findByText(/Still blocking execution: Jackboy CODE Emergency Stop is engaged/)).toBeInTheDocument();
+    expect(
+      await within(panel()).findByText(
+        /Still blocking execution: Jackboy CODE Emergency Stop is engaged/,
+      ),
+    ).toBeInTheDocument();
     expect(mocks.activateLink).not.toHaveBeenCalled();
   });
 
   it("deactivates without a code and refreshes the safety state without changing anything else", async () => {
     mocks.list.mockResolvedValue({ ...live(9, { linkActive: true }), mfaAgeSeconds: null });
-    mocks.deactivate.mockResolvedValue({ ok: true, message: "Live link deactivated (autonomy authorization ended too)." });
-    mocks.safety.mockResolvedValue({ ok: true, checked: true, message: "recorded as unknown", safety: safetyView(null, Date.now()) });
+    mocks.deactivate.mockResolvedValue({
+      ok: true,
+      message: "Live link deactivated (autonomy authorization ended too).",
+    });
+    mocks.safety.mockResolvedValue({
+      ok: true,
+      checked: true,
+      message: "recorded as unknown",
+      safety: safetyView(null, Date.now()),
+    });
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
     fireEvent.click(within(panel()).getByRole("button", { name: "Refresh safety state" }));
     await waitFor(() => expect(mocks.safety).toHaveBeenCalledTimes(1));
     expect(await within(panel()).findByText(/recorded as unknown/)).toBeInTheDocument();
     fireEvent.click(within(panel()).getByRole("button", { name: "Deactivate live link" }));
-    await waitFor(() => expect(mocks.deactivate).toHaveBeenCalledWith({ data: { kind: "live_link" } }));
+    await waitFor(() =>
+      expect(mocks.deactivate).toHaveBeenCalledWith({ data: { kind: "live_link" } }),
+    );
     expect(mocks.decide).not.toHaveBeenCalled();
     expect(mocks.activateLink).not.toHaveBeenCalled();
   });

@@ -78,7 +78,8 @@ function StateRow(props: { label: string; value: string; good: boolean; bad?: bo
 function activationLine(a: ActivationView | undefined) {
   if (!a) return "unreadable";
   if (a.effective) return `active since ${when(a.activatedAt)}`;
-  if (a.status === "active") return "recorded, but no longer in effect (approvals or Step 7 window changed)";
+  if (a.status === "active")
+    return "recorded, but no longer in effect (approvals or Step 7 window changed)";
   if (a.status === "inactive") return "never activated";
   return `${a.status}${a.reason ? ` (${a.reason.replace(/_/g, " ")})` : ""} · ${when(a.updatedAt)}`;
 }
@@ -112,9 +113,15 @@ export function LiveLinkPanel(props: {
   const autonomy = props.activations.find((a) => a.kind === "autonomy");
   const linkOn = Boolean(link?.effective);
   const autoOn = Boolean(autonomy?.effective);
-  const canActivateLink = liveLink.canCheck && !linkOn && props.mfaFresh && props.linkConfirmed && !props.busy;
+  const canActivateLink =
+    liveLink.canCheck && !linkOn && props.mfaFresh && props.linkConfirmed && !props.busy;
   const canActivateAuto =
-    linkOn && props.step10Approved && !autoOn && props.mfaFresh && props.autonomyConfirmed && !props.busy;
+    linkOn &&
+    props.step10Approved &&
+    !autoOn &&
+    props.mfaFresh &&
+    props.autonomyConfirmed &&
+    !props.busy;
   const spinner = (a: PanelAction) =>
     props.pending === a && (
       <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />
@@ -136,8 +143,8 @@ export function LiveLinkPanel(props: {
           Live link, autonomy, CODE and stops — separate states
         </h2>
         <p className="text-xs text-muted-foreground">
-          Read from the server on every refresh. Activating records configuration only; nothing on this
-          panel releases a stop, turns a Jackboy switch or starts a job.
+          Read from the server on every refresh. Activating records configuration only; nothing on
+          this panel releases a stop, turns a Jackboy switch or starts a job.
         </p>
       </div>
 
@@ -225,14 +232,18 @@ export function LiveLinkPanel(props: {
                 onChange={(e) => props.onLinkConfirmedChange(e.target.checked)}
               />
               <span>
-                I authorize activating the live link: one signed handshake and one signed safety read.
-                No job, self-test or CODE request is sent.
+                I authorize activating the live link: one signed handshake and one signed safety
+                read. No job, self-test or CODE request is sent.
               </span>
             </label>
           )}
           <div className="flex flex-wrap items-center gap-2">
             {!linkOn && (
-              <Button size="sm" disabled={!canActivateLink} onClick={() => props.onActivate("live_link")}>
+              <Button
+                size="sm"
+                disabled={!canActivateLink}
+                onClick={() => props.onActivate("live_link")}
+              >
                 {spinner("activate_link")}
                 Activate live link
               </Button>
@@ -261,7 +272,9 @@ export function LiveLinkPanel(props: {
             {waiting("activate_link")}
             {waiting("check")}
             {liveLink.canCheck && !props.mfaFresh && (
-              <span className="text-xs text-muted-foreground">Enter a fresh two-step code first.</span>
+              <span className="text-xs text-muted-foreground">
+                Enter a fresh two-step code first.
+              </span>
             )}
           </div>
           <Result result={props.linkResult} />
@@ -276,9 +289,9 @@ export function LiveLinkPanel(props: {
             Activation: <strong>{activationLine(autonomy)}</strong>
           </p>
           <p className="text-xs text-muted-foreground">
-            Authorization only. Caps enforced on every job: $0.50 per AI call, $1 reserved per task, $5 per
-            day, $10 total. Execution also needs every stop released, a fresh Jackboy reading that allows
-            autonomy, and a Jackboy permit per job renewed every 20 seconds.
+            Authorization only. Caps enforced on every job: $0.50 per AI call, $1 reserved per task,
+            $5 per day, $10 total. Execution also needs every stop released, a fresh Jackboy reading
+            that allows autonomy, and a Jackboy permit per job renewed every 20 seconds.
           </p>
           <p className="text-xs font-medium">What blocks execution now:</p>
           <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
@@ -296,14 +309,18 @@ export function LiveLinkPanel(props: {
                 onChange={(e) => props.onAutonomyConfirmedChange(e.target.checked)}
               />
               <span>
-                I authorize activating OMNI autonomy authorization under these caps. It starts nothing and
-                releases no stop.
+                I authorize activating OMNI autonomy authorization under these caps. It starts
+                nothing and releases no stop.
               </span>
             </label>
           )}
           <div className="flex flex-wrap items-center gap-2">
             {!autoOn && (
-              <Button size="sm" disabled={!canActivateAuto} onClick={() => props.onActivate("autonomy")}>
+              <Button
+                size="sm"
+                disabled={!canActivateAuto}
+                onClick={() => props.onActivate("autonomy")}
+              >
                 {spinner("activate_autonomy")}
                 Activate autonomy authorization
               </Button>
@@ -319,7 +336,9 @@ export function LiveLinkPanel(props: {
               </Button>
             )}
             {waiting("activate_autonomy")}
-            {!linkOn && <span className="text-xs text-muted-foreground">Activate the live link first.</span>}
+            {!linkOn && (
+              <span className="text-xs text-muted-foreground">Activate the live link first.</span>
+            )}
             {linkOn && !props.step10Approved && (
               <span className="text-xs text-muted-foreground">Approve Step 10 first.</span>
             )}
@@ -332,13 +351,18 @@ export function LiveLinkPanel(props: {
             <ShieldAlert size={14} aria-hidden /> Jackboy safety (signed, synced)
           </h3>
           <p className="text-sm">
-            Status: <strong className={safety.clear ? "" : "text-destructive"}>{safety.label}</strong>
+            Status:{" "}
+            <strong className={safety.clear ? "" : "text-destructive"}>{safety.label}</strong>
           </p>
           <p className="text-xs text-muted-foreground">{safety.detail}</p>
-          <ul className="space-y-1 text-xs text-muted-foreground" aria-label="Jackboy safety details">
+          <ul
+            className="space-y-1 text-xs text-muted-foreground"
+            aria-label="Jackboy safety details"
+          >
             <li>
               Kill Switch: <strong>{safety.killSwitch}</strong> · CODE Emergency Stop:{" "}
-              <strong>{safety.codeStop}</strong> · CODE setting: <strong>{safety.codeEnabled}</strong>
+              <strong>{safety.codeStop}</strong> · CODE setting:{" "}
+              <strong>{safety.codeEnabled}</strong>
             </li>
             <li>
               Jackboy allows OMNI autonomy: <strong>{safety.autonomousAllowed}</strong>
@@ -356,11 +380,13 @@ export function LiveLinkPanel(props: {
           </Button>
           <Result result={props.safetyResult} />
           <p className="text-xs text-muted-foreground">
-            The CODE Emergency Stop and Kill Switch are controlled only in Jackboy (passkey) and are never
-            changed here. Under Jackboy's permit contract a stop there revokes OMNI's permits, and an OMNI
-            job holding one halts at its next 20-second renewal; this page records the stop on the next
-            scheduled safety read or when you refresh. Unknown or stale counts as stopped. Not yet proven
-            live: Jackboy's permit service must be installed and no OMNI executor is connected.
+            The CODE Emergency Stop and Kill Switch are controlled only in Jackboy (passkey) and are
+            never changed here. Under Jackboy's permit contract a stop there revokes OMNI's permits,
+            and an OMNI job holding one halts at its next 20-second renewal; this page records the
+            stop on the next scheduled safety read or when you refresh. Unknown or stale counts as
+            stopped. Not yet proven live: the bounded executor and Jackboy permit service require
+            separate deployment and verification. The bounded-plan controls above do not enable the
+            general CODE/windowed queues.
           </p>
         </article>
 
@@ -370,8 +396,8 @@ export function LiveLinkPanel(props: {
           </h3>
           <ul className="space-y-1 text-xs text-muted-foreground">
             <li>
-              Not affected by the CODE Emergency Stop. Refused only while a verified Jackboy reading says
-              its System Kill Switch is on
+              Not affected by the CODE Emergency Stop. Refused only while a verified Jackboy reading
+              says its System Kill Switch is on
               {safety.manualBlocked ? (
                 <strong className="text-destructive"> — that is the case now.</strong>
               ) : (

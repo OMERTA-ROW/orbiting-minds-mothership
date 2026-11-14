@@ -207,6 +207,11 @@ export async function permissionRequest(config, operation, plan) {
     Date.parse(reply.state.checkedAt) > Date.now() + 1000
   )
     throw new Error("Stale permission state");
+  if (operation === "finish") {
+    if (!["completed", "failed", "cancelled"].includes(reply.state.jobState))
+      throw new Error("Terminal job outcome is unverified");
+    return reply.state.jobState;
+  }
   return (
     reply.state.allowed === true &&
     reply.state.emergencyStop === false &&
@@ -360,7 +365,15 @@ export function createExecutor(
         clearInterval(monitor);
         if (workspace) await fs.rm(workspace, { recursive: true, force: true });
         try {
-          if (claimed) await permission(config, "finish", { ...plan, outcome });
+          if (claimed) {
+            const recorded = await permission(config, "finish", { ...plan, outcome });
+            if (
+              typeof recorded === "string" &&
+              ["completed", "failed", "cancelled"].includes(recorded)
+            )
+              outcome = recorded;
+            else if (recorded !== true) throw new Error("Terminal job outcome is unverified");
+          }
         } finally {
           jobs.delete(id);
         }

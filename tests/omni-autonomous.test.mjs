@@ -155,6 +155,7 @@ test("signed stale safety responses are denied; completion retains the approved 
   const value = plan();
   const permissionSecret = "p".repeat(32);
   let seen;
+  let stale = true;
   const c = {
     jackboyOrigin: "https://jackboy.invalid",
     clientId: "fixture",
@@ -168,7 +169,8 @@ test("signed stale safety responses are denied; completion retains the approved 
         requestNonce: nonce,
         state: {
           projectId: value.projectId,
-          checkedAt: new Date(Date.now() - 10_000).toISOString(),
+          checkedAt: new Date(Date.now() - (stale ? 10_000 : 0)).toISOString(),
+          jobState: "cancelled",
           allowed: true,
           emergencyStop: false,
           killSwitch: false,
@@ -185,4 +187,9 @@ test("signed stale safety responses are denied; completion retains the approved 
   };
   await assert.rejects(permissionRequest(c, "finish", { ...value, outcome: "completed" }), /Stale/);
   assert.equal(seen.args.planSha256, planHash(value));
+  stale = false;
+  assert.equal(
+    await permissionRequest(c, "finish", { ...value, outcome: "completed" }),
+    "cancelled",
+  );
 });

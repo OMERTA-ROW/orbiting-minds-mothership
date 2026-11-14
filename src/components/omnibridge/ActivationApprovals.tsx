@@ -27,6 +27,7 @@ import {
   deactivateActivation,
 } from "@/lib/activation-approvals.functions";
 import { LiveLinkPanel, type LiveLinkOutcome } from "@/components/omnibridge/LiveLinkPanel";
+import { UnifiedExecutionStatus } from "@/components/omnibridge/UnifiedExecutionStatus";
 import { SELF_TEST_ATTEMPT_KEY } from "@/lib/activation-self-test";
 import { Step8SelfTest, type SelfTestOutcome } from "@/components/omnibridge/Step8SelfTest";
 import {
@@ -127,7 +128,10 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const [expiry, setExpiry] = useState(() => toLocalInput(Date.now() + 12 * 3600_000));
   const [cap, setCap] = useState(false);
   // Steps 9–10: approving also activates (owner can untick to record the approval only).
-  const [activateOnApprove, setActivateOnApprove] = useState<Record<number, boolean>>({ 9: true, 10: true });
+  const [activateOnApprove, setActivateOnApprove] = useState<Record<number, boolean>>({
+    9: true,
+    10: true,
+  });
   const [daily, setDaily] = useState(false);
   const [code, setCode] = useState("");
   const [now, setNow] = useState(() => Date.now());
@@ -338,11 +342,15 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
     )
       return;
     const alsoActivate =
-      action === "approve" && (row.step === 9 || row.step === 10) && activateOnApprove[row.step] === true;
+      action === "approve" &&
+      (row.step === 9 || row.step === 10) &&
+      activateOnApprove[row.step] === true;
     return exclusive("decide", row.step, async () => {
       setNotice({
         step: row.step,
-        text: alsoActivate ? "Recording your approval, then activating…" : "Recording your decision…",
+        text: alsoActivate
+          ? "Recording your approval, then activating…"
+          : "Recording your decision…",
       });
       let result: Awaited<ReturnType<typeof decide>>;
       try {
@@ -384,7 +392,9 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         const what = activation.kind === "live_link" ? "Live link" : "Autonomy authorization";
         const text = activation.ok
           ? `Approved. ${activation.message}${
-              activation.blockers.length ? ` Still blocking execution: ${activation.blockers.join(" ")}` : ""
+              activation.blockers.length
+                ? ` Still blocking execution: ${activation.blockers.join(" ")}`
+                : ""
             }`
           : `Approved, but ${what.toLowerCase()} was not activated: ${activation.message} You can retry from the panel below.`;
         await refreshAfter(row.step, text, activation.ok ? "ok" : "error");
@@ -481,10 +491,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
     return exclusive("livelink", null, async () => {
       setLiveResult(null);
       try {
-        const result = await withTimeout(
-          checkLiveLink({ data: { confirm: true } }),
-          limits.decide,
-        );
+        const result = await withTimeout(checkLiveLink({ data: { confirm: true } }), limits.decide);
         setLiveResult(
           result.ok
             ? { ok: true, message: result.message, at: result.verifiedAt }
@@ -513,41 +520,52 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
     const confirmed = kind === "live_link" ? liveConfirmed : autoConfirmed;
     const setResult = kind === "live_link" ? setLinkActResult : setAutoActResult;
     if (!confirmed)
-      return setNotice({ step: kind === "live_link" ? 9 : 10, tone: "error", text: "Tick the authorization box first." });
-    return exclusive(kind === "live_link" ? "activate_link" : "activate_autonomy", null, async () => {
-      setResult(null);
-      const attemptId = activationAttempt.current[kind] ?? crypto.randomUUID();
-      activationAttempt.current[kind] = attemptId;
-      try {
-        const call = kind === "live_link" ? activateLink : activateAuto;
-        const result = await withTimeout(call({ data: { confirm: true, attemptId } }), limits.decide);
-        // A finished attempt (either way) is over; the next click starts a new one.
-        if (result.ok || result.reason !== "not_recorded") delete activationAttempt.current[kind];
-        setResult({
-          ok: result.ok,
-          message: result.ok
-            ? result.blockers.length
-              ? `${result.message} Still blocking execution: ${result.blockers.join(" ")}`
-              : result.message
-            : result.message,
-          details: result.ok ? [] : result.details,
-          at: new Date().toISOString(),
-        });
-      } catch (error) {
-        setResult({
-          ok: false,
-          message:
-            error instanceof FlowTimeoutError
-              ? `${error.message} If it did not finish, it is not active; retrying continues the same attempt.`
-              : "The activation did not complete and is not active. Retrying continues the same attempt.",
-          at: new Date().toISOString(),
-        });
-      } finally {
-        if (kind === "live_link") setLiveConfirmed(false);
-        else setAutoConfirmed(false);
-      }
-      await refresh().catch(() => {});
-    });
+      return setNotice({
+        step: kind === "live_link" ? 9 : 10,
+        tone: "error",
+        text: "Tick the authorization box first.",
+      });
+    return exclusive(
+      kind === "live_link" ? "activate_link" : "activate_autonomy",
+      null,
+      async () => {
+        setResult(null);
+        const attemptId = activationAttempt.current[kind] ?? crypto.randomUUID();
+        activationAttempt.current[kind] = attemptId;
+        try {
+          const call = kind === "live_link" ? activateLink : activateAuto;
+          const result = await withTimeout(
+            call({ data: { confirm: true, attemptId } }),
+            limits.decide,
+          );
+          // A finished attempt (either way) is over; the next click starts a new one.
+          if (result.ok || result.reason !== "not_recorded") delete activationAttempt.current[kind];
+          setResult({
+            ok: result.ok,
+            message: result.ok
+              ? result.blockers.length
+                ? `${result.message} Still blocking execution: ${result.blockers.join(" ")}`
+                : result.message
+              : result.message,
+            details: result.ok ? [] : result.details,
+            at: new Date().toISOString(),
+          });
+        } catch (error) {
+          setResult({
+            ok: false,
+            message:
+              error instanceof FlowTimeoutError
+                ? `${error.message} If it did not finish, it is not active; retrying continues the same attempt.`
+                : "The activation did not complete and is not active. Retrying continues the same attempt.",
+            at: new Date().toISOString(),
+          });
+        } finally {
+          if (kind === "live_link") setLiveConfirmed(false);
+          else setAutoConfirmed(false);
+        }
+        await refresh().catch(() => {});
+      },
+    );
   }
 
   function deactivateKind(kind: "live_link" | "autonomy") {
@@ -557,7 +575,11 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         const result = await withTimeout(deactivate({ data: { kind } }), limits.decide);
         setResult({ ok: result.ok, message: result.message, at: new Date().toISOString() });
       } catch {
-        setResult({ ok: false, message: "Deactivation did not complete. Refresh and try again.", at: new Date().toISOString() });
+        setResult({
+          ok: false,
+          message: "Deactivation did not complete. Refresh and try again.",
+          at: new Date().toISOString(),
+        });
       }
       await refresh().catch(() => {});
     });
@@ -1227,6 +1249,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         })}
       </ol>
 
+      <UnifiedExecutionStatus />
       <LiveLinkPanel
         liveLink={data.liveLink}
         system={data.system}
