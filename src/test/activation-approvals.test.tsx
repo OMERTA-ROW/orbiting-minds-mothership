@@ -720,7 +720,11 @@ describe("Jackboy safety sync and Step 10 status", () => {
       liveReadiness: gates(),
       step7ExpiresAt: new Date(Date.now() + 6 * 3600_000).toISOString(),
     });
-  beforeEach(() => mocks.safety.mockReset());
+  beforeEach(() => {
+    mocks.safety.mockReset();
+    mocks.liveLink.mockReset();
+    mocks.decide.mockReset();
+  });
   const panel = () => screen.getByRole("region", { name: /Live link, terminal and CODE/ });
   const allApproved = (safety: ReturnType<typeof safetyView>) => {
     const base = live(10);
