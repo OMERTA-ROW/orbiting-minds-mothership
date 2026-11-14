@@ -20,12 +20,22 @@ Jackboy Dev Control is the authority. This file records how Mothership (OMNI) fo
 - One active permit per job, 60-second lifetime, renewed every 20 seconds by `PermitHolder`.
 - Mothership rejects permits whose signature, scope (job, kind, digest, client, project, approval) or
   limits (≤ $0.50 per call, ≤ $1 per task, ≤ $5 per day) do not match, and returns permits it cannot record.
-- Any refused, failed or timed-out renewal, an expired permit, or a stop halts the job at once and it
-  never resumes (a new job needs a new permit).
+- A refused, failed or timed-out renewal, an expired permit, or a recorded stop halts the job and it
+  never resumes (a new job needs a new permit). Jackboy revokes its permits when its stop is engaged;
+  Mothership must receive a stop notice or detect the refusal on renewal before its holder can cancel
+  work. This is not proof of instantaneous cross-service cancellation.
 - The database (migration 0055) re-checks stops, Step 10 activation and caps on record, and CODE
   leasing needs an active permit.
 
-## What is not yet proven
-- Jackboy's permit database change is staged, not installed: permits answer
-  `503 permit_service_unavailable` until the owner installs and publishes it.
-- No OMNI executor exists, so no live job has held a permit or been cancelled.
+## Deployment and executor status
+- The owner reported that Jackboy migration `0066_omni_execution_permits` is installed. The matching
+  implementation is in Jackboy commit `c86ebce9e610bff9f7f336138406938670836ed9`; its deployment and
+  the live database history have not been independently verified here. Do not apply a duplicate
+  migration. A database or store error still fails closed with `503 permit_service_unavailable`.
+- Mothership migration `0055` and its halt-audit follow-up `0056` require separate live-history and
+  deployment verification. Check the existing history and prerequisites before any owner-approved
+  migration; do not infer installation from this document.
+- No OMNI executor exists in this build. A standalone worker needs a scoped, revocable identity,
+  isolated execution, durable job admission and cancellation, and enforcement of permit, safety and
+  spending limits before it can process jobs. A permit or an isolated no-op test does not prove a live
+  job ran or was cancelled.
