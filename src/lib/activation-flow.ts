@@ -131,8 +131,9 @@ export function nextEligibleStep(views: StepView[]): number | null {
   return views.find((v) => v.isNext)?.step ?? null;
 }
 
-export const FLOW_TIMEOUTS = { list: 20_000, check: 30_000, decide: 20_000 } as const;
-export type FlowTimeouts = { list: number; check: number; decide: number };
+/** `selfTest` outlasts the server's own ~28 s self-test budget. */
+export const FLOW_TIMEOUTS = { list: 20_000, check: 30_000, decide: 20_000, selfTest: 40_000 } as const;
+export type FlowTimeouts = { list: number; check: number; decide: number; selfTest: number };
 
 export class FlowTimeoutError extends Error {
   constructor(readonly ms: number) {
