@@ -19,9 +19,12 @@ export type JackboyAction =
   | "status"
   | "cancel"
   | "configuration"
-  | "safety-state";
+  /** Jackboy omni.permit/v1 actions (session-token signed; the bootstrap key is refused). */
+  | "safety"
+  | "permit.request"
+  | "permit.release";
 type Action = JackboyAction;
-type JobAction = Exclude<Action, "handshake" | "configuration" | "safety-state">;
+type JobAction = Exclude<Action, "handshake" | "configuration" | "safety" | "permit.request" | "permit.release">;
 /**
  * How long Jackboy itself waits for its Railway runner before answering (mirrors Jackboy's
  * omni-remote-runner: 5 s for the configuration probe, runner limit + 1 s for a `run`).
@@ -64,6 +67,7 @@ type Reply = {
   execution?: string;
   configuration?: unknown;
   safety?: unknown;
+  permit?: unknown;
   job?: {
     id: string;
     status: string;
@@ -88,6 +92,29 @@ export const JACKBOY_REFUSAL_CODES = [
   "session_expired_or_invalid",
   "concurrency_limit",
   "runner_unavailable",
+  /** omni.permit/v1 refusals (Jackboy's permit service). */
+  "permit_denied",
+  "permit_service_unavailable",
+  "permit_not_found",
+  "replay",
+  "action_denied",
+  "job_required",
+  "scope_invalid",
+] as const;
+/** Nonsecret permit refusal reasons Jackboy documents for `permit_denied`. */
+export const PERMIT_REFUSAL_REASONS = [
+  "kill_switch_on",
+  "emergency_stop_engaged",
+  "code_disabled",
+  "not_authorized",
+  "approval_expired",
+  "owner_scope",
+  "scope_invalid",
+  "scope_mismatch",
+  "job_closed",
+  "permit_lapsed",
+  "concurrency_limit",
+  "daily_limit",
 ] as const;
 export type JackboyRefusalCode = (typeof JACKBOY_REFUSAL_CODES)[number];
 export type JackboyFailureStage =
@@ -110,6 +137,8 @@ export class JackboyLinkError extends Error {
   readonly limitMs: number | undefined;
   readonly waitedMs: number | undefined;
   readonly phase: "reply" | "body" | undefined;
+  /** Permit refusals only: Jackboy's allowlisted reason (advisory; a refusal always fails closed). */
+  readonly reason: string | undefined;
   constructor(
     message: string,
     stage: JackboyFailureStage,
@@ -119,6 +148,7 @@ export class JackboyLinkError extends Error {
       limitMs?: number;
       waitedMs?: number;
       phase?: "reply" | "body";
+      reason?: string;
     } = {},
   ) {
     super(message);
@@ -129,6 +159,18 @@ export class JackboyLinkError extends Error {
     this.limitMs = extra.limitMs;
     this.waitedMs = extra.waitedMs;
     this.phase = extra.phase;
+    this.reason = extra.reason;
+  }
+}
+
+/** The allowlisted `reason` of a permit refusal, if any. */
+export function permitReason(body: string): string | undefined {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    const reason = (parsed as { reason?: unknown } | null)?.reason;
+    return (PERMIT_REFUSAL_REASONS as readonly unknown[]).includes(reason) ? (reason as string) : undefined;
+  } catch {
+    return undefined;
   }
 }
 
@@ -356,6 +398,8 @@ async function sendSigned(
   return (await sendSignedRaw(config, options, action, token, jobId)).reply;
 }
 
+type ExtraFields = Record<string, string | number>;
+
 /** Like sendSigned, also returning a digest of the verified reply proof (for evidence records). */
 async function sendSignedRaw(
   config: LinkIdentity,
@@ -363,6 +407,7 @@ async function sendSignedRaw(
   action: Action,
   token: string,
   jobId?: string,
+  fields: ExtraFields = {},
 ): Promise<{ reply: Reply; proofDigest: string }> {
   const nonce = randomBytes(16).toString("hex");
   const ts = String(Math.floor(Date.now() / 1000));
@@ -371,6 +416,7 @@ async function sendSignedRaw(
     projectId: config.projectId,
     ...(jobId ? { jobId } : {}),
     ...(action === "submit" ? { kind: "protocol.self-test" } : {}),
+    ...fields,
   });
   const message = `${CONTRACT}\nPOST\n${PATH}\n${ts}\n${nonce}\n${sha256(token)}\n${body}`;
   const result = await post(
@@ -389,7 +435,12 @@ async function sendSignedRaw(
   );
   if (result.status !== 200 && result.status !== 202) {
     const code = refusalCode(result.body);
-    const extra = code ? { status: result.status, code } : { status: result.status };
+    const reason = code === "permit_denied" ? permitReason(result.body) : undefined;
+    const extra = {
+      status: result.status,
+      ...(code ? { code } : {}),
+      ...(reason ? { reason } : {}),
+    };
     if (result.status === 401)
       throw new JackboyLinkError("Jackboy session rejected.", "http", extra);
     throw new JackboyLinkError(`Jackboy request failed (HTTP ${result.status}).`, "http", extra);
@@ -414,6 +465,7 @@ async function sendSignedRaw(
     throw new JackboyLinkError("Jackboy response contract is invalid.", "contract");
   if (
     jobId &&
+    !action.startsWith("permit.") &&
     (reply.job?.id !== jobId ||
       !["queued", "running", "completed", "failed", "cancelled", "timed_out"].includes(
         reply.job.status,
@@ -458,44 +510,125 @@ export async function checkJackboyRunnerConfiguration(
   return parsed.data;
 }
 
-const safetyStateSchema = z
+const ISO = z.string().datetime({ offset: true });
+const HEX64 = z.string().regex(/^[a-f0-9]{64}$/);
+const UUID_S = z.string().regex(UUID);
+
+/** Jackboy's signed safety snapshot (`omni.safety/v1`, valid ~30 s). */
+const safetySnapshotSchema = z
   .object({
-    paused: z.boolean().nullable(),
-    codeStop: z.boolean().nullable(),
-    codeEnabled: z.boolean().nullable(),
-    cancellation: z
-      .enum(["not_needed", "pending", "requested", "confirmed", "completed", "unverified"])
-      .nullable(),
-    observedAt: z.string().datetime({ offset: true }),
-    expiresAt: z.string().datetime({ offset: true }),
+    contract: z.literal("omni.safety/v1"),
+    checkedAt: ISO,
+    validUntil: ISO,
+    killSwitch: z.boolean(),
+    emergencyStop: z.boolean(),
+    codeEnabled: z.boolean(),
+    authorization: z.object({ id: UUID_S, expiresAt: ISO }).strict().nullable(),
+    autonomousAllowed: z.boolean(),
+    blockedBy: z.string().regex(/^[a-z0-9_]{1,40}$/).nullable(),
+    manualDiagnosticsAllowed: z.boolean(),
+    activePermits: z.number().int().min(0).max(1000),
   })
   .strict();
-export type JackboySafetyReading = z.infer<typeof safetyStateSchema> & { proofDigest: string };
+export type JackboySafetySnapshot = z.infer<typeof safetySnapshotSchema> & { proofDigest: string };
 
-/**
- * Read-only signed safety state (Jackboy global pause / Kill Switch, CODE Emergency Stop).
- * Bootstrap-authenticated like the configuration probe; sends no job and changes nothing.
- * Only an exact, signed, project-bound, fresh reply is returned; anything else throws.
- */
-export async function readJackboySafetyState(
-  c: Omit<JackboyLinkConfig, "approvalExpiresAt">,
-  options: JackboyLinkOptions = {},
-): Promise<JackboySafetyReading> {
-  assertIdentity(c);
-  assertPublicLinkOrigin(c.origin);
-  const { reply, proofDigest } = await sendSignedRaw(c, options, "safety-state", c.bootstrap);
-  const parsed = safetyStateSchema.safeParse(reply.safety);
-  if (!parsed.success || reply.execution !== "none" || reply.projectId !== c.projectId)
-    throw new JackboyLinkError("Jackboy safety-state response is invalid.", "contract");
-  const now = Date.now();
-  const observed = Date.parse(parsed.data.observedAt);
-  const expires = Date.parse(parsed.data.expiresAt);
-  if (
-    !(observed <= now + 60_000 && observed >= now - 60_000) ||
-    !(expires > now && expires <= observed + 180_000)
-  )
-    throw new JackboyLinkError("Jackboy safety-state timing is invalid.", "contract");
+/** Owner caps OMNI enforces on every permit (Jackboy's OMNI_AUTONOMY_LIMITS must not exceed them). */
+export const OMNI_PERMIT_LIMITS = { perCallUsd: 0.5, perTaskUsd: 1, dailyUsd: 5 } as const;
+export const PERMIT_CONTRACT = "omni.permit/v1";
+export const PERMIT_MAX_TTL_MS = 65_000;
+
+const permitSchema = z
+  .object({
+    contract: z.literal(PERMIT_CONTRACT),
+    id: UUID_S,
+    jobId: UUID_S,
+    kind: z.enum(["autonomous", "code"]),
+    digest: HEX64,
+    status: z.literal("active"),
+    issuedAt: ISO,
+    expiresAt: ISO,
+    renewals: z.number().int().min(0),
+    limits: z
+      .object({ perCallUsd: z.number(), perTaskUsd: z.number(), dailyUsd: z.number() })
+      .strict(),
+    clientId: z.string(),
+    projectId: UUID_S,
+    approvalId: z.string().min(1).max(128),
+    renewEverySeconds: z.number().int().min(1).max(60),
+    signature: HEX64,
+  })
+  .strict();
+export type JackboyPermit = z.infer<typeof permitSchema> & { signatureDigest: string };
+export type PermitRequest = {
+  jobId: string;
+  kind: "autonomous" | "code";
+  digest: string;
+  estimateUsd: number;
+};
+
+/** Canonical bytes Jackboy signs for a permit (see Jackboy's docs/OMNI-PERMIT-CONTRACT.md). */
+export function permitSigningMessage(p: {
+  id: string;
+  jobId: string;
+  kind: string;
+  digest: string;
+  clientId: string;
+  projectId: string;
+  approvalId: string;
+  expiresAt: string;
+}): string {
+  return [PERMIT_CONTRACT, p.id, p.jobId, p.kind, p.digest, p.clientId, p.projectId, p.approvalId, p.expiresAt].join("\n");
+}
+
+function verifySnapshot(raw: unknown, now: number, proofDigest: string): JackboySafetySnapshot {
+  const parsed = safetySnapshotSchema.safeParse(raw);
+  if (!parsed.success) throw new JackboyLinkError("Jackboy safety snapshot is invalid.", "contract");
+  const checked = Date.parse(parsed.data.checkedAt);
+  const valid = Date.parse(parsed.data.validUntil);
+  if (!(Math.abs(checked - now) <= 60_000) || !(valid > now && valid <= checked + 60_000))
+    throw new JackboyLinkError("Jackboy safety snapshot timing is invalid.", "contract");
   return { ...parsed.data, proofDigest };
+}
+
+function verifyPermit(
+  raw: unknown,
+  c: LinkIdentity,
+  req: PermitRequest,
+  now: number,
+  approvalId: string | null,
+): JackboyPermit {
+  const parsed = permitSchema.safeParse(raw);
+  if (!parsed.success) throw new JackboyLinkError("Jackboy permit is invalid.", "contract");
+  const p = parsed.data;
+  const expires = Date.parse(p.expiresAt);
+  if (
+    p.clientId !== c.clientId ||
+    p.projectId !== c.projectId ||
+    (approvalId !== null && p.approvalId !== approvalId) ||
+    p.jobId !== req.jobId ||
+    p.kind !== req.kind ||
+    p.digest !== req.digest ||
+    !(expires > now && expires <= now + PERMIT_MAX_TTL_MS) ||
+    !(p.limits.perCallUsd > 0 && p.limits.perCallUsd <= OMNI_PERMIT_LIMITS.perCallUsd) ||
+    !(p.limits.perTaskUsd > 0 && p.limits.perTaskUsd <= OMNI_PERMIT_LIMITS.perTaskUsd) ||
+    !(p.limits.dailyUsd > 0 && p.limits.dailyUsd <= OMNI_PERMIT_LIMITS.dailyUsd)
+  )
+    throw new JackboyLinkError("Jackboy permit scope, expiry or limits are invalid.", "contract");
+  const expected = Buffer.from(hmac(c.secret, permitSigningMessage(p)), "utf8");
+  const received = Buffer.from(p.signature, "utf8");
+  if (expected.length !== received.length || !timingSafeEqual(expected, received))
+    throw new JackboyLinkError("Jackboy permit signature is invalid.", "proof");
+  return { ...p, signatureDigest: sha256(p.signature) };
+}
+
+function assertPermitRequest(r: PermitRequest) {
+  if (
+    !UUID.test(r.jobId) ||
+    !["autonomous", "code"].includes(r.kind) ||
+    !/^[a-f0-9]{64}$/.test(r.digest) ||
+    !(Number.isFinite(r.estimateUsd) && r.estimateUsd > 0 && r.estimateUsd <= OMNI_PERMIT_LIMITS.perTaskUsd)
+  )
+    throw new Error("Invalid permit request.");
 }
 
 export class JackboyLink {
@@ -537,6 +670,35 @@ export class JackboyLink {
     await this.audit("connected");
     this.session = reply.sessionToken!;
     this.expiresAt = expiry;
+  }
+
+  /** Session-signed `safety` snapshot (Jackboy answers only with a live Step 9 session). */
+  async safety(): Promise<JackboySafetySnapshot> {
+    await this.connect();
+    await this.audit("request_safety");
+    const { reply, proofDigest } = await sendSignedRaw(this.config, this.options, "safety", this.session);
+    const snapshot = verifySnapshot(reply.safety, Date.now(), proofDigest);
+    await this.audit(snapshot.autonomousAllowed ? "safety_allowed" : `safety_blocked`);
+    return snapshot;
+  }
+
+  /** Request or renew one job's permit; only a signed, scope-matching, capped permit is returned. */
+  async requestPermit(req: PermitRequest, approvalId: string | null): Promise<JackboyPermit> {
+    assertPermitRequest(req);
+    await this.connect();
+    const { reply } = await sendSignedRaw(this.config, this.options, "permit.request", this.session, req.jobId, {
+      kind: req.kind,
+      digest: req.digest,
+      estimateUsd: req.estimateUsd,
+    });
+    return verifyPermit(reply.permit, this.config, req, Date.now(), approvalId);
+  }
+
+  /** Close the job's permit at Jackboy (idempotent). */
+  async releasePermit(jobId: string): Promise<void> {
+    if (!UUID.test(jobId)) throw new Error("Invalid scoped operation.");
+    await this.connect();
+    await sendSignedRaw(this.config, this.options, "permit.release", this.session, jobId);
   }
 
   async execute(action: JobAction, jobId: string) {
