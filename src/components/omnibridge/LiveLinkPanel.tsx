@@ -38,6 +38,7 @@ const LINK_TEXT: Record<SystemStates["link"]["state"], string> = {
 const RUN_TEXT: Record<SystemStates["autonomous"]["state"], string> = {
   not_configured: "Not authorized",
   configured_blocked: "Authorized — blocked",
+  armed: "Armed — not running (no executor)",
   running: "Running",
 };
 
@@ -185,6 +186,10 @@ export function LiveLinkPanel(props: {
           bad={system.killSwitch !== "off"}
         />
       </ul>
+      <p className="text-sm" aria-label="Next owner action">
+        <span className="font-medium">Next owner action: </span>
+        {system.nextAction}
+      </p>
 
       <div className="grid gap-4 md:grid-cols-2">
         <article aria-labelledby="live-link-sub" className="space-y-2 rounded border p-3">

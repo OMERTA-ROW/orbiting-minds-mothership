@@ -1539,7 +1539,7 @@
         {
           "id": "07.08",
           "requirement": "Unified OMNI–Jackboy activation: Step 9 activates and verifies the signed live link, Step 10 activates autonomy authorization; Jackboy's omni.permit/v1 permits and session-signed safety snapshots make the CODE Emergency Stop a hard override (no new jobs, running jobs halt at the next renewal, stale/unknown fails closed); manual terminal blocked only by a verified Kill Switch. Approving Step 9/10 runs the activation in the same owner click.",
-          "status": "Implemented and tested; live activation pending owner",
+          "status": "In progress",
           "owner": "Lovable implementation (Mothership); Jackboy permit database install/publish and passkey authorization by owner",
           "dependencies": [
             "07.07"
@@ -1557,16 +1557,20 @@
             "src/components/omnibridge/LiveLinkPanel.tsx",
             "src/components/omnibridge/ActivationApprovals.tsx",
             "src/test/support/fake-jackboy.ts",
-            "docs/OMNI-PERMIT-CONTRACT.md"
+            "docs/OMNI-PERMIT-CONTRACT.md",
+            "drizzle/migrations/0056_jackboy_halt_audit.sql",
+            "src/test/test_omni_activation_sql.py",
+            "src/lib/jackboy-permit.server.test.ts"
           ],
           "commit": null,
           "commit_note": "Lovable-managed work; no external commit verified.",
-          "evidence": "Disposable-database SQL test (76 checks); unit/server/UI tests including an end-to-end run against a stand-in that follows Jackboy's documented contract; migration 0055 applied to the shared database with everything inactive.",
+          "evidence": "Disposable-database SQL test (99 checks: CODE always-on/windows/permits/agent jobs refused without Step 10 activation, with Jackboy CODE off or the stop engaged; lapsed/revoked permits rejected; per-job halt audit); signed permit tests with synthetic no-op jobs; offline check of Jackboy snapshot 25890e56's permit handler against Mothership's client; migration 0056 halt audit applied.",
           "verified_at": "2026-11-14",
           "verified_scope": "Mothership side and contract conformance only. NOT verified live: Jackboy's permit database change is staged, not installed; no live handshake, safety read or permit was sent; no OMNI executor exists, so no real job cancellation has been demonstrated.",
-          "test_result": "Passed: python3 src/test/test_omni_activation_sql.py (76 checks); bunx vitest run 1,877 tests / 129 files; typecheck clean; 2026-11-14 03:09 UTC targeted rerun 112 tests / 6 files after start-failure and safety-wording fixes; offline contract check ran Jackboy snapshot 25890e56 permit handler against Mothership's client (missing service -> 503 permit_service_unavailable, installed -> signed snapshot verified)",
-          "runtime_evidence": "Live database 2026-11-14 03:04 UTC: Steps 1–10 approved (9–10 at 02:57 UTC) but link and autonomy activations inactive with no activation attempt audited, 0 permits, safety unknown (never read); approval flow marker 9 live. Jackboy permit install not verifiable from Mothership.",
-          "next_action": "Owner: install/publish Jackboy's permit change and authorize OMNI autonomy there; click Activate live link (fresh code) on the approvals page; after Jackboy authorization, click Activate autonomy authorization; then a separately authorized live stop check."
+          "test_result": "Passed 2026-11-14 ~03:15 UTC: python3 src/test/test_omni_activation_sql.py (99 checks; fails without 0056); bunx vitest run 1,884 tests / 129 files; typecheck clean",
+          "runtime_evidence": "Live database 2026-11-14 03:10 UTC: Steps 1–10 approved; live_link and autonomy activations inactive (no attempt); 0 permits; safety unknown (never read); CODE always-on off; Mothership stop released; 0 open windows, 0 leased/running CODE jobs; 0 activation/permit audit rows; live guards on CODE always-on, CODE leasing, windows and agent jobs all require Step 10 activation and a fresh clear Jackboy reading (leasing/agent jobs also a permit); halt audit function live, not callable by anon/authenticated. Live approval marker 9 (10 in preview, unpublished).",
+          "next_action": "Owner: install/publish Jackboy's permit change and authorize OMNI autonomy there; click Activate live link (fresh code) on the approvals page; after Jackboy authorization, click Activate autonomy authorization; then a separately authorized live stop check.",
+          "release_status": "Flow marker 9 published earlier; migration 0056 applied to the shared database; marker 10 panel changes in preview only (not published)."
         }
       ]
     },

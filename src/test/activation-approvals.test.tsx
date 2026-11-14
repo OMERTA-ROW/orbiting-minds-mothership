@@ -896,7 +896,12 @@ describe("Steps 9–10 activation panel", () => {
     await screen.findByRole("heading", { name: /^9\. / });
     fireEvent.click(within(panel()).getByRole("checkbox", { name: /activating the live link/ }));
     expect(activateLinkButton()).toBeDisabled();
-    expect(within(panel()).getByText(/fresh two-step code/)).toBeInTheDocument();
+    expect(
+      within(panel())
+        .getAllByText(/fresh two-step code/)
+        .some((el) => !el.closest('[aria-label="Next owner action"]')),
+    ).toBe(true);
+    expect(within(panel()).getByLabelText("Next owner action")).toHaveTextContent(/Activate live link/);
     unmount();
     mocks.list.mockResolvedValue(live(9, {}, false));
     render(<ActivationApprovals />);
