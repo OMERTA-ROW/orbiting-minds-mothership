@@ -219,8 +219,8 @@ def main():
         checks += 1; assert json.loads(begin('live_link', A2))["ok"] is True
         # Approval changed during the attempt: finish rolls back to failed.
         sql(decide(8, 'approved'))
-        assert ok(finish('live_link', A2)) == 'failed'
-        assert act('live_link') == 'failed/approvals_changed'
+        assert ok(finish('live_link', A2)) == 'superseded'
+        assert act('live_link') == 'revoked/step8_changed'
         # Attempt expiry: a finish after 90 seconds fails.
         checks += 1; assert json.loads(begin('live_link', A3))["ok"] is True
         sql("UPDATE public.activation_activations SET started_at=now()-interval '2 minutes' WHERE kind='live_link';")
