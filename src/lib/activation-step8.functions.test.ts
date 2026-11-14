@@ -72,7 +72,7 @@ vi.mock("@/integrations/supabase/client.server", () => ({
   },
 }));
 
-import { selfTestInputForTest } from "./activation-step8.fixture";
+import { selfTestInput } from "./activation-self-test";
 import "./activation-approvals.functions";
 const runStep8 = () => mocks.handlers[3]!;
 
@@ -123,7 +123,7 @@ function invocation(opts: { mfaFresh?: boolean; approvedThrough?: number; step8?
   return {
     rpc,
     input: {
-      data: selfTestInputForTest(ATTEMPT),
+      data: { attemptId: ATTEMPT, confirm: true },
       context: {
         userId: OWNER,
         claims: {
@@ -283,7 +283,6 @@ describe("Step 8 run protocol self-test & verify", () => {
   });
 
   it("the input requires the explicit confirmation and a UUID attempt", async () => {
-    const { selfTestInput } = await import("./activation-step8.fixture");
     expect(selfTestInput.safeParse({ attemptId: ATTEMPT }).success).toBe(false);
     expect(selfTestInput.safeParse({ attemptId: "x", confirm: true }).success).toBe(false);
     expect(selfTestInput.safeParse({ attemptId: ATTEMPT, confirm: true }).success).toBe(true);

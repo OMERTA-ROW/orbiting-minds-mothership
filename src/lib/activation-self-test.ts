@@ -4,6 +4,7 @@
  * from the attempt's own audit trail so a retry never resubmits or reruns a job that
  * may already have reached Jackboy.
  */
+import { z } from "zod";
 import type { ActivationCheckDetail } from "./activation-approvals";
 import { probeFailure } from "./activation-probe";
 
@@ -19,6 +20,11 @@ export const SELF_TEST_STATUS_RESERVE_MS = 6_000;
 /** Another attempt with a run requested this recently and no result blocks a new one. */
 export const SELF_TEST_IN_FLIGHT_MS = 3 * 60_000;
 export const SELF_TEST_ATTEMPT_KEY = "omni.activation.step8.attempt";
+
+/** One click = one explicit authorization for one attempt (job) ID. */
+export const selfTestInput = z
+  .object({ attemptId: z.string().uuid(), confirm: z.literal(true) })
+  .strict();
 
 export type ReadinessItem = { key: string; label: string; ok: boolean; detail: string };
 

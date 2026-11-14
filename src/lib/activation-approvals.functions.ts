@@ -34,6 +34,7 @@ import {
   isUnfinished,
   otherAttemptInFlight,
   selfTestAuditAction,
+  selfTestInput,
   selfTestReadiness,
   type ReadinessItem,
 } from "./activation-self-test";
@@ -784,10 +785,6 @@ export const decideActivationApproval = createServerFn({ method: "POST" })
     }
     return { ok: true as const };
   });
-
-const selfTestInput = z
-  .object({ attemptId: z.string().uuid(), confirm: z.literal(true) })
-  .strict();
 
 type Detail = ActivationCheckDetail;
 type SelfTestFailure = {
