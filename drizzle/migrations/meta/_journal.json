@@ -404,8 +404,22 @@
     {
       "idx": 57,
       "version": "7",
-      "when": 1794628600000,
-      "tag": "0057_omni_noop_worker",
+      "when": 1794628500000,
+      "tag": "0057_bounded_executor_integration",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1794630000000,
+      "tag": "0058_omni_stop_propagation",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1794630100000,
+      "tag": "0059_omni_noop_worker",
       "breakpoints": true
     }
   ]

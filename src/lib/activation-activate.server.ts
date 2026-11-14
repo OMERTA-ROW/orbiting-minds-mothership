@@ -1,10 +1,3 @@
-/**
- * Step 9 / Step 10 activation orchestration (server only). One owner attempt:
- * begin (database: owner + fresh MFA, prerequisites, one attempt at a time) → signed handshake →
- * signed Jackboy safety snapshot → finish (service role; database re-checks revisions). Any failure
- * finishes the attempt as failed, so nothing is left active. Activating starts no job, releases no
- * stop and changes no Jackboy switch.
- */
 import type { JackboySafetySnapshot } from "./jackboy-link.server";
 import { classifyLiveLinkError } from "./live-link";
 import type { ActivationCheckDetail } from "./activation-approvals";
@@ -18,7 +11,6 @@ export type BeginReply = {
   activatedAt?: string | null;
 };
 export type FinishReply = "active" | "failed" | "superseded" | "expired";
-
 export type ActivationDeps = {
   begin(kind: ActivationKind, attempt: string): Promise<BeginReply>;
   finish(
@@ -28,16 +20,18 @@ export type ActivationDeps = {
     reason: string,
     evidence: Record<string, unknown>,
   ): Promise<FinishReply>;
-  /** Autonomy only: Mothership-side cap and metering checks; a string blocks with that message. */
+  outcome(kind: ActivationKind, attempt: string): Promise<string>;
   preflight?: (() => Promise<string | null>) | undefined;
   connect(): Promise<void>;
+  actuate(kind: ActivationKind, attempt: string): Promise<{ executorRelease: string | null }>;
+  rollback(kind: ActivationKind): Promise<void>;
+  verifyCurrent(kind: ActivationKind): Promise<void>;
   safety(): Promise<JackboySafetySnapshot>;
   recordSafety(s: JackboySafetySnapshot): Promise<unknown>;
   recordSafetyFailure(reason: string): Promise<unknown>;
   safetyFailureReason(error: unknown): string;
   now?: () => number;
 };
-
 export type ActivationFailureReason =
   | "mfa"
   | "rule"
@@ -50,7 +44,6 @@ export type ActivationFailureReason =
   | "jackboy_safety"
   | "jackboy_authorization"
   | "not_recorded";
-
 export type ActivationOutcome =
   | { ok: true; already: boolean; message: string; blockers: string[] }
   | {
@@ -61,11 +54,10 @@ export type ActivationOutcome =
     };
 
 const BEGIN_TEXT: Record<string, string> = {
-  busy: "Another activation attempt is in progress. Wait about 90 seconds, then refresh.",
+  busy: "Another activation attempt is in progress. Wait, then refresh.",
   step7_window_closed:
     "Step 7's approval window has ended or is invalid. Approve Step 7 again with a new expiry.",
-  step8_proof_not_fresh:
-    "Step 8 needs a passing signed self-test from the current Step 7 window (within 24 hours). Run Step 8 again.",
+  step8_proof_not_fresh: "Step 8 needs a current passing signed self-test. Run Step 8 again.",
   mothership_stop_engaged:
     "Mothership's Emergency Stop is engaged, so nothing was sent. It was not released.",
   live_link_not_active: "Activate the live link (Step 9) first.",
@@ -74,44 +66,32 @@ const BEGIN_TEXT: Record<string, string> = {
   mfa: "Re-verify with your authenticator first. Nothing was sent or activated.",
   denied: "Owner access could not be confirmed, so nothing was activated.",
   begin_error:
-    "The database did not start the activation, so nothing was sent or activated. Refresh and retry once; if it repeats, report the time.",
+    "The database did not start the activation, so nothing was sent or activated. Refresh and reconcile before another attempt.",
 };
-
-export function beginReasonText(reason: string | undefined): string {
+export function beginReasonText(reason: string | undefined) {
   if (!reason) return "Activation prerequisites are not met.";
   const step = /^step(\d+)_not_approved$/.exec(reason);
-  if (step) return `Step ${step[1]} must be approved first.`;
-  return BEGIN_TEXT[reason] ?? `Activation prerequisites are not met (${reason}).`;
+  return step
+    ? `Step ${step[1]} must be approved first.`
+    : (BEGIN_TEXT[reason] ?? `Activation prerequisites are not met (${reason}).`);
 }
-
-/** What still blocks execution after a successful activation (never "running" here). */
-export function executionBlockers(s: JackboySafetySnapshot | null): string[] {
-  const out: string[] = [];
-  if (!s) out.push("Jackboy safety could not be read, so it counts as stopped.");
+export function executionBlockers(
+  s: JackboySafetySnapshot | null,
+  executorRelease: string | null = null,
+) {
+  const blockers: string[] = [];
+  if (!s) blockers.push("Jackboy safety could not be read, so it counts as stopped.");
   else {
-    if (s.killSwitch) out.push("Jackboy System Kill Switch is on.");
-    if (s.emergencyStop) out.push("Jackboy CODE Emergency Stop is engaged.");
-    if (!s.codeEnabled) out.push("Jackboy's saved CODE setting is off.");
-    if (!s.authorization) out.push("OMNI autonomous work is not authorized in Jackboy.");
-    if (s.blockedBy && out.length === 0) out.push(`Jackboy blocks autonomy (${s.blockedBy}).`);
+    if (s.killSwitch) blockers.push("Jackboy System Kill Switch is on.");
+    if (s.emergencyStop) blockers.push("Jackboy CODE Emergency Stop is engaged.");
+    if (!s.codeEnabled) blockers.push("Jackboy's saved CODE setting is off.");
+    if (!s.authorization) blockers.push("OMNI autonomous work is not authorized in Jackboy.");
+    if (s.blockedBy && blockers.length === 0)
+      blockers.push(`Jackboy blocks autonomy (${s.blockedBy}).`);
   }
-  out.push("No OMNI executor is connected, so no autonomous job can run.");
-  return out;
-}
-
-function snapshotEvidence(s: JackboySafetySnapshot | null, failure: string | null) {
-  return s
-    ? {
-        checkedAt: s.checkedAt,
-        killSwitch: s.killSwitch,
-        emergencyStop: s.emergencyStop,
-        codeEnabled: s.codeEnabled,
-        autonomousAllowed: s.autonomousAllowed,
-        blockedBy: s.blockedBy,
-        authorizationExpiresAt: s.authorization?.expiresAt ?? null,
-        proofDigest: s.proofDigest,
-      }
-    : { unavailable: failure ?? "unknown" };
+  if (!executorRelease)
+    blockers.push("No OMNI executor is independently verified, so no autonomous job can run.");
+  return blockers;
 }
 
 export async function runActivation(
@@ -125,7 +105,6 @@ export async function runActivation(
     message: string,
     details: ActivationCheckDetail[] = [],
   ): ActivationOutcome => ({ ok: false, reason, message, details });
-
   if (kind === "autonomy" && deps.preflight) {
     const blocked = await deps.preflight();
     if (blocked) return fail("rule", `Nothing was activated: ${blocked}`);
@@ -136,98 +115,165 @@ export async function runActivation(
       begun.reason === "busy" ? "busy" : begun.reason === "mfa" ? "mfa" : "rule",
       beginReasonText(begun.reason),
     );
-  if (begun.duplicate)
+  if (begun.duplicate) {
+    try {
+      await deps.verifyCurrent(kind);
+    } catch {
+      return fail(
+        "jackboy_safety",
+        "Recorded activation is not verified at the backend. Reconcile it before retrying.",
+      );
+    }
     return {
       ok: true,
       already: true,
       message:
-        kind === "live_link"
-          ? "The live link is already activated for the current approvals. Nothing was recorded twice."
-          : "Autonomy authorization is already activated for the current approvals. Nothing was recorded twice.",
+        "Activation is already recorded and its backend state verified. Nothing was started or recorded twice.",
       blockers: [],
     };
-
-  const finishFailed = async (reason: string) => {
-    await deps.finish(kind, attempt, false, reason, {}).catch(() => "failed" as const);
-  };
-
-  // 1. Signed handshake (connection only).
+  }
+  async function rollback(reason: string) {
+    await deps.rollback(kind);
+    const recorded = await deps.finish(kind, attempt, false, reason, { rollbackVerified: true });
+    if (recorded !== "failed" && recorded !== "superseded")
+      throw new Error("Rollback could not be recorded");
+  }
   try {
     await deps.connect();
   } catch (error) {
-    const c = classifyLiveLinkError(error);
-    await finishFailed(`handshake_${c.kind}`);
-    return fail(c.kind, `Not activated: ${c.message}`, c.details);
+    const classified = classifyLiveLinkError(error);
+    try {
+      await rollback(`handshake_${classified.kind}`);
+    } catch {
+      return fail(
+        "not_recorded",
+        "Handshake failed and rollback is unverified. Keep Stop engaged; reconcile the pending activation.",
+      );
+    }
+    return fail(classified.kind, `Not activated: ${classified.message}`, classified.details);
+  }
+  let executorRelease: string | null;
+  try {
+    executorRelease = (await deps.actuate(kind, attempt)).executorRelease;
+  } catch {
+    try {
+      await rollback("backend_actuation_failed");
+    } catch {
+      return fail(
+        "not_recorded",
+        "Backend activation outcome is unverified. Keep Stop engaged; reconcile before another attempt.",
+      );
+    }
+    return fail(
+      "link_failure",
+      "Backend actuation failed and was rolled back. No job started or Stop released.",
+    );
   }
   const handshakeAt = new Date(now()).toISOString();
-
-  // 2. Signed safety snapshot (session-signed; answers only for a live session).
-  let snapshot: JackboySafetySnapshot | null = null;
-  let safetyFailure: string | null = null;
+  let snapshot: JackboySafetySnapshot;
   try {
     snapshot = await deps.safety();
     await deps.recordSafety(snapshot);
   } catch (error) {
-    safetyFailure = deps.safetyFailureReason(error);
-    snapshot = null;
-    await deps.recordSafetyFailure(safetyFailure).catch(() => {});
-  }
-
-  if (kind === "autonomy") {
-    if (!snapshot) {
-      await finishFailed("jackboy_safety_unavailable");
+    const reason = deps.safetyFailureReason(error);
+    let stored = true;
+    try {
+      await deps.recordSafetyFailure(reason);
+    } catch {
+      stored = false;
+    }
+    try {
+      await rollback("jackboy_safety_unavailable");
+    } catch {
       return fail(
-        "jackboy_safety",
-        `Not activated: Jackboy's signed safety snapshot could not be read (${safetyFailure}). Jackboy's permit service must be installed and published first.`,
+        "not_recorded",
+        "Safety read and rollback are unverified. Keep Stop engaged and reconcile the activation.",
       );
     }
-    const auth = snapshot.authorization;
-    if (!auth || Date.parse(auth.expiresAt) <= now()) {
-      await finishFailed("jackboy_authorization_missing");
+    return fail(
+      "jackboy_safety",
+      `Not activated: fresh signed safety was unavailable (${reason})${stored ? "" : "; local failure auditing also failed"}. Backend configuration was rolled back.`,
+    );
+  }
+  if (
+    kind === "autonomy" &&
+    (!snapshot.authorization || Date.parse(snapshot.authorization.expiresAt) <= now())
+  ) {
+    try {
+      await rollback("jackboy_authorization_missing");
+    } catch {
       return fail(
-        "jackboy_authorization",
-        "Not activated: Jackboy shows no current OMNI autonomous authorization. Authorize it in Jackboy (OMNI page, passkey) first.",
+        "not_recorded",
+        "Authorization and rollback are unverified; reconcile before another attempt.",
       );
     }
+    return fail(
+      "jackboy_authorization",
+      "Not activated: Jackboy has no current autonomous authorization.",
+    );
   }
-
   const evidence = {
     handshakeAt,
-    safety: snapshotEvidence(snapshot, safetyFailure),
+    safety: {
+      checkedAt: snapshot.checkedAt,
+      killSwitch: snapshot.killSwitch,
+      emergencyStop: snapshot.emergencyStop,
+      codeEnabled: snapshot.codeEnabled,
+      autonomousAllowed: snapshot.autonomousAllowed,
+      blockedBy: snapshot.blockedBy,
+      authorizationExpiresAt: snapshot.authorization?.expiresAt ?? null,
+      proofDigest: snapshot.proofDigest,
+    },
     ...(kind === "autonomy"
       ? {
           caps: { perCallUsd: 0.5, perTaskUsd: 1, dailyUsd: 5, openaiCapUsd: 10 },
-          executor: "none",
+          executor: executorRelease ?? "none",
         }
       : {}),
   };
-  let finished: FinishReply;
+  let finished: string;
   try {
     finished = await deps.finish(kind, attempt, true, "verified", evidence);
   } catch {
-    return fail(
-      "not_recorded",
-      "The handshake passed but the activation could not be recorded, so it is not active. Retrying is safe.",
-    );
+    finished = "unknown";
   }
-  if (finished !== "active")
-    return fail(
-      "rule",
-      finished === "superseded"
-        ? "Not activated: approvals changed or another attempt replaced this one. Refresh and try again."
-        : "Not activated: the database refused the activation (approvals changed or the attempt expired). Nothing is active.",
-    );
-  const blockers = kind === "autonomy" ? executionBlockers(snapshot) : [];
-  const safetyText = snapshot
-    ? `Jackboy safety: Kill Switch ${snapshot.killSwitch ? "on" : "off"}, CODE Emergency Stop ${snapshot.emergencyStop ? "engaged" : "released"}.`
-    : `Jackboy safety could not be read (${safetyFailure}); it counts as stopped.`;
+  if (finished !== "active") {
+    let outcome = "unknown";
+    try {
+      outcome = await deps.outcome(kind, attempt);
+    } catch {
+      /* Unknown remains unresolved, never a successful activation. */
+    }
+    if (outcome === "active") {
+      try {
+        await deps.verifyCurrent(kind);
+        finished = "active";
+      } catch {
+        finished = "unknown";
+      }
+    }
+    if (finished !== "active") {
+      try {
+        await rollback("finalization_not_verified");
+      } catch {
+        return fail(
+          "not_recorded",
+          "A decision may have been recorded, but activation or rollback is unverified. Refresh and reconcile; do not blindly retry.",
+        );
+      }
+      return fail(
+        "rule",
+        "Backend activation did not finalize under the current approvals and was rolled back. Nothing started.",
+      );
+    }
+  }
   return {
     ok: true,
     already: false,
     message:
       kind === "live_link"
-        ? `Live link activated: Jackboy answered a signed handshake. ${safetyText} No job, self-test or CODE request was sent.`
-        : `Autonomy authorization activated — not running. ${safetyText} Nothing was started.`,
-    blockers,
+        ? "Live link activated and its signed backend state verified. No job started or Stop released."
+        : "Autonomy configuration activated — not running. No job started or Stop released.",
+    blockers: kind === "autonomy" ? executionBlockers(snapshot, executorRelease) : [],
   };
 }

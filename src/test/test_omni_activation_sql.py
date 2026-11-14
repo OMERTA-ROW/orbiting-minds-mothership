@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -67,7 +68,9 @@ def main():
         paths = [Path(halt_audit)] if halt_audit else list((ROOT / "drizzle/migrations").glob("*_jackboy_halt_audit.sql"))
         assert len(paths) == 1
         sql(paths[0].read_text())
-        sql((ROOT / "drizzle/migrations/0057_omni_noop_worker.sql").read_text())
+        sql((ROOT / "drizzle/migrations/0057_bounded_executor_integration.sql").read_text())
+        sql((ROOT / "drizzle/migrations/0058_omni_stop_propagation.sql").read_text())
+        sql((ROOT / "drizzle/migrations/0059_omni_noop_worker.sql").read_text())
         sql(f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()); INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner');")
 
         def deny(text):
@@ -88,6 +91,8 @@ def main():
             return f"SET ROLE service_role; SELECT public.activation_activation_finish('{kind}','{attempt}',{str(good).lower()},'{reason}','{{}}'::jsonb);"
         def eff(kind):
             return sql(f"SELECT public.activation_effective('{kind}');")
+        def confirmed(kind, attempt):
+            return f"SET ROLE service_role; SELECT public.activation_rollback_confirmed('{kind}','{attempt}');"
         def poll(paused="false", stop="false", allowed="true", manual="true", observed="now()", expires="now()+interval '30 seconds'", code="true", blocked="NULL"):
             return (f"SELECT public.jackboy_safety_record_v2('poll',{paused},{stop},{code},{allowed},{manual},{blocked},now()+interval '1 hour',0,NULL,"
                     f"{observed},{expires},'{D}',NULL,'t');")
@@ -121,12 +126,17 @@ def main():
         # One attempt at a time: a second attempt is busy, the same attempt resumes.
         checks += 1; assert json.loads(begin('live_link', A2))["reason"] == "busy"
         checks += 1; assert json.loads(begin('live_link', A1))["resumed"] is True
+        sql("UPDATE public.activation_activations SET started_at=now()-interval '2 minutes' WHERE kind='live_link';")
+        deny(owner(f"SELECT public.activation_activation_begin('live_link','{A2}');"))
+        sql("UPDATE public.activation_activations SET started_at=now() WHERE kind='live_link';")
         # Only the server (service role) finishes, and only the current attempt.
         deny(owner(f"SELECT public.activation_activation_finish('live_link','{A1}',true,'x','{{}}'::jsonb);"))
         deny(owner("UPDATE public.activation_activations SET status='active';"))
         assert ok(finish('live_link', A2)) == 'superseded'
         assert eff('live_link') == 'f'
         assert ok(finish('live_link', A1)) == 'active'
+        assert ok(f"SET ROLE service_role; SELECT public.activation_attempt_outcome('live_link','{A1}');") == 'active'
+        deny(owner(f"SELECT public.activation_attempt_outcome('live_link','{A1}');"))
         assert eff('live_link') == 't'
         assert ok(finish('live_link', A1)) == 'superseded'  # idempotent, no double record
         checks += 1; assert json.loads(begin('live_link', A3))["duplicate"] is True
@@ -269,20 +279,30 @@ def main():
         assert sql("SELECT count(*) FROM public.omni_autonomy_windows WHERE ended_at IS NULL;") == '0'
         sql(decide(9, 'approved'))
         assert eff('live_link') == 'f'
+        deny(owner(f"SELECT public.activation_activation_begin('live_link','{A2}');"))
+        deny(owner(f"SELECT public.activation_rollback_confirmed('live_link','{A1}');"))
+        ok(confirmed('live_link', A1))  # Synthetic peer rollback acknowledgement, never live proof.
         checks += 1; assert json.loads(begin('live_link', A2))["ok"] is True
         # Approval changed during the attempt: finish rolls back to failed.
         sql(decide(8, 'approved'))
         assert ok(finish('live_link', A2)) == 'superseded'
         assert act('live_link') == 'revoked/step8_changed'
+        ok(confirmed('live_link', A2))
         # Attempt expiry: a finish after 90 seconds fails.
         checks += 1; assert json.loads(begin('live_link', A3))["ok"] is True
         sql("UPDATE public.activation_activations SET started_at=now()-interval '2 minutes' WHERE kind='live_link';")
         assert ok(finish('live_link', A3)) == 'failed'
         assert act('live_link') == 'failed/attempt_expired'
+        deny(owner(f"SELECT public.activation_activation_begin('live_link','{A1}');"))
+        ok(owner("SELECT public.activation_activation_revoke('live_link');"))
+        deny(owner(f"SELECT public.activation_activation_begin('live_link','{A1}');"))
+        ok(confirmed('live_link', A3))
         # A failed handshake/safety read never activates.
         checks += 1; assert json.loads(begin('live_link', A1))["ok"] is True
         assert ok(finish('live_link', A1, good=False, reason="handshake_failed")) == 'failed'
         assert eff('live_link') == 'f'
+        ok(owner("SELECT public.activation_activation_revoke('live_link');"))
+        ok(confirmed('live_link', A1))
         # Stale Step 8 proof blocks activation.
         sql("UPDATE public.activation_approval_checks SET checked_at=now()-interval '25 hours' WHERE step=8;")
         checks += 1; assert json.loads(begin('live_link', A2))["reason"] == "step8_proof_not_fresh"
@@ -300,6 +320,47 @@ def main():
         checks += 1; assert json.loads(begin('live_link', A1))["duplicate"] is True
         assert ok(finish('autonomy', A3)) == 'active'
         assert sql("SELECT public.activation_autonomy_authorized();") == 't'
+        # Disposable fixture only: these acknowledgements stand in for authenticated peer proofs,
+        # never evidence that a deployed worker was actually cancelled.
+        ok(poll())
+        assert ok("SET ROLE service_role; " + permit(A1, kind="autonomous", pid=A2)) == 'issued'
+        checks += 1; assert sql(f"SET ROLE service_role; SELECT public.omni_execution_permit_live('{A1}');") == 't'
+        ok(owner("SELECT public.omni_terminal_engage_stop('Synthetic fixture Stop');"))
+        checks += 1; assert sql(f"SELECT status FROM public.jackboy_permits WHERE job_id='{A1}';") == 'revoked'
+        checks += 1; assert sql(f"SET ROLE service_role; SELECT public.omni_execution_permit_live('{A1}');") == 'f'
+        pending = sql("SET ROLE service_role; SELECT public.omni_stop_pending();")
+        checks += 1; assert pending
+        deny(owner("SELECT public.omni_terminal_release_stop('Unverified cancellation');"))
+        deny("SET ROLE service_role; " + permit(A1, kind="autonomous", pid=A2, renewals=1))
+        ok(owner("SELECT public.omni_terminal_engage_stop('Second synthetic fixture Stop');"))
+        ok(f"SET ROLE service_role; SELECT public.omni_stop_delivered({pending});")
+        checks += 1; assert sql("SET ROLE service_role; SELECT public.omni_stop_pending();") != ''
+        deny(owner("SELECT public.omni_terminal_release_stop('Older acknowledgement');"))
+        ok("SET ROLE service_role; SELECT public.omni_stop_delivered(public.omni_stop_pending());")
+        ok(owner("SELECT public.omni_terminal_release_stop('Synthetic verified peer acknowledgement');"))
+        checks += 1; assert sql(f"SET ROLE service_role; SELECT public.omni_execution_permit_live('{A1}');") == 'f'
+        deny("SET ROLE anon; SELECT public.omni_stop_delivered(1);")
+        deny("SET ROLE authenticated; SELECT public.omni_execution_permit_live(NULL);")
+        deny("SET ROLE authenticated; SELECT * FROM public.omni_stop_outbox;")
+        # Two actual connections: Stop holds its control lock while a new permit is requested.
+        with ThreadPoolExecutor(max_workers=2) as workers:
+            stopped = workers.submit(sql, "BEGIN; " + owner(
+                "SELECT public.omni_terminal_engage_stop('Concurrent fixture Stop'); SELECT pg_sleep(0.5);"
+            ) + " COMMIT;")
+            for _ in range(100):
+                sleeping = sql("SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE pid<>pg_backend_pid() "
+                               "AND query LIKE '%Concurrent fixture Stop%' AND wait_event='PgSleep');")
+                if sleeping == 't':
+                    break
+                time.sleep(0.01)
+            else:
+                raise AssertionError("Concurrent Stop transaction did not acquire its lock")
+            refused = workers.submit(sql, "SET ROLE service_role; " + permit(A2, kind="autonomous", pid=A3), False)
+            stopped.result()
+            refused.result()
+        checks += 1; assert sql(f"SELECT count(*) FROM public.jackboy_permits WHERE job_id='{A2}';") == '0'
+        ok("SET ROLE service_role; SELECT public.omni_stop_delivered(public.omni_stop_pending());")
+        ok(owner("SELECT public.omni_terminal_release_stop('Synthetic concurrent peer acknowledgement');"))
         sql("UPDATE public.activation_approvals SET approval_expires_at=now()-interval '1 second' WHERE step=7;")
         assert eff('live_link') == 'f' and sql("SELECT public.activation_autonomy_authorized();") == 'f'
         deny(window)

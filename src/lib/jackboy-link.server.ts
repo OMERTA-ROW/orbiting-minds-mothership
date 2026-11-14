@@ -22,11 +22,17 @@ export type JackboyAction =
   /** Jackboy omni.permit/v1 actions (session-token signed; the bootstrap key is refused). */
   | "safety"
   | "permit.request"
-  | "permit.release";
+  | "permit.release"
+  | "execution-control";
 type Action = JackboyAction;
 type JobAction = Exclude<
   Action,
-  "handshake" | "configuration" | "safety" | "permit.request" | "permit.release"
+  | "handshake"
+  | "configuration"
+  | "safety"
+  | "permit.request"
+  | "permit.release"
+  | "execution-control"
 >;
 /**
  * How long Jackboy itself waits for its Railway runner before answering (mirrors Jackboy's
@@ -71,6 +77,7 @@ type Reply = {
   configuration?: unknown;
   safety?: unknown;
   permit?: unknown;
+  state?: unknown;
   job?: {
     id: string;
     status: string;
@@ -405,7 +412,7 @@ async function sendSigned(
   return (await sendSignedRaw(config, options, action, token, jobId)).reply;
 }
 
-type ExtraFields = Record<string, string | number>;
+type ExtraFields = Record<string, unknown>;
 
 /** Like sendSigned, also returning a digest of the verified reply proof (for evidence records). */
 async function sendSignedRaw(
@@ -482,6 +489,28 @@ async function sendSignedRaw(
   )
     throw new Error("Jackboy returned an invalid job.");
   return { reply, proofDigest: sha256(result.proof) };
+}
+
+export async function sendExecutionControl(operation: string, args: Record<string, unknown> = {}) {
+  const config = configuredJackboyConfiguration();
+  const timeoutMs = ["configure", "verify", "arm", "disarm", "unconfigure", "revoke"].includes(
+    operation,
+  )
+    ? 60_000
+    : 10_000;
+  const { reply } = await sendSignedRaw(
+    config,
+    { timeoutMs },
+    "execution-control",
+    config.bootstrap,
+    undefined,
+    {
+      audience: "mothership",
+      operation,
+      args,
+    },
+  );
+  return reply.state;
 }
 
 const runnerConfigurationSchema = z

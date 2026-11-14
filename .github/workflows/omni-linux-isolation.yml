@@ -1,0 +1,50 @@
+name: Bounded OMNI Linux isolation
+on:
+  pull_request:
+  push:
+    branches: [feat/unified-activation]
+    paths:
+      - .github/workflows/omni-linux-isolation.yml
+      - services/omni-autonomous/**
+      - tests/omni-autonomous*.test.mjs
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  activation-sql:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - run: echo "$(pg_config --bindir)" >> "$GITHUB_PATH"
+      - name: Verify activation, Stop admission races and safety in disposable local databases
+        run: |
+          python3 src/test/test_omni_activation_sql.py
+          python3 src/test/test_jackboy_safety_sql.py
+          python3 src/test/test_activation_approvals_sql.py
+  actual-linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "26"
+      - name: Install the worker's declared Linux isolation dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap util-linux python3
+      - name: Verify real namespaces and process cancellation in this disposable VM
+        run: |
+          set -euo pipefail
+          test "$(uname -s)" = Linux
+          git rev-parse HEAD
+          node --version
+          bwrap --version
+          prlimit --version
+          sudo env "PATH=$PATH" OMNI_LINUX_ISOLATION_TEST=true \
+            node --test tests/omni-autonomous-linux.test.mjs

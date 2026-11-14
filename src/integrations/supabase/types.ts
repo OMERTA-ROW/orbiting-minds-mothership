@@ -3280,6 +3280,14 @@ export type Database = {
       };
       activation_autonomy_authorized: { Args: never; Returns: boolean };
       activation_effective: { Args: { _kind: string }; Returns: boolean };
+      activation_attempt_outcome: { Args: { _kind: string; _attempt: string }; Returns: string };
+      activation_rollback_confirmed: {
+        Args: { _kind: string; _attempt: string };
+        Returns: undefined;
+      };
+      omni_stop_pending: { Args: never; Returns: number | null };
+      omni_stop_delivered: { Args: { _revision: number }; Returns: undefined };
+      omni_execution_permit_live: { Args: { _job: string }; Returns: boolean };
       activation_prereq_blocker: { Args: { _kind: string }; Returns: string };
       assert_fresh_mfa: {
         Args: { _max_age_seconds?: number };

@@ -134,10 +134,11 @@ export class PermitHolder {
     this.permit = permit;
     this.clearTimers();
     const ttl = Date.parse(permit.expiresAt) - this.now();
-    this.renewTimer = this.timers.set(
-      () => void this.renew(),
-      Math.min(PERMIT_RENEW_MS, Math.max(0, ttl - 5_000)),
-    );
+    if (ttl > 5_000)
+      this.renewTimer = this.timers.set(
+        () => void this.renew(),
+        Math.min(PERMIT_RENEW_MS, ttl - 5_000),
+      );
     // Hard deadline: even if the renewal call hangs, the job halts when the permit expires.
     this.deadlineTimer = this.timers.set(
       () => {
