@@ -128,16 +128,16 @@ export const ACTIVATION_STEPS = [
   },
   {
     step: 9,
-    title: "Live link switches approved",
+    title: "Live link activated",
     detail:
-      "Allows connection-only checks of the live signed link (handshake, no job). Changes no switch; CODE stays off",
+      "Activates the live signed link for connection checks and Jackboy safety sync (signed reads only, no job). Changes no switch; CODE stays off",
     kind: "owner",
   },
   {
     step: 10,
-    title: "CODE production switch",
+    title: "Production readiness & autonomy authorization",
     detail:
-      "Records your $10 OpenAI cap and $5 daily limit confirmation only. Does not turn CODE on; that happens only in Jackboy",
+      "Authorizes OMNI autonomy while Step 7's window is open, with your $10 cap and $5 daily limit confirmation. Starts nothing; the database still refuses work while any stop applies or Jackboy safety is not freshly verified clear",
     kind: "owner",
   },
 ] as const;
