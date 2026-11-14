@@ -63,6 +63,10 @@ def main():
             paths = list((ROOT / "drizzle/migrations").glob("*_omni_activation_permits.sql"))
             assert len(paths) == 1
             sql(paths[0].read_text())
+        halt_audit = os.environ.get("OMNI_HALT_AUDIT_SQL")
+        paths = [Path(halt_audit)] if halt_audit else list((ROOT / "drizzle/migrations").glob("*_jackboy_halt_audit.sql"))
+        assert len(paths) == 1
+        sql(paths[0].read_text())
         sql(f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()); INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner');")
 
         def deny(text):
@@ -276,11 +280,20 @@ def main():
         deny("SET ROLE anon; SELECT public.activation_activation_revoke('live_link');")
         # Audit trail present; owner can read activations and permits, anon cannot.
         assert int(sql("SELECT count(*) FROM public.razul_control_audit WHERE record_type IN ('activation','jackboy_permit');")) >= 10
-        print("CODE JOB EVENTS:", sql(f"SELECT string_agg(actor||':'||event, ' | ' ORDER BY id) FROM public.omni_code_job_events WHERE job_id='{j}';"))
+        # Per-job audit evidence: activations, permit issue/lapse, the stop, and each halt-revoked permit.
+        actions = set(sql("SELECT string_agg(DISTINCT action, ',') FROM public.razul_control_audit;").split(","))
+        for a in ["activation_begin", "activation_active", "activation_failed", "activation_revoked",
+                  "activation_refused_step10_not_approved", "permit_issued", "permit_lapsed",
+                  "permit_revoked_by_halt", "omni_halt_stopped_work", "jackboy_safety_engaged"]:
+            checks += 1; assert a in actions, a
+        checks += 1; assert sql(f"SELECT count(*) FROM public.razul_control_audit WHERE action='permit_revoked_by_halt' AND record_id='{j}';") == '1'
+        checks += 1; assert sql("SELECT count(*) FROM public.razul_control_audit WHERE action='omni_halt_stopped_work' AND record_id LIKE 'code=1 %';") == '1'
+        checks += 1; assert sql("SELECT count(*) FROM public.razul_control_audit WHERE actor_id IS NULL AND action LIKE 'permit_%' AND record_type <> 'jackboy_permit';") == '0'
+
         checks += 1; assert sql(owner("SELECT count(*) FROM public.activation_activations;")) == '2'
         deny("SET ROLE anon; SELECT * FROM public.jackboy_permits;")
 
-        print(f"PASS: {checks} isolated SQL checks: Step 9/10 activation (fresh MFA, single attempt, idempotent, revision-bound, rollback on failure/expiry/approval change), Jackboy safety admission, permits (caps, expiry, single job, no resume), stop/lapse/stale halts, manual terminal only refused by a verified Kill Switch. No hosted fixtures.")
+        print(f"PASS: {checks} isolated SQL checks: Step 9/10 activation (fresh MFA, single attempt, idempotent, revision-bound, rollback on failure/expiry/approval change), Jackboy safety admission, permits (caps, expiry, single job, no resume), stop/lapse/stale halts with per-job audit, CODE refused without Step 10 proof or with Jackboy CODE off, manual terminal only refused by a verified Kill Switch. No hosted fixtures.")
     finally:
         if started: command(["pg_ctl", "-D", str(base / "db"), "-m", "immediate", "-w", "stop"])
         shutil.rmtree(base)
