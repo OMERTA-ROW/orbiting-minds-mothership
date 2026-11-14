@@ -98,7 +98,7 @@ def main():
         j = job()
         ok(lease(j))
         q = job()
-        sess = sql(f"INSERT INTO public.omni_workspace_sessions(agent_id,owner_id,expires_at) VALUES('omni','{OWNER}',now()+interval '1 hour') RETURNING id;").splitlines()[0]
+        sess = sql(f"INSERT INTO public.omni_workspace_sessions(agent_id,owner_id) VALUES('omni','{OWNER}') RETURNING id;").splitlines()[0]
         aj = sql(f"INSERT INTO public.omni_agent_jobs(agent_id,session_id,kind,origin,input,status) VALUES('omni','{sess}','command','agent','x','running') RETURNING id;").splitlines()[0]
         mj = sql(f"INSERT INTO public.omni_agent_jobs(agent_id,session_id,kind,origin,input,status) VALUES('omni','{sess}','command','owner','status','running') RETURNING id;").splitlines()[0]
 
