@@ -83,8 +83,8 @@ def main():
             return f"SET ROLE service_role; SELECT public.activation_activation_finish('{kind}','{attempt}',{str(good).lower()},'{reason}','{{}}'::jsonb);"
         def eff(kind):
             return sql(f"SELECT public.activation_effective('{kind}');")
-        def poll(paused="false", stop="false", allowed="true", manual="true", observed="now()", expires="now()+interval '30 seconds'"):
-            return (f"SELECT public.jackboy_safety_record_v2('poll',{paused},{stop},true,{allowed},{manual},NULL,now()+interval '1 hour',0,NULL,"
+        def poll(paused="false", stop="false", allowed="true", manual="true", observed="now()", expires="now()+interval '30 seconds'", code="true", blocked="NULL"):
+            return (f"SELECT public.jackboy_safety_record_v2('poll',{paused},{stop},{code},{allowed},{manual},{blocked},now()+interval '1 hour',0,NULL,"
                     f"{observed},{expires},'{D}',NULL,'t');")
         def event(nonce, paused="false", stop="true"):
             return f"SELECT public.jackboy_safety_record('event',{paused},{stop},true,NULL,now(),NULL,'{D}','{nonce}','t');"
@@ -126,6 +126,16 @@ def main():
         assert ok(finish('live_link', A1)) == 'superseded'  # idempotent, no double record
         checks += 1; assert json.loads(begin('live_link', A3))["duplicate"] is True
 
+        # CODE needs persisted Step 10 proof first: link active + fresh clear Jackboy reading
+        # still admits nothing autonomous (no always-on, window, permit or agent job).
+        assert ok(poll()) == 'clear'
+        assert sql("SELECT public.jackboy_safety_clear();") == 't'
+        deny(always_on); deny(window)
+        pre = job()
+        deny("SET ROLE service_role; " + permit(pre))
+        assert sql("SELECT count(*) FROM public.jackboy_permits;") == '0'
+        assert ok("SET ROLE service_role; SELECT public.jackboy_safety_record('failure',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'test_reset');") == 'unknown'
+
         # Step 10: needs approval with cap confirmations, then activation; starts nothing.
         checks += 1; assert json.loads(begin('autonomy', A1))["reason"] == "step10_not_approved"
         sql(decide(10, 'approved', ", spend_confirmations=jsonb_build_object('openai_cap_usd',10,'daily_limit_usd',5,'confirmed_at',now())"))
@@ -142,6 +152,11 @@ def main():
         assert ok(poll(allowed="false")) == 'clear'
         assert sql("SELECT public.jackboy_safety_clear();") == 'f'
         deny(window)
+        # Jackboy CODE setting off (signed reading, blockedBy code_disabled): CODE and permits refused.
+        assert ok(poll(code="false", allowed="false", blocked="'code_disabled'")) == 'clear'
+        assert sql("SELECT code_enabled::text||'/'||blocked_by FROM public.jackboy_safety_state WHERE id=1;") == 'false/code_disabled'
+        deny(always_on); deny(window)
+        deny("SET ROLE service_role; " + permit(pre))
         # Jackboy allows: windows and CODE always-on admitted; leasing still needs a permit.
         assert ok(poll()) == 'clear'
         ok(window); ok(always_on)
@@ -175,6 +190,7 @@ def main():
         assert sql(f"SELECT status FROM public.omni_agent_jobs WHERE id='{mj}';") == 'running'  # manual untouched
         ok(manual_job)  # CODE stop does not block the manual terminal
         deny(permit(j, renewals=2))  # a revoked permit is never renewed
+        deny(permit(job()))  # no new permit while the CODE Emergency Stop is engaged
         deny(window); deny(always_on)
         # Releasing in Jackboy and a new clear reading restarts nothing.
         assert ok(poll()) == 'clear'
@@ -260,6 +276,7 @@ def main():
         deny("SET ROLE anon; SELECT public.activation_activation_revoke('live_link');")
         # Audit trail present; owner can read activations and permits, anon cannot.
         assert int(sql("SELECT count(*) FROM public.razul_control_audit WHERE record_type IN ('activation','jackboy_permit');")) >= 10
+        print("AUDIT ACTIONS:", sql("SELECT string_agg(DISTINCT action, ',') FROM public.razul_control_audit;"))
         checks += 1; assert sql(owner("SELECT count(*) FROM public.activation_activations;")) == '2'
         deny("SET ROLE anon; SELECT * FROM public.jackboy_permits;")
 
