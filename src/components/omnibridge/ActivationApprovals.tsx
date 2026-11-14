@@ -21,6 +21,7 @@ import {
   runActivationApprovalCheck,
   runStep8SelfTest,
   checkLiveLinkConnection,
+  refreshJackboySafety,
 } from "@/lib/activation-approvals.functions";
 import { LiveLinkPanel, type LiveLinkOutcome } from "@/components/omnibridge/LiveLinkPanel";
 import { SELF_TEST_ATTEMPT_KEY } from "@/lib/activation-self-test";
@@ -72,7 +73,7 @@ const ACTION_LABEL: Record<string, string> = {
 const CHECK_LABEL = { passed: "Passed", failed: "Failed", needs_attention: "Needs attention" };
 
 type Pending = {
-  kind: "check" | "decide" | "refresh" | "reverify" | "selftest" | "livelink";
+  kind: "check" | "decide" | "refresh" | "reverify" | "selftest" | "livelink" | "safety";
   step: number | null;
   since: number;
 };
@@ -94,6 +95,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const runCheck = useServerFn(runActivationApprovalCheck);
   const runSelfTest = useServerFn(runStep8SelfTest);
   const checkLiveLink = useServerFn(checkLiveLinkConnection);
+  const refreshSafety = useServerFn(refreshJackboySafety);
   const [data, setData] = useState<Loaded | null>(null);
   const [access, setAccess] = useState<"checking" | "ok" | "denied">("checking");
   const [reason, setReason] = useState<AccessReason>("unreadable");
@@ -119,6 +121,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   // Step 9 live link: one connection-only handshake per explicit authorization.
   const [liveConfirmed, setLiveConfirmed] = useState(false);
   const [liveResult, setLiveResult] = useState<LiveLinkOutcome | null>(null);
+  const [safetyResult, setSafetyResult] = useState<LiveLinkOutcome | null>(null);
 
   useEffect(() => {
     try {
@@ -465,6 +468,26 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         });
       } finally {
         setLiveConfirmed(false);
+      }
+      await refresh().catch(() => {});
+    });
+  }
+
+  function safetyRefresh() {
+    return exclusive("safety", null, async () => {
+      setSafetyResult(null);
+      try {
+        const result = await withTimeout(refreshSafety(), limits.decide);
+        setSafetyResult({ ok: result.ok, message: result.message, at: new Date().toISOString() });
+      } catch (error) {
+        setSafetyResult({
+          ok: false,
+          message:
+            error instanceof FlowTimeoutError
+              ? `${error.message} Autonomy and CODE stay halted; refreshing again is safe.`
+              : "The safety state could not be refreshed. Autonomy and CODE stay halted.",
+          at: new Date().toISOString(),
+        });
       }
       await refresh().catch(() => {});
     });
@@ -1111,6 +1134,10 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         onConfirmedChange={setLiveConfirmed}
         onCheck={() => void liveLinkCheck()}
         result={liveResult}
+        safety={data.safety}
+        safetyBusy={busy}
+        onRefreshSafety={() => void safetyRefresh()}
+        safetyResult={safetyResult}
       />
 
       <section aria-labelledby="audit" className="space-y-2">
