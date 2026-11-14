@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safetyEventSchema, safetyView, type SafetyRow } from "./jackboy-safety";
+import { safetyEventSchema, safetyFailureText, safetyView, type SafetyRow } from "./jackboy-safety";
 
 const NOW = Date.parse("2026-11-14T01:30:00Z");
 const row = (extra: Partial<SafetyRow>): SafetyRow => ({
@@ -86,5 +86,16 @@ describe("Jackboy stop notice contract", () => {
     expect(
       safetyEventSchema.safeParse({ ...base, event: "code_stop_engaged", release: true }).success,
     ).toBe(false);
+  });
+  it("explains an uninstalled Jackboy permit service without treating it as clear", () => {
+    const v = safetyView(
+      row({ state: "unknown", source: "failure", reason: "read_http_503_permit_service_unavailable", autonomous_allowed: null }),
+      NOW,
+    );
+    expect(v.clear).toBe(false);
+    expect(v.state).toBe("unknown");
+    expect(v.detail).toContain("permit service is not installed");
+    expect(safetyFailureText("read_timeout")).toBe("Jackboy did not answer in time");
+    expect(safetyFailureText("read_http_403_kill_switch_on")).toContain("Kill Switch is on");
   });
 });
