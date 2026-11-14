@@ -4,6 +4,7 @@ admission, Jackboy permits (caps, expiry, single active job, no resume after lap
 cross-system stop halting autonomous work while the manual terminal keeps its own rules.
 Never uses hosted credentials."""
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -36,7 +37,8 @@ def main():
         result = subprocess.run(["psql", "-X", "-v", "ON_ERROR_STOP=1", "-At", "-c", text], env=env, capture_output=True, text=True)
         if ok and result.returncode: raise AssertionError(result.stderr + "\n" + text)
         if not ok and not result.returncode: raise AssertionError("Expected SQL denial: " + text)
-        return result.stdout.strip().splitlines()[-1] if result.stdout.strip() else ""
+        lines = [l for l in result.stdout.strip().splitlines() if not re.match(r"^(SET|INSERT \d+ \d+|UPDATE \d+|DELETE \d+)$", l)]
+        return lines[-1] if lines else ""
     started = False
     try:
         command(["initdb", "-D", str(base / "db"), "-U", "fixture", "-A", "trust", "--no-locale"])
