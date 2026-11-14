@@ -141,6 +141,31 @@ describe("Jackboy permit (omni.permit/v1) and cross-system Emergency Stop", () =
     expect(holder.usable()).toBe(false);
   });
 
+  it("gives an issued permit back and starts nothing when Mothership cannot record it", async () => {
+    const { holder, store, fake, onHalt } = setup();
+    store.record.mockRejectedValueOnce(new Error("permit_not_recorded"));
+    await expect(holder.acquire()).rejects.toThrow(/not recorded/);
+    expect(fake.permits.get(JOB)?.status).toBe("released");
+    expect(holder.usable()).toBe(false);
+    expect(onHalt).not.toHaveBeenCalled();
+  });
+
+  it("labels a refusal reason only when Jackboy signed the refusal", async () => {
+    const fake = new FakeJackboy();
+    fake.engageStop();
+    const inner = fake.fetch;
+    fake.fetch = async (url, init) => {
+      const res = await inner(url, init);
+      if (res.status !== 403) return res;
+      return new Response(await res.text(), { status: 403 }); // proof stripped
+    };
+    const { holder } = setup(fake);
+    const err = (await holder.acquire().catch((e: unknown) => e)) as { reason?: string; signed?: boolean; code?: string };
+    expect(err.code).toBe("permit_denied");
+    expect(err.signed).toBe(false);
+    expect(err.reason).toBeUndefined();
+  });
+
   it("releases the permit at Jackboy and locally when the job ends", async () => {
     const { holder, store, fake } = setup();
     await holder.acquire();

@@ -139,6 +139,8 @@ export class JackboyLinkError extends Error {
   readonly phase: "reply" | "body" | undefined;
   /** Permit refusals only: Jackboy's allowlisted reason (advisory; a refusal always fails closed). */
   readonly reason: string | undefined;
+  /** True only when the refusal carried a valid `X-Omni-Proof` for this request (authentic refusal). */
+  readonly signed: boolean;
   constructor(
     message: string,
     stage: JackboyFailureStage,
@@ -149,6 +151,7 @@ export class JackboyLinkError extends Error {
       waitedMs?: number;
       phase?: "reply" | "body";
       reason?: string;
+      signed?: boolean;
     } = {},
   ) {
     super(message);
@@ -160,6 +163,7 @@ export class JackboyLinkError extends Error {
     this.waitedMs = extra.waitedMs;
     this.phase = extra.phase;
     this.reason = extra.reason;
+    this.signed = extra.signed ?? false;
   }
 }
 
@@ -433,11 +437,20 @@ async function sendSignedRaw(
     body,
     action,
   );
+  const expected = hmac(
+    config.secret,
+    `${CONTRACT}\nresponse\n${nonce}\n${result.status}\n${result.body}`,
+  );
+  const received = Buffer.from(result.proof, "utf8");
+  const wanted = Buffer.from(expected, "utf8");
+  const proofOk = received.length === wanted.length && timingSafeEqual(received, wanted);
   if (result.status !== 200 && result.status !== 202) {
+    // Any refusal fails closed. Its reason is only labelled as Jackboy's when the reply is signed.
     const code = refusalCode(result.body);
-    const reason = code === "permit_denied" ? permitReason(result.body) : undefined;
+    const reason = code === "permit_denied" && proofOk ? permitReason(result.body) : undefined;
     const extra = {
       status: result.status,
+      signed: proofOk,
       ...(code ? { code } : {}),
       ...(reason ? { reason } : {}),
     };
@@ -445,14 +458,7 @@ async function sendSignedRaw(
       throw new JackboyLinkError("Jackboy session rejected.", "http", extra);
     throw new JackboyLinkError(`Jackboy request failed (HTTP ${result.status}).`, "http", extra);
   }
-  const expected = hmac(
-    config.secret,
-    `${CONTRACT}\nresponse\n${nonce}\n${result.status}\n${result.body}`,
-  );
-  const received = Buffer.from(result.proof, "utf8");
-  const wanted = Buffer.from(expected, "utf8");
-  if (received.length !== wanted.length || !timingSafeEqual(received, wanted))
-    throw new JackboyLinkError("Jackboy response proof is invalid.", "proof");
+  if (!proofOk) throw new JackboyLinkError("Jackboy response proof is invalid.", "proof");
   let reply: Reply;
   try {
     reply = JSON.parse(result.body);
