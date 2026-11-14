@@ -6,7 +6,7 @@
  */
 export const APPROVAL_FLOW_SCHEMA = "evolution.approval-flow/v1";
 /** Bump whenever the approvals screen or its server rules change in a way the owner must know about. */
-export const APPROVAL_FLOW_VERSION = 11;
+export const APPROVAL_FLOW_VERSION = 12;
 export const APPROVAL_FLOW_SUMMARY =
   "Checks only record evidence; the owner approves separately with a fresh two-step code";
 

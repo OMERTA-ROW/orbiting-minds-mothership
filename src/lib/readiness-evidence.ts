@@ -190,7 +190,7 @@ export function readinessEvidence(i: EvidenceInput): EvidenceRow[] {
       decided.length === 2
         ? "both approved"
         : decided.length === 1
-          ? `only Step ${decided[0].step} approved`
+          ? `only Step ${decided[0]?.step} approved`
           : "not approved",
     status: decided.length === 2 ? "current" : "missing",
     at: decided.length
