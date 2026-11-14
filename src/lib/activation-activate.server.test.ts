@@ -30,7 +30,7 @@ function deps(o: Partial<ActivationDeps> = {}) {
     safetyFailureReason: () => "read_http_503_permit_service_unavailable",
     ...o,
   };
-  return d as typeof d & ActivationDeps;
+  return d as ActivationDeps & typeof d;
 }
 
 describe("Step 9/10 activation", () => {
