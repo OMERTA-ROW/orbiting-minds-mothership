@@ -5,7 +5,7 @@
  * Remove an entry once the generated types include it.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 type StagedFunctions = {
   activation_attempt_outcome: {
@@ -22,7 +22,7 @@ type StagedFunctions = {
   omni_noop_sweep: { Args: never; Returns: number };
   omni_noop_worker_action: {
     Args: { _hash: string; _op: string; _job?: string };
-    Returns: Database["public"]["Tables"] extends never ? never : import("./types-json").Json;
+    Returns: Json;
   };
   omni_noop_workers_list: {
     Args: never;

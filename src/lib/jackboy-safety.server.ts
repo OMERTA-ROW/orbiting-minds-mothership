@@ -14,6 +14,7 @@ import {
   safetyEventSchema,
 } from "./jackboy-safety";
 import type { JackboyLinkOptions, JackboySafetySnapshot } from "./jackboy-link.server";
+import { staged } from "./staged-rpc";
 
 type Admin = SupabaseClient<Database>;
 type Recorded = "clear" | "engaged" | "paused" | "unknown" | "ignored_older";
@@ -109,7 +110,7 @@ export async function syncJackboySafety(
 ): Promise<SafetySyncResult> {
   const result = await syncSafety(admin, deps);
   if (process.env["OMNI_NOOP_WORKER_ENABLED"] === "true") {
-    const swept = await admin.rpc("omni_noop_sweep");
+    const swept = await staged(admin).rpc("omni_noop_sweep");
     if (swept.error) throw new Error("No-op worker leases could not be enforced.");
   }
   return result;

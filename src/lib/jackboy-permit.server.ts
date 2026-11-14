@@ -166,7 +166,7 @@ export class PermitHolder {
 }
 
 /** Database-backed store for the permit mirror (service role only). */
-export function databasePermitStore(admin: SupabaseClient<Database>): PermitStore {
+export function databasePermitStore(admin: Pick<SupabaseClient<Database>, "rpc">): PermitStore {
   return {
     async record(req, permit) {
       const { data, error } = await admin.rpc("jackboy_permit_record", {

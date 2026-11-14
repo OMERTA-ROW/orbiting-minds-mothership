@@ -49,6 +49,7 @@ import {
   type SecurityEvent,
 } from "./activation-status";
 import { classifyLiveLinkError, liveLinkStatus, systemStates } from "./live-link";
+import { staged } from "./staged-rpc";
 
 /**
  * The check store (`activation_approval_checks`, `activation_approval_record_check`) comes from
@@ -1493,7 +1494,7 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
       return data as "active" | "failed" | "superseded" | "expired";
     },
     outcome: async (k, attempt) => {
-      const result = await supabaseAdmin.rpc("activation_attempt_outcome", {
+      const result = await staged(supabaseAdmin).rpc("activation_attempt_outcome", {
         _kind: k,
         _attempt: attempt,
       });
@@ -1542,7 +1543,7 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
         (k === "live_link" ? state.connected : state.configured)
       )
         throw new Error("Remote rollback is unverified");
-      const outcome = await supabaseAdmin.rpc("activation_attempt_outcome", {
+      const outcome = await staged(supabaseAdmin).rpc("activation_attempt_outcome", {
         _kind: k,
         _attempt: attemptId,
       });
@@ -1551,7 +1552,7 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
         const revoked = await context.supabase.rpc("activation_activation_revoke", { _kind: k });
         if (revoked.error) throw new Error("Remote rollback verified but local revocation failed");
       }
-      const confirmed = await supabaseAdmin.rpc("activation_rollback_confirmed", {
+      const confirmed = await staged(supabaseAdmin).rpc("activation_rollback_confirmed", {
         _kind: k,
         _attempt: attemptId,
       });
@@ -1701,7 +1702,7 @@ export const deactivateActivation = createServerFn({ method: "POST" })
       if (current.error) throw new Error("Current deactivation scope is unavailable");
       if (current.data.attempt_id) {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const confirmed = await supabaseAdmin.rpc("activation_rollback_confirmed", {
+        const confirmed = await staged(supabaseAdmin).rpc("activation_rollback_confirmed", {
           _kind: data.kind,
           _attempt: current.data.attempt_id,
         });

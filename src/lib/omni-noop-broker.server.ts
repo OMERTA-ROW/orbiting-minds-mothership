@@ -3,6 +3,7 @@ import { z } from "zod";
 import { JackboyLink, configuredJackboyLink, type PermitRequest } from "./jackboy-link.server";
 import { databasePermitStore } from "./jackboy-permit.server";
 import { syncJackboySafety } from "./jackboy-safety.server";
+import { staged } from "./staged-rpc";
 
 const DIGEST = "9903e100e835979c05c1664f2eac28a97ba4884a56e0f62807a22e43b04d8633";
 const message = z.discriminatedUnion("action", [
@@ -157,7 +158,7 @@ export async function productionNoopDeps(): Promise<Deps> {
   return {
     async action(hash, action, job) {
       const args = { _hash: hash, _op: action, ...(job ? { _job: job } : {}) };
-      const { data, error } = await supabaseAdmin.rpc("omni_noop_worker_action", args);
+      const { data, error } = await staged(supabaseAdmin).rpc("omni_noop_worker_action", args);
       if (error) throw new Error("worker_store_unavailable");
       return resultSchema.parse(data);
     },
