@@ -3,6 +3,7 @@ import {
   SELF_TEST_MAX_POLLS,
   attemptStage,
   classifySelfTestError,
+  linkIdentityIssues,
   otherAttemptInFlight,
   selfTestAuditAction,
   selfTestReadiness,
