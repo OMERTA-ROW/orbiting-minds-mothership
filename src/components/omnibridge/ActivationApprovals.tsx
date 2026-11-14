@@ -22,6 +22,9 @@ import {
   runStep8SelfTest,
   checkLiveLinkConnection,
   refreshJackboySafety,
+  activateLiveLink,
+  activateAutonomy,
+  deactivateActivation,
 } from "@/lib/activation-approvals.functions";
 import { LiveLinkPanel, type LiveLinkOutcome } from "@/components/omnibridge/LiveLinkPanel";
 import { SELF_TEST_ATTEMPT_KEY } from "@/lib/activation-self-test";
@@ -73,7 +76,17 @@ const ACTION_LABEL: Record<string, string> = {
 const CHECK_LABEL = { passed: "Passed", failed: "Failed", needs_attention: "Needs attention" };
 
 type Pending = {
-  kind: "check" | "decide" | "refresh" | "reverify" | "selftest" | "livelink" | "safety";
+  kind:
+    | "check"
+    | "decide"
+    | "refresh"
+    | "reverify"
+    | "selftest"
+    | "livelink"
+    | "safety"
+    | "activate_link"
+    | "activate_autonomy"
+    | "deactivate";
   step: number | null;
   since: number;
 };
@@ -96,6 +109,9 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const runSelfTest = useServerFn(runStep8SelfTest);
   const checkLiveLink = useServerFn(checkLiveLinkConnection);
   const refreshSafety = useServerFn(refreshJackboySafety);
+  const activateLink = useServerFn(activateLiveLink);
+  const activateAuto = useServerFn(activateAutonomy);
+  const deactivate = useServerFn(deactivateActivation);
   const [data, setData] = useState<Loaded | null>(null);
   const [access, setAccess] = useState<"checking" | "ok" | "denied">("checking");
   const [reason, setReason] = useState<AccessReason>("unreadable");
@@ -122,6 +138,11 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const [liveConfirmed, setLiveConfirmed] = useState(false);
   const [liveResult, setLiveResult] = useState<LiveLinkOutcome | null>(null);
   const [safetyResult, setSafetyResult] = useState<LiveLinkOutcome | null>(null);
+  // Steps 9/10 activation: explicit per-click authorization; an unfinished attempt is resumed.
+  const [autoConfirmed, setAutoConfirmed] = useState(false);
+  const [linkActResult, setLinkActResult] = useState<LiveLinkOutcome | null>(null);
+  const [autoActResult, setAutoActResult] = useState<LiveLinkOutcome | null>(null);
+  const activationAttempt = useRef<Record<string, string>>({});
 
   useEffect(() => {
     try {
@@ -438,8 +459,6 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   }
 
   function liveLinkCheck() {
-    if (!liveConfirmed)
-      return setNotice({ step: 9, tone: "error", text: "Tick the authorization box first." });
     return exclusive("livelink", null, async () => {
       setLiveResult(null);
       try {
@@ -466,8 +485,60 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
               : "The check did not complete. Nothing else was sent; retrying is safe.",
           at: new Date().toISOString(),
         });
+      }
+      await refresh().catch(() => {});
+    });
+  }
+
+  function activate(kind: "live_link" | "autonomy") {
+    const confirmed = kind === "live_link" ? liveConfirmed : autoConfirmed;
+    const setResult = kind === "live_link" ? setLinkActResult : setAutoActResult;
+    if (!confirmed)
+      return setNotice({ step: kind === "live_link" ? 9 : 10, tone: "error", text: "Tick the authorization box first." });
+    return exclusive(kind === "live_link" ? "activate_link" : "activate_autonomy", null, async () => {
+      setResult(null);
+      const attemptId = activationAttempt.current[kind] ?? crypto.randomUUID();
+      activationAttempt.current[kind] = attemptId;
+      try {
+        const call = kind === "live_link" ? activateLink : activateAuto;
+        const result = await withTimeout(call({ data: { confirm: true, attemptId } }), limits.decide);
+        // A finished attempt (either way) is over; the next click starts a new one.
+        if (result.ok || result.reason !== "not_recorded") delete activationAttempt.current[kind];
+        setResult({
+          ok: result.ok,
+          message: result.ok
+            ? result.blockers.length
+              ? `${result.message} Still blocking execution: ${result.blockers.join(" ")}`
+              : result.message
+            : result.message,
+          details: result.ok ? [] : result.details,
+          at: new Date().toISOString(),
+        });
+      } catch (error) {
+        setResult({
+          ok: false,
+          message:
+            error instanceof FlowTimeoutError
+              ? `${error.message} If it did not finish, it is not active; retrying continues the same attempt.`
+              : "The activation did not complete and is not active. Retrying continues the same attempt.",
+          at: new Date().toISOString(),
+        });
       } finally {
-        setLiveConfirmed(false);
+        if (kind === "live_link") setLiveConfirmed(false);
+        else setAutoConfirmed(false);
+      }
+      await refresh().catch(() => {});
+    });
+  }
+
+  function deactivateKind(kind: "live_link" | "autonomy") {
+    const setResult = kind === "live_link" ? setLinkActResult : setAutoActResult;
+    return exclusive("deactivate", null, async () => {
+      try {
+        const result = await withTimeout(deactivate({ data: { kind } }), limits.decide);
+        setResult({ ok: result.ok, message: result.message, at: new Date().toISOString() });
+      } catch {
+        setResult({ ok: false, message: "Deactivation did not complete. Refresh and try again.", at: new Date().toISOString() });
       }
       await refresh().catch(() => {});
     });
@@ -1122,21 +1193,35 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
 
       <LiveLinkPanel
         liveLink={data.liveLink}
-        code={data.code}
+        system={data.system}
+        activations={data.activations}
+        safety={data.safety}
         sandbox={data.sandbox}
+        step10Approved={data.rows.some((r) => r.step === 10 && r.status === "approved")}
         mfaFresh={mfaFresh}
         busy={busy}
-        running={pending?.kind === "livelink"}
-        elapsedSeconds={
-          pending?.kind === "livelink" ? Math.max(0, Math.round((now - pending.since) / 1000)) : 0
+        pending={
+          pending?.kind === "livelink"
+            ? "check"
+            : pending?.kind === "activate_link" ||
+                pending?.kind === "activate_autonomy" ||
+                pending?.kind === "safety" ||
+                pending?.kind === "deactivate"
+              ? pending.kind
+              : null
         }
-        confirmed={liveConfirmed}
-        onConfirmedChange={setLiveConfirmed}
+        elapsedSeconds={pending ? Math.max(0, Math.round((now - pending.since) / 1000)) : 0}
+        linkConfirmed={liveConfirmed}
+        onLinkConfirmedChange={setLiveConfirmed}
+        autonomyConfirmed={autoConfirmed}
+        onAutonomyConfirmedChange={setAutoConfirmed}
+        onActivate={(kind) => void activate(kind)}
+        onDeactivate={(kind) => void deactivateKind(kind)}
         onCheck={() => void liveLinkCheck()}
-        result={liveResult}
-        safety={data.safety}
-        safetyBusy={busy}
         onRefreshSafety={() => void safetyRefresh()}
+        linkResult={linkActResult}
+        autonomyResult={autoActResult}
+        result={liveResult}
         safetyResult={safetyResult}
       />
 
