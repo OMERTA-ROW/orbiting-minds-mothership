@@ -246,29 +246,34 @@ async function runtimeCounts(): Promise<{
   windows: number;
   agentJobs: number;
   codeJobs: number;
+  readable: boolean;
   mothershipStop: boolean | null;
 }> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const [w, a, c, stop] = await Promise.all([
-    supabaseAdmin.from("omni_autonomy_windows").select("id", { count: "exact", head: true }).is("ended_at", null),
-    supabaseAdmin
-      .from("omni_agent_jobs")
-      .select("id", { count: "exact", head: true })
-      .neq("origin", "owner")
-      .in("status", ["queued", "running"]),
-    supabaseAdmin
-      .from("omni_code_jobs")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["leased", "running"]),
-    supabaseAdmin.from("omni_terminal_controls").select("emergency_stop").eq("id", 1).maybeSingle(),
-  ]);
-  // Unreadable counts are shown as running so nothing is claimed idle without evidence.
-  return {
-    windows: w.error ? 1 : (w.count ?? 0),
-    agentJobs: a.error ? 1 : (a.count ?? 0),
-    codeJobs: c.error ? 1 : (c.count ?? 0),
-    mothershipStop: stop.error || !stop.data ? null : stop.data.emergency_stop,
-  };
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [w, a, c, stop] = await Promise.all([
+      supabaseAdmin.from("omni_autonomy_windows").select("id", { count: "exact", head: true }).is("ended_at", null),
+      supabaseAdmin
+        .from("omni_agent_jobs")
+        .select("id", { count: "exact", head: true })
+        .neq("origin", "owner")
+        .in("status", ["queued", "running"]),
+      supabaseAdmin
+        .from("omni_code_jobs")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["leased", "running"]),
+      supabaseAdmin.from("omni_terminal_controls").select("emergency_stop").eq("id", 1).maybeSingle(),
+    ]);
+    return {
+      windows: w.count ?? 0,
+      agentJobs: a.count ?? 0,
+      codeJobs: c.count ?? 0,
+      readable: !w.error && !a.error && !c.error,
+      mothershipStop: stop.error || !stop.data ? null : stop.data.emergency_stop,
+    };
+  } catch {
+    return { windows: 0, agentJobs: 0, codeJobs: 0, readable: false, mothershipStop: null };
+  }
 }
 
 /** Cloud sandbox (manual OMNI Terminal workspace) settings: presence booleans only. */
@@ -1307,6 +1312,9 @@ const activationInput = z
   })
   .strict();
 
+/** Ledger rows read for today's total; more than this fails closed rather than undercounting. */
+const LEDGER_ROWS = 5000;
+
 /** Mothership-side cap and metering checks before Step 10 activation (values are owner caps). */
 async function autonomyPreflight(context: Ctx): Promise<string | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -1318,7 +1326,7 @@ async function autonomyPreflight(context: Ctx): Promise<string | null> {
       .from("omni_spend_ledger")
       .select("cents")
       .gte("created_at", new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").toISOString())
-      .limit(5000),
+      .limit(LEDGER_ROWS + 1),
   ]);
   if (agents.error) return "agent budgets could not be read.";
   const over = (agents.data ?? []).find(
@@ -1328,7 +1336,14 @@ async function autonomyPreflight(context: Ctx): Promise<string | null> {
   );
   if (over)
     return `${over.display_name}'s budget exceeds the owner caps ($1 per task, $5 per day, $10 total).`;
+  const enrolled = (agents.data ?? []).filter((a) => a.status === "enrolled");
+  const combinedDay = enrolled.reduce((sum, a) => sum + (a.budget_day_cents ?? 0), 0);
+  const combinedTotal = enrolled.reduce((sum, a) => sum + (a.budget_total_cents ?? 0), 0);
+  if (combinedDay > 500) return "the enrolled agents' combined daily budgets exceed the $5 daily cap.";
+  if (combinedTotal > 1000) return "the enrolled agents' combined total budgets exceed the $10 cap.";
   if (ledger.error) return "the spend ledger (metering) could not be read.";
+  if ((ledger.data ?? []).length > LEDGER_ROWS)
+    return "today's spend ledger is too long to total safely here.";
   const today = (ledger.data ?? []).reduce((sum, r) => sum + (r.cents ?? 0), 0);
   if (today >= 500) return "today's recorded spend has reached the $5 daily limit.";
   return null;

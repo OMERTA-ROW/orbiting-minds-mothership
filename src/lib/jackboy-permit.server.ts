@@ -80,8 +80,19 @@ export class PermitHolder {
   async acquire(): Promise<JackboyPermit> {
     if (this.permit || this.halted) throw new Error("This job already requested a permit.");
     const permit = await this.deps.link.requestPermit(this.req, this.deps.approvalId);
-    const recorded = await this.deps.store.record(this.req, permit);
-    if (recorded !== "issued") throw new Error("Permit was not recorded as a new job.");
+    let recorded: "issued" | "renewed" | null = null;
+    try {
+      recorded = await this.deps.store.record(this.req, permit);
+    } catch {
+      recorded = null;
+    }
+    if (recorded !== "issued") {
+      // Jackboy issued it but Mothership refused or failed to record it: give it back, start nothing.
+      this.halted = "permit_not_recorded";
+      await this.deps.link.releasePermit(this.req.jobId).catch(() => {});
+      throw new Error("Permit was not recorded as a new job.");
+    }
+    if (this.halted) throw new Error("This job was halted while its permit was being recorded.");
     this.accept(permit);
     return permit;
   }
@@ -98,6 +109,8 @@ export class PermitHolder {
       if (permit.id !== this.permit.id) throw new Error("permit_replaced");
       if (this.halted) return false;
       await this.deps.store.record(this.req, permit);
+      // A halt (deadline, release) may have happened while recording: never re-arm a halted job.
+      if (this.halted) return false;
       this.accept(permit);
       return true;
     } catch (error) {

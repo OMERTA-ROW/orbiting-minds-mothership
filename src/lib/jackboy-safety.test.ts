@@ -13,10 +13,22 @@ const row = (extra: Partial<SafetyRow>): SafetyRow => ({
   source: "poll",
   reason: "",
   recorded_at: new Date(NOW - 20_000).toISOString(),
+  autonomous_allowed: true,
+  manual_allowed: true,
   ...extra,
 });
 
 describe("Jackboy safety view (fail closed)", () => {
+  it("is not clear when stops are released but Jackboy does not allow autonomy", () => {
+    const v = safetyView(row({ autonomous_allowed: false, blocked_by: "not_authorized" }), NOW);
+    expect(v.clear).toBe(false);
+    expect(v.autonomousAllowed).toBe("no");
+    expect(v.detail).toContain("not authorized");
+  });
+  it("keeps a verified Kill Switch reading as a manual-terminal block even after a failed read", () => {
+    expect(safetyView(row({ state: "unknown", source: "failure", paused: true, manual_allowed: false }), NOW).manualBlocked).toBe(true);
+    expect(safetyView(row({}), NOW).manualBlocked).toBe(false);
+  });
   it("is clear only for a fresh signed poll reading", () => {
     expect(safetyView(row({}), NOW).clear).toBe(true);
     expect(safetyView(row({}), NOW).state).toBe("clear");

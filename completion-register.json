@@ -1535,6 +1535,38 @@
           "next_action": "Owner applies docs/JACKBOY-SAFETY-STATE-SPEC.md in Jackboy, adds the shared JACKBOY_SAFETY_EVENT_HMAC_SECRET in both projects, publishes Jackboy, approves Step 9, then runs the stop-notice end-to-end check.",
           "release_status": "Mothership enforcement published to evoomni.tech (approval flow marker 7 verified live); Jackboy side not yet implemented",
           "test_command": "python3 src/test/test_jackboy_safety_sql.py && bunx vitest run"
+        },
+        {
+          "id": "07.08",
+          "requirement": "Unified OMNI–Jackboy activation: Step 9 activates and verifies the signed live link, Step 10 activates autonomy authorization; Jackboy's omni.permit/v1 permits and session-signed safety snapshots make the CODE Emergency Stop a hard override (no new jobs, running jobs halt at the next renewal, stale/unknown fails closed); manual terminal blocked only by a verified Kill Switch.",
+          "status": "Implemented awaiting test",
+          "owner": "Lovable implementation (Mothership); Jackboy permit database install/publish and passkey authorization by owner",
+          "dependencies": [
+            "07.07"
+          ],
+          "changed_files": [
+            "drizzle/migrations/0055_omni_activation_permits.sql",
+            "src/lib/activation-activate.server.ts",
+            "src/lib/jackboy-permit.server.ts",
+            "src/lib/jackboy-link.server.ts",
+            "src/lib/jackboy-safety.server.ts",
+            "src/lib/jackboy-safety.ts",
+            "src/lib/live-link.ts",
+            "src/lib/activation-approvals.functions.ts",
+            "src/lib/omni-workspace.functions.ts",
+            "src/components/omnibridge/LiveLinkPanel.tsx",
+            "src/components/omnibridge/ActivationApprovals.tsx",
+            "src/test/support/fake-jackboy.ts",
+            "docs/OMNI-PERMIT-CONTRACT.md"
+          ],
+          "commit": null,
+          "commit_note": "Lovable-managed work; no external commit verified.",
+          "evidence": "Disposable-database SQL test (76 checks); unit/server/UI tests including an end-to-end run against a stand-in that follows Jackboy's documented contract; migration 0055 applied to the shared database with everything inactive.",
+          "verified_at": "2026-11-14",
+          "verified_scope": "Mothership side and contract conformance only. NOT verified live: Jackboy's permit database change is staged, not installed; no live handshake, safety read or permit was sent; no OMNI executor exists, so no real job cancellation has been demonstrated.",
+          "test_result": "Passed: python3 src/test/test_omni_activation_sql.py (76 checks); bunx vitest run 1,872 tests / 129 files; typecheck clean, 2026-11-14",
+          "runtime_evidence": "Live database: link and autonomy activations inactive, 0 permits, safety unknown; Steps 9–10 pending.",
+          "next_action": "Owner: install/publish Jackboy's permit change and authorize OMNI autonomy there; approve Step 9 and activate the live link; approve Step 10 and activate autonomy authorization; then a separately authorized live stop check."
         }
       ]
     },

@@ -1,3 +1,5 @@
+> **SUPERSEDED (2026-11-14):** Jackboy implemented `omni.permit/v1` instead (session-signed `safety`, `permit.request`, `permit.release`). Mothership follows `docs/OMNI-PERMIT-CONTRACT.md`. The stop-notice receiver below remains as an extra stop-only path.
+
 # Jackboy side: signed safety state and stop notices for OMNI Mothership
 
 Paste the section "Instruction for the Jackboy project" into the Jackboy Dev Control chat.

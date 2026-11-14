@@ -1,23 +1,24 @@
 # Evolution — reconciled blueprint roadmap
 
-## Unified OMNI–Jackboy activation (omni.permit/v1) — 2026-11-14
-- [ ] Mothership: Step 9 "Activate live link" and Step 10 "Activate autonomy authorization" as audited, idempotent, revision-bound activations (fresh code; rollback on failed handshake/safety read).
-- [ ] Mothership: switch safety sync to Jackboy's real `safety` action (session-token signed) and record autonomousAllowed / manualDiagnosticsAllowed / blockedBy.
-- [ ] Mothership: Jackboy permits (request/renew/release, signature + caps check), CODE leasing and autonomous jobs need an active permit; lapse/stop halts jobs.
-- [ ] Manual terminal refused only while a verified Jackboy reading says diagnostics are not allowed (Kill Switch on).
-- [ ] Five separate statuses in the panel; SQL + app tests (concurrency, retries, expiry, partial failure, stop cancellation, stale network, rollback); publish with nothing activated; live endpoint/state check.
-- [ ] Waiting on owner/Jackboy: install Jackboy's staged permit database change, publish Jackboy, authorize OMNI autonomy in Jackboy with passkey.
+## Unified OMNI–Jackboy activation (omni.permit/v1) — 2026-11-14 (register 07.08)
+- [x] Mothership: Step 9 "Activate live link" and Step 10 "Activate autonomy authorization" as audited, idempotent, revision-bound activations (fresh code; rollback on failed handshake; Step 10 also needs a signed safety reading with Jackboy's authorization). Migration 0055.
+- [x] Mothership: safety sync uses Jackboy's session-signed `safety` action and records autonomousAllowed / manualDiagnosticsAllowed / blockedBy.
+- [x] Mothership: Jackboy permits (request/renew/release, signature + caps check, unrecorded permits returned); CODE leasing and autonomous jobs need an active permit; refusal/timeout/lapse/stop halts without resume.
+- [x] Manual terminal refused only while a verified Jackboy reading says diagnostics are not allowed (Kill Switch on).
+- [x] Separate statuses in the panel; 76 SQL checks + app tests against a contract-following Jackboy stand-in (stop revokes → OMNI halts at next renewal); flow marker 8.
+- [ ] Waiting on owner/Jackboy: install Jackboy's staged permit database change, publish Jackboy, authorize OMNI autonomy in Jackboy with passkey. Until then permits answer "permit service unavailable" and the live kill path is unverified.
+- [ ] Waiting on owner: approve Step 9, then "Activate live link"; approve Step 10, then "Activate autonomy authorization". No OMNI executor exists yet, so nothing can run.
 
 ## Cross-system CODE Emergency Stop enforcement — 2026-11-14 (register 07.07)
 - [x] Mothership: Jackboy safety record + database fail-closed guards (autonomy windows, CODE always-on, CODE leasing need a fresh signed clear reading and Step 10 in effect); non-clear/unknown/stale halts windows, CODE jobs and agent-initiated workspace jobs; manual terminal untouched. Migrations 0053/0054. SQL test 36 checks; 1,847 tests pass.
 - [x] Signed stop-notice receiver (`/api/public/jackboy/safety-event`), scheduled safety sync route, owner "Refresh safety state", Step 9 = live link activated, Step 10 = autonomy authorization shown "Authorized — not running". Flow marker 7.
 - [x] OMNI: `JACKBOY_SAFETY_EVENT_HMAC_SECRET` saved; published (flow marker 7 live); once-a-minute safety sync scheduled.
-- [ ] Waiting on owner: same secret value in Jackboy; apply `docs/JACKBOY-SAFETY-STATE-SPEC.md` in Jackboy and publish it.
-- [ ] Waiting on Jackboy change: end-to-end stop-notice check. Until it passes the kill mechanism is unverified.
+- [x] Superseded by Jackboy's `omni.permit/v1` (see 07.08); stop-notice receiver kept as an extra stop-only path.
+- [x] Moved to 07.08: the live end-to-end stop check waits on Jackboy's permit install.
 
 ## Activation Steps 9–10 live link vs CODE — 2026-11-14
 - [x] Approvals page gains a "Live link, terminal and CODE — separate controls" panel: Step 9 permits only a connection-only signed handshake ("Check live connection", per-click authorization + fresh code, Steps 1–9 + Mothership gates incl. Emergency Stop); CODE shown always Off (no Mothership CODE path; Step 10 records caps only); Jackboy paused refusal (`grant_unavailable`) reported as a safety denial. Approval flow marker 6. 1,822 tests pass.
-- [ ] Waiting on owner: approve Step 9, run "Check live connection" once; Jackboy's Kill Switch must be off for any link request (Jackboy-side decision). Step 10/CODE remain separate later decisions in Jackboy.
+- [x] Superseded by 07.08 activations ("Check live connection" remains for diagnostics).
 
 ## Activation Approvals Step 8 self-test — 2026-11-14
 - [x] Step 8 "Run protocol self-test & verify": explicit per-click authorization + fresh two-step code, fail-closed readiness, bounded run (~28 s server / 40 s page), signed result verified and recorded as evidence only; safety denial/timeout/pending shown distinctly; retry continues the same job (status only). Approval flow marker 4. Tests pass.

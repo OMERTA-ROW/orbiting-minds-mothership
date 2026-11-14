@@ -1,23 +1,22 @@
 import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handleSafetyEvent, syncJackboySafety } from "./jackboy-safety.server";
-import { readJackboySafetyState } from "./jackboy-link.server";
+import { JackboyLink } from "./jackboy-link.server";
+import { FakeJackboy, fakeLinkConfig } from "@/test/support/fake-jackboy";
 import { safetyEventMessage } from "./jackboy-safety";
 
 const SECRET = "s".repeat(40);
 const PROJECT = "4f9a3c1e-2b7d-4e8f-9a1b-3c5d7e9f0a2b";
 
-function fakeAdmin(opts: {
-  approvals?: Array<{ step: number; status: string; approval_expires_at: string | null }>;
-  stop?: boolean | null;
-  rpcError?: { code: string } | null;
-}) {
+function fakeAdmin(opts: { linkActive?: boolean; stop?: boolean | null; rpcError?: { code: string } | null }) {
   const calls: Array<{ fn: string; args: Record<string, unknown> | undefined }> = [];
   const admin = {
     rpc: vi.fn(async (fn: string, args?: Record<string, unknown>) => {
       calls.push({ fn, args });
-      if (fn === "jackboy_safety_record" && opts.rpcError) return { data: null, error: opts.rpcError };
-      if (fn === "jackboy_safety_record") {
+      if (fn.startsWith("jackboy_safety_record") && opts.rpcError) return { data: null, error: opts.rpcError };
+      if (fn === "activation_effective") return { data: opts.linkActive ?? false, error: null };
+      if (fn === "jackboy_permits_enforce") return { data: 0, error: null };
+      if (fn.startsWith("jackboy_safety_record")) {
         const a = args!;
         const state =
           a["_source"] === "failure" ? "unknown" : a["_code_stop"] ? "engaged" : a["_paused"] ? "paused" : "clear";
@@ -28,7 +27,6 @@ function fakeAdmin(opts: {
     from: vi.fn((table: string) => {
       const chain = {
         select: () => chain,
-        lte: async () => ({ data: opts.approvals ?? [], error: null }),
         eq: () => chain,
         maybeSingle: async () =>
           table === "omni_terminal_controls"
@@ -41,53 +39,60 @@ function fakeAdmin(opts: {
   return { admin: admin as never, calls };
 }
 
-const approved = (through: number, step7 = new Date(Date.now() + 3600_000).toISOString()) =>
-  Array.from({ length: 9 }, (_, i) => ({
-    step: i + 1,
-    status: i + 1 <= through ? "approved" : "pending",
-    approval_expires_at: i + 1 === 7 ? step7 : null,
-  }));
+const snapshot = (o: Record<string, unknown> = {}) => ({
+  contract: "omni.safety/v1" as const,
+  checkedAt: new Date().toISOString(),
+  validUntil: new Date(Date.now() + 30_000).toISOString(),
+  killSwitch: false,
+  emergencyStop: true,
+  codeEnabled: true,
+  authorization: null,
+  autonomousAllowed: false,
+  blockedBy: "emergency_stop_engaged",
+  manualDiagnosticsAllowed: true,
+  activePermits: 0,
+  proofDigest: "a".repeat(64),
+  ...o,
+});
 
 describe("scheduled/owner safety sync", () => {
-  it("sends nothing before Step 9 is in effect, but still enforces freshness", async () => {
+  it("sends nothing before the Step 9 live link is activated, but enforces permit lapse and freshness", async () => {
     const read = vi.fn();
-    const { admin, calls } = fakeAdmin({ approvals: approved(8) });
+    const { admin, calls } = fakeAdmin({ linkActive: false });
     const r = await syncJackboySafety(admin, { read });
-    expect(r.checked).toBe(false);
-    expect(r.reason).toBe("step9_not_in_effect");
+    expect(r).toMatchObject({ checked: false, reason: "live_link_not_active" });
     expect(read).not.toHaveBeenCalled();
-    expect(calls.map((c) => c.fn)).toEqual(["jackboy_safety_enforce_freshness"]);
+    expect(calls.map((c) => c.fn)).toEqual([
+      "jackboy_permits_enforce",
+      "jackboy_safety_enforce_freshness",
+      "activation_effective",
+    ]);
   });
   it("records unknown without sending while Mothership's Emergency Stop is engaged", async () => {
     const read = vi.fn();
-    const { admin, calls } = fakeAdmin({ approvals: approved(9), stop: true });
+    const { admin, calls } = fakeAdmin({ linkActive: true, stop: true });
     const r = await syncJackboySafety(admin, { read });
     expect(read).not.toHaveBeenCalled();
     expect(r.state).toBe("unknown");
     expect(calls.at(-1)?.args?.["_source"]).toBe("failure");
   });
-  it("records a failed or unsupported read as unknown (fail closed)", async () => {
-    const read = vi.fn().mockRejectedValue({ stage: "http", status: 400, code: "invalid_request" });
-    const { admin, calls } = fakeAdmin({ approvals: approved(9) });
+  it("records a failed or refused read as unknown (fail closed)", async () => {
+    const read = vi.fn().mockRejectedValue({ stage: "http", status: 503, code: "permit_service_unavailable" });
+    const { admin, calls } = fakeAdmin({ linkActive: true });
     const r = await syncJackboySafety(admin, { read });
     expect(r.state).toBe("unknown");
-    expect(r.reason).toBe("read_http_400_invalid_request");
+    expect(r.reason).toBe("read_http_503_permit_service_unavailable");
     expect(calls.at(-1)?.args?.["_source"]).toBe("failure");
   });
-  it("records a verified engaged reading as a poll", async () => {
-    const read = vi.fn().mockResolvedValue({
-      paused: false,
-      codeStop: true,
-      codeEnabled: false,
-      cancellation: "not_needed",
-      observedAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 120_000).toISOString(),
-      proofDigest: "a".repeat(64),
-    });
-    const { admin, calls } = fakeAdmin({ approvals: approved(9) });
+  it("records a verified omni.safety/v1 snapshot with Jackboy's verdict", async () => {
+    const read = vi.fn().mockResolvedValue(snapshot());
+    const { admin, calls } = fakeAdmin({ linkActive: true });
     const r = await syncJackboySafety(admin, { read });
     expect(r).toMatchObject({ checked: true, state: "engaged", reason: "verified" });
-    expect(calls.at(-1)?.args).toMatchObject({ _source: "poll", _code_stop: true });
+    expect(calls.at(-1)).toMatchObject({
+      fn: "jackboy_safety_record_v2",
+      args: { _source: "poll", _code_stop: true, _autonomous_allowed: false, _blocked_by: "emergency_stop_engaged" },
+    });
   });
 });
 
@@ -153,71 +158,36 @@ describe("signed stop notice receiver", () => {
   });
 });
 
-describe("signed safety-state read", () => {
-  const identity = {
-    origin: "https://jackboy.example.com",
-    clientId: "omni-mothership-client-01",
-    projectId: PROJECT,
-    bootstrap: "b".repeat(40),
-    secret: "k".repeat(48),
-  };
-  const reply = (nonce: string, extra: Record<string, unknown> = {}, safety: Record<string, unknown> = {}) =>
-    JSON.stringify({
-      contract: "omni.link/v2",
-      requestNonce: nonce,
-      projectId: PROJECT,
-      execution: "none",
-      safety: {
-        paused: false,
-        codeStop: true,
-        codeEnabled: false,
-        cancellation: "not_needed",
-        observedAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 120_000).toISOString(),
-        ...safety,
-      },
-      ...extra,
-    });
-  const fetcher =
-    (make: (nonce: string) => { status: number; body: string; sign?: boolean }) =>
-    async (_url: string, init: RequestInit) => {
-      const nonce = new Headers(init.headers).get("x-omni-nonce")!;
-      const r = make(nonce);
-      const proof = createHmac("sha256", identity.secret)
-        .update(`omni.link/v2\nresponse\n${nonce}\n${r.status}\n${r.body}`)
-        .digest("hex");
-      return new Response(r.body, { status: r.status, headers: r.sign === false ? {} : { "x-omni-proof": proof } });
+describe("session-signed safety snapshot (omni.safety/v1)", () => {
+  const link = (fake: FakeJackboy) =>
+    new JackboyLink(fakeLinkConfig(), async () => {}, { fetch: fake.fetch, timeoutMs: 200 });
+  it("handshakes, then reads an exact signed snapshot with the session token", async () => {
+    const fake = new FakeJackboy();
+    const s = await link(fake).safety();
+    expect(fake.calls).toEqual(["handshake", "safety"]);
+    expect(s).toMatchObject({ killSwitch: false, emergencyStop: false, autonomousAllowed: true });
+    expect(s.proofDigest).toMatch(/^[a-f0-9]{64}$/);
+  });
+  it("reports Jackboy's verdict when the CODE Emergency Stop is engaged", async () => {
+    const fake = new FakeJackboy();
+    fake.engageStop();
+    const s = await link(fake).safety();
+    expect(s).toMatchObject({ emergencyStop: true, autonomousAllowed: false, blockedBy: "emergency_stop_engaged" });
+  });
+  it("cannot read anything while Jackboy's Kill Switch is on (handshake refused)", async () => {
+    const fake = new FakeJackboy();
+    fake.killSwitch = true;
+    await expect(link(fake).safety()).rejects.toMatchObject({ stage: "http", status: 403, code: "grant_unavailable" });
+  });
+  it("refuses an unsigned or tampered snapshot", async () => {
+    const fake = new FakeJackboy();
+    const inner = fake.fetch;
+    fake.fetch = async (url, init) => {
+      const res = await inner(url, init);
+      if (!String(init.body).includes('"safety"')) return res;
+      const text = (await res.text()).replace('"killSwitch":false', '"killSwitch":true');
+      return new Response(text, { status: res.status, headers: res.headers });
     };
-  it("accepts an exact signed, project-bound, fresh reply", async () => {
-    const r = await readJackboySafetyState(identity, {
-      fetch: fetcher((n) => ({ status: 200, body: reply(n) })),
-    });
-    expect(r.codeStop).toBe(true);
-    expect(r.proofDigest).toMatch(/^[a-f0-9]{64}$/);
-  });
-  it("refuses an unsigned reply, a different project and an over-long expiry", async () => {
-    await expect(
-      readJackboySafetyState(identity, { fetch: fetcher((n) => ({ status: 200, body: reply(n), sign: false })) }),
-    ).rejects.toMatchObject({ stage: "proof" });
-    await expect(
-      readJackboySafetyState(identity, {
-        fetch: fetcher((n) => ({ status: 200, body: reply(n, { projectId: "0f9a3c1e-2b7d-4e8f-9a1b-3c5d7e9f0a2b" }) })),
-      }),
-    ).rejects.toMatchObject({ stage: "contract" });
-    await expect(
-      readJackboySafetyState(identity, {
-        fetch: fetcher((n) => ({
-          status: 200,
-          body: reply(n, {}, { expiresAt: new Date(Date.now() + 600_000).toISOString() }),
-        })),
-      }),
-    ).rejects.toMatchObject({ stage: "contract" });
-  });
-  it("treats Jackboy's unsigned paused refusal as an error, never as a state", async () => {
-    await expect(
-      readJackboySafetyState(identity, {
-        fetch: fetcher(() => ({ status: 403, body: '{"error":"grant_unavailable"}', sign: false })),
-      }),
-    ).rejects.toMatchObject({ stage: "http", status: 403, code: "grant_unavailable" });
+    await expect(link(fake).safety()).rejects.toMatchObject({ stage: "proof" });
   });
 });
