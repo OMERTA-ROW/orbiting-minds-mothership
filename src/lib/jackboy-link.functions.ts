@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertJackboyLinkScope, jackboyLinkRequestSchema } from "./jackboy-link-scope";
+import { selfTestAuditAction } from "./activation-self-test";
 
 export const requestJackboyLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -37,14 +38,7 @@ export const requestJackboyLink = createServerFn({ method: "POST" })
     if (!data.jobId) throw new Error("Job ID is required.");
     const job = await client.execute(data.action, data.jobId);
     // Only the proof-checked protocol result counts as self-test evidence.
-    const selfTestAction =
-      job.status === "completed" && job.result?.passed === true
-        ? "self_test_passed"
-        : (job.status === "completed" && job.result?.passed === false) ||
-            job.status === "failed" ||
-            job.status === "timed_out"
-          ? "self_test_failed"
-          : null;
+    const selfTestAction = selfTestAuditAction(job);
     if (selfTestAction) {
       const { error } = await supabaseAdmin.from("razul_control_audit").insert({
         actor_id: context.userId,

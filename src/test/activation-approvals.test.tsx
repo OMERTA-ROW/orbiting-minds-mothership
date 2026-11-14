@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   decide: vi.fn(),
   check: vi.fn(),
+  selfTest: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-start", () => ({
@@ -32,6 +33,7 @@ vi.mock("@/lib/activation-approvals.functions", () => ({
   listActivationApprovals: "list",
   decideActivationApproval: "decide",
   runActivationApprovalCheck: "check",
+  runStep8SelfTest: "selfTest",
 }));
 
 vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({
@@ -379,8 +381,11 @@ describe("Activation Approvals workflow", () => {
     render(<ActivationApprovals timeouts={{ check: 40 }} />);
     await screen.findByRole("heading", { name: /^2\. / });
     fireEvent.click(within(stepItem(2)).getByRole("button", { name: "Run check" }));
-    expect(await within(stepItem(2)).findByRole("status")).toHaveTextContent(
-      /No reply after .* the check was not retried/,
+    // The "Running…" notice comes first; wait for the timeout notice that replaces it.
+    await waitFor(() =>
+      expect(within(stepItem(2)).getByRole("status")).toHaveTextContent(
+        /No reply after .* the check was not retried/,
+      ),
     );
     expect(mocks.check).toHaveBeenCalledTimes(1);
     expect(mocks.list).toHaveBeenCalledTimes(2);
@@ -469,5 +474,130 @@ describe("Activation Approvals workflow", () => {
     );
     fireEvent.click(within(stepItem(2)).getByRole("button", { name: "Show details" }));
     expect(within(stepItem(2)).getByRole("button", { name: "Revoke" })).toBeDisabled();
+  });
+});
+
+describe("Step 8 run protocol self-test & verify", () => {
+  const readyItems = [
+    { key: "stop", label: "Mothership Emergency Stop", ok: true, detail: "Released." },
+    { key: "self_test", label: "Self-test switch (JACKBOY_LINK_SELF_TEST_ENABLED)", ok: true, detail: "On." },
+  ];
+  const step8 = (readiness = readyItems, extra: Record<string, unknown> = {}) => {
+    const base = snapshot("runner_only", { approvedThrough: 7 });
+    // Step 7's approval window must still be open for Step 8 to unlock.
+    const future = new Date(Date.now() + 6 * 3600_000).toISOString();
+    return {
+      ...base,
+      rows: base.rows.map((r) => (r.step === 7 ? { ...r, approval_expires_at: future } : r)),
+      selfTestReadiness: readiness,
+      ...extra,
+    };
+  };
+  const runButton = () =>
+    within(stepItem(8)).getByRole("button", { name: /protocol self-test & verify|Continue pending/ });
+
+  beforeEach(() => {
+    mocks.selfTest.mockReset();
+    window.sessionStorage.clear();
+  });
+
+  it("needs the explicit authorization tick, then runs once and shows a verified pass without approving", async () => {
+    mocks.list.mockResolvedValue(step8());
+    mocks.selfTest.mockResolvedValue({
+      ok: true,
+      outcome: "passed",
+      resumed: false,
+      job: { id: "22222222-2222-4222-8222-222222222222", status: "completed", checks: 3, runner: "restricted-protocol-self-test" },
+      startedAt: "2026-11-14T00:00:00.000Z",
+      finishedAt: "2026-11-14T00:00:04.000Z",
+      check: passingCheck,
+      approvalNeeded: true,
+      attemptFinal: true,
+    });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^8\. / });
+    expect(runButton()).toBeDisabled();
+    fireEvent.click(within(stepItem(8)).getByRole("checkbox", { name: /I authorize Mothership/ }));
+    fireEvent.click(runButton());
+    fireEvent.click(runButton());
+    await waitFor(() => expect(mocks.selfTest).toHaveBeenCalledTimes(1));
+    expect(mocks.selfTest.mock.calls[0]![0]).toEqual({
+      data: { attemptId: expect.stringMatching(/^[0-9a-f-]{36}$/), confirm: true },
+    });
+    const result = await within(stepItem(8)).findByLabelText("Self-test result");
+    expect(result).toHaveTextContent(/Passed/);
+    expect(result).toHaveTextContent(/signature verified/);
+    expect(result).toHaveTextContent(/Not approved yet/);
+    expect(mocks.decide).not.toHaveBeenCalled();
+    // The authorization is per click.
+    expect(within(stepItem(8)).getByRole("checkbox", { name: /I authorize Mothership/ })).not.toBeChecked();
+  });
+
+  it("keeps the button disabled and lists the next step when a setting blocks sending", async () => {
+    mocks.list.mockResolvedValue(
+      step8([
+        { key: "self_test", label: "Self-test switch (JACKBOY_LINK_SELF_TEST_ENABLED)", ok: false, detail: "Off or missing: set it to exactly true." },
+      ]),
+    );
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^8\. / });
+    fireEvent.click(within(stepItem(8)).getByRole("checkbox", { name: /I authorize Mothership/ }));
+    expect(runButton()).toBeDisabled();
+    expect(within(stepItem(8)).getByText(/set it to exactly true/)).toBeInTheDocument();
+    expect(mocks.selfTest).not.toHaveBeenCalled();
+  });
+
+  it("shows a safety denial and a timeout distinctly; a timed-out attempt is resumed with the same ID", async () => {
+    mocks.list.mockResolvedValue(step8());
+    mocks.selfTest.mockResolvedValueOnce({
+      ok: false,
+      reason: "timeout",
+      message: "Timeout: Jackboy sent no usable reply within 10 s. Retrying only reads this job's status; it never runs it again.",
+      details: [],
+      attemptFinal: false,
+      sent: true,
+    });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^8\. / });
+    const tick = () => fireEvent.click(within(stepItem(8)).getByRole("checkbox", { name: /I authorize Mothership/ }));
+    tick();
+    fireEvent.click(runButton());
+    expect(await within(stepItem(8)).findByText(/Timeout — no usable reply in time/)).toBeInTheDocument();
+    expect(runButton()).toHaveTextContent("Continue pending self-test (status only)");
+    const firstId = mocks.selfTest.mock.calls[0]![0].data.attemptId;
+
+    mocks.selfTest.mockResolvedValueOnce({
+      ok: false,
+      reason: "safety_denial",
+      message: "Safety denial: Jackboy's global Kill Switch is on, so it refused the self-test. Nothing ran.",
+      details: [],
+      attemptFinal: true,
+      sent: true,
+    });
+    tick();
+    fireEvent.click(runButton());
+    expect(await within(stepItem(8)).findByText(/Safety denial — nothing was run/)).toBeInTheDocument();
+    expect(mocks.selfTest.mock.calls[1]![0].data.attemptId).toBe(firstId);
+    expect(runButton()).toHaveTextContent("Run protocol self-test & verify");
+  });
+
+  it("stops waiting on a stuck run without resending", async () => {
+    mocks.list.mockResolvedValue(step8());
+    mocks.selfTest.mockReturnValue(new Promise(() => {}));
+    render(<ActivationApprovals timeouts={{ selfTest: 40 }} />);
+    await screen.findByRole("heading", { name: /^8\. / });
+    fireEvent.click(within(stepItem(8)).getByRole("checkbox", { name: /I authorize Mothership/ }));
+    fireEvent.click(runButton());
+    expect(await within(stepItem(8)).findByText(/This page stopped waiting/)).toBeInTheDocument();
+    expect(mocks.selfTest).toHaveBeenCalledTimes(1);
+    expect(runButton()).toHaveTextContent("Continue pending");
+  });
+
+  it("is locked while an earlier step is not approved", async () => {
+    mocks.list.mockResolvedValue({ ...snapshot("runner_only", { approvedThrough: 6 }), selfTestReadiness: readyItems });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^8\. / });
+    expect(within(stepItem(8)).queryByRole("button", { name: /protocol self-test/ })).toBeNull();
+    expect(within(stepItem(8)).getByText(/waiting on step 7/)).toBeInTheDocument();
   });
 });

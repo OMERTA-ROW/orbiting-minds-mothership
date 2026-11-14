@@ -19,7 +19,10 @@ import {
   decideActivationApproval,
   listActivationApprovals,
   runActivationApprovalCheck,
+  runStep8SelfTest,
 } from "@/lib/activation-approvals.functions";
+import { SELF_TEST_ATTEMPT_KEY } from "@/lib/activation-self-test";
+import { Step8SelfTest, type SelfTestOutcome } from "@/components/omnibridge/Step8SelfTest";
 import {
   ACTIVATION_STEPS,
   FRESH_MFA_SECONDS,
@@ -67,7 +70,7 @@ const ACTION_LABEL: Record<string, string> = {
 const CHECK_LABEL = { passed: "Passed", failed: "Failed", needs_attention: "Needs attention" };
 
 type Pending = {
-  kind: "check" | "decide" | "refresh" | "reverify";
+  kind: "check" | "decide" | "refresh" | "reverify" | "selftest";
   step: number | null;
   since: number;
 };
@@ -87,6 +90,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const list = useServerFn(listActivationApprovals);
   const decide = useServerFn(decideActivationApproval);
   const runCheck = useServerFn(runActivationApprovalCheck);
+  const runSelfTest = useServerFn(runStep8SelfTest);
   const [data, setData] = useState<Loaded | null>(null);
   const [access, setAccess] = useState<"checking" | "ok" | "denied">("checking");
   const [reason, setReason] = useState<AccessReason>("unreadable");
@@ -105,6 +109,29 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const [code, setCode] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const focused = useRef<number | null | undefined>(undefined);
+  // Step 8: explicit authorization per click; an unfinished attempt is resumed, never rerun.
+  const [selfTestConfirmed, setSelfTestConfirmed] = useState(false);
+  const [selfTestAttempt, setSelfTestAttempt] = useState<string | null>(null);
+  const [selfTestResult, setSelfTestResult] = useState<SelfTestOutcome | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = window.sessionStorage.getItem(SELF_TEST_ATTEMPT_KEY);
+      if (saved && /^[0-9a-f-]{36}$/i.test(saved)) setSelfTestAttempt(saved);
+    } catch {
+      /* storage unavailable: a new attempt is used, and the server blocks overlapping runs */
+    }
+  }, []);
+
+  function keepAttempt(id: string | null) {
+    setSelfTestAttempt(id);
+    try {
+      if (id) window.sessionStorage.setItem(SELF_TEST_ATTEMPT_KEY, id);
+      else window.sessionStorage.removeItem(SELF_TEST_ATTEMPT_KEY);
+    } catch {
+      /* not persisted across reloads */
+    }
+  }
 
   const refresh = useCallback(async () => {
     const result = await withTimeout(list(), limits.list);
@@ -353,6 +380,54 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
     });
   }
 
+  function selfTestStep() {
+    if (!selfTestConfirmed)
+      return setNotice({ step: 8, tone: "error", text: "Tick the authorization box first." });
+    return exclusive("selftest", 8, async () => {
+      const attemptId = selfTestAttempt ?? crypto.randomUUID();
+      keepAttempt(attemptId);
+      setSelfTestResult(null);
+      setNotice(null);
+      let result: Awaited<ReturnType<typeof runSelfTest>>;
+      try {
+        result = await withTimeout(
+          runSelfTest({ data: { attemptId, confirm: true } }),
+          limits.selfTest,
+        );
+      } catch (error) {
+        // Keep the attempt: the next click reads this job's status instead of running it again.
+        setSelfTestResult({
+          ok: false,
+          reason: error instanceof FlowTimeoutError ? "client_timeout" : "link_failure",
+          message:
+            error instanceof FlowTimeoutError
+              ? `${error.message} The server may still finish and record the result. Retrying continues the same job (status only); it never runs it twice.`
+              : "The request did not complete. Retrying continues the same job (status only).",
+          details: [],
+          sent: true,
+        });
+        await refreshAfter(8, "Showing the recorded status.", "error");
+        return;
+      } finally {
+        setSelfTestConfirmed(false);
+      }
+      setSelfTestResult(result);
+      keepAttempt(result.attemptFinal ? null : attemptId);
+      if (!result.ok) {
+        if (result.reason === "mfa" || result.reason === "already_approved")
+          await refresh().catch(() => {});
+        return;
+      }
+      await refreshAfter(
+        8,
+        result.outcome === "passed"
+          ? "Self-test passed and its signed result was verified. Not approved yet — approve within 15 minutes."
+          : "The self-test ran and failed. Nothing was approved.",
+        result.outcome === "passed" ? "ok" : "error",
+      );
+    });
+  }
+
   const signedInLine = who && (
     <p className="text-xs text-muted-foreground">
       Signed in as {who.email} · account created {who.since}
@@ -477,7 +552,8 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         >
           Owner approvals only record decisions. Run check may read server configuration, verify the
           signed Jackboy link, or inspect a self-test result; it never approves, flips switches,
-          sets secrets, deploys, runs the self-test, or makes paid calls.
+          sets secrets, deploys, or makes paid calls. Only Step 8&apos;s separately authorized
+          button runs the fixed protocol self-test, once per click.
         </p>
       </header>
 
@@ -496,7 +572,23 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
             fresh approval; ordinary sign-ins never reset them.
           </p>
         )}
-        {next.kind === "run_check" && next.step !== null && (
+        {next.kind === "run_check" && next.step === 8 && (
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => {
+              setExpanded((e) => ({ ...e, 8: true }));
+              window.setTimeout(() => {
+                const el = document.getElementById("step-8-selftest-title");
+                el?.scrollIntoView?.({ block: "center" });
+                document.querySelector<HTMLInputElement>("#step-8 input[type=checkbox]")?.focus();
+              }, 0);
+            }}
+          >
+            Go to Step 8: run protocol self-test &amp; verify
+          </Button>
+        )}
+        {next.kind === "run_check" && next.step !== null && next.step !== 8 && (
           <Button size="sm" disabled={busy} onClick={() => void checkStep(next.step!)}>
             {views.find((v) => v.step === next.step)?.checkLabel === "Retry check"
               ? `Retry check for step ${next.step}`
@@ -782,7 +874,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
                       {data.selfTest.fresh
                         ? " within the last 24 hours."
                         : " · older than 24 hours."}{" "}
-                      Run check to verify and record it here.
+                      “Verify recorded proof only” records it here without running a new test.
                     </p>
                   )}
 
@@ -854,8 +946,31 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
                           onChange={(e) => setNotes((n) => ({ ...n, [meta.step]: e.target.value }))}
                         />
                       )}
+                      {meta.step === 8 && !view.complete && (
+                        <Step8SelfTest
+                          readiness={data.selfTestReadiness}
+                          stepReady={view.blocker === null && data.checksStore === "ready"}
+                          mfaFresh={mfaFresh}
+                          busy={busy}
+                          running={pending?.kind === "selftest"}
+                          elapsedSeconds={
+                            pending ? Math.max(0, Math.round((now - pending.since) / 1000)) : 0
+                          }
+                          confirmed={selfTestConfirmed}
+                          onConfirmedChange={setSelfTestConfirmed}
+                          attemptPending={selfTestAttempt !== null}
+                          retry={view.checkLabel === "Retry check"}
+                          result={selfTestResult}
+                          onRun={() => void selfTestStep()}
+                          onVerifyOnly={() => void checkStep(8)}
+                          onNewAttempt={() => {
+                            keepAttempt(null);
+                            setSelfTestResult(null);
+                          }}
+                        />
+                      )}
                       <div className="flex flex-wrap items-center gap-2">
-                        {view.technical && !view.complete && (
+                        {view.technical && !view.complete && meta.step !== 8 && (
                           <Button
                             size="sm"
                             disabled={busy || !view.canRunCheck}

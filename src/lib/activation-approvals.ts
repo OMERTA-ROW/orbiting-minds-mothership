@@ -122,7 +122,8 @@ export const ACTIVATION_STEPS = [
   {
     step: 8,
     title: "Protocol self-test proof verified",
-    detail: "Run the separately gated self-test first; this check only verifies its signed result",
+    detail:
+      "Runs the fixed self-test once on your explicit authorization, then verifies its signed result",
     kind: "check",
   },
   {
