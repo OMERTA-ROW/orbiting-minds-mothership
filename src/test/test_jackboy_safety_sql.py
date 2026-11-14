@@ -76,6 +76,8 @@ def main():
         sql("INSERT INTO public.omni_terminal_controls(id,emergency_stop,changed_at,reason,revision) VALUES(1,false,now(),'t',1); INSERT INTO public.omni_workspace_settings(id,terminal_enabled) VALUES(1,true); UPDATE public.omni_agents SET status='enrolled' WHERE id='omni';")
         assert sql("SELECT state FROM public.jackboy_safety_state WHERE id=1;") == 'unknown'
         assert sql("SELECT public.jackboy_safety_clear();") == 'f'
+        sql("INSERT INTO public.activation_approvals(step) SELECT g FROM generate_series(1,10) g ON CONFLICT (step) DO NOTHING;")
+        assert sql("SELECT public.activation_autonomy_authorized();") == 'f'
         sql(approve_all)
         assert sql("SELECT public.activation_autonomy_authorized();") == 't'
         deny(window)  # unknown safety
