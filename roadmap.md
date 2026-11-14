@@ -1,5 +1,9 @@
 # Evolution — reconciled blueprint roadmap
 
+## Activation Approvals Step 8 self-test — 2026-11-14
+- [x] Step 8 "Run protocol self-test & verify": explicit per-click authorization + fresh two-step code, fail-closed readiness, bounded run (~28 s server / 40 s page), signed result verified and recorded as evidence only; safety denial/timeout/pending shown distinctly; retry continues the same job (status only). Approval flow marker 4. Tests pass.
+- [ ] Waiting on owner: turn on `JACKBOY_LINK_SELF_TEST_ENABLED` (exactly `true`) and renew `OMNI_LINK_APPROVAL_EXPIRES_AT` (≤24 h ahead) in settings, then run Step 8 on evoomni.tech and approve it yourself if it passes. Step 7's window ends 2026-11-14 10:20 UTC.
+
 ## Activation Approvals Step 2 timeout — 2026-11-13
 - [x] Runner check now waits 9 s (longer than Jackboy's own 5 s wait on the Railway runner; self-test run 10 s vs Jackboy's 6 s); timeouts show the actual deadline and whether a reply had started. Approval flow marker bumped to 3. Tests pass.
 - [ ] Waiting on owner: publish Mothership, then re-run Step 2 and approve it separately with a fresh two-step code if it passes.
