@@ -51,9 +51,10 @@ def main():
         if override:
             sql(Path(override).read_text())
         else:
-            paths = list((ROOT / "drizzle/migrations").glob("*_jackboy_safety_state.sql"))
-            assert len(paths) == 1, "jackboy safety migration"
-            sql(paths[0].read_text())
+            for name in ["*_jackboy_safety_state.sql", "*_jackboy_safety_halt_agent_jobs.sql"]:
+                paths = list((ROOT / "drizzle/migrations").glob(name))
+                assert len(paths) == 1, name
+                sql(paths[0].read_text())
         sql(f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()); INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner');")
         def deny(text):
             nonlocal checks
@@ -97,6 +98,9 @@ def main():
         j = job()
         ok(lease(j))
         q = job()
+        sess = sql(f"INSERT INTO public.omni_workspace_sessions(agent_id,owner_id,expires_at) VALUES('omni','{OWNER}',now()+interval '1 hour') RETURNING id;").splitlines()[0]
+        aj = sql(f"INSERT INTO public.omni_agent_jobs(agent_id,session_id,kind,origin,input,status) VALUES('omni','{sess}','command','agent','x','running') RETURNING id;").splitlines()[0]
+        mj = sql(f"INSERT INTO public.omni_agent_jobs(agent_id,session_id,kind,origin,input,status) VALUES('omni','{sess}','command','owner','status','running') RETURNING id;").splitlines()[0]
 
         # A signed CODE stop notice halts: windows end, active jobs stop, queued jobs are held.
         assert ok(record('event', 'false', 'true', nonce="'" + "1" * 32 + "'", expires="NULL")) == 'engaged'
@@ -104,6 +108,9 @@ def main():
         assert sql(f"SELECT status FROM public.omni_code_jobs WHERE id='{j}';") == 'stopped'
         assert sql(f"SELECT status FROM public.omni_code_jobs WHERE id='{q}';") == 'paused'
         assert sql("SELECT always_on FROM public.omni_code_service WHERE id=1;") == 'f'
+        assert sql(f"SELECT status FROM public.omni_agent_jobs WHERE id='{aj}';") == 'stopped'
+        assert sql(f"SELECT status FROM public.omni_agent_jobs WHERE id='{mj}';") == 'running'  # manual terminal untouched
+        assert sql(f"SELECT ended_at IS NULL FROM public.omni_workspace_sessions WHERE id='{sess}';") == 't'
         assert sql("SELECT end_reason FROM public.omni_autonomy_windows LIMIT 1;") == 'jackboy_safety'
         deny(window)
         deny(always_on)
