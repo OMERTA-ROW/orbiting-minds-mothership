@@ -1533,7 +1533,7 @@
           "test_result": "Passed: python3 src/test/test_jackboy_safety_sql.py (36 checks); bunx vitest run 1,847 tests / 127 files, 2026-11-14",
           "runtime_evidence": "Live database: safety state unknown, 0 autonomy windows, 0 CODE jobs; Steps 1–8 approved, 9–10 pending.",
           "next_action": "Owner applies docs/JACKBOY-SAFETY-STATE-SPEC.md in Jackboy, adds the shared JACKBOY_SAFETY_EVENT_HMAC_SECRET in both projects, publishes Jackboy, approves Step 9, then runs the stop-notice end-to-end check.",
-          "release_status": "Mothership code published only if the publish step in this turn is confirmed",
+          "release_status": "Mothership enforcement published to evoomni.tech (approval flow marker 7 verified live); Jackboy side not yet implemented",
           "test_command": "python3 src/test/test_jackboy_safety_sql.py && bunx vitest run"
         }
       ]

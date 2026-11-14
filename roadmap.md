@@ -3,7 +3,8 @@
 ## Cross-system CODE Emergency Stop enforcement — 2026-11-14 (register 07.07)
 - [x] Mothership: Jackboy safety record + database fail-closed guards (autonomy windows, CODE always-on, CODE leasing need a fresh signed clear reading and Step 10 in effect); non-clear/unknown/stale halts windows, CODE jobs and agent-initiated workspace jobs; manual terminal untouched. Migrations 0053/0054. SQL test 36 checks; 1,847 tests pass.
 - [x] Signed stop-notice receiver (`/api/public/jackboy/safety-event`), scheduled safety sync route, owner "Refresh safety state", Step 9 = live link activated, Step 10 = autonomy authorization shown "Authorized — not running". Flow marker 7.
-- [ ] Waiting on owner: shared secret `JACKBOY_SAFETY_EVENT_HMAC_SECRET` in both projects; apply `docs/JACKBOY-SAFETY-STATE-SPEC.md` in Jackboy and publish it.
+- [x] OMNI: `JACKBOY_SAFETY_EVENT_HMAC_SECRET` saved; published (flow marker 7 live); once-a-minute safety sync scheduled.
+- [ ] Waiting on owner: same secret value in Jackboy; apply `docs/JACKBOY-SAFETY-STATE-SPEC.md` in Jackboy and publish it.
 - [ ] Waiting on Jackboy change: end-to-end stop-notice check. Until it passes the kill mechanism is unverified.
 
 ## Activation Steps 9–10 live link vs CODE — 2026-11-14
