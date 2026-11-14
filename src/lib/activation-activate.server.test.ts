@@ -110,3 +110,11 @@ describe("Step 9/10 activation", () => {
     expect(await runActivation("live_link", ATTEMPT, b)).toMatchObject({ ok: false, reason: "not_recorded" });
   });
 });
+
+describe("activation start failures", () => {
+  it("does not describe a database start failure as an owner-access problem", async () => {
+    const { beginReasonText } = await import("./activation-activate.server");
+    expect(beginReasonText("begin_error")).toContain("nothing was sent or activated");
+    expect(beginReasonText("begin_error")).not.toContain("Owner access");
+  });
+});
