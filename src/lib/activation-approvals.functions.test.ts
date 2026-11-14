@@ -380,7 +380,7 @@ describe("Step 9/10 approval triggers the real activation", () => {
   });
   it("records the approval, then runs the activation workflow and reports it fails closed when the link is unusable", async () => {
     const { inv, rows } = step9(8, true);
-    inv.rpc.mockImplementation(async (fn: string) => {
+    (inv.rpc as unknown as ReturnType<typeof vi.fn>).mockImplementation(async (fn: string) => {
       if (fn === "activation_approval_decide") rows.data = allApproved(9);
       return { error: null };
     });
