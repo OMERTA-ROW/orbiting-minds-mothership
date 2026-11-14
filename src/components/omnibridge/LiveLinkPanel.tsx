@@ -179,6 +179,10 @@ export function LiveLinkPanel(props: {
           bad={system.killSwitch !== "off"}
         />
       </ul>
+      <p className="text-sm" aria-label="Next owner action">
+        <span className="font-medium">Next owner action: </span>
+        {system.nextAction}
+      </p>
 
       <div className="grid gap-4 md:grid-cols-2">
         <article aria-labelledby="live-link-sub" className="space-y-2 rounded border p-3">
