@@ -1,7 +1,8 @@
 /**
  * Owner-only Activation Approvals. Checks use server-side configuration and
  * the existing signed Jackboy client; decisions never actuate switches,
- * deploy, queue the protocol self-test or make paid calls.
+ * deploy or make paid calls. Only `runStep8SelfTest` sends the fixed protocol
+ * self-test, after the owner's explicit confirmation and fresh two-step code.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
@@ -25,6 +26,17 @@ import {
 } from "./activation-approvals";
 import type { Json } from "@/integrations/supabase/types";
 import { probeFailureDetails } from "./activation-probe";
+import {
+  SELF_TEST_IN_FLIGHT_MS,
+  SELF_TEST_SERVER_BUDGET_MS,
+  attemptStage,
+  classifySelfTestError,
+  isUnfinished,
+  otherAttemptInFlight,
+  selfTestAuditAction,
+  selfTestReadiness,
+  type ReadinessItem,
+} from "./activation-self-test";
 import {
   accessReason,
   approvedBeforeReset,
@@ -147,13 +159,45 @@ async function selfTestEvents(
 ) {
   const { data, error } = await db
     .from("razul_control_audit")
-    .select("action,occurred_at")
+    .select("action,record_id,occurred_at")
     .eq("record_type", "jackboy_link")
     .in("action", ["self_test_passed", "self_test_failed"])
     .order("occurred_at", { ascending: false })
     .limit(1);
   if (error) throw new Error("Protocol self-test evidence could not be read.");
   return data[0] ?? null;
+}
+
+/** Step 8 send preconditions: booleans only, never setting values. */
+async function currentSelfTestReadiness(context: {
+  supabase: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0];
+  userId: string;
+}): Promise<ReadinessItem[]> {
+  let stopReleased = false;
+  try {
+    const { assertEmergencyStopReleased } = await import("./omni-terminal.server");
+    await assertEmergencyStopReleased(context.supabase);
+    stopReleased = true;
+  } catch {
+    stopReleased = false;
+  }
+  let identityValid = false;
+  try {
+    const { configuredLinkIdentityValid } = await import("./jackboy-link.server");
+    identityValid = configuredLinkIdentityValid();
+  } catch {
+    identityValid = false;
+  }
+  return selfTestReadiness({
+    deploymentMode: currentDeployment().mode,
+    stopReleased,
+    ownerMatches: process.env["JACKBOY_LINK_MOTHERSHIP_OWNER_ID"] === context.userId,
+    linkEnabled: process.env["JACKBOY_LINK_ENABLED"] === "true",
+    selfTestEnabled: process.env["JACKBOY_LINK_SELF_TEST_ENABLED"] === "true",
+    approvalExpiresAt: Date.parse(process.env["OMNI_LINK_APPROVAL_EXPIRES_AT"] || ""),
+    identityValid,
+    now: Date.now(),
+  });
 }
 
 async function runnerConfigurationProof(context: { userId: string }) {
@@ -402,17 +446,17 @@ async function evaluateCheck(
       passed
         ? "A signed protocol self-test pass is recorded within the last 24 hours."
         : failed
-          ? "The latest protocol self-test failed; rerun it through the separately gated flow."
+          ? "The latest protocol self-test failed; run it again with “Run protocol self-test & verify”."
           : "No fresh passing protocol self-test is recorded.",
       [
         {
           label: "Signed runner proof",
           status,
           detail: passed
-            ? `Verified pass at ${new Date(occurredAt).toISOString()}.`
+            ? `Verified pass at ${new Date(occurredAt).toISOString()} (job ${event?.record_id ?? "?"}).`
             : failed
               ? "The latest recorded test result is failed."
-              : "Use the existing, separately gated protocol self-test flow, then run this check again.",
+              : "Use “Run protocol self-test & verify” on this step; it runs the fixed test once and verifies its signed result.",
         },
       ],
     ),
@@ -441,7 +485,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       return { denied: true as const, reason };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [steps, audit, checks, selfTest, resetAt] = await Promise.all([
+    const [steps, audit, checks, selfTest, resetAt, readiness] = await Promise.all([
       context.supabase
         .from("activation_approvals")
         .select(
@@ -460,6 +504,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
         .order("step"),
       selfTestEvents(context.supabase),
       securityResetAt(context.supabase, context.userId),
+      currentSelfTestReadiness(context),
     ]);
     if (steps.error || audit.error) throw new Error("Approval records could not be read.");
     // The approvals stay visible even when the check store is missing or unreadable;
@@ -507,121 +552,143 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       })),
       deployment,
       selfTest: latestSelfTest,
+      selfTestReadiness: readiness,
       mfaAgeSeconds: mfaAgeSeconds(context.claims["amr"], nowSeconds),
     };
   });
+
+type Ctx = {
+  supabase: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0];
+  userId: string;
+  claims: Record<string, unknown>;
+};
+
+/** Fresh MFA, earlier steps approved, this step not approved. Null when the step may be checked. */
+async function checkGate(context: Ctx, step: number) {
+  if (!isMfaFresh(context.claims["amr"], Math.floor(Date.now() / 1000)))
+    return {
+      ok: false as const,
+      reason: "mfa" as const,
+      message: "Re-verify with your authenticator first.",
+    };
+
+  const { data: rows, error: rowsError } = await context.supabase
+    .from("activation_approvals")
+    .select(
+      "step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision",
+    )
+    .order("step");
+  if (rowsError)
+    return {
+      ok: false as const,
+      reason: "denied" as const,
+      message: "Approval prerequisites could not be read; no check was run.",
+    };
+  let resetAt: string | null;
+  try {
+    resetAt = await securityResetAt(context.supabase, context.userId);
+  } catch {
+    return {
+      ok: false as const,
+      reason: "denied" as const,
+      message: "Account security history could not be read; no check was run.",
+    };
+  }
+  const effective = effectiveRows(normalizeRows(rows), resetAt);
+  const blocker = blockingStep(effective, step, Date.now());
+  if (blocker !== null)
+    return {
+      ok: false as const,
+      reason: "rule" as const,
+      message: `Step ${blocker} must be approved first.`,
+    };
+  // A repeat check on an approved step would silently re-approve (or fail and reset later steps).
+  const current = effective.find((r) => r.step === step);
+  if (current && isEffectivelyApproved(current, Date.now()))
+    return {
+      ok: false as const,
+      reason: "already_approved" as const,
+      message: `Step ${step} is already approved. Nothing was rerun; revoke it first to check again.`,
+    };
+  return null;
+}
+
+/** Stores check evidence; a non-pass also marks the step failed. A pass never approves. */
+async function storeCheck(
+  context: Ctx,
+  evaluated: { check: ActivationCheck; deploymentMode: "runner_only" | "unknown" | "inconsistent" },
+) {
+  const step = evaluated.check.step;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error: evidenceError } = await checkStore(supabaseAdmin).rpc(
+    "activation_approval_record_check",
+    {
+      _step: step,
+      _status: evaluated.check.status,
+      _version: evaluated.check.evidenceVersion,
+      _summary: evaluated.check.summary,
+      _details: evaluated.check.details.map((detail): Json => ({
+        label: detail.label,
+        status: detail.status,
+        detail: detail.detail,
+      })),
+      _mode: evaluated.deploymentMode,
+      _actor: context.userId,
+    },
+  );
+  if (evidenceError)
+    return {
+      ok: false as const,
+      reason: isMissingObject(evidenceError) ? ("store_missing" as const) : ("denied" as const),
+      message: isMissingObject(evidenceError)
+        ? STORE_MISSING
+        : "The check evidence and audit could not be stored; no approval was recorded.",
+    };
+
+  // A pass is evidence only: the owner approves it separately (the database requires a
+  // passed check from the last 15 minutes). A failure is recorded so later steps stay locked.
+  if (evaluated.check.status === "passed")
+    return { ok: true as const, check: evaluated.check, approvalNeeded: true as const };
+  const { error } = await context.supabase.rpc("activation_approval_decide", {
+    _step: step,
+    _action: "fail",
+    _note: "",
+    // NULL is valid for every step except 7; the generated type omits nullability.
+    _expires_at: null as unknown as string,
+    _cap_confirmed: false,
+    _daily_confirmed: false,
+  });
+  if (error) {
+    if (error.message.includes("Fresh two-factor"))
+      return {
+        ok: false as const,
+        reason: "mfa" as const,
+        message: "Re-verify with your authenticator first.",
+      };
+    return {
+      ok: false as const,
+      reason: error.code === "22023" ? ("rule" as const) : ("denied" as const),
+      message:
+        error.code === "22023"
+          ? error.message
+          : "The check was not recorded as an approval. Refresh and retry.",
+    };
+  }
+  return { ok: true as const, check: evaluated.check, approvalNeeded: false as const };
+}
 
 export const runActivationApprovalCheck = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => checkInput.parse(input))
   .handler(async ({ context, data }) => {
     await ownerContext(context);
-    if (!isMfaFresh(context.claims["amr"], Math.floor(Date.now() / 1000)))
-      return {
-        ok: false as const,
-        reason: "mfa" as const,
-        message: "Re-verify with your authenticator first.",
-      };
-
-    const { data: rows, error: rowsError } = await context.supabase
-      .from("activation_approvals")
-      .select(
-        "step,status,approver_id,decided_at,note,approval_expires_at,spend_confirmations,revision",
-      )
-      .order("step");
-    if (rowsError)
-      return {
-        ok: false as const,
-        reason: "denied" as const,
-        message: "Approval prerequisites could not be read; no check was run.",
-      };
-    let resetAt: string | null;
-    try {
-      resetAt = await securityResetAt(context.supabase, context.userId);
-    } catch {
-      return {
-        ok: false as const,
-        reason: "denied" as const,
-        message: "Account security history could not be read; no check was run.",
-      };
-    }
-    const effective = effectiveRows(normalizeRows(rows), resetAt);
-    const blocker = blockingStep(effective, data.step, Date.now());
-    if (blocker !== null)
-      return {
-        ok: false as const,
-        reason: "rule" as const,
-        message: `Step ${blocker} must be approved first.`,
-      };
-    // A repeat check on an approved step would silently re-approve (or fail and reset later steps).
-    const current = effective.find((r) => r.step === data.step);
-    if (current && isEffectivelyApproved(current, Date.now()))
-      return {
-        ok: false as const,
-        reason: "already_approved" as const,
-        message: `Step ${data.step} is already approved. Nothing was rerun; revoke it first to check again.`,
-      };
-
+    const gate = await checkGate(context, data.step);
+    if (gate) return gate;
     const evaluated = await evaluateCheck(data.step, {
       supabase: context.supabase,
       userId: context.userId,
     });
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error: evidenceError } = await checkStore(supabaseAdmin).rpc(
-      "activation_approval_record_check",
-      {
-        _step: data.step,
-        _status: evaluated.check.status,
-        _version: evaluated.check.evidenceVersion,
-        _summary: evaluated.check.summary,
-        _details: evaluated.check.details.map((detail): Json => ({
-          label: detail.label,
-          status: detail.status,
-          detail: detail.detail,
-        })),
-        _mode: evaluated.deploymentMode,
-        _actor: context.userId,
-      },
-    );
-    if (evidenceError)
-      return {
-        ok: false as const,
-        reason: isMissingObject(evidenceError) ? ("store_missing" as const) : ("denied" as const),
-        message: isMissingObject(evidenceError)
-          ? STORE_MISSING
-          : "The check evidence and audit could not be stored; no approval was recorded.",
-      };
-
-    // A pass is evidence only: the owner approves it separately (the database requires a
-    // passed check from the last 15 minutes). A failure is recorded so later steps stay locked.
-    if (evaluated.check.status === "passed")
-      return { ok: true as const, check: evaluated.check, approvalNeeded: true as const };
-    const { error } = await context.supabase.rpc("activation_approval_decide", {
-      _step: data.step,
-      _action: "fail",
-      _note: "",
-      // NULL is valid for every step except 7; the generated type omits nullability.
-      _expires_at: null as unknown as string,
-      _cap_confirmed: false,
-      _daily_confirmed: false,
-    });
-    if (error) {
-      if (error.message.includes("Fresh two-factor"))
-        return {
-          ok: false as const,
-          reason: "mfa" as const,
-          message: "Re-verify with your authenticator first.",
-        };
-      return {
-        ok: false as const,
-        reason: error.code === "22023" ? ("rule" as const) : ("denied" as const),
-        message:
-          error.code === "22023"
-            ? error.message
-            : "The check was not recorded as an approval. Refresh and retry.",
-      };
-    }
-    return { ok: true as const, check: evaluated.check, approvalNeeded: false as const };
+    return storeCheck(context, evaluated);
   });
 
 export const decideActivationApproval = createServerFn({ method: "POST" })
