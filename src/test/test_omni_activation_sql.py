@@ -276,7 +276,7 @@ def main():
         deny("SET ROLE anon; SELECT public.activation_activation_revoke('live_link');")
         # Audit trail present; owner can read activations and permits, anon cannot.
         assert int(sql("SELECT count(*) FROM public.razul_control_audit WHERE record_type IN ('activation','jackboy_permit');")) >= 10
-        print("AUDIT ACTIONS:", sql("SELECT string_agg(DISTINCT action, ',') FROM public.razul_control_audit;"))
+        print("CODE JOB EVENTS:", sql(f"SELECT string_agg(kind||':'||coalesce(detail,''), ' | ') FROM public.omni_code_job_events WHERE job_id='{j}';"))
         checks += 1; assert sql(owner("SELECT count(*) FROM public.activation_activations;")) == '2'
         deny("SET ROLE anon; SELECT * FROM public.jackboy_permits;")
 
