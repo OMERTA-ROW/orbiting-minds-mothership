@@ -7,7 +7,8 @@
 - [x] Manual terminal refused only while a verified Jackboy reading says diagnostics are not allowed (Kill Switch on).
 - [x] Separate statuses in the panel; 76 SQL checks + app tests against a contract-following Jackboy stand-in (stop revokes → OMNI halts at next renewal); flow marker 8.
 - [ ] Waiting on owner/Jackboy: install Jackboy's staged permit database change, publish Jackboy, authorize OMNI autonomy in Jackboy with passkey. Until then permits answer "permit service unavailable" and the live kill path is unverified.
-- [ ] Waiting on owner: approve Step 9, then "Activate live link"; approve Step 10, then "Activate autonomy authorization". No OMNI executor exists yet, so nothing can run.
+- [x] Approving Step 9/10 now runs the activation in the same owner click ("Also activate" ticked by default; approval stays recorded if activation fails). Flow marker 9.
+- [ ] Waiting on owner: approve Step 9 (activates the live link), then Step 10 (activates autonomy authorization). No OMNI executor exists yet, so nothing can run.
 
 ## Cross-system CODE Emergency Stop enforcement — 2026-11-14 (register 07.07)
 - [x] Mothership: Jackboy safety record + database fail-closed guards (autonomy windows, CODE always-on, CODE leasing need a fresh signed clear reading and Step 10 in effect); non-clear/unknown/stale halts windows, CODE jobs and agent-initiated workspace jobs; manual terminal untouched. Migrations 0053/0054. SQL test 36 checks; 1,847 tests pass.
