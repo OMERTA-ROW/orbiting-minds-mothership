@@ -381,8 +381,11 @@ describe("Activation Approvals workflow", () => {
     render(<ActivationApprovals timeouts={{ check: 40 }} />);
     await screen.findByRole("heading", { name: /^2\. / });
     fireEvent.click(within(stepItem(2)).getByRole("button", { name: "Run check" }));
-    expect(await within(stepItem(2)).findByRole("status")).toHaveTextContent(
-      /No reply after .* the check was not retried/,
+    // The "Running…" notice comes first; wait for the timeout notice that replaces it.
+    await waitFor(() =>
+      expect(within(stepItem(2)).getByRole("status")).toHaveTextContent(
+        /No reply after .* the check was not retried/,
+      ),
     );
     expect(mocks.check).toHaveBeenCalledTimes(1);
     expect(mocks.list).toHaveBeenCalledTimes(2);
