@@ -260,6 +260,50 @@ endpoint that differs from Jackboy's signed current configuration. Any endpoint,
 image or settings change requires disarming and repeating independent verification;
 release labels are not deployment SHA/image attestations.
 
+### Vercel Sandbox adapter draft (not connected or deployable)
+
+`services/omni-autonomous/vercel-adapter.mjs` is a mock-tested draft, not a
+replacement for the running executor. It is not imported by the service, has no
+provider credentials or SDK dependency, and cannot enable provider execution.
+It accepts a single exact `printf` argv matched against a separately supplied
+approval; callers must authenticate that approval, bind it to the signed permit,
+and verify that its arguments contain no secrets before any provider call.
+The draft requests no credentials, mounts, exposed ports or source files for
+the VM. The SDK's empty `env` option is not proof that the VM has an empty
+environment or that provider defaults cannot inject credentials.
+
+The adapter records a random VM name and plan hash before create, never retries a
+job, requests `deny-all` and `persistent: false`, and returns termination evidence
+only after a fresh non-resuming lookup reports the same non-persistent VM stopped
+and the journal records it. A lost create, missing VM, failed stop, or failed
+journal write is not a cancellation acknowledgement. Reconciliation only looks
+up and stops a recorded VM; it never creates or replays work. Stop during create
+waits for create to settle. Stop racing completion wins while the job remains
+active; an unknown or already-finished job is refused.
+
+The journal is an injected interface, **not an implementation**: `assertReady`
+must fail closed if any previous reservation is unresolved or the state is
+unreadable; `reserve` must atomically and durably reject any previously reserved
+job; `find` must retrieve the exact recorded name by job ID and plan hash; and
+`markTerminated` must durably record the exact termination. It needs crash-safe
+storage, exclusive instance ownership covering readiness and reservation, and
+reviewed restart reconciliation before use. The signed
+claim/permission/finish and cancellation-acknowledgement paths are not wired to
+this draft. Integration must keep polling permission, serialize Stop with
+completion, and refuse a signed acknowledgement until the provider's exact VM
+and session are confirmed terminated, including in-flight request races.
+
+Further blockers include project-scoped token compatibility with Sandbox,
+provider-side data retention, proof that no secrets are present, actual network
+and kill tests, per-process limits, a spend control that honors the owner's
+ceiling, and the 2 GiB minimum VM memory versus the existing 512 MiB process
+limit. The owner set a $5/month ceiling beyond existing plan charges, which is not
+yet enforced. Vercel's Hobby plan is for personal or non-commercial use; no paid
+plan, account, project, secret, deployment or provider test is authorized by this draft.
+The owner's current restriction permits only the explicitly approved `printf`
+arguments at the provider; any synthetic network or descendant-kill probes
+require separate permission. Mock results do not prove provider isolation.
+
 ### Railway staging dependencies (preparation only)
 
 Use distinct staging databases/projects and managed staging secrets; do not copy
