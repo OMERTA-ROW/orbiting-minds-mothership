@@ -69,9 +69,8 @@ export function parsePlan(value, now = Date.now()) {
 }
 export const planHash = (plan) => hash(JSON.stringify(plan));
 
-/** No host root, network, service files, credentials, or production workspace is mounted. */
-export async function runIsolated(command, signal, workspace, onSpawn = () => {}) {
-  const argv = [
+export function isolationArguments(command, workspace) {
+  return [
     "--as=536870912",
     "--cpu=10",
     "--nproc=32",
@@ -113,8 +112,15 @@ export async function runIsolated(command, signal, workspace, onSpawn = () => {}
     "--cap-drop",
     "ALL",
     "--",
+    "/usr/bin/env",
+    "-i",
     ...command.argv,
   ];
+}
+
+/** No host root, network, service files, credentials, or production workspace is mounted. */
+export async function runIsolated(command, signal, workspace, onSpawn = () => {}) {
+  const argv = isolationArguments(command, workspace);
   return new Promise((resolve, reject) => {
     const process = spawn("prlimit", argv, {
       uid: 65534,
@@ -336,6 +342,8 @@ export function createExecutor(
           environment.exitCode === 0 &&
           environment.output.length === 0 &&
           !environment.exceeded &&
+          !environment.timedOut &&
+          !environment.cancelled &&
           check.exitCode === 0 &&
           !check.exceeded &&
           childReady &&

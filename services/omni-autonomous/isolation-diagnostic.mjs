@@ -22,6 +22,20 @@ test("printf runs in isolation and returns its exact output", options, async (t)
   assert.equal(result.output, "hello");
 });
 
+test("isolated argv preserves spaces and shell metacharacters literally", options, async (t) => {
+  const values = ["space here", "$(printf injected)", "'quotes'; *", "-i"];
+  const result = await runIsolated(
+    { argv: ["/usr/bin/printf", "%s\n", ...values], timeoutMs: 3000 },
+    new AbortController().signal,
+    await workspace(t),
+  );
+  assert.equal(result.exitCode, 0, result.output);
+  assert.equal(result.output, `${values.join("\n")}\n`);
+  assert.equal(result.timedOut, false);
+  assert.equal(result.cancelled, false);
+  assert.equal(result.exceeded, false);
+});
+
 test(
   "real non-root PID/mount/network namespaces, read-only host files and empty child environment",
   options,
@@ -45,6 +59,8 @@ test(
     }
     assert.equal(environment.exitCode, 0, "environment probe failed");
     assert.equal(environment.exceeded, false, "environment probe exceeded output limit");
+    assert.equal(environment.timedOut, false, "environment probe timed out");
+    assert.equal(environment.cancelled, false, "environment probe was cancelled");
     assert.equal(environment.output.length, 0, "child environment is not empty");
     const result = await runIsolated(
       {

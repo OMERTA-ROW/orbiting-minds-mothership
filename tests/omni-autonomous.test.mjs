@@ -4,6 +4,7 @@ import { randomUUID, createHmac } from "node:crypto";
 import fs from "node:fs/promises";
 import {
   createExecutor,
+  isolationArguments,
   parsePlan,
   planHash,
   permissionRequest,
@@ -26,6 +27,23 @@ const complete = async () => ({
   exceeded: false,
 });
 const workspace = (prefix) => fs.mkdtemp(`/tmp/${prefix}-test-`);
+test("isolation launcher clears the environment without changing approved argv", () => {
+  const argv = Object.freeze([
+    "/usr/bin/printf",
+    "%s",
+    "hello world",
+    "$(not a shell)",
+    "-i",
+    "--",
+  ]);
+  const command = Object.freeze({ argv, timeoutMs: 1000 });
+  const args = isolationArguments(command, "/tmp/work space");
+  const separator = args.indexOf("--", args.indexOf("bwrap") + 1);
+  assert.deepEqual(args.slice(separator + 1), ["/usr/bin/env", "-i", ...argv]);
+  assert.ok(args.includes("--clearenv"));
+  assert.deepEqual(command.argv, argv);
+});
+
 test("disabled, expired, unbounded and shell plans never run", async () => {
   let calls = 0;
   const executor = createExecutor(
@@ -58,19 +76,25 @@ test("permission failure and unknown safety are fail closed with no command", as
   assert.equal(calls, 0);
 });
 test("self-test requires an empty environment and a ready escaped descendant", async () => {
-  for (const [environmentOutput, ready, expected] of [
-    ["", true, true],
-    ["SYNTHETIC_SECRET=value", true, false],
-    ["", false, false],
+  for (const [environmentOutput, ready, timedOut, cancelled, expected] of [
+    ["", true, false, false, true],
+    ["SYNTHETIC_SECRET=value", true, false, false, false],
+    ["PWD=/workspace\0", true, false, false, false],
+    ["", true, true, false, false],
+    ["", true, false, true, false],
+    ["", false, false, false, false],
   ]) {
     let runs = 0;
     const executor = createExecutor(
       { enabled: false },
       {
         workspace,
-        run: async (_command, signal, dir) => {
+        run: async (command, signal, dir) => {
           runs++;
-          if (runs === 1) return { exitCode: 0, output: environmentOutput, exceeded: false };
+          if (runs === 1) {
+            assert.deepEqual(command.argv, ["/usr/bin/env", "-0"]);
+            return { exitCode: 0, output: environmentOutput, exceeded: false, timedOut, cancelled };
+          }
           if (runs === 2) return { exitCode: 0, exceeded: false };
           if (ready) await fs.writeFile(`${dir}/child-ready`, "");
           if (!signal.aborted)
