@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { once } from "node:events";
 import fs from "node:fs/promises";
+import { createServer } from "node:net";
 import { createExecutor, runIsolated, RELEASE } from "./executor.mjs";
 
 if (process.platform !== "linux") throw new Error("Linux isolation diagnostics require Linux");
@@ -62,6 +64,19 @@ test(
     assert.equal(environment.timedOut, false, "environment probe timed out");
     assert.equal(environment.cancelled, false, "environment probe was cancelled");
     assert.equal(environment.output.length, 0, "child environment is not empty");
+    let hostConnections = 0;
+    const listener = createServer((socket) => {
+      hostConnections++;
+      socket.destroy();
+    });
+    listener.listen(0, "127.0.0.1");
+    await once(listener, "listening");
+    const closeListener = () =>
+      new Promise((resolve, reject) => {
+        if (!listener.listening) return resolve();
+        listener.close((error) => (error ? reject(error) : resolve()));
+      });
+    t.after(closeListener);
     const result = await runIsolated(
       {
         argv: [
@@ -69,7 +84,7 @@ test(
           "-c",
           `import os,socket,errno,sys
 assert os.getuid()==65534 and os.getgid()==65534
-for kind,host in zip(['pid','mnt','net'],sys.argv[1:]):
+for kind,host in zip(['pid','mnt','net'],sys.argv[1:4]):
  assert os.readlink('/proc/self/ns/'+kind)!=host
 for path in ['/app','/root','/home/runner','/etc']:
  assert not os.path.exists(path),path
@@ -88,22 +103,21 @@ with open('/proc/net/route') as routes:
 with open('/proc/net/dev') as interfaces:
  names=[line.split(':',1)[0].strip() for line in interfaces.readlines()[2:] if ':' in line]
  assert set(names).issubset({'lo'})
-listener=socket.socket()
+probe=socket.socket(); probe.settimeout(.2)
 try:
- listener.bind(('127.0.0.1',0)); listener.listen()
- probe=socket.socket(); probe.settimeout(.2)
- try: probe.connect(listener.getsockname()); raise AssertionError('loopback reachable')
- except OSError: pass
- finally: probe.close()
+ probe.connect(('127.0.0.1',int(sys.argv[4]))); raise AssertionError('host loopback reachable')
 except OSError: pass
-finally: listener.close()`,
+finally: probe.close()`,
           ...namespaces,
+          String(listener.address().port),
         ],
         timeoutMs: 3000,
       },
       new AbortController().signal,
       dir,
     );
+    await closeListener();
+    assert.equal(hostConnections, 0, "host loopback listener received a connection");
     assert.equal(result.exitCode, 0, result.output);
     assert.equal(result.timedOut, false);
   },

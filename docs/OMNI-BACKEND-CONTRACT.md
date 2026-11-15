@@ -237,6 +237,8 @@ staging image/kernel remains an independent verification prerequisite.
 Bubblewrap can add `PWD` after `--chdir`; the launcher uses `/usr/bin/env -i`
 inside the sandbox before the unchanged approved argv, without a shell. The
 self-test and Linux diagnostic still require an entirely empty child environment.
+The diagnostic tests host-loopback isolation against a listener on the host's
+`127.0.0.1`, not a listener inside the sandbox's own network namespace.
 Before each command and every 250 ms during a command, authenticated
 Jackboy permission is rechecked (1.5-second transport deadline; replies older than
 2 seconds are refused). Unknown safety aborts; cancellation waits for process
