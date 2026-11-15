@@ -12,6 +12,16 @@ async function workspace(t) {
   return path;
 }
 
+test("printf runs in isolation and returns its exact output", options, async (t) => {
+  const result = await runIsolated(
+    { argv: ["/usr/bin/printf", "hello"], timeoutMs: 3000 },
+    new AbortController().signal,
+    await workspace(t),
+  );
+  assert.equal(result.exitCode, 0);
+  assert.equal(result.output, "hello");
+});
+
 test(
   "real non-root PID/mount/network namespaces, read-only host files and empty child environment",
   options,
