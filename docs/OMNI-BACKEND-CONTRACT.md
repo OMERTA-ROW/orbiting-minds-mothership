@@ -332,6 +332,16 @@ production keys into a test or the worker. Values are intentionally not recorded
 
 ### Evidence and deployment boundary
 
+The executor image includes an opt-in diagnostic at
+`node /app/isolation-diagnostic.mjs`. It exercises the real isolation primitives,
+including an empty child environment, resource breaches and cancellation of a
+ready descendant that creates a separate session. It does not need or enable
+autonomous execution and is not run at startup. Run it on the exact staging
+image and kernel only after separate owner approval; a local or CI result does
+not prove Railway isolation. Its resource limits are process limits, not
+aggregate job cgroup quotas. The diagnostic is separate from the shorter signed
+executor self-test and does not prove cross-service Stop.
+
 All implementation and disposable tests remain on isolated feature branches.
 No migration was applied to a hosted database by this work. Feature branches are
 pushed for review; no main-branch merge, deployment, owner approval, Stop release

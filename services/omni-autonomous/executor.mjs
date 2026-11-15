@@ -70,7 +70,7 @@ export function parsePlan(value, now = Date.now()) {
 export const planHash = (plan) => hash(JSON.stringify(plan));
 
 /** No host root, network, service files, credentials, or production workspace is mounted. */
-export async function runIsolated(command, signal, workspace) {
+export async function runIsolated(command, signal, workspace, onSpawn = () => {}) {
   const argv = [
     "--as=536870912",
     "--cpu=10",
@@ -112,9 +112,6 @@ export async function runIsolated(command, signal, workspace) {
     "65534",
     "--cap-drop",
     "ALL",
-    "--setenv",
-    "PATH",
-    "/usr/bin:/bin",
     "--",
     ...command.argv,
   ];
@@ -126,6 +123,7 @@ export async function runIsolated(command, signal, workspace) {
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
+    if (process.pid) onSpawn(process.pid);
     let output = "";
     let exceeded = false;
     let timedOut = false;
@@ -267,12 +265,17 @@ export function createExecutor(
     let workspace;
     try {
       workspace = await makeWorkspace("omni-self-test");
+      const environment = await run(
+        { argv: ["/usr/bin/env", "-0"], timeoutMs: 3000 },
+        new AbortController().signal,
+        workspace,
+      );
       const check = await run(
         {
           argv: [
             "/usr/bin/python3",
             "-c",
-            "import os,socket,resource; assert os.getuid()!=0; assert not os.path.exists('/app'); assert not os.path.exists('/root'); assert len(os.environ)<5\nfor kind,cap in [(resource.RLIMIT_AS,536870912),(resource.RLIMIT_CPU,10),(resource.RLIMIT_NPROC,32),(resource.RLIMIT_FSIZE,1048576),(resource.RLIMIT_NOFILE,64)]:\n assert 0<resource.getrlimit(kind)[0]<=cap\ns=socket.socket(); s.settimeout(.2)\ntry: s.connect(('1.1.1.1',443)); raise AssertionError('network open')\nexcept OSError: pass",
+            "import os,socket,resource; assert os.getuid()!=0; assert not os.path.exists('/app'); assert not os.path.exists('/root')\nfor kind,cap in [(resource.RLIMIT_AS,536870912),(resource.RLIMIT_CPU,10),(resource.RLIMIT_NPROC,32),(resource.RLIMIT_FSIZE,1048576),(resource.RLIMIT_NOFILE,64)]:\n assert 0<resource.getrlimit(kind)[0]<=cap\ns=socket.socket(); s.settimeout(.2)\ntry: s.connect(('1.1.1.1',443)); raise AssertionError('network open')\nexcept OSError: pass",
           ],
           timeoutMs: 3000,
         },
@@ -280,25 +283,45 @@ export function createExecutor(
         workspace,
       );
       const abort = new AbortController();
-      const timer = setTimeout(() => abort.abort(), 100);
-      const started = Date.now();
-      let cancellation;
+      const cancellationRun = run(
+        {
+          argv: [
+            "/usr/bin/python3",
+            "-c",
+            "import os,time; child=os.fork()\nif child==0:\n os.setsid(); open('/workspace/child-ready','w').close(); time.sleep(.5); open('/workspace/child-survived','w').write('unsafe'); os._exit(0)\ntime.sleep(10)",
+          ],
+          timeoutMs: 3000,
+        },
+        abort.signal,
+        workspace,
+      ).then(
+        (result) => ({ result }),
+        (error) => ({ error }),
+      );
+      let childReady = false;
+      let readinessError;
+      const deadline = Date.now() + 1500;
       try {
-        cancellation = await run(
-          {
-            argv: [
-              "/usr/bin/python3",
-              "-c",
-              "import os,time; child=os.fork()\nif child==0:\n time.sleep(.5); open('/workspace/child-survived','w').write('unsafe'); os._exit(0)\ntime.sleep(10)",
-            ],
-            timeoutMs: 1000,
-          },
-          abort.signal,
-          workspace,
-        );
+        while (!childReady && Date.now() < deadline) {
+          childReady = await fs.stat(`${workspace}/child-ready`).then(
+            () => true,
+            (error) => {
+              if (error.code !== "ENOENT") throw error;
+              return false;
+            },
+          );
+          if (!childReady) await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+      } catch (error) {
+        readinessError = error;
       } finally {
-        clearTimeout(timer);
+        abort.abort();
       }
+      const started = Date.now();
+      const cancellationReply = await cancellationRun;
+      if ("error" in cancellationReply) throw cancellationReply.error;
+      if (readinessError) throw readinessError;
+      const cancellation = cancellationReply.result;
       const cancellationMs = Date.now() - started;
       await new Promise((resolve) => setTimeout(resolve, 600));
       const childSurvived = await fs.stat(`${workspace}/child-survived`).then(
@@ -310,8 +333,12 @@ export function createExecutor(
       );
       return {
         passed:
+          environment.exitCode === 0 &&
+          environment.output.length === 0 &&
+          !environment.exceeded &&
           check.exitCode === 0 &&
           !check.exceeded &&
+          childReady &&
           cancellation.cancelled &&
           cancellationMs < 1500 &&
           !childSurvived,

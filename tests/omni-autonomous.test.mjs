@@ -57,6 +57,37 @@ test("permission failure and unknown safety are fail closed with no command", as
   await assert.rejects(executor.runPlan(plan()));
   assert.equal(calls, 0);
 });
+test("self-test requires an empty environment and a ready escaped descendant", async () => {
+  for (const [environmentOutput, ready, expected] of [
+    ["", true, true],
+    ["SYNTHETIC_SECRET=value", true, false],
+    ["", false, false],
+  ]) {
+    let runs = 0;
+    const executor = createExecutor(
+      { enabled: false },
+      {
+        workspace,
+        run: async (_command, signal, dir) => {
+          runs++;
+          if (runs === 1) return { exitCode: 0, output: environmentOutput, exceeded: false };
+          if (runs === 2) return { exitCode: 0, exceeded: false };
+          if (ready) await fs.writeFile(`${dir}/child-ready`, "");
+          if (!signal.aborted)
+            await new Promise((resolve) =>
+              signal.addEventListener("abort", resolve, { once: true }),
+            );
+          return { cancelled: true };
+        },
+      },
+    );
+    try {
+      assert.equal((await executor.selfTest()).passed, expected);
+    } finally {
+      await executor.close();
+    }
+  }
+});
 test("duplicate concurrent jobs claim once; Stop cancellation waits for process exit", async () => {
   const value = plan();
   let notify;
