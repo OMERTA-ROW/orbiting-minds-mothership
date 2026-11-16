@@ -232,5 +232,7 @@ describe("activation start failures", () => {
     const { beginReasonText } = await import("./activation-activate.server");
     expect(beginReasonText("begin_error")).toContain("nothing was sent or activated");
     expect(beginReasonText("begin_error")).not.toContain("Owner access");
+    expect(beginReasonText("reconcile_required")).toContain("Reconcile pending activation");
+    expect(beginReasonText("reconcile_required")).toContain("Nothing was sent or activated");
   });
 });

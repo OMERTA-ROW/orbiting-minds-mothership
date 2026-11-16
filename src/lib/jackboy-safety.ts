@@ -104,6 +104,17 @@ export function safetyFailureText(reason: string): string {
   return r ? r.replace(/_/g, " ") : "check failed";
 }
 
+/**
+ * The values of the last verified reading, labelled as history: an expired reading proves nothing
+ * about now, so these never feed `codeStop`/`killSwitch` (which stay unknown).
+ */
+function lastVerifiedText(row: SafetyRow) {
+  if (!row.observed_at || row.code_stop === null || row.paused === null) return "";
+  const at = new Date(row.observed_at);
+  if (!Number.isFinite(at.getTime())) return "";
+  return ` Last verified reading at ${at.toISOString().slice(11, 19)} UTC (expired, history only): CODE Emergency Stop ${row.code_stop ? "engaged" : "released"}, Kill Switch ${row.paused ? "on" : "off"}.`;
+}
+
 export function safetyView(row: SafetyRow | null, now: number): SafetyView {
   if (!row) {
     return {
@@ -193,7 +204,7 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
       ...base,
       state: "stale",
       label: "Unknown (stale)",
-      detail: "The last verified reading has expired, so OMNI autonomy and CODE stay halted.",
+      detail: `The last verified reading has expired, so OMNI autonomy and CODE stay halted.${lastVerifiedText(row)}`,
       clear: false,
     };
   return {
@@ -202,7 +213,7 @@ export function safetyView(row: SafetyRow | null, now: number): SafetyView {
     label: "Unknown",
     detail:
       row.source === "none"
-        ? "No verified reading yet. It is read after the Step 9 live link is activated (Jackboy's permit service must be installed)."
+        ? "No verified reading yet. It is read after the Step 9 live link is activated."
         : `No verified reading: ${safetyFailureText(row.reason)}. OMNI autonomy and CODE stay halted.`,
     clear: false,
   };

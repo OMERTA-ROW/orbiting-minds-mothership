@@ -5,6 +5,7 @@
  * self-test, after the owner's explicit confirmation and fresh two-step code.
  */
 import { createServerFn } from "@tanstack/react-start";
+import { activationNeedsReconcile } from "./activation-reconcile";
 import { readinessEvidence, type PermitRecord } from "./readiness-evidence";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -217,6 +218,8 @@ export type ActivationRowView = {
   activatedAt: string | null;
   updatedAt: string;
   effective: boolean;
+  /** An earlier attempt must be reconciled before Activate can start a new one (database guard). */
+  reconcileRequired: boolean;
 };
 
 /** Step 9/10 activation rows plus the database's own "in effect" verdict (fails closed). */
@@ -225,7 +228,9 @@ async function activationInfo(
 ): Promise<ActivationRowView[]> {
   try {
     const [rows, link, auto] = await Promise.all([
-      db.from("activation_activations").select("kind,status,reason,activated_at,updated_at"),
+      db
+        .from("activation_activations")
+        .select("kind,status,reason,activated_at,updated_at,started_at,evidence"),
       db.rpc("activation_effective", { _kind: "live_link" }),
       db.rpc("activation_effective", { _kind: "autonomy" }),
     ]);
@@ -237,6 +242,8 @@ async function activationInfo(
       activatedAt: r.activated_at,
       updatedAt: r.updated_at,
       effective: r.kind === "live_link" ? link.data === true : auto.data === true,
+      // Only the derived boolean leaves the server; evidence contents are never sent.
+      reconcileRequired: activationNeedsReconcile(r, Date.now()),
     }));
   } catch {
     return [];
@@ -759,6 +766,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       system: systemStates({
         linkEffective: activations.some((a) => a.kind === "live_link" && a.effective),
         autonomyEffective: activations.some((a) => a.kind === "autonomy" && a.effective),
+        reconcileRequired: activations.some((a) => a.reconcileRequired),
         liveLink,
         safety,
         mothershipStop: counts.mothershipStop,
@@ -1371,11 +1379,32 @@ export const checkLiveLinkConnection = createServerFn({ method: "POST" })
  * Step 9 live link is activated, one handshake and one session-signed `safety` read. Never releases a stop, turns a switch or starts work;
  * any failure records "unknown", which keeps OMNI autonomy and CODE halted.
  */
+/** Minimum spacing of owner/page-triggered signed safety reads (Jackboy readings are valid ~30 s). */
+const SAFETY_REFRESH_MIN_MS = 10_000;
+
 export const refreshJackboySafety = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     setResponseHeader("Cache-Control", "private, no-store");
     await ownerContext(context);
+    // Automatic refreshes from an open page (or several tabs) never read Jackboy more than once per
+    // SAFETY_REFRESH_MIN_MS; the stored verified reading is returned instead.
+    const latest = await jackboySafetyRow(context.supabase);
+    const recorded = Date.parse(latest?.recorded_at ?? "");
+    if (
+      latest?.source === "poll" &&
+      Number.isFinite(recorded) &&
+      Date.now() - recorded >= 0 &&
+      Date.now() - recorded < SAFETY_REFRESH_MIN_MS
+    ) {
+      const view = safetyView(latest, Date.now());
+      return {
+        ok: true as const,
+        checked: false,
+        message: `A verified signed reading was recorded moments ago: ${view.label}. Not read again.`,
+        safety: view,
+      };
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { syncJackboySafety } = await import("./jackboy-safety.server");
     let result;
@@ -1478,10 +1507,11 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
         _attempt: attempt,
       });
       if (error) {
-        if (error.message.includes("Fresh two-factor")) return { ok: false, reason: "mfa" };
-        // Nonsecret diagnostics only (database error class), so a silent refusal can be traced.
-        console.error("[activation] begin refused", k, error.code ?? "no_code");
-        return { ok: false, reason: error.code === "42501" ? "denied" : "begin_error" };
+        const { classifyBeginError } = await import("./activation-reconcile");
+        const reason = classifyBeginError(error);
+        // Nonsecret diagnostics only (database error class + classification), so a refusal can be traced.
+        console.error("[activation] begin refused", k, error.code ?? "no_code", reason);
+        return { ok: false, reason };
       }
       return data as { ok: boolean; duplicate?: boolean; resumed?: boolean; reason?: string };
     },

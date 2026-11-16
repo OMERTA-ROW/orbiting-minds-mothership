@@ -132,13 +132,20 @@ describe("separate system states", () => {
     expect(codeOff.autonomous.state).toBe("armed");
     expect(codeOff.code.state).toBe("configured_blocked");
   });
+  it("points to reconciliation first when an earlier attempt is unresolved", () => {
+    const s = states({ linkEffective: false, autonomyEffective: false, reconcileRequired: true });
+    expect(s.nextAction).toContain("Reconcile pending activation");
+    expect(s.link.state).toBe("not_configured");
+    // Fully in effect: nothing to reconcile for the owner's next step.
+    expect(states({ reconcileRequired: true }).nextAction).not.toContain("Reconcile");
+  });
   it("names the exact next owner action before each activation", () => {
     const unknown = safetyView(null, NOW);
     expect(
       states({ linkEffective: false, autonomyEffective: false, safety: unknown }).nextAction,
     ).toContain("Activate live link");
     expect(states({ autonomyEffective: false, safety: unknown }).nextAction).toContain(
-      "permit service",
+      "not current yet",
     );
     const noAuth = safetyView(
       row("clear", { autonomous_allowed: false, blocked_by: "not_authorized" }),

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   owner: vi.fn(),
   approvalMs: 3_600_000,
   localAllowed: true,
+  activation: null as unknown,
 }));
 vi.mock("@tanstack/react-start", () => ({
   createServerFn: () => {
@@ -68,6 +69,7 @@ function query(data: unknown) {
   for (const op of ["select", "lte", "eq", "order", "limit"]) q[op] = () => q;
   q["then"] = (ok: (value: unknown) => unknown) => Promise.resolve({ data, error: null }).then(ok);
   q["single"] = async () => ({ data: Array.isArray(data) ? data[0] : data, error: null });
+  q["maybeSingle"] = q["single"];
   return q;
 }
 async function invoke(data: unknown, fresh = true) {
@@ -86,7 +88,14 @@ async function invoke(data: unknown, fresh = true) {
       },
       supabase: {
         rpc: mocks.rpc,
-        from: (table: string) => query(table === "activation_approvals" ? rows : []),
+        from: (table: string) =>
+          query(
+            table === "activation_approvals"
+              ? rows
+              : table === "activation_activations"
+                ? mocks.activation
+                : [],
+          ),
       },
     },
   });
@@ -99,6 +108,7 @@ const plan = () => ({
 });
 beforeEach(() => {
   mocks.calls.length = 0;
+  mocks.activation = null;
   mocks.approvalMs = 3_600_000;
   mocks.localAllowed = true;
   vi.stubEnv("OMNI_AUTONOMY_REVIEWED_RELEASE", "omni-bounded-plan-1");
@@ -208,6 +218,19 @@ it("stale owner authentication and ineffective upstream activation start nothing
   await expect(invoke(plan(), false)).rejects.toThrow("Fresh owner");
   mocks.rpc.mockResolvedValue({ data: false, error: null });
   await expect(invoke(plan())).rejects.toThrow("Current upstream");
+  expect(mocks.signed).not.toHaveBeenCalled();
+  expect(mocks.permit).not.toHaveBeenCalled();
+});
+it("names the missing activation and the reconcile step instead of a generic refusal", async () => {
+  mocks.rpc.mockResolvedValue({ data: false, error: null });
+  await expect(invoke(plan())).rejects.toThrow("Step 10 autonomy authorization has never been activated");
+  // Revoked by a Step 8 re-approval: Jackboy's side unconfirmed, so reconcile is the next action.
+  mocks.activation = {
+    status: "revoked",
+    evidence: { remoteReconciliationRequired: true },
+    started_at: null,
+  };
+  await expect(invoke(plan())).rejects.toThrow("Click Reconcile pending activation");
   expect(mocks.signed).not.toHaveBeenCalled();
   expect(mocks.permit).not.toHaveBeenCalled();
 });

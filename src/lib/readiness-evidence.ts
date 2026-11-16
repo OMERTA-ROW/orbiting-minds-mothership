@@ -55,6 +55,7 @@ export interface EvidenceInput {
     activatedAt: string | null;
     updatedAt: string;
     effective: boolean;
+    reconcileRequired?: boolean;
   }> | null;
   selfTest: { action: string; occurred_at: string } | null;
   mothershipStop: { engaged: boolean | null; changedAt: string | null };
@@ -222,7 +223,9 @@ export function readinessEvidence(i: EvidenceInput): EvidenceRow[] {
             ? "in effect"
             : a.status === "active"
               ? "recorded, no longer in effect"
-              : a.status,
+              : a.reconcileRequired
+                ? `${a.status} · reconcile required`
+                : a.status,
       status: !i.activations
         ? "unreadable"
         : a?.effective
@@ -242,7 +245,9 @@ export function readinessEvidence(i: EvidenceInput): EvidenceRow[] {
       signed: false,
       detail: a?.effective
         ? "Configuration only; it starts no work."
-        : "Use the matching Activate button with a fresh two-step code.",
+        : a?.reconcileRequired
+          ? "An earlier attempt is unresolved; Reconcile pending activation must succeed before Activate can start a new one."
+          : "Use the matching Activate button with a fresh two-step code.",
     });
   }
   const authExp = ms(i.safety.authorizationExpiresAt);
