@@ -93,6 +93,10 @@ export function safetyFailureText(reason: string): string {
   if (r.startsWith("read_timeout")) return "Jackboy did not answer in time";
   if (r.startsWith("read_connection")) return "Jackboy could not be reached";
   if (r.startsWith("read_proof")) return "Jackboy's reply signature did not verify";
+  if (r.startsWith("read_contract") && r.endsWith("snapshot_timing"))
+    return "Jackboy's safety reading was too old or its validity window was wrong";
+  if (r.startsWith("read_contract") && r.endsWith("snapshot_fields"))
+    return "Jackboy's safety reading had fields Mothership does not accept (a format mismatch between the two systems)";
   if (r.startsWith("read_contract")) return "Jackboy's reply did not match the safety contract";
   if (r.startsWith("read_http_401")) return "Jackboy rejected the link session";
   if (r === "mothership_stop_engaged")
