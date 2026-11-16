@@ -29,6 +29,7 @@ import {
 import { LiveLinkPanel, type LiveLinkOutcome } from "@/components/omnibridge/LiveLinkPanel";
 import { ReadinessEvidence } from "@/components/omnibridge/ReadinessEvidence";
 import { UnifiedExecutionStatus } from "@/components/omnibridge/UnifiedExecutionStatus";
+import { ActivationOrchestrator } from "@/components/omnibridge/ActivationOrchestrator";
 import { SELF_TEST_ATTEMPT_KEY } from "@/lib/activation-self-test";
 import { Step8SelfTest, type SelfTestOutcome } from "@/components/omnibridge/Step8SelfTest";
 import {
@@ -1273,6 +1274,13 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         })}
       </ol>
 
+      <ActivationOrchestrator
+        mfaFresh={mfaFresh}
+        step9Approved={effective.some((r) => r.step === 9 && isEffectivelyApproved(r, now))}
+        step10Approved={effective.some((r) => r.step === 10 && isEffectivelyApproved(r, now))}
+        busy={busy}
+        onChanged={() => void refresh().catch(() => {})}
+      />
       <UnifiedExecutionStatus onChanged={() => void refresh().catch(() => {})} />
       {data.readinessEvidence && <ReadinessEvidence rows={data.readinessEvidence} now={now} />}
       <LiveLinkPanel

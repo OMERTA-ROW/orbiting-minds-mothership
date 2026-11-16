@@ -4,6 +4,7 @@ import {
   connectionExpiresAt,
   describeActuationFailure,
   earlierOf,
+  verifyThenConfigure,
 } from "./activation-actuation";
 import { JackboyLinkError } from "./jackboy-link.server";
 
@@ -65,5 +66,78 @@ describe("actuation failure reasons", () => {
       new JackboyLinkError("x", "http", { status: 403, code: "approval_expired_or_link_disabled" }),
     );
     expect(`backend_actuation_${f.reason}`.length).toBeLessThanOrEqual(200);
+  });
+});
+
+describe("Jackboy 9081a41 execution-control refusals", () => {
+  it("names the classified reason and Jackboy's stage from a signed refusal", () => {
+    const f = describeActuationFailure({
+      stage: "http",
+      status: 409,
+      code: "executor_verification_required",
+      remoteStage: "verification",
+      signed: true,
+    });
+    expect(f.reason).toBe("jackboy_http_409_executor_verification_required_verification");
+    expect(f.message).toContain("fresh executor verification");
+    expect(f.message).toContain("Jackboy refused at: executor verification");
+  });
+  it("ignores a stage on an unsigned refusal", () => {
+    const f = describeActuationFailure({
+      stage: "http",
+      status: 409,
+      code: "spend_enforcement_unverified",
+      remoteStage: "authority",
+      signed: false,
+    });
+    expect(f.reason).toBe("jackboy_http_409_spend_enforcement_unverified");
+    expect(f.message).not.toContain("Jackboy refused at");
+  });
+  it("explains a missing executor verification as its own local issue", () => {
+    expect(describeActuationFailure(new ActuationError("executor_unverified", "x")).reason).toBe(
+      "executor_unverified",
+    );
+  });
+});
+
+describe("Step 10 verify, then configure", () => {
+  const base = {
+    connected: true,
+    configured: false,
+    armed: false,
+    executorRelease: "omni-bounded-plan-1" as string | null,
+    operationId: "aaaaaaaa-0000-4000-8000-000000000009",
+  };
+  it("verifies immediately before configuring, in that order", async () => {
+    const calls: string[] = [];
+    const state = await verifyThenConfigure(async (op) => {
+      calls.push(op);
+      return op === "verify" ? base : { ...base, configured: true };
+    }, "omni-bounded-plan-1");
+    expect(calls).toEqual(["verify", "configure"]);
+    expect(state.configured).toBe(true);
+  });
+  it("never configures when verification recorded no release", async () => {
+    const calls: string[] = [];
+    await expect(
+      verifyThenConfigure(async (op) => {
+        calls.push(op);
+        return { ...base, executorRelease: null };
+      }, "omni-bounded-plan-1"),
+    ).rejects.toMatchObject({ issue: "executor_unverified" });
+    expect(calls).toEqual(["verify"]);
+  });
+  it("refuses an unreviewed release before configuring", async () => {
+    await expect(
+      verifyThenConfigure(async () => ({ ...base, executorRelease: "other-1" }), "omni-bounded-plan-1"),
+    ).rejects.toMatchObject({ issue: "release_mismatch" });
+  });
+  it("refuses a configured state that came back armed", async () => {
+    await expect(
+      verifyThenConfigure(
+        async (op) => (op === "verify" ? base : { ...base, configured: true, armed: true }),
+        "omni-bounded-plan-1",
+      ),
+    ).rejects.toMatchObject({ issue: "state_mismatch" });
   });
 });

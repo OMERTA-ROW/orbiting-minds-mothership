@@ -5,6 +5,7 @@ export async function signedExecutorRequest(
   secret: string,
   operation: string,
   args: Record<string, unknown>,
+  timeoutMs = 35_000,
 ) {
   const nonce = randomBytes(16).toString("hex");
   const timestamp = String(Math.floor(Date.now() / 1000));
@@ -15,7 +16,7 @@ export async function signedExecutorRequest(
     method: "POST",
     body,
     redirect: "error",
-    signal: AbortSignal.timeout(35_000),
+    signal: AbortSignal.timeout(timeoutMs),
     headers: {
       "Content-Type": "application/json",
       "X-Executor-Timestamp": timestamp,

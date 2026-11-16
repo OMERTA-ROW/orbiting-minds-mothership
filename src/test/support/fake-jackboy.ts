@@ -45,6 +45,13 @@ export class FakeJackboy {
   /** When set, the next request never answers (stale network). */
   hang = false;
   sessions = new Set<string>();
+  /** Jackboy's live-session cap per client (docs/OMNI-SECURE-LINK.md: eight). */
+  sessionLimit = 8;
+  /** Idempotent handshakes (migration 0073/0077): handshakeId -> session token. */
+  handshakes = new Map<string, string>();
+  /** Test hooks: Jackboy without the idempotent table (5xx), or a signed ID conflict (409). */
+  idempotentUnavailable = false;
+  conflictHandshakeIds = new Set<string>();
   permits = new Map<string, Permit>();
   nonces = new Set<string>();
   calls: string[] = [];
@@ -106,8 +113,23 @@ export class FakeJackboy {
     if (action === "handshake") {
       if (token !== FAKE.bootstrap) return plain(401, "authentication_failed");
       if (this.killSwitch) return plain(403, "grant_unavailable");
+      const handshakeId = typeof input["handshakeId"] === "string" ? input["handshakeId"] : null;
+      if (handshakeId && this.idempotentUnavailable)
+        return plain(503, "execution_control_unavailable");
+      if (handshakeId && this.conflictHandshakeIds.has(handshakeId))
+        return signed(409, { error: "handshake_id_expired_or_conflict" });
+      const reused = handshakeId ? this.handshakes.get(handshakeId) : undefined;
+      if (reused && this.sessions.has(reused))
+        return signed(200, {
+          sessionToken: reused,
+          expiresAt: new Date(Date.now() + 240_000).toISOString(),
+          ready: true,
+          capabilities: ["jobs.cancel", "jobs.read", "protocol.self-test"],
+        });
+      if (this.sessions.size >= this.sessionLimit) return plain(429, "session_limit");
       const session = randomBytes(32).toString("hex");
       this.sessions.add(session);
+      if (handshakeId) this.handshakes.set(handshakeId, session);
       return signed(200, {
         sessionToken: session,
         expiresAt: new Date(Date.now() + 300_000).toISOString(),

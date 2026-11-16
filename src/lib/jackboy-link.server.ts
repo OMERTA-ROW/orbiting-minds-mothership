@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { linkIdentityIssues } from "./activation-self-test";
 
@@ -58,8 +58,10 @@ export type JackboyLinkConfig = {
   bootstrap: string;
   secret: string;
   approvalExpiresAt: number;
+  /** Jackboy link approval ID as configured here; only scopes the derived handshake ID. */
+  approvalId?: string;
 };
-type LinkIdentity = Omit<JackboyLinkConfig, "approvalExpiresAt">;
+type LinkIdentity = Omit<JackboyLinkConfig, "approvalExpiresAt" | "approvalId">;
 export type JackboyConfigurationConfig = LinkIdentity & { runnerOrigin: string };
 type Fetch = (input: string, init: RequestInit) => Promise<Response>;
 /** Test seam only; never populated from environment settings. */
@@ -117,7 +119,28 @@ export const JACKBOY_REFUSAL_CODES = [
   "release_unreviewed",
   "execution_control_unavailable",
   "cancellation_unverified",
+  /** Classified execution-control refusals (Jackboy `omni-execution-refusal.ts`, commit 9081a41+). */
+  "executor_verification_required",
+  "owner_authorization_required",
+  "connection_not_authorized",
+  "spend_enforcement_unverified",
+  "execution_blocked",
+  "code_configuration_not_ready",
+  /** Idempotent handshake (Jackboy migration 0073/0077): the handshake ID expired or conflicts. */
+  "handshake_id_expired_or_conflict",
 ] as const;
+/** Stages Jackboy names on a signed execution-control refusal (kept only when the reply is signed). */
+export const JACKBOY_REFUSAL_STAGES = [
+  "request",
+  "nonce",
+  "approval",
+  "readiness",
+  "executor",
+  "verification",
+  "authority",
+  "cancellation",
+] as const;
+export type JackboyRefusalStage = (typeof JACKBOY_REFUSAL_STAGES)[number];
 /** Nonsecret permit refusal reasons Jackboy documents for `permit_denied`. */
 export const PERMIT_REFUSAL_REASONS = [
   "kill_switch_on",
@@ -158,6 +181,8 @@ export class JackboyLinkError extends Error {
   readonly reason: string | undefined;
   /** True only when the refusal carried a valid `X-Omni-Proof` for this request (authentic refusal). */
   readonly signed: boolean;
+  /** Signed execution-control refusals only: the allowlisted Jackboy stage that refused. */
+  readonly remoteStage: JackboyRefusalStage | undefined;
   constructor(
     message: string,
     stage: JackboyFailureStage,
@@ -169,6 +194,7 @@ export class JackboyLinkError extends Error {
       phase?: "reply" | "body";
       reason?: string;
       signed?: boolean;
+      remoteStage?: JackboyRefusalStage;
     } = {},
   ) {
     super(message);
@@ -181,7 +207,38 @@ export class JackboyLinkError extends Error {
     this.phase = extra.phase;
     this.reason = extra.reason;
     this.signed = extra.signed ?? false;
+    this.remoteStage = extra.remoteStage;
   }
+}
+
+/** The allowlisted `stage` of a refusal body, if any (callers keep it only for signed replies). */
+export function refusalStage(body: string): JackboyRefusalStage | undefined {
+  try {
+    const stage = (JSON.parse(body) as { stage?: unknown } | null)?.stage;
+    return (JACKBOY_REFUSAL_STAGES as readonly unknown[]).includes(stage)
+      ? (stage as JackboyRefusalStage)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * One logical Jackboy session per window, shared by every Mothership worker: the handshake ID is
+ * derived (keyed with the link secret) from the link identity and a 4-minute bucket. Jackboy's
+ * idempotent handshake returns the same live token for the same ID without opening another session,
+ * so at most three sessions (buckets) are ever live — well under Jackboy's eight-session limit.
+ */
+export const HANDSHAKE_BUCKET_MS = 240_000;
+export function handshakeIdFor(c: JackboyLinkConfig, now: number): string {
+  const bucket = Math.floor(now / HANDSHAKE_BUCKET_MS);
+  const h = createHmac("sha256", c.secret)
+    .update(
+      `${CONTRACT}\nmothership-handshake-id\n${c.clientId}\n${c.projectId}\n${c.approvalId ?? ""}\n${c.approvalExpiresAt}\n${bucket}`,
+    )
+    .digest("hex");
+  const variant = ((parseInt(h[16]!, 16) & 3) | 8).toString(16);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
 /** The allowlisted `reason` of a permit refusal, if any. */
@@ -280,6 +337,7 @@ export async function configuredJackboyLink(): Promise<JackboyLinkConfig> {
     bootstrap: process.env["OMNI_LINK_BOOTSTRAP_KEY"] || "",
     secret: process.env["OMNI_LINK_HMAC_SECRET"] || "",
     approvalExpiresAt: Date.parse(process.env["OMNI_LINK_APPROVAL_EXPIRES_AT"] || ""),
+    approvalId: process.env["OMNI_LINK_APPROVAL_ID"] || "",
   };
   assertPublicLinkOrigin(c.origin);
   assertConfig(c);
@@ -465,11 +523,13 @@ async function sendSignedRaw(
     // Any refusal fails closed. Its reason is only labelled as Jackboy's when the reply is signed.
     const code = refusalCode(result.body);
     const reason = code === "permit_denied" && proofOk ? permitReason(result.body) : undefined;
+    const remoteStage = proofOk ? refusalStage(result.body) : undefined;
     const extra = {
       status: result.status,
       signed: proofOk,
       ...(code ? { code } : {}),
       ...(reason ? { reason } : {}),
+      ...(remoteStage ? { remoteStage } : {}),
     };
     if (result.status === 401)
       throw new JackboyLinkError("Jackboy session rejected.", "http", extra);
@@ -738,11 +798,55 @@ export class JackboyLink {
     return sendSigned(this.config, this.options, action, token, jobId);
   }
 
+  private async handshake(handshakeId: string | null): Promise<Reply> {
+    assertConfig(this.config);
+    return (
+      await sendSignedRaw(
+        this.config,
+        this.options,
+        "handshake",
+        this.config.bootstrap,
+        undefined,
+        handshakeId ? { handshakeId } : {},
+      )
+    ).reply;
+  }
+
+  /**
+   * Reuses the window's shared session (idempotent handshake ID). Only a *signed* 409
+   * `handshake_id_expired_or_conflict` rotates to a fresh random ID. If Jackboy cannot serve
+   * idempotent handshakes (5xx other than a disabled link), one legacy handshake is sent and audited.
+   */
+  private async openSession(): Promise<Reply> {
+    try {
+      const reply = await this.handshake(handshakeIdFor(this.config, Date.now()));
+      // A reused session about to expire is replaced rather than used.
+      if (Date.parse(reply.expiresAt || "") > Date.now() + 15_000) return reply;
+      await this.audit("handshake_id_rotated");
+      return await this.handshake(randomUUID());
+    } catch (error) {
+      if (!(error instanceof JackboyLinkError) || error.stage !== "http") throw error;
+      if (error.signed && error.status === 409 && error.code === "handshake_id_expired_or_conflict") {
+        await this.audit("handshake_id_rotated");
+        return this.handshake(randomUUID());
+      }
+      if (
+        (error.status ?? 0) >= 500 &&
+        error.code !== "link_disabled" &&
+        error.code !== "grant_unavailable"
+      ) {
+        await this.audit("handshake_reuse_unavailable");
+        return this.handshake(null);
+      }
+      throw error;
+    }
+  }
+
   async connect() {
     if (this.session && this.expiresAt > Date.now() + 5000) return;
     this.session = "";
     await this.audit("connecting");
-    const reply = await this.send("handshake", this.config.bootstrap);
+    const reply = await this.openSession();
     const expiry = Date.parse(reply.expiresAt || "");
     if (
       !/^[a-f0-9]{64}$/.test(reply.sessionToken || "") ||

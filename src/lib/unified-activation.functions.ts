@@ -106,7 +106,18 @@ export const controlUnifiedExecution = createServerFn({ method: "POST" })
       .strict()
       .parse(value),
   )
-  .handler(async ({ context, data }) => {
+  .handler(({ context, data }) => executionControl(context, data.operation));
+
+/**
+ * Owner execution control (verify / arm / disarm / reconcile) with the same gates as the button.
+ * Exported so the combined activation reuses it; verify disarms at Jackboy (its contract).
+ */
+export async function executionControl(
+  context: Context,
+  operation: "verify" | "arm" | "disarm" | "reconcile",
+) {
+  const data = { operation };
+  {
     if (data.operation === "verify" || data.operation === "arm")
       await approved(context, data.operation === "verify" ? "live_link" : "autonomy");
     else await owner(context);
@@ -174,7 +185,39 @@ export const controlUnifiedExecution = createServerFn({ method: "POST" })
       }
     }
     return state;
-  });
+  }
+}
+
+/**
+ * Signed, read-only `inspect` of the separate Railway executor (Mothership's executor settings):
+ * whether autonomous execution is enabled there and which release it reviews. Never runs anything.
+ */
+export async function inspectRailwayExecutor(): Promise<
+  | { ok: true; release: string; enabled: boolean; reviewedRelease: string | null }
+  | { ok: false; issue: "not_configured" | "unreachable" | "invalid_reply" }
+> {
+  const origin = process.env["OMNI_EXECUTOR_ORIGIN"];
+  const secret = process.env["OMNI_EXECUTOR_CONTROL_SECRET"];
+  if (!origin || !secret || secret.length < 32) return { ok: false, issue: "not_configured" };
+  let raw: unknown;
+  try {
+    const { assertPublicLinkOrigin } = await import("./jackboy-link.server");
+    assertPublicLinkOrigin(origin);
+    const { signedExecutorRequest } = await import("./omni-executor-client");
+    raw = await signedExecutorRequest(origin, secret, "inspect", {}, 8000);
+  } catch {
+    return { ok: false, issue: "unreachable" };
+  }
+  const parsed = z
+    .object({
+      release: z.string().regex(/^[A-Za-z0-9_.-]{1,80}$/),
+      enabled: z.boolean(),
+      reviewedRelease: z.string().max(80).nullable(),
+    })
+    .strict()
+    .safeParse(raw);
+  return parsed.success ? { ok: true, ...parsed.data } : { ok: false, issue: "invalid_reply" };
+}
 
 const command = z
   .object({

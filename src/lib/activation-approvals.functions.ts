@@ -1539,8 +1539,12 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
       return result.data;
     },
     actuate: async (k, attempt) => {
-      const { readExecutionState } = await import("./unified-activation.server");
-      const { ActuationError, connectionExpiresAt } = await import("./activation-actuation");
+      const { readExecutionState, REVIEWED_EXECUTOR_RELEASE } = await import(
+        "./unified-activation.server"
+      );
+      const { ActuationError, connectionExpiresAt, verifyThenConfigure } = await import(
+        "./activation-actuation"
+      );
       const window = await context.supabase
         .from("activation_approvals")
         .select("approval_expires_at")
@@ -1549,19 +1553,18 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
       if (window.error || !window.data.approval_expires_at)
         throw new ActuationError("window_unavailable", "Current approval window is unavailable");
       // Jackboy refuses a connection that outlasts its own link approval, so ask for the earlier end.
-      const state = await readExecutionState(
-        k === "live_link" ? "connect" : "configure",
+      // Step 10 verifies the executor immediately before configuring (Jackboy's contract).
+      const state =
         k === "live_link"
-          ? {
+          ? await readExecutionState("connect", {
               operationId: attempt,
               expiresAt: connectionExpiresAt(
                 window.data.approval_expires_at,
                 Date.parse(process.env["OMNI_LINK_APPROVAL_EXPIRES_AT"] || ""),
                 Date.now(),
               ),
-            }
-          : {},
-      );
+            })
+          : await verifyThenConfigure((op) => readExecutionState(op), REVIEWED_EXECUTOR_RELEASE);
       if (
         !state.connected ||
         (k === "live_link" && state.operationId !== attempt) ||
@@ -1635,7 +1638,8 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
   });
 }
 
-function activationHandler(kind: "live_link" | "autonomy") {
+/** Exported for the combined activation (`activation-orchestrate.functions.ts`); same gates. */
+export function activationHandler(kind: "live_link" | "autonomy") {
   return async ({ context, data }: { context: Ctx; data: z.infer<typeof activationInput> }) => {
     setResponseHeader("Cache-Control", "private, no-store");
     await ownerContext(context);
