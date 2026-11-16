@@ -1,5 +1,16 @@
 # Evolution — reconciled blueprint roadmap
 
+## One coherent OMNI ↔ Jackboy activation — 2026-11-16 (preview, flow marker 16)
+- [x] Jackboy live build read from its public marker: commit 9081a41, built 21:55 UTC (names the build only).
+- [x] Step 10 now verifies the executor immediately before configuring (Jackboy clears verification on every Step 9 connect and needs it < 15 min, same release).
+- [x] Jackboy's classified refusals (`executor_verification_required`, `spend_enforcement_unverified`, `code_configuration_not_ready`, …) and signed refusal stage are named in plain words.
+- [x] One shared Jackboy session per 4-minute window (idempotent handshake ID; signed-conflict rotation; audited legacy fallback) so polls and actions cannot hit the eight-session limit.
+- [x] "Activate OMNI and Jackboy together": read-only checklist (build, window, stops, Step 9, Railway executor, release pin, Step 10, armed, cancellation/lease, CODE routing, manual terminal) plus one owner click that runs only the ticked scopes in order, skips scopes already in effect, rolls back a failed step and reports partial state.
+- [ ] Waiting on owner: publish Mothership (preview only so far).
+- [ ] Waiting on owner (Railway): set `OMNI_AUTONOMOUS_ENABLED=true` on the omni-autonomous executor before arming; arming stays its own tick.
+- [ ] Waiting on owner: manual terminal host (services/omni-sandbox on Railway + `OMNI_SANDBOX_*` settings) — not configured; separate from autonomy.
+- [ ] Unverified live: whether Jackboy's idempotent-handshake table (0077) is installed; Mothership falls back (audited) if not.
+
 ## Unified OMNI–Jackboy activation (omni.permit/v1) — 2026-11-14 (register 07.08)
 - [x] Mothership: Step 9 "Activate live link" and Step 10 "Activate autonomy authorization" as audited, idempotent, revision-bound activations (fresh code; rollback on failed handshake; Step 10 also needs a signed safety reading with Jackboy's authorization). Migration 0055.
 - [x] Mothership: safety sync uses Jackboy's session-signed `safety` action and records autonomousAllowed / manualDiagnosticsAllowed / blockedBy.
