@@ -1709,6 +1709,83 @@ export type Database = {
         }
         Relationships: []
       }
+      omni_noop_jobs: {
+        Row: {
+          created_at: string
+          duration_ms: number
+          ended_at: string | null
+          id: string
+          lease_expires_at: string | null
+          owner_id: string
+          reason: string | null
+          started_at: string | null
+          status: string
+          worker_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms: number
+          ended_at?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          owner_id: string
+          reason?: string | null
+          started_at?: string | null
+          status?: string
+          worker_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number
+          ended_at?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          owner_id?: string
+          reason?: string | null
+          started_at?: string | null
+          status?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_noop_jobs_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "omni_noop_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      omni_noop_workers: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          key_hash: string
+          name: string
+          revoked_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          key_hash: string
+          name: string
+          revoked_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          key_hash?: string
+          name?: string
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
       omni_passkey_checks: {
         Row: {
           challenge: string
@@ -1868,6 +1945,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      omni_stop_outbox: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          revision: number
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          revision?: never
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          revision?: never
+        }
+        Relationships: []
       }
       omni_task_handoffs: {
         Row: {
@@ -3284,9 +3379,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      activation_attempt_outcome: {
+        Args: { _attempt: string; _kind: string }
+        Returns: string
+      }
       activation_autonomy_authorized: { Args: never; Returns: boolean }
       activation_effective: { Args: { _kind: string }; Returns: boolean }
       activation_prereq_blocker: { Args: { _kind: string }; Returns: string }
+      activation_rollback_confirmed: {
+        Args: { _attempt: string; _kind: string }
+        Returns: undefined
+      }
       assert_fresh_mfa: {
         Args: { _max_age_seconds?: number }
         Returns: undefined
@@ -3425,6 +3528,21 @@ export type Database = {
         Returns: string
       }
       jackboy_permit_record: {
+        Args: {
+          _daily: number
+          _digest: string
+          _expires_at: string
+          _job: string
+          _kind: string
+          _per_call: number
+          _per_task: number
+          _permit_id: string
+          _renewals: number
+          _signature_digest: string
+        }
+        Returns: string
+      }
+      jackboy_permit_record_unlocked: {
         Args: {
           _daily: number
           _digest: string
@@ -3729,6 +3847,7 @@ export type Database = {
         Returns: Json
       }
       omni_dock_valid_permissions: { Args: { _p: string[] }; Returns: boolean }
+      omni_execution_permit_live: { Args: { _job: string }; Returns: boolean }
       omni_memory_delete: {
         Args: { _agent: string; _id: string }
         Returns: boolean
@@ -3766,6 +3885,39 @@ export type Database = {
         Returns: string
       }
       omni_memory_valid_agent: { Args: { _agent: string }; Returns: boolean }
+      omni_noop_enqueue: { Args: { _duration_ms: number }; Returns: string }
+      omni_noop_jobs_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          ended_at: string
+          id: string
+          reason: string
+          started_at: string
+          status: string
+          worker_id: string
+        }[]
+      }
+      omni_noop_sweep: { Args: never; Returns: number }
+      omni_noop_worker_action: {
+        Args: { _hash: string; _job?: string; _op: string }
+        Returns: Json
+      }
+      omni_noop_worker_create: {
+        Args: { _hash: string; _hours: number; _name: string }
+        Returns: string
+      }
+      omni_noop_worker_revoke: { Args: { _id: string }; Returns: undefined }
+      omni_noop_workers_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          name: string
+          revoked_at: string
+        }[]
+      }
       omni_social_transition: {
         Args: {
           _action: string
@@ -3793,7 +3945,9 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      omni_stop_delivered: { Args: { _revision: number }; Returns: undefined }
       omni_stop_engaged: { Args: never; Returns: boolean }
+      omni_stop_pending: { Args: never; Returns: number }
       omni_task_handoff_begin: {
         Args: { _digest: string; _kind: string; _task: string }
         Returns: {
