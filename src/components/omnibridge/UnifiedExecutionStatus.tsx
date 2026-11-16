@@ -127,7 +127,7 @@ export function UnifiedExecutionStatus() {
       {status && !status.state && "reason" in status && status.reason && (
         <p className="text-sm text-muted-foreground">Why blocked: {status.reason}.</p>
       )}
-      {status?.release && (
+      {status && "release" in status && status.release && (
         <p className="text-sm text-muted-foreground">
           Executor release reported by Jackboy: {status.release.jackboyRelease ?? "none"}
           {status.release.jackboyRelease
