@@ -110,6 +110,13 @@ export const JACKBOY_REFUSAL_CODES = [
   "action_denied",
   "job_required",
   "scope_invalid",
+  /** omni.autonomous/v1 execution-control refusals (Jackboy `omni-execution.server.ts`). */
+  "approval_unavailable",
+  "approval_expired",
+  "approval_expired_or_link_disabled",
+  "release_unreviewed",
+  "execution_control_unavailable",
+  "cancellation_unverified",
 ] as const;
 /** Nonsecret permit refusal reasons Jackboy documents for `permit_denied`. */
 export const PERMIT_REFUSAL_REASONS = [

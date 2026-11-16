@@ -157,18 +157,25 @@ export async function runActivation(
   let executorRelease: string | null;
   try {
     executorRelease = (await deps.actuate(kind, attempt)).executorRelease;
-  } catch {
+  } catch (error) {
+    const failure = describeActuationFailure(error);
+    // Nonsecret diagnostics only (stage, status, allowlisted code or local issue).
+    console.error("[activation] actuation failed", kind, failure.reason);
     try {
-      await rollback("backend_actuation_failed");
+      await rollback(`backend_actuation_${failure.reason}`);
     } catch {
       return fail(
         "not_recorded",
-        "Backend activation outcome is unverified. Keep Stop engaged; reconcile before another attempt.",
+        `Backend activation failed (${failure.message}) and its rollback is unverified. Keep Stop engaged; reconcile before another attempt.`,
       );
     }
     return fail(
       "link_failure",
-      "Backend actuation failed and was rolled back. No job started or Stop released.",
+      `Not activated: ${failure.message} The attempt was rolled back; no job started and no stop was released.`,
+      [
+        { label: "Backend step", status: "needs_attention", detail: kind === "live_link" ? "Jackboy connect" : "Jackboy configure" },
+        { label: "Reason code", status: "needs_attention", detail: failure.reason },
+      ],
     );
   }
   const handshakeAt = new Date(now()).toISOString();
