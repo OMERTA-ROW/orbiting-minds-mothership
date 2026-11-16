@@ -830,9 +830,21 @@ describe("Steps 9–10 activation panel", () => {
     expect(ids[0]).toBe(ids[1]);
   });
 
-  it("approving Step 9 also activates the live link by default, and can record the approval only", async () => {
+  it("approving Step 9 records the approval only by default, and activates only when ticked", async () => {
     mocks.list.mockResolvedValue(live(8));
-    mocks.decide.mockResolvedValue({
+    mocks.decide.mockResolvedValue({ ok: true, activation: null });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    const box = within(stepItem(9)).getByRole("checkbox", {
+      name: /Also activate the live link now/,
+    });
+    expect(box).not.toBeChecked();
+    fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
+    await waitFor(() => expect(mocks.decide).toHaveBeenCalledTimes(1));
+    expect(
+      (mocks.decide.mock.calls[0]![0] as { data: { activate: unknown } }).data.activate,
+    ).toBeNull();
+    mocks.decide.mockReset().mockResolvedValue({
       ok: true,
       activation: {
         kind: "live_link",
@@ -842,12 +854,9 @@ describe("Steps 9–10 activation panel", () => {
         blockers: [],
       },
     });
-    render(<ActivationApprovals />);
-    await screen.findByRole("heading", { name: /^9\. / });
-    const box = within(stepItem(9)).getByRole("checkbox", {
-      name: /Also activate the live link now/,
-    });
-    expect(box).toBeChecked();
+    fireEvent.click(
+      within(stepItem(9)).getByRole("checkbox", { name: /Also activate the live link now/ }),
+    );
     fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
     await waitFor(() => expect(mocks.decide).toHaveBeenCalledTimes(1));
     const arg = mocks.decide.mock.calls[0]![0] as {
@@ -857,15 +866,17 @@ describe("Steps 9–10 activation panel", () => {
     expect(arg.data.activate?.attemptId).toMatch(/^[0-9a-f-]{36}$/);
     expect(await screen.findByText(/Approved\. Live link activated/)).toBeInTheDocument();
     expect(mocks.activateLink).not.toHaveBeenCalled();
-    mocks.decide.mockReset().mockResolvedValue({ ok: true, activation: null });
-    fireEvent.click(
-      within(stepItem(9)).getByRole("checkbox", { name: /Also activate the live link now/ }),
-    );
-    fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
-    await waitFor(() => expect(mocks.decide).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not activate Step 10 autonomy authorization unless the owner ticks it", async () => {
+    mocks.list.mockResolvedValue(live(9));
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^10\. / });
     expect(
-      (mocks.decide.mock.calls[0]![0] as { data: { activate: unknown } }).data.activate,
-    ).toBeNull();
+      within(stepItem(10)).getByRole("checkbox", {
+        name: /Also activate autonomy authorization now/,
+      }),
+    ).not.toBeChecked();
   });
 
   it("reports a recorded approval whose activation failed, without claiming activation", async () => {
@@ -882,6 +893,9 @@ describe("Steps 9–10 activation panel", () => {
     });
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
+    fireEvent.click(
+      within(stepItem(9)).getByRole("checkbox", { name: /Also activate the live link now/ }),
+    );
     fireEvent.click(within(stepItem(9)).getByRole("button", { name: "Approve" }));
     expect(
       await screen.findByText(
