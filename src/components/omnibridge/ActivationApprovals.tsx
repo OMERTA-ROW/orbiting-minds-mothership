@@ -1273,7 +1273,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         })}
       </ol>
 
-      <UnifiedExecutionStatus />
+      <UnifiedExecutionStatus onChanged={() => void refresh().catch(() => {})} />
       {data.readinessEvidence && <ReadinessEvidence rows={data.readinessEvidence} now={now} />}
       <LiveLinkPanel
         liveLink={data.liveLink}
