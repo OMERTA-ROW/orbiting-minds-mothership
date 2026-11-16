@@ -972,6 +972,26 @@ describe("Steps 9–10 activation panel", () => {
     expect(mocks.activateLink).not.toHaveBeenCalled();
   });
 
+  it("reads safety automatically only while the live link is in effect", async () => {
+    mocks.safety.mockResolvedValue({
+      ok: true,
+      checked: true,
+      message: "verified",
+      safety: safetyView(null, Date.now()),
+    });
+    mocks.list.mockResolvedValue({ ...live(9), mfaAgeSeconds: null });
+    const { unmount } = render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mocks.safety).not.toHaveBeenCalled();
+    unmount();
+    mocks.list.mockResolvedValue({ ...live(9, { linkActive: true }), mfaAgeSeconds: null });
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    await waitFor(() => expect(mocks.safety).toHaveBeenCalledTimes(1));
+    expect(mocks.activateLink).not.toHaveBeenCalled();
+    expect(mocks.decide).not.toHaveBeenCalled();
+  });
   it("deactivates without a code and refreshes the safety state without changing anything else", async () => {
     mocks.list.mockResolvedValue({ ...live(9, { linkActive: true }), mfaAgeSeconds: null });
     mocks.deactivate.mockResolvedValue({
@@ -986,8 +1006,10 @@ describe("Steps 9–10 activation panel", () => {
     });
     render(<ActivationApprovals />);
     await screen.findByRole("heading", { name: /^9\. / });
-    fireEvent.click(within(panel()).getByRole("button", { name: "Refresh safety state" }));
+    // With the link in effect, the page keeps the signed safety reading current automatically.
     await waitFor(() => expect(mocks.safety).toHaveBeenCalledTimes(1));
+    fireEvent.click(within(panel()).getByRole("button", { name: "Refresh safety state" }));
+    await waitFor(() => expect(mocks.safety).toHaveBeenCalledTimes(2));
     expect(await within(panel()).findByText(/recorded as unknown/)).toBeInTheDocument();
     fireEvent.click(within(panel()).getByRole("button", { name: "Deactivate live link" }));
     await waitFor(() =>
