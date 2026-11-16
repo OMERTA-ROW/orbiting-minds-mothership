@@ -40,7 +40,7 @@ describe("combined activation sequencing", () => {
   it("runs Step 9, then Step 10, then arm, in order, once each", async () => {
     const d = deps();
     const r = await orchestrate(ALL, ATTEMPTS, d);
-    expect(d.activate.mock.calls).toEqual([
+    expect(vi.mocked(d.activate).mock.calls).toEqual([
       ["live_link", ATTEMPTS.live_link],
       ["autonomy", ATTEMPTS.autonomy],
     ]);
