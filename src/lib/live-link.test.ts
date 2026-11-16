@@ -145,7 +145,7 @@ describe("separate system states", () => {
       states({ linkEffective: false, autonomyEffective: false, safety: unknown }).nextAction,
     ).toContain("Activate live link");
     expect(states({ autonomyEffective: false, safety: unknown }).nextAction).toContain(
-      "permit service",
+      "not current yet",
     );
     const noAuth = safetyView(
       row("clear", { autonomous_allowed: false, blocked_by: "not_authorized" }),
