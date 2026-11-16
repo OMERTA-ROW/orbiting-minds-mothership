@@ -1,0 +1,1 @@
+COMMENT ON TABLE public.omni_noop_jobs IS 'Owner-queued no-op test jobs; no shell, CODE, project or provider access.';
