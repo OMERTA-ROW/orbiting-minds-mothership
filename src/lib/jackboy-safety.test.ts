@@ -48,6 +48,27 @@ describe("Jackboy safety view (fail closed)", () => {
     expect(v.state).toBe("stale");
     expect(v.clear).toBe(false);
   });
+  it("an expired reading keeps stops unknown and shows its last values only as labelled history", () => {
+    const v = safetyView(
+      row({
+        state: "unknown",
+        source: "stale",
+        observed_at: "2026-11-14T01:28:02Z",
+        expires_at: "2026-11-14T01:28:32Z",
+      }),
+      NOW,
+    );
+    expect(v.state).toBe("stale");
+    expect(v.codeStop).toBe("unknown");
+    expect(v.killSwitch).toBe("unknown");
+    expect(v.clear).toBe(false);
+    expect(v.detail).toContain("Last verified reading at 01:28:02 UTC (expired, history only)");
+    expect(v.detail).toContain("CODE Emergency Stop released, Kill Switch off");
+  });
+  it("an expired reading without recorded values adds no history", () => {
+    const v = safetyView(row({ source: "stale", state: "unknown", code_stop: null }), NOW);
+    expect(v.detail).not.toContain("Last verified reading");
+  });
   it("shows the CODE Emergency Stop as engaged", () => {
     const v = safetyView(row({ state: "engaged", code_stop: true, source: "event" }), NOW);
     expect(v.state).toBe("engaged");
