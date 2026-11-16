@@ -25,7 +25,8 @@ describe("shared Jackboy session (idempotent handshake ID)", () => {
     const c = fakeLinkConfig();
     for (let i = 0; i < 12; i++)
       await new JackboyLink(c, async () => {}, { fetch: fake.fetch }).safety();
-    expect(fake.sessions.size).toBe(1);
+    // One per 4-minute window (two only if the test happens to cross a window boundary).
+    expect(fake.sessions.size).toBeLessThanOrEqual(2);
   });
 
   it("without reuse, the twelve reads would hit Jackboy's eight-session limit", async () => {
