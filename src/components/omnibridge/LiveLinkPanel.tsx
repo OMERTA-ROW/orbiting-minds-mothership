@@ -18,6 +18,8 @@ export type ActivationView = {
   activatedAt: string | null;
   updatedAt: string;
   effective: boolean;
+  /** An earlier attempt must be reconciled before a new activation can start. */
+  reconcileRequired?: boolean;
 };
 
 export type PanelAction = "activate_link" | "activate_autonomy" | "check" | "safety" | "deactivate";
