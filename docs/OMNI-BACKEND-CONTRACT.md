@@ -234,6 +234,11 @@ ceilings. Per-process ceilings do not replace a staging service/container memory
 budget. The launcher drops host UID/GID to 65534 before bubblewrap; scratch remains
 private to that UID, not world-writable. Actual Linux enforcement on the exact
 staging image/kernel remains an independent verification prerequisite.
+Bubblewrap can add `PWD` after `--chdir`; the launcher uses `/usr/bin/env -i`
+inside the sandbox before the unchanged approved argv, without a shell. The
+self-test and Linux diagnostic still require an entirely empty child environment.
+The diagnostic tests host-loopback isolation against a listener on the host's
+`127.0.0.1`, not a listener inside the sandbox's own network namespace.
 Before each command and every 250 ms during a command, authenticated
 Jackboy permission is rechecked (1.5-second transport deadline; replies older than
 2 seconds are refused). Unknown safety aborts; cancellation waits for process
@@ -331,6 +336,16 @@ production keys into a test or the worker. Values are intentionally not recorded
    engaged. Do not call autonomy operational before this live drill succeeds.
 
 ### Evidence and deployment boundary
+
+The executor image includes an opt-in diagnostic at
+`node /app/isolation-diagnostic.mjs`. It exercises the real isolation primitives,
+including an empty child environment, resource breaches and cancellation of a
+ready descendant that creates a separate session. It does not need or enable
+autonomous execution and is not run at startup. Run it on the exact staging
+image and kernel only after separate owner approval; a local or CI result does
+not prove Railway isolation. Its resource limits are process limits, not
+aggregate job cgroup quotas. The diagnostic is separate from the shorter signed
+executor self-test and does not prove cross-service Stop.
 
 All implementation and disposable tests remain on isolated feature branches.
 No migration was applied to a hosted database by this work. Feature branches are
