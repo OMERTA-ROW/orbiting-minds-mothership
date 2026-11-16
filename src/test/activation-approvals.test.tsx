@@ -78,6 +78,7 @@ function snapshot(
     step7ExpiresAt?: string;
     linkActive?: boolean;
     autonomyActive?: boolean;
+    reconcileLink?: boolean;
     safety?: ReturnType<typeof safetyView>;
   } = {},
 ) {
@@ -115,7 +116,14 @@ function snapshot(
     effective: on,
   });
   const activations = [
-    activation("live_link", Boolean(overrides.linkActive)),
+    overrides.reconcileLink
+      ? {
+          ...activation("live_link", false),
+          status: "revoked" as const,
+          reason: "step8_changed",
+          reconcileRequired: true,
+        }
+      : activation("live_link", Boolean(overrides.linkActive)),
     activation("autonomy", Boolean(overrides.autonomyActive)),
   ];
   return {
@@ -139,6 +147,7 @@ function snapshot(
     system: systemStates({
       linkEffective: Boolean(overrides.linkActive),
       autonomyEffective: Boolean(overrides.autonomyActive),
+      reconcileRequired: Boolean(overrides.reconcileLink),
       liveLink,
       safety,
       mothershipStop: false,
@@ -972,6 +981,18 @@ describe("Steps 9–10 activation panel", () => {
     expect(mocks.activateLink).not.toHaveBeenCalled();
   });
 
+  it("an unresolved earlier link keeps Activate off and points to reconciliation", async () => {
+    mocks.list.mockResolvedValue(live(9, { reconcileLink: true }));
+    render(<ActivationApprovals />);
+    await screen.findByRole("heading", { name: /^9\. / });
+    const p = panel();
+    expect(within(p).getByRole("button", { name: "Activate live link" })).toBeDisabled();
+    expect(within(p).getByText(/database refuses a new attempt/)).toBeInTheDocument();
+    expect(within(p).getByLabelText("Next owner action")).toHaveTextContent(
+      "Reconcile pending activation",
+    );
+    expect(mocks.activateLink).not.toHaveBeenCalled();
+  });
   it("reads safety automatically only while the live link is in effect", async () => {
     mocks.safety.mockResolvedValue({
       ok: true,
