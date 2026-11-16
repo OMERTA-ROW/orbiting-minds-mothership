@@ -72,3 +72,11 @@ describe("upstreamNotInEffect", () => {
     expect(revoked).toContain("Reconcile pending activation");
   });
 });
+
+describe("production schema compatibility", () => {
+  it("matches the exact guard text installed by migration 0057", async () => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync("drizzle/migrations/0057_bounded_executor_integration.sql", "utf8");
+    expect(sql).toContain(`RAISE EXCEPTION '${RECONCILE_GUARD_TEXT}'`);
+  });
+});
