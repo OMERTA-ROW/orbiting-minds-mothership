@@ -126,6 +126,39 @@ describe("Step 9/10 activation", () => {
       { rollbackVerified: true },
     );
   });
+  it("autonomy: refused and rolled back when Jackboy's authorization allows only CODE jobs", async () => {
+    const auth = (capabilities: string[]) => ({
+      id: "c0ffee00-0000-4000-8000-000000000001",
+      expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+      capabilities,
+    });
+    const d = deps({ safety: vi.fn(async () => snap({ authorization: auth(["code"]) })) });
+    expect(await runActivation("autonomy", ATTEMPT, d)).toMatchObject({
+      ok: false,
+      reason: "jackboy_authorization",
+    });
+    expect(d.rollback).toHaveBeenCalledWith("autonomy");
+    expect(d.finish).toHaveBeenCalledWith(
+      "autonomy",
+      ATTEMPT,
+      false,
+      "jackboy_autonomous_not_authorized",
+      { rollbackVerified: true },
+    );
+    const ok = deps({
+      safety: vi.fn(async () => snap({ authorization: auth(["autonomous", "code"]) })),
+    });
+    expect(await runActivation("autonomy", ATTEMPT, ok)).toMatchObject({ ok: true });
+    expect(ok.finish).toHaveBeenCalledWith(
+      "autonomy",
+      ATTEMPT,
+      true,
+      "verified",
+      expect.objectContaining({
+        safety: expect.objectContaining({ authorizationCapabilities: ["autonomous", "code"] }),
+      }),
+    );
+  });
   it("autonomy: activates as authorization only while the CODE Emergency Stop is engaged, listing what blocks execution", async () => {
     const d = deps();
     const r = await runActivation("autonomy", ATTEMPT, d);
