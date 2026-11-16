@@ -110,4 +110,102 @@ describe("Activate OMNI and Jackboy together", () => {
       mocks.together.mock.calls[0]![0].data.attempts,
     );
   });
+
+  const noSignedAnswer =
+    "The staging executor (Vultr) did not give a signed answer. Check that omni-executor.service is running.";
+  const armFailure = {
+    ok: false,
+    mfa: false,
+    partial: true,
+    ownerAction: noSignedAnswer,
+    summary: "Partly done. In effect: Step 9 live link.",
+    stages: [
+      { id: "live_link", status: "already", message: "Already in effect; not re-run." },
+      { id: "autonomy", status: "already", message: "Already in effect; not re-run." },
+      { id: "arm", status: "skipped", message: `Not attempted: ${noSignedAnswer}` },
+    ],
+  };
+
+  async function runOnce() {
+    fireEvent.click(screen.getByLabelText(/Arm bounded executor/));
+    fireEvent.click(screen.getByRole("button", { name: "Activate selected together" }));
+  }
+
+  it("labels the last result with its attempt time and shows a missing signed answer once", async () => {
+    mocks.together.mockResolvedValue(armFailure);
+    render(<ActivationOrchestrator mfaFresh step9Approved step10Approved busy={false} />);
+    await screen.findByText(/^Not operational/);
+    await runOnce();
+    const box = await screen.findByRole("alert", { name: "Previous activation attempt" });
+    expect(box.textContent).toMatch(/Previous attempt — Last attempt at \d{1,2}:\d{2}/);
+    expect(box.textContent!.split("did not give a signed answer").length - 1).toBe(1);
+    expect(box.textContent).toMatch(/Not attempted — see “Your action” below/);
+  });
+
+  it("replaces the old result with In progress as soon as a new attempt starts", async () => {
+    mocks.together.mockResolvedValueOnce(armFailure);
+    let finish!: (v: unknown) => void;
+    mocks.together.mockReturnValueOnce(new Promise((r) => (finish = r)));
+    render(<ActivationOrchestrator mfaFresh step9Approved step10Approved busy={false} />);
+    await screen.findByText(/^Not operational/);
+    await runOnce();
+    await screen.findByRole("alert", { name: "Previous activation attempt" });
+    await runOnce();
+    expect(await screen.findByRole("status", { name: "Activation in progress" })).toBeTruthy();
+    expect(screen.queryByText(/did not give a signed answer/)).toBeNull();
+    expect(screen.queryByRole("alert", { name: "Previous activation attempt" })).toBeNull();
+    finish({ ...armFailure, ok: true, ownerAction: null, summary: "In effect.", stages: [] });
+    expect(await screen.findByText("In effect.")).toBeTruthy();
+  });
+
+  it("marks the previous result out of date after a later successful Verify executor", async () => {
+    mocks.together.mockResolvedValue(armFailure);
+    const { rerender } = render(
+      <ActivationOrchestrator mfaFresh step9Approved step10Approved busy={false} />,
+    );
+    await screen.findByText(/^Not operational/);
+    await runOnce();
+    await screen.findByRole("alert", { name: "Previous activation attempt" });
+    expect(screen.queryByText(/out of date/)).toBeNull();
+    rerender(
+      <ActivationOrchestrator
+        mfaFresh
+        step9Approved
+        step10Approved
+        busy={false}
+        executorVerifiedAt={Date.now() + 1000}
+      />,
+    );
+    const box = screen.getByRole("status", { name: "Previous activation attempt" });
+    expect(box.textContent).toMatch(/\(out of date\)/);
+    expect(box.textContent).toMatch(/Verify executor succeeded at/);
+    expect(box.className).not.toMatch(/text-destructive/);
+  });
+
+  it("marks the previous result out of date when a refreshed check shows the step in effect", async () => {
+    mocks.together.mockResolvedValue(armFailure);
+    render(<ActivationOrchestrator mfaFresh step9Approved step10Approved busy={false} />);
+    await screen.findByText(/^Not operational/);
+    await runOnce();
+    await screen.findByRole("alert", { name: "Previous activation attempt" });
+    mocks.readiness.mockResolvedValue({
+      ...facts,
+      autonomyEffective: true,
+      jackboy: { ...facts.jackboy, configured: true, armed: true },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Check readiness" }));
+    expect(await screen.findByText(/now in effect/)).toBeTruthy();
+    expect(screen.getByRole("status", { name: "Previous activation attempt" })).toBeTruthy();
+  });
+
+  it("keeps the result current when a refreshed check still shows the step not in effect", async () => {
+    mocks.together.mockResolvedValue(armFailure);
+    render(<ActivationOrchestrator mfaFresh step9Approved step10Approved busy={false} />);
+    await screen.findByText(/^Not operational/);
+    await runOnce();
+    await screen.findByRole("alert", { name: "Previous activation attempt" });
+    fireEvent.click(screen.getByRole("button", { name: "Check readiness" }));
+    await waitFor(() => expect(mocks.readiness.mock.calls.length).toBeGreaterThanOrEqual(3));
+    expect(screen.queryByText(/out of date/)).toBeNull();
+  });
 });
