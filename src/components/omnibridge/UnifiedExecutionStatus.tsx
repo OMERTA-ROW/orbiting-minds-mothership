@@ -28,7 +28,14 @@ export function armBlockers(status: Status | null): string[] {
   return out;
 }
 
-export function UnifiedExecutionStatus({ onChanged }: { onChanged?: () => void } = {}) {
+export function UnifiedExecutionStatus({
+  onChanged,
+  onExecutorVerified,
+}: {
+  onChanged?: () => void;
+  /** Display only: lets the combined panel mark an older result out of date. */
+  onExecutorVerified?: (at: number) => void;
+} = {}) {
   const read = useServerFn(getUnifiedExecutionState);
   const control = useServerFn(controlUnifiedExecution);
   const runPlan = useServerFn(runAuthorizedPlan);
@@ -80,6 +87,7 @@ export function UnifiedExecutionStatus({ onChanged }: { onChanged?: () => void }
     setOutcome("");
     try {
       const result = await control({ data: { operation, confirm: true } });
+      if (operation === "verify" && result && "executorRelease" in result) onExecutorVerified?.(Date.now());
       if (operation === "verify" && result && "executorRelease" in result)
         setOutcome(
           `Jackboy verified the executor (release ${result.executorRelease}) at ${new Date(result.checkedAt).toLocaleTimeString()}. Jackboy needs a fresh verification within 15 minutes before configuring or authorizing. Nothing was armed or started.`,

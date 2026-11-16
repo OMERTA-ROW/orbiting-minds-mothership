@@ -8,10 +8,17 @@ import {
   type StageResult,
 } from "@/lib/activation-orchestration";
 import { FlowTimeoutError, withTimeout } from "@/lib/activation-flow";
+import {
+  attemptTime,
+  outcomeStaleReason,
+  stageLine,
+  type InEffect,
+  type ShownOutcome,
+} from "@/lib/activation-outcome";
 import { Button } from "@/components/ui/button";
 
 type Facts = Awaited<ReturnType<typeof getActivationReadiness>>;
-type Outcome = { summary: string; stages: StageResult[]; ownerAction: string | null; ok: boolean };
+type Outcome = ShownOutcome | { inProgress: true; attemptedAt: number };
 
 const STATUS_TEXT: Record<CheckStatus, string> = {
   ok: "Done",
@@ -38,10 +45,13 @@ export function ActivationOrchestrator(props: {
   busy: boolean;
   onChanged?: () => void;
   timeoutMs?: number;
+  /** Client time of the latest successful "Verify executor" (display only). */
+  executorVerifiedAt?: number | null;
 }) {
   const read = useServerFn(getActivationReadiness);
   const run = useServerFn(activateTogether);
   const [facts, setFacts] = useState<Facts | null>(null);
+  const [factsReadAt, setFactsReadAt] = useState(0);
   const [readError, setReadError] = useState("");
   const [checking, setChecking] = useState(false);
   const [running, setRunning] = useState(false);
@@ -55,6 +65,7 @@ export function ActivationOrchestrator(props: {
     setReadError("");
     try {
       setFacts(await withTimeout(read(), 30_000));
+      setFactsReadAt(Date.now());
     } catch {
       setFacts(null);
       setReadError("Readiness could not be read; everything counts as not ready.");
@@ -86,6 +97,22 @@ export function ActivationOrchestrator(props: {
       })
     : null;
 
+  const inEffect: InEffect | null = facts
+    ? {
+        live_link: facts.linkEffective && !!facts.jackboy?.connected,
+        autonomy: facts.autonomyEffective && !!facts.jackboy?.configured,
+        arm: !!facts.jackboy?.armed,
+        readAt: factsReadAt,
+      }
+    : null;
+  const stale =
+    outcome && !("inProgress" in outcome)
+      ? outcomeStaleReason(outcome, {
+          executorVerifiedAt: props.executorVerifiedAt ?? null,
+          inEffect,
+        })
+      : null;
+
   const anySelected = sel.liveLink || sel.autonomy || sel.arm;
   const disabled = props.busy || running || !props.mfaFresh || !anySelected;
 
@@ -101,8 +128,10 @@ export function ActivationOrchestrator(props: {
       )
     )
       return;
+    const attemptedAt = Date.now();
     setRunning(true);
-    setOutcome(null);
+    // Replace any earlier result at once, so an old failure never reads as this attempt.
+    setOutcome({ inProgress: true, attemptedAt });
     attempts.current ??= { live_link: crypto.randomUUID(), autonomy: crypto.randomUUID() };
     try {
       const result = await withTimeout(
@@ -115,6 +144,7 @@ export function ActivationOrchestrator(props: {
         stages: result.stages,
         ownerAction: result.ownerAction,
         ok: result.ok,
+        attemptedAt,
       });
       setSel({ liveLink: false, autonomy: false, arm: false });
     } catch (error) {
@@ -122,6 +152,7 @@ export function ActivationOrchestrator(props: {
         ok: false,
         stages: [],
         ownerAction: null,
+        attemptedAt,
         summary:
           error instanceof FlowTimeoutError
             ? `${error.message} The result is unknown, not active. Refresh; retrying continues the same attempts.`
@@ -229,24 +260,44 @@ export function ActivationOrchestrator(props: {
           Re-verify with your authenticator at the top of this page first.
         </p>
       )}
-      {outcome && (
+      {outcome && "inProgress" in outcome && (
+        <p role="status" className="text-sm" aria-label="Activation in progress">
+          <strong>In progress</strong> — started at {attemptTime(outcome.attemptedAt)}. The previous
+          result was cleared; this attempt's result appears here when it finishes.
+        </p>
+      )}
+      {outcome && !("inProgress" in outcome) && (
         <div
-          role={outcome.ok ? "status" : "alert"}
-          className={`space-y-1 text-sm ${outcome.ok ? "" : "text-destructive"}`}
+          role={outcome.ok || stale ? "status" : "alert"}
+          aria-label="Previous activation attempt"
+          className={`space-y-1 rounded-md border p-3 text-sm ${
+            stale ? "text-muted-foreground" : outcome.ok ? "" : "text-destructive"
+          }`}
         >
+          <p className="font-medium">
+            Previous attempt — Last attempt at {attemptTime(outcome.attemptedAt)}
+            {stale ? " (out of date)" : ""}
+          </p>
+          {stale && (
+            <p>
+              <strong>Out of date:</strong> {stale} The checklist above shows the current state.
+            </p>
+          )}
           <p>{outcome.summary}</p>
           {outcome.stages.length > 0 && (
             <ol className="list-decimal pl-5 text-muted-foreground">
               {outcome.stages.map((s) => (
                 <li key={s.id}>
-                  <strong>{STAGE_LABEL[s.id]}:</strong> {STAGE_TEXT[s.status]} — {s.message}
+                  <strong>{STAGE_LABEL[s.id]}:</strong> {STAGE_TEXT[s.status]} —{" "}
+                  {stageLine(s, outcome.ownerAction)}
                 </li>
               ))}
             </ol>
           )}
           {outcome.ownerAction && (
             <p>
-              <strong>Your action:</strong> {outcome.ownerAction}
+              <strong>Your action{stale ? " (at that time)" : ""}:</strong> {outcome.ownerAction}{" "}
+              (from the attempt at {attemptTime(outcome.attemptedAt)})
             </p>
           )}
         </div>
