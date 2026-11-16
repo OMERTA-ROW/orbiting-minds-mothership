@@ -52,7 +52,7 @@ export const getActivationReadiness = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await owner(context);
     const { readExecutionState } = await import("./unified-activation.server");
-    const { inspectRailwayExecutor } = await import("./unified-activation.functions");
+    const { inspectRailwayExecutor } = await import("./unified-activation-control.server");
     const { assertEmergencyStopReleased } = await import("./omni-terminal.server");
     const [build, executor, state, link, auto, step7, stop, safety, sandbox] = await Promise.all([
       jackboyBuild(),
@@ -160,9 +160,9 @@ export const activateTogether = createServerFn({ method: "POST" })
         partial: false,
         ownerAction: null,
       };
-    const { activationHandler } = await import("./activation-approvals.functions");
+    const { activationHandler } = await import("./activation-handler.server");
     const { executionControl, inspectRailwayExecutor } = await import(
-      "./unified-activation.functions"
+      "./unified-activation-control.server"
     );
     const { readExecutionState } = await import("./unified-activation.server");
     const result = await orchestrate(
