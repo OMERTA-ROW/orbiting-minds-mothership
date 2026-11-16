@@ -35,7 +35,10 @@ vi.mock("@tanstack/react-start", () => ({
 vi.mock("@tanstack/react-start/server", () => ({ setResponseHeader: vi.fn() }));
 vi.mock("@/integrations/supabase/auth-middleware", () => ({ requireSupabaseAuth: {} }));
 vi.mock("./razul-owner.server", () => ({ requireRazulOwner: mocks.owner }));
-vi.mock("./unified-activation.server", () => ({ readExecutionState: mocks.state }));
+vi.mock("./unified-activation.server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./unified-activation.server")>()),
+  readExecutionState: mocks.state,
+}));
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { rpc: mocks.rpc } }));
 vi.mock("./omni-executor-client", () => ({ signedExecutorRequest: mocks.signed }));
 vi.mock("./jackboy-safety.server", () => ({
