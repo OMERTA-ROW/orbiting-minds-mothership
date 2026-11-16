@@ -66,7 +66,7 @@ export function UnifiedExecutionStatus({ onChanged }: { onChanged?: () => void }
     if (
       !window.confirm(
         operation === "verify"
-          ? "Run the isolated executor verification and cancellation drill? No autonomous job will start."
+          ? "Run the isolated executor verification and cancellation drill? No autonomous job will start. Jackboy disarms on every verification, so arm again afterwards if you want bounded plans."
           : operation === "arm"
             ? "Authorize bounded autonomous plans? Emergency Stop is not released and no job starts."
             : operation === "reconcile"

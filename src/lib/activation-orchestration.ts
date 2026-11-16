@@ -323,7 +323,7 @@ export function readinessChecklist(r: ReadinessInput): {
     detail:
       r.codeEnabled === null
         ? "Jackboy's CODE setting is unknown."
-        : `Jackboy CODE ${r.codeEnabled ? "on" : "off"}; OMNI authorization ${r.codeAllowed ? "includes" : "does not include"} CODE jobs. OMNI autonomy never routes to CODE by itself: each CODE job needs its own Jackboy permit and spend checks.`,
+        : `Jackboy CODE ${r.codeEnabled ? "on" : "off"}${r.codeAllowed === null ? "" : `; OMNI authorization ${r.codeAllowed ? "includes" : "does not include"} CODE jobs`}. OMNI autonomy never routes to CODE by itself: each CODE job needs its own Jackboy permit and spend checks.`,
     required: false,
   });
 
