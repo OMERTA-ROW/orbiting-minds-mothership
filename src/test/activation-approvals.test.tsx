@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   unifiedState: vi.fn(async () => ({ state: null, label: "Blocked" })),
   unifiedControl: vi.fn(),
   unifiedPlan: vi.fn(),
+  readiness: vi.fn(async () => null),
+  together: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-start", () => ({
@@ -52,6 +54,11 @@ vi.mock("@/lib/unified-activation.functions", () => ({
   getUnifiedExecutionState: "unifiedState",
   controlUnifiedExecution: "unifiedControl",
   runAuthorizedPlan: "unifiedPlan",
+}));
+
+vi.mock("@/lib/activation-orchestrate.functions", () => ({
+  getActivationReadiness: "readiness",
+  activateTogether: "together",
 }));
 
 vi.mock("@/components/omnibridge/ApprovalBuildBanner", () => ({

@@ -442,6 +442,8 @@ describe("Step 9/10 approval triggers the real activation", () => {
     expect(inv.rpc).toHaveBeenCalledTimes(1);
   });
   it("completes Step 9 only after the backend connect operation and signed safety record", async () => {
+    // Jackboy's configured link approval ends after Step 7 here, so Step 7's end is requested.
+    vi.stubEnv("OMNI_LINK_APPROVAL_EXPIRES_AT", new Date(Date.now() + 23 * 3600_000).toISOString());
     const { inv, rows } = step9(8, true);
     inv.rpc.mockImplementation(async (fn = "") => {
       if (fn === "activation_approval_decide") rows.data = allApproved(9);
