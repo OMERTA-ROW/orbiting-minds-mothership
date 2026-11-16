@@ -8,13 +8,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export function UnifiedExecutionStatus() {
+type Status = Awaited<ReturnType<typeof getUnifiedExecutionState>>;
+
+/** Unmet prerequisites for "Authorize autonomous capability" (Jackboy re-checks all of them). */
+export function armBlockers(status: Status | null): string[] {
+  const state = status?.state;
+  if (!state) return ["Fresh signed backend state is unavailable."];
+  const out: string[] = [];
+  if (!state.connected) out.push("Step 9 live link is not active at Jackboy — activate it first.");
+  if (!state.configured)
+    out.push("Step 10 \"Activate autonomy authorization\" has not configured Jackboy yet.");
+  if (!state.executorRelease)
+    out.push("No verified executor release — click Verify executor (valid 15 minutes).");
+  if ("release" in status && status.release && !status.release.mothershipPinned)
+    out.push(`Mothership's reviewed-release setting is not ${status.release.expected}.`);
+  if (state.emergencyStop !== false) out.push("Jackboy CODE Emergency Stop is engaged or unknown.");
+  if (state.killSwitch !== false) out.push("Jackboy System Kill Switch is on or unknown.");
+  if (state.armed) out.push("Already authorized (armed).");
+  return out;
+}
+
+export function UnifiedExecutionStatus({ onChanged }: { onChanged?: () => void } = {}) {
   const read = useServerFn(getUnifiedExecutionState);
   const control = useServerFn(controlUnifiedExecution);
   const runPlan = useServerFn(runAuthorizedPlan);
-  const [status, setStatus] = useState<Awaited<ReturnType<typeof getUnifiedExecutionState>> | null>(
-    null,
-  );
+  const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [planText, setPlanText] = useState("");
@@ -70,14 +88,19 @@ export function UnifiedExecutionStatus() {
         for (const key of Object.keys(sessionStorage))
           if (key.startsWith("activation-operation:")) sessionStorage.removeItem(key);
       }
+      if (operation === "reconcile")
+        setOutcome("Reconciled: the earlier activation was rolled back and closed. Nothing was granted.");
       setStatus(await read());
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Execution control failed");
       setStatus(null);
     } finally {
       setBusy(false);
+      // The approvals panel reads the same records; refresh it so Step 9/10 controls update at once.
+      onChanged?.();
     }
   }
+  const blockers = armBlockers(status);
   async function submitPlan() {
     if (
       !window.confirm(
@@ -154,13 +177,9 @@ export function UnifiedExecutionStatus() {
           Verify executor
         </Button>
         <Button
-          disabled={
-            busy ||
-            !status?.state?.configured ||
-            status.state.emergencyStop ||
-            status.state.killSwitch
-          }
+          disabled={busy || blockers.length > 0}
           variant="outline"
+          aria-describedby="arm-blockers"
           onClick={() => void act("arm")}
         >
           Authorize autonomous capability
@@ -172,6 +191,16 @@ export function UnifiedExecutionStatus() {
           Reconcile pending activation
         </Button>
       </div>
+      {blockers.length > 0 && (
+        <div id="arm-blockers" className="text-xs text-muted-foreground">
+          <p className="font-medium">Authorize autonomous capability needs:</p>
+          <ul className="list-disc pl-4">
+            {blockers.map((b) => (
+              <li key={b}>{b}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <label htmlFor="bounded-omni-plan" className="block text-sm">
         Explicit bounded plan (JSON command array; no shell, network or provider calls)
       </label>

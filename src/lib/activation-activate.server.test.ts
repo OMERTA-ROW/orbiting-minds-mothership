@@ -69,6 +69,26 @@ describe("Step 9/10 activation", () => {
     });
     expect(d.safety).not.toHaveBeenCalled();
   });
+  it("reports Jackboy's signed connect refusal and records it as the rollback reason", async () => {
+    const d = deps({
+      actuate: vi
+        .fn()
+        .mockRejectedValue(
+          new JackboyLinkError("x", "http", { status: 403, code: "approval_expired" }),
+        ),
+    });
+    const r = await runActivation("live_link", ATTEMPT, d);
+    expect(r).toMatchObject({ ok: false, reason: "link_failure" });
+    if (!r.ok) expect(r.message).toMatch(/outlast Jackboy's own link approval/);
+    expect(d.finish).toHaveBeenCalledWith(
+      "live_link",
+      ATTEMPT,
+      false,
+      "backend_actuation_jackboy_http_403_approval_expired",
+      { rollbackVerified: true },
+    );
+    expect(d.safety).not.toHaveBeenCalled();
+  });
   it("rolls back on a handshake timeout (stale network)", async () => {
     const d = deps({
       connect: vi.fn().mockRejectedValue(new JackboyLinkError("t", "timeout", { limitMs: 5000 })),

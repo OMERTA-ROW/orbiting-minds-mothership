@@ -12,6 +12,7 @@ import {
 import type { ReadinessItem } from "./activation-self-test";
 import { probeFailure } from "./activation-probe";
 import type { SafetyView } from "./jackboy-safety";
+import { earlierOf } from "./activation-actuation";
 
 /** Readiness keys (from Step 8's readiness list) that also gate a connection-only handshake. */
 export const LIVE_LINK_READINESS_KEYS = ["stop", "owner", "link", "window", "identity"] as const;
@@ -36,6 +37,8 @@ export interface LiveLinkInput {
   now: number;
   lastConnectedAt: string | null;
   lastAttemptAt: string | null;
+  /** Jackboy's link approval end as configured in Mothership (OMNI_LINK_APPROVAL_EXPIRES_AT). */
+  jackboyApprovalEndsAt?: string | null;
 }
 
 export interface LiveLinkStatus {
@@ -48,6 +51,10 @@ export interface LiveLinkStatus {
   step8ApprovedAt: string | null;
   lastConnectedAt: string | null;
   lastAttemptFailed: boolean;
+  /** Jackboy's configured link approval end (null when unknown). */
+  jackboyApprovalEndsAt: string | null;
+  /** When a new connection would end: the earlier of Step 7's window and Jackboy's approval. */
+  connectionEndsAt: string | null;
 }
 
 export function liveLinkStatus(input: LiveLinkInput): LiveLinkStatus {
@@ -98,6 +105,8 @@ export function liveLinkStatus(input: LiveLinkInput): LiveLinkStatus {
     step8ApprovedAt: row(8)?.status === "approved" ? (row(8)?.decided_at ?? null) : null,
     lastConnectedAt: input.lastConnectedAt,
     lastAttemptFailed,
+    jackboyApprovalEndsAt: input.jackboyApprovalEndsAt ?? null,
+    connectionEndsAt: earlierOf(row(7)?.approval_expires_at, input.jackboyApprovalEndsAt),
   };
 }
 
