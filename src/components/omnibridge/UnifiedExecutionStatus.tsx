@@ -114,7 +114,8 @@ export function UnifiedExecutionStatus() {
   }
   return (
     <section
-      className="space-y-2 rounded-lg border bg-card p-4"
+      id="backend-execution"
+      className="scroll-mt-24 space-y-2 rounded-lg border bg-card p-4"
       aria-label="Backend execution state"
     >
       <h2 className="text-lg">Backend: {status?.label ?? "Blocked"}</h2>

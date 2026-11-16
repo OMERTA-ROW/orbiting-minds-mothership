@@ -116,9 +116,18 @@ export function LiveLinkPanel(props: {
   const autonomy = props.activations.find((a) => a.kind === "autonomy");
   const linkOn = Boolean(link?.effective);
   const autoOn = Boolean(autonomy?.effective);
+  // The database refuses a new attempt while an earlier one is unresolved (any kind: a link revoke
+  // cascades to autonomy), so Activate stays off until "Reconcile pending activation" succeeds.
+  const reconcileFirst = props.activations.some((a) => a.reconcileRequired);
   const canActivateLink =
-    liveLink.canCheck && !linkOn && props.mfaFresh && props.linkConfirmed && !props.busy;
+    liveLink.canCheck &&
+    !linkOn &&
+    !reconcileFirst &&
+    props.mfaFresh &&
+    props.linkConfirmed &&
+    !props.busy;
   const canActivateAuto =
+    !reconcileFirst &&
     linkOn &&
     props.step10Approved &&
     !autoOn &&
@@ -201,6 +210,16 @@ export function LiveLinkPanel(props: {
           <p className="text-sm">
             Activation: <strong>{activationLine(link)}</strong>
           </p>
+          {reconcileFirst && (
+            <p className="text-xs text-destructive" role="note">
+              An earlier activation is unresolved (revoked or failed without a confirmed rollback on
+              Jackboy&apos;s side), so the database refuses a new attempt. Use{" "}
+              <a href="#backend-execution" className="underline">
+                Reconcile pending activation
+              </a>{" "}
+              with a fresh two-step code first. It only revokes and rolls back; nothing is granted.
+            </p>
+          )}
           <ul className="space-y-1 text-xs text-muted-foreground">
             <li>Gates: {STATE_TEXT[liveLink.state]}</li>
             <li>Last verified handshake: {when(liveLink.lastConnectedAt)}</li>
