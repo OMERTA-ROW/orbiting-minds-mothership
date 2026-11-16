@@ -120,7 +120,7 @@ const STAGE_TEXT: Record<string, string> = {
   nonce: "replay protection",
   approval: "link approval",
   readiness: "CODE readiness",
-  executor: "Railway executor",
+  executor: "staging executor (Vultr)",
   verification: "executor verification",
   authority: "execution authority (database)",
   cancellation: "cancellation",
@@ -134,7 +134,7 @@ const ISSUE_TEXT: Record<ActuationIssue, string> = {
     "Jackboy answered, but its signed state did not show this connection (or showed it armed), so it was not trusted.",
   identity_changed: "Jackboy's connection belongs to a different activation attempt.",
   executor_unverified:
-    "Jackboy did not record a passing executor verification, so Step 10 was not configured. Check the Railway executor (its self-test must pass).",
+    "Jackboy did not record a passing executor verification, so Step 10 was not configured. Check the staging executor (Vultr) (its self-test must pass).",
   release_mismatch:
     "The executor release Jackboy verified is not the reviewed release Mothership accepts, so Step 10 was not configured.",
 };
