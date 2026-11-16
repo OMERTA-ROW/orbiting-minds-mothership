@@ -59,8 +59,13 @@ export function UnifiedExecutionStatus() {
       return;
     setBusy(true);
     setError("");
+    setOutcome("");
     try {
-      await control({ data: { operation, confirm: true } });
+      const result = await control({ data: { operation, confirm: true } });
+      if (operation === "verify" && result && "executorRelease" in result)
+        setOutcome(
+          `Jackboy verified the executor (release ${result.executorRelease}) at ${new Date(result.checkedAt).toLocaleTimeString()}. Jackboy needs a fresh verification within 15 minutes before configuring or authorizing. Nothing was armed or started.`,
+        );
       if (operation === "reconcile") {
         for (const key of Object.keys(sessionStorage))
           if (key.startsWith("activation-operation:")) sessionStorage.removeItem(key);
@@ -116,8 +121,27 @@ export function UnifiedExecutionStatus() {
       <p className="text-sm">
         Signed connection: {status?.state?.connected ? "active" : "unverified"} · Configuration:{" "}
         {status?.state?.configured ? "configured" : "not configured"} · Jackboy Stop:{" "}
-        {status?.state?.emergencyStop === false ? "released" : "engaged or unknown"}.
+        {status?.state?.emergencyStop === false ? "released" : "engaged or unknown"} · Jackboy Kill
+        Switch: {status?.state?.killSwitch === false ? "off" : "on or unknown"}.
       </p>
+      {status && !status.state && "reason" in status && status.reason && (
+        <p className="text-sm text-muted-foreground">Why blocked: {status.reason}.</p>
+      )}
+      {status?.release && (
+        <p className="text-sm text-muted-foreground">
+          Executor release reported by Jackboy: {status.release.jackboyRelease ?? "none"}
+          {status.release.jackboyRelease
+            ? status.release.jackboyMatches
+              ? " (the accepted release)"
+              : ` (not the accepted ${status.release.expected})`
+            : ""}{" "}
+          · Mothership reviewed-release setting:{" "}
+          {status.release.mothershipPinned
+            ? `set to ${status.release.expected}`
+            : `not set to ${status.release.expected}, so Authorize autonomous capability is refused`}
+          . Jackboy does not report when it last verified the executor.
+        </p>
+      )}
       <p className="text-sm text-muted-foreground">
         No approval starts jobs. Manual sandbox sessions retain their separate policy.{" "}
         {status?.state?.cancellationPending
