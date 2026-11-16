@@ -1539,7 +1539,9 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
       return result.data;
     },
     actuate: async (k, attempt) => {
-      const { readExecutionState } = await import("./unified-activation.server");
+      const { readExecutionState, REVIEWED_EXECUTOR_RELEASE } = await import(
+        "./unified-activation.server"
+      );
       const { ActuationError, connectionExpiresAt } = await import("./activation-actuation");
       const window = await context.supabase
         .from("activation_approvals")
@@ -1548,6 +1550,18 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
         .single();
       if (window.error || !window.data.approval_expires_at)
         throw new ActuationError("window_unavailable", "Current approval window is unavailable");
+      // Step 10: Jackboy configures only after a fresh (<15 min) verification of the same executor
+      // release recorded since the latest Step 9 connect, so verify immediately before configuring.
+      // Verification runs the executor's harmless self-test and never arms or starts work.
+      let verifiedRelease: string | null = null;
+      if (k === "autonomy") {
+        const verified = await readExecutionState("verify");
+        if (!verified.connected || verified.armed || !verified.executorRelease)
+          throw new ActuationError("executor_unverified", "Executor verification was not recorded");
+        if (verified.executorRelease !== REVIEWED_EXECUTOR_RELEASE)
+          throw new ActuationError("release_mismatch", "Verified executor release is not reviewed");
+        verifiedRelease = verified.executorRelease;
+      }
       // Jackboy refuses a connection that outlasts its own link approval, so ask for the earlier end.
       const state = await readExecutionState(
         k === "live_link" ? "connect" : "configure",
@@ -1562,6 +1576,8 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
             }
           : {},
       );
+      if (k === "autonomy" && state.executorRelease !== verifiedRelease)
+        throw new ActuationError("release_mismatch", "Configured executor release changed");
       if (
         !state.connected ||
         (k === "live_link" && state.operationId !== attempt) ||
@@ -1635,7 +1651,8 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
   });
 }
 
-function activationHandler(kind: "live_link" | "autonomy") {
+/** Exported for the combined activation (`activation-orchestrate.functions.ts`); same gates. */
+export function activationHandler(kind: "live_link" | "autonomy") {
   return async ({ context, data }: { context: Ctx; data: z.infer<typeof activationInput> }) => {
     setResponseHeader("Cache-Control", "private, no-store");
     await ownerContext(context);
