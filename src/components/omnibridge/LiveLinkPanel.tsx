@@ -228,6 +228,14 @@ export function LiveLinkPanel(props: {
             )}
             <li>Step 8 signed self-test approved: {when(liveLink.step8ApprovedAt)}</li>
             <li>Step 7 window ends: {when(liveLink.step7EndsAt)}</li>
+            <li>
+              Jackboy link approval ends (Mothership&apos;s copy):{" "}
+              {when(liveLink.jackboyApprovalEndsAt)}
+            </li>
+            <li>
+              A new connection would end at: {when(liveLink.connectionEndsAt)} (the earlier of the
+              two; Jackboy refuses anything longer)
+            </li>
           </ul>
           <ul className="space-y-1 text-xs" aria-label="Mothership link gates">
             {liveLink.items.map((item) => (

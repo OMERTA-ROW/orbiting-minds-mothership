@@ -1,5 +1,6 @@
 import type { JackboySafetySnapshot } from "./jackboy-link.server";
 import { classifyLiveLinkError } from "./live-link";
+import { describeActuationFailure } from "./activation-actuation";
 import type { ActivationCheckDetail } from "./activation-approvals";
 
 export type ActivationKind = "live_link" | "autonomy";

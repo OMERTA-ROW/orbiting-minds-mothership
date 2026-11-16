@@ -716,12 +716,16 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
     const checkRows = checks.error ? [] : (checks.data ?? []);
     const deployment = currentDeployment();
     const nowSeconds = Math.floor(Date.now() / 1000);
+    const jackboyApprovalMs = Date.parse(process.env["OMNI_LINK_APPROVAL_EXPIRES_AT"] || "");
     const liveLink = liveLinkStatus({
       rows: effectiveRows(normalizeRows(steps.data), resetAt),
       readiness,
       now: Date.now(),
       lastConnectedAt: linkEvents.lastConnectedAt,
       lastAttemptAt: linkEvents.lastAttemptAt,
+      jackboyApprovalEndsAt: Number.isFinite(jackboyApprovalMs)
+        ? new Date(jackboyApprovalMs).toISOString()
+        : null,
     });
     const safety = safetyView(safetyRow, Date.now());
     const latestSelfTest = selfTest
@@ -1536,17 +1540,26 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
     },
     actuate: async (k, attempt) => {
       const { readExecutionState } = await import("./unified-activation.server");
+      const { ActuationError, connectionExpiresAt } = await import("./activation-actuation");
       const window = await context.supabase
         .from("activation_approvals")
         .select("approval_expires_at")
         .eq("step", 7)
         .single();
       if (window.error || !window.data.approval_expires_at)
-        throw new Error("Current approval window is unavailable");
+        throw new ActuationError("window_unavailable", "Current approval window is unavailable");
+      // Jackboy refuses a connection that outlasts its own link approval, so ask for the earlier end.
       const state = await readExecutionState(
         k === "live_link" ? "connect" : "configure",
         k === "live_link"
-          ? { operationId: attempt, expiresAt: window.data.approval_expires_at }
+          ? {
+              operationId: attempt,
+              expiresAt: connectionExpiresAt(
+                window.data.approval_expires_at,
+                Date.parse(process.env["OMNI_LINK_APPROVAL_EXPIRES_AT"] || ""),
+                Date.now(),
+              ),
+            }
           : {},
       );
       if (
@@ -1554,7 +1567,7 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
         (k === "live_link" && state.operationId !== attempt) ||
         (k === "autonomy" && (!state.configured || state.armed))
       )
-        throw new Error("Backend actuation did not verify");
+        throw new ActuationError("state_mismatch", "Backend actuation did not verify");
       if (k === "autonomy") {
         const live = await context.supabase
           .from("activation_activations")
@@ -1562,7 +1575,7 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
           .eq("kind", "live_link")
           .single();
         if (live.error || state.operationId !== live.data.attempt_id)
-          throw new Error("Backend connection identity changed");
+          throw new ActuationError("identity_changed", "Backend connection identity changed");
       }
       return { executorRelease: state.executorRelease };
     },
