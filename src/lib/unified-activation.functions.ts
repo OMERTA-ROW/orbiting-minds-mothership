@@ -4,7 +4,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isMfaFresh } from "./activation-approvals";
 import { latestSecurityReset } from "./activation-status";
-import { readExecutionState } from "./unified-activation.server";
+import {
+  REVIEWED_EXECUTOR_RELEASE,
+  executorReleaseStatus,
+  readExecutionState,
+  verifiedExecutorRelease,
+} from "./unified-activation.server";
 import { staged } from "./staged-rpc";
 
 type OwnerArgs = Parameters<typeof import("./razul-owner.server").requireRazulOwner>;
@@ -63,6 +68,10 @@ export const getUnifiedExecutionState = createServerFn({ method: "GET" })
       return {
         state: { ...state, executionReady: ready },
         label: ready ? (state.running ? "Running" : "Configured") : "Blocked",
+        release: executorReleaseStatus(
+          state.executorRelease,
+          process.env["OMNI_AUTONOMY_REVIEWED_RELEASE"],
+        ),
       };
     } catch {
       return {
@@ -120,7 +129,7 @@ export const controlUnifiedExecution = createServerFn({ method: "POST" })
       return readExecutionState();
     }
     const release = process.env["OMNI_AUTONOMY_REVIEWED_RELEASE"];
-    if (data.operation === "arm" && release !== "omni-bounded-plan-1")
+    if (data.operation === "arm" && release !== REVIEWED_EXECUTOR_RELEASE)
       throw new Error("No independently reviewed executor release is configured");
     if (data.operation === "disarm") {
       const local = await context.supabase.rpc("activation_activation_revoke", {
@@ -132,6 +141,7 @@ export const controlUnifiedExecution = createServerFn({ method: "POST" })
       data.operation,
       data.operation === "arm" ? { release } : {},
     );
+    if (data.operation === "verify") verifiedExecutorRelease(state);
     if (data.operation === "disarm") {
       if (state.armed || state.cancellationPending)
         throw new Error("Disarming or cancellation remains unverified");
@@ -189,7 +199,7 @@ export const runAuthorizedPlan = createServerFn({ method: "POST" })
     if (
       !current.executionReady ||
       current.cancellationPending ||
-      release !== "omni-bounded-plan-1" ||
+      release !== REVIEWED_EXECUTOR_RELEASE ||
       current.executorRelease !== release
     )
       throw new Error("Jackboy blocks this executor or its reviewed release");

@@ -81,11 +81,20 @@ export async function recordSafetySnapshot(
   return data as Recorded;
 }
 
-/** Nonsecret reason from a link failure (stage, status, refusal code). */
+/** Mothership-side contract classifications that may be appended to a recorded reason. */
+const CONTRACT_ISSUES = new Set(["snapshot_fields", "snapshot_timing"]);
+
+/** Nonsecret reason from a link failure (stage, status, refusal code, local contract issue). */
 export function safetyFailureReason(error: unknown): string {
-  const e = error as { stage?: string; status?: number; code?: string };
+  const e = error as { stage?: string; status?: number; code?: string; reason?: string };
   if (e && typeof e.stage === "string")
-    return ["read", e.stage, e.status ? String(e.status) : "", e.code ?? ""]
+    return [
+      "read",
+      e.stage,
+      e.status ? String(e.status) : "",
+      e.code ?? "",
+      e.stage === "contract" && e.reason && CONTRACT_ISSUES.has(e.reason) ? e.reason : "",
+    ]
       .filter(Boolean)
       .join("_");
   return "read_failed";

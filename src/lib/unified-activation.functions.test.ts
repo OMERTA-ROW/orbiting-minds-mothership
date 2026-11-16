@@ -35,7 +35,10 @@ vi.mock("@tanstack/react-start", () => ({
 vi.mock("@tanstack/react-start/server", () => ({ setResponseHeader: vi.fn() }));
 vi.mock("@/integrations/supabase/auth-middleware", () => ({ requireSupabaseAuth: {} }));
 vi.mock("./razul-owner.server", () => ({ requireRazulOwner: mocks.owner }));
-vi.mock("./unified-activation.server", () => ({ readExecutionState: mocks.state }));
+vi.mock("./unified-activation.server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./unified-activation.server")>()),
+  readExecutionState: mocks.state,
+}));
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { rpc: mocks.rpc } }));
 vi.mock("./omni-executor-client", () => ({ signedExecutorRequest: mocks.signed }));
 vi.mock("./jackboy-safety.server", () => ({
@@ -250,5 +253,44 @@ it("owner disarm records local revocation before remote reduction and service-on
     "activation_rollback_confirmed",
   ]);
   expect(mocks.state).toHaveBeenCalledWith("disarm", {});
+  expect(mocks.signed).not.toHaveBeenCalled();
+});
+async function verify() {
+  const rows = Array.from({ length: 9 }, (_, i) => ({
+    step: i + 1,
+    status: "approved",
+    decided_at: new Date().toISOString(),
+    approval_expires_at: i === 6 ? new Date(Date.now() + 3_600_000).toISOString() : null,
+  }));
+  return mocks.handlers[1]!({
+    data: mocks.validators[1]!({ operation: "verify", confirm: true }),
+    context: {
+      userId: projectId,
+      claims: { amr: [{ method: "totp", timestamp: Math.floor(Date.now() / 1000) }] },
+      supabase: {
+        rpc: mocks.rpc,
+        from: (table: string) => query(table === "activation_approvals" ? rows : []),
+      },
+    },
+  });
+}
+it("executor verify reports success only when Jackboy's signed state records a release", async () => {
+  mocks.state.mockImplementationOnce(async () => ({
+    projectId,
+    connected: true,
+    armed: false,
+    executorRelease: "omni-bounded-plan-1",
+    checkedAt: new Date().toISOString(),
+  }));
+  await expect(verify()).resolves.toMatchObject({ executorRelease: "omni-bounded-plan-1" });
+  expect(mocks.state).toHaveBeenLastCalledWith("verify", {});
+  mocks.state.mockImplementationOnce(async () => ({
+    projectId,
+    connected: true,
+    armed: false,
+    executorRelease: null,
+    checkedAt: new Date().toISOString(),
+  }));
+  await expect(verify()).rejects.toThrow("did not report a verified executor release");
   expect(mocks.signed).not.toHaveBeenCalled();
 });

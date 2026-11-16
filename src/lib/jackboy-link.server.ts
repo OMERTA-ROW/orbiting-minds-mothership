@@ -552,6 +552,12 @@ const ISO = z.string().datetime({ offset: true });
 const HEX64 = z.string().regex(/^[a-f0-9]{64}$/);
 const UUID_S = z.string().regex(UUID);
 
+/** Job kinds Jackboy can authorize for OMNI permits (`omni.permit/v1`). */
+export const OMNI_JOB_KINDS = ["autonomous", "code"] as const;
+
+/** Mothership's own classification of a rejected safety snapshot (never reply contents). */
+export type SnapshotContractIssue = "snapshot_fields" | "snapshot_timing";
+
 /** Jackboy's signed safety snapshot (`omni.safety/v1`, valid ~30 s). */
 const safetySnapshotSchema = z
   .object({
@@ -561,7 +567,23 @@ const safetySnapshotSchema = z
     killSwitch: z.boolean(),
     emergencyStop: z.boolean(),
     codeEnabled: z.boolean(),
-    authorization: z.object({ id: UUID_S, expiresAt: ISO }).strict().nullable(),
+    authorization: z
+      .object({
+        id: UUID_S,
+        expiresAt: ISO,
+        /**
+         * Job kinds the owner allowed in Jackboy (docs/OMNI-PERMIT-CONTRACT.md: present once Jackboy's
+         * autonomy-scope change is installed). Absent means Jackboy's earlier default (both kinds).
+         */
+        capabilities: z
+          .array(z.enum(OMNI_JOB_KINDS))
+          .min(1)
+          .max(OMNI_JOB_KINDS.length)
+          .refine((c) => new Set(c).size === c.length, "duplicate capability")
+          .optional(),
+      })
+      .strict()
+      .nullable(),
     autonomousAllowed: z.boolean(),
     blockedBy: z
       .string()
@@ -634,11 +656,15 @@ export function permitSigningMessage(p: {
 function verifySnapshot(raw: unknown, now: number, proofDigest: string): JackboySafetySnapshot {
   const parsed = safetySnapshotSchema.safeParse(raw);
   if (!parsed.success)
-    throw new JackboyLinkError("Jackboy safety snapshot is invalid.", "contract");
+    throw new JackboyLinkError("Jackboy safety snapshot is invalid.", "contract", {
+      reason: "snapshot_fields" satisfies SnapshotContractIssue,
+    });
   const checked = Date.parse(parsed.data.checkedAt);
   const valid = Date.parse(parsed.data.validUntil);
   if (!(Math.abs(checked - now) <= 60_000) || !(valid > now && valid <= checked + 60_000))
-    throw new JackboyLinkError("Jackboy safety snapshot timing is invalid.", "contract");
+    throw new JackboyLinkError("Jackboy safety snapshot timing is invalid.", "contract", {
+      reason: "snapshot_timing" satisfies SnapshotContractIssue,
+    });
   return { ...parsed.data, proofDigest };
 }
 

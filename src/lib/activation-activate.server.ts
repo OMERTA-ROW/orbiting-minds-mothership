@@ -212,6 +212,22 @@ export async function runActivation(
       "Not activated: Jackboy has no current autonomous authorization.",
     );
   }
+  // Jackboy's authorization may name the job kinds it allows; OMNI's bounded work is "autonomous".
+  const allowedKinds = snapshot.authorization?.capabilities;
+  if (kind === "autonomy" && allowedKinds && !allowedKinds.includes("autonomous")) {
+    try {
+      await rollback("jackboy_autonomous_not_authorized");
+    } catch {
+      return fail(
+        "not_recorded",
+        "Authorization scope and rollback are unverified; reconcile before another attempt.",
+      );
+    }
+    return fail(
+      "jackboy_authorization",
+      "Not activated: Jackboy's authorization does not include autonomous work (only CODE). Re-authorize in Jackboy with autonomous work allowed.",
+    );
+  }
   const evidence = {
     handshakeAt,
     safety: {
@@ -222,6 +238,7 @@ export async function runActivation(
       autonomousAllowed: snapshot.autonomousAllowed,
       blockedBy: snapshot.blockedBy,
       authorizationExpiresAt: snapshot.authorization?.expiresAt ?? null,
+      ...(allowedKinds ? { authorizationCapabilities: allowedKinds } : {}),
       proofDigest: snapshot.proofDigest,
     },
     ...(kind === "autonomy"

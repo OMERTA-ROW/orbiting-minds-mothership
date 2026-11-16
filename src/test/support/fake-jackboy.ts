@@ -36,6 +36,10 @@ export class FakeJackboy {
   emergencyStop = false;
   codeEnabled = true;
   authorized = true;
+  /** Job kinds on the authorization (Jackboy's autonomy-scope change); null omits the field. */
+  authorizationCapabilities: unknown[] | null = null;
+  /** Test hook: rewrites the safety snapshot before it is signed (contract drift cases). */
+  mutateSafety: ((s: Record<string, unknown>) => Record<string, unknown>) | null = null;
   limits = { perCallUsd: 0.5, perTaskUsd: 1, dailyUsd: 5 };
   tamperPermitSignature = false;
   /** When set, the next request never answers (stale network). */
@@ -118,9 +122,7 @@ export class FakeJackboy {
     const reason = this.reason();
     if (action === "safety") {
       const now = Date.now();
-      return signed(200, {
-        http: 200,
-        safety: {
+      const safety: Record<string, unknown> = {
           contract: "omni.safety/v1",
           checkedAt: new Date(now).toISOString(),
           validUntil: new Date(now + 30_000).toISOString(),
@@ -131,13 +133,19 @@ export class FakeJackboy {
             ? {
                 id: "c0ffee00-0000-4000-8000-000000000001",
                 expiresAt: new Date(now + 3600_000).toISOString(),
+                ...(this.authorizationCapabilities
+                  ? { capabilities: this.authorizationCapabilities }
+                  : {}),
               }
             : null,
           autonomousAllowed: reason === null,
           blockedBy: reason,
           manualDiagnosticsAllowed: !this.killSwitch,
           activePermits: [...this.permits.values()].filter((p) => p.status === "active").length,
-        },
+      };
+      return signed(200, {
+        http: 200,
+        safety: this.mutateSafety ? this.mutateSafety(safety) : safety,
       });
     }
     const jobId = String(input["jobId"]);

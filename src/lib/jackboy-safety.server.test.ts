@@ -1,9 +1,13 @@
 import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { handleSafetyEvent, syncJackboySafety } from "./jackboy-safety.server";
+import {
+  handleSafetyEvent,
+  safetyFailureReason,
+  syncJackboySafety,
+} from "./jackboy-safety.server";
 import { JackboyLink } from "./jackboy-link.server";
 import { FakeJackboy, fakeLinkConfig } from "@/test/support/fake-jackboy";
-import { safetyEventMessage } from "./jackboy-safety";
+import { safetyEventMessage, safetyFailureText } from "./jackboy-safety";
 
 const SECRET = "s".repeat(40);
 const PROJECT = "4f9a3c1e-2b7d-4e8f-9a1b-3c5d7e9f0a2b";
@@ -245,5 +249,88 @@ describe("session-signed safety snapshot (omni.safety/v1)", () => {
       return new Response(text, { status: res.status, headers: res.headers });
     };
     await expect(link(fake).safety()).rejects.toMatchObject({ stage: "proof" });
+  });
+
+});
+
+describe("omni.safety/v1 contract compatibility (authorization capabilities)", () => {
+  const link = (fake: FakeJackboy) =>
+    new JackboyLink(fakeLinkConfig(), async () => {}, { fetch: fake.fetch, timeoutMs: 200 });
+  const live = (fake: FakeJackboy) =>
+    syncJackboySafety(fakeAdmin({ linkActive: true }).admin, { read: () => link(fake).safety() });
+
+  it("valid: accepts Jackboy's authorization.capabilities and records a verified reading", async () => {
+    const fake = new FakeJackboy();
+    fake.authorizationCapabilities = ["autonomous", "code"];
+    const s = await link(fake).safety();
+    expect(s.authorization?.capabilities).toEqual(["autonomous", "code"]);
+    expect(s).toMatchObject({ killSwitch: false, emergencyStop: false, autonomousAllowed: true });
+    expect(await live(fake)).toEqual({ checked: true, state: "clear", reason: "verified" });
+  });
+  it("valid: still accepts the earlier snapshot without capabilities", async () => {
+    const fake = new FakeJackboy();
+    const s = await link(fake).safety();
+    expect(s.authorization).not.toHaveProperty("capabilities");
+  });
+  it.each([
+    ["an unknown job kind", ["autonomous", "shell"]],
+    ["a duplicate job kind", ["code", "code"]],
+    ["an empty list", []],
+    ["a non-list value", "autonomous"],
+  ])("invalid: refuses capabilities with %s and records unknown", async (_label, caps) => {
+    const fake = new FakeJackboy();
+    fake.authorizationCapabilities = caps as unknown[];
+    await expect(link(fake).safety()).rejects.toMatchObject({
+      stage: "contract",
+      reason: "snapshot_fields",
+    });
+    expect(await live(fake)).toEqual({
+      checked: true,
+      state: "unknown",
+      reason: "read_contract_snapshot_fields",
+    });
+  });
+  it("invalid: still refuses any other unexpected field (strict contract)", async () => {
+    const fake = new FakeJackboy();
+    fake.mutateSafety = (s) => ({
+      ...s,
+      authorization: { ...(s["authorization"] as object), scope: "all" },
+    });
+    await expect(link(fake).safety()).rejects.toMatchObject({ reason: "snapshot_fields" });
+    fake.mutateSafety = (s) => ({ ...s, releaseStop: true });
+    await expect(link(fake).safety()).rejects.toMatchObject({ reason: "snapshot_fields" });
+  });
+  it("stale: refuses an old or expired reading and records unknown", async () => {
+    const fake = new FakeJackboy();
+    fake.mutateSafety = (s) => ({
+      ...s,
+      checkedAt: new Date(Date.now() - 120_000).toISOString(),
+      validUntil: new Date(Date.now() - 90_000).toISOString(),
+    });
+    await expect(link(fake).safety()).rejects.toMatchObject({
+      stage: "contract",
+      reason: "snapshot_timing",
+    });
+    expect(await live(fake)).toEqual({
+      checked: true,
+      state: "unknown",
+      reason: "read_contract_snapshot_timing",
+    });
+  });
+  it("unreachable: a Jackboy that never answers records unknown (fail closed)", async () => {
+    const fake = new FakeJackboy();
+    fake.hang = true;
+    const result = await live(fake);
+    expect(result.state).toBe("unknown");
+    expect(result.reason.startsWith("read_timeout")).toBe(true);
+  });
+  it("describes the recorded reasons in plain words", () => {
+    expect(safetyFailureText("read_contract_snapshot_fields")).toMatch(/format mismatch/);
+    expect(safetyFailureText("read_contract_snapshot_timing")).toMatch(/too old/);
+    expect(safetyFailureText("read_contract")).toMatch(/safety contract/);
+    // Only Mothership's own classifications are appended; arbitrary reasons are dropped.
+    expect(
+      safetyFailureReason({ stage: "contract", reason: "anything_jackboy_said" }),
+    ).toBe("read_contract");
   });
 });
