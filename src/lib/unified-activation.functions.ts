@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isMfaFresh } from "./activation-approvals";
 import { latestSecurityReset } from "./activation-status";
+import { upstreamNotInEffect } from "./activation-reconcile";
 import {
   REVIEWED_EXECUTOR_RELEASE,
   executorReleaseStatus,
@@ -38,8 +39,20 @@ async function approved(context: Context, kind: "live_link" | "autonomy") {
       .order("created_at", { ascending: false })
       .limit(50),
   ]);
-  if (effective.error || effective.data !== true || rows.error || history.error)
-    throw new Error("Current upstream activation and approvals are required");
+  if (effective.error || rows.error || history.error)
+    throw new Error(
+      "Current upstream activation and approvals could not be read, so nothing was sent",
+    );
+  if (effective.data !== true) {
+    const row = await context.supabase
+      .from("activation_activations")
+      .select("status,evidence,started_at")
+      .eq("kind", kind)
+      .maybeSingle();
+    if (row.error)
+      throw new Error("Current upstream activation could not be read, so nothing was sent");
+    throw new Error(upstreamNotInEffect(kind, row.data, Date.now()));
+  }
   const reset = latestSecurityReset(history.data ?? []);
   const expiry = Date.parse(rows.data.find((row) => row.step === 7)?.approval_expires_at ?? "");
   if (
