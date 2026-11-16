@@ -150,6 +150,7 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const [autoConfirmed, setAutoConfirmed] = useState(false);
   const [linkActResult, setLinkActResult] = useState<LiveLinkOutcome | null>(null);
   const [autoActResult, setAutoActResult] = useState<LiveLinkOutcome | null>(null);
+  const [executorVerifiedAt, setExecutorVerifiedAt] = useState<number | null>(null);
   const activationAttempt = useRef<Record<string, string>>({});
 
   useEffect(() => {
@@ -1280,8 +1281,12 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
         step10Approved={effective.some((r) => r.step === 10 && isEffectivelyApproved(r, now))}
         busy={busy}
         onChanged={() => void refresh().catch(() => {})}
+        executorVerifiedAt={executorVerifiedAt}
       />
-      <UnifiedExecutionStatus onChanged={() => void refresh().catch(() => {})} />
+      <UnifiedExecutionStatus
+        onChanged={() => void refresh().catch(() => {})}
+        onExecutorVerified={setExecutorVerifiedAt}
+      />
       {data.readinessEvidence && <ReadinessEvidence rows={data.readinessEvidence} now={now} />}
       <LiveLinkPanel
         liveLink={data.liveLink}
