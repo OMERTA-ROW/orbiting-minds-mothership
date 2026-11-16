@@ -766,6 +766,7 @@ export const listActivationApprovals = createServerFn({ method: "GET" })
       system: systemStates({
         linkEffective: activations.some((a) => a.kind === "live_link" && a.effective),
         autonomyEffective: activations.some((a) => a.kind === "autonomy" && a.effective),
+        reconcileRequired: activations.some((a) => a.reconcileRequired),
         liveLink,
         safety,
         mothershipStop: counts.mothershipStop,

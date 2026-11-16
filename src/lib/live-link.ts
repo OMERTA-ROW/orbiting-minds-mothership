@@ -125,6 +125,8 @@ export interface SystemStates {
 export interface SystemInput {
   linkEffective: boolean;
   autonomyEffective: boolean;
+  /** An earlier Step 9/10 attempt must be reconciled before a new activation can start. */
+  reconcileRequired?: boolean;
   liveLink: LiveLinkStatus;
   safety: SafetyView;
   /** Mothership's own Emergency Stop: true engaged, false released, null unreadable. */
@@ -184,14 +186,17 @@ export function systemStates(i: SystemInput): SystemStates {
   const autonomousState = runState(i.running.windows + i.running.agentJobs, autonomousGates);
   const notActivated = "Step 10 autonomy authorization is not activated.";
   let nextAction: string;
-  if (!i.linkEffective)
+  if (i.reconcileRequired && !(i.linkEffective && i.autonomyEffective))
+    nextAction =
+      "Click Reconcile pending activation (Backend panel) with a fresh two-step code. An earlier activation was revoked or failed and Jackboy's side must be confirmed rolled back before a new attempt; it grants nothing.";
+  else if (!i.linkEffective)
     nextAction = i.liveLink.canCheck
       ? "Click Activate live link (Step 9) with a fresh two-step code. It sends one signed handshake and one safety read; nothing runs."
       : `Activate live link is not available yet: ${i.liveLink.blocker ?? "a Mothership requirement is not met."}`;
   else if (!i.autonomyEffective)
     nextAction =
       i.safety.state === "unknown" || i.safety.state === "stale"
-        ? "Jackboy's safety state is not verified yet (its permit service must be installed and published). Then authorize OMNI autonomy in Jackboy with your passkey and click Activate autonomy authorization with a fresh code."
+        ? "Jackboy's safety reading is not current yet. It is refreshed automatically while this page is open and the live link is active; once it is verified, click Activate autonomy authorization with a fresh code (OMNI autonomy must also be authorized in Jackboy)."
         : i.safety.authorizationExpiresAt === null
           ? "Authorize OMNI autonomy in Jackboy with your passkey, then click Activate autonomy authorization with a fresh two-step code."
           : "Click Activate autonomy authorization with a fresh two-step code. It authorizes only; nothing starts.";
