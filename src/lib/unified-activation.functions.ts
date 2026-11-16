@@ -17,7 +17,8 @@ export const getUnifiedExecutionState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await owner(context);
-    const { executorReleaseStatus, readExecutionState } = await import("./unified-activation.server");
+    const { executorReleaseStatus, readExecutionState } =
+      await import("./unified-activation.server");
     try {
       await (await import("./unified-stop.server")).reconcileTerminalStop();
       const state = await readExecutionState();
@@ -52,10 +53,7 @@ export const controlUnifiedExecution = createServerFn({ method: "POST" })
       .parse(value),
   )
   .handler(async ({ context, data }) =>
-    (await import("./unified-activation-control.server")).executionControl(
-      context,
-      data.operation,
-    ),
+    (await import("./unified-activation-control.server")).executionControl(context, data.operation),
   );
 
 const command = z
@@ -89,9 +87,8 @@ export const runAuthorizedPlan = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const approvalExpiry = await approved(context, "autonomy");
-    const { readExecutionState, REVIEWED_EXECUTOR_RELEASE } = await import(
-      "./unified-activation.server"
-    );
+    const { readExecutionState, REVIEWED_EXECUTOR_RELEASE } =
+      await import("./unified-activation.server");
     const current = await readExecutionState();
     const release = process.env["OMNI_AUTONOMY_REVIEWED_RELEASE"];
     if (

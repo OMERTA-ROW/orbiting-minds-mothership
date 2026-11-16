@@ -47,7 +47,6 @@ export async function securityResetAt(
   return latestSecurityReset((data ?? []) as SecurityEvent[]);
 }
 
-
 /** Ledger rows read for today's total; more than this fails closed rather than undercounting. */
 const LEDGER_ROWS = 5000;
 
@@ -148,12 +147,10 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
       return result.data;
     },
     actuate: async (k, attempt) => {
-      const { readExecutionState, REVIEWED_EXECUTOR_RELEASE } = await import(
-        "./unified-activation.server"
-      );
-      const { ActuationError, connectionExpiresAt, verifyThenConfigure } = await import(
-        "./activation-actuation"
-      );
+      const { readExecutionState, REVIEWED_EXECUTOR_RELEASE } =
+        await import("./unified-activation.server");
+      const { ActuationError, connectionExpiresAt, verifyThenConfigure } =
+        await import("./activation-actuation");
       const window = await context.supabase
         .from("activation_approvals")
         .select("approval_expires_at")

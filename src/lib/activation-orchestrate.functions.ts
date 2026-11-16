@@ -18,7 +18,10 @@ async function owner(context: Context) {
 
 const BUILD = z.object({
   app: z.literal("jackboy"),
-  commit: z.string().regex(/^[0-9a-f]{40}$/).nullable(),
+  commit: z
+    .string()
+    .regex(/^[0-9a-f]{40}$/)
+    .nullable(),
   builtAt: z.string().max(40).nullable(),
 });
 
@@ -56,9 +59,7 @@ export const getActivationReadiness = createServerFn({ method: "GET" })
     const { assertEmergencyStopReleased } = await import("./omni-terminal.server");
     const [build, executor, state, link, auto, step7, stop, safety, sandbox] = await Promise.all([
       jackboyBuild(),
-      inspectRailwayExecutor().catch(
-        (): ExecutorInspect => ({ ok: false, issue: "unreachable" }),
-      ),
+      inspectRailwayExecutor().catch((): ExecutorInspect => ({ ok: false, issue: "unreachable" })),
       readExecutionState().catch(() => null),
       context.supabase.rpc("activation_effective", { _kind: "live_link" }),
       context.supabase.rpc("activation_effective", { _kind: "autonomy" }),
@@ -126,7 +127,9 @@ export const getActivationReadiness = createServerFn({ method: "GET" })
 async function controlFailure(error: unknown) {
   const e = error as { stage?: unknown } | null;
   if (e && typeof e.stage === "string")
-    return new Error((await import("./activation-actuation")).describeActuationFailure(error).message);
+    return new Error(
+      (await import("./activation-actuation")).describeActuationFailure(error).message,
+    );
   return error instanceof Error ? error : new Error("Jackboy refused or could not be verified");
 }
 
@@ -161,9 +164,8 @@ export const activateTogether = createServerFn({ method: "POST" })
         ownerAction: null,
       };
     const { activationHandler } = await import("./activation-handler.server");
-    const { executionControl, inspectRailwayExecutor } = await import(
-      "./unified-activation-control.server"
-    );
+    const { executionControl, inspectRailwayExecutor } =
+      await import("./unified-activation-control.server");
     const { readExecutionState } = await import("./unified-activation.server");
     const result = await orchestrate(
       { liveLink: data.liveLink, autonomy: data.autonomy, arm: data.arm },
@@ -202,5 +204,9 @@ export const activateTogether = createServerFn({ method: "POST" })
         },
       },
     );
-    return { ok: !result.stages.some((s) => s.status === "failed" || s.status === "skipped"), mfa: false as const, ...result };
+    return {
+      ok: !result.stages.some((s) => s.status === "failed" || s.status === "skipped"),
+      mfa: false as const,
+      ...result,
+    };
   });
