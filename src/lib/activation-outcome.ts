@@ -24,7 +24,7 @@ export function outcomeStaleReason(
   if (signals.executorVerifiedAt !== null && signals.executorVerifiedAt > outcome.attemptedAt)
     return `Verify executor succeeded at ${attemptTime(signals.executorVerifiedAt)}, after this attempt.`;
   const now = signals.inEffect;
-  if (now && now.readAt > outcome.attemptedAt) {
+  if (now && now.readAt >= outcome.attemptedAt) {
     const changed = outcome.stages.filter(
       (s) => (s.status === "failed" || s.status === "skipped") && now[s.id],
     );
