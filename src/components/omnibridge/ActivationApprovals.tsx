@@ -128,10 +128,10 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [expiry, setExpiry] = useState(() => toLocalInput(Date.now() + 12 * 3600_000));
   const [cap, setCap] = useState(false);
-  // Steps 9–10: approving also activates (owner can untick to record the approval only).
+  // Steps 9–10: activation on approve is opt-in; approving alone records the decision only.
   const [activateOnApprove, setActivateOnApprove] = useState<Record<number, boolean>>({
-    9: true,
-    10: true,
+    9: false,
+    10: false,
   });
   const [daily, setDaily] = useState(false);
   const [code, setCode] = useState("");
@@ -1059,8 +1059,8 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
                   {(meta.step === 9 || meta.step === 10) && (
                     <p className="text-xs text-muted-foreground">
                       {meta.step === 9
-                        ? "Approving records your decision only. The link switches are already set in each project's settings and are not changed here. Afterwards, “Check live connection” in the panel below may send one signed handshake per click."
-                        : "Approving records the two cap confirmations only. CODE stays off: Mothership has no CODE request path, and CODE can only be turned on in Jackboy."}{" "}
+                        ? "Approving on its own records your decision only. If you tick “Also activate the live link now” below, approving also sends one signed handshake and one signed safety read to Jackboy. The link switches in each project's settings are not changed here."
+                        : "Approving on its own records your decision and the two cap confirmations only. If you tick “Also activate autonomy authorization now” below, approving also records OMNI autonomy authorization. Either way CODE stays off: Mothership has no CODE request path, and CODE can only be turned on in Jackboy."}{" "}
                       <a href="#live-link" className="underline">
                         See live link and CODE status
                       </a>
