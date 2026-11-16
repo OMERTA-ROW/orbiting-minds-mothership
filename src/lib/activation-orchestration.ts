@@ -36,18 +36,18 @@ export const STAGE_LABEL: Record<StageId, string> = {
   arm: "Arm bounded executor",
 };
 
-/** Exact Railway/Mothership setting the owner must change; null when the executor allows arming. */
+/** Exact staging-executor (Vultr)/Mothership setting the owner must change; null when the executor allows arming. */
 export function executorOwnerAction(inspect: ExecutorInspect, pinned: boolean): string | null {
   if (!inspect.ok)
     return inspect.issue === "not_configured"
       ? "Mothership has no executor settings: add OMNI_EXECUTOR_ORIGIN and OMNI_EXECUTOR_CONTROL_SECRET in Mothership's secrets."
-      : "The Railway executor (omni-autonomous) did not give a signed answer. Check that the service is running on Railway and that OMNI_EXECUTOR_CONTROL_SECRET matches in Mothership and on Railway.";
+      : "The staging executor (Vultr) did not give a signed answer. Check that omni-executor.service is running on the Vultr server and that its env file has the same executor settings Mothership already has, then restart omni-executor.service.";
   if (inspect.release !== REVIEWED_RELEASE)
-    return `The Railway executor runs release ${inspect.release}, not ${REVIEWED_RELEASE}. Deploy the reviewed services/omni-autonomous release on Railway.`;
+    return `The staging executor (Vultr) runs release ${inspect.release}, not ${REVIEWED_RELEASE}. Deploy the reviewed services/omni-autonomous release on the Vultr server, then restart omni-executor.service.`;
   if (inspect.reviewedRelease !== REVIEWED_RELEASE)
-    return `On Railway, set OMNI_AUTONOMY_REVIEWED_RELEASE=${REVIEWED_RELEASE} on the omni-autonomous executor service and redeploy it.`;
+    return `Edit the executor's env file on the Vultr server: set OMNI_AUTONOMY_REVIEWED_RELEASE=${REVIEWED_RELEASE}, then restart omni-executor.service.`;
   if (!inspect.enabled)
-    return "On Railway, set OMNI_AUTONOMOUS_ENABLED=true on the omni-autonomous executor service and redeploy it. (Verification works while it is off; arming and plans do not.)";
+    return "Edit the executor's env file on the Vultr server: set OMNI_AUTONOMOUS_ENABLED=true, then restart omni-executor.service. (Verification works while it is off; arming and plans do not.)";
   if (!pinned)
     return `In Mothership's secrets, set OMNI_AUTONOMY_REVIEWED_RELEASE=${REVIEWED_RELEASE}, then publish.`;
   return null;
@@ -261,7 +261,7 @@ export function readinessChecklist(r: ReadinessInput): {
   const execAction = r.executor ? executorOwnerAction(r.executor, true) : null;
   add({
     id: "executor",
-    label: "Railway executor (omni-autonomous)",
+    label: "Staging executor (Vultr)",
     status: !r.executor ? "unknown" : execAction ? "action" : "ok",
     detail: !r.executor
       ? "Not checked yet."
@@ -300,7 +300,7 @@ export function readinessChecklist(r: ReadinessInput): {
     status: j?.armed ? "ok" : "action",
     detail: j?.armed
       ? `Armed${j.running ? " and a plan is running" : ", nothing running"}. Plans are accepted only within 15 minutes of the last verification; verifying again disarms.`
-      : "Not armed. Arming is its own choice below; it needs the Railway executor enabled.",
+      : "Not armed. Arming is its own choice below; it needs the staging executor (Vultr) enabled.",
     required: true,
   });
 

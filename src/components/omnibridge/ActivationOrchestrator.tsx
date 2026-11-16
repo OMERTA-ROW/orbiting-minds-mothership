@@ -218,7 +218,7 @@ export function ActivationOrchestrator(props: {
             disabled={!props.step10Approved}
             onChange={(e) => setSel((s) => ({ ...s, arm: e.target.checked }))}
           />
-          {STAGE_LABEL.arm} (needs the Railway executor enabled; starts nothing)
+          {STAGE_LABEL.arm} (needs the staging executor (Vultr) enabled; starts nothing)
         </label>
       </fieldset>
       <Button disabled={disabled} onClick={() => void start()}>

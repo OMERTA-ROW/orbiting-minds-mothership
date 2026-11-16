@@ -79,7 +79,7 @@ describe("combined activation sequencing", () => {
     expect(d.verifyAndArm).not.toHaveBeenCalled();
   });
 
-  it("does not arm while the Railway executor is disabled and names the exact setting", async () => {
+  it("does not arm while the staging executor (Vultr) is disabled and names the exact setting", async () => {
     const d = deps({ inspectExecutor: vi.fn(async () => ({ ...ENABLED, enabled: false })) });
     const r = await orchestrate(ALL, ATTEMPTS, d);
     expect(d.verifyAndArm).not.toHaveBeenCalled();
@@ -117,12 +117,17 @@ describe("combined activation sequencing", () => {
 });
 
 describe("executor owner action", () => {
-  it("asks for the Railway reviewed-release setting before the enable switch", () => {
-    expect(executorOwnerAction({ ...ENABLED, reviewedRelease: null, enabled: false }, true)).toContain(
-      "OMNI_AUTONOMY_REVIEWED_RELEASE=omni-bounded-plan-1 on the omni-autonomous",
+  it("asks for the Vultr reviewed-release setting before the enable switch", () => {
+    const action = executorOwnerAction(
+      { ...ENABLED, reviewedRelease: null, enabled: false },
+      true,
     );
+    expect(action).toContain("OMNI_AUTONOMY_REVIEWED_RELEASE=omni-bounded-plan-1");
+    expect(action).toContain("env file on the Vultr server");
+    expect(action).toContain("restart omni-executor.service");
+    expect(action).not.toMatch(/Railway|secret value/i);
   });
-  it("asks for Mothership's pin when Railway is ready", () => {
+  it("asks for Mothership's pin when the staging executor is ready", () => {
     expect(executorOwnerAction(ENABLED, false)).toContain("Mothership's secrets");
     expect(executorOwnerAction(ENABLED, true)).toBeNull();
   });
@@ -163,7 +168,7 @@ describe("readiness checklist", () => {
   it("is operational only when every required item is proven", () => {
     expect(readinessChecklist(ready()).operational).toBe(true);
   });
-  it("is not operational while the Railway executor is disabled", () => {
+  it("is not operational while the staging executor (Vultr) is disabled", () => {
     const r = readinessChecklist(ready({ executor: { ...ENABLED, enabled: false } }));
     expect(r.operational).toBe(false);
     expect(r.items.find((i) => i.id === "executor")!.detail).toContain("OMNI_AUTONOMOUS_ENABLED=true");
