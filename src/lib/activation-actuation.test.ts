@@ -67,3 +67,34 @@ describe("actuation failure reasons", () => {
     expect(`backend_actuation_${f.reason}`.length).toBeLessThanOrEqual(200);
   });
 });
+
+describe("Jackboy 9081a41 execution-control refusals", () => {
+  it("names the classified reason and Jackboy's stage from a signed refusal", () => {
+    const f = describeActuationFailure({
+      stage: "http",
+      status: 409,
+      code: "executor_verification_required",
+      remoteStage: "verification",
+      signed: true,
+    });
+    expect(f.reason).toBe("jackboy_http_409_executor_verification_required_verification");
+    expect(f.message).toContain("fresh executor verification");
+    expect(f.message).toContain("Jackboy refused at: executor verification");
+  });
+  it("ignores a stage on an unsigned refusal", () => {
+    const f = describeActuationFailure({
+      stage: "http",
+      status: 409,
+      code: "spend_enforcement_unverified",
+      remoteStage: "authority",
+      signed: false,
+    });
+    expect(f.reason).toBe("jackboy_http_409_spend_enforcement_unverified");
+    expect(f.message).not.toContain("Jackboy refused at");
+  });
+  it("explains a missing executor verification as its own local issue", () => {
+    expect(describeActuationFailure(new ActuationError("executor_unverified", "x")).reason).toBe(
+      "executor_unverified",
+    );
+  });
+});
