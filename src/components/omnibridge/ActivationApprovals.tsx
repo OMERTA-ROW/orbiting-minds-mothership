@@ -218,6 +218,29 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
     return () => window.clearInterval(id);
   }, [pending]);
 
+  // While the Step 9 link is in effect, keep Jackboy's signed safety reading current (valid ~30 s;
+  // the scheduled check runs once a minute). Read-only: the same signed read the schedule makes.
+  const linkInEffect = Boolean(data?.activations?.some((a) => a.kind === "live_link" && a.effective));
+  useEffect(() => {
+    if (!linkInEffect) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled || inFlight.current || document.visibilityState !== "visible") return;
+      try {
+        await withTimeout(refreshSafety(), limits.decide);
+        if (!cancelled && !inFlight.current) await refresh();
+      } catch {
+        /* the stored state stays as recorded (unknown/stale counts as stopped) */
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => void tick(), 20_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [linkInEffect, refreshSafety, refresh, limits.decide]);
+
   const mfaFresh = useMemo(() => {
     if (!data || data.mfaAgeSeconds === null) return false;
     return data.mfaAgeSeconds <= FRESH_MFA_SECONDS;

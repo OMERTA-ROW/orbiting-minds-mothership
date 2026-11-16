@@ -1379,11 +1379,32 @@ export const checkLiveLinkConnection = createServerFn({ method: "POST" })
  * Step 9 live link is activated, one handshake and one session-signed `safety` read. Never releases a stop, turns a switch or starts work;
  * any failure records "unknown", which keeps OMNI autonomy and CODE halted.
  */
+/** Minimum spacing of owner/page-triggered signed safety reads (Jackboy readings are valid ~30 s). */
+const SAFETY_REFRESH_MIN_MS = 10_000;
+
 export const refreshJackboySafety = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     setResponseHeader("Cache-Control", "private, no-store");
     await ownerContext(context);
+    // Automatic refreshes from an open page (or several tabs) never read Jackboy more than once per
+    // SAFETY_REFRESH_MIN_MS; the stored verified reading is returned instead.
+    const latest = await jackboySafetyRow(context.supabase);
+    const recorded = Date.parse(latest?.recorded_at ?? "");
+    if (
+      latest?.source === "poll" &&
+      Number.isFinite(recorded) &&
+      Date.now() - recorded >= 0 &&
+      Date.now() - recorded < SAFETY_REFRESH_MIN_MS
+    ) {
+      const view = safetyView(latest, Date.now());
+      return {
+        ok: true as const,
+        checked: false,
+        message: `A verified signed reading was recorded moments ago: ${view.label}. Not read again.`,
+        safety: view,
+      };
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { syncJackboySafety } = await import("./jackboy-safety.server");
     let result;
