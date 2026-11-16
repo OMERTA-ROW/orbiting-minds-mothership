@@ -1542,7 +1542,9 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
       const { readExecutionState, REVIEWED_EXECUTOR_RELEASE } = await import(
         "./unified-activation.server"
       );
-      const { ActuationError, connectionExpiresAt } = await import("./activation-actuation");
+      const { ActuationError, connectionExpiresAt, verifyThenConfigure } = await import(
+        "./activation-actuation"
+      );
       const window = await context.supabase
         .from("activation_approvals")
         .select("approval_expires_at")
@@ -1550,34 +1552,19 @@ async function runActivationFor(context: Ctx, kind: "live_link" | "autonomy", at
         .single();
       if (window.error || !window.data.approval_expires_at)
         throw new ActuationError("window_unavailable", "Current approval window is unavailable");
-      // Step 10: Jackboy configures only after a fresh (<15 min) verification of the same executor
-      // release recorded since the latest Step 9 connect, so verify immediately before configuring.
-      // Verification runs the executor's harmless self-test and never arms or starts work.
-      let verifiedRelease: string | null = null;
-      if (k === "autonomy") {
-        const verified = await readExecutionState("verify");
-        if (!verified.connected || verified.armed || !verified.executorRelease)
-          throw new ActuationError("executor_unverified", "Executor verification was not recorded");
-        if (verified.executorRelease !== REVIEWED_EXECUTOR_RELEASE)
-          throw new ActuationError("release_mismatch", "Verified executor release is not reviewed");
-        verifiedRelease = verified.executorRelease;
-      }
       // Jackboy refuses a connection that outlasts its own link approval, so ask for the earlier end.
-      const state = await readExecutionState(
-        k === "live_link" ? "connect" : "configure",
+      // Step 10 verifies the executor immediately before configuring (Jackboy's contract).
+      const state =
         k === "live_link"
-          ? {
+          ? await readExecutionState("connect", {
               operationId: attempt,
               expiresAt: connectionExpiresAt(
                 window.data.approval_expires_at,
                 Date.parse(process.env["OMNI_LINK_APPROVAL_EXPIRES_AT"] || ""),
                 Date.now(),
               ),
-            }
-          : {},
-      );
-      if (k === "autonomy" && state.executorRelease !== verifiedRelease)
-        throw new ActuationError("release_mismatch", "Configured executor release changed");
+            })
+          : await verifyThenConfigure((op) => readExecutionState(op), REVIEWED_EXECUTOR_RELEASE);
       if (
         !state.connected ||
         (k === "live_link" && state.operationId !== attempt) ||

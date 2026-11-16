@@ -42,6 +42,36 @@ export function connectionExpiresAt(
   return new Date(Math.min(step7, jackboyApprovalEndsAt)).toISOString();
 }
 
+type ExecState = {
+  connected: boolean;
+  configured: boolean;
+  armed: boolean;
+  executorRelease: string | null;
+  operationId: string | null;
+};
+
+/**
+ * Step 10 backend actuation. Jackboy configures only after a fresh (<15 min) verification of the
+ * same executor release recorded since the latest Step 9 connect, so verify immediately before
+ * configuring. Verification runs the executor's harmless self-test; it never arms or starts work.
+ */
+export async function verifyThenConfigure<S extends ExecState>(
+  read: (operation: "verify" | "configure") => Promise<S>,
+  reviewedRelease: string,
+): Promise<S> {
+  const verified = await read("verify");
+  if (!verified.connected || verified.armed || !verified.executorRelease)
+    throw new ActuationError("executor_unverified", "Executor verification was not recorded");
+  if (verified.executorRelease !== reviewedRelease)
+    throw new ActuationError("release_mismatch", "Verified executor release is not reviewed");
+  const state = await read("configure");
+  if (!state.connected || !state.configured || state.armed)
+    throw new ActuationError("state_mismatch", "Backend actuation did not verify");
+  if (state.executorRelease !== verified.executorRelease)
+    throw new ActuationError("release_mismatch", "Configured executor release changed");
+  return state;
+}
+
 /** Earlier of two optional ISO times (null when neither parses). */
 export function earlierOf(a: string | null | undefined, b: string | null | undefined): string | null {
   const x = Date.parse(a ?? "");
