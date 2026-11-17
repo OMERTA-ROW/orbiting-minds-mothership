@@ -33,7 +33,10 @@ export function connectionExpiresAt(
 ): string {
   const step7 = Date.parse(step7EndsAt ?? "");
   if (!Number.isFinite(step7) || step7 <= now)
-    throw new ActuationError("window_unavailable", "Step 7's approval window is unavailable or ended.");
+    throw new ActuationError(
+      "window_unavailable",
+      "Step 7's approval window is unavailable or ended.",
+    );
   if (!Number.isFinite(jackboyApprovalEndsAt) || jackboyApprovalEndsAt <= now + 60_000)
     throw new ActuationError(
       "jackboy_window_ended",
@@ -73,7 +76,10 @@ export async function verifyThenConfigure<S extends ExecState>(
 }
 
 /** Earlier of two optional ISO times (null when neither parses). */
-export function earlierOf(a: string | null | undefined, b: string | null | undefined): string | null {
+export function earlierOf(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): string | null {
   const x = Date.parse(a ?? "");
   const y = Date.parse(b ?? "");
   if (!Number.isFinite(x) && !Number.isFinite(y)) return null;
@@ -112,7 +118,8 @@ const CODE_TEXT: Record<string, string> = {
     "Jackboy's CODE gateway, workflow identity or spending enforcement is not ready. Complete Jackboy's CODE readiness checks, then retry.",
   session_limit:
     "Jackboy already holds its maximum of open link sessions. They expire within 5 minutes; Mothership now reuses one shared session, so retry shortly.",
-  handshake_id_expired_or_conflict: "Jackboy's shared link session ended. Retrying opens a new one.",
+  handshake_id_expired_or_conflict:
+    "Jackboy's shared link session ended. Retrying opens a new one.",
 };
 
 const STAGE_TEXT: Record<string, string> = {
@@ -127,7 +134,8 @@ const STAGE_TEXT: Record<string, string> = {
 };
 
 const ISSUE_TEXT: Record<ActuationIssue, string> = {
-  window_unavailable: "Step 7's approval window could not be read or has ended. Renew Step 7, then retry.",
+  window_unavailable:
+    "Step 7's approval window could not be read or has ended. Renew Step 7, then retry.",
   jackboy_window_ended:
     "Jackboy's link approval (OMNI_LINK_APPROVAL_EXPIRES_AT in Mothership) has ended. Renew it in Jackboy and update the Mothership setting, then retry.",
   state_mismatch:
@@ -141,7 +149,8 @@ const ISSUE_TEXT: Record<ActuationIssue, string> = {
 
 /** Nonsecret reason suffix and owner-facing explanation for a failed actuation. */
 export function describeActuationFailure(error: unknown): { reason: string; message: string } {
-  if (error instanceof ActuationError) return { reason: error.issue, message: ISSUE_TEXT[error.issue] };
+  if (error instanceof ActuationError)
+    return { reason: error.issue, message: ISSUE_TEXT[error.issue] };
   const e = error as {
     stage?: unknown;
     status?: unknown;
@@ -175,6 +184,7 @@ export function describeActuationFailure(error: unknown): { reason: string; mess
   }
   return {
     reason: "state_unverified",
-    message: "Jackboy's signed state was stale, malformed or for another project, so it was not trusted.",
+    message:
+      "Jackboy's signed state was stale, malformed or for another project, so it was not trusted.",
   };
 }

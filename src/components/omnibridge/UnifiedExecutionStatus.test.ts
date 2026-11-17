@@ -13,14 +13,14 @@ const state = {
   executionReady: false,
   expiresAt: null,
   operationId: null,
-  executorRelease: "omni-bounded-plan-1",
+  executorRelease: "omni-bounded-plan-2",
   executorOrigin: null,
   running: false,
   cancellationPending: false,
 };
 const release = {
-  expected: "omni-bounded-plan-1",
-  jackboyRelease: "omni-bounded-plan-1",
+  expected: "omni-bounded-plan-2",
+  jackboyRelease: "omni-bounded-plan-2",
   jackboyMatches: true,
   mothershipPinned: true,
 };
@@ -41,8 +41,12 @@ describe("Authorize autonomous capability prerequisites", () => {
     expect(b.join(" ")).toMatch(/Verify executor/);
   });
   it("blocks on an engaged Stop or Kill Switch", () => {
-    expect(armBlockers({ state: { ...state, emergencyStop: true }, label: "Blocked", release } as S)).toHaveLength(1);
-    expect(armBlockers({ state: { ...state, killSwitch: true }, label: "Blocked", release } as S)).toHaveLength(1);
+    expect(
+      armBlockers({ state: { ...state, emergencyStop: true }, label: "Blocked", release } as S),
+    ).toHaveLength(1);
+    expect(
+      armBlockers({ state: { ...state, killSwitch: true }, label: "Blocked", release } as S),
+    ).toHaveLength(1);
   });
   it("blocks when no fresh state is available", () => {
     expect(armBlockers(null)).toHaveLength(1);

@@ -8,6 +8,8 @@ import {
   parsePlan,
   planHash,
   permissionRequest,
+  PERMISSION_MAX_AGE_MS,
+  PERMISSION_TIMEOUT_MS,
   RELEASE,
   PATH,
 } from "../services/omni-autonomous/executor.mjs";
@@ -279,4 +281,47 @@ test("signed stale safety responses are denied; completion retains the approved 
     await permissionRequest(c, "finish", { ...value, outcome: "completed" }),
     "cancelled",
   );
+});
+
+test("permission replies stamped within the window are accepted; older ones are denied", async () => {
+  assert.equal(RELEASE, "omni-bounded-plan-2");
+  assert.equal(PERMISSION_TIMEOUT_MS, 6000);
+  assert.equal(PERMISSION_MAX_AGE_MS, 6000);
+  const value = plan();
+  const permissionSecret = "p".repeat(32);
+  let ageMs = 0;
+  let signalSeen;
+  const c = {
+    jackboyOrigin: "https://jackboy.invalid",
+    clientId: "fixture",
+    permissionToken: "t".repeat(32),
+    permissionSecret,
+    fetch: async (_url, init) => {
+      signalSeen = init.signal;
+      const nonce = init.headers["X-Omni-Nonce"];
+      const body = JSON.stringify({
+        contract: "omni.link/v2",
+        requestNonce: nonce,
+        state: {
+          projectId: value.projectId,
+          checkedAt: new Date(Date.now() - ageMs).toISOString(),
+          allowed: true,
+          emergencyStop: false,
+          killSwitch: false,
+        },
+      });
+      return new Response(body, {
+        headers: {
+          "X-Omni-Proof": createHmac("sha256", permissionSecret)
+            .update(`omni.link/v2\nresponse\n${nonce}\n200\n${body}`)
+            .digest("hex"),
+        },
+      });
+    },
+  };
+  ageMs = 4000;
+  assert.equal(await permissionRequest(c, "permission", value), true);
+  assert.ok(signalSeen instanceof AbortSignal);
+  ageMs = 7000;
+  await assert.rejects(permissionRequest(c, "permission", value), /Stale/);
 });

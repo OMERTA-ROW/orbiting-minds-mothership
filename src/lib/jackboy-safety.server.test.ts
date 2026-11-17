@@ -1,10 +1,6 @@
 import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  handleSafetyEvent,
-  safetyFailureReason,
-  syncJackboySafety,
-} from "./jackboy-safety.server";
+import { handleSafetyEvent, safetyFailureReason, syncJackboySafety } from "./jackboy-safety.server";
 import { JackboyLink } from "./jackboy-link.server";
 import { FakeJackboy, fakeLinkConfig } from "@/test/support/fake-jackboy";
 import { safetyEventMessage, safetyFailureText } from "./jackboy-safety";
@@ -250,7 +246,6 @@ describe("session-signed safety snapshot (omni.safety/v1)", () => {
     };
     await expect(link(fake).safety()).rejects.toMatchObject({ stage: "proof" });
   });
-
 });
 
 describe("omni.safety/v1 contract compatibility (authorization capabilities)", () => {
@@ -329,8 +324,8 @@ describe("omni.safety/v1 contract compatibility (authorization capabilities)", (
     expect(safetyFailureText("read_contract_snapshot_timing")).toMatch(/too old/);
     expect(safetyFailureText("read_contract")).toMatch(/safety contract/);
     // Only Mothership's own classifications are appended; arbitrary reasons are dropped.
-    expect(
-      safetyFailureReason({ stage: "contract", reason: "anything_jackboy_said" }),
-    ).toBe("read_contract");
+    expect(safetyFailureReason({ stage: "contract", reason: "anything_jackboy_said" })).toBe(
+      "read_contract",
+    );
   });
 });

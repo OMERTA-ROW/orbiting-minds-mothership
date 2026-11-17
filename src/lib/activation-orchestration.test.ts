@@ -13,8 +13,8 @@ const ATTEMPTS = {
 };
 const ENABLED = {
   ok: true as const,
-  release: "omni-bounded-plan-1",
-  reviewedRelease: "omni-bounded-plan-1",
+  release: "omni-bounded-plan-2",
+  reviewedRelease: "omni-bounded-plan-2",
   enabled: true,
 };
 
@@ -109,7 +109,9 @@ describe("combined activation sequencing", () => {
   });
 
   it("an arm refusal leaves Step 10 configured and says so", async () => {
-    const d = deps({ verifyAndArm: vi.fn(async () => Promise.reject(new Error("Jackboy blocks"))) });
+    const d = deps({
+      verifyAndArm: vi.fn(async () => Promise.reject(new Error("Jackboy blocks"))),
+    });
     const r = await orchestrate(ALL, ATTEMPTS, d);
     expect(r.stages[2]).toMatchObject({ status: "failed" });
     expect(r.stages[2]!.message).toContain("Step 10 stays configured, not armed");
@@ -118,11 +120,8 @@ describe("combined activation sequencing", () => {
 
 describe("executor owner action", () => {
   it("asks for the Vultr reviewed-release setting before the enable switch", () => {
-    const action = executorOwnerAction(
-      { ...ENABLED, reviewedRelease: null, enabled: false },
-      true,
-    );
-    expect(action).toContain("OMNI_AUTONOMY_REVIEWED_RELEASE=omni-bounded-plan-1");
+    const action = executorOwnerAction({ ...ENABLED, reviewedRelease: null, enabled: false }, true);
+    expect(action).toContain("OMNI_AUTONOMY_REVIEWED_RELEASE=omni-bounded-plan-2");
     expect(action).toContain("env file on the Vultr server");
     expect(action).toContain("restart omni-executor.service");
     expect(action).not.toMatch(/Railway|secret value/i);
@@ -137,7 +136,10 @@ const NOW = Date.parse("2026-11-16T22:30:00Z");
 function ready(over: Partial<ReadinessInput> = {}): ReadinessInput {
   return {
     now: NOW,
-    jackboyBuild: { commit: "9081a4187c4f8e691e209f12ec3afd1db3b75b91", builtAt: "2026-11-16T21:55:36Z" },
+    jackboyBuild: {
+      commit: "9081a4187c4f8e691e209f12ec3afd1db3b75b91",
+      builtAt: "2026-11-16T21:55:36Z",
+    },
     windowEndsAt: "2026-11-17T03:49:58.534Z",
     step9Approved: true,
     step10Approved: true,
@@ -151,7 +153,7 @@ function ready(over: Partial<ReadinessInput> = {}): ReadinessInput {
       running: false,
       emergencyStop: false,
       killSwitch: false,
-      executorRelease: "omni-bounded-plan-1",
+      executorRelease: "omni-bounded-plan-2",
       cancellationPending: false,
     },
     executor: ENABLED,
@@ -171,7 +173,9 @@ describe("readiness checklist", () => {
   it("is not operational while the staging executor (Vultr) is disabled", () => {
     const r = readinessChecklist(ready({ executor: { ...ENABLED, enabled: false } }));
     expect(r.operational).toBe(false);
-    expect(r.items.find((i) => i.id === "executor")!.detail).toContain("OMNI_AUTONOMOUS_ENABLED=true");
+    expect(r.items.find((i) => i.id === "executor")!.detail).toContain(
+      "OMNI_AUTONOMOUS_ENABLED=true",
+    );
   });
   it("counts an unavailable signed reading as stopped", () => {
     const r = readinessChecklist(ready({ jackboy: null }));

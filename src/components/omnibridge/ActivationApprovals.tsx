@@ -222,7 +222,9 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
 
   // While the Step 9 link is in effect, keep Jackboy's signed safety reading current (valid ~30 s;
   // the scheduled check runs once a minute). Read-only: the same signed read the schedule makes.
-  const linkInEffect = Boolean(data?.activations?.some((a) => a.kind === "live_link" && a.effective));
+  const linkInEffect = Boolean(
+    data?.activations?.some((a) => a.kind === "live_link" && a.effective),
+  );
   useEffect(() => {
     if (!linkInEffect) return;
     let cancelled = false;

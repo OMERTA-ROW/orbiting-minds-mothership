@@ -221,7 +221,7 @@ displayed separately and never called process execution.
 ### Executor scope and trust boundary
 
 `services/omni-autonomous/executor.mjs` is a new, separate Node 26/Linux service
-(`omni.autonomous/v1`, release `omni-bounded-plan-1`), default disabled. It is **not**
+(`omni.autonomous/v1`, release `omni-bounded-plan-2`), default disabled. It is **not**
 a model-driven agent, general shell, repository worker, existing CODE runner,
 manual sandbox or the designed windowed/mac queues described above. It executes
 only an exact owner-authorized plan: at most five allowlisted argv commands,
@@ -314,7 +314,7 @@ production keys into a test or the worker. Values are intentionally not recorded
    with passkey**. This needs its own fresh `omni_autonomy` passkey, current
    approval/Step 8 proof, recent Step 9 session, runner and healthy meter/guard;
    it never changes a switch or starts a job. Only after review, manually set
-   `OMNI_AUTONOMY_REVIEWED_RELEASE=omni-bounded-plan-1` on all three services
+   `OMNI_AUTONOMY_REVIEWED_RELEASE=omni-bounded-plan-2` on all three services
    and run **Verify executor** explicitly. This is a diagnostic self-test and
    cancellation drill, not an autonomous plan.
    Confirm the existing $10 cap/$5 daily controls and approve Step 10. Configuration

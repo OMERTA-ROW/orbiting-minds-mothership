@@ -826,7 +826,11 @@ export class JackboyLink {
       return await this.handshake(randomUUID());
     } catch (error) {
       if (!(error instanceof JackboyLinkError) || error.stage !== "http") throw error;
-      if (error.signed && error.status === 409 && error.code === "handshake_id_expired_or_conflict") {
+      if (
+        error.signed &&
+        error.status === 409 &&
+        error.code === "handshake_id_expired_or_conflict"
+      ) {
         await this.audit("handshake_id_rotated");
         return this.handshake(randomUUID());
       }

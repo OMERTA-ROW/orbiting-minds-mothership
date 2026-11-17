@@ -17,7 +17,7 @@ export function armBlockers(status: Status | null): string[] {
   const out: string[] = [];
   if (!state.connected) out.push("Step 9 live link is not active at Jackboy — activate it first.");
   if (!state.configured)
-    out.push("Step 10 \"Activate autonomy authorization\" has not configured Jackboy yet.");
+    out.push('Step 10 "Activate autonomy authorization" has not configured Jackboy yet.');
   if (!state.executorRelease)
     out.push("No verified executor release — click Verify executor (valid 15 minutes).");
   if ("release" in status && status.release && !status.release.mothershipPinned)
@@ -87,7 +87,8 @@ export function UnifiedExecutionStatus({
     setOutcome("");
     try {
       const result = await control({ data: { operation, confirm: true } });
-      if (operation === "verify" && result && "executorRelease" in result) onExecutorVerified?.(Date.now());
+      if (operation === "verify" && result && "executorRelease" in result)
+        onExecutorVerified?.(Date.now());
       if (operation === "verify" && result && "executorRelease" in result)
         setOutcome(
           `Jackboy verified the executor (release ${result.executorRelease}) at ${new Date(result.checkedAt).toLocaleTimeString()}. Jackboy needs a fresh verification within 15 minutes before configuring or authorizing. Nothing was armed or started.`,
@@ -97,7 +98,9 @@ export function UnifiedExecutionStatus({
           if (key.startsWith("activation-operation:")) sessionStorage.removeItem(key);
       }
       if (operation === "reconcile")
-        setOutcome("Reconciled: the earlier activation was rolled back and closed. Nothing was granted.");
+        setOutcome(
+          "Reconciled: the earlier activation was rolled back and closed. Nothing was granted.",
+        );
       setStatus(await read());
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Execution control failed");

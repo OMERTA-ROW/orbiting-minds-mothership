@@ -60,7 +60,7 @@ vi.mock("./jackboy-link.server", () => ({
 }));
 vi.mock("./unified-activation.server", () => ({
   readExecutionState: mocks.execution,
-  REVIEWED_EXECUTOR_RELEASE: "omni-bounded-plan-1",
+  REVIEWED_EXECUTOR_RELEASE: "omni-bounded-plan-2",
 }));
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: {

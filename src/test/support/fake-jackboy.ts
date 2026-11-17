@@ -145,25 +145,25 @@ export class FakeJackboy {
     if (action === "safety") {
       const now = Date.now();
       const safety: Record<string, unknown> = {
-          contract: "omni.safety/v1",
-          checkedAt: new Date(now).toISOString(),
-          validUntil: new Date(now + 30_000).toISOString(),
-          killSwitch: this.killSwitch,
-          emergencyStop: this.emergencyStop,
-          codeEnabled: this.codeEnabled,
-          authorization: this.authorized
-            ? {
-                id: "c0ffee00-0000-4000-8000-000000000001",
-                expiresAt: new Date(now + 3600_000).toISOString(),
-                ...(this.authorizationCapabilities
-                  ? { capabilities: this.authorizationCapabilities }
-                  : {}),
-              }
-            : null,
-          autonomousAllowed: reason === null,
-          blockedBy: reason,
-          manualDiagnosticsAllowed: !this.killSwitch,
-          activePermits: [...this.permits.values()].filter((p) => p.status === "active").length,
+        contract: "omni.safety/v1",
+        checkedAt: new Date(now).toISOString(),
+        validUntil: new Date(now + 30_000).toISOString(),
+        killSwitch: this.killSwitch,
+        emergencyStop: this.emergencyStop,
+        codeEnabled: this.codeEnabled,
+        authorization: this.authorized
+          ? {
+              id: "c0ffee00-0000-4000-8000-000000000001",
+              expiresAt: new Date(now + 3600_000).toISOString(),
+              ...(this.authorizationCapabilities
+                ? { capabilities: this.authorizationCapabilities }
+                : {}),
+            }
+          : null,
+        autonomousAllowed: reason === null,
+        blockedBy: reason,
+        manualDiagnosticsAllowed: !this.killSwitch,
+        activePermits: [...this.permits.values()].filter((p) => p.status === "active").length,
       };
       return signed(200, {
         http: 200,
