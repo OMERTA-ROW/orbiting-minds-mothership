@@ -172,7 +172,12 @@ export function ActivationOrchestrator(props: {
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg">Activate OMNI and Jackboy together</h2>
-        <Button size="sm" variant="outline" disabled={checking || running} onClick={() => void check()}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={checking || running}
+          onClick={() => void check()}
+        >
           {checking ? "Checking…" : "Check readiness"}
         </Button>
       </div>
@@ -217,8 +222,8 @@ export function ActivationOrchestrator(props: {
             ))}
           </ul>
           <p className="text-xs text-muted-foreground">
-            Checked {facts ? new Date(facts.checkedAt).toLocaleTimeString() : ""}. Read-only: nothing
-            was changed by this check.
+            Checked {facts ? new Date(facts.checkedAt).toLocaleTimeString() : ""}. Read-only:
+            nothing was changed by this check.
           </p>
         </>
       )}

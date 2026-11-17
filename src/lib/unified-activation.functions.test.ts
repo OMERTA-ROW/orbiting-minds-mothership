@@ -223,7 +223,9 @@ it("stale owner authentication and ineffective upstream activation start nothing
 });
 it("names the missing activation and the reconcile step instead of a generic refusal", async () => {
   mocks.rpc.mockResolvedValue({ data: false, error: null });
-  await expect(invoke(plan())).rejects.toThrow("Step 10 autonomy authorization has never been activated");
+  await expect(invoke(plan())).rejects.toThrow(
+    "Step 10 autonomy authorization has never been activated",
+  );
   // Revoked by a Step 8 re-approval: Jackboy's side unconfirmed, so reconcile is the next action.
   mocks.activation = {
     status: "revoked",

@@ -18,7 +18,11 @@ describe("Step 9 connection window", () => {
   });
   it("keeps Step 7's end when it is earlier than Jackboy's approval", () => {
     expect(
-      connectionExpiresAt("2026-11-16T20:33:00Z", Date.parse("2026-11-17T03:49:58Z"), Date.parse("2026-11-16T20:00:00Z")),
+      connectionExpiresAt(
+        "2026-11-16T20:33:00Z",
+        Date.parse("2026-11-17T03:49:58Z"),
+        Date.parse("2026-11-16T20:00:00Z"),
+      ),
     ).toBe("2026-11-16T20:33:00.000Z");
   });
   it("refuses locally when Jackboy's approval is missing or ending within a minute", () => {
@@ -129,7 +133,10 @@ describe("Step 10 verify, then configure", () => {
   });
   it("refuses an unreviewed release before configuring", async () => {
     await expect(
-      verifyThenConfigure(async () => ({ ...base, executorRelease: "other-1" }), "omni-bounded-plan-2"),
+      verifyThenConfigure(
+        async () => ({ ...base, executorRelease: "other-1" }),
+        "omni-bounded-plan-2",
+      ),
     ).rejects.toMatchObject({ issue: "release_mismatch" });
   });
   it("refuses a configured state that came back armed", async () => {

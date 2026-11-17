@@ -64,7 +64,8 @@ export function upstreamNotInEffect(
 ) {
   const { name, button } = LABEL[kind];
   const head = `Current upstream activation is not in effect: the ${name}`;
-  if (!row) return `${head} has never been activated. Approval records the decision only; click ${button} first. Nothing was sent.`;
+  if (!row)
+    return `${head} has never been activated. Approval records the decision only; click ${button} first. Nothing was sent.`;
   if (activationNeedsReconcile(row, now))
     return `${head} is ${row.status} and unresolved. Click Reconcile pending activation with a fresh two-step code, then ${button}. Nothing was sent.`;
   if (row.status === "active")

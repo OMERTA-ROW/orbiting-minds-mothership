@@ -67,7 +67,7 @@ const BEGIN_TEXT: Record<string, string> = {
   mfa: "Re-verify with your authenticator first. Nothing was sent or activated.",
   denied: "Owner access could not be confirmed, so nothing was activated.",
   reconcile_required:
-    "An earlier activation is still unresolved: it was revoked (for example when Step 8 was approved again) or failed, and Jackboy's side has not been confirmed rolled back. Click \"Reconcile pending activation\" in the Backend panel with a fresh two-step code, then activate again. Nothing was sent or activated.",
+    'An earlier activation is still unresolved: it was revoked (for example when Step 8 was approved again) or failed, and Jackboy\'s side has not been confirmed rolled back. Click "Reconcile pending activation" in the Backend panel with a fresh two-step code, then activate again. Nothing was sent or activated.',
   begin_error:
     "The database did not start the activation, so nothing was sent or activated. Refresh and reconcile before another attempt.",
 };
@@ -174,7 +174,11 @@ export async function runActivation(
       "link_failure",
       `Not activated: ${failure.message} The attempt was rolled back; no job started and no stop was released.`,
       [
-        { label: "Backend step", status: "needs_attention", detail: kind === "live_link" ? "Jackboy connect" : "Jackboy configure" },
+        {
+          label: "Backend step",
+          status: "needs_attention",
+          detail: kind === "live_link" ? "Jackboy connect" : "Jackboy configure",
+        },
         { label: "Reason code", status: "needs_attention", detail: failure.reason },
       ],
     );

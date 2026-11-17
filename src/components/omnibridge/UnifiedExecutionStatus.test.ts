@@ -41,8 +41,12 @@ describe("Authorize autonomous capability prerequisites", () => {
     expect(b.join(" ")).toMatch(/Verify executor/);
   });
   it("blocks on an engaged Stop or Kill Switch", () => {
-    expect(armBlockers({ state: { ...state, emergencyStop: true }, label: "Blocked", release } as S)).toHaveLength(1);
-    expect(armBlockers({ state: { ...state, killSwitch: true }, label: "Blocked", release } as S)).toHaveLength(1);
+    expect(
+      armBlockers({ state: { ...state, emergencyStop: true }, label: "Blocked", release } as S),
+    ).toHaveLength(1);
+    expect(
+      armBlockers({ state: { ...state, killSwitch: true }, label: "Blocked", release } as S),
+    ).toHaveLength(1);
   });
   it("blocks when no fresh state is available", () => {
     expect(armBlockers(null)).toHaveLength(1);

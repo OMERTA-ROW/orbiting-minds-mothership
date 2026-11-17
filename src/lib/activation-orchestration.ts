@@ -63,7 +63,12 @@ export async function orchestrate(
   selection: OrchestrationSelection,
   attempts: { live_link: string; autonomy: string },
   deps: OrchestrationDeps,
-): Promise<{ stages: StageResult[]; summary: string; partial: boolean; ownerAction: string | null }> {
+): Promise<{
+  stages: StageResult[];
+  summary: string;
+  partial: boolean;
+  ownerAction: string | null;
+}> {
   const stages: StageResult[] = [];
   let ownerAction: string | null = null;
   let blockedBy: string | null = null;
@@ -217,10 +222,16 @@ export function readinessChecklist(r: ReadinessInput): {
   add({
     id: "window",
     label: "Approval window",
-    status: !Number.isFinite(ends) || ends <= r.now ? "action" : ends - r.now < 30 * 60_000 ? "action" : "ok",
-    detail: !Number.isFinite(ends) || ends <= r.now
-      ? "No current window: renew Step 7 and Jackboy's link approval (and OMNI_LINK_APPROVAL_EXPIRES_AT in Mothership)."
-      : `Ends ${new Date(ends).toISOString().slice(11, 16)} UTC (earlier of Step 7 and Jackboy's link approval).${ends - r.now < 30 * 60_000 ? " Ends within 30 minutes — renew both first." : ""}`,
+    status:
+      !Number.isFinite(ends) || ends <= r.now
+        ? "action"
+        : ends - r.now < 30 * 60_000
+          ? "action"
+          : "ok",
+    detail:
+      !Number.isFinite(ends) || ends <= r.now
+        ? "No current window: renew Step 7 and Jackboy's link approval (and OMNI_LINK_APPROVAL_EXPIRES_AT in Mothership)."
+        : `Ends ${new Date(ends).toISOString().slice(11, 16)} UTC (earlier of Step 7 and Jackboy's link approval).${ends - r.now < 30 * 60_000 ? " Ends within 30 minutes — renew both first." : ""}`,
     required: true,
   });
 
@@ -248,13 +259,14 @@ export function readinessChecklist(r: ReadinessInput): {
     id: "step9",
     label: "Step 9 live link",
     status: r.linkEffective && j?.connected ? "ok" : !r.step9Approved ? "blocked" : "action",
-    detail: r.linkEffective && j?.connected
-      ? "Activated and Jackboy's signed state shows the connection."
-      : r.linkEffective
-        ? "Recorded as active, but Jackboy's signed state does not show the connection. Deactivate and activate it again."
-        : r.step9Approved
-          ? "Approved, not activated. Include it below."
-          : "Approve Step 9 first.",
+    detail:
+      r.linkEffective && j?.connected
+        ? "Activated and Jackboy's signed state shows the connection."
+        : r.linkEffective
+          ? "Recorded as active, but Jackboy's signed state does not show the connection. Deactivate and activate it again."
+          : r.step9Approved
+            ? "Approved, not activated. Include it below."
+            : "Approve Step 9 first.",
     required: true,
   });
 
@@ -284,13 +296,13 @@ export function readinessChecklist(r: ReadinessInput): {
   add({
     id: "step10",
     label: "Step 10 autonomy authorization",
-    status:
-      r.autonomyEffective && j?.configured ? "ok" : !r.step10Approved ? "blocked" : "action",
-    detail: r.autonomyEffective && j?.configured
-      ? `Configured at Jackboy (executor release ${j.executorRelease ?? "not reported"}).`
-      : r.step10Approved
-        ? "Approved, not activated. Including it verifies the executor first, then configures Jackboy."
-        : "Approve Step 10 first.",
+    status: r.autonomyEffective && j?.configured ? "ok" : !r.step10Approved ? "blocked" : "action",
+    detail:
+      r.autonomyEffective && j?.configured
+        ? `Configured at Jackboy (executor release ${j.executorRelease ?? "not reported"}).`
+        : r.step10Approved
+          ? "Approved, not activated. Including it verifies the executor first, then configures Jackboy."
+          : "Approve Step 10 first.",
     required: true,
   });
 
@@ -349,6 +361,8 @@ export function readinessChecklist(r: ReadinessInput): {
     headline: operational
       ? "Operational: armed for bounded plans, nothing started."
       : `Not operational: ${required.filter((i) => i.status !== "ok").length} of ${required.length} required items need attention.`,
-    nextAction: first ? `${first.label}: ${first.detail}` : "None. Starting a plan is still a separate, explicit owner action.",
+    nextAction: first
+      ? `${first.label}: ${first.detail}`
+      : "None. Starting a plan is still a separate, explicit owner action.",
   };
 }

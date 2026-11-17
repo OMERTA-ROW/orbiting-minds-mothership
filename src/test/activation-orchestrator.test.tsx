@@ -17,8 +17,16 @@ import { ActivationOrchestrator } from "@/components/omnibridge/ActivationOrches
 
 const facts = {
   checkedAt: "2026-11-16T22:30:00Z",
-  jackboyBuild: { commit: "9081a4187c4f8e691e209f12ec3afd1db3b75b91", builtAt: "2026-11-16T21:55:36Z" },
-  executor: { ok: true, release: "omni-bounded-plan-2", reviewedRelease: "omni-bounded-plan-2", enabled: false },
+  jackboyBuild: {
+    commit: "9081a4187c4f8e691e209f12ec3afd1db3b75b91",
+    builtAt: "2026-11-16T21:55:36Z",
+  },
+  executor: {
+    ok: true,
+    release: "omni-bounded-plan-2",
+    reviewedRelease: "omni-bounded-plan-2",
+    enabled: false,
+  },
   pinned: true,
   windowEndsAt: new Date(Date.now() + 5 * 3600_000).toISOString(),
   linkEffective: true,
@@ -50,9 +58,11 @@ describe("Activate OMNI and Jackboy together", () => {
     render(<ActivationOrchestrator mfaFresh step9Approved step10Approved busy={false} />);
     expect(await screen.findByText(/^Not operational/)).toBeTruthy();
     expect(screen.getAllByText(/OMNI_AUTONOMOUS_ENABLED=true/).length).toBeGreaterThan(0);
-    for (const box of screen.getAllByRole("checkbox")) expect((box as HTMLInputElement).checked).toBe(false);
+    for (const box of screen.getAllByRole("checkbox"))
+      expect((box as HTMLInputElement).checked).toBe(false);
     expect(
-      (screen.getByRole("button", { name: "Activate selected together" }) as HTMLButtonElement).disabled,
+      (screen.getByRole("button", { name: "Activate selected together" }) as HTMLButtonElement)
+        .disabled,
     ).toBe(true);
   });
 
@@ -61,7 +71,8 @@ describe("Activate OMNI and Jackboy together", () => {
     await screen.findByText(/^Not operational/);
     fireEvent.click(screen.getByLabelText(/Step 10 autonomy authorization/));
     expect(
-      (screen.getByRole("button", { name: "Activate selected together" }) as HTMLButtonElement).disabled,
+      (screen.getByRole("button", { name: "Activate selected together" }) as HTMLButtonElement)
+        .disabled,
     ).toBe(true);
   });
 
@@ -80,7 +91,13 @@ describe("Activate OMNI and Jackboy together", () => {
     });
     const changed = vi.fn();
     render(
-      <ActivationOrchestrator mfaFresh step9Approved step10Approved busy={false} onChanged={changed} />,
+      <ActivationOrchestrator
+        mfaFresh
+        step9Approved
+        step10Approved
+        busy={false}
+        onChanged={changed}
+      />,
     );
     await screen.findByText(/^Not operational/);
     fireEvent.click(screen.getByLabelText(/Step 10 autonomy authorization/));
@@ -97,7 +114,12 @@ describe("Activate OMNI and Jackboy together", () => {
   it("reuses the same attempt IDs after an unanswered request", async () => {
     mocks.together.mockRejectedValueOnce(new Error("network"));
     mocks.together.mockResolvedValueOnce({
-      ok: true, mfa: false, partial: false, ownerAction: null, summary: "In effect.", stages: [],
+      ok: true,
+      mfa: false,
+      partial: false,
+      ownerAction: null,
+      summary: "In effect.",
+      stages: [],
     });
     render(<ActivationOrchestrator mfaFresh step9Approved step10Approved busy={false} />);
     await screen.findByText(/^Not operational/);

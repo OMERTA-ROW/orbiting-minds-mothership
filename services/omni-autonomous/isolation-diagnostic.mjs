@@ -230,89 +230,93 @@ async function processSnapshot() {
   return processes;
 }
 
-test("cancellation terminates observed descendants, including a separate session", options, async (t) => {
-  const dir = await workspace(t);
-  const abort = new AbortController();
-  let leader;
-  const running = runIsolated(
-    {
-      argv: [
-        "/usr/bin/python3",
-        "-c",
-        "import os,time; child=os.fork()\nif child==0:\n os.setsid(); open('/workspace/ready','w').close(); time.sleep(20); os._exit(0)\ntime.sleep(20)",
-      ],
-      timeoutMs: 10000,
-    },
-    abort.signal,
-    dir,
-    (pid) => {
-      leader = pid;
-    },
-  ).then(
-    (result) => ({ result }),
-    (error) => ({ error }),
-  );
-  let observed = new Map();
-  try {
-    const deadline = Date.now() + 3000;
-    let ready = false;
-    while (!ready && Date.now() < deadline) {
-      ready = await fs.stat(`${dir}/ready`).then(
-        () => true,
-        (error) => {
-          if (error.code !== "ENOENT") throw error;
-          return false;
-        },
-      );
-      if (!ready) await new Promise((resolve) => setTimeout(resolve, 20));
-    }
-    assert.ok(ready && leader, "descendant did not become ready");
-    const snapshot = await processSnapshot();
-    const descendants = new Set([leader]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const [pid, process] of snapshot) {
-        if (descendants.has(process.parent) && !descendants.has(pid)) {
-          descendants.add(pid);
-          changed = true;
+test(
+  "cancellation terminates observed descendants, including a separate session",
+  options,
+  async (t) => {
+    const dir = await workspace(t);
+    const abort = new AbortController();
+    let leader;
+    const running = runIsolated(
+      {
+        argv: [
+          "/usr/bin/python3",
+          "-c",
+          "import os,time; child=os.fork()\nif child==0:\n os.setsid(); open('/workspace/ready','w').close(); time.sleep(20); os._exit(0)\ntime.sleep(20)",
+        ],
+        timeoutMs: 10000,
+      },
+      abort.signal,
+      dir,
+      (pid) => {
+        leader = pid;
+      },
+    ).then(
+      (result) => ({ result }),
+      (error) => ({ error }),
+    );
+    let observed = new Map();
+    try {
+      const deadline = Date.now() + 3000;
+      let ready = false;
+      while (!ready && Date.now() < deadline) {
+        ready = await fs.stat(`${dir}/ready`).then(
+          () => true,
+          (error) => {
+            if (error.code !== "ENOENT") throw error;
+            return false;
+          },
+        );
+        if (!ready) await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      assert.ok(ready && leader, "descendant did not become ready");
+      const snapshot = await processSnapshot();
+      const descendants = new Set([leader]);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const [pid, process] of snapshot) {
+          if (descendants.has(process.parent) && !descendants.has(pid)) {
+            descendants.add(pid);
+            changed = true;
+          }
         }
       }
+      observed = new Map([...descendants].map((pid) => [pid, snapshot.get(pid)?.startTime]));
+      const python = [...observed.keys()].filter((pid) =>
+        snapshot.get(pid)?.name.startsWith("python3"),
+      );
+      assert.ok(python.length >= 2, "parent and descendant were not observable");
+      assert.ok(
+        python.some((pid) => snapshot.get(pid)?.session === pid),
+        "separate descendant session was not observable",
+      );
+    } finally {
+      abort.abort();
+      const reply = await running;
+      if ("error" in reply) throw reply.error;
+      assert.equal(reply.result.cancelled, true, "runner did not report cancellation");
     }
-    observed = new Map([...descendants].map((pid) => [pid, snapshot.get(pid)?.startTime]));
-    const python = [...observed.keys()].filter((pid) =>
-      snapshot.get(pid)?.name.startsWith("python3"),
-    );
-    assert.ok(python.length >= 2, "parent and descendant were not observable");
-    assert.ok(
-      python.some((pid) => snapshot.get(pid)?.session === pid),
-      "separate descendant session was not observable",
-    );
-  } finally {
-    abort.abort();
-    const reply = await running;
-    if ("error" in reply) throw reply.error;
-    assert.equal(reply.result.cancelled, true, "runner did not report cancellation");
-  }
-  const deadline = Date.now() + 1500;
-  let survivors;
-  do {
-    const snapshot = await processSnapshot();
-    survivors = [...observed].filter(([pid, startTime]) => {
-      const process = snapshot.get(pid);
-      return process && process.startTime === startTime && process.state !== "Z";
-    });
-    if (survivors.length) await new Promise((resolve) => setTimeout(resolve, 20));
-  } while (survivors.length && Date.now() < deadline);
-  for (const [pid] of survivors) {
-    try {
-      process.kill(pid, "SIGKILL");
-    } catch (error) {
-      if (error.code !== "ESRCH") throw error;
+    const deadline = Date.now() + 1500;
+    let survivors;
+    do {
+      const snapshot = await processSnapshot();
+      survivors = [...observed].filter(([pid, startTime]) => {
+        const process = snapshot.get(pid);
+        return process && process.startTime === startTime && process.state !== "Z";
+      });
+      if (survivors.length) await new Promise((resolve) => setTimeout(resolve, 20));
+    } while (survivors.length && Date.now() < deadline);
+    for (const [pid] of survivors) {
+      try {
+        process.kill(pid, "SIGKILL");
+      } catch (error) {
+        if (error.code !== "ESRCH") throw error;
+      }
     }
-  }
-  assert.equal(survivors.length, 0, "observed processes survived cancellation");
-});
+    assert.equal(survivors.length, 0, "observed processes survived cancellation");
+  },
+);
 
 test("real Linux isolation, resource ceilings and descendant cancellation", options, async () => {
   const executor = createExecutor({ enabled: false, controlSecret: "fixture-only".repeat(4) });

@@ -76,7 +76,9 @@ describe("shared Jackboy session (idempotent handshake ID)", () => {
 
 describe("Jackboy refusal stage", () => {
   it("keeps only allowlisted stages", () => {
-    expect(refusalStage(JSON.stringify({ error: "x", stage: "verification" }))).toBe("verification");
+    expect(refusalStage(JSON.stringify({ error: "x", stage: "verification" }))).toBe(
+      "verification",
+    );
     expect(refusalStage(JSON.stringify({ error: "x", stage: "elsewhere" }))).toBeUndefined();
     expect(refusalStage("not json")).toBeUndefined();
   });
