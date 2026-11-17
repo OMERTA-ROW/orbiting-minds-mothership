@@ -13,14 +13,14 @@ const state = {
   executionReady: false,
   expiresAt: null,
   operationId: null,
-  executorRelease: "omni-bounded-plan-1",
+  executorRelease: "omni-bounded-plan-2",
   executorOrigin: null,
   running: false,
   cancellationPending: false,
 };
 const release = {
-  expected: "omni-bounded-plan-1",
-  jackboyRelease: "omni-bounded-plan-1",
+  expected: "omni-bounded-plan-2",
+  jackboyRelease: "omni-bounded-plan-2",
   jackboyMatches: true,
   mothershipPinned: true,
 };

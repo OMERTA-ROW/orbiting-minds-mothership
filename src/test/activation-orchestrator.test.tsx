@@ -18,7 +18,7 @@ import { ActivationOrchestrator } from "@/components/omnibridge/ActivationOrches
 const facts = {
   checkedAt: "2026-11-16T22:30:00Z",
   jackboyBuild: { commit: "9081a4187c4f8e691e209f12ec3afd1db3b75b91", builtAt: "2026-11-16T21:55:36Z" },
-  executor: { ok: true, release: "omni-bounded-plan-1", reviewedRelease: "omni-bounded-plan-1", enabled: false },
+  executor: { ok: true, release: "omni-bounded-plan-2", reviewedRelease: "omni-bounded-plan-2", enabled: false },
   pinned: true,
   windowEndsAt: new Date(Date.now() + 5 * 3600_000).toISOString(),
   linkEffective: true,

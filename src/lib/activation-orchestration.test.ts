@@ -13,8 +13,8 @@ const ATTEMPTS = {
 };
 const ENABLED = {
   ok: true as const,
-  release: "omni-bounded-plan-1",
-  reviewedRelease: "omni-bounded-plan-1",
+  release: "omni-bounded-plan-2",
+  reviewedRelease: "omni-bounded-plan-2",
   enabled: true,
 };
 
@@ -122,7 +122,7 @@ describe("executor owner action", () => {
       { ...ENABLED, reviewedRelease: null, enabled: false },
       true,
     );
-    expect(action).toContain("OMNI_AUTONOMY_REVIEWED_RELEASE=omni-bounded-plan-1");
+    expect(action).toContain("OMNI_AUTONOMY_REVIEWED_RELEASE=omni-bounded-plan-2");
     expect(action).toContain("env file on the Vultr server");
     expect(action).toContain("restart omni-executor.service");
     expect(action).not.toMatch(/Railway|secret value/i);
@@ -151,7 +151,7 @@ function ready(over: Partial<ReadinessInput> = {}): ReadinessInput {
       running: false,
       emergencyStop: false,
       killSwitch: false,
-      executorRelease: "omni-bounded-plan-1",
+      executorRelease: "omni-bounded-plan-2",
       cancellationPending: false,
     },
     executor: ENABLED,

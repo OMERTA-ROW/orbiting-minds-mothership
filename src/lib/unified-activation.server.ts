@@ -2,7 +2,7 @@ import { z } from "zod";
 import { sendExecutionControl } from "./jackboy-link.server";
 
 /** The only executor release Mothership accepts (Jackboy's `omni.autonomous/v1` bounded executor). */
-export const REVIEWED_EXECUTOR_RELEASE = "omni-bounded-plan-1";
+export const REVIEWED_EXECUTOR_RELEASE = "omni-bounded-plan-2";
 
 /**
  * Release facts for display: what Jackboy reports for its verified executor and whether Mothership's own

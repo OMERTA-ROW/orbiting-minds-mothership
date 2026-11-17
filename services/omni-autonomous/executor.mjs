@@ -4,7 +4,10 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import { pathToFileURL } from "node:url";
 
-export const RELEASE = "omni-bounded-plan-1";
+export const RELEASE = "omni-bounded-plan-2";
+/** Jackboy runs on a serverless host whose cold replies can take about 3 s. */
+export const PERMISSION_TIMEOUT_MS = 6000;
+export const PERMISSION_MAX_AGE_MS = 6000;
 export const PATH = "/omni-autonomous/v1";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const BINARIES = [
@@ -192,7 +195,7 @@ export async function permissionRequest(config, operation, plan) {
     method: "POST",
     body,
     redirect: "error",
-    signal: AbortSignal.timeout(1500),
+    signal: AbortSignal.timeout(PERMISSION_TIMEOUT_MS),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${config.permissionToken}`,
@@ -220,7 +223,7 @@ export async function permissionRequest(config, operation, plan) {
     reply.requestNonce !== nonce ||
     reply.state?.projectId !== plan.projectId ||
     !Number.isFinite(Date.parse(reply.state?.checkedAt)) ||
-    Date.now() - Date.parse(reply.state.checkedAt) > 2000 ||
+    Date.now() - Date.parse(reply.state.checkedAt) > PERMISSION_MAX_AGE_MS ||
     Date.parse(reply.state.checkedAt) > Date.now() + 1000
   )
     throw new Error("Stale permission state");

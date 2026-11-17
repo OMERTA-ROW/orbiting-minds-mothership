@@ -4,7 +4,7 @@
  * a stop, enables CODE, changes caps or starts work, and nothing reports "ready" on missing proof.
  */
 
-export const REVIEWED_RELEASE = "omni-bounded-plan-1";
+export const REVIEWED_RELEASE = "omni-bounded-plan-2";
 
 export type OrchestrationSelection = { liveLink: boolean; autonomy: boolean; arm: boolean };
 export type StageId = "live_link" | "autonomy" | "arm";

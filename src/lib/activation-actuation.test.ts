@@ -105,7 +105,7 @@ describe("Step 10 verify, then configure", () => {
     connected: true,
     configured: false,
     armed: false,
-    executorRelease: "omni-bounded-plan-1" as string | null,
+    executorRelease: "omni-bounded-plan-2" as string | null,
     operationId: "aaaaaaaa-0000-4000-8000-000000000009",
   };
   it("verifies immediately before configuring, in that order", async () => {
@@ -113,7 +113,7 @@ describe("Step 10 verify, then configure", () => {
     const state = await verifyThenConfigure(async (op) => {
       calls.push(op);
       return op === "verify" ? base : { ...base, configured: true };
-    }, "omni-bounded-plan-1");
+    }, "omni-bounded-plan-2");
     expect(calls).toEqual(["verify", "configure"]);
     expect(state.configured).toBe(true);
   });
@@ -123,20 +123,20 @@ describe("Step 10 verify, then configure", () => {
       verifyThenConfigure(async (op) => {
         calls.push(op);
         return { ...base, executorRelease: null };
-      }, "omni-bounded-plan-1"),
+      }, "omni-bounded-plan-2"),
     ).rejects.toMatchObject({ issue: "executor_unverified" });
     expect(calls).toEqual(["verify"]);
   });
   it("refuses an unreviewed release before configuring", async () => {
     await expect(
-      verifyThenConfigure(async () => ({ ...base, executorRelease: "other-1" }), "omni-bounded-plan-1"),
+      verifyThenConfigure(async () => ({ ...base, executorRelease: "other-1" }), "omni-bounded-plan-2"),
     ).rejects.toMatchObject({ issue: "release_mismatch" });
   });
   it("refuses a configured state that came back armed", async () => {
     await expect(
       verifyThenConfigure(
         async (op) => (op === "verify" ? base : { ...base, configured: true, armed: true }),
-        "omni-bounded-plan-1",
+        "omni-bounded-plan-2",
       ),
     ).rejects.toMatchObject({ issue: "state_mismatch" });
   });

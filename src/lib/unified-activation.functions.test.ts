@@ -111,7 +111,7 @@ beforeEach(() => {
   mocks.activation = null;
   mocks.approvalMs = 3_600_000;
   mocks.localAllowed = true;
-  vi.stubEnv("OMNI_AUTONOMY_REVIEWED_RELEASE", "omni-bounded-plan-1");
+  vi.stubEnv("OMNI_AUTONOMY_REVIEWED_RELEASE", "omni-bounded-plan-2");
   vi.stubEnv("OMNI_EXECUTOR_ORIGIN", "https://executor.fixture.invalid");
   vi.stubEnv("OMNI_EXECUTOR_CONTROL_SECRET", "c".repeat(32));
   mocks.rpc.mockImplementation((name: string) => {
@@ -132,7 +132,7 @@ beforeEach(() => {
     mocks.calls.push(operation);
     return {
       projectId,
-      executorRelease: "omni-bounded-plan-1",
+      executorRelease: "omni-bounded-plan-2",
       executorOrigin: "https://executor.fixture.invalid",
       executionReady: true,
       allowed: true,
@@ -302,10 +302,10 @@ it("executor verify reports success only when Jackboy's signed state records a r
     projectId,
     connected: true,
     armed: false,
-    executorRelease: "omni-bounded-plan-1",
+    executorRelease: "omni-bounded-plan-2",
     checkedAt: new Date().toISOString(),
   }));
-  await expect(verify()).resolves.toMatchObject({ executorRelease: "omni-bounded-plan-1" });
+  await expect(verify()).resolves.toMatchObject({ executorRelease: "omni-bounded-plan-2" });
   expect(mocks.state).toHaveBeenLastCalledWith("verify", {});
   mocks.state.mockImplementationOnce(async () => ({
     projectId,
