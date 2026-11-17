@@ -76,6 +76,12 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
     await db.exec(
       await readFile(join(jackboy, "drizzle/migrations/0030_omni_sessions.sql"), "utf8"),
     );
+    await db.exec(
+      await readFile(
+        join(jackboy, "drizzle/migrations/0073_omni_idempotent_handshake.sql"),
+        "utf8",
+      ),
+    );
     const project = "11111111-1111-4111-8111-111111111111";
     const owner = "22222222-2222-4222-8222-222222222222";
     const approval = "33333333-3333-4333-8333-333333333333";
@@ -95,10 +101,12 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
     };
     const store = async (op, args) =>
       (
-        await db.query("SELECT omni_link_action($1,$2::jsonb) AS result", [
-          op,
-          JSON.stringify(args),
-        ])
+        await db.query(
+          op === "handshake_idempotent"
+            ? "SELECT omni_link_idempotent_handshake($1::jsonb) AS result"
+            : "SELECT omni_link_action($1,$2::jsonb) AS result",
+          op === "handshake_idempotent" ? [JSON.stringify(args)] : [op, JSON.stringify(args)],
+        )
       ).rows[0].result;
     const key = join(dir, "key.pem"),
       cert = join(dir, "cert.pem");
@@ -180,6 +188,31 @@ test("Mothership client against real Jackboy handler over verified TLS and isola
           )
         ).rows[0].n,
         1,
+      );
+    });
+    await t.test("independent clients reuse the idempotent handshake", async (t) => {
+      t.mock.timers.enable({ apis: ["Date"], now: Date.now() });
+      await new JackboyLink(config, async () => {}, trusted).connect();
+      const before = (await db.query("SELECT count(*)::int AS n FROM omni_link_sessions")).rows[0]
+        .n;
+      const retries = (
+        await db.query(
+          "SELECT count(*)::int AS n FROM site_log WHERE action='omni.link.handshake_retry'",
+        )
+      ).rows[0].n;
+      const fresh = new JackboyLink(config, async () => {}, trusted);
+      await fresh.connect();
+      assert.equal(
+        (await db.query("SELECT count(*)::int AS n FROM omni_link_sessions")).rows[0].n,
+        before,
+      );
+      assert.equal(
+        (
+          await db.query(
+            "SELECT count(*)::int AS n FROM site_log WHERE action='omni.link.handshake_retry'",
+          )
+        ).rows[0].n,
+        retries + 1,
       );
     });
     await t.test("rejects untrusted certificate and wrong scoped credentials", async () => {

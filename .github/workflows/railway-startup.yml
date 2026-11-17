@@ -17,13 +17,13 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: OMERTA-ROW/jackboy-dev-control
-          ref: d5b9ab213cf6313a81d20f8f351a6caffc26450c
+          ref: 3155b88ea99ea434e9940cea5401d89ca24c9464
           path: jackboy-interop
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: OMERTA-ROW/Omni
-          ref: cc083d8e51e0135f536e01f08000de7d8660acbe
+          ref: 8527cd5aba2a0a575c1079b965a8c5bb22f45d6b
           path: omni-interop
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
