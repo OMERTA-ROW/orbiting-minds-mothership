@@ -24,6 +24,10 @@ export async function signedExecutorRequest(
       "X-Executor-Signature": mac(`omni.autonomous/v1\n${path}\n${timestamp}\n${nonce}\n${body}`),
     },
   });
+  if (response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)) {
+    await response.body?.cancel().catch(() => {});
+    throw new Error("Executor status or signed proof failed; do not automatically retry the job");
+  }
   const { readCapped } = await import("./jackboy-link.server");
   const text = await readCapped(response);
   const actual = Buffer.from(response.headers.get("X-Executor-Proof") ?? "");
