@@ -79,7 +79,11 @@ test("one approved printf runs in a fresh deny-all non-persistent sandbox and is
   const f = fixture();
   const adapter = createVercelAdapter(f);
   const value = plan();
-  const result = await adapter.run(value, ["/usr/bin/printf", "hello"], new AbortController().signal);
+  const result = await adapter.run(
+    value,
+    ["/usr/bin/printf", "hello"],
+    new AbortController().signal,
+  );
   assert.equal(result.outcome, "completed");
   assert.equal(result.output, "hello");
   assert.equal(result.terminated, true);
@@ -94,7 +98,10 @@ test("one approved printf runs in a fresh deny-all non-persistent sandbox and is
   assert.deepEqual(command.args, ["hello"]);
   assert.deepEqual(command.env, {});
   assert.ok(f.records.get(value.jobId).terminated);
-  await assert.rejects(adapter.run(value, value.commands[0].argv, new AbortController().signal), /duplicate/);
+  await assert.rejects(
+    adapter.run(value, value.commands[0].argv, new AbortController().signal),
+    /duplicate/,
+  );
   assert.equal(f.calls.filter(([type]) => type === "create").length, 1);
 });
 
@@ -102,9 +109,15 @@ test("only the exact approved single printf command is accepted", async () => {
   const f = fixture();
   const adapter = createVercelAdapter(f);
   const value = plan();
-  await assert.rejects(adapter.run(value, ["/usr/bin/printf", "different"], new AbortController().signal), /approved/);
+  await assert.rejects(
+    adapter.run(value, ["/usr/bin/printf", "different"], new AbortController().signal),
+    /approved/,
+  );
   value.commands.push({ argv: ["/usr/bin/printf", "second"], timeoutMs: 1000 });
-  await assert.rejects(adapter.run(value, value.commands[0].argv, new AbortController().signal), /approved/);
+  await assert.rejects(
+    adapter.run(value, value.commands[0].argv, new AbortController().signal),
+    /approved/,
+  );
   assert.deepEqual(f.calls, []);
 });
 
@@ -120,7 +133,11 @@ test("the approved arguments cannot be changed while durable reservation is pend
   };
   const value = plan();
   const originalHash = planHash(value);
-  const running = createVercelAdapter(f).run(value, [...value.commands[0].argv], new AbortController().signal);
+  const running = createVercelAdapter(f).run(
+    value,
+    [...value.commands[0].argv],
+    new AbortController().signal,
+  );
   await reserved.promise;
   value.commands[0].argv[1] = "changed";
   gate.resolve();
@@ -145,16 +162,21 @@ test("Stop during creation waits for the VM and confirmed termination", async ()
   const running = adapter.run(value, value.commands[0].argv, new AbortController().signal);
   await started.promise;
   let acknowledged = false;
-  const cancelling = adapter.cancel({ jobId: value.jobId, planSha256: planHash(value) }).then((result) => {
-    acknowledged = true;
-    return result;
-  });
+  const cancelling = adapter
+    .cancel({ jobId: value.jobId, planSha256: planHash(value) })
+    .then((result) => {
+      acknowledged = true;
+      return result;
+    });
   await Promise.resolve();
   assert.equal(acknowledged, false);
   creation.resolve();
   assert.equal((await running).outcome, "cancelled");
   assert.equal((await cancelling).terminated, true);
-  assert.equal(f.calls.some(([type]) => type === "command"), false);
+  assert.equal(
+    f.calls.some(([type]) => type === "command"),
+    false,
+  );
 });
 
 test("Stop racing completion waits for fresh stopped status and durable recording", async () => {
@@ -182,10 +204,12 @@ test("Stop racing completion waits for fresh stopped status and durable recordin
   runningCommand.resolve({ exitCode: 0 });
   await Promise.resolve();
   let acknowledged = false;
-  const cancellation = adapter.cancel({ jobId: value.jobId, planSha256: planHash(value) }).then((result) => {
-    acknowledged = true;
-    return result;
-  });
+  const cancellation = adapter
+    .cancel({ jobId: value.jobId, planSha256: planHash(value) })
+    .then((result) => {
+      acknowledged = true;
+      return result;
+    });
   await Promise.resolve();
   assert.equal(acknowledged, false);
   stopGate.resolve();
@@ -203,13 +227,28 @@ test("uncertain creation cannot acknowledge or replay; restart reconciles a foun
   };
   const value = plan();
   const adapter = createVercelAdapter(f);
-  await assert.rejects(adapter.run(value, value.commands[0].argv, new AbortController().signal), /lost/);
-  await assert.rejects(adapter.cancel({ jobId: value.jobId, planSha256: planHash(value) }), /unverified/);
+  await assert.rejects(
+    adapter.run(value, value.commands[0].argv, new AbortController().signal),
+    /lost/,
+  );
+  await assert.rejects(
+    adapter.cancel({ jobId: value.jobId, planSha256: planHash(value) }),
+    /unverified/,
+  );
   const next = plan();
   const restarted = createVercelAdapter(f);
-  await assert.rejects(restarted.run(next, next.commands[0].argv, new AbortController().signal), /unresolved/);
-  assert.equal((await restarted.reconcile({ jobId: value.jobId, planSha256: planHash(value) })).terminated, true);
-  await assert.rejects(restarted.run(value, value.commands[0].argv, new AbortController().signal), /duplicate/);
+  await assert.rejects(
+    restarted.run(next, next.commands[0].argv, new AbortController().signal),
+    /unresolved/,
+  );
+  assert.equal(
+    (await restarted.reconcile({ jobId: value.jobId, planSha256: planHash(value) })).terminated,
+    true,
+  );
+  await assert.rejects(
+    restarted.run(value, value.commands[0].argv, new AbortController().signal),
+    /duplicate/,
+  );
   assert.equal(f.calls.filter(([type]) => type === "create").length, 1);
 });
 
@@ -221,15 +260,24 @@ test("missing VM, unsuccessful stop and journal failure never produce terminatio
       const box = await original(options);
       if (failure === "missing") f.boxes.delete(box.name);
       if (failure === "stop") box.stop = async () => {};
-      if (failure === "journal") f.journal.markTerminated = async () => { throw new Error("journal failed"); };
+      if (failure === "journal")
+        f.journal.markTerminated = async () => {
+          throw new Error("journal failed");
+        };
       return box;
     };
     const value = plan();
     const adapter = createVercelAdapter(f);
     await assert.rejects(adapter.run(value, value.commands[0].argv, new AbortController().signal));
-    await assert.rejects(adapter.cancel({ jobId: value.jobId, planSha256: planHash(value) }), /unverified/);
+    await assert.rejects(
+      adapter.cancel({ jobId: value.jobId, planSha256: planHash(value) }),
+      /unverified/,
+    );
     if (failure === "missing")
-      await assert.rejects(adapter.reconcile({ jobId: value.jobId, planSha256: planHash(value) }), /not found/);
+      await assert.rejects(
+        adapter.reconcile({ jobId: value.jobId, planSha256: planHash(value) }),
+        /not found/,
+      );
     assert.equal(f.records.get(value.jobId).terminated, false);
   }
 });
@@ -248,7 +296,11 @@ test("oversized output aborts and command errors still terminate the VM", async 
       return box;
     };
     const value = plan();
-    const running = createVercelAdapter(f).run(value, value.commands[0].argv, new AbortController().signal);
+    const running = createVercelAdapter(f).run(
+      value,
+      value.commands[0].argv,
+      new AbortController().signal,
+    );
     if (failure === "command") await assert.rejects(running, /command failed/);
     else {
       const result = await running;

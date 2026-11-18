@@ -65,8 +65,7 @@ export function createVercelAdapter({ Sandbox, journal }) {
       // reserve must atomically persist before create and reject every repeated job.
       await journal.reserve(record);
       const remaining = Date.parse(plan.expiresAt) - Date.now();
-      if (state.stopRequested || remaining <= 0)
-        throw new Error("Stopped before sandbox creation");
+      if (state.stopRequested || remaining <= 0) throw new Error("Stopped before sandbox creation");
       const box = await Sandbox.create({
         name: record.name,
         networkPolicy: "deny-all",
