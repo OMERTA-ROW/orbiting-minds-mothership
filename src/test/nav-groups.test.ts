@@ -84,6 +84,7 @@ describe("grouped navigation", () => {
     expect(navGroups.map((g) => g.label)).toEqual([
       "Projects",
       "Agents",
+      "Mothership",
       "Approvals",
       "Connections",
       "Settings",
@@ -99,6 +100,7 @@ describe("grouped navigation", () => {
       "/omni-api-keys",
       "/activation-approvals",
       "/members",
+      "/treasury",
     ])
       expect(status[p]).toBe("owner");
   });
@@ -130,6 +132,7 @@ describe("design previews are hidden from the working site", () => {
       "/members",
       "/omni-terminal",
       "/omni-dock",
+      "/treasury",
       "/account-security",
       "/invite",
     ])

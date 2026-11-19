@@ -109,6 +109,19 @@ export const navGroups = [
     ],
   },
   {
+    id: "mothership",
+    label: "Mothership",
+    blurb: "Owner-only financial status. No funding or transfers are connected.",
+    items: [
+      {
+        to: "/treasury",
+        label: "Treasury",
+        status: "owner",
+        note: "Read-only OMNI workspace metering; no balances or money movement.",
+      },
+    ],
+  },
+  {
     id: "approvals",
     label: "Approvals",
     blurb: "Nothing important happens without you.",

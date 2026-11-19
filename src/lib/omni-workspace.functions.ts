@@ -25,6 +25,7 @@ import {
   stopDrillInput,
   STOP_DRILL_COMMAND,
 } from "./omni-workspace";
+import { summarizeOmniLedger } from "./treasury";
 
 type Ctx = {
   supabase: Parameters<typeof import("./razul-owner.server").requireRazulOwner>[0];
@@ -131,6 +132,42 @@ export const readWorkspace = createServerFn({ method: "POST" })
       audit: auditRows.data ?? [],
       passkeys: passkeys.data ?? [],
       steps: steps.data ?? [],
+    };
+  });
+
+const TREASURY_LEDGER_ROWS = 5000;
+const TREASURY_AGENT_ROWS = 100;
+
+export const readTreasury = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await owner(context);
+    const [agents, ledger] = await Promise.all([
+      db
+        .from("omni_agents")
+        .select("id,display_name,status,budget_task_cents,budget_day_cents,budget_total_cents")
+        .order("id")
+        .limit(TREASURY_AGENT_ROWS + 1),
+      db
+        .from("omni_spend_ledger")
+        .select("id,agent_id,cents,note,created_at")
+        .order("created_at", { ascending: false })
+        .limit(TREASURY_LEDGER_ROWS + 1),
+    ]);
+
+    if (agents.error || ledger.error) throw new Error("Treasury records could not be read.");
+    if ((agents.data ?? []).length > TREASURY_AGENT_ROWS)
+      throw new Error("Treasury agent list exceeds the safe read limit.");
+    if ((ledger.data ?? []).length > TREASURY_LEDGER_ROWS)
+      throw new Error("Treasury ledger exceeds the safe read limit.");
+
+    const now = new Date();
+    const rows = ledger.data ?? [];
+    return {
+      generatedAt: now.toISOString(),
+      agents: agents.data ?? [],
+      spend: summarizeOmniLedger(rows, now),
+      activity: rows.slice(0, 20),
     };
   });
 
