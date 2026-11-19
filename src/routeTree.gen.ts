@@ -74,6 +74,7 @@ import { Route as SandboxRouteImport } from './routes/sandbox'
 import { Route as SdkRouteImport } from './routes/sdk'
 import { Route as SecurityReportRouteImport } from './routes/security-report'
 import { Route as SignInHelpRouteImport } from './routes/sign-in-help'
+import { Route as TreasuryRouteImport } from './routes/treasury'
 import { Route as TrustRouteImport } from './routes/trust'
 import { Route as UniverseRouteImport } from './routes/universe'
 import { Route as UpdatesRouteImport } from './routes/updates'
@@ -436,6 +437,11 @@ const SignInHelpRoute = SignInHelpRouteImport.update({
   path: '/sign-in-help',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TreasuryRoute = TreasuryRouteImport.update({
+  id: '/treasury',
+  path: '/treasury',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrustRoute = TrustRouteImport.update({
   id: '/trust',
   path: '/trust',
@@ -699,6 +705,7 @@ export interface FileRoutesByFullPath {
   '/sdk': typeof SdkRoute
   '/security-report': typeof SecurityReportRoute
   '/sign-in-help': typeof SignInHelpRoute
+  '/treasury': typeof TreasuryRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
@@ -802,6 +809,7 @@ export interface FileRoutesByTo {
   '/sdk': typeof SdkRoute
   '/security-report': typeof SecurityReportRoute
   '/sign-in-help': typeof SignInHelpRoute
+  '/treasury': typeof TreasuryRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
@@ -907,6 +915,7 @@ export interface FileRoutesById {
   '/sdk': typeof SdkRoute
   '/security-report': typeof SecurityReportRoute
   '/sign-in-help': typeof SignInHelpRoute
+  '/treasury': typeof TreasuryRoute
   '/trust': typeof TrustRoute
   '/universe': typeof UniverseRoute
   '/updates': typeof UpdatesRoute
@@ -1012,6 +1021,7 @@ export interface FileRouteTypes {
     | '/sdk'
     | '/security-report'
     | '/sign-in-help'
+    | '/treasury'
     | '/trust'
     | '/universe'
     | '/updates'
@@ -1115,6 +1125,7 @@ export interface FileRouteTypes {
     | '/sdk'
     | '/security-report'
     | '/sign-in-help'
+    | '/treasury'
     | '/trust'
     | '/universe'
     | '/updates'
@@ -1219,6 +1230,7 @@ export interface FileRouteTypes {
     | '/sdk'
     | '/security-report'
     | '/sign-in-help'
+    | '/treasury'
     | '/trust'
     | '/universe'
     | '/updates'
@@ -1324,6 +1336,7 @@ export interface RootRouteChildren {
   SdkRoute: typeof SdkRoute
   SecurityReportRoute: typeof SecurityReportRoute
   SignInHelpRoute: typeof SignInHelpRoute
+  TreasuryRoute: typeof TreasuryRoute
   TrustRoute: typeof TrustRoute
   UniverseRoute: typeof UniverseRoute
   UpdatesRoute: typeof UpdatesRoute
@@ -1814,6 +1827,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInHelpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/treasury': {
+      id: '/treasury'
+      path: '/treasury'
+      fullPath: '/treasury'
+      preLoaderRoute: typeof TreasuryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/trust': {
       id: '/trust'
       path: '/trust'
@@ -2163,6 +2183,7 @@ const rootRouteChildren: RootRouteChildren = {
   SdkRoute: SdkRoute,
   SecurityReportRoute: SecurityReportRoute,
   SignInHelpRoute: SignInHelpRoute,
+  TreasuryRoute: TreasuryRoute,
   TrustRoute: TrustRoute,
   UniverseRoute: UniverseRoute,
   UpdatesRoute: UpdatesRoute,
