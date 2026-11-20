@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-10-22",
-  "updated_at": "2026-11-14",
+  "updated_at": "2026-11-20T16:20:00Z",
   "project_name": "Evolution Mothership",
   "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
   "source_note_urls": [
@@ -269,6 +269,11 @@
       "command": "bunx vitest run src/lib/rasul-chat.test.ts + Playwright /omni-razul",
       "result": "12 unit tests PASS. Browser: agents answer with verified label, Guardian dispatch prepared pending-approval with blocked execution and named prerequisite, handoff transparency rendered. Build OK 14:02 UTC.",
       "passed": true
+    },
+    "site-links-connections": {
+      "command": "bunx vitest run src/test/site-links.test.ts src/lib/omni-spend-evidence.test.ts + python3 scripts/smoke_site.py",
+      "result": "2026-11-20 preview: 76 pages 200 with no runtime errors or broken links; 13 OMNI/delegation endpoints return documented refusals; registered origins exact; spending cap stays Unverified (newest signed permit 2026-11-19 01:57 UTC, older than 15 minutes). Not published.",
+      "passed": true
     }
   },
   "steps": [
@@ -470,10 +475,6 @@
             "cli/internal/companion/guardian_defense_test.go",
             "cli/README.md",
             "cli/SECURITY.md",
-            "src/lib/guardian-evidence.ts",
-            "src/components/guardian/DevelopmentEvidence.tsx",
-            "src/components/guardian/Center.tsx",
-            "src/test/guardian-evidence.test.ts",
             ".lovable/guardian-defense-verification.md"
           ],
           "commit": null,
@@ -486,7 +487,14 @@
           "next_action": "Implement authenticated owner-scoped event/capability/audit adapters in isolated development backend; confirm custom durable rate-limit tradeoff and concrete quotas (no standard limiter); choose isolated job runner/session-revoke and reviewed version-restoration adapters before activation. Terminal maintenance coverage is 07.05; apply/scans remain blocked, no duplicate Guardian authorization model.",
           "missing_input": null,
           "release_status": "Development source/preview only; no production deploy, signing, install, provider connection or live-site disruptive testing",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/guardian-evidence.ts",
+            "src/components/guardian/DevelopmentEvidence.tsx",
+            "src/components/guardian/Center.tsx",
+            "src/test/guardian-evidence.test.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "03.02",
@@ -510,10 +518,6 @@
             "cli/internal/companion/guardian_defense_test.go",
             "cli/README.md",
             "cli/SECURITY.md",
-            "src/lib/guardian-evidence.ts",
-            "src/components/guardian/DevelopmentEvidence.tsx",
-            "src/components/guardian/Center.tsx",
-            "src/test/guardian-evidence.test.ts",
             ".lovable/guardian-defense-verification.md"
           ],
           "commit": null,
@@ -526,7 +530,14 @@
           "next_action": "Require actual auth-event/capability/rate/job adapters before those acceptance tests; do not promote local binding or mocked identity denial to hosted security proof. No disruptive shared live-site testing.",
           "missing_input": null,
           "release_status": "Development source/preview only; no production deploy, signing, install, provider connection or live-site disruptive testing",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/guardian-evidence.ts",
+            "src/components/guardian/DevelopmentEvidence.tsx",
+            "src/components/guardian/Center.tsx",
+            "src/test/guardian-evidence.test.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "03.03",
@@ -550,10 +561,6 @@
             "cli/internal/companion/guardian_defense_test.go",
             "cli/README.md",
             "cli/SECURITY.md",
-            "src/lib/guardian-evidence.ts",
-            "src/components/guardian/DevelopmentEvidence.tsx",
-            "src/components/guardian/Center.tsx",
-            "src/test/guardian-evidence.test.ts",
             ".lovable/guardian-defense-verification.md"
           ],
           "commit": null,
@@ -566,7 +573,14 @@
           "next_action": "Retain best-effort redaction and same-user limitations. Hosted Guardian audit requires owner-only grants/retention and independent external anchor; no immutable evidence or Windows ACL claim.",
           "missing_input": null,
           "release_status": "Development source/preview only; no production deploy, signing, install, provider connection or live-site disruptive testing",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/guardian-evidence.ts",
+            "src/components/guardian/DevelopmentEvidence.tsx",
+            "src/components/guardian/Center.tsx",
+            "src/test/guardian-evidence.test.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         }
       ]
     },
@@ -593,9 +607,7 @@
           "changed_files": [
             "src/lib/ai/omni-responses.server.ts",
             "src/routes/_authenticated/beta-omni.tsx",
-            "src/lib/omni-activation.functions.ts",
             "src/lib/beta-auth.server.ts",
-            "src/test/omni-activation-server.test.ts",
             ".lovable/omni-activation-verification.md",
             "src/lib/ai/omni-agent.server.ts",
             "src/lib/omni-agent.ts",
@@ -617,7 +629,12 @@
           "next_action": "Owner explicitly authorizes both staged scripts on shared backend or supplies isolated backend, chooses real email securely and confirms /auth then /members claim; separately authorized AI approval and project consent precede first real connection test. This is owner-imposed shared-backend restriction, not missing platform AI entitlement.",
           "missing_input": "Verified owner account, protected membership and approved minimal run schema activation; exact scripts/actions .lovable/omni-agent-activation.md. No applicable native approval card or desktop runtime exists.",
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/omni-activation.functions.ts",
+            "src/test/omni-activation-server.test.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "04.02",
@@ -629,11 +646,7 @@
             "03"
           ],
           "changed_files": [
-            "src/components/omnibridge/OmniAssistant.tsx",
             "src/routes/_authenticated/beta-omni.tsx",
-            "src/components/omnibridge/OmniActivation.tsx",
-            "src/lib/omni-activation.ts",
-            "src/test/omni-activation.test.ts",
             ".lovable/omni-activation-verification.md",
             "src/components/omnibridge/OmniAgentHistory.tsx",
             "src/lib/omni-agent.functions.ts",
@@ -649,21 +662,26 @@
           "next_action": "After named pending schema and verified owner activation, select private project, consent and run Omni connection test; prove saved answer readback/Stop/pause. Native companion remains independently blocked.",
           "missing_input": "Confirmed owner/member account plus approved pending run schema and AI approval. No shared schema/account changes permitted this turn; no CLI login or companion.",
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/components/omnibridge/OmniAssistant.tsx",
+            "src/components/omnibridge/OmniActivation.tsx",
+            "src/lib/omni-activation.ts",
+            "src/test/omni-activation.test.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "04.03",
           "requirement": "Implement capability discovery for OmniBridge, Parallel Worlds and role-specific agents; show unavailable providers honestly.",
-          "status": "Demo only",
+          "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
             "02",
             "03"
           ],
           "changed_files": [
-            "src/lib/omnibridge.ts",
-            "src/lib/omni-platforms.ts",
-            "src/components/omnibridge/CapabilityGraph.tsx"
+            "src/lib/omni-platforms.ts"
           ],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
@@ -672,24 +690,26 @@
           "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
-          "next_action": "Supported per-user clients/adapter capabilities and verified scopes required for live discovery.",
+          "next_action": "Demo retired; a real version needs a working backend and owner approval. Previous status: Demo only. Supported per-user clients/adapter capabilities and verified scopes required for live discovery.",
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/omnibridge.ts",
+            "src/components/omnibridge/CapabilityGraph.tsx"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "04.04",
           "requirement": "OMNI multi-agent registry and collaboration conventions: independent specialist agents across opted-in projects with categorized roles (AngelTech constructive research/creation/quality, DemonTech authorized defensive security/risk testing, Guardian permissions/audit, OMNI core coordination), capability declarations, task/result reporting, agent-to-agent coordination and owner pause control. Autonomous discovery, drafting, code generation and isolated testing allowed only through declared capabilities plus a connected runner; irreversible, high-impact, private-data and production actions always need owner approval.",
-          "status": "Demo only",
+          "status": "Deferred",
           "owner": "Lovable implementation; owner supplies backend activation and runner",
           "dependencies": [
             "02",
             "07"
           ],
           "changed_files": [
-            "src/lib/omni-agents.ts",
-            "src/test/omni-agents.test.ts",
-            "src/components/omnibridge/OmniAgentRegistry.tsx",
             "src/routes/omni-agents.tsx",
             "src/components/SiteNav.tsx",
             "roadmap.md",
@@ -706,14 +726,20 @@
           "verified_scope": "Local concept-stage registry only: categorized roles, owner-confirmed capability declarations, non-executing task/result/coordination records and owner pause. No live agent, runner, inference or backend membership.",
           "test_result": "11 vitest tests PASS (registration, pause blocking reports, coordination only between registered agents, undeclared-capability denial, approval boundaries, corrupt-store fallback).",
           "runtime_evidence": "Route /omni-agents renders with CONCEPT · NO AGENT IS LIVE badge; reports never execute; autonomy requires a connected runner that does not exist.",
-          "next_action": "Blocked: authenticated backend membership, a real agent runner and live Guardian policy engine before any live integration claim.",
+          "next_action": "Demo retired; a real version needs a working backend and owner approval. Previous status: Demo only. Blocked: authenticated backend membership, a real agent runner and live Guardian policy engine before any live integration claim.",
           "release_status": "Not released; private prototype only.",
-          "test_command": "bunx vitest run src/test/omni-agents.test.ts"
+          "test_command": "bunx vitest run src/test/omni-agents.test.ts",
+          "retired_files": [
+            "src/lib/omni-agents.ts",
+            "src/test/omni-agents.test.ts",
+            "src/components/omnibridge/OmniAgentRegistry.tsx"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "04.05",
           "requirement": "Model-agnostic multi-agent gateway: extensible provider adapter registry for authorized model APIs and local models, declaration-based capability discovery, per-project agent passports (identity, specialty, permissions, project scope, endpoint, health), enrollment and routing; project-assigned agents inspect own project within approved scopes and send structured gap reports to Jackboy, who dispatches coding/tests through OMNI and reports outcomes; JAX as separately enrolled autonomous agent with approved broker workflow, no Honeycomb Vault secrets, no external data submission without consent. Show real vs simulated integrations, credential prerequisites and end-to-end acceptance test; never claim unconnected models.",
-          "status": "Demo only",
+          "status": "Deferred",
           "owner": "Lovable implementation; owner supplies provider credentials, backend activation and runner",
           "dependencies": [
             "02",
@@ -721,9 +747,6 @@
             "07"
           ],
           "changed_files": [
-            "src/lib/omni-model-gateway.ts",
-            "src/test/omni-model-gateway.test.ts",
-            "src/components/omnibridge/OmniModelGateway.tsx",
             "src/routes/omni-models.tsx",
             "src/components/SiteNav.tsx",
             "roadmap.md",
@@ -740,9 +763,15 @@
           "verified_scope": "Declaration-only model gateway: adapter registry, capability discovery (probed=false), owner-confirmed passports, routing plans and simulated dispatch staging. No provider credential, probe, model call or runner.",
           "test_result": "11 vitest tests PASS (credential-missing adapters never connect, revocation blocks routing, JAX denied Vault secrets and non-consented external submission, acceptance test unrunnable).",
           "runtime_evidence": "Route /omni-models renders with DECLARATIONS · NO MODEL CONNECTED badge; real-vs-simulated panel lists credential prerequisites.",
-          "next_action": "Blocked: owner-supplied provider credentials through secure settings, backend enrollment and a runner before the end-to-end acceptance test can run.",
+          "next_action": "Demo retired; a real version needs a working backend and owner approval. Previous status: Demo only. Blocked: owner-supplied provider credentials through secure settings, backend enrollment and a runner before the end-to-end acceptance test can run.",
           "release_status": "Not released; private prototype only.",
-          "test_command": "bunx vitest run src/test/omni-model-gateway.test.ts"
+          "test_command": "bunx vitest run src/test/omni-model-gateway.test.ts",
+          "retired_files": [
+            "src/lib/omni-model-gateway.ts",
+            "src/test/omni-model-gateway.test.ts",
+            "src/components/omnibridge/OmniModelGateway.tsx"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         }
       ]
     },
@@ -943,9 +972,6 @@
             "04"
           ],
           "changed_files": [
-            "src/lib/omni-razul.ts",
-            "src/lib/omni-razul.test.ts",
-            "src/components/omnibridge/RazulArchive.tsx",
             "src/routes/omni-razul.tsx",
             "src/components/SiteNav.tsx",
             "src/lib/razul-observatory.ts",
@@ -982,7 +1008,13 @@
           "next_action": "Verified OMNI owner activation/MFA and real positive UI readback required; then scoped project enrollment/machine reads, private version/correction history and Guardian/runner pilot. Existing feed job/receipts reused; continuous crawlers/source policy gates and later independent backend remain unimplemented/gated.",
           "release_status": "Not released; private prototype only.",
           "test_command": "bunx vitest run src/lib/omni-razul.test.ts",
-          "verified_at": "2026-10-31"
+          "verified_at": "2026-10-31",
+          "retired_files": [
+            "src/lib/omni-razul.ts",
+            "src/lib/omni-razul.test.ts",
+            "src/components/omnibridge/RazulArchive.tsx"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "05.09",
@@ -1091,8 +1123,7 @@
             "src/components/omnibridge/RasulChat.tsx",
             "src/routes/omni-razul.tsx",
             "src/routes/omni.tsx",
-            "src/routes/omni-agents.tsx",
-            "src/components/omnibridge/OmniBridge.tsx"
+            "src/routes/omni-agents.tsx"
           ],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified.",
@@ -1115,7 +1146,11 @@
             "missing_input": "Verified real OMNI owner activation and MFA session for positive retrieval; source-specific receipts and approved adapters for continuous monitoring; live Guardian and enrolled runner/watchers for execution.",
             "release_status": "Owner-authorized migration 0029 and one existing preview feed check only; no app publication/deployment, scheduler/provider/external-project change or paid inference"
           },
-          "notes": "One consolidated thread, session-only (no persistence; questions tool unavailable so shape/storage chosen per owner 'one thread' request and stated). Research/status use authenticated Ask Razul when signed in; signed-out gets honest blocked fallback. Dispatches always pending-approval; execution blocked until Guardian+runner. Browser verified signed-out flow."
+          "notes": "One consolidated thread, session-only (no persistence; questions tool unavailable so shape/storage chosen per owner 'one thread' request and stated). Research/status use authenticated Ask Razul when signed in; signed-out gets honest blocked fallback. Dispatches always pending-approval; execution blocked until Guardian+runner. Browser verified signed-out flow.",
+          "retired_files": [
+            "src/components/omnibridge/OmniBridge.tsx"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         }
       ]
     },
@@ -1383,10 +1418,6 @@
             "cli/internal/companion/cli_guardian.go",
             "cli/internal/companion/guardian_defense_test.go",
             "cli/README.md",
-            "src/lib/guardian-evidence.ts",
-            "src/components/guardian/DevelopmentEvidence.tsx",
-            "src/components/guardian/Center.tsx",
-            "src/test/guardian-evidence.test.ts",
             ".lovable/guardian-defense-verification.md"
           ],
           "commit": null,
@@ -1399,7 +1430,14 @@
           "next_action": "Supported isolated container/VM/runner with explicit filesystem/network/CPU/memory limits and authenticated owner/capability policy; macOS/Windows process-tree adapters and host QA. Local Linux containment does not satisfy entire isolation requirement.",
           "missing_input": "Supported isolated container/VM/runner with explicit filesystem/network/CPU/memory limits and authenticated owner/capability policy; macOS/Windows process-tree adapters and host QA. Local Linux containment does not satisfy entire isolation requirement.",
           "release_status": "Development source/preview only; no production deploy, signing, install, provider connection or live-site disruptive testing",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/guardian-evidence.ts",
+            "src/components/guardian/DevelopmentEvidence.tsx",
+            "src/components/guardian/Center.tsx",
+            "src/test/guardian-evidence.test.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "07.04",
@@ -1471,19 +1509,15 @@
         {
           "id": "07.06",
           "requirement": "OMNI coding gateway for Jackboy integration: private authenticated job API with least-privilege service identity and scoped project access; receive Jackboy-approved code-generation tasks, generate patch proposals, execute tests in isolated sandbox, return logs/diffs/pass-fail evidence and submit reviewable changes; project enrollment plus AngelTech quality and DemonTech defensive-security advisory feedback channels. Never run scraped untrusted code without isolation, never auto-merge/deploy, never expose terminal publicly, no external writes without owner approval.",
-          "status": "Demo only",
+          "status": "Deferred",
           "owner": "Lovable implementation; owner supplies backend activation, service identity and sandbox runner",
           "dependencies": [
             "02",
             "04"
           ],
           "changed_files": [
-            "src/lib/omni-gateway.ts",
-            "src/test/omni-gateway.test.ts",
-            "src/components/omnibridge/OmniGateway.tsx",
             "src/routes/omni-gateway.tsx",
             "src/components/SiteNav.tsx",
-            "src/components/omnibridge/OmniAssistant.tsx",
             "roadmap.md",
             "completion-register.json"
           ],
@@ -1499,9 +1533,16 @@
           "verified_scope": "Local planning workspace only: owner-confirmed project enrollment/scopes, Jackboy-approved task intake, blocked job state machine, Guardian default-deny gate with logged decisions, advisory feedback channels, local learning loop. No authenticated job API, sandbox runner, patch generation or repository write.",
           "test_result": "17 gateway vitest tests PASS; 83 focused tests PASS; browser verified enrollment, blocked job, default-deny log and lesson capture.",
           "runtime_evidence": "Route /omni-gateway renders with BLOCKED · RUNNER NOT CONNECTED badge; tasks always end Blocked: sandbox runner and job API not connected; merge/deploy need human approval and cannot be delegated.",
-          "next_action": "Blocked: owner-approved backend job schema, least-privilege service identity, isolated sandbox runner and activated model inference; owner-approved repository write path. Auto-merge/deploy stay disabled by design.",
+          "next_action": "Demo retired; a real version needs a working backend and owner approval. Previous status: Demo only. Blocked: owner-approved backend job schema, least-privilege service identity, isolated sandbox runner and activated model inference; owner-approved repository write path. Auto-merge/deploy stay disabled by design.",
           "release_status": "Not released; private prototype only.",
-          "test_command": "bunx vitest run src/test/omni-gateway.test.ts"
+          "test_command": "bunx vitest run src/test/omni-gateway.test.ts",
+          "retired_files": [
+            "src/lib/omni-gateway.ts",
+            "src/test/omni-gateway.test.ts",
+            "src/components/omnibridge/OmniGateway.tsx",
+            "src/components/omnibridge/OmniAssistant.tsx"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "07.07",
@@ -1663,18 +1704,13 @@
         {
           "id": "08.04",
           "requirement": "Stage Evolution Care, Pilot voice, My Devices/Fleet, health reports and opt-in updates through supported enrolled-device adapters.",
-          "status": "Demo only",
+          "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
             "06",
             "07"
           ],
-          "changed_files": [
-            "src/lib/care.ts",
-            "src/lib/guardian.ts",
-            "src/components/guardian/Fleet.tsx",
-            "src/components/care/Voice.tsx"
-          ],
+          "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Local consent/dry-run/update/health/fleet/voice reference screens; no enrollment/OS actions.",
@@ -1682,10 +1718,17 @@
           "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
-          "next_action": "Signed native adapters, device identity/OS grants, module-specific secure records/qualified review.",
+          "next_action": "Demo retired; a real version needs a working backend and owner approval. Previous status: Demo only. Signed native adapters, device identity/OS grants, module-specific secure records/qualified review.",
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/care.ts",
+            "src/lib/guardian.ts",
+            "src/components/guardian/Fleet.tsx",
+            "src/components/care/Voice.tsx"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         }
       ]
     },
@@ -1982,7 +2025,6 @@
             "04"
           ],
           "changed_files": [
-            "src/components/entertainment/EntertainmentGalaxy.tsx",
             "src/lib/forge.ts",
             "src/lib/forge-web.ts"
           ],
@@ -1996,7 +2038,11 @@
           "next_action": "Studio-specific supported adapters, rights-cleared input and repeatable artifact QA before each is enabled.",
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/components/entertainment/EntertainmentGalaxy.tsx"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "10.04",
@@ -2467,16 +2513,14 @@
         {
           "id": "12.01",
           "requirement": "Implement reproducible simulated races, transparent rules, isolated runs and anti-cheating checks.",
-          "status": "Demo only",
+          "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
             "02",
             "03",
             "04"
           ],
-          "changed_files": [
-            "src/lib/arena.ts"
-          ],
+          "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Seeded numeric races/replay tampering checks; no submitted code/hardware, no secure browser anti-cheat.",
@@ -2484,10 +2528,14 @@
           "test_result": "Prior reconciliation browser workflow passed; 8 Arena tests pass in full suite",
           "evidence_ref": "arena",
           "runtime_evidence": "Seeded numerical replay, finish award/local persistence/standings/mobile/storage failures; no shared anti-cheat or authenticated results.",
-          "next_action": "Versioned owner-scoped multiuser results and supported isolated runner needed for trusted competitions/custom racers.",
+          "next_action": "Demo retired; a real version needs a working backend and owner approval. Previous status: Demo only. Versioned owner-scoped multiuser results and supported isolated runner needed for trusted competitions/custom racers.",
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/arena.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "12.02",
@@ -2518,17 +2566,14 @@
         {
           "id": "12.03",
           "requirement": "Use points with no monetary value, prizes or redemption.",
-          "status": "Verified working",
+          "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
             "02",
             "03",
             "04"
           ],
-          "changed_files": [
-            "src/lib/arena.ts",
-            "src/test/arena.test.ts"
-          ],
+          "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Disabled real-money constant; local points cannot buy/redeem/transfer; no payment routes.",
@@ -2536,10 +2581,15 @@
           "test_result": "Prior reconciliation browser workflow passed; 8 Arena tests pass in full suite",
           "evidence_ref": "arena",
           "runtime_evidence": "Seeded numerical replay, finish award/local persistence/standings/mobile/storage failures; no shared anti-cheat or authenticated results.",
-          "next_action": "Keep real-money betting separately Deferred, never activate under routine build authorization.",
+          "next_action": "Demo retired; a real version needs a working backend and owner approval. Previous status: Verified working. Keep real-money betting separately Deferred, never activate under routine build authorization.",
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/arena.ts",
+            "src/test/arena.test.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         }
       ]
     },
@@ -2562,7 +2612,7 @@
         {
           "id": "13.01",
           "requirement": "Stage Agent Embassy/passports, Code Genesis/Open Call, challenges, Knowledge Exchange, Commons, Code Exchange, Code Vault, Agent Lounge, debriefs and Incident Archives.",
-          "status": "Demo only",
+          "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
             "02",
@@ -2573,12 +2623,7 @@
             "07",
             "08"
           ],
-          "changed_files": [
-            "src/lib/genesis.ts",
-            "src/lib/code-exchange.ts",
-            "src/lib/incidents.ts",
-            "src/lib/code-vault.ts"
-          ],
+          "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "All listed local/sample consent/review/search/export/reference families present; no operational shared collaboration claim.",
@@ -2586,15 +2631,22 @@
           "test_result": "Passed: 917 tests / 55 files, 2026-10-22 23:53 UTC",
           "evidence_ref": "current",
           "runtime_evidence": "Latest harness build OK; current account tests additionally exercised against localhost/Cloud. Not public-release evidence.",
-          "next_action": "Per-family authenticated collaborator/visibility/moderation/data model and selected enabled beta scope.",
+          "next_action": "Demo retired; a real version needs a working backend and owner approval. Previous status: Demo only. Per-family authenticated collaborator/visibility/moderation/data model and selected enabled beta scope.",
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/genesis.ts",
+            "src/lib/code-exchange.ts",
+            "src/lib/incidents.ts",
+            "src/lib/code-vault.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "13.02",
           "requirement": "Verify identities, permissions, contribution licensing/provenance, evidence labels, moderation and approval/release history.",
-          "status": "In progress",
+          "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [
             "02",
@@ -2605,10 +2657,7 @@
             "07",
             "08"
           ],
-          "changed_files": [
-            "src/lib/trusted-release.ts",
-            "src/lib/incident-screening.ts"
-          ],
+          "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Owner beta identity and private revision approvals real; broader family passports/license/evidence/moderation demo declarations.",
@@ -2616,10 +2665,15 @@
           "test_result": "Prior reconciliation: 38 hosted checks passed",
           "evidence_ref": "planning",
           "runtime_evidence": "Owner/project revision-bound draft/review/stop, audit/readback; no external post/receipt/scopes.",
-          "next_action": "Verified operators/independent reviewers, restricted evidence storage/permissions and provenance/signatures for enabled collaboration modules.",
+          "next_action": "Demo retired; a real version needs a working backend and owner approval. Previous status: In progress. Verified operators/independent reviewers, restricted evidence storage/permissions and provenance/signatures for enabled collaboration modules.",
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/trusted-release.ts",
+            "src/lib/incident-screening.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "id": "13.03",
@@ -2667,7 +2721,6 @@
             "08"
           ],
           "changed_files": [
-            "src/lib/robotics.ts",
             "src/routes/partnerships.tsx"
           ],
           "commit": null,
@@ -2680,7 +2733,11 @@
           "next_action": "Qualified independent domain/safety validation, partner/operator consent and signed hardware adapters.",
           "missing_input": "Qualified independent domain/safety validation, partner/operator consent and signed hardware adapters.",
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/lib/robotics.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "status": "Deferred",
@@ -2891,27 +2948,13 @@
             "07"
           ],
           "changed_files": [
-            "src/data/omni-legal-sources.ts",
-            "src/lib/omni-legal.ts",
-            "src/lib/omni-legal-export.ts",
-            "src/components/omnibridge/OmniLegal.tsx",
             "src/routes/omni-legal.tsx",
             "src/components/SiteNav.tsx",
-            "src/components/omnibridge/OmniBridge.tsx",
-            "src/components/omnibridge/OmniRights.tsx",
-            "src/test/omni-legal.test.ts",
             "src/test/app-routing.test.tsx",
             "cli/internal/companion/legal.go",
             "cli/internal/companion/legal_test.go",
             "cli/internal/companion/commands.go",
             "cli/README.md",
-            "src/lib/omni-legal-forms.ts",
-            "src/lib/omni-legal-form-fetch.server.ts",
-            "src/lib/omni-legal-forms.functions.ts",
-            "src/components/omnibridge/OmniLegalForms.tsx",
-            "src/test/omni-legal-forms.test.ts",
-            "src/lib/omni-legal-library.ts",
-            "src/test/omni-legal-library.test.ts",
             "AGENTS.md",
             "roadmap.md",
             "completion-register.json",
@@ -2930,7 +2973,24 @@
           "next_action": "Keep real cases/transmission blocked. Extend verified official blank catalogs/affidavits and jurisdiction-specific format/requirements with source/version/retrieval evidence; no universal county availability. Limited statewide California intake verified separately under omni-legal-forms; local additions pending. Implement scoped case vault/retention/revocation/audit and verified companion before private PDF data; integrate code traceability under project permissions, never legal-compliance certification.",
           "missing_input": "Exact court/practice area and responsible legal review; scoped private case storage/access/revocation and protected audit; supported authenticated court/provider, secure scopes/test account/receipt verification and explicit transmission confirmation. Native companion bridge and court PDF/format QA unavailable.",
           "release_status": "Not published/deployed; real records/submissions/payments/service/signatures prohibited in this build",
-          "release_receipt": null
+          "release_receipt": null,
+          "retired_files": [
+            "src/data/omni-legal-sources.ts",
+            "src/lib/omni-legal.ts",
+            "src/lib/omni-legal-export.ts",
+            "src/components/omnibridge/OmniLegal.tsx",
+            "src/components/omnibridge/OmniBridge.tsx",
+            "src/components/omnibridge/OmniRights.tsx",
+            "src/test/omni-legal.test.ts",
+            "src/lib/omni-legal-forms.ts",
+            "src/lib/omni-legal-form-fetch.server.ts",
+            "src/lib/omni-legal-forms.functions.ts",
+            "src/components/omnibridge/OmniLegalForms.tsx",
+            "src/test/omni-legal-forms.test.ts",
+            "src/lib/omni-legal-library.ts",
+            "src/test/omni-legal-library.test.ts"
+          ],
+          "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         }
       ]
     },

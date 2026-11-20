@@ -6,15 +6,15 @@ Status 2026-11-20 (preview, not published). Owner delegation: `docs/OMNI-OWNER-D
 
 ## What answers today
 
-| OMNI frontend call                         | Mothership answer                                                                                                                                                                                                                                  | Key scope  |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `GET /api/omni/health`                     | `{ ok: true, version }`                                                                                                                                                                                                                            | `health`   |
-| `GET /api/omni/manifest`                   | Lovable AI provider with its one model when configured (configuration, not verification); OMNI `enrolled` only after 0066 is installed; no `orchestration` (Fusion doesn't exist; `orchestrationStatus` says so); `autonomous: false`; owner links | `health`   |
-| `POST /api/omni/chat`                      | Owner delegation `chat:write` after proposed migration 0066 is installed (see `docs/OMNI-OWNER-DELEGATION.md`); until then 403 `not_available`. Keys never chat                                                                                    | delegation |
-| `GET /api/omni/tasks`                      | Read-only: the 10 latest observatory runs (same data and audit as `/api/public/omni/jobs`), `requiresApproval: false`; held OMNI Terminal tasks not included                                                                                       | `jobs`     |
-| `POST /api/omni/tasks`                     | Owner delegation `tasks:write`: stores a **held** task (see `docs/OMNI-OWNER-DELEGATION.md`); API keys → 403 `delegation_required`                                                                                                                 | delegation |
-| `POST /api/omni/tasks/:id/approve\|reject` | 403 `not_available` — decisions need owner two-step sign-in + passkey                                                                                                                                                                              | any valid  |
-| `POST /api/omni/emergency-stop`            | Owner delegation `safety:emergency-stop`: engage only, `ok:true` after remote cancellation is verified; API keys → 403 `delegation_required`                                                                                                       | delegation |
+| OMNI frontend call                         | Mothership answer                                                                                                                                                                                                                                                                                                                         | Key scope  |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `GET /api/omni/health`                     | `{ ok: true, version, service, checkedAt }`                                                                                                                                                                                                                                                                                               | `health`   |
+| `GET /api/omni/manifest`                   | Lovable AI provider with its one model when configured (configuration, not verification); OMNI `enrolled` only after 0066 is installed; no `orchestration` (Fusion doesn't exist; `orchestrationStatus` says so); `autonomous: false`; `checkedAt`; `spendingCap` evidence, and `spendingCapUsd` only while verified (below); owner links | `health`   |
+| `POST /api/omni/chat`                      | Owner delegation `chat:write` after proposed migration 0066 is installed (see `docs/OMNI-OWNER-DELEGATION.md`); until then 403 `not_available`. Keys never chat                                                                                                                                                                           | delegation |
+| `GET /api/omni/tasks`                      | Read-only: the 10 latest observatory runs (same data and audit as `/api/public/omni/jobs`), `requiresApproval: false`; held OMNI Terminal tasks not included                                                                                                                                                                              | `jobs`     |
+| `POST /api/omni/tasks`                     | Owner delegation `tasks:write`: stores a **held** task (see `docs/OMNI-OWNER-DELEGATION.md`); API keys → 403 `delegation_required`                                                                                                                                                                                                        | delegation |
+| `POST /api/omni/tasks/:id/approve\|reject` | 403 `not_available` — decisions need owner two-step sign-in + passkey                                                                                                                                                                                                                                                                     | any valid  |
+| `POST /api/omni/emergency-stop`            | Owner delegation `safety:emergency-stop`: engage only, `ok:true` after remote cancellation is verified; API keys → 403 `delegation_required`                                                                                                                                                                                              | delegation |
 
 Missing/unknown/expired/revoked key → 401. Valid key without the needed scope → 403 `scope_missing`.
 When credential verification is unavailable, the contract returns 503
@@ -22,6 +22,41 @@ When credential verification is unavailable, the contract returns 503
 Nothing is simulated; the existing `health`/`jobs` scopes never authorize chat, approvals or stop.
 Each `/api/omni/tasks` read is recorded in the owner audit log (`use-jobs`); if recording fails the read is refused (503).
 Unknown observatory counts are displayed as unknown, not zero.
+
+## CODE spending cap (`spendingCap`, `spendingCapUsd`)
+
+OMNI web shows "CODE spending cap verified" only when the manifest has a numeric `spendingCapUsd`.
+The Mothership sends it (the daily cap in dollars) only while the newest Jackboy-signed `omni.permit/v1`
+permit it recorded is at most 15 minutes old and every limit is above $0 and within the owner caps:
+$0.50 per AI call, $1 per job, $5 per day, one active job (`src/lib/omni-spend-evidence.ts`). The
+Mothership verifies each permit's signature and refuses permits above the caps before recording,
+and the database refuses a second active permit. `spendingCap.state` is `verified`, `stale`,
+`exceeds_caps`, `no_evidence` or `unknown`, with `lastSignedPermit` (limits, `recordedAt`,
+`ageSeconds`, `matchesIntended`), `checkedAt` and a plain `reason`.
+
+Live reading 2026-11-20 16:10 UTC (read-only): 9 signed permits recorded, all $0.50/$1/$5; newest
+2026-11-19 01:57 UTC, so the state is `stale` and OMNI correctly shows **Unverified**. It turns
+verified only when Jackboy next issues a signed permit for an owner-authorized job; nothing here
+issues one.
+
+## Connection matrix (preview, 2026-11-20, signed out, `scripts/smoke_site.py`)
+
+| Check                                                                                                     | Result                                                                                                                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 76 page addresses (every route file)                                                                      | 200, no runtime errors, no in-page link to a missing page                                                                                                                                                                      |
+| Source links, menu, placeholder links (`src/test/site-links.test.ts`)                                     | All resolve; menu lists no retired area; no `#`/`javascript:`/empty handlers                                                                                                                                                   |
+| `/api/omni/health`, `/manifest`, `/tasks`, `/chat`, `/emergency-stop`, task decisions — no or invalid key | 401 JSON                                                                                                                                                                                                                       |
+| `/api/omni/held-tasks`, delegation `status`/`revoke` — no token                                           | 401 `invalid_token`                                                                                                                                                                                                            |
+| Delegation `token` — empty body                                                                           | 400 `unsupported_grant_type`                                                                                                                                                                                                   |
+| `/api/public/approval-flow`                                                                               | 200 version marker                                                                                                                                                                                                             |
+| Registered destinations                                                                                   | canonical `https://evoomni.tech`; OMNI web origin and exact `/mothership/callback`; Docking Bay allows only Honeycomb's published + preview sites                                                                              |
+| Jackboy / runner / executor hosts                                                                         | from settings only (`JACKBOY_LINK_ORIGIN`, `JACKBOY_HANDOFF_ORIGIN` = same Jackboy site, `JACKBOY_LINK_RUNNER_ORIGIN` Railway, `OMNI_EXECUTOR_ORIGIN` separate staging host); all present, https, origin-only; none hard-coded |
+| Jackboy dispatch / callback                                                                               | `JACKBOY_DISPATCH_*`, `JACKBOY_CALLBACK_*` not set, so both stay off (fail closed)                                                                                                                                             |
+| Migration 0064 (task reads) + 0065 note                                                                   | applied; 66 migrations recorded (0000–0065)                                                                                                                                                                                    |
+| Migration 0066 (delegated chat)                                                                           | not installed; chat answers `not_available`                                                                                                                                                                                    |
+
+Not covered here: signed-in owner pages beyond their sign-in gate, live key/delegation use, and
+anything on the published site (it still runs the earlier release until the owner publishes).
 
 ## Owner steps (no values in chat)
 

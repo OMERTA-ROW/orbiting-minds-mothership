@@ -10,6 +10,7 @@ import {
   type ManifestLive,
   type UnsupportedCapability,
 } from "./omni-contract";
+import type { SpendEvidenceRead } from "./omni-spend-evidence";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 type Verification =
@@ -70,12 +71,44 @@ function verificationUnavailable() {
   );
 }
 
-/** Live manifest facts: provider key presence (boolean only) and whether 0066 is installed. */
+/** Newest signed permit limits the Mothership recorded (signature and caps verified before recording). */
+async function serviceSpendEvidence(): Promise<SpendEvidenceRead> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const r = await supabaseAdmin
+      .from("jackboy_permits")
+      .select("per_call_usd,per_task_usd,daily_usd,updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    if (r.error) return { status: "unreadable" };
+    const row = r.data?.[0];
+    if (!row) return { status: "read", latest: null };
+    return {
+      status: "read",
+      latest: {
+        perCallUsd: Number(row.per_call_usd),
+        perTaskUsd: Number(row.per_task_usd),
+        dailyUsd: Number(row.daily_usd),
+        recordedAt: new Date(row.updated_at).toISOString(),
+      },
+    };
+  } catch {
+    return { status: "unreadable" };
+  }
+}
+
+/** Live manifest facts: provider key presence (boolean only), 0066 install, signed cap evidence. */
 async function serviceManifestLive(): Promise<ManifestLive> {
   const { delegatedChatInstalled } = await import("./omni-delegated-chat.server");
+  const [chatInstalled, spend] = await Promise.all([
+    delegatedChatInstalled(),
+    serviceSpendEvidence(),
+  ]);
   return {
     aiConfigured: Boolean(process.env["LOVABLE_API_KEY"]),
-    chatInstalled: await delegatedChatInstalled(),
+    chatInstalled,
+    spend,
+    now: Date.now(),
   };
 }
 
@@ -89,7 +122,12 @@ export async function omniContractRead(
   if (denied instanceof Response) return denied;
   const body =
     what === "health"
-      ? { ok: true, version: OMNI_CONTRACT_VERSION, service: "omni-mothership" }
+      ? {
+          ok: true,
+          version: OMNI_CONTRACT_VERSION,
+          service: "omni-mothership",
+          checkedAt: new Date().toISOString(),
+        }
       : buildManifest(httpsOrigin(request.url), await readLive());
   return Response.json(body, { headers: NO_STORE });
 }

@@ -28,6 +28,11 @@ import {
   CHAT_PROVIDER,
   DELEGATED_CHAT_LIMITS,
 } from "./omni-delegated-chat";
+import {
+  manifestSpendingCapUsd,
+  spendingCapView,
+  type SpendEvidenceRead,
+} from "./omni-spend-evidence";
 
 export const OMNI_CONTRACT_VERSION = "1.0.0";
 
@@ -114,6 +119,10 @@ export type ManifestLive = {
   aiConfigured: boolean;
   /** Migration 0066 (chat:write delegation) is installed. */
   chatInstalled: boolean;
+  /** Newest signed Jackboy permit limits (absent = not read, reported as unknown). */
+  spend?: SpendEvidenceRead;
+  /** Time of this reading (ms); defaults to now. */
+  now?: number;
 };
 
 const NOT_LIVE: ManifestLive = { aiConfigured: false, chatInstalled: false };
@@ -129,15 +138,21 @@ export const FUSION_STATUS = {
  * Truthful manifest. Providers list only what is configured on the Mothership (the OMNI text
  * agent's Lovable AI model); being listed is configuration, not a verified reply. OMNI is
  * chat-enrolled only when the chat:write delegation is installed and the provider is
- * configured; held-task agents are never chat-enrolled. No spending cap or orchestration is
+ * configured; held-task agents are never chat-enrolled. `spendingCapUsd` is sent only while a
+ * fresh signed Jackboy permit proves the cap (see omni-spend-evidence.ts); orchestration is never
  * claimed; autonomous is always false. Links point at real owner pages.
  */
 export function buildManifest(origin: string | null, live: ManifestLive = NOT_LIVE) {
+  const now = live.now ?? Date.now();
   const chatEnrolled = live.chatInstalled && live.aiConfigured;
+  const spendingCap = spendingCapView(live.spend ?? { status: "not_read" }, now);
+  const spendingCapUsd = manifestSpendingCapUsd(spendingCap);
   const supportedScopes: string[] = [...SUPPORTED_DELEGATION_SCOPES];
   if (live.chatInstalled) supportedScopes.unshift("chat:write");
   return {
     version: OMNI_CONTRACT_VERSION,
+    /** When these facts were read on the Mothership. */
+    checkedAt: new Date(now).toISOString(),
     agents: [
       {
         id: CHAT_AGENT.id,
@@ -165,6 +180,9 @@ export function buildManifest(origin: string | null, live: ManifestLive = NOT_LI
       ? [{ id: CHAT_PROVIDER.id, label: CHAT_PROVIDER.label, models: [OMNI_MODEL] }]
       : ([] as { id: string; label: string; models: string[] }[]),
     autonomous: false as const,
+    ...(spendingCapUsd !== undefined ? { spendingCapUsd } : {}),
+    /** Evidence behind (or missing for) spendingCapUsd, with freshness. */
+    spendingCap,
     // {read, write} per resource, as OMNI reads them. Writes need an owner delegation.
     capabilities: {
       chat: { read: false, write: chatEnrolled },
