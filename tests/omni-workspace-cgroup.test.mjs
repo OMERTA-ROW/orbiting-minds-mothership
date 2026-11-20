@@ -3,8 +3,10 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { test } from "node:test";
-import { createJobCgroup } from "../services/omni-sandbox/cgroup.mjs";
+import { createJobCgroup, openJobCgroupForRecovery } from "../services/omni-sandbox/cgroup.mjs";
 
 const parent = process.env.OMNI_WORKSPACE_DELEGATED_CGROUP;
 const runLinux = process.platform === "linux" && Boolean(parent);
@@ -148,3 +150,81 @@ while time.monotonic() < end: pass`,
     group.remove();
   }
 });
+
+test(
+  "a replacement supervisor can terminate an orphaned job but cannot attach or resume it",
+  { skip: !runLinux, timeout: 10000 },
+  async () => {
+    const id = randomUUID();
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-cgroup-recovery-"));
+    const marker = path.join(dir, "started");
+    const groupPath = path.join(parent, `job-${id}`);
+    const moduleUrl = new URL("../services/omni-sandbox/cgroup.mjs", import.meta.url).href;
+    const script = `
+      import fs from "node:fs";
+      import { spawn } from "node:child_process";
+      import { createJobCgroup } from ${JSON.stringify(moduleUrl)};
+      const group = createJobCgroup(process.argv[1], process.argv[2], ${JSON.stringify(limits)});
+      const child = spawn("/bin/sh", ["-c", 'read -r go; test "$go" = go || exit 1; setsid sleep 60 & echo "$!" > "$1"; wait', "sh", process.argv[3]],
+        { detached: true, stdio: ["pipe", "ignore", "ignore"] });
+      group.attach(child.pid);
+      child.stdin.end("go\\n");
+      const deadline = Date.now() + 5000;
+      while (!fs.existsSync(process.argv[3])) {
+        if (Date.now() > deadline) throw new Error("child did not start");
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      process.kill(process.pid, "SIGKILL");
+    `;
+    const supervisor = spawn(
+      process.execPath,
+      ["--input-type=module", "-e", script, parent, id, marker],
+      {
+        stdio: ["ignore", "ignore", "pipe"],
+      },
+    );
+    let errors = "";
+    supervisor.stderr.on("data", (chunk) => (errors += chunk));
+    try {
+      const [code, signal] = await once(supervisor, "exit");
+      assert.equal(code, null, errors);
+      assert.equal(signal, "SIGKILL", errors);
+      assert.ok(fs.existsSync(marker), errors);
+      assert.match(fs.readFileSync(`${groupPath}/cgroup.events`, "utf8"), /^populated 1$/m);
+      const recovered = openJobCgroupForRecovery(parent, id);
+      assert.throws(() => recovered.attach(process.pid), /Cannot attach/);
+      assert.throws(() => recovered.remove(), /populated/);
+      await recovered.stop();
+      assert.match(fs.readFileSync(`${groupPath}/cgroup.events`, "utf8"), /^populated 0$/m);
+      recovered.remove();
+      assert.equal(fs.existsSync(groupPath), false);
+    } finally {
+      if (fs.existsSync(groupPath)) {
+        const recovered = openJobCgroupForRecovery(parent, id);
+        await recovered.stop();
+        recovered.remove();
+      }
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "recovery reports cleanup failure rather than claiming removal",
+  { skip: !runLinux },
+  async () => {
+    const id = randomUUID();
+    const group = createJobCgroup(parent, id, limits);
+    const nested = path.join(group.path, "leftover");
+    fs.mkdirSync(nested);
+    try {
+      const recovered = openJobCgroupForRecovery(parent, id);
+      await recovered.stop();
+      assert.throws(() => recovered.remove());
+      assert.equal(fs.existsSync(group.path), true);
+    } finally {
+      fs.rmdirSync(nested);
+      group.remove();
+    }
+  },
+);

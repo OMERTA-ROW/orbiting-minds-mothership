@@ -100,6 +100,12 @@ attach a trusted blocked child before allowing untrusted code to run, keep the c
 inaccessible to that child, and handle startup and Stop races. Do not remove quarantine based on
 this primitive or its tests.
 
+`openJobCgroupForRecovery` can reopen a known job leaf only to kill and remove it; it cannot attach
+or resume work. Recovery requires a durable job inventory and exclusive ownership of the delegated
+parent so that a replacement supervisor cannot kill another live supervisor's jobs. Neither
+requirement is wired into the service. In particular, this helper does not stop jobs when a
+supervisor crashes; a separate fail-closed watchdog and startup recovery are still required.
+
 The opt-in `workspace-seccomp-probe` job starts only a disposable namespace probe, not the
 workspace service, as UID 20000 with all container capabilities dropped and no-new-privileges.
 It derives a test policy from the SHA-256-pinned Docker 28.0.4 default profile, adding `unshare`
