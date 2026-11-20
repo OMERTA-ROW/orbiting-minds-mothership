@@ -118,8 +118,9 @@ remote Stop acknowledgement.
 
 The opt-in `workspace-image-recovery` fixture runs the recovery tests against modules from the
 built image, with a delegated cgroup and all container capabilities dropped. It invokes the service
-through its module API with synthetic settings; it does not exercise the root-starting image
-entrypoint, an execution supervisor, or a renewable authority.
+through its module API with synthetic settings. The fixture shares the host cgroup namespace to
+reach its delegated subtree; it does not exercise the root-starting image entrypoint, an execution
+supervisor, or a renewable authority, and is not a workspace isolation configuration.
 
 The opt-in `workspace-seccomp-probe` job starts only a disposable namespace probe, not the
 workspace service, as UID 20000 with all container capabilities dropped and no-new-privileges.

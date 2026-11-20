@@ -128,6 +128,7 @@ jobs:
               timeout --signal=TERM --kill-after=5s 90s \
                 docker run --rm --name "$container" --user "$(id -u):$(id -g)" \
                 --cap-drop ALL --security-opt no-new-privileges --read-only \
+                --cgroupns host \
                 --network none --tmpfs /tmp:rw,nosuid,nodev,size=128m \
                 --cgroup-parent "$OMNI_TEST_SLICE" \
                 --mount "type=bind,source=$root,target=/delegated" \
