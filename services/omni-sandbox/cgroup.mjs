@@ -38,6 +38,7 @@ export function createJobCgroup(parent, jobId, limits) {
     for (const [file, value] of [
       ["cpu.max", `${quota} ${period}`],
       ["memory.max", String(memory)],
+      ["memory.swap.max", "0"],
       ["memory.oom.group", "1"],
       ["pids.max", String(pids)],
     ]) {
