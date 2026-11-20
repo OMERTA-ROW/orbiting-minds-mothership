@@ -66,7 +66,8 @@ credentials. It does not verify Linux containment.
 
 The manually dispatched `OMNI Linux isolation` workflow builds the workspace image and runs all
 11 historical execution tests against that image on disposable Linux, without bypassing the
-quarantine. The image ID and build manifest digest are printed separately. The test container has
+quarantine. The local image ID and build metadata digests are printed; Docker's local exporter may
+report a config digest rather than a distributable OCI manifest digest. The test container has
 no network and uses only synthetic credentials; this outer network restriction means even a pass
 would not independently prove per-workspace network isolation. The image test is expected to fail
 while execution is quarantined. It does not cover detached descendants, aggregate limits,

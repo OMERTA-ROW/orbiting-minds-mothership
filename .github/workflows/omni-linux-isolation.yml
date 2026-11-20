@@ -34,7 +34,7 @@ jobs:
           git rev-parse HEAD
           docker buildx build --load --metadata-file /tmp/omni-image-metadata.json \
             --tag omni-workspace-historical:fixture services/omni-sandbox
-          jq '{manifestDigest: .["containerimage.digest"], configDigest: .["containerimage.config.digest"]}' \
+          jq '{buildMetadataDigest: .["containerimage.digest"], configDigest: .["containerimage.config.digest"]}' \
             /tmp/omni-image-metadata.json
           docker image inspect omni-workspace-historical:fixture --format 'localImageId={{.Id}}'
           trap 'docker stop omni-workspace-historical >/dev/null 2>&1 || true' EXIT
@@ -59,12 +59,14 @@ jobs:
             sleep 0.2
           done
           if [ "$ready" != true ]; then docker logs omni-workspace-historical; exit 1; fi
+          docker exec omni-workspace-historical node -e \
+            "require('fs').writeFileSync('/tmp/omni-test.config.mjs', 'export default { test: { environment: \"jsdom\", globals: true, setupFiles: [\"/repo/src/test/setup.ts\"] }, resolve: { alias: { \"@\": \"/repo/src\" } } };')"
           docker exec --workdir /repo \
             --env OMNI_WORKSPACE_HISTORICAL_TEST=1 \
             --env OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:8080 \
             --env OMNI_WORKSPACE_TEST_ROOT=/tmp/omni-fixture \
             omni-workspace-historical \
-            node node_modules/vitest/vitest.mjs run --configLoader runner src/test/omni-sandbox-containment.test.ts
+            node node_modules/vitest/vitest.mjs run --config /tmp/omni-test.config.mjs src/test/omni-sandbox-containment.test.ts
   workspace-replay:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
