@@ -32,6 +32,8 @@ jobs:
         run: |
           set -euo pipefail
           git rev-parse HEAD
+          uname -a
+          docker version --format 'server={{.Server.Version}}'
           docker buildx build --load --metadata-file /tmp/omni-image-metadata.json \
             --tag omni-workspace-historical:fixture services/omni-sandbox
           jq '{buildMetadataDigest: .["containerimage.digest"], configDigest: .["containerimage.config.digest"]}' \
@@ -59,6 +61,13 @@ jobs:
             sleep 0.2
           done
           if [ "$ready" != true ]; then docker logs omni-workspace-historical; exit 1; fi
+          docker exec omni-workspace-historical node --version
+          if docker exec omni-workspace-historical setpriv --reuid=20000 --regid=20000 \
+            --clear-groups --inh-caps=-all -- unshare --user --map-current-user --net -- true; then
+            echo 'Workspace user+network namespace probe: available'
+          else
+            echo 'Workspace user+network namespace probe: unavailable (see error above)'
+          fi
           docker exec omni-workspace-historical node -e \
             "require('fs').writeFileSync('/tmp/omni-test.config.mjs', 'export default { test: { environment: \"node\", globals: true }, resolve: { alias: { \"@\": \"/repo/src\" } } };')"
           docker exec --workdir /repo \
