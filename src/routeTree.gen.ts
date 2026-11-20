@@ -102,6 +102,7 @@ import { Route as ApiOmniHeldTasksRouteImport } from './routes/api/omni/held-tas
 import { Route as ApiOmniManifestRouteImport } from './routes/api/omni/manifest'
 import { Route as ApiOmniTasksRouteImport } from './routes/api/omni/tasks'
 import { Route as ApiPublicApprovalFlowRouteImport } from './routes/api/public/approval-flow'
+import { Route as ApiOmniFusionPlansRouteImport } from './routes/api/omni/fusion/plans'
 import { Route as ApiPublicJackboyDispatchRouteImport } from './routes/api/public/jackboy/dispatch'
 import { Route as ApiPublicJackboySafetyEventRouteImport } from './routes/api/public/jackboy/safety-event'
 import { Route as ApiPublicJobsJackboySafetyRouteImport } from './routes/api/public/jobs/jackboy-safety'
@@ -591,6 +592,11 @@ const ApiPublicApprovalFlowRoute = ApiPublicApprovalFlowRouteImport.update({
   path: '/api/public/approval-flow',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOmniFusionPlansRoute = ApiOmniFusionPlansRouteImport.update({
+  id: '/fusion/plans',
+  path: '/fusion/plans',
+  getParentRoute: () => ApiOmniRoute,
+} as any)
 const ApiPublicJackboyDispatchRoute =
   ApiPublicJackboyDispatchRouteImport.update({
     id: '/api/public/jackboy/dispatch',
@@ -802,6 +808,7 @@ export interface FileRoutesByFullPath {
   '/api/omni/manifest': typeof ApiOmniManifestRoute
   '/api/omni/tasks': typeof ApiOmniTasksRouteWithChildren
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
+  '/api/omni/fusion/plans': typeof ApiOmniFusionPlansRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jackboy/safety-event': typeof ApiPublicJackboySafetyEventRoute
   '/api/public/jobs/jackboy-safety': typeof ApiPublicJobsJackboySafetyRoute
@@ -917,6 +924,7 @@ export interface FileRoutesByTo {
   '/api/omni/manifest': typeof ApiOmniManifestRoute
   '/api/omni/tasks': typeof ApiOmniTasksRouteWithChildren
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
+  '/api/omni/fusion/plans': typeof ApiOmniFusionPlansRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jackboy/safety-event': typeof ApiPublicJackboySafetyEventRoute
   '/api/public/jobs/jackboy-safety': typeof ApiPublicJobsJackboySafetyRoute
@@ -1034,6 +1042,7 @@ export interface FileRoutesById {
   '/api/omni/manifest': typeof ApiOmniManifestRoute
   '/api/omni/tasks': typeof ApiOmniTasksRouteWithChildren
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
+  '/api/omni/fusion/plans': typeof ApiOmniFusionPlansRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jackboy/safety-event': typeof ApiPublicJackboySafetyEventRoute
   '/api/public/jobs/jackboy-safety': typeof ApiPublicJobsJackboySafetyRoute
@@ -1151,6 +1160,7 @@ export interface FileRouteTypes {
     | '/api/omni/manifest'
     | '/api/omni/tasks'
     | '/api/public/approval-flow'
+    | '/api/omni/fusion/plans'
     | '/api/public/jackboy/dispatch'
     | '/api/public/jackboy/safety-event'
     | '/api/public/jobs/jackboy-safety'
@@ -1266,6 +1276,7 @@ export interface FileRouteTypes {
     | '/api/omni/manifest'
     | '/api/omni/tasks'
     | '/api/public/approval-flow'
+    | '/api/omni/fusion/plans'
     | '/api/public/jackboy/dispatch'
     | '/api/public/jackboy/safety-event'
     | '/api/public/jobs/jackboy-safety'
@@ -1382,6 +1393,7 @@ export interface FileRouteTypes {
     | '/api/omni/manifest'
     | '/api/omni/tasks'
     | '/api/public/approval-flow'
+    | '/api/omni/fusion/plans'
     | '/api/public/jackboy/dispatch'
     | '/api/public/jackboy/safety-event'
     | '/api/public/jobs/jackboy-safety'
@@ -2162,6 +2174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicApprovalFlowRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/omni/fusion/plans': {
+      id: '/api/omni/fusion/plans'
+      path: '/fusion/plans'
+      fullPath: '/api/omni/fusion/plans'
+      preLoaderRoute: typeof ApiOmniFusionPlansRouteImport
+      parentRoute: typeof ApiOmniRoute
+    }
     '/api/public/jackboy/dispatch': {
       id: '/api/public/jackboy/dispatch'
       path: '/api/public/jackboy/dispatch'
@@ -2352,6 +2371,7 @@ interface ApiOmniRouteChildren {
   ApiOmniHeldTasksRoute: typeof ApiOmniHeldTasksRoute
   ApiOmniManifestRoute: typeof ApiOmniManifestRoute
   ApiOmniTasksRoute: typeof ApiOmniTasksRouteWithChildren
+  ApiOmniFusionPlansRoute: typeof ApiOmniFusionPlansRoute
 }
 
 const ApiOmniRouteChildren: ApiOmniRouteChildren = {
@@ -2361,6 +2381,7 @@ const ApiOmniRouteChildren: ApiOmniRouteChildren = {
   ApiOmniHeldTasksRoute: ApiOmniHeldTasksRoute,
   ApiOmniManifestRoute: ApiOmniManifestRoute,
   ApiOmniTasksRoute: ApiOmniTasksRouteWithChildren,
+  ApiOmniFusionPlansRoute: ApiOmniFusionPlansRoute,
 }
 
 const ApiOmniRouteWithChildren =

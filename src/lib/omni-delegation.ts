@@ -8,7 +8,8 @@
  *   3. The browser returns to the one allowlisted callback with a single-use 60-second code.
  *   4. OMNI's server exchanges code + code_verifier server-to-server for a 15-minute bearer.
  * Only "tasks:read", "tasks:write" and "safety:emergency-stop" can be granted, plus "chat:write"
- * once database change 0066 is installed (checked server-side per request).
+ * once database change 0066 is installed and "fusion:plan" once 0067 is installed (each checked
+ * server-side per request; neither implies the other or any other scope).
  * The database enforces the same client, callback, scopes and lifetimes (migration 0062).
  */
 import { z } from "zod";
@@ -33,6 +34,7 @@ export const DELEGATION_SCOPES = [
   "tasks:approve",
   "tasks:reject",
   "safety:emergency-stop",
+  "fusion:plan",
 ] as const;
 export type DelegationScope = (typeof DELEGATION_SCOPES)[number];
 
@@ -49,7 +51,7 @@ export function isSupportedScope(scope: string): scope is SupportedDelegationSco
 }
 
 /** Scopes that become grantable only after their database change is installed. */
-export const INSTALL_GATED_SCOPES = ["chat:write"] as const;
+export const INSTALL_GATED_SCOPES = ["chat:write", "fusion:plan"] as const;
 /** Every scope that can ever be granted (the approval page validates against the live list). */
 export const GRANTABLE_SCOPE_CANDIDATES = [
   ...SUPPORTED_DELEGATION_SCOPES,
@@ -58,10 +60,14 @@ export const GRANTABLE_SCOPE_CANDIDATES = [
 export type GrantableDelegationScope = (typeof GRANTABLE_SCOPE_CANDIDATES)[number];
 
 /** Grantable scopes right now: the always-supported ones plus installed gated ones. */
-export function grantableScopes(chatInstalled: boolean): GrantableDelegationScope[] {
-  return chatInstalled
-    ? [...SUPPORTED_DELEGATION_SCOPES, "chat:write"]
-    : [...SUPPORTED_DELEGATION_SCOPES];
+export function grantableScopes(
+  chatInstalled: boolean,
+  fusionPlanInstalled = false,
+): GrantableDelegationScope[] {
+  const scopes: GrantableDelegationScope[] = [...SUPPORTED_DELEGATION_SCOPES];
+  if (chatInstalled) scopes.push("chat:write");
+  if (fusionPlanInstalled) scopes.push("fusion:plan");
+  return scopes;
 }
 
 export const DELEGATION_SCOPE_INFO: Record<
@@ -93,6 +99,14 @@ export const DELEGATION_SCOPE_INFO: Record<
     supported: false,
     needsInstall:
       "Not available yet: the Mothership's database change for chat (0066) hasn't been approved and installed.",
+  },
+  "fusion:plan": {
+    title: "Ask Fusion for plans",
+    effect:
+      "OMNI web can ask Fusion, on your behalf, to propose a plan for one of your held tasks. A plan is only a proposal: this permission can't start or hand off work, add or read tasks, use paid AI, change spending limits, or press or release the Emergency Stop, and every request is refused while the Emergency Stop is engaged. Fusion's planner isn't built yet, so requests are checked, logged and answered \"not available\".",
+    supported: false,
+    needsInstall:
+      "Not available yet: the Mothership's database change for Fusion plans (0067) hasn't been approved and installed.",
   },
   "providers:write": {
     title: "Change AI providers",

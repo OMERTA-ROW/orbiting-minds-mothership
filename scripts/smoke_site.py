@@ -34,6 +34,7 @@ ENDPOINTS = [
     ("POST", "/api/omni/tasks", {}, 401, "OMNI held-task create · no delegation"),
     ("GET", "/api/omni/held-tasks", {}, 401, "OMNI held-task reads · no delegation"),
     ("POST", "/api/omni/chat", {}, 401, "OMNI chat · no delegation"),
+    ("POST", "/api/omni/fusion/plans", {}, 401, "Fusion plan · no delegation"),
     ("POST", "/api/omni/emergency-stop", {}, 401, "OMNI Stop engage · no delegation"),
     ("POST", "/api/omni/tasks/x/approve", {}, 401, "OMNI task decision · no credential"),
     ("GET", "/api/public/omni/delegation/status", {}, 401, "Delegation status · no token"),

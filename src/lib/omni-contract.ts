@@ -22,6 +22,7 @@ import {
   SUPPORTED_DELEGATION_SCOPES,
 } from "./omni-delegation";
 import { OMNI_MODEL } from "./ai/omni-model";
+import { FUSION_PLAN_LIMITS, FUSION_PLAN_PATH, FUSION_PLAN_SCOPE } from "./omni-fusion";
 import {
   CHAT_AGENT,
   CHAT_MODEL_REF,
@@ -119,6 +120,8 @@ export type ManifestLive = {
   aiConfigured: boolean;
   /** Migration 0066 (chat:write delegation) is installed. */
   chatInstalled: boolean;
+  /** Migration 0067 (separate fusion:plan delegation scope) is installed. */
+  fusionPlanInstalled?: boolean;
   /** Newest signed Jackboy permit limits (absent = not read, reported as unknown). */
   spend?: SpendEvidenceRead;
   /** Time of this reading (ms); defaults to now. */
@@ -135,6 +138,23 @@ export const FUSION_STATUS = {
 };
 
 /**
+ * Fusion status plus its separate plan permission. `permission.state` is "not_installed" until
+ * 0067 is installed, then "planner_not_available": the scope can be granted but only asks; it
+ * never plans, starts work, spends or touches the Emergency Stop.
+ */
+export function fusionStatus(fusionPlanInstalled: boolean) {
+  return {
+    ...FUSION_STATUS,
+    permission: {
+      scope: FUSION_PLAN_SCOPE,
+      path: FUSION_PLAN_PATH,
+      state: fusionPlanInstalled ? ("planner_not_available" as const) : ("not_installed" as const),
+      ...FUSION_PLAN_LIMITS,
+    },
+  };
+}
+
+/**
  * Truthful manifest. Providers list only what is configured on the Mothership (the OMNI text
  * agent's Lovable AI model); being listed is configuration, not a verified reply. OMNI is
  * chat-enrolled only when the chat:write delegation is installed and the provider is
@@ -149,6 +169,7 @@ export function buildManifest(origin: string | null, live: ManifestLive = NOT_LI
   const spendingCapUsd = manifestSpendingCapUsd(spendingCap);
   const supportedScopes: string[] = [...SUPPORTED_DELEGATION_SCOPES];
   if (live.chatInstalled) supportedScopes.unshift("chat:write");
+  if (live.fusionPlanInstalled) supportedScopes.push(FUSION_PLAN_SCOPE);
   return {
     version: OMNI_CONTRACT_VERSION,
     /** When these facts were read on the Mothership. */
@@ -210,7 +231,7 @@ export function buildManifest(origin: string | null, live: ManifestLive = NOT_LI
       verified: false,
     },
     /** `orchestration` is deliberately absent: see FUSION_STATUS. */
-    orchestrationStatus: FUSION_STATUS,
+    orchestrationStatus: fusionStatus(live.fusionPlanInstalled === true),
     delegation: {
       clientId: DELEGATION_CLIENT.id,
       audience: DELEGATION_AUDIENCE,

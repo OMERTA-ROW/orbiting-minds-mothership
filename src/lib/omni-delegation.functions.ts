@@ -22,14 +22,21 @@ import {
 } from "./omni-delegation";
 import { staged } from "./staged-rpc";
 
-/** Whether chat:write can be granted: database change 0066 is installed (marker function). */
+/** Install markers for gated scopes (0066 chat:write, 0067 fusion:plan); unreadable = not installed. */
 async function liveGrantable(client: Parameters<typeof staged>[0]) {
-  try {
-    const r = await staged(client).rpc("omni_delegated_chat_ready");
-    return grantableScopes(!r.error && r.data === true);
-  } catch {
-    return grantableScopes(false);
-  }
+  const marker = async (fn: "omni_delegated_chat_ready" | "omni_fusion_plan_ready") => {
+    try {
+      const r = await staged(client).rpc(fn);
+      return !r.error && r.data === true;
+    } catch {
+      return false;
+    }
+  };
+  const [chat, fusion] = await Promise.all([
+    marker("omni_delegated_chat_ready"),
+    marker("omni_fusion_plan_ready"),
+  ]);
+  return grantableScopes(chat, fusion);
 }
 
 /** Owner state for the approval page; never throws for "not the owner". */

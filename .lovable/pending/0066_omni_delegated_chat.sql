@@ -7,11 +7,15 @@
 -- "evolution-omni" provider guard the private OMNI text agent uses (one request at a time;
 -- a lost outcome keeps AI paused for owner review). Only metadata is stored: no message
 -- or reply text. Metadata API keys are unchanged and still cannot chat.
+-- Independent of proposed 0067 (fusion:plan): both install the same consent function, which
+-- offers each gated scope only while that change's marker function exists.
 
 ALTER TABLE public.omni_delegations DROP CONSTRAINT omni_delegations_scopes_check;
 ALTER TABLE public.omni_delegations
-  ADD CONSTRAINT omni_delegations_scopes_check CHECK (cardinality(scopes) BETWEEN 1 AND 4);
+  ADD CONSTRAINT omni_delegations_scopes_check CHECK (cardinality(scopes) BETWEEN 1 AND 5);
 
+-- Shared with 0066/0067: the same consent function body, so either install order gives the same
+-- result. chat:write and fusion:plan are grantable only while their own install marker exists.
 CREATE OR REPLACE FUNCTION public.omni_delegation_authorize(
   _client_id text, _audience text, _redirect_uri text, _scopes text[], _code_hash text, _code_challenge text
 )
@@ -21,6 +25,7 @@ DECLARE
   _id uuid;
   _exp timestamptz := now() + interval '60 seconds';
   _clean text[];
+  _allowed text[] := ARRAY['tasks:read', 'tasks:write', 'safety:emergency-stop'];
 BEGIN
   PERFORM public.assert_razul_owner();
   PERFORM public.assert_fresh_mfa(900);
@@ -34,9 +39,14 @@ BEGIN
   IF _code_challenge IS NULL OR _code_challenge !~ '^[A-Za-z0-9_-]{43}$' THEN
     RAISE EXCEPTION 'Code challenge must be an S256 challenge' USING ERRCODE = '22023';
   END IF;
+  IF to_regprocedure('public.omni_delegated_chat_ready()') IS NOT NULL THEN
+    _allowed := _allowed || 'chat:write'::text;
+  END IF;
+  IF to_regprocedure('public.omni_fusion_plan_ready()') IS NOT NULL THEN
+    _allowed := _allowed || 'fusion:plan'::text;
+  END IF;
   IF _scopes IS NULL OR cardinality(_scopes) < 1 OR EXISTS (
-    SELECT 1 FROM unnest(_scopes) s WHERE s IS NULL
-      OR s NOT IN ('chat:write', 'tasks:read', 'tasks:write', 'safety:emergency-stop')
+    SELECT 1 FROM unnest(_scopes) s WHERE s IS NULL OR NOT (s = ANY (_allowed))
   ) THEN
     RAISE EXCEPTION 'Only supported scopes can be granted' USING ERRCODE = '22023';
   END IF;

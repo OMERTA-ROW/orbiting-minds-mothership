@@ -22,6 +22,10 @@ ran and passed; it does not mean the feature has been used live.
 | Spending cap reading                  | Shows verified only from a signed Jackboy permit ≤ 15 minutes old within $0.50 / $1 / $5 / one job | Boundary and failure tests               |
 | App checks                            | 1,296 tests, type check, style check and production build pass                                 | Test run on `d10fb1f`                        |
 
+- [x] **Fusion plan permission** (built, not installed): separate "Ask Fusion for plans" consent;
+      isolated tests prove it cannot start work, use paid AI or get past the Emergency Stop
+      (285 database checks, 18 app tests). On this preview it answers "not available".
+
 ## B. Waiting on your approval
 
 These need your decision. Each is separate; approving one does not approve another.
@@ -31,8 +35,11 @@ These need your decision. Each is separate; approving one does not approve anoth
 - [ ] **OMNI web asks for chat permission separately** (`chat:write`), done in the OMNI project.
 - [ ] **OMNI web project changes**: its migration 0002, callback page and server-side token storage.
 - [ ] **PR #25** (repository Fusion intake, documents only): merge or close on GitHub.
-- [ ] **Fusion purpose and scope**: answer the purpose question and review
-      `docs/OMNI-FUSION-REQUIREMENTS.md` before anything is built.
+- [x] **Fusion purpose**: answered 2026-11-20 (orchestration architecture, not an agent); brief
+      rewritten in `docs/OMNI-FUSION-REQUIREMENTS.md`.
+- [ ] **Install database change 0067** (separate "Ask Fusion for plans" permission). Until then
+      `/api/omni/fusion/plans` answers "not available". It grants no work, spending or Stop control.
+- [ ] **Approve Fusion phase 2** (planner records and owner plan review) per the brief, before it is built.
 
 ## C. Live checks you run after publishing
 
@@ -55,7 +62,8 @@ Each needs you signed in on the live site. Some cost money; those are marked.
 
 ## D. Not built yet (cannot be checked)
 
-- Fusion (see its brief); task approve/reject from OMNI web (owner-only on the Mothership by design);
+- Fusion planner, answer comparison, shared knowledge and maintenance coordination (see its brief;
+  only the separate permission and its refusals exist); task approve/reject from OMNI web (owner-only on the Mothership by design);
   Jackboy dispatch and callback; Honeycomb's Mothership adapter.
 
 ## Never part of a release

@@ -27,6 +27,7 @@ No other origin, path, query or trailing slash is accepted. OMNI must create tha
 | `tasks:write`                   | Yes        | `POST /api/omni/tasks` stores a **held** OMNI Terminal task. Nothing runs or is dispatched.                                                                                                  |
 | `safety:emergency-stop`         | Yes        | `POST /api/omni/emergency-stop` **engages** the Stop. It can never release it.                                                                                                               |
 | `chat:write`                    | After 0066 | **Proposed, not installed.** Separate opt-in to chat with the OMNI text agent (paid Lovable AI). Until 0066 is installed: refused at approval; `/api/omni/chat` answers 403 `not_available`. |
+| `fusion:plan`                   | After 0067 | **Proposed, not installed.** Separate opt-in to ask Fusion for a plan proposal for a held task. Cannot add/read/start/hand off tasks, chat or use paid AI, touch permits or caps, or engage/release the Stop; refused while the Stop is engaged. Planner not built: admitted requests get 503 `planner_not_available`. |
 | `providers:write`               | No         | Refused; no endpoint.                                                                                                                                                                        |
 | `tasks:retry`                   | No         | Refused; held tasks never run.                                                                                                                                                               |
 | `tasks:approve`, `tasks:reject` | No         | Refused; decisions stay owner-only on the Mothership (two-step + passkey).                                                                                                                   |
@@ -248,6 +249,20 @@ Success 200:
 Metadata API keys on `/api/omni/chat`: 403 `delegation_required` (`needs: "chat:write"`) once 0066 is
 installed, 403 `not_available` before. Keys never chat.
 
+### POST /api/omni/fusion/plans — `fusion:plan` (needs proposed migration 0067; not installed)
+
+Body `{"taskId": "<uuid>"}` (≤ 2 KB, nothing else). Server-to-server only. Before 0067: 503
+`not_available` and the gate is never called. After 0067, one service-only database call
+(`omni_delegation_fusion_plan_gate`) checks the delegation (401 invalid/revoked/expired/wrong
+audience/owner unverified; 403 `scope_missing`), then the Emergency Stop (423
+`emergency_stop_engaged`, also when the Stop row is missing), and writes one
+`fusion_plan_requested` audit row. It then answers 503 `planner_not_available`: no plan, step, run,
+job, permit or cost is ever returned. Metadata API keys: 401 without a valid key, 403
+`delegation_required` (`needs: "fusion:plan"`) with one. Tests:
+`src/lib/omni-fusion.test.ts` (refusals, no network/model/task/permit/Stop calls, import
+allowlist) and `src/test/test_omni_fusion_plan_sql.py` (285 isolated checks, both install orders
+with 0066).
+
 ### Everything else
 
 `POST /api/omni/tasks/:id/approve|reject` (and chat before 0066): 403 `not_available` for an
@@ -275,7 +290,7 @@ Mothership has no Fusion orchestrator or handshake.
 ## Chat (0066) — what the owner decides
 
 1. Review and approve installing `.lovable/pending/0066_omni_delegated_chat.sql` (additive: wider
-   1–4 scope limit, `chat:write` at consent, metadata-only `omni_delegated_chat_runs`, four
+   1–5 scope limit, the consent function shared with proposed 0067, `chat:write` at consent, metadata-only `omni_delegated_chat_runs`, four
    service-only functions plus the install marker). Tested in a throwaway database
    (`src/test/test_omni_delegated_chat_sql.py`).
 2. Publish the Mothership revision containing this code.
@@ -287,6 +302,20 @@ Mothership has no Fusion orchestrator or handshake.
 Rollback: republish the previous revision; it answers chat with 403 `not_available` on either
 schema. To switch chat off without a release, the owner cancels the OMNI connection or engages the
 Stop; a forward migration could revoke the chat functions from `service_role` — never edit 0066.
+
+## Fusion plan permission (0067) — what the owner decides
+
+1. Review and approve installing `.lovable/pending/0067_omni_fusion_plan_scope.sql` (additive:
+   1–5 scope limit, `fusion:plan` at consent, install marker, one service-only gate). Independent
+   of 0066: both install the same consent function, which offers each gated scope only while that
+   change's marker exists.
+2. Publish the Mothership revision containing this code.
+3. In OMNI: request `fusion:plan` as its own opt-in and show 503 `planner_not_available` as a
+   state ("Fusion planner not built"), never as a plan.
+4. Owner ticks "Ask Fusion for plans" on `/omni-authorize`. Nothing is charged.
+
+Rollback: republish the previous revision (it answers `/api/omni/fusion/plans` with 404), cancel
+the OMNI connection, or a forward migration revoking the gate from `service_role`.
 
 ## Verification still required (not done)
 
