@@ -36,7 +36,12 @@ jobs:
             /bin/bash -c '
               set -euo pipefail
               root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+              printf "service cgroup=%s\n" "$root"
+              cat /proc/self/cgroup
+              stat -f -c "filesystem=%T" /sys/fs/cgroup
+              cat "$root/cgroup.type" "$root/cgroup.controllers"
               mkdir "$root/manager"
+              cat "$root/manager/cgroup.type"
               echo $$ > "$root/manager/cgroup.procs"
               echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
               export OMNI_WORKSPACE_DELEGATED_CGROUP="$root"
