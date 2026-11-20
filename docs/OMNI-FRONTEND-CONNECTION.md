@@ -79,7 +79,7 @@ anything on the published site (it still runs the earlier release until the owne
   consent, owner AI approval, Stop, daily limit and the shared AI guard; it waits on owner approval of
   migration 0066, publishing, and OMNI requesting `chat:write`.
 - Fusion: no Fusion orchestrator or handshake exists on the Mothership, so the manifest never reports
-  `orchestration`. OMNI's "Fusion · unverified" is the correct state until one is specified and built.
+  `orchestration`. OMNI's "Fusion · unverified" is the correct state until it is built and verified; requirements: `docs/OMNI-FUSION-REQUIREMENTS.md`.
 - Task decisions stay owner-only on the Mothership (two-step + passkey); a key should never decide.
 - The OMNI frontend is unpublished, so the Mothership has no URL to link back to it yet.
 

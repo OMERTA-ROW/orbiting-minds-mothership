@@ -13,7 +13,9 @@
 - [x] "CODE spending cap Unverified" traced: OMNI web needs `spendingCapUsd`; the manifest now sends it only from a ≤15-minute signed Jackboy permit within $0.50/$1/$5 and one job; newest live permit is 2026-11-19 01:57 UTC ($0.50/$1/$5), so it correctly stays Unverified with the reason and dates in `spendingCap`.
 - [ ] CODE spending cap shown verified — blocked on: publishing, then Jackboy issuing a fresh signed permit for an owner-authorized job.
 - [ ] OMNI web chat — blocked on: owner approval to install `.lovable/pending/0066_omni_delegated_chat.sql`, publishing, OMNI requesting `chat:write`, then the owner's first live reply (paid).
-- [ ] Fusion orchestration — blocked on: a written Fusion specification (what it does, its handshake and status); nothing exists to verify.
+- [ ] Fusion orchestration — blocked on: owner confirming Fusion's purpose and approving the brief's new scope and table (`docs/OMNI-FUSION-REQUIREMENTS.md`).
+- [x] Fusion requirements brief (`docs/OMNI-FUSION-REQUIREMENTS.md`): data sources, permissions, outputs, verification criteria.
+- [x] Owner release checklist (`docs/OWNER-RELEASE-CHECKLIST.md`): verified connections vs owner approvals and live checks.
 - [ ] OMNI owner delegation live verification — blocked on: publishing the Mothership (owner approval), the OMNI project's callback route/server-side token storage/`taskAgents` change, and an owner-run live approve → exchange → held task → revoke test.
 - [x] GitHub reconciliation 2026-11-20: GitHub main = Lovable HEAD; merged #23 Treasury (`e5e8117`), #24 OMNI orb plan (`743f833`), #20 Honeycomb contract (`2959fb8`) all in history; leftover fictional reference data pruned.
 - [ ] Open PR #25 (repository fusion intake, docs only) not installed; owner to resolve/merge on GitHub, then CLI reconciliation as a separate change.
