@@ -88,8 +88,9 @@ no network and uses only synthetic credentials; this outer network restriction m
 would not independently prove per-workspace network isolation. The image test is expected to fail
 while execution is quarantined. It does not cover detached descendants, aggregate limits,
 owner-bound approvals, Stop races or restart recovery.
-The same workflow runs the historical tests directly against the quarantined service on its
-disposable Linux host; it does not bypass quarantine or establish execution readiness.
+The host workflow runs the historical tests against a disposable, test-only service copy that
+bypasses quarantine and invokes the experimental supervisor; this does not establish execution
+readiness.
 
 `cgroup.mjs` contains a preliminary cgroup v2 job-leaf primitive. It requires an already
 delegated parent, applies CPU bandwidth, memory and PID limits, and uses `cgroup.kill` with a
@@ -117,6 +118,16 @@ This recovery path therefore does not make the service safe to execute commands.
 jobs while the supervisor is down; a separate fail-closed watchdog and renewable authority are still
 required. The recorded `terminated` state confirms cgroup emptiness, not broader containment or a
 remote Stop acknowledgement.
+
+`supervisor.mjs` is an experimental host-only bubblewrap command boundary. Bubblewrap supplies
+the mount, user, PID, network, IPC and UTS namespaces; the launcher is attached to a delegated
+job cgroup while blocked before it can enter bubblewrap. Only `/usr`, a private `/tmp`, a new
+`/proc` and `/dev`, and the session's workspace are mounted, with a cleared environment. The
+disposable `workspace-host-historical` fixture uses a temporary copy of the service with its
+quarantine removed and routes commands to this boundary. The unchanged historical assertions
+exercise that fixture, not the quarantined production entrypoint. This is not a deployable
+supervisor: renewable authority, independent crash supervision, total disk quotas, robust
+startup/Stop race handling and serving-runtime verification are missing. Do not enable execution.
 
 The command decision handler has a prepared transactional claim path that validates the owner,
 project, session, job and pending command and writes the decision and job claim together. A separate
