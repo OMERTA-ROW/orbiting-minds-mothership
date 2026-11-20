@@ -89,6 +89,54 @@ jobs:
               exec node --test --test-concurrency=1 \
                 tests/omni-workspace-cgroup.test.mjs tests/omni-workspace-recovery.test.mjs
             '
+  workspace-image-recovery:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Build image and test recovery using a delegated cgroup
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          docker version --format 'server={{.Server.Version}}'
+          docker info --format 'cgroupDriver={{.CgroupDriver}} cgroupVersion={{.CgroupVersion}}'
+          docker build --quiet --tag omni-workspace-recovery:fixture services/omni-sandbox
+          docker image inspect omni-workspace-recovery:fixture --format 'localImageId={{.Id}}'
+          sudo systemd-run --quiet --wait --pipe --collect \
+            --unit="omni-image-ci-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --property=Delegate=yes --property=User=runner \
+            --property="WorkingDirectory=$GITHUB_WORKSPACE" --setenv="PATH=$PATH" \
+            --setenv="GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            /bin/bash -c '
+              set -euo pipefail
+              root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+              mkdir "$root/manager"
+              echo 0 > "$root/manager/cgroup.procs"
+              echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
+              if [ "$(docker info --format "{{.CgroupDriver}}")" != cgroupfs ]; then
+                echo "Fixture requires Docker cgroupfs driver for its delegated parent"
+                exit 1
+              fi
+              docker run --rm --user "$(id -u):$(id -g)" \
+                --cap-drop ALL --security-opt no-new-privileges --read-only \
+                --network none --tmpfs /tmp:rw,nosuid,nodev,size=128m \
+                --cgroup-parent "${root#/sys/fs/cgroup}" \
+                --mount "type=bind,source=$root,target=/delegated" \
+                --mount "type=bind,source=$GITHUB_WORKSPACE,target=/repo,readonly" \
+                --env OMNI_WORKSPACE_DELEGATED_CGROUP=/delegated \
+                --entrypoint /bin/sh omni-workspace-recovery:fixture -c '"'"'
+                  set -eu
+                  grep -Eq "^NoNewPrivs:[[:space:]]+1$" /proc/self/status
+                  grep -Eq "^CapEff:[[:space:]]+0+$" /proc/self/status
+                  mkdir -p /tmp/fixture/services /tmp/fixture/tests
+                  ln -s /app /tmp/fixture/services/omni-sandbox
+                  cp /repo/tests/omni-workspace-cgroup.test.mjs /repo/tests/omni-workspace-recovery.test.mjs /tmp/fixture/tests/
+                  exec node --test --test-concurrency=1 /tmp/fixture/tests/omni-workspace-cgroup.test.mjs /tmp/fixture/tests/omni-workspace-recovery.test.mjs
+                '"'"'
+            '
   workspace-host-historical:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
