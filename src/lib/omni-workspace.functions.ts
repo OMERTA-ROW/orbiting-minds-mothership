@@ -372,6 +372,7 @@ export const startSession = createServerFn({ method: "POST" })
       try {
         const reply = await ws.relay(link, "session.start", {
           sessionId: row.id,
+          ownerId: uid,
           agentId: agent.id,
           allowedActions: agent.allowed_actions,
           provider: data.provider,
@@ -807,6 +808,23 @@ export const decideStep = createServerFn({ method: "POST" })
         if (gated) throw new Error("This step needs a passkey approval in Approvals waiting.");
         ({ job_id: jobId, remote_id: remoteId, session_id: sessionId, agent_id: agentId } = s);
       } else throw new Error("Nothing to decide.");
+      const { data: session, error: sessionError } = await db
+        .from("omni_workspace_sessions")
+        .select("owner_id, agent_id")
+        .eq("id", sessionId)
+        .maybeSingle();
+      if (sessionError || session?.owner_id !== uid)
+        throw new Error("The decision does not belong to this owner.");
+      if (session.agent_id !== agentId)
+        throw new Error("The decision does not match its session and agent.");
+      const { data: job, error: jobError } = await db
+        .from("omni_agent_jobs")
+        .select("id")
+        .eq("id", jobId)
+        .eq("session_id", sessionId)
+        .eq("agent_id", agentId)
+        .maybeSingle();
+      if (jobError || !job) throw new Error("The decision does not match its session and job.");
       const { gate, link } = await ws.gateFor(db, admin, uid, true);
       if (data.approve && !gate.open)
         throw new Error(`Not sent: ${gate.blockers[0] ?? "not connected"}`);
@@ -838,6 +856,7 @@ export const decideStep = createServerFn({ method: "POST" })
       if (gate.open) {
         const { agent } = await ws.activeSession(db, admin, sessionId);
         const reply = await ws.relay(link, "step.decide", {
+          ownerId: uid,
           sessionId,
           jobId,
           stepId: remoteId,
@@ -899,7 +918,8 @@ export const runStopDrill = createServerFn({ method: "POST" })
       await pk.consumePasskeyCheck(admin, uid, data.checkId, ["autonomy"]);
       const { gate, link } = await ws.gateFor(db, admin, uid, true);
       if (!gate.open) throw new Error(gate.blockers[0] ?? "Not connected.");
-      const { agent } = await ws.activeSession(db, admin, data.sessionId);
+      const { session, agent } = await ws.activeSession(db, admin, data.sessionId);
+      if (session.owner_id !== uid) throw new Error("This session belongs to a different owner.");
       const sessionId = data.sessionId;
       const { data: job, error } = await admin
         .from("omni_agent_jobs")
@@ -939,7 +959,12 @@ export const runStopDrill = createServerFn({ method: "POST" })
           agent,
           sessionId,
           job.id,
-          await ws.relay(link, "step.decide", { ...base, stepId: "cmd", approve: true }),
+          await ws.relay(link, "step.decide", {
+            ...base,
+            ownerId: uid,
+            stepId: "cmd",
+            approve: true,
+          }),
         );
         await admin
           .from("omni_agent_steps")

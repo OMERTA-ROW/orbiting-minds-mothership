@@ -35,7 +35,7 @@ export async function workspaceRequest(
 ): Promise<RemoteReply> {
   const nonce = randomBytes(16).toString("hex");
   const ts = String(Math.floor(Date.now() / 1000));
-  const body = JSON.stringify({ action, projectId: config.projectId, ...payload });
+  const body = JSON.stringify({ ...payload, action, projectId: config.projectId });
   const message = `${WORKSPACE_CONTRACT}\nPOST\n${WORKSPACE_PATH}\n${ts}\n${nonce}\n${sha256(body)}`;
   const send: Fetch = opts.fetch ?? ((i, init) => fetch(i, init));
   let res: Response;

@@ -19,6 +19,13 @@ make the in-memory sessions safe to run across replicas or provide restart recov
 Node 22.13 or later with `node:sqlite` is required. Verify volume locking, flush semantics and
 capacity on the actual serving runtime; these are not established by local tests.
 
+The same database records a single decision claim per project, session, job and step, including
+the owner. The signed decision must match the in-memory session owner and pending job; a claim is
+written before a decision can proceed. A failed write refuses the decision, and a crash after a
+claim does not authorize replay. This is a preliminary safeguard, not an end-to-end approval or
+restart-recovery guarantee: execution stays quarantined, sessions are not durable, and actual
+concurrent exchange and crash behavior on the serving volume remain unverified.
+
 Implements `omni.workspace/v1` for Mothership's cloud shell. **Not deployed by Lovable.** Copy this
 folder only after the missing containment and replay guarantees have been implemented and verified.
 

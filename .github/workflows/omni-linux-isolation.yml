@@ -126,6 +126,7 @@ jobs:
       - name: Test durable replay and report quarantined workspace execution tests
         run: |
           node --version
+          node --test tests/omni-workspace-decision.test.mjs
           bun run test src/test/omni-sandbox-interop.test.ts src/test/omni-sandbox-containment.test.ts
   activation-sql:
     runs-on: ubuntu-22.04

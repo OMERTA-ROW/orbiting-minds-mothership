@@ -79,6 +79,45 @@ const safeEqual = (a, b) => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
+export function boundDecision(projectId, session, body) {
+  if (
+    body.projectId !== projectId ||
+    typeof body.ownerId !== "string" ||
+    !UUID.test(body.ownerId) ||
+    body.ownerId !== session.ownerId ||
+    body.sessionId !== session.id ||
+    typeof body.jobId !== "string" ||
+    !UUID.test(body.jobId) ||
+    typeof body.approve !== "boolean"
+  )
+    throw new Refusal("Decision does not match the owner, project, session and job.");
+  const job = session.jobs.get(body.jobId);
+  if (!job || job.id !== body.jobId || job.state !== "awaiting_approval" || !job.pending)
+    throw new Refusal("Nothing is waiting for a decision.");
+  return job;
+}
+
+export function createDecisionClaims(database) {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS decision_claims (
+      project_id TEXT NOT NULL,
+      session_id TEXT NOT NULL,
+      job_id TEXT NOT NULL,
+      step_id TEXT NOT NULL,
+      owner_id TEXT NOT NULL,
+      claimed_at INTEGER NOT NULL,
+      PRIMARY KEY (project_id, session_id, job_id, step_id)
+    ) WITHOUT ROWID;
+  `);
+  const insert = database.prepare(`
+    INSERT INTO decision_claims (project_id, session_id, job_id, step_id, owner_id, claimed_at)
+    VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING
+  `);
+  return (body) =>
+    insert.run(body.projectId, body.sessionId, body.jobId, body.stepId, body.ownerId, Date.now())
+      .changes === 1;
+}
+
 // ---------------------------------------------------------------- isolation
 
 /** argv that runs `bash -c "$OMNI_CMD"` as `uid` with limits and, when possible, no network. */
@@ -183,6 +222,7 @@ export function createSandbox(c, opts = {}) {
   const insertNonce = nonceStore.prepare(
     "INSERT INTO nonces (nonce, seen_at) VALUES (?, ?) ON CONFLICT DO NOTHING",
   );
+  const claimDecision = createDecisionClaims(nonceStore);
   const claimNonce = (nonce) => {
     const now = Date.now();
     nonceStore.exec("BEGIN IMMEDIATE");
@@ -733,10 +773,18 @@ export function createSandbox(c, opts = {}) {
         };
       }
       case "session.start": {
-        if (!UUID.test(b.sessionId ?? "")) throw new Refusal("Invalid session ID.");
+        if (
+          typeof b.sessionId !== "string" ||
+          !UUID.test(b.sessionId) ||
+          typeof b.ownerId !== "string" ||
+          !UUID.test(b.ownerId)
+        )
+          throw new Refusal("Invalid session or owner ID.");
         if (net !== "isolated" && !c.allowNetwork)
           throw new Refusal("Network isolation is unavailable on this host; commands are refused.");
         let s = sessions.get(b.sessionId);
+        if (s && s.ownerId !== b.ownerId)
+          throw new Refusal("Session belongs to a different owner.");
         if (!s) {
           const slot = slotFree();
           if (!slot) throw new Refusal(`At most ${c.limits.maxSessions} sessions at once.`);
@@ -749,6 +797,7 @@ export function createSandbox(c, opts = {}) {
           const provider = ["openai", "anthropic"].includes(b.provider) ? b.provider : "none";
           s = {
             id: b.sessionId,
+            ownerId: b.ownerId,
             slot,
             uid,
             dir,
@@ -812,10 +861,17 @@ export function createSandbox(c, opts = {}) {
       }
       case "step.decide": {
         const s = getSession(b.sessionId);
-        const job = s.jobs.get(b.jobId);
-        if (!job || !job.pending) throw new Refusal("Nothing is waiting for a decision.");
+        const job = boundDecision(c.projectId, s, b);
         const want = job.pending.kind === "pr" ? "pr" : "cmd";
         if (b.stepId !== want) throw new Refusal("That step is not waiting.");
+        let claimed;
+        try {
+          claimed = claimDecision(b);
+        } catch {
+          console.error("Sandbox decision store unavailable; request refused.");
+          throw new Refusal("Decision store unavailable; nothing was started.");
+        }
+        if (!claimed) throw new Refusal("This decision has already been consumed.");
         if (b.approve !== true) {
           job.pending = null;
           job.state = "stopped";

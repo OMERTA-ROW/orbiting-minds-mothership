@@ -126,6 +126,15 @@ describe("quarantined workspace reference", () => {
     ).rejects.toThrow(/signature/);
   });
 
+  it("does not allow payload fields to override the signed action or configured project", async () => {
+    await expect(
+      workspaceRequest(cfg, "session.start", { action: "health.check" }),
+    ).rejects.toThrow(/execution is disabled/i);
+    await expect(
+      workspaceRequest(cfg, "agent.stop", { projectId: "other" }),
+    ).resolves.toMatchObject({ contract: "omni.workspace/v1" });
+  });
+
   it("does not consume a nonce from an invalid signature", async () => {
     const request = signedStop("f".repeat(32));
     const url = `${cfg.origin}/api/public/omni/workspace`;

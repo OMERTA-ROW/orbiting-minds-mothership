@@ -10,6 +10,7 @@ import { workspaceRequest } from "@/lib/omni-workspace-link.server";
 import { evaluateSandboxHealth, type RemoteReply } from "@/lib/omni-workspace";
 
 const SECRET = "t".repeat(48);
+const ownerId = "f1b3d943-c6ee-4ed1-abce-f08ba1493734";
 const externalOrigin = process.env["OMNI_WORKSPACE_TEST_ORIGIN"];
 const cfg = {
   origin: externalOrigin ?? "",
@@ -30,7 +31,13 @@ async function runApproved(sessionId: string, command: string) {
   const jobId = randomUUID();
   const queued = await call("command.run", { sessionId, jobId, command, autonomous: true });
   const steps: RemoteReply["steps"] = [...queued.steps];
-  const decided = await call("step.decide", { sessionId, jobId, stepId: "cmd", approve: true });
+  const decided = await call("step.decide", {
+    ownerId,
+    sessionId,
+    jobId,
+    stepId: "cmd",
+    approve: true,
+  });
   steps.push(...decided.steps);
   let status = decided.job?.status;
   for (
@@ -83,7 +90,12 @@ suite("quarantined historical sandbox execution contract (requires containment r
 
   it("starts a session and never runs a command before approval", async () => {
     sessionId = randomUUID();
-    const s = await call("session.start", { sessionId, agentId: "omni", provider: "none" });
+    const s = await call("session.start", {
+      ownerId,
+      sessionId,
+      agentId: "omni",
+      provider: "none",
+    });
     expect(s.session?.sandboxId).toMatch(/^sbx-/);
     const jobId = randomUUID();
     const q = await call("command.run", {
@@ -94,7 +106,13 @@ suite("quarantined historical sandbox execution contract (requires containment r
     });
     expect(q.steps[0]).toMatchObject({ kind: "command", status: "pending_approval" });
     expect(q.job?.status).toBe("queued");
-    const rej = await call("step.decide", { sessionId, jobId, stepId: "cmd", approve: false });
+    const rej = await call("step.decide", {
+      ownerId,
+      sessionId,
+      jobId,
+      stepId: "cmd",
+      approve: false,
+    });
     expect(rej.steps.some((x) => x.title === "Rejected by owner")).toBe(true);
     const check = await runApproved(sessionId, "test -e ran && echo RAN || echo NOT_RUN");
     expect(check.out("stdout")).toContain("NOT_RUN");
@@ -130,7 +148,7 @@ suite("quarantined historical sandbox execution contract (requires containment r
   it("stops a running command", async () => {
     const jobId = randomUUID();
     await call("command.run", { sessionId, jobId, command: "sleep 1.5; echo finished" });
-    await call("step.decide", { sessionId, jobId, stepId: "cmd", approve: true });
+    await call("step.decide", { ownerId, sessionId, jobId, stepId: "cmd", approve: true });
     await call("job.stop", { sessionId, jobId });
     await new Promise((r) => setTimeout(r, 300));
     const r = await call("events.poll", { sessionId, jobId });
@@ -192,7 +210,7 @@ suite("quarantined historical sandbox execution contract (requires containment r
 
   it("keeps sessions apart: one session cannot read another's files", async () => {
     const other = randomUUID();
-    await call("session.start", { sessionId: other, agentId: "omni", provider: "none" });
+    await call("session.start", { ownerId, sessionId: other, agentId: "omni", provider: "none" });
     await runApproved(sessionId, "echo private > note.txt");
     const peek = await runApproved(
       other,
