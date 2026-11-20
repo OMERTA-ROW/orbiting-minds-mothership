@@ -178,10 +178,12 @@ jobs:
           node --version
           bwrap --version
           unit="omni-host-fixture-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          workspace_root="$(mktemp -d /tmp/omni-workspace-ci.XXXXXXXX)"
+          chmod 711 "$workspace_root"
           sudo systemd-run --quiet --wait --pipe --collect --unit="$unit" \
             --property=Delegate=yes --property="WorkingDirectory=$GITHUB_WORKSPACE" \
             --setenv="PATH=$PATH" --setenv=PORT=18791 \
-            --setenv="OMNI_SANDBOX_ROOT=$RUNNER_TEMP/omni-workspace-host/root" \
+            --setenv="OMNI_SANDBOX_ROOT=$workspace_root/root" \
             --setenv=OMNI_SANDBOX_CLIENT_ID=mothership-test \
             --setenv=OMNI_SANDBOX_HMAC_SECRET=tttttttttttttttttttttttttttttttttttttttttttttttt \
             --setenv=OMNI_SANDBOX_COMMAND_TIMEOUT_SEC=2 \
@@ -209,7 +211,7 @@ jobs:
           if [ "$ready" != true ]; then cat "$RUNNER_TEMP/omni-workspace-host.log"; exit 1; fi
           OMNI_WORKSPACE_HISTORICAL_TEST=1 \
             OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:18791 \
-            OMNI_WORKSPACE_TEST_ROOT="$RUNNER_TEMP/omni-workspace-host" \
+            OMNI_WORKSPACE_TEST_ROOT="$workspace_root" \
             bun run test src/test/omni-sandbox-containment.test.ts || {
               cat "$RUNNER_TEMP/omni-workspace-host.log"
               exit 1
