@@ -55,7 +55,7 @@ jobs:
           if [ "$ready" != true ]; then cat "$RUNNER_TEMP/omni-workspace-host.log"; exit 1; fi
           OMNI_WORKSPACE_HISTORICAL_TEST=1 \
             OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:18791 \
-            "OMNI_WORKSPACE_TEST_ROOT=$RUNNER_TEMP/omni-workspace-host" \
+            OMNI_WORKSPACE_TEST_ROOT="$RUNNER_TEMP/omni-workspace-host" \
             bun run test src/test/omni-sandbox-containment.test.ts
   workspace-image-historical:
     if: github.event_name == 'workflow_dispatch'
