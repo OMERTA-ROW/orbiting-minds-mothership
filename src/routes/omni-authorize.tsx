@@ -49,7 +49,8 @@ export const Route = createFileRoute("/omni-authorize")({
 });
 
 type Described =
-  { valid: false; error: string } | { valid: true; owner: boolean; mfaBlocker: string | null };
+  | { valid: false; error: string }
+  | { valid: true; owner: boolean; needsSecondStep: boolean; mfaBlocker: string | null };
 
 function OmniAuthorizePage() {
   const search = Route.useSearch();
