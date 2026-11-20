@@ -44,6 +44,28 @@ describe("OMNI frontend contract", () => {
       401,
     );
   });
+  it("raw manifest JSON gives OMNI web six assignable held-task agents and no chat agent", async () => {
+    await ready;
+    const r = await omniContractRead(
+      new Request("https://evoomni.tech/api/omni/manifest", {
+        headers: { authorization: `Bearer ${HEALTH_KEY}` },
+      }),
+      "manifest",
+      verify,
+    );
+    expect(r.status).toBe(200);
+    const raw = (await r.json()) as {
+      agents: { id: string; enrolled: unknown }[];
+      taskAgents: unknown;
+    };
+    // Mirrors OMNI web 6df27e6: taskAgents strings, intersected with manifest agents.
+    const taskAgents = Array.isArray(raw.taskAgents)
+      ? raw.taskAgents.filter((a): a is string => typeof a === "string" && a.length > 0)
+      : [];
+    const eligible = raw.agents.filter((a) => taskAgents.includes(a.id)).map((a) => a.id);
+    expect(eligible).toEqual(["jackboy", "jax", "razul", "sabrina", "guardian", "hercules"]);
+    expect(raw.agents.filter((a) => a.enrolled === true)).toEqual([]);
+  });
   it("a jobs-only key is valid but gets 403 for health and manifest", async () => {
     await ready;
     const r = await omniContractRead(req("/api/omni/manifest", JOBS_KEY), "manifest", verify);
@@ -111,6 +133,19 @@ describe("OMNI frontend contract", () => {
       emergencyStop: { read: false, write: true },
     });
     expect(m.links.terminal).toBe("https://evoomni.tech/omni-terminal");
+  });
+  it("lists exactly the six held-task agents as assignable, none chat-enrolled", () => {
+    const m = buildManifest("https://evoomni.tech");
+    const ids = ["jackboy", "jax", "razul", "sabrina", "guardian", "hercules"];
+    expect(m.taskAgents).toEqual(ids);
+    // OMNI web assigns only agents present in both lists, so every task agent must be listed.
+    expect(m.agents.filter((a) => m.taskAgents.includes(a.id as never)).map((a) => a.id)).toEqual(
+      ids,
+    );
+    expect(m.agents.find((a) => a.id === "razul")?.name).toBe("Razul Central Intelligence");
+    expect(m.taskAgents).not.toContain("omni");
+    expect(m.agents.some((a) => a.enrolled)).toBe(false);
+    expect(m.agents.some((a) => "status" in a)).toBe(false);
   });
   it("advertises no links on a non-https origin", () => {
     expect(buildManifest(null).links).toEqual({});

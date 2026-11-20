@@ -106,6 +106,16 @@ export const HELD_TASK_AGENTS = [
   "hercules",
 ] as const;
 
+/** Verified display names for held-task agents (same names as the OMNI Terminal). */
+export const HELD_TASK_AGENT_NAMES: Record<(typeof HELD_TASK_AGENTS)[number], string> = {
+  jackboy: "Jackboy",
+  jax: "JAX",
+  razul: "Razul Central Intelligence",
+  sabrina: "Sabrina",
+  guardian: "Guardian",
+  hercules: "Hercules",
+};
+
 export const DELEGATION_TOKEN_PATTERN = /^omnid_[0-9a-f]{64}$/;
 export const AUTH_CODE_PATTERN = /^omnic_[0-9a-f]{64}$/;
 /** RFC 7636 code_verifier: 43–128 unreserved characters. */

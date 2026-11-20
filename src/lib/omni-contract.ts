@@ -18,6 +18,7 @@ import {
   DELEGATION_CLIENT,
   DELEGATION_TOKEN_SECONDS,
   HELD_TASK_AGENTS,
+  HELD_TASK_AGENT_NAMES,
   SUPPORTED_DELEGATION_SCOPES,
 } from "./omni-delegation";
 
@@ -101,7 +102,7 @@ export function httpsOrigin(requestUrl: string): string | null {
 }
 
 /**
- * Truthful manifest. OMNI is listed but not enrolled (chat is not enabled); no providers,
+ * Truthful manifest. No agent is chat-enrolled (OMNI and the held-task agents); no providers,
  * spending cap or orchestration are claimed; autonomous is always false. Task writes and the
  * Stop are declared because owner delegations can do them; links point at real owner pages.
  */
@@ -117,6 +118,16 @@ export function buildManifest(origin: string | null) {
         description:
           "Mothership's private text agent. Chat through this connection isn't enabled; use OMNI chat on the Mothership.",
       },
+      // OMNI web offers task assignment only to agents present here AND in `taskAgents`, so
+      // each held-task agent is listed, never chat-enrolled and with no claimed live status.
+      ...HELD_TASK_AGENTS.map((id) => ({
+        id,
+        name: HELD_TASK_AGENT_NAMES[id],
+        kind: "external" as const,
+        enrolled: false,
+        description:
+          "Can be named on a held task through an owner delegation; the task waits on the Mothership and nothing runs. Chat isn't enabled.",
+      })),
     ],
     providers: [] as { id: string; label: string; models: string[] }[],
     autonomous: false as const,

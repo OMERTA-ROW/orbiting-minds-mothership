@@ -175,8 +175,10 @@ Errors: 401 `invalid_token` (`reason`: invalid/expired/revoked/wrong_audience/ow
 422 `invalid_request` / `agent_not_accepted` / `secret_like`, 429 `daily_limit` (20 per day),
 503 `not_stored` (retry with the same idempotencyKey).
 
-**OMNI change needed:** `createRemoteTask` currently requires `agent.enrolled`, which means chat
-enrollment. It must check `manifest.taskAgents` instead; no agent is chat-enrolled.
+OMNI web (6df27e6) checks `manifest.taskAgents` here, not chat enrollment. Its task picker offers
+only agents present in **both** `manifest.agents` and `manifest.taskAgents`, so the manifest lists each
+held-task agent in `agents` with its verified name, `kind: "external"`, `enrolled: false` (chat stays
+off) and no live status. Before that listing, `agents` held only OMNI and the picker showed no agents.
 
 ### POST /api/omni/emergency-stop — `safety:emergency-stop`
 
@@ -198,7 +200,7 @@ keep working unchanged for health, manifest and job history; delegations do not 
 ## Manifest additions
 
 `capabilities` now uses `{read, write}` objects (`tasks {read:true, write:true}`,
-`emergencyStop {read:false, write:true}`, everything else false), plus `taskAgents` and
+`emergencyStop {read:false, write:true}`, everything else false), plus `taskAgents` (also listed, never chat-enrolled, in `agents`) and
 `delegation { clientId, audience, supportedScopes, tokenLifetimeSeconds, heldTasksPath,
 authorizeUrl, tokenUrl, statusUrl, revokeUrl }`. The `heldTasksPath` and `tasks:read` are
 available only after migration 0064 and the matching application revision are deployed.
