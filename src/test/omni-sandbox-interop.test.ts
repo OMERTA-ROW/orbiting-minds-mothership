@@ -251,6 +251,7 @@ describe("quarantined workspace reference", () => {
         "Sandbox Stop attempted without durable nonce claim; result unverified.",
       );
       expect((await fetch(url, alreadyClaimed)).status).toBe(503);
+      expect(serviceLogs.get(proc)).toContain("SQLite code 5");
     } finally {
       await stopService(lock);
     }
