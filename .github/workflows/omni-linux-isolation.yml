@@ -60,7 +60,7 @@ jobs:
           done
           if [ "$ready" != true ]; then docker logs omni-workspace-historical; exit 1; fi
           docker exec omni-workspace-historical node -e \
-            "require('fs').writeFileSync('/tmp/omni-test.config.mjs', 'export default { test: { environment: \"jsdom\", globals: true, setupFiles: [\"/repo/src/test/setup.ts\"] }, resolve: { alias: { \"@\": \"/repo/src\" } } };')"
+            "require('fs').writeFileSync('/tmp/omni-test.config.mjs', 'export default { test: { environment: \"node\", globals: true }, resolve: { alias: { \"@\": \"/repo/src\" } } };')"
           docker exec --workdir /repo \
             --env OMNI_WORKSPACE_HISTORICAL_TEST=1 \
             --env OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:8080 \
