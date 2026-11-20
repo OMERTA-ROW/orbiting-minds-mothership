@@ -1,0 +1,1 @@
+COMMENT ON FUNCTION public.omni_delegation_read_tasks(text, text, uuid) IS 'Service-only: returns the verified owner''s delegated held tasks when the short-lived OMNI delegation has separately consented tasks:read; audited; confers no write, approval or execution authority.';

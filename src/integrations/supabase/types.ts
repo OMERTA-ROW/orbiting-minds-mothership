@@ -3849,6 +3849,10 @@ export type Database = {
       }
       omni_delegation_owner_ok: { Args: { _uid: string }; Returns: boolean }
       omni_delegation_owner_revoke: { Args: { _id: string }; Returns: Json }
+      omni_delegation_read_tasks: {
+        Args: { _audience: string; _task_id?: string; _token_hash: string }
+        Returns: Json
+      }
       omni_delegation_revoke: { Args: { _token_hash: string }; Returns: Json }
       omni_delegation_status: { Args: { _token_hash: string }; Returns: Json }
       omni_delegation_use: {
