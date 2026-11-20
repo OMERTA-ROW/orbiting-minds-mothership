@@ -100,6 +100,9 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
   }, 15_000);
 
   it("excludes host state, inherited settings and network routes", async () => {
+    const root = process.env["OMNI_WORKSPACE_TEST_ROOT"] ?? "";
+    if (!/^\/tmp\/omni-workspace-ci\.[A-Za-z0-9]+$/.test(root))
+      throw new Error("The test requires the disposable host fixture root.");
     const sessionId = await startSession();
     const script = [
       "id -u",
@@ -107,7 +110,8 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
       "test ! -e /sys && echo NO_SYS",
       "test ! -e /var/run/docker.sock && echo NO_DOCKER",
       "test ! -e /etc/resolv.conf && echo NO_RESOLVER",
-      "test ! -e /proc/1/root/.state && echo NO_SERVICE_STATE",
+      `test ! -e ${root}/root/.state/nonces.sqlite && echo NO_SERVICE_STATE`,
+      "getent ahosts example.com >/dev/null 2>&1 && echo DNS_OPEN || echo DNS_BLOCKED",
       ...["127.0.0.1:18791", "169.254.169.254:80", "10.0.0.1:80", "1.1.1.1:443"].map(
         (address) =>
           `bash -c 'exec 3<>/dev/tcp/${address.replace(":", "/")}' 2>/dev/null && echo NETWORK_OPEN || echo NETWORK_BLOCKED`,
@@ -122,6 +126,8 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
       expect(result.stdout).toContain("NO_DOCKER");
       expect(result.stdout).toContain("NO_RESOLVER");
       expect(result.stdout).toContain("NO_SERVICE_STATE");
+      expect(result.stdout).toContain("DNS_BLOCKED");
+      expect(result.stdout).not.toContain("DNS_OPEN");
       expect(result.stdout.match(/NETWORK_BLOCKED/g)).toHaveLength(4);
       expect(result.stdout).not.toContain("NETWORK_OPEN");
       expect(result.stdout).not.toContain("OMNI_SANDBOX");
