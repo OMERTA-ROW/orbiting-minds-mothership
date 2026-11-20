@@ -15,11 +15,34 @@ on:
         description: Run only the disposable historical workspace host fixture
         type: boolean
         default: false
+      namespace_trace:
+        description: Trace namespace syscalls on disposable Linux host only
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
+  workspace-namespace-trace:
+    if: github.event_name == 'workflow_dispatch' && inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Trace unprivileged bubblewrap namespace setup
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap strace
+          bwrap --version
+          sudo -u runner strace -f -e trace=clone,clone3,unshare,setns,mount,umount2,pivot_root \
+            -o /tmp/omni-bwrap-trace \
+            bwrap --unshare-user --unshare-pid --unshare-net --unshare-ipc --unshare-uts \
+              --die-with-parent --new-session --ro-bind /usr /usr \
+              --symlink usr/bin /bin --symlink usr/lib /lib --symlink usr/lib64 /lib64 \
+              --proc /proc --dev /dev --tmpfs /tmp --clearenv \
+              --setenv PATH /usr/bin:/bin -- /bin/true
+          cat /tmp/omni-bwrap-trace
   workspace-seccomp-probe:
-    if: github.event_name == 'workflow_dispatch' && !inputs.host_only
+    if: github.event_name == 'workflow_dispatch' && !inputs.host_only && !inputs.namespace_trace
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -59,7 +82,7 @@ jobs:
               '"'"'
             '
   workspace-cgroup:
-    if: github.event_name == 'workflow_dispatch' && !inputs.host_only
+    if: github.event_name == 'workflow_dispatch' && !inputs.host_only && !inputs.namespace_trace
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
@@ -95,7 +118,7 @@ jobs:
                 tests/omni-workspace-cgroup.test.mjs tests/omni-workspace-recovery.test.mjs
             '
   workspace-image-recovery:
-    if: github.event_name == 'workflow_dispatch' && !inputs.host_only
+    if: github.event_name == 'workflow_dispatch' && !inputs.host_only && !inputs.namespace_trace
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -152,7 +175,7 @@ jobs:
                 '"'"'
             '
   workspace-host-historical:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && !inputs.namespace_trace
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -224,7 +247,7 @@ jobs:
               exit 1
             }
   workspace-image-historical:
-    if: github.event_name == 'workflow_dispatch' && !inputs.host_only
+    if: github.event_name == 'workflow_dispatch' && !inputs.host_only && !inputs.namespace_trace
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -320,7 +343,7 @@ jobs:
             omni-workspace-historical \
             node node_modules/vitest/vitest.mjs run --config /tmp/omni-test.config.mjs src/test/omni-sandbox-containment.test.ts
   workspace-replay:
-    if: github.event_name != 'workflow_dispatch' || !inputs.host_only
+    if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -340,7 +363,7 @@ jobs:
           node --test tests/omni-workspace-decision.test.mjs
           bun run test src/test/omni-sandbox-interop.test.ts src/test/omni-sandbox-containment.test.ts
   activation-sql:
-    if: github.event_name != 'workflow_dispatch' || !inputs.host_only
+    if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
@@ -354,7 +377,7 @@ jobs:
           python3 src/test/test_jackboy_safety_sql.py
           python3 src/test/test_activation_approvals_sql.py
   actual-linux:
-    if: github.event_name != 'workflow_dispatch' || !inputs.host_only
+    if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
