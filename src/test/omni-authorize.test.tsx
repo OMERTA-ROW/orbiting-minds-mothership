@@ -11,6 +11,7 @@ const SEARCH = {
   code_challenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
   code_challenge_method: "S256",
 };
+const GRANTABLE = ["tasks:read", "tasks:write", "safety:emergency-stop"];
 const mocks = vi.hoisted(() => ({
   search: {} as Record<string, string>,
   describe: vi.fn(),
@@ -50,6 +51,7 @@ describe("OMNI connection approval page", () => {
       owner: true,
       needsSecondStep: false,
       mfaBlocker: null,
+      grantable: GRANTABLE,
     });
     mocks.approve.mockResolvedValue({ ok: true, redirectTo: `${CB}?code=x&state=y` });
     render(<Page />);
@@ -72,6 +74,7 @@ describe("OMNI connection approval page", () => {
       owner: true,
       needsSecondStep: false,
       mfaBlocker: "Enter a fresh authenticator code first (last 15 minutes).",
+      grantable: GRANTABLE,
     });
     render(<Page />);
     await screen.findByText("code form");
@@ -84,6 +87,7 @@ describe("OMNI connection approval page", () => {
       owner: true,
       needsSecondStep: false,
       mfaBlocker: null,
+      grantable: GRANTABLE,
     });
     mocks.approve.mockResolvedValue({ ok: true, redirectTo: `${CB}?code=x&state=y` });
     render(<Page />);
@@ -105,6 +109,7 @@ describe("OMNI connection approval page", () => {
       owner: false,
       needsSecondStep: false,
       mfaBlocker: null,
+      grantable: GRANTABLE,
     });
     render(<Page />);
     await screen.findByText(/Only the verified Mothership owner/);
@@ -113,6 +118,41 @@ describe("OMNI connection approval page", () => {
     expect(url.origin + url.pathname).toBe(CB);
     expect(url.searchParams.get("error")).toBe("access_denied");
     expect(url.searchParams.get("code")).toBeNull();
+  });
+  it("chat:write can't be ticked until the server says it is installed, and says why", async () => {
+    mocks.describe.mockResolvedValue({
+      valid: true,
+      owner: true,
+      needsSecondStep: false,
+      mfaBlocker: null,
+      grantable: GRANTABLE,
+    });
+    render(<Page />);
+    const chat = await screen.findByRole("checkbox", { name: /Chat with OMNI/ });
+    expect(chat).toBeDisabled();
+    expect(screen.getByText(/database change for chat \(0066\)/)).toBeTruthy();
+  });
+  it("once installed, chat:write is a separate opt-in that states its AI cost", async () => {
+    mocks.describe.mockResolvedValue({
+      valid: true,
+      owner: true,
+      needsSecondStep: false,
+      mfaBlocker: null,
+      grantable: [...GRANTABLE, "chat:write"],
+    });
+    mocks.approve.mockResolvedValue({ ok: true, redirectTo: `${CB}?code=x&state=y` });
+    render(<Page />);
+    const chat = await screen.findByRole("checkbox", { name: /Chat with OMNI/ });
+    expect(chat).not.toBeDisabled();
+    expect(chat).not.toBeChecked();
+    expect(screen.getByText(/paid Lovable AI credits/)).toBeTruthy();
+    fireEvent.click(chat);
+    fireEvent.click(screen.getByRole("button", { name: /Allow/ }));
+    await waitFor(() =>
+      expect(mocks.approve).toHaveBeenCalledWith({
+        data: { request: SEARCH, scopes: ["chat:write"], confirm: true },
+      }),
+    );
   });
   it("an unknown callback is shown as an error and never redirected", async () => {
     mocks.search = { ...SEARCH, redirect_uri: "https://evil.example/cb" };

@@ -13,12 +13,24 @@ import { stepUpBlocker } from "./owner-mfa";
 import {
   DELEGATION_AUDIENCE,
   DELEGATION_CLIENT,
-  SUPPORTED_DELEGATION_SCOPES,
+  GRANTABLE_SCOPE_CANDIDATES,
   authorizeParamsSchema,
   callbackUrl,
   generateDelegationSecret,
+  grantableScopes,
   parseAuthorizeRequest,
 } from "./omni-delegation";
+import { staged } from "./staged-rpc";
+
+/** Whether chat:write can be granted: database change 0066 is installed (marker function). */
+async function liveGrantable(client: Parameters<typeof staged>[0]) {
+  try {
+    const r = await staged(client).rpc("omni_delegated_chat_ready");
+    return grantableScopes(!r.error && r.data === true);
+  } catch {
+    return grantableScopes(false);
+  }
+}
 
 /** Owner state for the approval page; never throws for "not the owner". */
 export const describeOmniAuthorization = createServerFn({ method: "POST" })
@@ -26,13 +38,15 @@ export const describeOmniAuthorization = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => authorizeParamsSchema.parse(input))
   .handler(async ({ context, data }) => {
     setResponseHeader("Cache-Control", "private, no-store");
-    const parsed = parseAuthorizeRequest(data);
+    const grantable = await liveGrantable(context.supabase);
+    const parsed = parseAuthorizeRequest(data, grantable);
     if (!parsed.ok) return { valid: false as const, error: parsed.error };
     const role = await context.supabase.rpc("is_razul_owner");
     const owner = !role.error && role.data === true;
     return {
       valid: true as const,
       owner,
+      grantable,
       // Owner checks need aal2; an owner signed in without the second step is asked for a code.
       needsSecondStep: !owner && context.claims["aal"] !== "aal2",
       mfaBlocker: owner
@@ -45,9 +59,9 @@ const approveInput = z
   .object({
     request: authorizeParamsSchema,
     scopes: z
-      .array(z.enum(SUPPORTED_DELEGATION_SCOPES))
+      .array(z.enum(GRANTABLE_SCOPE_CANDIDATES))
       .min(1)
-      .max(SUPPORTED_DELEGATION_SCOPES.length),
+      .max(GRANTABLE_SCOPE_CANDIDATES.length),
     confirm: z.literal(true),
   })
   .strict();
@@ -68,7 +82,7 @@ export const approveOmniAuthorization = createServerFn({ method: "POST" })
     setResponseHeader("Cache-Control", "private, no-store");
     const { requireRazulOwner } = await import("./razul-owner.server");
     await requireRazulOwner(context.supabase, context.userId, context.claims);
-    const parsed = parseAuthorizeRequest(data.request);
+    const parsed = parseAuthorizeRequest(data.request, await liveGrantable(context.supabase));
     if (!parsed.ok) return { ok: false as const, message: parsed.error };
     if (
       new Set(data.scopes).size !== data.scopes.length ||

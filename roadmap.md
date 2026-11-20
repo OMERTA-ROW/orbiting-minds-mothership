@@ -1,12 +1,16 @@
 # Evolution — reconciled blueprint roadmap
 
 ## Demo mode removed + OMNI connection paths — 2026-11-20 (preview)
+
 - [x] Design-preview switch, Advanced demo menu, sample search results and demo providers removed; 61 former demo addresses show an honest "not connected" page with what's needed and a working alternative (`src/lib/retired-areas.ts`); browser-saved records kept and downloadable.
 - [x] Model choices, Coding gateway and the Observatory's local archive retired (browser-only prototypes); Observatory keeps real research, status and live findings; Razul no longer prepares pretend dispatches or lists simulated agents.
 - [x] Demo starting points/links removed from AI Pathway, Launch readiness, CLI page and Quantum Studio; OMNI chat and Quantum Studio use only the server account pause.
 - [x] OMNI frontend contract: `/api/omni/health` + `/manifest` (health scope) and read-only `/api/omni/tasks` observatory runs (jobs scope, audited); chat/decisions/stop answer 403 naming what's missing (`docs/OMNI-FRONTEND-CONNECTION.md`).
 - [x] OMNI owner delegation (2026-11-20, preview, migrations 0062–0063): `/omni-authorize` owner+aal2+fresh-code consent, exact `omni-web` callback, single-use PKCE code, server-to-server 15-minute hash-only bearer, status/revoke, owner cancel; grants only held-task creation (`POST /api/omni/tasks`) and Stop engage; chat/decisions still 403. Isolated SQL + app tests pass (`docs/OMNI-OWNER-DELEGATION.md`).
 - [x] OMNI delegated task reads (2026-11-20): migration 0064 + comment-only 0065 applied with owner authorization (hashes match the reviewed file); `GET /api/omni/held-tasks` now refuses fake tokens with 401 instead of 503; 239 isolated SQL checks, 1,257 app tests, typecheck, lint and production build pass.
+- [x] OMNI web symptoms (2026-11-20 08:33) traced: manifest listed no providers, chat had no route, and Fusion doesn't exist. Manifest now lists the configured Lovable AI model (Models discovered 1 after publishing); delegated `chat:write` chat built and tested (fails closed); Fusion stays honestly unverified (`orchestrationStatus`).
+- [ ] OMNI web chat — blocked on: owner approval to install `.lovable/pending/0066_omni_delegated_chat.sql`, publishing, OMNI requesting `chat:write`, then the owner's first live reply (paid).
+- [ ] Fusion orchestration — blocked on: a written Fusion specification (what it does, its handshake and status); nothing exists to verify.
 - [ ] OMNI owner delegation live verification — blocked on: publishing the Mothership (owner approval), the OMNI project's callback route/server-side token storage/`taskAgents` change, and an owner-run live approve → exchange → held task → revoke test.
 - [x] GitHub reconciliation 2026-11-20: GitHub main = Lovable HEAD; merged #23 Treasury (`e5e8117`), #24 OMNI orb plan (`743f833`), #20 Honeycomb contract (`2959fb8`) all in history; leftover fictional reference data pruned.
 - [ ] Open PR #25 (repository fusion intake, docs only) not installed; owner to resolve/merge on GitHub, then CLI reconciliation as a separate change.
@@ -16,12 +20,14 @@
 - [ ] Not built (needs owner decision + database change): chat/task/stop key scopes and a founder-verified chat adapter.
 
 ## Owner dashboard and API keys with "Never expires" — 2026-11-20 (preview)
+
 - [x] `/omni-api-keys` is now the owner dashboard: primary shortcuts, signed connection status (read-only), API keys first, Jackboy manual tools in their own tab; OMNI menu links it directly.
 - [x] One-step key creation: name, plain-language access, expiry (7/30/90/365 days, custom 1–365, or Never expires) and one Create button; allowlisted failure reasons.
 - [x] Database 0061 (applied): `never_expires` + nullable expiry enforced together; new owner/MFA `omni_api_key_issue`; verify accepts never-expiring active keys; older finite keys unchanged; old create kept for the published build. 54 isolated SQL checks.
 - [ ] Waiting on owner: publish Mothership; then on the live site create one finite and one never-expiring test key, call `/api/public/omni/health` with each, revoke both and confirm both are refused.
 
 ## One coherent OMNI ↔ Jackboy activation — 2026-11-16 (preview, flow marker 16)
+
 - [x] Jackboy live build read from its public marker: commit 9081a41, built 21:55 UTC (names the build only).
 - [x] Step 10 now verifies the executor immediately before configuring (Jackboy clears verification on every Step 9 connect and needs it < 15 min, same release).
 - [x] Jackboy's classified refusals (`executor_verification_required`, `spend_enforcement_unverified`, `code_configuration_not_ready`, …) and signed refusal stage are named in plain words.
@@ -33,6 +39,7 @@
 - [ ] Unverified live: whether Jackboy's idempotent-handshake table (0077) is installed; Mothership falls back (audited) if not.
 
 ## Unified OMNI–Jackboy activation (omni.permit/v1) — 2026-11-14 (register 07.08)
+
 - [x] Mothership: Step 9 "Activate live link" and Step 10 "Activate autonomy authorization" as audited, idempotent, revision-bound activations (fresh code; rollback on failed handshake; Step 10 also needs a signed safety reading with Jackboy's authorization). Migration 0055.
 - [x] Mothership: safety sync uses Jackboy's session-signed `safety` action and records autonomousAllowed / manualDiagnosticsAllowed / blockedBy.
 - [x] Mothership: Jackboy permits (request/renew/release, signature + caps check, unrecorded permits returned); CODE leasing and autonomous jobs need an active permit; refusal/timeout/lapse/stop halts without resume.
@@ -44,6 +51,7 @@
 - [x] Clearer reasons: a database start failure is no longer shown as an owner-access problem; "permit service not installed" from Jackboy is named in the safety status. Offline contract check against Jackboy's real permit code passed.
 
 ## Autonomy proof before CODE — 2026-11-14 (register 07.08)
+
 - [x] Isolated database test (99 checks): CODE always-on, windows, permits and agent jobs refused until Step 10's activation is in effect, even with the link active and a fresh clear reading; refused with Jackboy CODE off or the stop engaged; lapsed/revoked permits never renew or reissue; per-job audit.
 - [x] Database: halts now audit each revoked permit and what work they stopped (migration 0056, applied).
 - [x] Signed permit tests (no-op synthetic jobs): fresh signed capped decision recorded; CODE off refused and halts at renewal; stale/revoked permits rejected.
@@ -51,6 +59,7 @@
 - [ ] Waiting on owner: Activate live link (fresh code); Jackboy permit install/publish + passkey authorization; then Activate autonomy authorization.
 
 ## Cross-system CODE Emergency Stop enforcement — 2026-11-14 (register 07.07)
+
 - [x] Mothership: Jackboy safety record + database fail-closed guards (autonomy windows, CODE always-on, CODE leasing need a fresh signed clear reading and Step 10 in effect); non-clear/unknown/stale halts windows, CODE jobs and agent-initiated workspace jobs; manual terminal untouched. Migrations 0053/0054. SQL test 36 checks; 1,847 tests pass.
 - [x] Signed stop-notice receiver (`/api/public/jackboy/safety-event`), scheduled safety sync route, owner "Refresh safety state", Step 9 = live link activated, Step 10 = autonomy authorization shown "Authorized — not running". Flow marker 7.
 - [x] OMNI: `JACKBOY_SAFETY_EVENT_HMAC_SECRET` saved; published (flow marker 7 live); once-a-minute safety sync scheduled.
@@ -58,28 +67,34 @@
 - [x] Moved to 07.08: the live end-to-end stop check waits on Jackboy's permit install.
 
 ## Activation Steps 9–10 live link vs CODE — 2026-11-14
+
 - [x] Approvals page gains a "Live link, terminal and CODE — separate controls" panel: Step 9 permits only a connection-only signed handshake ("Check live connection", per-click authorization + fresh code, Steps 1–9 + Mothership gates incl. Emergency Stop); CODE shown always Off (no Mothership CODE path; Step 10 records caps only); Jackboy paused refusal (`grant_unavailable`) reported as a safety denial. Approval flow marker 6. 1,822 tests pass.
 - [x] Superseded by 07.08 activations ("Check live connection" remains for diagnostics).
 
 ## Activation Approvals Step 8 self-test — 2026-11-14
+
 - [x] Step 8 "Run protocol self-test & verify": explicit per-click authorization + fresh two-step code, fail-closed readiness, bounded run (~28 s server / 40 s page), signed result verified and recorded as evidence only; safety denial/timeout/pending shown distinctly; retry continues the same job (status only). Approval flow marker 4. Tests pass.
 - [x] Owner ran Step 8 on 2026-11-14 00:50 UTC: signed self-test passed and was verified; owner approved Step 8 at 00:51 UTC.
 
 ## Activation Approvals Step 2 timeout — 2026-11-13
+
 - [x] Runner check now waits 9 s (longer than Jackboy's own 5 s wait on the Railway runner; self-test run 10 s vs Jackboy's 6 s); timeouts show the actual deadline and whether a reply had started. Approval flow marker bumped to 3. Tests pass.
 - [ ] Waiting on owner: publish Mothership, then re-run Step 2 and approve it separately with a fresh two-step code if it passes.
 
 ## OMNI chat experience upgrade — 2026-11-13
+
 - [x] Private OMNI chat (`/beta-omni`): saved conversation history in chat, opt-in earlier-turn context (0–6, resets each send, fails closed), configured-model display, connection states with owner terminal check (relay, Emergency Stop, autonomy off, spending), terminal/CODE/memory entry points, approval-gated held-task handoff with in-chat status/cancel. Orb, voice and safety gates unchanged. 19 new tests pass; browser: signed-in page shows truthful states, terminal check refused without two-step code.
 - [ ] Blocked: deleting saved runs and recording which turns were used as context need a database change (not approved); live replies need founder AI approval on the account; handoff/terminal status need an owner sign-in with fresh two-step code; Jackboy/terminal chat need the sandbox settings + self-test.
 
 ## Current OMNI simplification and controls — 2026-11-04
+
 - [x] Scoped silver/gray OMNI and demo-dashboard theme, plain shared workspace navigation, expandable connection/autonomy/scope/local-archive sections, mobile wrapping. Every existing route/feature retained; homepage cosmic identity unchanged.
 - [x] Reproduced Rights unreadable-storage overwrite, unhandled specimen-hash rejection and specialist mobile overflow before edits; same browser checks now pass. Fixed copy/import/export feedback, task busy/retry states, local grant no-op explanation, saved-run refresh/cancel feedback and sign-out exceptions. Shared local-record hook protects unreadable/concurrent saved copies across eight workspaces and reports temporary edits rather than silent saving. No new endpoint, secret, account or hosted-data changes.
 - [x] Browser: 115 recorded local/menu/navigation/export actions plus OmniBridge proposal/review/export/withdrawal pass; all 14 checked routes at 1280/390 widths have no overflow or page errors. Signed-in existing account: connection and autonomy checks return visible blocked results; owner-only API provisioning and All-Seeing Eye correctly denied. No model request, key creation or account permission change. Final full suite **1,259 tests / 86 files PASS**, including 12 new control regressions. Preview build OK.
 - [ ] Positive owner-only controls and actual inference/cancel remain untested: existing signed-in account has no configured owner access/AI approval. Owner must complete verified owner/MFA and scoped AI approval; no role reset or invented identity. Honeycomb/Jackboy execution needs authenticated companion, selected project and isolated runner. Native Mac behavior remains unverified; no publishing.
 
 ## Current visual update — 2026-11-01
+
 - [x] Integrated the owner-supplied Mothership image/component and uploaded camera, reactor, ring-light, star and vignette styles inside the homepage's `ms-page` / `ms-content` wrapper. Image and overlays share the actual 1920×1280 frame; lower content uses a readability veil. **66 routing/SEO tests PASS**; desktop 1974×1125 and mobile 390×844 image load, moving rings, navigation, anchor, no-overflow and reduced-motion checks PASS with no page errors; latest preview build OK. Existing content, other-route backgrounds and access preserved; nothing published.
 
 Updated 2026-10-24: Oct 24 owner instruction (Omni Terminal/OmniBridge push) reconciled — CLI gained reviewable file-level change manifests (`evolution change new/list/diff`) bound to real sandbox runs via `--change`, plus an honest per-target support matrix (`evolution release matrix`); beta OMNI gained opt-in browser dictation with typed fallback and review-before-send. Go `-race` tests + vet pass; 5 speech-input tests pass. Still blocked: GitHub/mail/social per-user connectors (absent or declined), signing accounts/native runners, server-enforced Guardian agent scopes (needs new backend tables). No connectors linked, nothing published.
@@ -89,6 +104,7 @@ Updated 2026-10-24 (later): OMNI project workspace/folders implemented in the of
 Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes reconciled against current source, migrations and actual QA. Part 3 recovered from chat and retained in `.lovable/blueprint/`; earlier detailed dated tracker retained in `.lovable/history/roadmap-before-reconciliation-2026-10-22.md`. Evidence and exact commands: `.lovable/evolution-reconciliation-2026-10-22.md`.
 
 ## Ordered owner refinement — 23:41 UTC
+
 - [x] Adopt the supplied fifteen-step process as the canonical `completion-register.json`: 54 exact acceptance items and 25 original family crosswalks, required owners/dependencies/files/commands/runtime/next actions/release states. Three register validation tests pass. Supplied text used; no Notion page read/write or new connection required.
 - [x] Execute the next feasible Step 2 account repair: recovery identity now synchronized/revalidated, user-bound hints are presentation only, successful reset survives identity transitions, busy/rejected states handled, stale async identity cannot reappear after logout, same-user refresh avoids cache thrash, OAuth callback confirms actual identity before navigating. Generated integration/storage files unchanged.
 - [x] Verify Step 2 bounded flow twice: actual temporary-account login/logout/new-login owner project readback, real explicit refresh/hard reload, account switch, generated recovery challenge/OTP session and reload, mobile password update, successful new-password login. Temporary users/projects/audit removed. One initial recovery-readback timeout was not counted as pass. Generated challenge is not delivered email verification.
@@ -100,6 +116,7 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 **Statuses:** IMPLEMENTED + TESTED means the stated bounded behavior, not production certification; DEMO ONLY means local/sample/reference; BLOCKED/DEFERRED names a missing external prerequisite or separate required decision. No stale Notion checkbox overrides source evidence. Existing black/gold design and owned records preserved.
 
 ## Current owner work — completed
+
 - [x] **2026-11-12 Owner authenticator recovery DONE (owner-approved):** identity confirmed via Lovable's server-side match of the requesting editor's verified email to the owner account; the unreachable Nov 5 TOTP factor was removed through the provider admin API, all owner sign-ins ended, `admin_factor_removed` logged (migration 0044 adds the event value). Owner role unchanged; owner pages locked (fail closed) until re-enrollment. 62 focused tests + 82 dock and 93 recovery isolated SQL checks PASS.
 - [ ] **Owner:** sign in, set up the new "OMNI Mothership" authenticator, confirm a code, create and store recovery codes. Blocked on the owner's phone.
 - [ ] **Docking Bay CLI pairing:** live site serves the signed dock endpoints at https://evoomni.tech (unsigned requests refused; the lovable.app address redirects, so clients must use evoomni.tech). No desktop client exists in this project's Evolution CLI; `omni_cli`/`omni_desktop` must implement `omni.dock/v1` (see `docs/OMNI-DOCK-PROTOCOL.md`, `src/lib/omni-dock-client.ts`). Blocked on that client and owner MFA.
@@ -136,6 +153,7 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [x] Inspect repository hosts, provider clients, signing-secret presence and media execution boundary read-only. No connect, broad grants, branch push, installation or public release.
 
 ## Actual current verification
+
 - Full app: **902 tests / 51 files passed** with `bunx vitest run`; focused ESLint passes; harness `build OK`. No manual app build/typecheck.
 - CLI: Go 1.25.7, `go test -race -count=1 ./...` and `go vet ./...` pass. Three Python archive tests pass (mock compilation there); separately **six actual unsigned cross-compiles** and final ZIP entries/binary/archive SHA-256 checked. Linux CLI manifest/verify JSON succeeds unsigned. macOS/Windows/arm64 native execution unverified.
 - Hosted retained checks: **25 beta, 37 media, 38 social/review/stop, 31 Forge, 48 Creator/Distro, 27 knowledge/audit/lease** pass. No provider posting/API integrations; temporary QA data removed.
@@ -144,46 +162,47 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - Auth settings read: email/Google enabled, confirmation required, anonymous off, signup allowed. Delivery/reset/OAuth/renewal remain unverified; QA accounts were admin-confirmed, not delivery tests.
 
 ## Family disposition — no completed functionality rebuilt
-| Blueprint family / item | Current bounded status | Remaining prerequisite / deferred scope |
-|---|---|---|
-| Home, Mothership architecture, Universe map, Platform, navigation/command search | IMPLEMENTED + TESTED visual/interactive prototype; worlds/sample profiles DEMO ONLY | Live network enrollment/telemetry requires authorized sources and scoped persistence; no institutional connections |
-| SEO homepage/indexing/beta exclusions/social previews/status panel | IMPLEMENTED + TESTED configured metadata, noindex policy and status | Actual search indexing/live metadata requires separate publish/search evidence; noindex is not access control |
-| Dashboard / Founder Command Deck / analytics / alerts | DEMO ONLY sample project/agent/strategy metrics; real owner projects exist separately | Connected project telemetry, costs/adoption sources, monitoring/infrastructure and permissioned metrics; no continuous dashboard review schedule created |
-| Private beta auth/projects/operator agent declarations | IMPLEMENTED + TESTED owner-isolated saves/reads/pause/revoke/audit | Confirmation/reset/OAuth/renewal, independent accessibility/security review and launch controls; declarations do not enroll agents |
-| OMNI coordinator / Oracle / Guardian roles / AI pathways | IMPLEMENTED + TESTED bounded private inference/consent and creator drafts; public coordinator DEMO ONLY | Live Stop/timing/account charge evidence not reverified this turn; no tool execution/history, full agents or blanket model entitlement |
-| OMNI Autopilot / advanced Linux coding / parallel agent handoffs | DEMO ONLY strict proposals/local independent drafts; CLI targeting/test commands work | Exact authorized repository/branch, supported isolated runner, scoped live agents, reviewer, secure custody/limits; consequential actions need separate approval |
-| Daily AlphaSignal/public technology collection / stored retrieval / briefs | IMPLEMENTED + TESTED five-feed storage, URLs/timestamps/dedupe/cited brief/history/pause/lease and approved reader | BLOCKED operational deployment: managed 06:00 UTC cron targets published app, not preview; supported background execution and fresh long AI completion not proved. Retrieval is not retraining |
-| Social Autopilot / official per-account posting/calendar/status/revoke | IMPLEMENTED + TESTED private exact-revision draft/review/stop and UTC intentions; posting DEMO/disabled | BLOCKED: LinkedIn per-user client absent, prior setup declined; no scope/expiry/offline-key flow, selected account or actual receipt. No shared credential substitute |
-| Developer connectors / GitHub bridge / repository branch/PR | DEMO ONLY review-only exact-target proposals; no repository/API branch claimed | BLOCKED: no GitHub API connection/per-user client; only internal storage remotes visible. Git-sync UI linkage not readable by agent. Owner selects repo in Project settings → Git; GitHub App route needed for provider-enforced single-repo restriction |
-| Gmail/Outlook Everyday Communications | DEMO ONLY read/draft-first scope contracts/exports | BLOCKED: Google Mail/Microsoft Outlook per-user clients absent; secure admin connector form, selected mailbox and verified scopes/consent/expiry/disconnect needed |
-| Adaptive Upgrade Engine | DEMO ONLY review-only exportable proposals | Authorized target + isolated tests, measured change, signing, staged rollback and privileged owner approval; no self-granted deploy/secrets/billing |
-| Quantum private asset library/non-destructive gain/QA | IMPLEMENTED + TESTED private bounded WAV, eight/4 MiB limits, exact PCM QA, SHA-256, reviews/recovery/deletion | Wider users require named media approval/privacy review; no model audio, stem/denoise/video claim |
-| OMNI FORGE Radio Lab / Web Forge | IMPLEMENTED + TESTED bounded PCM silence/tone/cut/crossfade/mono and immutable reviewable one-page HTML | FFmpeg/LUFS/true peak/stems/video/multi-page/brand images and durable processing service not connected; sandbox-installed ffmpeg is not app runtime |
-| Podcast Forge / Game Forge / Genesis canon | IMPLEMENTED + TESTED immutable owner-project fictional canon/branches; creative execution DEMO ONLY | Recording/transcription/game compilation/assets require selected authorized processor/adapters/rights review |
-| FORGE DISTRO / post-edit distribute/schedule/draft / RSS owned-site path | IMPLEMENTED + TESTED exact QA-bound draft/review/revoke/manual RSS+WAV/canon ZIP, timestamp intentions | No hosting/upload/schedule/receipt. Exact controlled host/channel, supported format/OAuth/quota and first-release approval required |
-| YouTube / Filmhub / VEVO / Vydia | DEMO ONLY truthful eligibility/manual incomplete handoffs | YouTube eligible per-user Data API + video; Filmhub QC/account submission; VEVO approved distributor; Vydia verified eligibility; no WAV-as-video delivery claim |
-| Entertainment six studios / Scene-to-Screen / Cartoon Galaxy | IMPLEMENTED + TESTED DEMO local editable plans/original characters/storyboards/synthetic samples/editorial gates | Separate approved persistence, private media, rights/likeness/child privacy, supported adapters; no copyrighted cloning/partnership/publication |
-| OmniBridge Capability Graph / SDK adapter refs / Command Nexus / Cyberace | IMPLEMENTED + TESTED DEMO capability/explainable plans/local threads/isolated drafts/conflicts/merge rehearsal | Supported scoped integrations/authenticated shared chat/runner/signed companion. Cyberace optional/unconfirmed; CyberLink strictly excluded; Solana read-only reference, no wallets |
-| Optional Evolution CLI / omni fallback / discovery / estimator | IMPLEMENTED + TESTED offline source + fixed project-targeted local tests/logs, real hash checks, local discovery and user-entered offline estimates | BLOCKED signed distribution/live OMNI: exact repository/license, OS vault/auth adapters, native QA/signing/CI/release approval. No package identity/download/installation |
-| CLI signing/release manifest | IMPLEMENTED + TESTED integrity/exit statuses and dormant exact-workflow/tag identity scaffold | Apple Developer ID/notarization or Windows certificate/Azure account decisions; secure editor/CI secrets, pinned actions/native runner verification; Sigstore requires selected repo. No authentic signature verified |
-| Guardian Ghost/Iron/Global Eye/report/critique/emergency pause / Immune System | IMPLEMENTED + TESTED DEMO proposed reviews/consent/local pauses; real beta gates separate | Controlled infrastructure detection/containment/verified backup recovery, signed agents and operator authorization; no scan/hack-back/secure containment proof |
-| My Devices / Fleet / pairing / scopes | IMPLEMENTED + TESTED DEMO expiring codes/unpaired devices/revoke | Per-module secure enrollment/owner records, native signed clients and explicit OS scopes; no trusted device ownership |
-| CARE / auto-update / Pilot / Voice | IMPLEMENTED + TESTED DEMO consented rehearsal/queues/update catalogs/dry-run/history/rollback/audit/persona references | Signed native updater/agent, secure grants/capture/OS custody and review; no deletion/keyboard capture/mic/screen/shell activation |
-| Robotics/Mobility/ROS2/aerospace/public-sector / Digital Twin | IMPLEMENTED + TESTED DEMO synthetic bounded scenarios/safety review handoffs | Qualified independent safety/domain tests, authenticated operator/evidence and signed hardware adapters; physical systems/weapons/surveillance excluded |
-| Debrief / six-category Archives / Incident Accountability | IMPLEMENTED + TESTED DEMO local consent/privacy screening/facts-hypotheses/corrections/disputes | Family-specific restricted storage, verified operator/moderation, private evidence, independent review; no culpability/provenance/media verification |
-| Safety Lock / Replay / Ledger / Release Passport / impact | IMPLEMENTED + TESTED DEMO evidence labels/numeric comparison/digest-bound self-review/revoke | Independent trusted evidence/keys/review/security/qualified hardware safety; hashes/self-signoff are not certification |
-| Code Vault / Welcome Lounge / Release Galaxy / marketplace | IMPLEMENTED + TESTED DEMO pinned samples/hash/diff/forks/unsigned preparation/symbolic onboarding | Trusted release keys/signatures/provenance/independent reviewers/scoped owned records; no signing/payment/enrollment claim |
-| Genesis / Challenges / Embassy / Open Call / passport / SDK / Compute Grid | IMPLEMENTED + TESTED DEMO submissions/consent/revoke/contracts/bounded twins/reference compute | Module-specific auth/collaboration, verified operator/provider scopes, evidence/moderation/native compute; secure beta auth exists but is not automatically this module's permission model |
-| Discovery Radar / Code Exchange / contributor attribution/licenses/translation | IMPLEMENTED + TESTED DEMO local search/filters/samples/comments/description localization/unsigned packages | Authenticated contributor/collaborator storage/moderation, GitHub provenance/signing/distribution; no code-translation/provider grants |
-| Commons / Pulse / capsule exchange/homecoming / knowledge clustering | DEMO ONLY local submission/activity/sample source links; persistent shared foundation NOT IMPLEMENTED | Family-specific collaborator/visibility/moderation/owner data model and source-grounded records required. Optional human profile fields are not a global auth blocker |
-| Global Brain / DNA / Invention Engine / Time Machine | DEMO ONLY represented sample journey, not omitted independent operational features | Actual consented manifests/prior art/citations/compatibility evidence, selected repository and isolated repeatable tests; no prediction/certification |
-| Contribution Economy / USD bounties/revenue/payouts/optional subscriptions | DEMO ONLY proposed/TBD amounts and inert access policy | Validated prices/rates/license attribution/disputes/provider/legal setup and separate billing approval; no live money, tokens or forced subscription |
-| Planetary Network / public-sector partnerships / clusters/game servers | DEFERRED research/reference only | Formal partner authorization, controlled infrastructure/privacy/safety and exact supported integrations; no NASA/SpaceX/Starlink/CERN claim |
-| Racing Arena spectator/replay/performance/local standings | IMPLEMENTED + TESTED DEMO deterministic numeric races/complete replay/local points/wins/mean times | Trusted multiuser competitions/custom racers/anti-cheat/isolation/shared leaderboard need authenticated records and supported runner; browser points confer no authority/value |
-| Future real-money betting | BLOCKED/DEFERRED research only; disabled constant tested | Counsel/jurisdictions/licensing/authorized provider/age-geo/responsible gambling/integrity review plus explicit separate owner approval; excluded from current implementation |
 
+| Blueprint family / item                                                          | Current bounded status                                                                                                                              | Remaining prerequisite / deferred scope                                                                                                                                                                                                                  |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home, Mothership architecture, Universe map, Platform, navigation/command search | IMPLEMENTED + TESTED visual/interactive prototype; worlds/sample profiles DEMO ONLY                                                                 | Live network enrollment/telemetry requires authorized sources and scoped persistence; no institutional connections                                                                                                                                       |
+| SEO homepage/indexing/beta exclusions/social previews/status panel               | IMPLEMENTED + TESTED configured metadata, noindex policy and status                                                                                 | Actual search indexing/live metadata requires separate publish/search evidence; noindex is not access control                                                                                                                                            |
+| Dashboard / Founder Command Deck / analytics / alerts                            | DEMO ONLY sample project/agent/strategy metrics; real owner projects exist separately                                                               | Connected project telemetry, costs/adoption sources, monitoring/infrastructure and permissioned metrics; no continuous dashboard review schedule created                                                                                                 |
+| Private beta auth/projects/operator agent declarations                           | IMPLEMENTED + TESTED owner-isolated saves/reads/pause/revoke/audit                                                                                  | Confirmation/reset/OAuth/renewal, independent accessibility/security review and launch controls; declarations do not enroll agents                                                                                                                       |
+| OMNI coordinator / Oracle / Guardian roles / AI pathways                         | IMPLEMENTED + TESTED bounded private inference/consent and creator drafts; public coordinator DEMO ONLY                                             | Live Stop/timing/account charge evidence not reverified this turn; no tool execution/history, full agents or blanket model entitlement                                                                                                                   |
+| OMNI Autopilot / advanced Linux coding / parallel agent handoffs                 | DEMO ONLY strict proposals/local independent drafts; CLI targeting/test commands work                                                               | Exact authorized repository/branch, supported isolated runner, scoped live agents, reviewer, secure custody/limits; consequential actions need separate approval                                                                                         |
+| Daily AlphaSignal/public technology collection / stored retrieval / briefs       | IMPLEMENTED + TESTED five-feed storage, URLs/timestamps/dedupe/cited brief/history/pause/lease and approved reader                                  | BLOCKED operational deployment: managed 06:00 UTC cron targets published app, not preview; supported background execution and fresh long AI completion not proved. Retrieval is not retraining                                                           |
+| Social Autopilot / official per-account posting/calendar/status/revoke           | IMPLEMENTED + TESTED private exact-revision draft/review/stop and UTC intentions; posting DEMO/disabled                                             | BLOCKED: LinkedIn per-user client absent, prior setup declined; no scope/expiry/offline-key flow, selected account or actual receipt. No shared credential substitute                                                                                    |
+| Developer connectors / GitHub bridge / repository branch/PR                      | DEMO ONLY review-only exact-target proposals; no repository/API branch claimed                                                                      | BLOCKED: no GitHub API connection/per-user client; only internal storage remotes visible. Git-sync UI linkage not readable by agent. Owner selects repo in Project settings → Git; GitHub App route needed for provider-enforced single-repo restriction |
+| Gmail/Outlook Everyday Communications                                            | DEMO ONLY read/draft-first scope contracts/exports                                                                                                  | BLOCKED: Google Mail/Microsoft Outlook per-user clients absent; secure admin connector form, selected mailbox and verified scopes/consent/expiry/disconnect needed                                                                                       |
+| Adaptive Upgrade Engine                                                          | DEMO ONLY review-only exportable proposals                                                                                                          | Authorized target + isolated tests, measured change, signing, staged rollback and privileged owner approval; no self-granted deploy/secrets/billing                                                                                                      |
+| Quantum private asset library/non-destructive gain/QA                            | IMPLEMENTED + TESTED private bounded WAV, eight/4 MiB limits, exact PCM QA, SHA-256, reviews/recovery/deletion                                      | Wider users require named media approval/privacy review; no model audio, stem/denoise/video claim                                                                                                                                                        |
+| OMNI FORGE Radio Lab / Web Forge                                                 | IMPLEMENTED + TESTED bounded PCM silence/tone/cut/crossfade/mono and immutable reviewable one-page HTML                                             | FFmpeg/LUFS/true peak/stems/video/multi-page/brand images and durable processing service not connected; sandbox-installed ffmpeg is not app runtime                                                                                                      |
+| Podcast Forge / Game Forge / Genesis canon                                       | IMPLEMENTED + TESTED immutable owner-project fictional canon/branches; creative execution DEMO ONLY                                                 | Recording/transcription/game compilation/assets require selected authorized processor/adapters/rights review                                                                                                                                             |
+| FORGE DISTRO / post-edit distribute/schedule/draft / RSS owned-site path         | IMPLEMENTED + TESTED exact QA-bound draft/review/revoke/manual RSS+WAV/canon ZIP, timestamp intentions                                              | No hosting/upload/schedule/receipt. Exact controlled host/channel, supported format/OAuth/quota and first-release approval required                                                                                                                      |
+| YouTube / Filmhub / VEVO / Vydia                                                 | DEMO ONLY truthful eligibility/manual incomplete handoffs                                                                                           | YouTube eligible per-user Data API + video; Filmhub QC/account submission; VEVO approved distributor; Vydia verified eligibility; no WAV-as-video delivery claim                                                                                         |
+| Entertainment six studios / Scene-to-Screen / Cartoon Galaxy                     | IMPLEMENTED + TESTED DEMO local editable plans/original characters/storyboards/synthetic samples/editorial gates                                    | Separate approved persistence, private media, rights/likeness/child privacy, supported adapters; no copyrighted cloning/partnership/publication                                                                                                          |
+| OmniBridge Capability Graph / SDK adapter refs / Command Nexus / Cyberace        | IMPLEMENTED + TESTED DEMO capability/explainable plans/local threads/isolated drafts/conflicts/merge rehearsal                                      | Supported scoped integrations/authenticated shared chat/runner/signed companion. Cyberace optional/unconfirmed; CyberLink strictly excluded; Solana read-only reference, no wallets                                                                      |
+| Optional Evolution CLI / omni fallback / discovery / estimator                   | IMPLEMENTED + TESTED offline source + fixed project-targeted local tests/logs, real hash checks, local discovery and user-entered offline estimates | BLOCKED signed distribution/live OMNI: exact repository/license, OS vault/auth adapters, native QA/signing/CI/release approval. No package identity/download/installation                                                                                |
+| CLI signing/release manifest                                                     | IMPLEMENTED + TESTED integrity/exit statuses and dormant exact-workflow/tag identity scaffold                                                       | Apple Developer ID/notarization or Windows certificate/Azure account decisions; secure editor/CI secrets, pinned actions/native runner verification; Sigstore requires selected repo. No authentic signature verified                                    |
+| Guardian Ghost/Iron/Global Eye/report/critique/emergency pause / Immune System   | IMPLEMENTED + TESTED DEMO proposed reviews/consent/local pauses; real beta gates separate                                                           | Controlled infrastructure detection/containment/verified backup recovery, signed agents and operator authorization; no scan/hack-back/secure containment proof                                                                                           |
+| My Devices / Fleet / pairing / scopes                                            | IMPLEMENTED + TESTED DEMO expiring codes/unpaired devices/revoke                                                                                    | Per-module secure enrollment/owner records, native signed clients and explicit OS scopes; no trusted device ownership                                                                                                                                    |
+| CARE / auto-update / Pilot / Voice                                               | IMPLEMENTED + TESTED DEMO consented rehearsal/queues/update catalogs/dry-run/history/rollback/audit/persona references                              | Signed native updater/agent, secure grants/capture/OS custody and review; no deletion/keyboard capture/mic/screen/shell activation                                                                                                                       |
+| Robotics/Mobility/ROS2/aerospace/public-sector / Digital Twin                    | IMPLEMENTED + TESTED DEMO synthetic bounded scenarios/safety review handoffs                                                                        | Qualified independent safety/domain tests, authenticated operator/evidence and signed hardware adapters; physical systems/weapons/surveillance excluded                                                                                                  |
+| Debrief / six-category Archives / Incident Accountability                        | IMPLEMENTED + TESTED DEMO local consent/privacy screening/facts-hypotheses/corrections/disputes                                                     | Family-specific restricted storage, verified operator/moderation, private evidence, independent review; no culpability/provenance/media verification                                                                                                     |
+| Safety Lock / Replay / Ledger / Release Passport / impact                        | IMPLEMENTED + TESTED DEMO evidence labels/numeric comparison/digest-bound self-review/revoke                                                        | Independent trusted evidence/keys/review/security/qualified hardware safety; hashes/self-signoff are not certification                                                                                                                                   |
+| Code Vault / Welcome Lounge / Release Galaxy / marketplace                       | IMPLEMENTED + TESTED DEMO pinned samples/hash/diff/forks/unsigned preparation/symbolic onboarding                                                   | Trusted release keys/signatures/provenance/independent reviewers/scoped owned records; no signing/payment/enrollment claim                                                                                                                               |
+| Genesis / Challenges / Embassy / Open Call / passport / SDK / Compute Grid       | IMPLEMENTED + TESTED DEMO submissions/consent/revoke/contracts/bounded twins/reference compute                                                      | Module-specific auth/collaboration, verified operator/provider scopes, evidence/moderation/native compute; secure beta auth exists but is not automatically this module's permission model                                                               |
+| Discovery Radar / Code Exchange / contributor attribution/licenses/translation   | IMPLEMENTED + TESTED DEMO local search/filters/samples/comments/description localization/unsigned packages                                          | Authenticated contributor/collaborator storage/moderation, GitHub provenance/signing/distribution; no code-translation/provider grants                                                                                                                   |
+| Commons / Pulse / capsule exchange/homecoming / knowledge clustering             | DEMO ONLY local submission/activity/sample source links; persistent shared foundation NOT IMPLEMENTED                                               | Family-specific collaborator/visibility/moderation/owner data model and source-grounded records required. Optional human profile fields are not a global auth blocker                                                                                    |
+| Global Brain / DNA / Invention Engine / Time Machine                             | DEMO ONLY represented sample journey, not omitted independent operational features                                                                  | Actual consented manifests/prior art/citations/compatibility evidence, selected repository and isolated repeatable tests; no prediction/certification                                                                                                    |
+| Contribution Economy / USD bounties/revenue/payouts/optional subscriptions       | DEMO ONLY proposed/TBD amounts and inert access policy                                                                                              | Validated prices/rates/license attribution/disputes/provider/legal setup and separate billing approval; no live money, tokens or forced subscription                                                                                                     |
+| Planetary Network / public-sector partnerships / clusters/game servers           | DEFERRED research/reference only                                                                                                                    | Formal partner authorization, controlled infrastructure/privacy/safety and exact supported integrations; no NASA/SpaceX/Starlink/CERN claim                                                                                                              |
+| Racing Arena spectator/replay/performance/local standings                        | IMPLEMENTED + TESTED DEMO deterministic numeric races/complete replay/local points/wins/mean times                                                  | Trusted multiuser competitions/custom racers/anti-cheat/isolation/shared leaderboard need authenticated records and supported runner; browser points confer no authority/value                                                                           |
+| Future real-money betting                                                        | BLOCKED/DEFERRED research only; disabled constant tested                                                                                            | Counsel/jurisdictions/licensing/authorized provider/age-geo/responsible gambling/integrity review plus explicit separate owner approval; excluded from current implementation                                                                            |
 
 ## Deferred Step 10 backlog — captured 2026-10-24 (not started)
+
 - [ ] **Film (10.05):** real multitrack video/audio timeline, trim/reorder, captions, dialogue cleanup, color correction, transitions, aspect-ratio/export presets.
 - [ ] **Music (10.06):** multitrack editing, stem separation, noise cleanup, beat/tempo alignment, EQ/compression/mastering with preview.
 - [ ] **Shared (10.07):** conversational voice/typed editing with reviewable changes, nondestructive originals, undo/version history, proxy previews, resumable jobs.
@@ -198,8 +217,8 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] **Automatic code enhancement (06.05, merged with the Step 6 improvement pilot — no duplicate):** for an owner-authorized supported repository/project, analyze code, identify concrete defects/maintainability/security/performance opportunities, generate scoped improvements on a separate branch/workspace, run actual tests/static checks and benchmark performance claims, return a reviewable diff with evidence. Preserve intended behavior/public interfaces unless the owner asks; originals/version history/rollback retained; no promise every change is an improvement. Routine analysis/repair may run automatically under project-defined permissions, compute/spend limits and bounded retries, with independent review/test role where supported. Failed checks halt advancement and are surfaced honestly; no auto-merge, public release, production change or new provider access inferred from upload. First milestone: small reproducible defect → isolated fix → meaningful regression test passing → reviewed diff and rollback.
 - Gated behind verified terminal/project routing, sandbox execution and Guardian controls; each future feature needs a supported processing adapter, real usable output, provenance and acceptance tests. Software-development advanced features were mentioned but not specified — scope not invented. No deployment, purchase, publishing or provider connection authorized by this capture.
 
-
 ## Deferred Step 13 backlog — Omni MCP & connector distribution, captured 2026-10-24 (not started)
+
 - [ ] **MCP interface (13.05):** standards-compatible authenticated remote MCP server — transport/version negotiation, capability discovery, owner/project-scoped tools/resources, revocation, audit, limits, safe untrusted-content handling; OAuth/secure credentials, existing RLS preserved.
 - [ ] **Read-only first tools (13.06):** list capabilities, job status, authorized artifact retrieval, export preparation; write/publish/execute tools need explicit scopes + Guardian gates.
 - [ ] **Platform distribution (13.07):** per-platform client setup/submission packages only after checking current official requirements; compatibility matrix (private tested vs submitted vs directory approved); privacy/support docs, domain ownership, test accounts, reproducible client acceptance tests. Never claim all AIs connected.
@@ -207,6 +226,7 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - Public endpoint deployment, directory submission, external distribution and publishing remain separate reviewable actions; no purchases or credential collection in chat.
 
 ## Deferred Steps 9/11 backlog — autonomous publishing & marketing, captured 2026-10-24 (not started)
+
 - [ ] **Provider capability matrix (09.05):** supported official adapters across social, podcast and other publishing platforms — per-provider account authorization, prerequisites/API access, supported media, limits, receipt/status semantics, manual handoff where no supported route. Broad coverage goal; never a claim all platforms are supported.
 - [ ] **Autonomous publishing pipeline (09.06):** multiple posts across arbitrarily many owner-authorized accounts — no artificial account-count cap, but honor real provider quotas/rate limits/OAuth eligibility/hosting capacity and disclosed plan economics (never market literal unlimited infrastructure). Approved artifact → platform formatting/metadata/captions/accessibility and content/platform variants, including picture/image posts (single images and multi-image/carousel only where supported) with platform-specific dimensions/formats, captions, alt text, preview and authorized asset selection → durable queue with per-account timezone/schedule and multiple queued posts per account → owner-selectable dispatch mode: sequential account-by-account OR parallel fan-out to all selected authorized accounts from one action/schedule (parallel = concurrent dispatch within provider rate limits and configured worker/resource limits, not guaranteed same-second publication; this supersedes the earlier sequential-only preference) → policy-authorized publish → independent per-account success/failure/external receipts → dedup/idempotency, retry failed targets only, pause/cancel/revoke, clear progress/status. Explicit destination per post; one expired/failed connection must not block unrelated authorized accounts. Queued/submitted is never labeled published.
 - [ ] **Revocable autonomous rules (09.07):** owner-configured revocable rules per account/content/channel covering schedule, rate and allowed actions, applied to autonomous content/actions alongside provider policies; outside rules → human review. Audit, credential/ownership isolation, user/project isolation, duplicate-post prevention, provider policy/consent compliance, no fake engagement or spam.
@@ -217,6 +237,7 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - Merges with existing 09.01–09.04 and 11.01–11.03 (email/social providers, autopublish rules, distribution routes); no duplicate build. This is backlog authorization only — no messages sent, content published, ads bought, accounts connected or deployment. Gated behind verified core terminal/project routing, sandbox execution and Guardian controls.
 
 ## Deferred Step 13 backlog — financial trading module, captured 2026-10-24 (not started)
+
 - [ ] **Research & simulation first (13.09):** Omni-coordinated internal specialist agent (no new agent name) — account/portfolio monitoring, strategy research and advanced configurable strategy skills, backtesting and paper trading with point-in-time data/provenance, out-of-sample/walk-forward validation, fees/slippage/liquidity, drawdown/exposure and benchmark comparisons; no look-ahead/survivorship bias, hypothetical results labeled. Asset classes/brokers/exchanges not selected — no stocks/crypto/options assumed, no accounts connected.
 - [ ] **Risk & control architecture (13.10):** per-user/account isolation, order/position reconciliation, stale-data detection, duplicate prevention, bounded retries that cannot duplicate orders, size/exposure/leverage/daily-loss/spend limits, monitoring, emergency stop, audit, disconnect/revoke. No leverage or derivatives by default. Strategy changes versioned, paper-tested and approved under explicit account policy before live promotion; autonomous actions only within separately authorized revocable rules; no withdrawal permission ever.
 - [ ] **Live execution gate (13.11):** optional autonomous order execution and "auto-enhance trading" = evidence-based strategy evaluation/proposed improvements, never guaranteed profit or unchecked live strategy changes. Live trading disabled pending owner-selected broker/account, secure scoped credentials, supported API/compliance review and configured risk policy; account-owner authorization and platform/regulatory requirements validated before any public trading service claim.
@@ -224,12 +245,14 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - Separate from creative/publishing modules; backlog/design authorization only — no real orders, funds transfers, account connections, paid data, purchases, deployment or live activation. Never label planned trading operational.
 
 ## Deferred Step 5 backlog — Omni self-learning core, captured 2026-10-24 (not started)
+
 - [ ] **Learning core (05.05):** merged with Knowledge Fusion/project memory/feedback loop — honestly defined as consented persistent memory + retrieval + evaluated workflow improvement, not automatic foundation-model retraining or unchecked self-modification. Learn approved preferences, accepted corrections, successful/failed task patterns and verified test outcomes with provenance, confidence, timestamps/version and expiry; user facts vs inference distinguished; retrieved instructions/content stay untrusted. Per-user/project isolation, opt-in retention, view/edit/delete/reset/export, revocation, secrets exclusion. No cross-customer private memory sharing or training on customer data by default.
 - [ ] **Evaluated improvement pipeline (05.06):** suggest/version prompt/routing/tool-selection improvements against fixed evaluation tasks; compare baseline vs candidate for quality/cost/latency and regressions; stage/rollback with policy-authorized promotion. Never modify Guardian permissions, risk caps or release policy through learning; trading adaptations stay separately gated (13.10/13.11). Agent agreement is not evidence; self-evaluation is not independent verification. Fine-tuning, if ever selected, is a separate explicitly consented project with data rights/privacy/cost decisions and evals.
 - [ ] **First milestone (05.07):** approved correction saved → retrieved only in authorized context next session → measurably changes task behavior → deletion/revocation stops retrieval, with recorded evidence.
 - Backlog authorization only — no purchases, new provider connections, public deploy, live trading or model training. Label planned/unverified until tested.
 
 ## Guardian defense-in-depth remaining stages — 2026-10-25
+
 - [ ] **Auth/tool/file telemetry:** verified auth-failure event ingestion and owner correlation; authenticated unauthorized tool/file request sensors. No fake sensors or live-site brute-force tests; existing beta isolation evidence stays dated.
 - [ ] **Capabilities:** durable server-issued owner/project/agent/tool scopes with expiry/revoke/default-deny; forged/expired/revoked and cross-user acceptance on isolated development infrastructure. Local CLI profiles are not user identity/capabilities.
 - [ ] **Rate limits:** no standard backend primitive; owner confirmation of custom durable tradeoff and concrete per-user/project quotas needed before implementation. Timeout/log/audit caps are not request rate limiting.
@@ -239,6 +262,7 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - Parrot Security OS is only future isolated authorized testing; not installed/integrated. No paid service, account connection, offensive tools, third-party scan or production release.
 
 ## Terminal maintenance remaining adapters — 07.05, 2026-10-25
+
 - [ ] **Enrolled device boundary:** signed scoped local companion, authenticated owner/device/project isolation, short-lived per-operation capability and revoke, Guardian stop/protected audit; local UID/profile tests are not cloud customer isolation. No browser device endpoint exists.
 - [ ] **Safe cleanup:** native pinned target identity and active/open-file checks; recoverable trash/quarantine, reviewed restore and receipts. Exact plan validation exists but apply always blocks; no irreversible deletion fallback.
 - [ ] **Genuine scanner:** already installed supported engine + verified version/database and safe no-remediation isolated file target. No scanner installed in sandbox; fixed-argv subprocess prototype is test-only, not source-binary execution. No malware-free claim or scanner install/upload/update.
@@ -246,6 +270,7 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] **External scope:** github.com/street-Tech666/Omni is not auto-synced; evoomni.tech/www and existing published Lovable site unchanged. Exact repository/runtime approval needed, no unrelated project modifications.
 
 ## Exact open gates and secure owner actions
+
 - [ ] **Repository/branch** — inspect Project settings → Git; select exact CLI repository/destination and source license. Agent cannot verify UI Git sync or create/push a review branch with current internal-only access. No account-wide permission fallback.
 - [ ] **Signing** — choose Apple Developer ID, Windows certificate/Azure, selected-repo Sigstore trust identity and native runner policies. Inputs absent/unverified; use Project Settings → Secrets / CI secure secrets, never chat. No purchase or activation implied.
 - [ ] **Per-user providers** — admin configures supported clients in secure connector forms and authorizes exact accounts/scopes/targets. LinkedIn setup remains declined; GitHub, Google Mail and Outlook clients absent. No default reconnection attempt.
@@ -267,12 +292,15 @@ Earlier update 2026-10-22. All three Notion parts and Dashboard/Racing notes rec
 - [ ] **Omni Legal remaining (13.13):** owner/project/case-scoped private access and retention/revocation/protected audit; exact practice area/court/current official statute/rule currency and applicable local-rule review; broader verified state/county/court/filing-type blank catalogs and affidavits including federal PDF intake, supported private PDF/document parsers and signed companion; generated-code requirements linked under project permissions. Legal Forms is a confirmed-jurisdiction web library only; actual Desktop creation/sync needs installed supported companion and explicit filesystem authorization. Optional consented location suggestions pending, never governing-court inference. Limited California statewide blanks and Central District federal reference handoffs verified separately, not complete coverage. Real completed copies must remain owner/case scoped and out of shared blanks. No automatic compliance, calculated deadlines, real records or court submissions. Future authenticated court integration requires explicit per-transmission confirmation and authentic provider/court evidence before submitted/accepted/rejected; unsupported courts export only. All pending human approvals and core terminal work preserved.
 
 ## Honeycomb / Omni / Guardian architecture (owner notes 2026-10-25, from conversation — not a Notion page)
+
 - Omni is the parent platform. Honeycomb Terminal (separate project f5dd4092-07a4-4e53-bf40-35c167b9eaac; implementation request already sent there) handles paired-device transfers of user-selected files/documents only. Guardian enforces per-device least-privilege permissions, revocation and audit. No changes made to the Honeycomb project from here.
 - [ ] **Milestone 1 — pairing + selected-file transfer (Honeycomb, pending):** one-time QR or manual expiring code; device identity shown and approved; trust persisted securely; approved selected-file transfer across different internet networks; integrity (hash) verification; revoked device denied. Phones/tablets/laptops/desktops in all directions desired, but each platform exposes only actually supported capabilities — no promise of unattended iOS or browser background access. Files stay separate; no blanket sync. Not verified here.
 - [ ] **Milestone 2 — Omni enhancement (pending, starts only after Milestone 1 evidence):** user-selected project review, proposed diff, isolated tests with real evidence, explicit apply approval and rollback. Until then: no untrusted code execution; no integration, scan or test is claimed live.
 
 ## Queued add-ons (owner request 2026-10-25; after in-progress work AND the 15-step completion register; unpublished; clarification, not a duplicate build)
+
 Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Blocked.
+
 - [ ] A1 Truth badges: Live / Demo / Blocked on every card, panel and agent (extends existing DemoBadge).
 - [ ] A2 Hive Jobs: one shared job record (id, project, requested by, approval state, masked logs, result, timestamps); single Mothership feed.
 - [ ] A3 Project auto-registration from manifest (name, URL, health endpoint, owner) as orbital nodes; seed HERCULES, Honeycomb Terminal, Honeycomb Vault.
@@ -284,6 +312,7 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [ ] A9 CLI bridge: doctor/build/test/status as jobs one-tap triggerable by Honeycomb Terminal (Blocked until Honeycomb pairing is proven).
 
 ## Private owner accounts & invitations (owner request 2026-10-26/27)
+
 - [x] Invitation/role rules + tests (`src/lib/invitations.ts`)
 - [x] Server functions, `/members`, `/invite` pages (code complete; show "not activated" until SQL applied)
 - [x] APPLIED 2026-10-31 with explicit owner approval: `owner-invitations.sql` (roles, invitations, claim_owner, member/invite RPCs) and `omni-agent.sql` (saved agent runs + start/cancel/list RPCs) migrated to the backend; all 12 functions verified present; types regenerated.
@@ -292,6 +321,7 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [ ] Vault real-credential storage stays off (no audited encryption); CLI login not implemented
 
 ## Current Omni activation request — 2026-10-27
+
 - [x] Inspect configured AI, current account activation and native connectivity without service/schema/account writes: zero auth users/verified approved accounts; owner bootstrap/membership RPC absent. One orphan beta approval grants no identity. AI key present/no saved block proves configuration only; no bridge service or independent agent runner.
 - [x] Add explicit read-only authenticated readiness checks and secure handoffs in existing Omni/agent/CLI surfaces; require verified email for inference, retain Demo/Blocked labels and no automatic execution. No member schema/roles/self-approval bypass.
 - [x] Test safe runtime denials, local permission rules and browser flows: 1038 tests/67 files PASS (188 focused); anonymous/forged model 401 and cross-origin 403; desktop/mobile readiness/sign-in/demo labels PASS, no page errors; actual Linux offline source help/version/doctor/security 0 and login/agents/connect/start/omni 2. Lint/build/register PASS. Evidence `.lovable/omni-activation-verification.md`; no model inference, native installation, account creation or publication.
@@ -302,30 +332,36 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - Autonomous task mode (Omni): server-checked goal/allowlist/state machine built; BLOCKED until a real browser/computer executor or host companion exists and owner/member setup is activated. Tasks are not saved.
 
 ## OMNI coding gateway for Jackboy — 2026-10-31
+
 - [x] `/omni-gateway` local planning workspace: owner-confirmed project enrollment with least-privilege scopes, Jackboy-approved task intake (approval note + no-untrusted-code attestation required), job state machine, forbidden-goal hints (merge/deploy/secrets/destructive), AngelTech quality and DemonTech defensive-security advisory feedback channels, revocation. 11 tests pass; records are browser-local only.
 - [ ] BLOCKED real gateway: authenticated private job API + least-privilege service identity (needs owner-approved backend schema on shared DB or isolated backend), isolated sandbox runner (none connected — untrusted code must never run without one), activated model inference for patch proposals, and owner-approved repository write path. Auto-merge/deploy/public terminal stay disabled by design.
 
 ## Angel Tech / Sabrina concept workspace — 2026-10-31
+
 - [x] `/angel-tech` local concept workspace: Sabrina marketing-intelligence notes, review-only campaign drafts, prospective consenting agent/research-group registry, perspective, invitation status, API/MCP compatibility, requested permissions, human approval, revocation, local history and JSON export.
 - [x] Sabrina added to the demo Agent Network as pending/local-drafts-only; navigation and OMNI handoff link added. No trend crawler, model inference, discovery, account connection, credential storage, unsolicited outreach or delivery.
 - [x] Sabrina director expansion (`src/lib/omni-sabrina.ts` + `SabrinaDirector.tsx`): Opportunity Radar (explainable keyword-overlap match scores, revoked excluded, unapproved gated, never auto-advanced), strategic memory with provenance/confidence/expiry (deletion stops retrieval; not model training), on-demand weekly ecosystem brief (owner-entered inputs only, honestly labeled), structured Jackboy feedback (local handoff, never dispatched). 13 tests pass; browser flow verified (radar 100/100 ready-for-review, brief, memory, feedback). Pure local computation — no crawler, inference or outreach.
 - [ ] BLOCKED live ambassador: verified owner/member activation, server-side records and permissions, official API/MCP credentials through secure settings, consenting outreach channel and independent human approval.
 
 ## Gateway Guardian gate + learning loop — 2026-10-31
+
 - [x] Guardian policy gate in `/omni-gateway`: default-deny when unavailable, logged decisions, no simulated approval; merge/deploy need initial human approval and can never be delegated; scoped owner delegation only for non-merge actions.
 - [x] Jackboy learning loop: human review outcomes recorded as local provenance-tagged lessons; not retraining, never changes policy. 17 gateway tests, 83 focused tests pass.
 - [ ] BLOCKED end-to-end: authenticated job lifecycle, isolated generation/tests and live Guardian review request all need the activated backend, service identity and sandbox runner; no connection claimed before end-to-end tests.
 
 ## OMNI multi-agent registry — 2026-10-31
+
 - [x] `/omni-agents` local registry: owner-confirmed agent registration with categorized roles (AngelTech research/creation/quality, DemonTech defensive security, Guardian permissions/audit, OMNI core), capability declarations scoped to opted-in projects, task/result/coordination reports that never execute, agent-to-agent coordination between registered agents only, and immediate owner pause/resume. 11 tests, 82 focused tests pass.
 - [x] Approval boundaries enforced in rules: irreversible, high-impact, private-data and production actions always require owner/human approval regardless of declarations.
 - [ ] BLOCKED live agents: runner, model inference, backend membership and Guardian policy engine all pending; no live integration claimed until end-to-end tests.
 
 ## OMNI model-agnostic gateway — 2026-10-31
+
 - [x] `/omni-models` declaration-stage gateway: provider adapter registry (cloud APIs marked credential-missing without a secret name; never "connected"), declaration-only capability discovery, per-project agent passports (identity/specialty/permissions/scope/endpoint/health=unknown), routing plans that never execute, simulated Jackboy dispatch loop (inspect → gap-report → dispatch → outcome), JAX broker rules (no Honeycomb Vault secrets, no external submission without consent), real-vs-simulated panel with credential prerequisites and an unrunnable end-to-end acceptance test. 11 tests, 76 focused tests pass.
 - [ ] BLOCKED live gateway: provider credentials in Project Settings → Secrets, host companion for local models, backend member activation, runner; acceptance test must pass before any "connected" claim.
 
 ## RAZUL · The Eternal Archivist — 2026-10-31
+
 - [x] `/omni-razul` local reference implementation: opt-in project enrollment (owner consent required), append-only tamper-evident event archive (project events, agent reports, test results, code changes, approvals, incidents, outcomes) with provenance, secret-pattern rejection at intake, redaction with recorded reasons, retention tombstoning, and per-project/per-consumer retrieval grants for Jackboy, OMNI, Guardian, Sabrina and JAX (denied by default).
 - [x] RAZUL Internet Observatory (real, scheduled): `razul_sources`/`razul_findings`/`razul_runs`/`razul_job_state` tables with approved-reader RLS and owner/admin-gated pause/resume/configure RPCs (threshold, retention, coverage, block list); cron-authenticated `/api/public/jobs/razul-observe` with DB lease, bounded feed fetches, URL dedupe, keyword relevance scoring, threshold-gated routing to Guardian/OMNI/Jackboy/Sabrina, and retention cleanup; managed schedule `razul-observe` every 6 hours. Verified live: 50 real entries from 4 public feeds (CISA, GitHub Security, OpenAI, arXiv cs.AI), 1 routed alert. Public feeds only — no private communications, no protected-site scraping, no exhaustive-coverage claim.
 - [x] Knowledge graph (projects/agents/dependencies with relations) and allowlisted public-source intelligence: robots/terms/owner-approval attestation, HTTPS-only sources, dedupe by URL, cross-source corroboration, tag-based relevance ranking, grant-gated routing by category. 14 tests pass; browser end-to-end retrieval + finding routing verified.
@@ -335,6 +371,7 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [ ] BLOCKED: server-side persistence, authenticated retrieval API, Guardian-enforced policies and scheduled public-web discovery need the activated owner backend; scheduled discovery must extend the existing daily knowledge collector, not duplicate it. No entire-internet monitoring, private communications or secrets ever in scope.
 
 ## RAZUL Sentinel network — 2026-10-31
+
 - [x] Sentinel connectors: `razul_sentinels` (owner/admin enrollment via `razul_enroll_sentinel`, scoped kinds, SHA-256 credential hash only, expiring, revocable via `razul_revoke_sentinel`) + append-only `razul_sentinel_events` history; approved-reader RLS.
 - [x] Authenticated report route `/api/public/razul-sentinel/report`: hash+expiry+scope verification (service-only `razul_sentinel_verify`), 60 reports/hour per sentinel, 8KB payload cap, five allowlisted kinds; feedback/release reports create a provenance finding (`sentinel-report` evidence class, registered `sentinel:` source) and fan out alert events to enabled Jackboy/OMNI feeds.
 - [x] Dispatch queue `razul_dispatch_queue` + `razul_dispatch_scout` (owner/admin, active unexpired sentinels only): every dispatch recorded `blocked-guardian` because the Guardian policy engine is not connected — default deny, no simulated approval.
@@ -342,9 +379,11 @@ Order: A1 and A2 first. Unconnected = Demo (never Live); setup-dependent = Block
 - [ ] PENDING: owner enrollment UI, Agent Passports on dispatch, scout execution (needs sandbox runner + Guardian), offline retry/connection-status heartbeat UI, OMNI sandbox job assignment from findings. Auto-discovery means reading the enrollment registry — never network scanning.
 
 ## RA'SUL independent platform migration (SEQUENCED — do not start early) — 2026-10-31
+
 Owner architecture decision: AFTER current OMNI/Jackboy/JAX priority work is completed and tested, migrate RA'SUL to a separate independent private intelligence backend (own database, scheduler, research workers, dispatcher) connected to OMNI as primary command center through authenticated APIs. Do NOT create/deploy the separate platform prematurely or interrupt current builds.
 
 Access model (binding, clarified 2026-10-31):
+
 - Owner-facing hub/control panel: centralized ONLY in the main OMNI Mothership project. Razul has NO separate public dashboard and NO owner logins; no other project gets owner-facing Razul controls.
 - Human access: strictly SINGLE OWNER ONLY via the verified OMNI owner account with strong MFA — no public signup, no invitations for Razul controls, no other human accounts, protected routes, server-side roles/RLS, private logs and secrets, no public publishing.
 - Machine access: other owned projects connect through authorized, revocable machine identities/Sentinels — never owner credentials or admin access. Guardian audit + emergency revocation on all machine identities.
@@ -352,6 +391,7 @@ Access model (binding, clarified 2026-10-31):
 - Never assume owner email/identity; request secure verification through the editor when needed.
 
 Readiness prerequisites (all must be true before migration starts):
+
 1. Current OMNI/Jackboy/JAX priority work completed and tested (register items green).
 2. Activated single owner account with MFA on the current backend (owner bootstrap already staged; activation pending real email via secure editor flow).
 3. Sentinel network stable: enrollment, scoped credentials, revocation, dispatch queue exercised end-to-end.
@@ -359,6 +399,7 @@ Readiness prerequisites (all must be true before migration starts):
 5. Separate backend provisioned as its own stack with its own database, schedulers, workers and dispatcher — no shared-schema coupling; backend-only, no dashboard or login surface of its own.
 
 Safe migration steps (when prerequisites met):
+
 1. Provision the independent Razul backend (own DB, scheduler, workers, dispatcher); single-owner auth with MFA; server-side roles/RLS; no signup/invitation paths.
 2. Issue scoped machine credentials per agent (OMNI, Jackboy, JAX, each Sentinel) with expiry + revocation; register them in Guardian audit.
 3. Replicate schema (sources/findings/runs/feeds/alerts/sentinels/dispatch) and migrate data with counts verified; keep the current backend read-only during cutover.
@@ -366,17 +407,20 @@ Safe migration steps (when prerequisites met):
 5. Owner verification checkpoint (secure editor confirmation), then decommission Razul tables/schedules on the old backend; Guardian emergency-revocation drill before declaring done.
 
 Dependency, enrollment and rollout checks for the Razul platform phase:
+
 - Dependency check: every OMNI/Jackboy/JAX register item green before provisioning begins; Guardian connected; Sentinel network stable.
 - Enrollment check: each owned project enrolls explicitly (owner-confirmed) with a scoped machine identity; enrollment registry is the only discovery mechanism; revocation tested per project before rollout continues.
 - Rollout checks: (1) single-owner MFA login to the Mothership hub works and no other login path exists; (2) machine identities cannot reach owner/admin functions (denial test per identity); (3) AngelTech/DemonTech dispatch respects per-project enrollment, site policies and rate limits (denial test on an unenrolled target); (4) Jackboy/JAX receive only their scoped findings (cross-scope read denied); (5) Guardian emergency revocation halts all machine access within one audit cycle; (6) no public route, dashboard or publishing surface exists on the Razul backend.
 
 ## RA'SUL conversational front door — 2026-10-31
+
 - [x] `/omni-razul` now opens with RA'SUL Front Door (`RasulChat.tsx` + `rasul-chat.ts`): owner-only conversational interface, one consolidated thread (session-only, no persistence — conversation shape chosen as single thread per owner request; storage choice: no persistence, stated because the questions tool is unavailable). Research answers use the authenticated Ask Razul path with citations/evidence class/confidence; signed-out or failed calls get honest blocked fallbacks, never fabricated answers.
 - [x] Transparent handoffs: every response lists which specialists were involved with verified/simulated/blocked labels and named prerequisites. Agent discovery lists all passport capabilities. Dispatch requests (Jackboy/OMNI/Sabrina/JAX/Guardian) always start pending explicit owner approval; approval is recorded but execution stays blocked until Guardian + job runner connect; production changes/external actions always need separate approval.
 - [x] 12 unit tests PASS; browser verified signed-out flow: agents answer (verified label), Guardian dispatch prepared with approval gate and blocked execution, handoff transparency rendered. Build OK.
 - [ ] BLOCKED live front door: verified owner account activation (real email via secure editor flow), then Ask Razul answers become live; dispatch execution awaits Guardian policy engine + isolated runner. Razul holds no blanket credentials; independent-backend migration stays sequenced after priority work per the recorded architecture decision.
 
 ## Resident Operations Agents + Project Knowledge Passports — clarification 2026-10-31 (DEFERRED)
+
 Refines the existing resident-agent/Passport, Sentinel (05.09), memory (05.08), front-door (05.10) and Jackboy developer-pilot (06) work; not a replacement or duplicate network. Current priority auth/OMNI/Jackboy/JAX readiness must pass before implementation/pilot. This records future requirements only; no Ops Agent, routine maintenance, schedule or new integration is activated.
 
 - [ ] **Separate operational roles:** every explicitly owner-enrolled project gets a resident Operations Agent distinct from creative/specialized agents. No enrollment, connectivity, owner identity or permissions inferred from a project name, passport or URL.
@@ -389,6 +433,7 @@ Refines the existing resident-agent/Passport, Sentinel (05.09), memory (05.08), 
 - [ ] **Sync/recovery:** project-isolated approved bootstrap and incremental event IDs/versions, duplicate refusal, source timestamps and stale/offline labels; bounded offline retry/backoff, reconnect/restart recovery, pause/stop/revoke. Recheck grants before accepting/replaying queued events or jobs; revoked project data is no longer retrievable by Jackboy/other agents. Cross-project memory is permissioned, not universal access.
 
 First staged pilot (one project only; owner selection pending):
+
 1. Verify current priority gates: real owner activation/MFA and access isolation; OMNI/Jackboy/JAX integration acceptance; scoped enrolled project and resident machine identity; Guardian policy/verdict interface; isolated OMNI runner and reviewed repository scope. Preserve the later independent Razul backend and OMNI-only owner hub; do not provision a separate dashboard/platform early.
 2. Bootstrap that project's approved Passport and collect one harmless real diagnostic/test-fixture issue from its resident Ops Agent. Persist an attributed, versioned event in Ra'sul; read it back via Jackboy's authenticated Ask Agent/status/incident interface with scope/freshness/evidence intact.
 3. Jackboy produces a bounded test/repair proposal tied to that issue. Guardian authorizes only the isolated test scope BEFORE OMNI executes; OMNI records actual test command, run identity, logs, exit/result, reviewed diff if generated, and rollback evidence. No shell/code execution without isolation and prior authorization.
@@ -398,10 +443,12 @@ First staged pilot (one project only; owner selection pending):
 **Current disposition:** architecture recorded; Ops capabilities and pilot **Deferred / unverified**. Existing Sentinel feedback/health history is bounded prior evidence only, not a resident Ops lifecycle. Activation is **Blocked** on verified owner/MFA + current priority acceptance, owner-selected project/access, authenticated resident interfaces, live Guardian and isolated runner. No external project, backend, schedule, device, live game data or publication changed by this clarification.
 
 ## RA'SUL original architecture naming — 2026-10-31
+
 - [x] Restored navigation to `RA'SUL · OMNI Intelligence · Local`, chat heading to `RA'SUL — Central Intelligence`, archive heading to `RA'SUL (Razul) · The Eternal Archivist`, page metadata to `RA'SUL (Razul) · OMNI Central Intelligence`; chat introduction/fallback and archive description name the central cross-project role. Resident watch coordination remains explicitly planned/scoped; the game is one participating project. No game-advisor title found in current project source. IDs, access rules, routes, stored records and blocked/demo states unchanged; memory saved.
 - [x] Verification: `bunx vitest run src/lib/rasul-chat.test.ts src/lib/omni-razul.test.ts src/lib/razul-sentinel.test.ts` — 33/33 PASS; local browser confirmed title/description/navigation/archive heading, central-role signed-out fallback and pending-approval/blocked Guardian dispatch; desktop/mobile have no horizontal overflow or page errors; harness build OK. Untested: signed-in owner/MFA, real resident watch-agent/status collection, live task execution/Guardian verdicts, other projects and full suite. No backend/external-project changes, deployment or publishing.
 
 ## RA'SUL default OMNI conversation — 2026-10-31
+
 - [x] **Consolidated Razul implemented increment (owner authorization 17:58 UTC):** exact primary `Razul Central Intelligence`, RA'SUL alias. Migration `0029_razul_owner_controls_and_source_receipts.sql` applied: seven NULL-safe verified owner/confirmed-email/aal2 RPC gates, restrictive private RLS on 11 tables, Sentinel findings/sources shielded from ordinary public-feed readers; new explicitly granted/RLS source-check and metadata audit tables, subscription RPC/triggers. Existing All-Seeing Eye: saved pause, threshold/public retention/source blocking, six agent subscription settings, actual receipt freshness/failure, findings search/evidence/revision, chronology/control metadata. Reads in batches <=6; settings require explicit confirmation and no-store owner enforcement, no job-start/resume UI. Chat status reads infrastructure, async replies invalidated on unmount; shared root account used, no new subscriber. Ask scope intersects stored subscription, empty scope denied and unrelated high-relevance matches fixed. Existing archive/passports/stable specialist IDs and Itanimulli capabilities retained.
 - [x] **Current increment bounded verification:** full suite **1236/1236 PASS / 84 files**; focused Razul **171/171 / 12 files**; `python3 src/test/test_razul_owner_sql.py` **38 local PostgreSQL calls plus anon execute denial PASS** (NULL-role/admin/weak MFA/unconfirmed/revoked owner blocked, proper owner writes/RLS/audit/Guardian default deny). Preview existing approved-feed job HTTP 200 **PARTIAL: 43 fetched/0 inserted/43 duplicate/0 alerts**; readback **3 completed receipts (USGS/BBC science/Language Log), 2 fetch-failed (arXiv physics/Phys archaeology)**, no guessed times or fabricated success. Anonymous desktop/mobile default exact identity/status denial/hidden controls/Guardian local review blocked, zero page errors/overflow; screenshots checked. Harness build OK. No paid calls, users, new sources/schedules, connector, external-project changes, public publish/deployment or visibility changes.
 - [ ] **Consolidation blockers:** real verified OMNI owner activation+MFA for positive owner UI/readback (hosted 0 accounts/0 owners/0 Passport/0 Sentinel); source failures unresolved without broadening redirects/site access; per-project scoped machine retrieval/enrollment binding/offline lifecycle, real AngelTech/DemonTech/resident execution and immutable private version/correction/retention history; Guardian+isolated runner for correlated one-project pilot. Existing 19 approved public feeds and historical alerts are bounded evidence, not continuous crawling/healthy projects. Later independent backend remains sequenced after priorities. No account identity/approval or execution invented.
@@ -415,6 +462,7 @@ First staged pilot (one project only; owner selection pending):
 - [x] OMNI Agent Workspace (chat + live terminal, passkeys, Autonomous Mode, per-agent view) — Mothership side built; blocked on Railway workspace endpoint, sandbox and self-test.
 
 ## OMNI Bridge landing spot (2026-11-12)
+
 - [x] Held task → Jackboy handoff (signed `jackboy.omni-handoff/v1`, matched to Jackboy's published contract), status badges, device status list, Stop on every step.
 - [ ] Jackboy endpoint exists on branch `jackboy/omni-handoff-v1`; live call blocked on Jackboy deploy + the four handoff settings.
 - [ ] Owner adds four `JACKBOY_HANDOFF_*` settings — blocked on Jackboy-issued secret.
@@ -422,9 +470,11 @@ First staged pilot (one project only; owner selection pending):
 - [x] Browser-environment test: owner handoff flow against a mocked Jackboy endpoint; missing settings keep sending disabled, no secrets shown. Real-browser positive run blocked on a two-factor-verified owner session.
 
 ## Owner authenticator (2026-11-12)
+
 - [ ] Owner checks the existing authenticator entry works, then creates and stores recovery codes — owner's phone needed.
 
 ## Sign-in audit and simpler home (2026-11-12)
+
 - [x] Audited sign-in: Lovable Cloud auth with Google, email/password (email confirmation on) and the "Continue with Lovable" button; owner-only TOTP two-factor; owner-only app passkey for the OMNI Workspace. Recorded in `docs/AUTHENTICATION.md`.
 - [x] Guided `/sign-in-help` page; clearer sign-in/reset errors; invitation links now survive sign-in (`/invite` public, acceptance still server-checked).
 - [x] Grouped navigation (Projects, Agents, Approvals, Connections, Settings, Advanced), status badges with tooltips, single Account menu; simplified home with Advanced view. All earlier pages remain reachable (test).
@@ -432,6 +482,7 @@ First staged pilot (one project only; owner selection pending):
 - [ ] Owner verifies authenticator code and creates recovery codes (0 exist) — owner's phone needed.
 
 ## OMNI readiness increment (2026-11-12)
+
 - [x] Audited terminal lock: page opens for the owner at two-step level; agent workspace locked because no handshake/self-test ever recorded, 0/10 approvals, self-test switch unset. Typecheck clean.
 - [x] Terminal shows one of five states (Stopped, Not authorized, Not connected, No device docked, Read-only) with a numbered checklist; locked screen names the failing sign-in gate and offers code entry; read-only "Check" replaces "Run".
 - [x] Per-agent memory (owner-only save/list/delete, one agent per call, source + fingerprint, metadata-only audit). Not read by any agent or Railway.
@@ -441,6 +492,7 @@ First staged pilot (one project only; owner selection pending):
 - [ ] `omni.memory/v1` read path for agents — design only; needs owner approval and a tested build.
 
 ## OMNI cloud shell (2026-11-12, priority)
+
 - [x] Mothership: separate `OMNI_SANDBOX_*` link (refuses Jackboy host/secret reuse), signed self-test with isolation/limit verdict, per-command approval, live stdout/stderr/exit, stop, repository checkout, passkey-gated draft pull requests, OpenAI/Claude provider status, autonomy refused server-side.
 - [x] Reference Railway service `services/omni-sandbox/` + Dockerfile + deploy guide; 11 local end-to-end checks pass on Lovable's machine.
 - [ ] Deploy the sandbox service on Railway and confirm logs say `network isolated` — owner/Railway step.
@@ -449,19 +501,21 @@ First staged pilot (one project only; owner selection pending):
 - [ ] First live run: self-test, session, approved command, checkout, draft PR — blocked on the steps above.
 
 ## Razul intelligence provisioning (2026-11-12)
+
 - [x] `razul.manifest/v1` manifests, static checks, escalation diff, proposal/rollout/rollback rules, namespaced knowledge with sources, health checks, history (migration 0050, `docs/RAZUL-PROVISIONING.md`).
 - [x] Owner screen on Razul page; 22 unit + 71 isolated SQL checks.
 - [ ] Sandbox evaluation endpoint with signed proof — blocked on deployed OMNI cloud sandbox (Railway).
 - [ ] Agent runtime that loads active manifests, reports stage health, auto-rolls back — OMNI/Railway work.
 - [ ] Razul auto-proposer and memory link for app agents — after the two items above.
 
-
 ## Legacy code modernization ("dinosaur code") (2026-11-12, audit; after cloud shell goes live)
+
 Audit: no dedicated legacy-modernization feature exists. Reusable pieces: reference sandbox (`services/omni-sandbox/`, checkout/approved commands/diff, tested locally only, not deployed), workspace diff view, CLI change records, CODE queue `code_task` (no worker), Jackboy handoff Test/Build (never sent live), Razul digests/staged rollout pattern.
+
 - [ ] M1 First safe proof (local only, no network, no model, no Jackboy call): add a case to `src/test/omni-sandbox-interop.test.ts` with a bundled legacy fixture and an owner-written modern version; the sandbox runs both on the same fixed inputs, outputs must match exactly, a deliberately changed version must be caught, and the modern copy gets a SHA-256 fingerprint while the original stays unchanged.
 - [ ] M2 Modernization job type in CODE queue: original read-only, work on a branch copy, characterization tests captured before any change, every command owner-approved.
 - [ ] M3 Comparison report: same-input output/exit-code/timing comparison, coverage of captured cases, mismatches block approval.
 - [ ] M4 Versioned artifacts: immutable digest-pinned versions (original, each candidate), lineage and rollback to the original.
 - [ ] M5 Jackboy package handoff: build the `jackboy.omni-handoff/v1` payload with artifact digest + comparison report; held until owner fresh-TOTP send; Jackboy keeps passkey/spend gates.
 - [ ] M6 Model-assisted conversion (OpenAI/Claude in sandbox) — blocked on live sandbox, verified provider and spend caps.
-Blockers: M2–M6 need the deployed Railway sandbox (cloud shell priority stays first); M5 also needs the Jackboy handoff settings; autonomy stays off.
+      Blockers: M2–M6 need the deployed Railway sandbox (cloud shell priority stays first); M5 also needs the Jackboy handoff settings; autonomy stays off.

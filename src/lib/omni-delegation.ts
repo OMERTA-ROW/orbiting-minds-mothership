@@ -7,7 +7,8 @@
  *   2. The verified owner (aal2, authenticator code within 15 minutes) ticks scopes and approves.
  *   3. The browser returns to the one allowlisted callback with a single-use 60-second code.
  *   4. OMNI's server exchanges code + code_verifier server-to-server for a 15-minute bearer.
- * Only "tasks:read", "tasks:write" and "safety:emergency-stop" can be granted.
+ * Only "tasks:read", "tasks:write" and "safety:emergency-stop" can be granted, plus "chat:write"
+ * once database change 0066 is installed (checked server-side per request).
  * The database enforces the same client, callback, scopes and lifetimes (migration 0062).
  */
 import { z } from "zod";
@@ -47,9 +48,25 @@ export function isSupportedScope(scope: string): scope is SupportedDelegationSco
   return (SUPPORTED_DELEGATION_SCOPES as readonly string[]).includes(scope);
 }
 
+/** Scopes that become grantable only after their database change is installed. */
+export const INSTALL_GATED_SCOPES = ["chat:write"] as const;
+/** Every scope that can ever be granted (the approval page validates against the live list). */
+export const GRANTABLE_SCOPE_CANDIDATES = [
+  ...SUPPORTED_DELEGATION_SCOPES,
+  ...INSTALL_GATED_SCOPES,
+] as const;
+export type GrantableDelegationScope = (typeof GRANTABLE_SCOPE_CANDIDATES)[number];
+
+/** Grantable scopes right now: the always-supported ones plus installed gated ones. */
+export function grantableScopes(chatInstalled: boolean): GrantableDelegationScope[] {
+  return chatInstalled
+    ? [...SUPPORTED_DELEGATION_SCOPES, "chat:write"]
+    : [...SUPPORTED_DELEGATION_SCOPES];
+}
+
 export const DELEGATION_SCOPE_INFO: Record<
   DelegationScope,
-  { title: string; effect: string; supported: boolean }
+  { title: string; effect: string; supported: boolean; needsInstall?: string }
 > = {
   "tasks:read": {
     title: "Read OMNI web tasks",
@@ -70,9 +87,12 @@ export const DELEGATION_SCOPE_INFO: Record<
     supported: true,
   },
   "chat:write": {
-    title: "Chat",
-    effect: "Not available: no chat route through OMNI web exists on the Mothership yet.",
+    title: "Chat with OMNI",
+    effect:
+      "OMNI web can send your messages to the Mothership's OMNI text agent and show its replies. Each reply uses paid Lovable AI credits (at most 30 a day, one at a time). Messages and replies aren't saved on the Mothership. OMNI has no tools and can't run tasks or code.",
     supported: false,
+    needsInstall:
+      "Not available yet: the Mothership's database change for chat (0066) hasn't been approved and installed.",
   },
   "providers:write": {
     title: "Change AI providers",
@@ -142,7 +162,7 @@ export type ParsedAuthorize =
       state: string;
       codeChallenge: string;
       requested: DelegationScope[];
-      supported: SupportedDelegationScope[];
+      supported: GrantableDelegationScope[];
       unsupported: DelegationScope[];
     }
   | { ok: false; error: string };
@@ -151,7 +171,10 @@ export type ParsedAuthorize =
  * Validates an authorize request. Any failure is shown on the Mothership and never redirected:
  * the callback is only ever the exact allowlisted URL.
  */
-export function parseAuthorizeRequest(p: AuthorizeParams): ParsedAuthorize {
+export function parseAuthorizeRequest(
+  p: AuthorizeParams,
+  grantable: readonly GrantableDelegationScope[] = SUPPORTED_DELEGATION_SCOPES,
+): ParsedAuthorize {
   if (p.client_id !== DELEGATION_CLIENT.id) return { ok: false, error: "Unknown app." };
   if (p.redirect_uri !== DELEGATION_CLIENT.redirectUri)
     return { ok: false, error: "The return address isn't the approved OMNI address." };
@@ -172,8 +195,10 @@ export function parseAuthorizeRequest(p: AuthorizeParams): ParsedAuthorize {
     state: p.state!,
     codeChallenge: p.code_challenge!,
     requested,
-    supported: requested.filter(isSupportedScope),
-    unsupported: requested.filter((s) => !isSupportedScope(s)),
+    supported: requested.filter((s): s is GrantableDelegationScope =>
+      (grantable as readonly string[]).includes(s),
+    ),
+    unsupported: requested.filter((s) => !(grantable as readonly string[]).includes(s)),
   };
 }
 

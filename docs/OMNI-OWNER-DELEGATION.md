@@ -21,15 +21,15 @@ No other origin, path, query or trailing slash is accepted. OMNI must create tha
 
 ## Scopes
 
-| Scope                           | Granted?        | Effect                                                                                          |
-| ------------------------------- | --------------- | ----------------------------------------------------------------------------------------------- |
-| `tasks:read`                    | Yes             | Read this owner's tasks created through OMNI web delegations and their recorded handoff status. |
-| `tasks:write`                   | Yes             | `POST /api/omni/tasks` stores a **held** OMNI Terminal task. Nothing runs or is dispatched.     |
-| `safety:emergency-stop`         | Yes             | `POST /api/omni/emergency-stop` **engages** the Stop. It can never release it.                  |
-| `chat:write`                    | No              | Refused at approval; `/api/omni/chat` answers 403 `not_available`.                              |
-| `providers:write`               | No              | Refused; no endpoint.                                                                           |
-| `tasks:retry`                   | No              | Refused; held tasks never run.                                                                  |
-| `tasks:approve`, `tasks:reject` | No              | Refused; decisions stay owner-only on the Mothership (two-step + passkey).                      |
+| Scope                           | Granted?   | Effect                                                                                                                                                                                       |
+| ------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tasks:read`                    | Yes        | Read this owner's tasks created through OMNI web delegations and their recorded handoff status.                                                                                              |
+| `tasks:write`                   | Yes        | `POST /api/omni/tasks` stores a **held** OMNI Terminal task. Nothing runs or is dispatched.                                                                                                  |
+| `safety:emergency-stop`         | Yes        | `POST /api/omni/emergency-stop` **engages** the Stop. It can never release it.                                                                                                               |
+| `chat:write`                    | After 0066 | **Proposed, not installed.** Separate opt-in to chat with the OMNI text agent (paid Lovable AI). Until 0066 is installed: refused at approval; `/api/omni/chat` answers 403 `not_available`. |
+| `providers:write`               | No         | Refused; no endpoint.                                                                                                                                                                        |
+| `tasks:retry`                   | No         | Refused; held tasks never run.                                                                                                                                                               |
+| `tasks:approve`, `tasks:reject` | No         | Refused; decisions stay owner-only on the Mothership (two-step + passkey).                                                                                                                   |
 
 A scope never bypasses the Mothership's own rules: held tasks stay held (owner hand-off with a fresh
 code is still required), the Stop release still needs the owner, spend caps/permits/autonomy are untouched.
@@ -190,9 +190,67 @@ cancellation exactly like the owner's button.
 `{ ok: false, error: "remote_cancellation_unverified", localStopEngaged: true }` when the local Stop
 is engaged but remote cancellation is not confirmed. 401/403 as above, 503 `stop_not_recorded`.
 
+### POST /api/omni/chat — `chat:write` (needs proposed migration 0066; not installed)
+
+Code is in place and fails closed until `.lovable/pending/0066_omni_delegated_chat.sql` is
+approved and installed (detected per request through `omni_delegated_chat_ready()`; missing =
+not installed). Server-to-server only (requests with `Origin`/`Sec-Fetch-*` → 403).
+
+Request (OMNI's existing body; extra fields ignored; at most 512 KB):
+
+```json
+{
+  "agentId": "omni",
+  "model": "lovable-ai:openai/gpt-6-astra",
+  "messages": [{ "role": "user", "content": "…" }],
+  "autonomous": false,
+  "source": "omni-web"
+}
+```
+
+- `agentId` must be `omni` (403 `agent_not_enrolled` otherwise). `model` is optional; only
+  `lovable-ai:openai/gpt-6-astra` (or the bare model ID) is accepted (422 `model_not_available`).
+- The most recent messages that fit **20 messages / 24,000 characters** are used (reported as
+  `contextMessages` / `omittedMessages`); the last must be a non-empty user message (422 `invalid_request`).
+  Messages that look like keys, passwords, tokens or email addresses → 422 `secret_like` before anything is sent.
+- One database transaction admits the request: valid delegation with `chat:write` (401
+  `invalid_token` with `reason`, 403 `scope_missing`), verified owner, owner AI approval not paused
+  (403 `ai_not_approved`), Emergency Stop released (423 `emergency_stop_engaged`), at most **30**
+  started requests per owner per 24 h (429 `daily_limit`), and the same durable `evolution-omni`
+  AI guard as the private OMNI agent — one request at a time, and any existing pause blocks it
+  (503 `ai_busy_or_paused`). No Lovable AI key → 503 `provider_not_configured`.
+- While the reply is generated, the delegation, Stop and AI approval are re-checked every second
+  and once more before replying; any change stops the reply (same status as above, `stopped`) and
+  no text is returned. An unreadable re-check fails closed (409 `check_unavailable`).
+- Deadline 17 s (below OMNI web's 20 s call timeout) → 504 `timeout`. Declined → 422
+  `model_declined`; output budget → 422 `output_limit`; empty → 502 `empty_reply`. Provider
+  credit/permission refusals (402/403/404) keep AI paused for owner review; others (e.g. 429) are failures only.
+- The outcome is recorded with metadata only (counts, tokens, status, gateway run ID — never message
+  or reply text) in `omni_delegated_chat_runs`, and the guard is released in the same transaction.
+  If recording fails: 503 `outcome_not_recorded`, no reply, AI stays paused. Never retried automatically.
+
+Success 200:
+
+```json
+{
+  "ok": true,
+  "reply": "…",
+  "agentId": "omni",
+  "agentName": "OMNI",
+  "model": "lovable-ai:openai/gpt-6-astra",
+  "runId": "<uuid>",
+  "contextMessages": 1,
+  "omittedMessages": 0,
+  "usage": { "inputTokens": 0, "outputTokens": 0, "totalTokens": 0 }
+}
+```
+
+Metadata API keys on `/api/omni/chat`: 403 `delegation_required` (`needs: "chat:write"`) once 0066 is
+installed, 403 `not_available` before. Keys never chat.
+
 ### Everything else
 
-`POST /api/omni/chat` and `POST /api/omni/tasks/:id/approve|reject`: 403 `not_available` for an
+`POST /api/omni/tasks/:id/approve|reject` (and chat before 0066): 403 `not_available` for an
 active delegation (401 otherwise). Metadata API keys on `/api/omni/tasks` (POST) or
 `/api/omni/emergency-stop`: 403 `delegation_required` with `needs` and `authorize` link. API keys
 keep working unchanged for health, manifest and job history; delegations do not authenticate those reads.
@@ -204,6 +262,31 @@ keep working unchanged for health, manifest and job history; delegations do not 
 `delegation { clientId, audience, supportedScopes, tokenLifetimeSeconds, heldTasksPath,
 authorizeUrl, tokenUrl, statusUrl, revokeUrl }`. Migration 0064 is applied; `heldTasksPath`
 and `tasks:read` reach production once the matching application revision is published.
+
+Live manifest facts (read server-side per request): `providers` lists
+`{ id: "lovable-ai", label: "Lovable AI", models: ["openai/gpt-6-astra"] }` and
+`capabilities.providers.read: true` only when the Lovable AI key is present — that is
+configuration, not a verified reply. OMNI is `enrolled: true` (and `capabilities.chat.write: true`,
+`supportedScopes` gains `chat:write`) only when 0066 is installed **and** the key is present. A `chat`
+descriptor gives the path, scope, model, limits and `verified: false`. `orchestration` is
+deliberately absent; `orchestrationStatus: { state: "not_available", reason }` explains that the
+Mothership has no Fusion orchestrator or handshake.
+
+## Chat (0066) — what the owner decides
+
+1. Review and approve installing `.lovable/pending/0066_omni_delegated_chat.sql` (additive: wider
+   1–4 scope limit, `chat:write` at consent, metadata-only `omni_delegated_chat_runs`, four
+   service-only functions plus the install marker). Tested in a throwaway database
+   (`src/test/test_omni_delegated_chat_sql.py`).
+2. Publish the Mothership revision containing this code.
+3. In OMNI: request `chat:write` as a separate opt-in (today `startMothershipDelegation` asks only
+   for `tasks:write` + Stop), and treat 423/429/503 refusals as states, not route failures.
+4. Owner ticks "Chat with OMNI" on `/omni-authorize`; each reply uses paid Lovable AI credits.
+   The first live reply (for example OMNI's "Test route") is the only thing that verifies the route.
+
+Rollback: republish the previous revision; it answers chat with 403 `not_available` on either
+schema. To switch chat off without a release, the owner cancels the OMNI connection or engages the
+Stop; a forward migration could revoke the chat functions from `service_role` — never edit 0066.
 
 ## Verification still required (not done)
 

@@ -6,15 +6,15 @@ Status 2026-11-20 (preview, not published). Owner delegation: `docs/OMNI-OWNER-D
 
 ## What answers today
 
-| OMNI frontend call                      | Mothership answer                                                                 | Key scope |
-| --------------------------------------- | --------------------------------------------------------------------------------- | --------- |
-| `GET /api/omni/health`                  | `{ ok: true, version }`                                                           | `health`  |
-| `GET /api/omni/manifest`                | OMNI listed, `enrolled: false`; no providers; `autonomous: false`; owner links      | `health`  |
-| `POST /api/omni/chat`                   | 403 `not_available` — no chat scope or founder-verified chat adapter exists        | any valid |
-| `GET /api/omni/tasks`                   | Read-only: the 10 latest observatory runs (same data and audit as `/api/public/omni/jobs`), `requiresApproval: false`; held OMNI Terminal tasks not included | `jobs`    |
-| `POST /api/omni/tasks`                  | Owner delegation `tasks:write`: stores a **held** task (see `docs/OMNI-OWNER-DELEGATION.md`); API keys → 403 `delegation_required` | delegation |
-| `POST /api/omni/tasks/:id/approve\|reject` | 403 `not_available` — decisions need owner two-step sign-in + passkey           | any valid |
-| `POST /api/omni/emergency-stop`         | Owner delegation `safety:emergency-stop`: engage only, `ok:true` after remote cancellation is verified; API keys → 403 `delegation_required` | delegation |
+| OMNI frontend call                         | Mothership answer                                                                                                                                                                                                                                  | Key scope  |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `GET /api/omni/health`                     | `{ ok: true, version }`                                                                                                                                                                                                                            | `health`   |
+| `GET /api/omni/manifest`                   | Lovable AI provider with its one model when configured (configuration, not verification); OMNI `enrolled` only after 0066 is installed; no `orchestration` (Fusion doesn't exist; `orchestrationStatus` says so); `autonomous: false`; owner links | `health`   |
+| `POST /api/omni/chat`                      | Owner delegation `chat:write` after proposed migration 0066 is installed (see `docs/OMNI-OWNER-DELEGATION.md`); until then 403 `not_available`. Keys never chat                                                                                    | delegation |
+| `GET /api/omni/tasks`                      | Read-only: the 10 latest observatory runs (same data and audit as `/api/public/omni/jobs`), `requiresApproval: false`; held OMNI Terminal tasks not included                                                                                       | `jobs`     |
+| `POST /api/omni/tasks`                     | Owner delegation `tasks:write`: stores a **held** task (see `docs/OMNI-OWNER-DELEGATION.md`); API keys → 403 `delegation_required`                                                                                                                 | delegation |
+| `POST /api/omni/tasks/:id/approve\|reject` | 403 `not_available` — decisions need owner two-step sign-in + passkey                                                                                                                                                                              | any valid  |
+| `POST /api/omni/emergency-stop`            | Owner delegation `safety:emergency-stop`: engage only, `ok:true` after remote cancellation is verified; API keys → 403 `delegation_required`                                                                                                       | delegation |
 
 Missing/unknown/expired/revoked key → 401. Valid key without the needed scope → 403 `scope_missing`.
 When credential verification is unavailable, the contract returns 503
@@ -40,8 +40,11 @@ Unknown observatory counts are displayed as unknown, not zero.
 
 - Held tasks and Stop engagement now use short-lived owner delegations (migration 0062,
   `docs/OMNI-OWNER-DELEGATION.md`), not API key scopes; verification after publishing is pending.
-- A founder-verified chat adapter that routes to the private OMNI agent with its consent, spend and
-  stop guards (today the agent needs the owner's signed-in session).
+- Chat: the delegated adapter is built (`src/lib/omni-delegated-chat*.ts`) with its own `chat:write`
+  consent, owner AI approval, Stop, daily limit and the shared AI guard; it waits on owner approval of
+  migration 0066, publishing, and OMNI requesting `chat:write`.
+- Fusion: no Fusion orchestrator or handshake exists on the Mothership, so the manifest never reports
+  `orchestration`. OMNI's "Fusion · unverified" is the correct state until one is specified and built.
 - Task decisions stay owner-only on the Mothership (two-step + passkey); a key should never decide.
 - The OMNI frontend is unpublished, so the Mothership has no URL to link back to it yet.
 

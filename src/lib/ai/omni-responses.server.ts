@@ -2,7 +2,8 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { createLovableAiGatewayRunIdFetch } from "./run-id.server.ts";
 import { safeGatewayFailure, type GatewayFailure } from "./gateway-errors";
-export const omniModel = "openai/gpt-6-astra";
+import { OMNI_MODEL } from "./omni-model";
+export const omniModel = OMNI_MODEL;
 export function createOmniCall(
   request: Request,
   apiKey: string,

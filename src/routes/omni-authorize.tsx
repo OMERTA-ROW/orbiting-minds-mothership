@@ -19,7 +19,7 @@ import {
   readPendingAuthorize,
   clearPendingAuthorize,
   type AuthorizeParams,
-  type SupportedDelegationScope,
+  type GrantableDelegationScope,
 } from "@/lib/omni-delegation";
 import {
   approveOmniAuthorization,
@@ -50,7 +50,14 @@ export const Route = createFileRoute("/omni-authorize")({
 
 type Described =
   | { valid: false; error: string }
-  | { valid: true; owner: boolean; needsSecondStep: boolean; mfaBlocker: string | null };
+  | {
+      valid: true;
+      owner: boolean;
+      needsSecondStep: boolean;
+      mfaBlocker: string | null;
+      /** Scopes the Mothership can grant right now (checked on the server). */
+      grantable: GrantableDelegationScope[];
+    };
 
 function OmniAuthorizePage() {
   const search = Route.useSearch();
@@ -60,7 +67,7 @@ function OmniAuthorizePage() {
   const approve = useServerFn(approveOmniAuthorization);
   const [params, setParams] = useState<AuthorizeParams | null>(null);
   const [described, setDescribed] = useState<Described | null>(null);
-  const [chosen, setChosen] = useState<SupportedDelegationScope[]>([]);
+  const [chosen, setChosen] = useState<GrantableDelegationScope[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -72,7 +79,9 @@ function OmniAuthorizePage() {
     } else setParams(readPendingAuthorize(window.sessionStorage) ?? {});
   }, [search]);
 
+  // Request shape is checked locally; which scopes can be granted comes from the server.
   const parsed = params ? parseAuthorizeRequest(params) : null;
+  const grantable: readonly string[] = described?.valid ? described.grantable : [];
 
   const load = useCallback(async () => {
     if (!params || !parsed?.ok || !user) return;
@@ -184,17 +193,18 @@ function OmniAuthorizePage() {
         <ul className="space-y-3">
           {parsed.requested.map((scope) => {
             const info = DELEGATION_SCOPE_INFO[scope];
+            const available = grantable.includes(scope);
             const id = `scope-${scope.replace(/[^a-z]/g, "-")}`;
             return (
               <li key={scope} className="flex items-start gap-3 rounded-lg border p-3">
                 <Checkbox
                   id={id}
-                  disabled={!info.supported || busy}
-                  checked={info.supported && chosen.includes(scope as SupportedDelegationScope)}
+                  disabled={!available || busy}
+                  checked={available && chosen.includes(scope as GrantableDelegationScope)}
                   onCheckedChange={(v) =>
                     setChosen((c) =>
                       v === true
-                        ? [...c, scope as SupportedDelegationScope]
+                        ? [...c, scope as GrantableDelegationScope]
                         : c.filter((s) => s !== scope),
                     )
                   }
@@ -203,6 +213,9 @@ function OmniAuthorizePage() {
                   <span className="font-medium">{info.title}</span>{" "}
                   <span className="text-xs text-muted-foreground">({scope})</span>
                   <span className="block text-muted-foreground">{info.effect}</span>
+                  {!available && info.needsInstall && (
+                    <span className="block text-xs text-muted-foreground">{info.needsInstall}</span>
+                  )}
                 </label>
               </li>
             );
@@ -233,7 +246,7 @@ function OmniAuthorizePage() {
             </Button>
           </div>
         )}
-        {parsed.supported.length === 0 && (
+        {!parsed.requested.some((s) => grantable.includes(s)) && (
           <p className="text-sm text-muted-foreground">
             None of the requested permissions are available yet, so there is nothing to approve.
           </p>

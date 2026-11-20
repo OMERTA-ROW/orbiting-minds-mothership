@@ -38,7 +38,7 @@ const NO_STORE = { "Cache-Control": "no-store", Pragma: "no-cache" };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: NO_STORE });
 const MAX_BODY = 16_384;
 
-function browserRefused() {
+export function browserRefused() {
   return json(
     {
       ok: false,
@@ -151,7 +151,7 @@ export async function omniDelegationToken(request: Request, rpc: Rpc = serviceRp
   });
 }
 
-function needsDelegation() {
+export function needsDelegation() {
   return json(
     {
       ok: false,

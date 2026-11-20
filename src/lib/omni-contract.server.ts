@@ -7,6 +7,7 @@ import {
   buildManifest,
   httpsOrigin,
   unsupportedBody,
+  type ManifestLive,
   type UnsupportedCapability,
 } from "./omni-contract";
 
@@ -69,17 +70,27 @@ function verificationUnavailable() {
   );
 }
 
+/** Live manifest facts: provider key presence (boolean only) and whether 0066 is installed. */
+async function serviceManifestLive(): Promise<ManifestLive> {
+  const { delegatedChatInstalled } = await import("./omni-delegated-chat.server");
+  return {
+    aiConfigured: Boolean(process.env["LOVABLE_API_KEY"]),
+    chatInstalled: await delegatedChatInstalled(),
+  };
+}
+
 export async function omniContractRead(
   request: Request,
   what: "health" | "manifest",
   verify: Verify = serviceVerify,
+  readLive: () => Promise<ManifestLive> = serviceManifestLive,
 ) {
   const denied = await authorize(request, CONTRACT_SCOPE[what], verify);
   if (denied instanceof Response) return denied;
   const body =
     what === "health"
       ? { ok: true, version: OMNI_CONTRACT_VERSION, service: "omni-mothership" }
-      : buildManifest(httpsOrigin(request.url));
+      : buildManifest(httpsOrigin(request.url), await readLive());
   return Response.json(body, { headers: NO_STORE });
 }
 
@@ -89,7 +100,7 @@ export async function omniContractRead(
  */
 export async function omniContractNeedsDelegation(
   request: Request,
-  scope: "tasks:write" | "safety:emergency-stop",
+  scope: "tasks:write" | "safety:emergency-stop" | "chat:write",
   verify: Verify = serviceVerify,
 ) {
   const denied = await authorize(request, null, verify);

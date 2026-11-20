@@ -52,6 +52,8 @@ type StagedFunctions = {
   };
   omni_noop_worker_revoke: { Args: { _id: string }; Returns: undefined };
   omni_noop_enqueue: { Args: { _duration_ms: number }; Returns: string };
+  /** Proposed migration 0066 (`.lovable/pending/0066_omni_delegated_chat.sql`), not installed. */
+  omni_delegated_chat_ready: { Args: never; Returns: boolean };
 };
 
 type Pub = Database["public"];

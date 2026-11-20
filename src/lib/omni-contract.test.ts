@@ -52,6 +52,7 @@ describe("OMNI frontend contract", () => {
       }),
       "manifest",
       verify,
+      async () => ({ aiConfigured: false, chatInstalled: false }),
     );
     expect(r.status).toBe(200);
     const raw = (await r.json()) as {
@@ -65,6 +66,22 @@ describe("OMNI frontend contract", () => {
     const eligible = raw.agents.filter((a) => taskAgents.includes(a.id)).map((a) => a.id);
     expect(eligible).toEqual(["jackboy", "jax", "razul", "sabrina", "guardian", "hercules"]);
     expect(raw.agents.filter((a) => a.enrolled === true)).toEqual([]);
+  });
+  it("raw manifest reports live provider and chat facts read on the server", async () => {
+    await ready;
+    const r = await omniContractRead(
+      req("/api/omni/manifest", HEALTH_KEY),
+      "manifest",
+      verify,
+      async () => ({ aiConfigured: true, chatInstalled: true }),
+    );
+    const raw = (await r.json()) as {
+      agents: { id: string; enrolled: boolean }[];
+      providers: { models: string[] }[];
+    };
+    // OMNI web counts "Models discovered" as the sum of provider models.
+    expect(raw.providers.reduce((n, p) => n + p.models.length, 0)).toBe(1);
+    expect(raw.agents.filter((a) => a.enrolled).map((a) => a.id)).toEqual(["omni"]);
   });
   it("a jobs-only key is valid but gets 403 for health and manifest", async () => {
     await ready;

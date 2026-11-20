@@ -21,6 +21,13 @@ import {
   HELD_TASK_AGENT_NAMES,
   SUPPORTED_DELEGATION_SCOPES,
 } from "./omni-delegation";
+import { OMNI_MODEL } from "./ai/omni-model";
+import {
+  CHAT_AGENT,
+  CHAT_MODEL_REF,
+  CHAT_PROVIDER,
+  DELEGATED_CHAT_LIMITS,
+} from "./omni-delegated-chat";
 
 export const OMNI_CONTRACT_VERSION = "1.0.0";
 
@@ -67,9 +74,9 @@ export const UNSUPPORTED: Record<
   { reason: string; needs: string; page: string }
 > = {
   chat: {
-    reason: "Chat through OMNI web is not enabled.",
+    reason: "Chat through OMNI web is not installed on the Mothership.",
     needs:
-      "A founder-verified chat adapter, which doesn't exist yet. Neither API keys nor owner delegations can chat.",
+      "Database change 0066 (owner-approved) and an owner delegation that includes chat:write. API keys can never chat.",
     page: "/beta-omni",
   },
   "task-decision": {
@@ -101,22 +108,47 @@ export function httpsOrigin(requestUrl: string): string | null {
   }
 }
 
+/** Live facts the manifest reports; read server-side for each request, never from the caller. */
+export type ManifestLive = {
+  /** LOVABLE_API_KEY is present (the provider the OMNI text agent uses is configured). */
+  aiConfigured: boolean;
+  /** Migration 0066 (chat:write delegation) is installed. */
+  chatInstalled: boolean;
+};
+
+const NOT_LIVE: ManifestLive = { aiConfigured: false, chatInstalled: false };
+
+/** Why Fusion is not claimed: no Fusion orchestrator or handshake exists on the Mothership. */
+export const FUSION_STATUS = {
+  state: "not_available" as const,
+  reason:
+    "The Mothership has no Fusion orchestrator or Fusion handshake. Held tasks wait on the Mothership until the owner hands them to Jackboy through the signed handoff.",
+};
+
 /**
- * Truthful manifest. No agent is chat-enrolled (OMNI and the held-task agents); no providers,
- * spending cap or orchestration are claimed; autonomous is always false. Task writes and the
- * Stop are declared because owner delegations can do them; links point at real owner pages.
+ * Truthful manifest. Providers list only what is configured on the Mothership (the OMNI text
+ * agent's Lovable AI model); being listed is configuration, not a verified reply. OMNI is
+ * chat-enrolled only when the chat:write delegation is installed and the provider is
+ * configured; held-task agents are never chat-enrolled. No spending cap or orchestration is
+ * claimed; autonomous is always false. Links point at real owner pages.
  */
-export function buildManifest(origin: string | null) {
+export function buildManifest(origin: string | null, live: ManifestLive = NOT_LIVE) {
+  const chatEnrolled = live.chatInstalled && live.aiConfigured;
+  const supportedScopes: string[] = [...SUPPORTED_DELEGATION_SCOPES];
+  if (live.chatInstalled) supportedScopes.unshift("chat:write");
   return {
     version: OMNI_CONTRACT_VERSION,
     agents: [
       {
-        id: "omni",
-        name: "OMNI",
+        id: CHAT_AGENT.id,
+        name: CHAT_AGENT.name,
         kind: "omni" as const,
-        enrolled: false,
-        description:
-          "Mothership's private text agent. Chat through this connection isn't enabled; use OMNI chat on the Mothership.",
+        enrolled: chatEnrolled,
+        description: chatEnrolled
+          ? "Mothership's private text agent. Chat needs an owner delegation with chat:write; it has no tools and runs nothing."
+          : !live.chatInstalled
+            ? "Mothership's private text agent. Chat through OMNI web isn't installed yet (database change 0066 awaits owner approval)."
+            : "Mothership's private text agent. Lovable AI isn't configured on the Mothership, so chat is unavailable.",
       },
       // OMNI web offers task assignment only to agents present here AND in `taskAgents`, so
       // each held-task agent is listed, never chat-enrolled and with no claimed live status.
@@ -129,12 +161,14 @@ export function buildManifest(origin: string | null) {
           "Can be named on a held task through an owner delegation; the task waits on the Mothership and nothing runs. Chat isn't enabled.",
       })),
     ],
-    providers: [] as { id: string; label: string; models: string[] }[],
+    providers: live.aiConfigured
+      ? [{ id: CHAT_PROVIDER.id, label: CHAT_PROVIDER.label, models: [OMNI_MODEL] }]
+      : ([] as { id: string; label: string; models: string[] }[]),
     autonomous: false as const,
     // {read, write} per resource, as OMNI reads them. Writes need an owner delegation.
     capabilities: {
-      chat: { read: false, write: false },
-      providers: { read: false, write: false },
+      chat: { read: false, write: chatEnrolled },
+      providers: { read: live.aiConfigured, write: false },
       tasks: { read: true, write: true },
       taskRetry: { read: false, write: false },
       taskDecisions: { read: false, write: false },
@@ -145,10 +179,24 @@ export function buildManifest(origin: string | null) {
     },
     /** Agents a held task may name. Not chat enrollment: `enrolled` above stays the chat flag. */
     taskAgents: [...HELD_TASK_AGENTS],
+    chat: {
+      state: chatEnrolled ? ("delegation_required" as const) : ("not_available" as const),
+      path: "/api/omni/chat",
+      scope: "chat:write",
+      agentId: CHAT_AGENT.id,
+      model: CHAT_MODEL_REF,
+      dailyLimit: DELEGATED_CHAT_LIMITS.daily,
+      maxMessages: DELEGATED_CHAT_LIMITS.maxMessages,
+      maxInputChars: DELEGATED_CHAT_LIMITS.maxInputChars,
+      timeoutMs: DELEGATED_CHAT_LIMITS.timeoutMs,
+      verified: false,
+    },
+    /** `orchestration` is deliberately absent: see FUSION_STATUS. */
+    orchestrationStatus: FUSION_STATUS,
     delegation: {
       clientId: DELEGATION_CLIENT.id,
       audience: DELEGATION_AUDIENCE,
-      supportedScopes: [...SUPPORTED_DELEGATION_SCOPES],
+      supportedScopes,
       tokenLifetimeSeconds: DELEGATION_TOKEN_SECONDS,
       heldTasksPath: "/api/omni/held-tasks",
       ...(origin
