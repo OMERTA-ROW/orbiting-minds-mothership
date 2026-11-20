@@ -171,7 +171,7 @@ export async function endAutonomy(admin: Db, agentId: string | null, reason: str
     .update({ ended_at: new Date().toISOString(), end_reason: reason })
     .is("ended_at", null);
   if (agentId) q = q.eq("agent_id", agentId);
-  await q;
+  return await q;
 }
 
 /** Loads an active session, ending it if idle or too old. */

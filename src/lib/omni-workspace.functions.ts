@@ -656,17 +656,33 @@ export const stopWork = createServerFn({ method: "POST" })
       .in("status", ["queued", "running"]);
     if (data.sessionId) q = q.eq("session_id", data.sessionId);
     if (data.agentId) q = q.eq("agent_id", data.agentId);
-    await q;
+    const failures: string[] = [];
+    try {
+      const { error } = await q;
+      if (error) failures.push("Could not mark local jobs stopped.");
+    } catch {
+      failures.push("Could not mark local jobs stopped.");
+    }
     let agentId = data.agentId ?? null;
     if (!agentId && data.sessionId) {
-      const { data: s } = await db
-        .from("omni_workspace_sessions")
-        .select("agent_id")
-        .eq("id", data.sessionId)
-        .maybeSingle();
-      agentId = s?.agent_id ?? null;
+      try {
+        const { data: s, error } = await db
+          .from("omni_workspace_sessions")
+          .select("agent_id")
+          .eq("id", data.sessionId)
+          .maybeSingle();
+        if (error) failures.push("Could not determine the session's agent.");
+        agentId = s?.agent_id ?? null;
+      } catch {
+        failures.push("Could not determine the session's agent.");
+      }
     }
-    await ws.endAutonomy(admin, agentId, "stop");
+    try {
+      const { error } = await ws.endAutonomy(admin, agentId, "stop");
+      if (error) failures.push("Could not end local autonomy windows.");
+    } catch {
+      failures.push("Could not end local autonomy windows.");
+    }
     let remote = "not sent (link not configured)";
     const link = await ws.linkState(admin);
     if (link.configured) {
@@ -676,15 +692,23 @@ export const stopWork = createServerFn({ method: "POST" })
           agentId,
         })
         .then(() => "request acknowledged; remote cancellation is unverified")
-        .catch((e: unknown) => `not confirmed: ${e instanceof Error ? e.message : "error"}`);
+        .catch((e: unknown) => {
+          failures.push("Remote Stop could not be delivered.");
+          return `not confirmed: ${e instanceof Error ? e.message : "error"}`;
+        });
+    } else {
+      failures.push("Remote Stop was not sent because the link is not configured.");
     }
     await ws.audit(admin, {
       actor: "owner",
       event: data.agentId ? "agent_stop" : "stop",
       agentId,
       sessionId: data.sessionId,
-      detail: { remote },
+      detail: { remote, failures },
     });
+    if (failures.length) {
+      return { ok: false as const, message: `${failures.join(" ")} Remote Stop: ${remote}` };
+    }
     return { ok: true as const, remote };
   });
 
