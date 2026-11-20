@@ -123,7 +123,10 @@ jobs:
                 exit 1
               fi
               sudo chown "$(id -u):$(id -g)" "$(dirname "$root")/cgroup.procs"
-              docker run --rm --user "$(id -u):$(id -g)" \
+              container="omni-recovery-${OMNI_TEST_SLICE%.slice}"
+              trap '"'"'docker stop "$container" >/dev/null 2>&1 || true'"'"' EXIT
+              timeout --signal=TERM --kill-after=5s 90s \
+                docker run --rm --name "$container" --user "$(id -u):$(id -g)" \
                 --cap-drop ALL --security-opt no-new-privileges --read-only \
                 --network none --tmpfs /tmp:rw,nosuid,nodev,size=128m \
                 --cgroup-parent "$OMNI_TEST_SLICE" \
@@ -134,6 +137,8 @@ jobs:
                   set -eu
                   grep -Eq "^NoNewPrivs:[[:space:]]+1$" /proc/self/status
                   grep -Eq "^CapEff:[[:space:]]+0+$" /proc/self/status
+                  id
+                  stat -f -c "delegatedFilesystem=%T" /delegated
                   mkdir -p /tmp/fixture/services /tmp/fixture/tests
                   ln -s /app /tmp/fixture/services/omni-sandbox
                   cp /repo/tests/omni-workspace-cgroup.test.mjs /repo/tests/omni-workspace-recovery.test.mjs /tmp/fixture/tests/

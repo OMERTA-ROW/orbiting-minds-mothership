@@ -33,7 +33,14 @@ function startPython(group, script) {
   child.stdout.on("data", (chunk) => (stdout += chunk));
   child.stderr.on("data", (chunk) => (stderr += chunk));
   const done = once(child, "close").then(([code, signal]) => ({ code, signal, stdout, stderr }));
-  group.attach(child.pid);
+  try {
+    group.attach(child.pid);
+  } catch (error) {
+    child.stdin.destroy();
+    return done.then(() => {
+      throw error;
+    });
+  }
   child.stdin.end("go\n");
   return done;
 }
@@ -74,6 +81,7 @@ test(
       await exited;
       assert.match(fs.readFileSync(`${group.path}/cgroup.events`, "utf8"), /^populated 0$/m);
     } finally {
+      child.stdin.destroy();
       await group.stop();
       await exited;
       group.remove();

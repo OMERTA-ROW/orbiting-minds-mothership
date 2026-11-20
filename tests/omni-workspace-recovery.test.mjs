@@ -140,6 +140,7 @@ test(
       assert.notEqual(missingCode, 0);
       assert.match(missingErrors, /recovery parent must be configured/);
     } finally {
+      child.stdin.destroy();
       if (first && first.exitCode === null && first.signalCode === null) {
         const stopped = once(first, "exit");
         first.kill("SIGTERM");
