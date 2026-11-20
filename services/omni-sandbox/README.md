@@ -98,7 +98,9 @@ it is **not wired into workspace execution**. It does not provide filesystem or 
 isolation, renewable Stop, job recovery, or aggregate CPU-time and disk limits. The caller must
 attach a trusted blocked child before allowing untrusted code to run, keep the cgroup filesystem
 inaccessible to that child, and handle startup and Stop races. Do not remove quarantine based on
-this primitive or its tests.
+this primitive or its tests. A cgroup handle rejects future attachments as soon as its Stop begins,
+including when Stop fails. This guard applies only to that handle in its process; it does not
+serialize other handles, processes, or direct writes to the delegated cgroup.
 
 `openJobCgroupForRecovery` can reopen a known job leaf only to kill and remove it; it cannot attach
 or resume work. With `OMNI_SANDBOX_CGROUP_PARENT` configured, service startup holds an exclusive

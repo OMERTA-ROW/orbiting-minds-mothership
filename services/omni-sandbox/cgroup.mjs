@@ -32,15 +32,18 @@ function jobPath(parent, jobId) {
 }
 
 function jobGroup(group, allowAttach) {
+  let stopping = false;
   return {
     path: group,
     attach(pid) {
       if (!allowAttach) throw new Error("Cannot attach processes to a recovered job.");
+      if (stopping) throw new Error("Cannot attach processes after job termination begins.");
       if (!Number.isSafeInteger(pid) || pid <= 1) throw new Error("Invalid process ID.");
       fs.writeFileSync(path.join(group, "cgroup.procs"), String(pid));
     },
     async stop(timeoutMs = 2000) {
       boundedInteger(timeoutMs, 1, 10000, "stop timeout");
+      stopping = true;
       fs.writeFileSync(path.join(group, "cgroup.kill"), "1");
       const deadline = performance.now() + timeoutMs;
       while (populated(group)) {

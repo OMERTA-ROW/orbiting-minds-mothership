@@ -89,6 +89,37 @@ test(
   },
 );
 
+test("a stopped job cannot subsequently attach a blocked child", { skip: !runLinux }, async () => {
+  const group = createJobCgroup(parent, randomUUID(), limits);
+  const child = spawn("/bin/sh", ["-c", "read -r go"], { stdio: ["pipe", "ignore", "ignore"] });
+  const exited = once(child, "close");
+  try {
+    const stopping = group.stop();
+    assert.throws(() => group.attach(child.pid), /termination begins/);
+    await stopping;
+    assert.match(fs.readFileSync(`${group.path}/cgroup.events`, "utf8"), /^populated 0$/m);
+  } finally {
+    child.stdin.destroy();
+    await exited;
+    await group.stop();
+    group.remove();
+  }
+});
+
+test("a failed stop still prevents later attachment", { skip: !runLinux }, async () => {
+  const group = createJobCgroup(parent, randomUUID(), limits);
+  const child = spawn("/bin/sh", ["-c", "read -r go"], { stdio: ["pipe", "ignore", "ignore"] });
+  const exited = once(child, "close");
+  try {
+    group.remove();
+    await assert.rejects(group.stop());
+    assert.throws(() => group.attach(child.pid), /termination begins/);
+  } finally {
+    child.stdin.destroy();
+    await exited;
+  }
+});
+
 test("the PID controller rejects excess processes", { skip: !runLinux }, async () => {
   const group = createJobCgroup(parent, randomUUID(), { ...limits, maxProcesses: 3 });
   try {
