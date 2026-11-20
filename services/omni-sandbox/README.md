@@ -101,10 +101,20 @@ inaccessible to that child, and handle startup and Stop races. Do not remove qua
 this primitive or its tests.
 
 `openJobCgroupForRecovery` can reopen a known job leaf only to kill and remove it; it cannot attach
-or resume work. Recovery requires a durable job inventory and exclusive ownership of the delegated
-parent so that a replacement supervisor cannot kill another live supervisor's jobs. Neither
-requirement is wired into the service. In particular, this helper does not stop jobs when a
-supervisor crashes; a separate fail-closed watchdog and startup recovery are still required.
+or resume work. With `OMNI_SANDBOX_CGROUP_PARENT` configured, service startup holds an exclusive
+SQLite lock in the private state directory, reads the durable workspace job journal, and kills and
+confirms each known unfinished cgroup before recording termination and allowing readiness. An
+unknown cgroup, a missing cgroup for an unfinished claim, a changed parent, an unavailable state
+lock, or failed cleanup prevents readiness. Once a parent is recorded, omitting it also refuses
+startup. The state directory and cgroup parent must be dedicated to the same service and shared
+among all of its potential instances; a second state directory using the same parent would not
+share the lock. Configure neither in production until a complete reviewed boundary exists.
+
+The existing command handler does not yet write the job journal or use cgroups for execution.
+This recovery path therefore does not make the service safe to execute commands. It does not stop
+jobs while the supervisor is down; a separate fail-closed watchdog and renewable authority are still
+required. The recorded `terminated` state confirms cgroup emptiness, not broader containment or a
+remote Stop acknowledgement.
 
 The opt-in `workspace-seccomp-probe` job starts only a disposable namespace probe, not the
 workspace service, as UID 20000 with all container capabilities dropped and no-new-privileges.

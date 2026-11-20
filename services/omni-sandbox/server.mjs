@@ -8,6 +8,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
+import { createWorkspaceJournal, recoverWorkspaceJobs } from "./recovery.mjs";
 
 export const CONTRACT = "omni.workspace/v1";
 export const PATH = "/api/public/omni/workspace";
@@ -29,6 +30,7 @@ export function loadConfig(env = process.env) {
     secret: env.OMNI_SANDBOX_HMAC_SECRET ?? "",
     projectId: env.OMNI_SANDBOX_PROJECT_ID ?? "omni",
     root: env.OMNI_SANDBOX_ROOT ?? "/sandbox",
+    cgroupParent: env.OMNI_SANDBOX_CGROUP_PARENT ?? "",
     uidBase: int(env.OMNI_SANDBOX_UID_BASE, 20000, 1000, 60000),
     limits: {
       commandTimeoutSec: int(env.OMNI_SANDBOX_COMMAND_TIMEOUT_SEC, 60, 1, 300),
@@ -226,6 +228,42 @@ export function createSandbox(c, opts = {}) {
     "INSERT INTO nonces (nonce, seen_at) VALUES (?, ?) ON CONFLICT DO NOTHING",
   );
   const claimDecision = createDecisionClaims(nonceStore);
+  createWorkspaceJournal(nonceStore);
+  const recoveryBinding = nonceStore
+    .prepare("SELECT cgroup_parent FROM workspace_recovery_config WHERE singleton = 1")
+    .get();
+  const unfinishedJob = nonceStore
+    .prepare("SELECT job_id FROM workspace_job_journal WHERE state != 'terminated' LIMIT 1")
+    .get();
+  if ((recoveryBinding || unfinishedJob) && !c.cgroupParent) {
+    nonceStore.close();
+    throw new Error("The recorded workspace recovery parent must be configured at startup.");
+  }
+  let recoveryLock;
+  if (c.cgroupParent) {
+    try {
+      recoveryLock = new DatabaseSync(path.join(stateDir, "workspace-lock.sqlite"));
+      recoveryLock.exec("PRAGMA busy_timeout = 0; BEGIN IMMEDIATE;");
+    } catch (error) {
+      recoveryLock?.close();
+      nonceStore.close();
+      throw new Error("Cannot exclusively lock workspace recovery state.", { cause: error });
+    }
+  }
+  let recoveryState = c.cgroupParent ? "pending" : "ready";
+  const ready = c.cgroupParent
+    ? recoverWorkspaceJobs(nonceStore, c.cgroupParent, c.projectId).then(
+        () => {
+          recoveryState = "ready";
+        },
+        (error) => {
+          recoveryState = "failed";
+          console.error("Workspace startup recovery failed:", error.message);
+          throw error;
+        },
+      )
+    : Promise.resolve();
+  void ready.catch(() => {});
   const claimNonce = (nonce, failFast) => {
     const now = Date.now();
     if (failFast) nonceStore.exec("PRAGMA busy_timeout = 100");
@@ -927,6 +965,10 @@ export function createSandbox(c, opts = {}) {
   // -------------------------------------------------------------- HTTP
 
   const server = http.createServer((req, res) => {
+    if (recoveryState !== "ready") {
+      res.writeHead(503, { "content-type": "application/json" }).end('{"ok":false}');
+      return;
+    }
     if (req.method === "GET" && req.url === "/healthz") {
       res.writeHead(200, { "content-type": "application/json" }).end('{"ok":true}');
       return;
@@ -975,8 +1017,9 @@ export function createSandbox(c, opts = {}) {
           res.writeHead(401).end();
           return;
         }
-      } catch {
-        console.error("Sandbox nonce store unavailable; request refused.");
+      } catch (error) {
+        const code = Number.isInteger(error?.errcode) ? error.errcode : "unknown";
+        console.error(`Sandbox nonce store unavailable; request refused (SQLite code ${code}).`);
         // A verified, fresh Stop is a safety reduction. Try it even when its nonce cannot
         // be recorded, but never acknowledge the request as accepted or replay-protected.
         if (safetyStop) {
@@ -1023,12 +1066,18 @@ export function createSandbox(c, opts = {}) {
   return {
     server,
     network: net,
+    ready,
     verifyProviders,
     close: () => {
       clearInterval(reaper);
       for (const s of [...sessions.values()]) endSession(s, "shutdown");
       server.close();
-      nonceStore.close();
+      const closeStores = () => {
+        nonceStore.close();
+        recoveryLock?.close();
+      };
+      if (recoveryState === "pending") void ready.then(closeStores, closeStores);
+      else closeStores();
     },
   };
 }
@@ -1044,6 +1093,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   const c = loadConfig();
   const sb = createSandbox(c);
+  await sb.ready;
   console.log(
     `omni-sandbox ${VERSION}: network ${sb.network}; ${c.repoAllowlist.length} allowed repositories`,
   );

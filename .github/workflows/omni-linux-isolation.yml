@@ -86,7 +86,8 @@ jobs:
               echo "service moved; enabling delegated controllers"
               echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
               export OMNI_WORKSPACE_DELEGATED_CGROUP="$root"
-              exec node --test tests/omni-workspace-cgroup.test.mjs
+              exec node --test --test-concurrency=1 \
+                tests/omni-workspace-cgroup.test.mjs tests/omni-workspace-recovery.test.mjs
             '
   workspace-host-historical:
     if: github.event_name == 'workflow_dispatch'

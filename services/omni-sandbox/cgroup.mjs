@@ -17,13 +17,18 @@ function populated(group) {
   return match[1] === "1";
 }
 
-function jobPath(parent, jobId) {
-  if (typeof parent !== "string" || !path.isAbsolute(parent) || !UUID.test(jobId))
-    throw new Error("Invalid delegated cgroup or job ID.");
+export function delegatedCgroupRoot(parent) {
+  if (typeof parent !== "string" || !path.isAbsolute(parent))
+    throw new Error("Invalid delegated cgroup.");
   const info = fs.lstatSync(parent);
   if (!info.isDirectory() || info.isSymbolicLink() || fs.statfsSync(parent).type !== CGROUP2_MAGIC)
     throw new Error("The delegated parent must be a real cgroup v2 directory.");
-  return path.join(fs.realpathSync(parent), `job-${jobId}`);
+  return fs.realpathSync(parent);
+}
+
+function jobPath(parent, jobId) {
+  if (typeof jobId !== "string" || !UUID.test(jobId)) throw new Error("Invalid job ID.");
+  return path.join(delegatedCgroupRoot(parent), `job-${jobId}`);
 }
 
 function jobGroup(group, allowAttach) {

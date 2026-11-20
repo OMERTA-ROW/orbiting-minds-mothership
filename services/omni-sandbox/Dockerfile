@@ -4,7 +4,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends git util-linux procps ca-certificates python3 \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY server.mjs ./
+COPY server.mjs cgroup.mjs recovery.mjs ./
 # Starts as root only to drop each command to an unprivileged per-session user.
 ENV OMNI_SANDBOX_ROOT=/sandbox NODE_ENV=production
 EXPOSE 8080

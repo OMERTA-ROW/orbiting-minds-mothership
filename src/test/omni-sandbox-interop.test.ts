@@ -188,7 +188,10 @@ describe("quarantined workspace reference", () => {
           fetch(`http://127.0.0.1:${p}/api/public/omni/workspace`, request),
         ),
       );
-      expect(replies.map((r) => r.status).sort()).toEqual([200, 401]);
+      expect(
+        replies.map((r) => r.status).sort(),
+        `First service: ${serviceLogs.get(proc)}; second service: ${serviceLogs.get(second)}`,
+      ).toEqual([200, 401]);
     } finally {
       await stopService(second);
     }
@@ -204,6 +207,9 @@ describe("quarantined workspace reference", () => {
   }, 10_000);
 
   it("refuses requests when the durable nonce store cannot be locked", async () => {
+    const alreadyClaimed = signedStop("9".repeat(32));
+    const url = `${cfg.origin}/api/public/omni/workspace`;
+    expect((await fetch(url, alreadyClaimed)).status).toBe(200);
     const source = `
       import { DatabaseSync } from "node:sqlite";
       const db = new DatabaseSync(process.argv[1]);
@@ -244,9 +250,11 @@ describe("quarantined workspace reference", () => {
       expect(serviceLogs.get(proc)).toContain(
         "Sandbox Stop attempted without durable nonce claim; result unverified.",
       );
+      expect((await fetch(url, alreadyClaimed)).status).toBe(503);
     } finally {
       await stopService(lock);
     }
+    expect((await fetch(url, alreadyClaimed)).status).toBe(401);
     expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(200);
   }, 25_000);
 });
