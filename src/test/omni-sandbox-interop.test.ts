@@ -7,7 +7,6 @@ import { createHash, createHmac, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { workspaceRequest } from "@/lib/omni-workspace-link.server";
 
@@ -191,14 +190,29 @@ describe("quarantined workspace reference", () => {
   }, 10_000);
 
   it("refuses requests when the durable nonce store cannot be locked", async () => {
-    const db = new DatabaseSync(path.join(dir, "root", ".state", "nonces.sqlite"));
-    db.exec("BEGIN EXCLUSIVE");
+    const source = `
+      import { DatabaseSync } from "node:sqlite";
+      const db = new DatabaseSync(process.argv[1]);
+      db.exec("BEGIN EXCLUSIVE");
+      process.stdout.write("locked\\n");
+      process.on("SIGTERM", () => { db.exec("ROLLBACK"); db.close(); process.exit(0); });
+      setInterval(() => {}, 1000);
+    `;
+    const lock = spawn(
+      process.execPath,
+      ["--input-type=module", "-e", source, path.join(dir, "root", ".state", "nonces.sqlite")],
+      { stdio: ["ignore", "pipe", "ignore"] },
+    );
     const request = signedStop("e".repeat(32));
     try {
+      await new Promise<void>((resolve, reject) => {
+        lock.stdout.once("data", () => resolve());
+        lock.once("exit", () => reject(new Error("SQLite lock process exited before readiness.")));
+        lock.once("error", reject);
+      });
       expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(503);
     } finally {
-      db.exec("ROLLBACK");
-      db.close();
+      await stopService(lock);
     }
     expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(200);
   }, 12_000);
