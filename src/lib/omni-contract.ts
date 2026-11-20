@@ -23,6 +23,7 @@ import {
 } from "./omni-delegation";
 import { OMNI_MODEL } from "./ai/omni-model";
 import { FUSION_PLAN_LIMITS, FUSION_PLAN_PATH, FUSION_PLAN_SCOPE } from "./omni-fusion";
+import { FUSION_PLAN_SCHEMA, FUSION_PLANS_PER_DAY } from "./omni-fusion-plan";
 import {
   CHAT_AGENT,
   CHAT_MODEL_REF,
@@ -122,6 +123,8 @@ export type ManifestLive = {
   chatInstalled: boolean;
   /** Migration 0067 (separate fusion:plan delegation scope) is installed. */
   fusionPlanInstalled?: boolean;
+  /** Migration 0069 (Fusion rules-only planner) is installed. */
+  fusionPlannerInstalled?: boolean;
   /** Newest signed Jackboy permit limits (absent = not read, reported as unknown). */
   spend?: SpendEvidenceRead;
   /** Time of this reading (ms); defaults to now. */
@@ -139,17 +142,33 @@ export const FUSION_STATUS = {
 
 /**
  * Fusion status plus its separate plan permission. `permission.state` is "not_installed" until
- * 0067 is installed, then "planner_not_available": the scope can be granted but only asks; it
- * never plans, starts work, spends or touches the Emergency Stop.
+ * 0067 is installed, "planner_not_available" while only the permission exists, and "rules_only"
+ * once the rules-only planner (0069) is installed: it then returns `omni.fusion-plan/v1`
+ * proposals that consult no agent or model. Orchestration itself stays "not_available" (never
+ * `orchestration`): a proposal is not coordination, and nothing is verified live yet.
  */
-export function fusionStatus(fusionPlanInstalled: boolean) {
+export function fusionStatus(fusionPlanInstalled: boolean, plannerInstalled = false) {
+  const rulesOnly = fusionPlanInstalled && plannerInstalled;
   return {
     ...FUSION_STATUS,
+    ...(rulesOnly
+      ? {
+          reason:
+            "Fusion only proposes rules-based plans for one held task (no agents or models consulted). It does not orchestrate, run, compare or approve; held tasks still go to Jackboy only through the owner's signed handoff.",
+        }
+      : {}),
     permission: {
       scope: FUSION_PLAN_SCOPE,
       path: FUSION_PLAN_PATH,
-      state: fusionPlanInstalled ? ("planner_not_available" as const) : ("not_installed" as const),
+      state: !fusionPlanInstalled
+        ? ("not_installed" as const)
+        : rulesOnly
+          ? ("rules_only" as const)
+          : ("planner_not_available" as const),
+      ...(rulesOnly ? { schema: FUSION_PLAN_SCHEMA, plansPerDay: FUSION_PLANS_PER_DAY } : {}),
       ...FUSION_PLAN_LIMITS,
+      plannerBuilt: rulesOnly,
+      verified: false as const,
     },
   };
 }
@@ -231,7 +250,10 @@ export function buildManifest(origin: string | null, live: ManifestLive = NOT_LI
       verified: false,
     },
     /** `orchestration` is deliberately absent: see FUSION_STATUS. */
-    orchestrationStatus: fusionStatus(live.fusionPlanInstalled === true),
+    orchestrationStatus: fusionStatus(
+      live.fusionPlanInstalled === true,
+      live.fusionPlannerInstalled === true,
+    ),
     delegation: {
       clientId: DELEGATION_CLIENT.id,
       audience: DELEGATION_AUDIENCE,

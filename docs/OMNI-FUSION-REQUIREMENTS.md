@@ -1,7 +1,9 @@
 # OMNI Fusion — requirements brief
 
-Status 2026-11-20. **Only phase 0 (a separate permission and its refusals) is built; its database change
-(0067) was installed on 2026-11-20 with owner approval and has not been used live yet.** Everything else here is a specification. The manifest keeps
+Status 2026-11-20. **Phase 0 (a separate permission and its refusals) is built, installed (0067)
+and published, but not used live yet. Phase 1's rules-only plan proposals are built and tested in
+source; their database change (0069) is proposed, not installed, and not published** (contract:
+`docs/OMNI-FUSION-PLAN-CONTRACT.md`). Phases 2–4 are a specification. The manifest keeps
 `orchestrationStatus.state: "not_available"` and never sends `orchestration` until a phase passes
 its verification criteria. OMNI web's "Fusion · unverified" stays correct until then.
 
@@ -34,18 +36,18 @@ Rules that apply to every capability:
 - **Proposes; does not execute.** Running anything stays with the existing owner-triggered Jackboy
   handoff and its permit. Fusion adds no new way to start work.
 - **Incremental, behind the existing OMNI interface.** Each phase is its own owner approval,
-  migration and permission; every status label says *planned*, *built (not installed)*,
-  *installed (unverified)* or *verified*, with evidence.
+  migration and permission; every status label says _planned_, _built (not installed)_,
+  _installed (unverified)_ or _verified_, with evidence.
 
 ## Status by capability
 
-| Capability                 | State                      | Evidence / blocker                                                                        |
-| -------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
-| Phase 0 — `fusion:plan` permission and consent | **Installed, unverified live** | 285 isolated SQL checks + 18 app tests; 0067 installed 2026-11-20; needs publishing and OMNI web requesting the scope |
-| 1. Plan and route          | Planned                    | Needs phase 1 approval (plan records, owner review screen)                                 |
-| 2. Compare and combine     | Planned                    | Needs phase 2 approval; every model call is paid and goes through the spend guard           |
-| 3. Shared knowledge        | Planned                    | Needs phase 3 approval; PR #25 (repository intake) is related and still open               |
-| 4. Maintenance coordination | Planned                   | Needs phase 4 approval; backups/updates also need the existing trusted-release rules       |
+| Capability                                     | State                                        | Evidence / blocker                                                                                                                                                                                       |
+| ---------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0 — `fusion:plan` permission and consent | **Installed and published, unverified live** | 285 isolated SQL checks + app tests; 0067 installed and published 2026-11-20; needs OMNI web requesting the scope                                                                                        |
+| 1. Plan and route (rules-only proposals)       | **Built, not installed**                     | 295 isolated SQL checks for proposed 0069 + app tests (`omni-fusion-plan.test.ts`); needs owner review, 0069 install, then publishing. Plan records and an owner accept/discard screen are still planned |
+| 2. Compare and combine                         | Planned                                      | Needs phase 2 approval; every model call is paid and goes through the spend guard                                                                                                                        |
+| 3. Shared knowledge                            | Planned                                      | Needs phase 3 approval; PR #25 (repository intake) is related and still open                                                                                                                             |
+| 4. Maintenance coordination                    | Planned                                      | Needs phase 4 approval; backups/updates also need the existing trusted-release rules                                                                                                                     |
 
 ## 1. Data sources
 
@@ -53,25 +55,25 @@ Fusion may read only server-side, owner-scoped records the Mothership already ow
 reads is data, never instructions. Never allowed: browser storage, URL values, other owners'
 records, the caller's claims about itself, secrets, and live device contents.
 
-| Capability       | Sources (all owner-scoped)                                                                                                   |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| All              | Emergency Stop and account pause; owner AI approval; delegation scopes, expiry and revocation; agent roster; signed spend evidence (`omni-spend-evidence.ts`) |
-| Plan and route   | Held OMNI Terminal tasks (0062–0064); existing Jackboy handoff records (read only); Guardian decisions                       |
-| Compare/combine  | Replies from agents/models the owner selects, each through its existing guarded route, with model id, time and cost recorded |
+| Capability       | Sources (all owner-scoped)                                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All              | Emergency Stop and account pause; owner AI approval; delegation scopes, expiry and revocation; agent roster; signed spend evidence (`omni-spend-evidence.ts`)                     |
+| Plan and route   | Held OMNI Terminal tasks (0062–0064); existing Jackboy handoff records (read only); Guardian decisions                                                                            |
+| Compare/combine  | Replies from agents/models the owner selects, each through its existing guarded route, with model id, time and cost recorded                                                      |
 | Shared knowledge | Only sources the owner approved one by one: project records, a selected repository (review-only), docs, troubleshooting and security records, with provenance, version and expiry |
-| Maintenance      | Test results, diagnostics, backup and release records the Mothership already stores; never live shells or devices            |
+| Maintenance      | Test results, diagnostics, backup and release records the Mothership already stores; never live shells or devices                                                                 |
 
 ## 2. User permissions
 
 Each capability gets its **own** delegated scope, consented separately on `/omni-authorize` by the
 verified owner (aal2 + fresh code). No scope implies another; metadata API keys never reach Fusion.
 
-| Scope (OMNI web)        | Grants                                                         | State                         |
-| ----------------------- | -------------------------------------------------------------- | ----------------------------- |
-| `fusion:plan`           | Ask for a plan proposal for one held task                      | Installed (0067)              |
-| `fusion:compare`        | Ask for a comparison of answers the owner selected (paid)      | Planned                       |
-| `fusion:knowledge:read` | Search approved knowledge with sources shown                   | Planned                       |
-| `fusion:maintain`       | Ask for a diagnostic or repair/backup/update *proposal*        | Planned                       |
+| Scope (OMNI web)        | Grants                                                    | State            |
+| ----------------------- | --------------------------------------------------------- | ---------------- |
+| `fusion:plan`           | Ask for a plan proposal for one held task                 | Installed (0067) |
+| `fusion:compare`        | Ask for a comparison of answers the owner selected (paid) | Planned          |
+| `fusion:knowledge:read` | Search approved knowledge with sources shown              | Planned          |
+| `fusion:maintain`       | Ask for a diagnostic or repair/backup/update _proposal_   | Planned          |
 
 Owner-only, on the Mothership, never through any scope: accepting a plan or recommendation,
 approving knowledge sources, starting a handoff, restoring a backup, installing an update, changing
@@ -90,7 +92,11 @@ unverified, 403 `scope_missing`, 423 `emergency_stop_engaged`, 400/413 bad body,
 or gate unavailable. The manifest's `orchestrationStatus.permission` reports `scope`, `path`,
 `state` (`not_installed` → `planner_not_available`) and `canStartWork/canSpend/canChangeEmergencyStop/canApprove/plannerBuilt: false`.
 
-**Phase 1 — plan record** (`omni.fusion-plan/v1`, metadata only): plan id, task id, owner, created
+**Phase 1 — built as rules-only proposals** (`docs/OMNI-FUSION-PLAN-CONTRACT.md`): five fixed
+steps (owner review → owner handover → Jackboy admission → the task's own agent → owner result
+review) with responsibilities, dependencies and checkpoints; deterministic `planId`; no consulted
+agents/models; 10 per owner per day; not stored. Still planned for phase 1, as originally specified —
+**plan record** (`omni.fusion-plan/v1`, metadata only): plan id, task id, owner, created
 and expiry (24 h), input digest (not the text), ordered steps (agent id + verified name,
 responsibility, depends-on, approval checkpoint, labelled cost estimate), status
 `proposed → accepted | discarded | expired | refused`. No `running`/`done` state in Fusion. Plans
@@ -121,7 +127,7 @@ output, date):
    without model calls are tested to make none.
 5. **Live owner check after publishing** (owner-run; paid only where the phase uses a model).
 6. **Handshake**: OMNI web shows the phase's state from the manifest; only `orchestration.verified:
-   true` with `verifiedAt` may turn its label green.
+true` with `verifiedAt` may turn its label green.
 
 Phase 0 evidence: criteria 1–4 pass (`src/test/test_omni_fusion_plan_sql.py`, 285 checks, both
 install orders with 0066; `src/lib/omni-fusion.test.ts`, 18 tests). 0067 is installed;
@@ -135,7 +141,8 @@ presenting a planned capability as working.
 
 ## 6. Needed next
 
-1. Done: 0067 installed 2026-11-20. Next: owner approves publishing.
+1. Done: 0067 installed and published 2026-11-20.
 2. OMNI web requests `fusion:plan` as its own opt-in and shows `planner_not_available` as a state.
-3. Owner approves phase 1 (plan records and the review screen) — including the daily plan limit
-   (proposed 10) and whether plans use one model call (paid) or rules only (free).
+3. Done in source (owner chose deterministic rules, no model calls): phase 1 proposals. Next: owner
+   reviews them and the proposed 10-per-day limit, approves installing 0069, then publishing.
+4. Later, separately approved: plan records and the owner accept/discard screen.

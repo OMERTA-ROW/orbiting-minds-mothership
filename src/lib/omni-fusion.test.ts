@@ -7,7 +7,12 @@ import {
   grantableScopes,
   parseAuthorizeRequest,
 } from "./omni-delegation";
-import { FUSION_PLAN_GATE_RPC, FUSION_PLAN_READY_RPC } from "./omni-fusion";
+import {
+  FUSION_PLAN_CONTEXT_RPC,
+  FUSION_PLAN_GATE_RPC,
+  FUSION_PLAN_READY_RPC,
+  FUSION_PLANNER_READY_RPC,
+} from "./omni-fusion";
 import { omniFusionPlanRequest, type Rpc } from "./omni-fusion.server";
 
 const TOKEN = `omnid_${"b".repeat(64)}`;
@@ -21,12 +26,13 @@ function req(body: unknown = { taskId: TASK }, headers: Record<string, string> =
   });
 }
 
-/** Database stand-in: install marker plus a scripted gate answer; records every call. */
+/** Database stand-in: install markers plus a scripted gate answer; records every call. */
 function db(gate: { data: unknown; error: unknown } | "throw", installed = true) {
   const calls: string[] = [];
   const rpc: Rpc = async (fn) => {
     calls.push(fn);
     if (fn === FUSION_PLAN_READY_RPC) return { data: installed, error: null };
+    if (fn === FUSION_PLANNER_READY_RPC) return { data: false, error: null };
     if (fn === FUSION_PLAN_GATE_RPC) {
       if (gate === "throw") throw new Error("down");
       return gate;
@@ -89,7 +95,11 @@ describe("POST /api/omni/fusion/plans", () => {
     expect(body).toMatchObject({ ok: false, error: "planner_not_available" });
     for (const key of ["plan", "steps", "runId", "jobId", "costUsd", "permit"])
       expect(body).not.toHaveProperty(key);
-    expect(d.calls).toEqual([FUSION_PLAN_READY_RPC, FUSION_PLAN_GATE_RPC]);
+    expect(d.calls).toEqual([
+      FUSION_PLAN_READY_RPC,
+      FUSION_PLANNER_READY_RPC,
+      FUSION_PLAN_GATE_RPC,
+    ]);
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(res.headers.get("cache-control")).toBe("no-store");
   });
@@ -157,6 +167,7 @@ describe("POST /api/omni/fusion/plans", () => {
       const d = db({ data: { ok: true }, error: null });
       expect((await omniFusionPlanRequest(request, d.rpc)).status).toBe(status);
       expect(d.calls).not.toContain(FUSION_PLAN_GATE_RPC);
+      expect(d.calls).not.toContain(FUSION_PLAN_CONTEXT_RPC);
     }
   });
 });
@@ -175,7 +186,14 @@ describe("no execution path", () => {
       "./omni-api-keys",
       "./omni-delegation",
       "./omni-fusion",
+      "./omni-fusion-plan",
       "@/integrations/supabase/client.server",
+    ]);
+    // The plan rules are pure: agent names, the intended caps and validation only.
+    expect(imports(code("./omni-fusion-plan.ts")).sort()).toEqual([
+      "./omni-delegation",
+      "./omni-spend-evidence",
+      "zod",
     ]);
     expect(imports(code("../routes/api/omni/fusion/plans.ts")).sort()).toEqual([
       "@/lib/omni-contract.server",
@@ -192,7 +210,21 @@ describe("no execution path", () => {
       /jackboy|executor|handoff|permit|hold_task|engage_stop|begin_chat|stop_release|createOmniCall|ai-gateway/i,
     );
     const rpcNames = [...src.matchAll(/"(omni_[a-z_]+)"/g)].map((m) => m[1]);
-    expect(new Set(rpcNames)).toEqual(new Set([FUSION_PLAN_GATE_RPC, FUSION_PLAN_READY_RPC]));
+    expect(new Set(rpcNames)).toEqual(
+      new Set([
+        FUSION_PLAN_GATE_RPC,
+        FUSION_PLAN_READY_RPC,
+        FUSION_PLANNER_READY_RPC,
+        FUSION_PLAN_CONTEXT_RPC,
+      ]),
+    );
+  });
+
+  it("the plan rules call nothing and depend on no clock or randomness", () => {
+    const src = code("./omni-fusion-plan.ts");
+    expect(src).not.toMatch(/\bfetch\s*\(|\.rpc\s*\(|supabase|import\(|process\.env/);
+    expect(src).not.toMatch(/Date\.now|Math\.random|crypto\./);
+    expect(src).not.toMatch(/"omni_[a-z_]+"/);
   });
 });
 
@@ -220,10 +252,43 @@ describe("manifest", () => {
         canSpend: false,
         canChangeEmergencyStop: false,
         canApprove: false,
+        callsModels: false,
+        consultsAgents: false,
         plannerBuilt: false,
+        verified: false,
       },
     });
     expect(after).not.toHaveProperty("orchestration");
     expect(after.autonomous).toBe(false);
+  });
+
+  it("reports the rules-only planner after 0069, still not orchestration and never verified", () => {
+    const m = buildManifest("https://evoomni.tech", {
+      aiConfigured: true,
+      chatInstalled: true,
+      fusionPlanInstalled: true,
+      fusionPlannerInstalled: true,
+    });
+    expect(m.orchestrationStatus.state).toBe("not_available");
+    expect(m.orchestrationStatus.permission).toMatchObject({
+      state: "rules_only",
+      schema: "omni.fusion-plan/v1",
+      plansPerDay: 10,
+      plannerBuilt: true,
+      verified: false,
+      canStartWork: false,
+      canSpend: false,
+      canApprove: false,
+      canChangeEmergencyStop: false,
+    });
+    expect(m).not.toHaveProperty("orchestration");
+    // The planner marker alone (without the 0067 permission) is not enough.
+    const noScope = buildManifest("https://evoomni.tech", {
+      aiConfigured: true,
+      chatInstalled: false,
+      fusionPlannerInstalled: true,
+    });
+    expect(noScope.orchestrationStatus.permission.state).toBe("not_installed");
+    expect(noScope.delegation.supportedScopes).not.toContain("fusion:plan");
   });
 });

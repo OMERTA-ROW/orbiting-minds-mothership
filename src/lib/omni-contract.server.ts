@@ -100,16 +100,18 @@ async function serviceSpendEvidence(): Promise<SpendEvidenceRead> {
 /** Live manifest facts: provider key presence (boolean only), 0066/0067 installs, signed cap evidence. */
 async function serviceManifestLive(): Promise<ManifestLive> {
   const { delegatedChatInstalled } = await import("./omni-delegated-chat.server");
-  const { fusionPlanInstalled: fusionInstalled } = await import("./omni-fusion.server");
-  const [chatInstalled, fusionPlanInstalled, spend] = await Promise.all([
+  const fusion = await import("./omni-fusion.server");
+  const [chatInstalled, fusionPlanInstalled, fusionPlannerInstalled, spend] = await Promise.all([
     delegatedChatInstalled(),
-    fusionInstalled(),
+    fusion.fusionPlanInstalled(),
+    fusion.fusionPlannerInstalled(),
     serviceSpendEvidence(),
   ]);
   return {
     aiConfigured: Boolean(process.env["LOVABLE_API_KEY"]),
     chatInstalled,
     fusionPlanInstalled,
+    fusionPlannerInstalled,
     spend,
     now: Date.now(),
   };

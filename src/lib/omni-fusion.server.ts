@@ -1,12 +1,16 @@
 /**
  * POST /api/omni/fusion/plans with an owner delegation ("fusion:plan"). Server-to-server only.
- * One database call (`omni_delegation_fusion_plan_gate`, migration 0067) checks the delegation,
- * scope, owner and Emergency Stop and logs the request. Nothing else happens: this module has no
- * path to tasks, handoffs, Jackboy, executors, permits, models or providers (checked by tests).
+ * With the rules planner installed (0069), one database call checks the delegation, scope, owner,
+ * Emergency Stop, the owner's held task and the daily limit and logs the request; the reply is a
+ * rules-only proposal built from that metadata. Without 0069, the 0067 gate checks and logs, and
+ * the answer is `planner_not_available`. This module has no path to task changes, Jackboy,
+ * executors, models, providers or the Stop (checked by tests).
  */
 import { sha256Hex } from "./omni-api-keys";
 import { DELEGATION_AUDIENCE, classifyBearer, isBrowserRequest } from "./omni-delegation";
 import {
+  FUSION_PLAN_CONTEXT_RPC,
+  FUSION_PLANNER_READY_RPC,
   FUSION_PLAN_GATE_RPC,
   FUSION_PLAN_MAX_BODY,
   FUSION_PLAN_READY_RPC,
@@ -14,6 +18,7 @@ import {
   INVALID_DELEGATION_REASONS,
   fusionPlanBody,
 } from "./omni-fusion";
+import { buildFusionPlan, canonicalPlanInput, planContextSchema } from "./omni-fusion-plan";
 
 export type Rpc = (
   fn: string,
@@ -44,15 +49,34 @@ function refuse(reason: string) {
   return json({ ok: false, error: "refused" }, 403);
 }
 
-/** Whether migration 0067 is installed (marker function). Unreadable = not installed. */
-export async function fusionPlanInstalled(rpc: Rpc = serviceRpc): Promise<boolean> {
+async function marker(rpc: Rpc, fn: string): Promise<boolean> {
   try {
-    const r = await rpc(FUSION_PLAN_READY_RPC, {});
+    const r = await rpc(fn, {});
     return !r.error && r.data === true;
   } catch {
     return false;
   }
 }
+
+/** Whether migration 0067 is installed (marker function). Unreadable = not installed. */
+export function fusionPlanInstalled(rpc: Rpc = serviceRpc): Promise<boolean> {
+  return marker(rpc, FUSION_PLAN_READY_RPC);
+}
+
+/** Whether the rules-only planner (migration 0069) is installed. Unreadable = not installed. */
+export function fusionPlannerInstalled(rpc: Rpc = serviceRpc): Promise<boolean> {
+  return marker(rpc, FUSION_PLANNER_READY_RPC);
+}
+
+async function callRpc(rpc: Rpc, fn: string, args: Record<string, unknown>) {
+  try {
+    return await rpc(fn, args);
+  } catch {
+    return { data: null, error: true };
+  }
+}
+
+const unavailable = () => json({ ok: false, error: "fusion_unavailable" }, 503);
 
 async function readBody(request: Request) {
   const text = await request.text();
@@ -93,20 +117,30 @@ export async function omniFusionPlanRequest(request: Request, rpc: Rpc = service
       { ok: false, error: "invalid_request", message: 'Send {"taskId": "<held task id>"}.' },
       400,
     );
-  let r: { data: unknown; error: unknown };
-  try {
-    r = await rpc(FUSION_PLAN_GATE_RPC, {
-      _token_hash: await sha256Hex(bearer.token),
+  const tokenHash = await sha256Hex(bearer.token);
+  if (await fusionPlannerInstalled(rpc)) {
+    const r = await callRpc(rpc, FUSION_PLAN_CONTEXT_RPC, {
+      _token_hash: tokenHash,
       _audience: DELEGATION_AUDIENCE,
+      _task_id: body.data.taskId,
     });
-  } catch {
-    r = { data: null, error: true };
+    if (r.error || !r.data || typeof r.data !== "object") return unavailable();
+    const result = r.data as { ok?: unknown; reason?: unknown };
+    if (result.ok === false) return refuse(typeof result.reason === "string" ? result.reason : "");
+    // Only an exact, well-formed answer for the requested task becomes a proposal.
+    const ctx = planContextSchema.safeParse(r.data);
+    if (!ctx.success || ctx.data.task.id !== body.data.taskId) return unavailable();
+    const digest = await sha256Hex(canonicalPlanInput(ctx.data));
+    return json({ ok: true, plan: buildFusionPlan(ctx.data, digest, Date.now()) }, 200);
   }
-  if (r.error || !r.data || typeof r.data !== "object")
-    return json({ ok: false, error: "fusion_unavailable" }, 503);
+  const r = await callRpc(rpc, FUSION_PLAN_GATE_RPC, {
+    _token_hash: tokenHash,
+    _audience: DELEGATION_AUDIENCE,
+  });
+  if (r.error || !r.data || typeof r.data !== "object") return unavailable();
   const result = r.data as { ok?: unknown; reason?: unknown; planner?: unknown };
   if (result.ok === false) return refuse(typeof result.reason === "string" ? result.reason : "");
-  // Admitted, but no planner exists: never report a plan, step, run or cost.
+  // Admitted by the 0067 gate, but no planner is installed: never report a plan, step, run or cost.
   if (result.ok === true) return refuse("planner_not_available");
-  return json({ ok: false, error: "fusion_unavailable" }, 503);
+  return unavailable();
 }
