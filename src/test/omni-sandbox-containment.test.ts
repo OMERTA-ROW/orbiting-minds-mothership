@@ -1,25 +1,22 @@
 /**
  * Historical execution assertions retained while the unsafe reference service is quarantined.
- * These tests are insufficient to establish containment and must be expanded before enabling it.
+ * The opt-in image test runs these unchanged against a disposable Linux service. These tests are
+ * insufficient to establish containment and must be expanded before enabling it.
  */
-import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { workspaceRequest } from "@/lib/omni-workspace-link.server";
 import { evaluateSandboxHealth, type RemoteReply } from "@/lib/omni-workspace";
 
-const PORT = 18000 + Math.floor(Math.random() * 1000);
 const SECRET = "t".repeat(48);
+const externalOrigin = process.env["OMNI_WORKSPACE_TEST_ORIGIN"];
 const cfg = {
-  origin: `http://127.0.0.1:${PORT}`,
+  origin: externalOrigin ?? "",
   clientId: "mothership-test",
   secret: SECRET,
   projectId: "omni",
 };
-let proc: ChildProcess | null = null;
 let dir = "";
 
 async function call(
@@ -59,36 +56,21 @@ async function runApproved(sessionId: string, command: string) {
   };
 }
 
-describe.skip("quarantined historical sandbox execution contract (requires containment repair)", () => {
+const suite = process.env["OMNI_WORKSPACE_HISTORICAL_TEST"] === "1" ? describe : describe.skip;
+
+suite("quarantined historical sandbox execution contract (requires containment repair)", () => {
   let sessionId = "";
-  beforeAll(async () => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-sbx-"));
-    fs.chmodSync(dir, 0o711);
-    proc = spawn("node", ["services/omni-sandbox/server.mjs"], {
-      env: {
-        PATH: process.env["PATH"] ?? "/usr/bin:/bin",
-        PORT: String(PORT),
-        OMNI_SANDBOX_CLIENT_ID: cfg.clientId,
-        OMNI_SANDBOX_HMAC_SECRET: SECRET,
-        OMNI_SANDBOX_ROOT: path.join(dir, "root"),
-        OMNI_SANDBOX_COMMAND_TIMEOUT_SEC: "2",
-        OMNI_REPO_ALLOWLIST: "example/allowed",
-        OPENAI_API_KEY: "sk-test-not-real-key-0000000000",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    for (let i = 0; i < 50; i++) {
-      const ok = await fetch(`${cfg.origin}/healthz`).then(
-        (r) => r.ok,
-        () => false,
-      );
-      if (ok) break;
-      await new Promise((r) => setTimeout(r, 100));
-    }
-  }, 15_000);
-  afterAll(() => {
-    proc?.kill("SIGTERM");
-    if (dir) fs.rmSync(dir, { recursive: true, force: true });
+  beforeAll(() => {
+    const testRoot = process.env["OMNI_WORKSPACE_TEST_ROOT"];
+    if (
+      process.platform !== "linux" ||
+      !externalOrigin ||
+      new URL(externalOrigin).hostname !== "127.0.0.1" ||
+      !testRoot ||
+      !path.isAbsolute(testRoot)
+    )
+      throw new Error("Historical image tests require a disposable Linux loopback fixture.");
+    dir = testRoot;
   });
 
   it("passes the self-test: isolated network, non-root user, no leaked settings, bounded limits", async () => {

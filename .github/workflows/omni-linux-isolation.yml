@@ -13,6 +13,58 @@ on:
 permissions:
   contents: read
 jobs:
+  workspace-image-historical:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.4.4"
+      - run: bun install --frozen-lockfile
+      - name: Build image and run all historical tests without bypassing quarantine
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          docker buildx build --load --metadata-file /tmp/omni-image-metadata.json \
+            --tag omni-workspace-historical:fixture services/omni-sandbox
+          jq '{manifestDigest: .["containerimage.digest"], configDigest: .["containerimage.config.digest"]}' \
+            /tmp/omni-image-metadata.json
+          docker image inspect omni-workspace-historical:fixture --format 'localImageId={{.Id}}'
+          trap 'docker stop omni-workspace-historical >/dev/null 2>&1 || true' EXIT
+          docker run --detach --rm --name omni-workspace-historical \
+            --network none --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/repo,readonly" \
+            --env PORT=8080 \
+            --env OMNI_SANDBOX_ROOT=/tmp/omni-fixture/root \
+            --env OMNI_SANDBOX_CLIENT_ID=mothership-test \
+            --env OMNI_SANDBOX_HMAC_SECRET=tttttttttttttttttttttttttttttttttttttttttttttttt \
+            --env OMNI_SANDBOX_COMMAND_TIMEOUT_SEC=2 \
+            --env OMNI_REPO_ALLOWLIST=example/allowed \
+            --env OPENAI_API_KEY=sk-test-not-real-key-0000000000 \
+            omni-workspace-historical:fixture
+          ready=false
+          for attempt in $(seq 1 50); do
+            if docker exec omni-workspace-historical node -e \
+              "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"; then
+              ready=true
+              break
+            fi
+            sleep 0.2
+          done
+          if [ "$ready" != true ]; then docker logs omni-workspace-historical; exit 1; fi
+          docker exec --workdir /repo \
+            --env OMNI_WORKSPACE_HISTORICAL_TEST=1 \
+            --env OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:8080 \
+            --env OMNI_WORKSPACE_TEST_ROOT=/tmp/omni-fixture \
+            omni-workspace-historical \
+            node node_modules/vitest/vitest.mjs run --configLoader runner src/test/omni-sandbox-containment.test.ts
   workspace-replay:
     runs-on: ubuntu-22.04
     timeout-minutes: 10

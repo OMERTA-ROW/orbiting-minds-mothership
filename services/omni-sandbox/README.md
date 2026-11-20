@@ -64,6 +64,14 @@ reviewed implementation and real Linux containment tests establish the missing g
 `src/test/omni-sandbox-interop.test.ts` checks the signed fail-closed protocol using synthetic
 credentials. It does not verify Linux containment.
 
+The manually dispatched `OMNI Linux isolation` workflow builds the workspace image and runs all
+11 historical execution tests against that image on disposable Linux, without bypassing the
+quarantine. The image ID and build manifest digest are printed separately. The test container has
+no network and uses only synthetic credentials; this outer network restriction means even a pass
+would not independently prove per-workspace network isolation. The image test is expected to fail
+while execution is quarantined. It does not cover detached descendants, aggregate limits,
+owner-bound approvals, Stop races or restart recovery.
+
 ## Known limits
 
 - Disk use per session is bounded only by per-file size and the 60-minute session; Railway's disk limit applies overall.

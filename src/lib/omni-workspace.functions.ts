@@ -671,11 +671,11 @@ export const stopWork = createServerFn({ method: "POST" })
     const link = await ws.linkState(admin);
     if (link.configured) {
       remote = await ws
-        .relay(link, data.agentId ? "agent.stop" : "job.stop", {
+        .relay(link, data.agentId || !data.sessionId ? "agent.stop" : "job.stop", {
           sessionId: data.sessionId,
           agentId,
         })
-        .then(() => "confirmed by OMNI")
+        .then(() => "request acknowledged; remote cancellation is unverified")
         .catch((e: unknown) => `not confirmed: ${e instanceof Error ? e.message : "error"}`);
     }
     await ws.audit(admin, {
