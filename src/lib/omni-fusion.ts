@@ -5,7 +5,7 @@
  * The only thing "fusion:plan" lets OMNI web do is ASK for a plan proposal for one held task.
  * It can never start, hand off, approve or retry work, call a model or provider, touch permits
  * or spending limits, or engage/release the Emergency Stop. Its planner is not built, so an
- * admitted request is answered `planner_not_available` (proposed migration 0067).
+ * admitted request is answered `planner_not_available` (migration 0067).
  */
 import { z } from "zod";
 
@@ -48,7 +48,7 @@ export const FUSION_REFUSALS: Record<string, { status: number; error: string; me
     status: 503,
     error: "not_available",
     message:
-      "The Fusion plan permission isn't installed on the Mothership (database change 0067 awaits owner approval).",
+      "The Mothership couldn't confirm its Fusion plan permission (database change 0067) is installed. Nothing was checked or logged.",
   },
 };
 

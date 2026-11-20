@@ -1,6 +1,6 @@
 /**
  * OMNI web chat through an owner delegation ("chat:write") — shared, browser-safe rules.
- * The database (proposed migration `.lovable/pending/0066_omni_delegated_chat.sql`) enforces the
+ * The database (migration `drizzle/migrations/0066_omni_delegated_chat.sql`, installed 2026-11-20) enforces the
  * scope, owner AI approval, Emergency Stop, daily limit and the one-at-a-time AI guard; this
  * file only shapes the request. No network, no secrets.
  */
@@ -137,6 +137,6 @@ export const CHAT_REFUSALS: Record<string, { status: number; error: string; mess
     status: 503,
     error: "chat_not_installed",
     message:
-      "Chat through OMNI web isn't installed on the Mothership yet (database change 0066 awaits owner approval). Nothing was sent.",
+      "The Mothership couldn't confirm chat through OMNI web is installed (database change 0066). Nothing was sent.",
   },
 };

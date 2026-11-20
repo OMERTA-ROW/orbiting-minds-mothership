@@ -463,6 +463,27 @@
       "when": 1795162975231,
       "tag": "0065_omni_delegated_task_reads_note",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1795196785514,
+      "tag": "0066_omni_delegated_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1795196827251,
+      "tag": "0067_omni_fusion_plan_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1795196928658,
+      "tag": "0068_omni_chat_fusion_install_notes",
+      "breakpoints": true
     }
   ]
 }

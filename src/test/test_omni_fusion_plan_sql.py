@@ -1,5 +1,5 @@
-"""Disposable PostgreSQL only: PROPOSED migration 0067 (.lovable/pending/0067_omni_fusion_plan_scope.sql)
-on top of every installed migration, alone and together with proposed 0066 in both orders.
+"""Disposable PostgreSQL only: migration 0067 (drizzle/migrations/0067_omni_fusion_plan_scope.sql, installed
+2026-11-20) on top of migrations up to 0065, alone and together with 0066 in both orders.
 fusion:plan is its own owner-consented scope; it cannot create/read/hand off tasks, chat (spend),
 engage or release the Emergency Stop, or touch permits; the gate refuses while the Stop is engaged
 or unreadable and writes only one audit row. Never uses hosted credentials."""
@@ -12,8 +12,8 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PROPOSED = ROOT / ".lovable/pending/0067_omni_fusion_plan_scope.sql"
-CHAT = ROOT / ".lovable/pending/0066_omni_delegated_chat.sql"
+PROPOSED = ROOT / "drizzle/migrations/0067_omni_fusion_plan_scope.sql"
+CHAT = ROOT / "drizzle/migrations/0066_omni_delegated_chat.sql"
 OWNER = "11111111-1111-4111-8111-111111111111"
 OTHER = "22222222-2222-4222-8222-222222222222"
 CLIENT = "omni-web"
@@ -26,7 +26,7 @@ PORT = "55467"
 
 def migrations():
     found = []
-    for number in range(20, 100):
+    for number in range(20, 66):
         paths = list((ROOT / "drizzle/migrations").glob(f"{number:04d}_*.sql"))
         if not paths:
             break
@@ -218,7 +218,7 @@ def main():
             assert sql("SELECT count(*) FROM public.omni_delegated_chat_runs;") == "0"
             assert sql("SELECT count(*) FROM public.ai_gateway_state;") == "0"
             authorize("c", "ARRAY['fusion:plan','chat:write','tasks:read','tasks:write','safety:emergency-stop','tasks:approve']", ok=False)
-        print(f"PASS: {checks} isolated SQL checks for proposed 0067: separate owner-consented fusion:plan scope (owner, fresh code, no implication either way), cannot create/read/hand off tasks, chat/spend, engage or release the Emergency Stop or write any row except one audit entry; refuses while the Stop is engaged or missing; expiry/revocation/audience/owner checks; API keys refused; works with 0066 in either order. No hosted fixtures.")
+        print(f"PASS: {checks} isolated SQL checks for installed 0067: separate owner-consented fusion:plan scope (owner, fresh code, no implication either way), cannot create/read/hand off tasks, chat/spend, engage or release the Emergency Stop or write any row except one audit entry; refuses while the Stop is engaged or missing; expiry/revocation/audience/owner checks; API keys refused; works with 0066 in either order. No hosted fixtures.")
     finally:
         if started:
             command(["pg_ctl", "-D", str(base / "db"), "-m", "immediate", "-w", "stop"])

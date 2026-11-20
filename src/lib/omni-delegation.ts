@@ -98,7 +98,7 @@ export const DELEGATION_SCOPE_INFO: Record<
       "OMNI web can send your messages to the Mothership's OMNI text agent and show its replies. Each reply uses paid Lovable AI credits (at most 30 a day, one at a time). Messages and replies aren't saved on the Mothership. OMNI has no tools and can't run tasks or code.",
     supported: false,
     needsInstall:
-      "Not available yet: the Mothership's database change for chat (0066) hasn't been approved and installed.",
+      "Not available right now: the Mothership couldn't confirm its chat database change (0066) is installed.",
   },
   "fusion:plan": {
     title: "Ask Fusion for plans",
@@ -106,7 +106,7 @@ export const DELEGATION_SCOPE_INFO: Record<
       "OMNI web can ask Fusion, on your behalf, to propose a plan for one of your held tasks. A plan is only a proposal: this permission can't start or hand off work, add or read tasks, use paid AI, change spending limits, or press or release the Emergency Stop, and every request is refused while the Emergency Stop is engaged. Fusion's planner isn't built yet, so requests are checked, logged and answered \"not available\".",
     supported: false,
     needsInstall:
-      "Not available yet: the Mothership's database change for Fusion plans (0067) hasn't been approved and installed.",
+      "Not available right now: the Mothership couldn't confirm its Fusion plan database change (0067) is installed.",
   },
   "providers:write": {
     title: "Change AI providers",

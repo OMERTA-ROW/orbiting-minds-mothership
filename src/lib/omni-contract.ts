@@ -82,7 +82,7 @@ export const UNSUPPORTED: Record<
   chat: {
     reason: "Chat through OMNI web is not installed on the Mothership.",
     needs:
-      "Database change 0066 (owner-approved) and an owner delegation that includes chat:write. API keys can never chat.",
+      "Database change 0066 (installed 2026-11-20; unconfirmed on this reading) and an owner delegation that includes chat:write. API keys can never chat.",
     page: "/beta-omni",
   },
   "task-decision": {
@@ -183,7 +183,7 @@ export function buildManifest(origin: string | null, live: ManifestLive = NOT_LI
         description: chatEnrolled
           ? "Mothership's private text agent. Chat needs an owner delegation with chat:write; it has no tools and runs nothing."
           : !live.chatInstalled
-            ? "Mothership's private text agent. Chat through OMNI web isn't installed yet (database change 0066 awaits owner approval)."
+            ? "Mothership's private text agent. Chat through OMNI web couldn't be confirmed as installed (database change 0066)."
             : "Mothership's private text agent. Lovable AI isn't configured on the Mothership, so chat is unavailable.",
       },
       // OMNI web offers task assignment only to agents present here AND in `taskAgents`, so

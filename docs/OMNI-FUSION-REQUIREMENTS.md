@@ -1,7 +1,7 @@
 # OMNI Fusion — requirements brief
 
-Status 2026-11-20. **Only phase 0 (a separate permission and its refusals) is built, and it is not
-installed.** Everything else here is a specification. The manifest keeps
+Status 2026-11-20. **Only phase 0 (a separate permission and its refusals) is built; its database change
+(0067) was installed on 2026-11-20 with owner approval and has not been used live yet.** Everything else here is a specification. The manifest keeps
 `orchestrationStatus.state: "not_available"` and never sends `orchestration` until a phase passes
 its verification criteria. OMNI web's "Fusion · unverified" stays correct until then.
 
@@ -41,7 +41,7 @@ Rules that apply to every capability:
 
 | Capability                 | State                      | Evidence / blocker                                                                        |
 | -------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
-| Phase 0 — `fusion:plan` permission and consent | **Built, tested, not installed** | 285 isolated SQL checks + 18 app tests; needs owner approval of migration 0067, then publish |
+| Phase 0 — `fusion:plan` permission and consent | **Installed, unverified live** | 285 isolated SQL checks + 18 app tests; 0067 installed 2026-11-20; needs publishing and OMNI web requesting the scope |
 | 1. Plan and route          | Planned                    | Needs phase 1 approval (plan records, owner review screen)                                 |
 | 2. Compare and combine     | Planned                    | Needs phase 2 approval; every model call is paid and goes through the spend guard           |
 | 3. Shared knowledge        | Planned                    | Needs phase 3 approval; PR #25 (repository intake) is related and still open               |
@@ -68,7 +68,7 @@ verified owner (aal2 + fresh code). No scope implies another; metadata API keys 
 
 | Scope (OMNI web)        | Grants                                                         | State                         |
 | ----------------------- | -------------------------------------------------------------- | ----------------------------- |
-| `fusion:plan`           | Ask for a plan proposal for one held task                      | Built (0067 proposed)         |
+| `fusion:plan`           | Ask for a plan proposal for one held task                      | Installed (0067)              |
 | `fusion:compare`        | Ask for a comparison of answers the owner selected (paid)      | Planned                       |
 | `fusion:knowledge:read` | Search approved knowledge with sources shown                   | Planned                       |
 | `fusion:maintain`       | Ask for a diagnostic or repair/backup/update *proposal*        | Planned                       |
@@ -124,8 +124,8 @@ output, date):
    true` with `verifiedAt` may turn its label green.
 
 Phase 0 evidence: criteria 1–4 pass (`src/test/test_omni_fusion_plan_sql.py`, 285 checks, both
-install orders with 0066; `src/lib/omni-fusion.test.ts`, 18 tests). Criteria 5–6 wait on 0067,
-publishing and OMNI web requesting `fusion:plan`.
+install orders with 0066; `src/lib/omni-fusion.test.ts`, 18 tests). 0067 is installed;
+criteria 5–6 wait on publishing and OMNI web requesting `fusion:plan`.
 
 ## 5. Never in scope
 
@@ -135,7 +135,7 @@ presenting a planned capability as working.
 
 ## 6. Needed next
 
-1. Owner approves installing `.lovable/pending/0067_omni_fusion_plan_scope.sql`, then publishing.
+1. Done: 0067 installed 2026-11-20. Next: owner approves publishing.
 2. OMNI web requests `fusion:plan` as its own opt-in and shows `planner_not_available` as a state.
 3. Owner approves phase 1 (plan records and the review screen) — including the daily plan limit
    (proposed 10) and whether plans use one model call (paid) or rules only (free).

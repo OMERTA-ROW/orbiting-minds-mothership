@@ -130,7 +130,7 @@ describe("OMNI connection approval page", () => {
     render(<Page />);
     const chat = await screen.findByRole("checkbox", { name: /Chat with OMNI/ });
     expect(chat).toBeDisabled();
-    expect(screen.getByText(/database change for chat \(0066\)/)).toBeTruthy();
+    expect(screen.getByText(/chat database change \(0066\)/)).toBeTruthy();
   });
   it("once installed, chat:write is a separate opt-in that states its AI cost", async () => {
     mocks.describe.mockResolvedValue({

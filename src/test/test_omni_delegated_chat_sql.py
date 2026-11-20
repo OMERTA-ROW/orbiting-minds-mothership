@@ -1,5 +1,5 @@
-"""Disposable PostgreSQL only: PROPOSED migration 0066 (.lovable/pending/0066_omni_delegated_chat.sql)
-on top of every installed migration. chat:write consent, scope separation, owner AI approval,
+"""Disposable PostgreSQL only: migration 0066 (drizzle/migrations/0066_omni_delegated_chat.sql, installed
+2026-11-20) on top of migrations up to 0065. chat:write consent, scope separation, owner AI approval,
 Emergency Stop, model allowlist, daily limit, the shared one-at-a-time AI guard (including
 concurrency and pauses), request-bound re-checks after revocation/expiry/Stop, outcome recording,
 privileges and owner-only metadata reads with no stored text. Never uses hosted credentials."""
@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PROPOSED = ROOT / ".lovable/pending/0066_omni_delegated_chat.sql"
+PROPOSED = ROOT / "drizzle/migrations/0066_omni_delegated_chat.sql"
 OWNER = "11111111-1111-4111-8111-111111111111"
 OTHER = "22222222-2222-4222-8222-222222222222"
 CLIENT = "omni-web"
@@ -25,7 +25,7 @@ PORT = "55462"
 
 def migrations():
     found = []
-    for number in range(20, 100):
+    for number in range(20, 66):
         paths = list((ROOT / "drizzle/migrations").glob(f"{number:04d}_*.sql"))
         if not paths:
             break
@@ -238,7 +238,7 @@ def main():
 
         assert int(sql("SELECT count(*) FROM public.razul_control_audit WHERE action LIKE 'chat_%';")) >= 8
         assert int(sql("SELECT count(*) FROM public.razul_control_audit;")) > audit0
-        print(f"PASS: {checks} isolated SQL checks for proposed 0066: chat:write consent and scope separation, owner AI approval, Emergency Stop, model allowlist, bounds, shared AI guard with pause/ownership/concurrency, re-checks on Stop/approval/expiry/revocation, outcome recording, daily limit, owner-only metadata, API key separation. No hosted fixtures.")
+        print(f"PASS: {checks} isolated SQL checks for installed 0066: chat:write consent and scope separation, owner AI approval, Emergency Stop, model allowlist, bounds, shared AI guard with pause/ownership/concurrency, re-checks on Stop/approval/expiry/revocation, outcome recording, daily limit, owner-only metadata, API key separation. No hosted fixtures.")
     finally:
         if started:
             command(["pg_ctl", "-D", str(base / "db"), "-m", "immediate", "-w", "stop"])

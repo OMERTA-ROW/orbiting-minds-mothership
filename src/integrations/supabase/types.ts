@@ -1416,6 +1416,71 @@ export type Database = {
         }
         Relationships: []
       }
+      omni_delegated_chat_runs: {
+        Row: {
+          delegation_id: string
+          error_reason: string | null
+          error_status: number | null
+          finished_at: string | null
+          gateway_run_id: string | null
+          id: string
+          input_chars: number
+          input_tokens: number | null
+          message_count: number
+          model: string
+          output_tokens: number | null
+          owner_id: string
+          reply_chars: number | null
+          started_at: string
+          status: string
+          total_tokens: number | null
+        }
+        Insert: {
+          delegation_id: string
+          error_reason?: string | null
+          error_status?: number | null
+          finished_at?: string | null
+          gateway_run_id?: string | null
+          id?: string
+          input_chars: number
+          input_tokens?: number | null
+          message_count: number
+          model: string
+          output_tokens?: number | null
+          owner_id: string
+          reply_chars?: number | null
+          started_at?: string
+          status?: string
+          total_tokens?: number | null
+        }
+        Update: {
+          delegation_id?: string
+          error_reason?: string | null
+          error_status?: number | null
+          finished_at?: string | null
+          gateway_run_id?: string | null
+          id?: string
+          input_chars?: number
+          input_tokens?: number | null
+          message_count?: number
+          model?: string
+          output_tokens?: number | null
+          owner_id?: string
+          reply_chars?: number | null
+          started_at?: string
+          status?: string
+          total_tokens?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_delegated_chat_runs_delegation_id_fkey"
+            columns: ["delegation_id"]
+            isOneToOne: false
+            referencedRelation: "omni_delegations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       omni_delegation_codes: {
         Row: {
           audience: string
@@ -3809,6 +3874,7 @@ export type Database = {
         Args: { _agent: string; _reason: string }
         Returns: undefined
       }
+      omni_delegated_chat_ready: { Args: never; Returns: boolean }
       omni_delegation_authorize: {
         Args: {
           _audience: string
@@ -3818,6 +3884,20 @@ export type Database = {
           _redirect_uri: string
           _scopes: string[]
         }
+        Returns: Json
+      }
+      omni_delegation_begin_chat: {
+        Args: {
+          _audience: string
+          _input_chars: number
+          _message_count: number
+          _model: string
+          _token_hash: string
+        }
+        Returns: Json
+      }
+      omni_delegation_check_chat: {
+        Args: { _audience: string; _run_id: string; _token_hash: string }
         Returns: Json
       }
       omni_delegation_engage_stop: {
@@ -3833,6 +3913,26 @@ export type Database = {
           _token_hash: string
           _token_prefix: string
         }
+        Returns: Json
+      }
+      omni_delegation_finish_chat: {
+        Args: {
+          _error_reason: string
+          _error_status: number
+          _gateway_run_id: string
+          _input_tokens: number
+          _output_tokens: number
+          _pause_message: string
+          _pause_status: number
+          _reply_chars: number
+          _run_id: string
+          _status: string
+          _total_tokens: number
+        }
+        Returns: Json
+      }
+      omni_delegation_fusion_plan_gate: {
+        Args: { _audience: string; _token_hash: string }
         Returns: Json
       }
       omni_delegation_hold_task: {
@@ -4023,6 +4123,7 @@ export type Database = {
       }
       omni_dock_valid_permissions: { Args: { _p: string[] }; Returns: boolean }
       omni_execution_permit_live: { Args: { _job: string }; Returns: boolean }
+      omni_fusion_plan_ready: { Args: never; Returns: boolean }
       omni_memory_delete: {
         Args: { _agent: string; _id: string }
         Returns: boolean

@@ -12,12 +12,13 @@
 - [x] Site links and connections audit (2026-11-20 16:10): 76 pages open with no errors or broken links; every source link, menu item and partner origin checked (`src/test/site-links.test.ts`, `scripts/smoke_site.py`); OMNI endpoints answer their documented refusals; Jackboy/runner/executor hosts come only from settings. Matrix in `docs/OMNI-FRONTEND-CONNECTION.md`.
 - [x] "CODE spending cap Unverified" traced: OMNI web needs `spendingCapUsd`; the manifest now sends it only from a ≤15-minute signed Jackboy permit within $0.50/$1/$5 and one job; newest live permit is 2026-11-19 01:57 UTC ($0.50/$1/$5), so it correctly stays Unverified with the reason and dates in `spendingCap`.
 - [ ] CODE spending cap shown verified — blocked on: publishing, then Jackboy issuing a fresh signed permit for an owner-authorized job.
-- [ ] OMNI web chat — blocked on: owner approval to install `.lovable/pending/0066_omni_delegated_chat.sql`, publishing, OMNI requesting `chat:write`, then the owner's first live reply (paid).
+- [x] Migrations 0066 (delegated chat), 0067 (Fusion plan permission) and notes-only 0068 installed 2026-11-20 with owner approval; applied hashes equal reviewed files; 19 isolated SQL suites pass.
+- [ ] OMNI web chat — blocked on: publishing, OMNI requesting `chat:write`, then the owner's first live reply (paid).
 - [ ] Fusion phases 1–4 (plan/route, compare answers, shared knowledge, maintenance coordination) — blocked on: owner approval of each phase per `docs/OMNI-FUSION-REQUIREMENTS.md`.
 - [x] Fusion requirements brief (`docs/OMNI-FUSION-REQUIREMENTS.md`): data sources, permissions, outputs, verification criteria.
 - [x] Fusion brief rewritten for the owner's definition (orchestration architecture: plan/route, compare answers, permission-aware knowledge, diagnostics/repair/backup/update coordination; not an agent).
-- [x] Separate least-privilege `fusion:plan` delegated permission + owner consent flow (built; proposed `.lovable/pending/0067_omni_fusion_plan_scope.sql`), 285 isolated SQL checks + 18 app tests prove it cannot start work, spend money or bypass the Emergency Stop.
-- [ ] `fusion:plan` live — blocked on: owner approval to install 0067, publishing, OMNI web requesting `fusion:plan`.
+- [x] Separate least-privilege `fusion:plan` delegated permission + owner consent flow (built; installed as migration 0067), 285 isolated SQL checks + 18 app tests prove it cannot start work, spend money or bypass the Emergency Stop.
+- [ ] `fusion:plan` live — blocked on: publishing, OMNI web requesting `fusion:plan`.
 - [x] Owner release checklist (`docs/OWNER-RELEASE-CHECKLIST.md`): verified connections vs owner approvals and live checks.
 - [ ] OMNI owner delegation live verification — blocked on: publishing the Mothership (owner approval), the OMNI project's callback route/server-side token storage/`taskAgents` change, and an owner-run live approve → exchange → held task → revoke test.
 - [x] GitHub reconciliation 2026-11-20: GitHub main = Lovable HEAD; merged #23 Treasury (`e5e8117`), #24 OMNI orb plan (`743f833`), #20 Honeycomb contract (`2959fb8`) all in history; leftover fictional reference data pruned.

@@ -1,6 +1,6 @@
 /**
  * POST /api/omni/fusion/plans with an owner delegation ("fusion:plan"). Server-to-server only.
- * One database call (`omni_delegation_fusion_plan_gate`, proposed 0067) checks the delegation,
+ * One database call (`omni_delegation_fusion_plan_gate`, migration 0067) checks the delegation,
  * scope, owner and Emergency Stop and logs the request. Nothing else happens: this module has no
  * path to tasks, handoffs, Jackboy, executors, permits, models or providers (checked by tests).
  */
@@ -44,7 +44,7 @@ function refuse(reason: string) {
   return json({ ok: false, error: "refused" }, 403);
 }
 
-/** Whether proposed 0067 is installed (marker function). Unreadable = not installed. */
+/** Whether migration 0067 is installed (marker function). Unreadable = not installed. */
 export async function fusionPlanInstalled(rpc: Rpc = serviceRpc): Promise<boolean> {
   try {
     const r = await rpc(FUSION_PLAN_READY_RPC, {});

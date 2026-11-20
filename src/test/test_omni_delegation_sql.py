@@ -24,7 +24,8 @@ TASK = "aaaaaaaa-0000-4000-8000-0000000000a1"
 
 def migrations():
     found = []
-    for number in range(20, 100):
+    # 0062–0065 state (before 0066/0067 widened consent); later changes have their own tests.
+    for number in range(20, 66):
         paths = list((ROOT / "drizzle/migrations").glob(f"{number:04d}_*.sql"))
         if not paths:
             break
