@@ -100,6 +100,15 @@ attach a trusted blocked child before allowing untrusted code to run, keep the c
 inaccessible to that child, and handle startup and Stop races. Do not remove quarantine based on
 this primitive or its tests.
 
+The opt-in `workspace-seccomp-probe` job starts only a disposable namespace probe, not the
+workspace service, as UID 20000 with all container capabilities dropped and no-new-privileges.
+It derives a test policy from the SHA-256-pinned Docker 28.0.4 default profile, adding `unshare`
+only for flags `CLONE_NEWUSER` and `CLONE_NEWUSER|CLONE_NEWNET`. The upstream Moby profile is
+available under the [Apache 2.0 license](https://github.com/moby/moby/blob/v28.0.4/LICENSE).
+This delta does not cover the full supervisor's unknown namespace and syscall needs, and Docker's
+default profile is not a minimal service syscall allowlist. It is not a production policy and
+does not validate the image's existing root/setuid service.
+
 ## Namespace diagnosis
 
 On the disposable Ubuntu 22.04 GitHub-hosted VM in

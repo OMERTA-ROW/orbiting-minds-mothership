@@ -13,6 +13,46 @@ on:
 permissions:
   contents: read
 jobs:
+  workspace-seccomp-probe:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Probe a narrow namespace delta on Docker's pinned default profile
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          docker version --format 'server={{.Server.Version}}'
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/moby/moby/v28.0.4/profiles/seccomp/default.json \
+            -o "$RUNNER_TEMP/omni-seccomp-base.json"
+          echo "9c1025c88ccaa517b648da571961838744ea2137f176bfe6a48b21294cae9c76  $RUNNER_TEMP/omni-seccomp-base.json" | sha256sum --check
+          jq '.syscalls += [
+            {"names":["unshare"],"action":"SCMP_ACT_ALLOW","args":[{"index":0,"value":268435456,"op":"SCMP_CMP_EQ"}]},
+            {"names":["unshare"],"action":"SCMP_ACT_ALLOW","args":[{"index":0,"value":1342177280,"op":"SCMP_CMP_EQ"}]}
+          ]' "$RUNNER_TEMP/omni-seccomp-base.json" > "$RUNNER_TEMP/omni-seccomp-probe.json"
+          sha256sum "$RUNNER_TEMP/omni-seccomp-probe.json"
+          docker build --quiet --tag omni-seccomp-probe:fixture services/omni-sandbox
+          docker image inspect omni-seccomp-probe:fixture --format 'localImageId={{.Id}}'
+          docker run --rm --read-only --user 20000:20000 --cap-drop ALL \
+            --security-opt no-new-privileges --security-opt "seccomp=$RUNNER_TEMP/omni-seccomp-probe.json" \
+            --entrypoint /bin/sh omni-seccomp-probe:fixture -c '
+              set -eu
+              parent=$(readlink /proc/self/ns/net)
+              export OMNI_PROBE_PARENT_NET="$parent"
+              exec unshare --user --map-current-user --net -- /bin/sh -c '"'"'
+                set -eu
+                test "$(id -u)" = 20000
+                test "$(readlink /proc/self/ns/net)" != "$OMNI_PROBE_PARENT_NET"
+                grep -Eq "^NoNewPrivs:[[:space:]]+1$" /proc/self/status
+                grep -Eq "^CapEff:[[:space:]]+0+$" /proc/self/status
+                grep -Eq "^Seccomp:[[:space:]]+2$" /proc/self/status
+                echo "rootless namespace probe passed"
+              '"'"'
+            '
   workspace-cgroup:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
