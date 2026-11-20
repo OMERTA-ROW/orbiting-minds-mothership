@@ -13,6 +13,7 @@ import {
   noteProblem,
   type ApprovalRow,
 } from "./activation-approvals";
+import { WORKSPACE_CONTAINMENT_BLOCKER } from "./omni-workspace";
 
 /** No executor or host companion exists in this project. Changing this needs a reviewed build. */
 export const EXECUTOR_AVAILABLE = false as const;
@@ -630,8 +631,7 @@ export const TERMINAL_STATE_LABEL: Record<
   },
   disconnected: {
     title: "Not connected",
-    detail:
-      "The cloud sandbox is not set up, or its self-test has not passed in the last 24 hours.",
+    detail: "The cloud sandbox is not set up, or workspace containment has not been verified.",
   },
   unpaired: {
     title: "No device docked",
@@ -667,9 +667,7 @@ export function terminalReadiness(s: Snapshot): {
   const present = (n: string) => s.settings.find((x) => x.name === n)?.present === true;
   const missing = LINK_REQUIRED_SETTINGS.filter((n) => !present(n));
   const ev = linkEvidence(s.audit);
-  const selfTestFresh =
-    s.sandbox.selfTestPassedAt !== null &&
-    s.now - Date.parse(s.sandbox.selfTestPassedAt) <= SELF_TEST_WINDOW_MS;
+  const selfTestFresh = false;
   const approved = s.approvals.filter((r) => isEffectivelyApproved(r, s.now)).length;
   const allApproved = approvedThrough(s.approvals, ACTIVATION_STEPS.length, s.now);
   const linkSettingsReady = missing.length === 0 && s.originValid && s.ownerIdMatches === "match";
@@ -748,9 +746,7 @@ export function terminalReadiness(s: Snapshot): {
       id: "sandbox_self_test",
       label: "Sandbox self-test passed (last 24 h)",
       ok: selfTestFresh,
-      detail: s.sandbox.selfTestPassedAt
-        ? `Last passed ${when(s.sandbox.selfTestPassedAt)}${selfTestFresh ? "." : " — older than 24 hours."}`
-        : "Never passed. Run it from the agent workspace; it checks isolation, limits and providers.",
+      detail: WORKSPACE_CONTAINMENT_BLOCKER,
       where: "here",
     },
     {

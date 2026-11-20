@@ -36,7 +36,7 @@ const healthy: SandboxHealth = {
 };
 
 describe("sandbox self-test verdict", () => {
-  it("passes an isolated, non-root, bounded sandbox", () =>
+  it("accepts preliminary probe claims without proving containment", () =>
     expect(evaluateSandboxHealth(healthy).passed).toBe(true));
   it("fails when commands can reach the network", () =>
     expect(

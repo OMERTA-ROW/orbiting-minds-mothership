@@ -284,12 +284,13 @@ describe("terminal readiness states", () => {
       terminalReadiness(snap({ ...base, sandbox: sandbox({ configured: false }) })).primary,
     ).toBe("disconnected");
   });
-  it("is ready only when every cloud-shell item passes; docking stays optional", () => {
+  it("does not claim readiness from a historical self-test", () => {
     const r = terminalReadiness(
       snap({ emergencyStop: released, workspaceEnabled: true, sandbox: sandbox() }),
     );
-    expect(r.primary).toBe("ready");
-    expect(r.conditions.read_only).toBe(false);
+    expect(r.primary).toBe("disconnected");
+    expect(r.conditions.read_only).toBe(true);
+    expect(r.items.find((i) => i.id === "sandbox_self_test")?.detail).toMatch(/not verified/i);
     expect(r.conditions.unpaired).toBe(true);
   });
   it("stays Read-only by default", () => {

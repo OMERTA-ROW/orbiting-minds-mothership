@@ -24,6 +24,7 @@ import {
   evaluateSandboxHealth,
   stopDrillInput,
   STOP_DRILL_COMMAND,
+  WORKSPACE_CONTAINMENT_BLOCKER,
 } from "./omni-workspace";
 import { summarizeOmniLedger } from "./treasury";
 
@@ -282,7 +283,7 @@ export const setKillSwitch = createServerFn({ method: "POST" })
 
 /**
  * Asks the sandbox for its live health probe over the signed link and records the result.
- * Passes only if isolation and limits check out; the reply proof is verified first.
+ * The signed report is a preliminary probe, not proof of containment.
  */
 export const runSandboxSelfTest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -318,6 +319,8 @@ export const runSandboxSelfTest = createServerFn({ method: "POST" })
         return { ok: false as const, message: "The sandbox did not send a health report." };
       }
       const verdict = evaluateSandboxHealth(health);
+      verdict.failures.push(WORKSPACE_CONTAINMENT_BLOCKER);
+      verdict.passed = false;
       await ws.audit(admin, {
         actor: "owner",
         event: verdict.passed ? "sandbox_self_test_passed" : "sandbox_self_test_failed",

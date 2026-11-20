@@ -663,6 +663,11 @@ export function createSandbox(c, opts = {}) {
   }
 
   async function handle(action, b) {
+    if (!["health.check", "job.stop", "agent.stop", "session.end"].includes(action)) {
+      throw new Refusal(
+        "Workspace execution is disabled: filesystem/PID isolation, descendant cancellation and durable replay protection are not verified.",
+      );
+    }
     switch (action) {
       case "health.check": {
         const pr = probe(c, net);

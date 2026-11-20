@@ -25,7 +25,11 @@ const open = {
 };
 
 describe("workspace gate", () => {
-  it("opens only when every item is true", () => expect(workspaceGate(open).open).toBe(true));
+  it("remains closed even with a recent historical self-test", () => {
+    const gate = workspaceGate(open);
+    expect(gate.open).toBe(false);
+    expect(gate.blockers[0]).toMatch(/containment.*not verified/i);
+  });
   it("stays closed before the self-test passes", () =>
     expect(workspaceGate({ ...open, selfTestPassedAt: null }).open).toBe(false));
   it("treats a self-test older than 24 hours as not passed", () =>
