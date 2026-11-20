@@ -116,6 +116,11 @@ jobs while the supervisor is down; a separate fail-closed watchdog and renewable
 required. The recorded `terminated` state confirms cgroup emptiness, not broader containment or a
 remote Stop acknowledgement.
 
+The command decision handler has a prepared transactional claim path that validates the owner,
+project, session, job and pending command and writes the decision and job claim together. A separate
+hard refusal precedes it until the isolated supervisor exists, in addition to the outer quarantine.
+No approved command is claimed or started by the running service while that refusal remains.
+
 The opt-in `workspace-image-recovery` fixture runs the recovery tests against modules from the
 built image, with a delegated cgroup and all container capabilities dropped. It invokes the service
 through its module API with synthetic settings. The fixture shares the host cgroup namespace to

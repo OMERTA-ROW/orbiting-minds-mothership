@@ -66,7 +66,7 @@ async function stopService(child: ChildProcess, signal: NodeJS.Signals = "SIGTER
   await exit;
 }
 
-function signedStop(nonce: string, action = "agent.stop", projectId = "omni") {
+function signedRequest(nonce: string, action = "agent.stop", projectId = "omni") {
   const body = JSON.stringify({ action, projectId });
   const ts = String(Math.floor(Date.now() / 1000));
   const hash = createHash("sha256").update(body).digest("hex");
@@ -141,7 +141,7 @@ describe("quarantined workspace reference", () => {
   });
 
   it("does not consume a nonce from an invalid signature", async () => {
-    const request = signedStop("f".repeat(32));
+    const request = signedRequest("f".repeat(32));
     const url = `${cfg.origin}/api/public/omni/workspace`;
     const invalid = {
       ...request,
@@ -172,7 +172,7 @@ describe("quarantined workspace reference", () => {
   });
 
   it("rejects a concurrent replay while the process is running", async () => {
-    const request = signedStop("a".repeat(32));
+    const request = signedRequest("a".repeat(32));
     const replies = await Promise.all(
       [0, 1].map(() => fetch(`${cfg.origin}/api/public/omni/workspace`, request)),
     );
@@ -182,7 +182,7 @@ describe("quarantined workspace reference", () => {
   it("atomically rejects concurrent replay across service processes sharing the state volume", async () => {
     const second = await startService(port + 1);
     try {
-      const request = signedStop("c".repeat(32));
+      const request = signedRequest("c".repeat(32));
       const replies = await Promise.all(
         [port, port + 1].map((p) =>
           fetch(`http://127.0.0.1:${p}/api/public/omni/workspace`, request),
@@ -197,8 +197,40 @@ describe("quarantined workspace reference", () => {
     }
   }, 10_000);
 
+  it("fails closed on a concurrent Stop replay when the nonce store is contended", async () => {
+    const second = await startService(port + 1);
+    try {
+      const request = signedRequest("8".repeat(32));
+      const replies = await Promise.all(
+        [port, port + 1].map((p) =>
+          fetch(`http://127.0.0.1:${p}/api/public/omni/workspace`, request),
+        ),
+      );
+      const statuses = replies.map((r) => r.status).sort();
+      expect(statuses[0]).toBe(200);
+      expect([401, 503]).toContain(statuses[1]);
+      if (statuses[1] === 503) {
+        for (
+          let i = 0;
+          i < 50 &&
+          !`${serviceLogs.get(proc)} ${serviceLogs.get(second)}`.includes(
+            "Stop attempted without durable nonce claim",
+          );
+          i++
+        )
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        const logs = `${serviceLogs.get(proc)} ${serviceLogs.get(second)}`;
+        expect(logs).toContain("SQLite code 5");
+        expect(logs).toContain("Stop attempted without durable nonce claim; result unverified.");
+      }
+      expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(401);
+    } finally {
+      await stopService(second);
+    }
+  }, 10_000);
+
   it("rejects a previously accepted request after an abrupt service restart", async () => {
-    const request = signedStop("d".repeat(32));
+    const request = signedRequest("d".repeat(32));
     const url = `${cfg.origin}/api/public/omni/workspace`;
     expect((await fetch(url, request)).status).toBe(200);
     await stopService(proc, "SIGKILL");
@@ -207,7 +239,7 @@ describe("quarantined workspace reference", () => {
   }, 10_000);
 
   it("refuses requests when the durable nonce store cannot be locked", async () => {
-    const alreadyClaimed = signedStop("9".repeat(32));
+    const alreadyClaimed = signedRequest("9".repeat(32));
     const url = `${cfg.origin}/api/public/omni/workspace`;
     expect((await fetch(url, alreadyClaimed)).status).toBe(200);
     const source = `
@@ -223,7 +255,7 @@ describe("quarantined workspace reference", () => {
       ["--input-type=module", "-e", source, path.join(dir, "root", ".state", "nonces.sqlite")],
       { stdio: ["ignore", "pipe", "ignore"] },
     );
-    const request = signedStop("e".repeat(32));
+    const request = signedRequest("e".repeat(32));
     try {
       await new Promise<void>((resolve, reject) => {
         lock.stdout.once("data", () => resolve());
@@ -236,8 +268,8 @@ describe("quarantined workspace reference", () => {
       };
       expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, invalid)).status).toBe(401);
       for (const rejected of [
-        signedStop("1".repeat(32), "agent.stop", "other"),
-        signedStop("2".repeat(32), "session.end"),
+        signedRequest("1".repeat(32), "agent.stop", "other"),
+        signedRequest("2".repeat(32), "session.end"),
       ]) {
         expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, rejected)).status).toBe(503);
       }

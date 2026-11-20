@@ -120,6 +120,29 @@ export function createDecisionClaims(database) {
       .changes === 1;
 }
 
+export function createCommandClaims(database) {
+  const claimDecision = createDecisionClaims(database);
+  const journal = createWorkspaceJournal(database);
+  return (projectId, session, body) => {
+    const job = boundDecision(projectId, session, body);
+    if (body.approve !== true || body.stepId !== "cmd" || job.pending.kind !== "command")
+      throw new Refusal("An approved command decision is required.");
+    database.exec("BEGIN IMMEDIATE");
+    try {
+      if (!claimDecision(body)) {
+        database.exec("ROLLBACK");
+        return false;
+      }
+      journal.claim(body);
+      database.exec("COMMIT");
+      return true;
+    } catch (error) {
+      database.exec("ROLLBACK");
+      throw error;
+    }
+  };
+}
+
 // ---------------------------------------------------------------- isolation
 
 /** argv that runs `bash -c "$OMNI_CMD"` as `uid` with limits and, when possible, no network. */
@@ -229,6 +252,7 @@ export function createSandbox(c, opts = {}) {
   );
   const claimDecision = createDecisionClaims(nonceStore);
   createWorkspaceJournal(nonceStore);
+  const claimCommand = createCommandClaims(nonceStore);
   const recoveryBinding = nonceStore
     .prepare("SELECT cgroup_parent FROM workspace_recovery_config WHERE singleton = 1")
     .get();
@@ -910,9 +934,15 @@ export function createSandbox(c, opts = {}) {
         const job = boundDecision(c.projectId, s, b);
         const want = job.pending.kind === "pr" ? "pr" : "cmd";
         if (b.stepId !== want) throw new Refusal("That step is not waiting.");
+        // Do not consume an approval until a real supervisor can accept it.
+        if (b.approve && job.pending.kind === "command")
+          throw new Refusal("The isolated workspace command supervisor is unavailable.");
         let claimed;
         try {
-          claimed = claimDecision(b);
+          claimed =
+            b.approve && job.pending.kind === "command"
+              ? claimCommand(c.projectId, s, b)
+              : claimDecision(b);
         } catch {
           console.error("Sandbox decision store unavailable; request refused.");
           throw new Refusal("Decision store unavailable; nothing was started.");
