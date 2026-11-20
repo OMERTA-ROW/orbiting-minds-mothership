@@ -5,6 +5,7 @@
  * What is fully supported today with an owner-issued OMNI API key:
  *   GET /api/omni/health    (key scope "health")
  *   GET /api/omni/manifest  (key scope "health"; truthful service metadata)
+ *   GET /api/omni/tasks     (key scope "jobs"; read-only observatory runs, never approvals)
  * Everything else in the contract answers 403 with a named reason: OMNI API keys only
  * carry the "health" and "jobs" scopes, and chat, task decisions and the stop need the
  * owner's own sign-in (two-step code / passkey) on the Mothership. A key never
@@ -15,12 +16,41 @@ import type { OmniApiScope } from "./omni-api-keys";
 export const OMNI_CONTRACT_VERSION = "1.0.0";
 
 /** Scope a key needs for each supported read. */
-export const CONTRACT_SCOPE: Record<"health" | "manifest", OmniApiScope> = {
+export const CONTRACT_SCOPE: Record<"health" | "manifest" | "tasks", OmniApiScope> = {
   health: "health",
   manifest: "health",
+  tasks: "jobs",
 };
 
-export type UnsupportedCapability = "chat" | "tasks" | "task-decision" | "emergency-stop";
+/** One observatory run as stored (metadata only: no payloads or source errors). */
+export type ObservatoryRun = {
+  id: string;
+  status: string;
+  started_at: string | null;
+  finished_at: string | null;
+  fetched: number | null;
+  inserted: number | null;
+  alerts: number | null;
+};
+
+/**
+ * Observatory runs in the OMNI frontend's task shape. They are real scheduled research
+ * runs, read-only: requiresApproval is always false, so no decision control is offered,
+ * and no agent is named because the run isn't an agent's reply.
+ */
+export function runsToTasks(runs: readonly ObservatoryRun[]) {
+  return runs.map((r) => ({
+    id: `observatory-run-${r.id}`,
+    title: `Observatory run · ${r.fetched ?? 0} fetched, ${r.inserted ?? 0} saved, ${r.alerts ?? 0} alerts`,
+    status: r.status,
+    requiresApproval: false as const,
+    kind: "observatory-run" as const,
+    startedAt: r.started_at,
+    finishedAt: r.finished_at,
+  }));
+}
+
+export type UnsupportedCapability = "chat" | "task-decision" | "emergency-stop";
 
 /** Plain reason and the Mothership page where the owner does it today. */
 export const UNSUPPORTED: Record<
@@ -31,11 +61,6 @@ export const UNSUPPORTED: Record<
     reason: "Chat through an API key is not enabled.",
     needs: "A chat scope and a founder-verified chat adapter, which don't exist yet.",
     page: "/beta-omni",
-  },
-  tasks: {
-    reason: "Task lists through an API key are not enabled.",
-    needs: "A task-read scope, which doesn't exist yet. Held tasks stay in OMNI Terminal.",
-    page: "/omni-terminal",
   },
   "task-decision": {
     reason: "Approving or rejecting through an API key is not allowed.",
@@ -95,7 +120,7 @@ export function buildManifest(origin: string | null) {
       health: true,
       manifest: true,
       chat: false,
-      tasks: false,
+      tasks: true,
       taskDecisions: false,
       emergencyStop: false,
     },

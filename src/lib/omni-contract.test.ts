@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { omniContractRead, omniContractUnsupported } from "./omni-contract.server";
-import { buildManifest } from "./omni-contract";
+import {
+  omniContractRead,
+  omniContractTasks,
+  omniContractUnsupported,
+} from "./omni-contract.server";
+import { buildManifest, runsToTasks, type ObservatoryRun } from "./omni-contract";
 import { sha256Hex } from "./omni-api-keys";
 
 const HEALTH_KEY = "omni_" + "a".repeat(48);
@@ -44,17 +48,21 @@ describe("OMNI frontend contract", () => {
     expect(m.autonomous).toBe(false);
     expect(m.providers).toEqual([]);
     expect(m.agents.every((a) => !a.enrolled)).toBe(true);
-    expect(m.capabilities).toMatchObject({ chat: false, tasks: false, emergencyStop: false });
+    expect(m.capabilities).toMatchObject({
+      chat: false,
+      tasks: true,
+      taskDecisions: false,
+      emergencyStop: false,
+    });
     expect(m.links.terminal).toBe("https://evoomni.tech/omni-terminal");
   });
   it("advertises no links on a non-https origin", () => {
     expect(buildManifest(null).links).toEqual({});
   });
-  it("chat, tasks, decisions and stop are refused with 403 even for valid keys", async () => {
+  it("chat, decisions and stop are refused with 403 even for valid keys", async () => {
     await ready;
     for (const [path, cap, method] of [
       ["/api/omni/chat", "chat", "POST"],
-      ["/api/omni/tasks", "tasks", "GET"],
       ["/api/omni/tasks/t1/approve", "task-decision", "POST"],
       ["/api/omni/emergency-stop", "emergency-stop", "POST"],
     ] as const) {
@@ -69,5 +77,69 @@ describe("OMNI frontend contract", () => {
         (await omniContractUnsupported(req(path, undefined, method), cap, verify)).status,
       ).toBe(401);
     }
+  });
+
+  const RUN: ObservatoryRun = {
+    id: "r1",
+    status: "succeeded",
+    started_at: "2026-11-20T01:00:00Z",
+    finished_at: "2026-11-20T01:02:00Z",
+    fetched: 12,
+    inserted: 3,
+    alerts: 1,
+  };
+  it("tasks needs the jobs scope: a health-only key gets 403 and nothing is read", async () => {
+    await ready;
+    let reads = 0;
+    const r = await omniContractTasks(req("/api/omni/tasks", HEALTH_KEY), verify, async () => {
+      reads++;
+      return [RUN];
+    });
+    expect(r.status).toBe(403);
+    expect(await r.json()).toMatchObject({ error: "scope_missing", needs: "jobs" });
+    expect(reads).toBe(0);
+    expect(
+      (await omniContractTasks(req("/api/omni/tasks"), verify, async () => [RUN])).status,
+    ).toBe(401);
+  });
+  it("tasks with a jobs key lists observatory runs that never ask for approval", async () => {
+    await ready;
+    let auditedKey = "";
+    const r = await omniContractTasks(req("/api/omni/tasks", JOBS_KEY), verify, async (id) => {
+      auditedKey = id;
+      return [RUN];
+    });
+    expect(r.status).toBe(200);
+    const body = await r.json();
+    expect(auditedKey).toBe("key-id");
+    expect(body.tasks).toEqual([
+      expect.objectContaining({
+        id: "observatory-run-r1",
+        status: "succeeded",
+        requiresApproval: false,
+      }),
+    ]);
+    expect(body.tasks[0].agentId).toBeUndefined();
+  });
+  it("tasks fails closed when the read or the audit fails", async () => {
+    await ready;
+    expect(
+      (await omniContractTasks(req("/api/omni/tasks", JOBS_KEY), verify, async () => "read-failed"))
+        .status,
+    ).toBe(500);
+    expect(
+      (
+        await omniContractTasks(
+          req("/api/omni/tasks", JOBS_KEY),
+          verify,
+          async () => "audit-failed",
+        )
+      ).status,
+    ).toBe(503);
+  });
+  it("runsToTasks shows missing counts as zero in the title", () => {
+    expect(runsToTasks([{ ...RUN, fetched: null, inserted: null, alerts: null }])[0]?.title).toBe(
+      "Observatory run · 0 fetched, 0 saved, 0 alerts",
+    );
   });
 });

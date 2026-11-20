@@ -2,8 +2,9 @@
  * OMNI API credential provisioning — shared validation and helpers.
  * Secrets are generated in the server function, shown to the owner exactly
  * once, and never stored: only the SHA-256 hash and a short display prefix
- * reach the database. Keys authenticate only the /api/public/omni/health and
- * /api/public/omni/jobs endpoints; creating a key connects nothing external.
+ * reach the database. Keys authenticate only the read-only /api/public/omni/health and
+ * /api/public/omni/jobs endpoints and the OMNI frontend's /api/omni/health, /manifest and
+ * /tasks reads; creating a key connects nothing external.
  */
 import { z } from "zod";
 
@@ -19,11 +20,11 @@ export const OMNI_SCOPE_LABELS: Record<OmniApiScope, string> = {
 export const OMNI_SCOPE_CHOICES: Record<OmniApiScope, { title: string; help: string }> = {
   health: {
     title: "Check OMNI is online",
-    help: "Read-only health status · GET /api/public/omni/health",
+    help: "Read-only health status · GET /api/public/omni/health, /api/omni/health and /api/omni/manifest",
   },
   jobs: {
     title: "Read job history",
-    help: "Read-only job and run details · GET /api/public/omni/jobs",
+    help: "Read-only job and run details · GET /api/public/omni/jobs and /api/omni/tasks",
   },
 };
 

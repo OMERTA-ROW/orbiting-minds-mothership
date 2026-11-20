@@ -1,6 +1,8 @@
 import { parseOmniBearer, sha256Hex, OMNI_API_SCOPES, type OmniApiScope } from "./omni-api-keys";
 import {
   CONTRACT_SCOPE,
+  runsToTasks,
+  type ObservatoryRun,
   OMNI_CONTRACT_VERSION,
   buildManifest,
   httpsOrigin,
@@ -26,7 +28,10 @@ async function authorize(request: Request, scope: OmniApiScope | null, verify: V
       { status: 401, headers: NO_STORE },
     );
   const hash = await sha256Hex(key);
-  if (scope && (await verify(hash, scope))) return null;
+  if (scope) {
+    const id = await verify(hash, scope);
+    if (id) return { keyId: id };
+  }
   for (const s of OMNI_API_SCOPES)
     if (s !== scope && (await verify(hash, s)))
       return scope
@@ -67,4 +72,65 @@ export async function omniContractUnsupported(
     status: 403,
     headers: NO_STORE,
   });
+}
+
+/** Reads recent observatory runs and records the key's use; same data and audit as /api/public/omni/jobs. */
+type ReadRuns = (keyId: string) => Promise<ObservatoryRun[] | "read-failed" | "audit-failed">;
+
+async function serviceReadRuns(
+  keyId: string,
+): Promise<ObservatoryRun[] | "read-failed" | "audit-failed"> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const runs = await supabaseAdmin
+    .from("razul_runs")
+    .select("id,status,started_at,finished_at,fetched,inserted,alerts")
+    .order("started_at", { ascending: false })
+    .limit(10);
+  if (runs.error) return "read-failed";
+  const audit = await supabaseAdmin.from("razul_control_audit").insert({
+    actor_id: null,
+    action: "use-jobs",
+    record_type: "omni_api_key",
+    record_id: keyId,
+  });
+  if (audit.error) return "audit-failed";
+  return (runs.data ?? []) as ObservatoryRun[];
+}
+
+/**
+ * GET /api/omni/tasks — read-only. Needs the existing "jobs" scope and returns only the
+ * observatory runs that /api/public/omni/jobs already exposes, as tasks that never ask
+ * for approval. Held OMNI Terminal tasks are not included: they need the owner's sign-in.
+ */
+export async function omniContractTasks(
+  request: Request,
+  verify: Verify = serviceVerify,
+  readRuns: ReadRuns = serviceReadRuns,
+) {
+  const denied = await authorize(request, CONTRACT_SCOPE.tasks, verify);
+  if (denied instanceof Response) return denied;
+  if (!denied || denied === "valid")
+    return Response.json({ ok: false }, { status: 500, headers: NO_STORE });
+  const runs = await readRuns(denied.keyId);
+  if (runs === "read-failed")
+    return Response.json(
+      { ok: false, error: "Job metadata could not be read" },
+      { status: 500, headers: NO_STORE },
+    );
+  if (runs === "audit-failed")
+    return Response.json(
+      { ok: false, error: "Job access could not be audited" },
+      { status: 503, headers: NO_STORE },
+    );
+  return Response.json(
+    {
+      ok: true,
+      scope: "jobs",
+      source: "observatory-runs",
+      tasks: runsToTasks(runs),
+      notIncluded: "Held OMNI Terminal tasks need the owner's sign-in on the Mothership.",
+      time: new Date().toISOString(),
+    },
+    { headers: NO_STORE },
+  );
 }
