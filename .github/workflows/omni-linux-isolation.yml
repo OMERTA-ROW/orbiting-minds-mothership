@@ -216,6 +216,12 @@ jobs:
               cat "$RUNNER_TEMP/omni-workspace-host.log"
               exit 1
             }
+          OMNI_WORKSPACE_HISTORICAL_TEST=1 \
+            OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:18791 \
+            bun run test src/test/omni-sandbox-supervisor.test.ts || {
+              cat "$RUNNER_TEMP/omni-workspace-host.log"
+              exit 1
+            }
   workspace-image-historical:
     if: github.event_name == 'workflow_dispatch' && !inputs.host_only
     runs-on: ubuntu-22.04

@@ -103,19 +103,20 @@ export async function startWorkspaceCommand({ parent, jobId, work, uid, limits, 
   const closed = new Promise((resolve) => child.once("close", resolve));
   let stopping;
   const stop = () => (stopping ??= group.stop());
-  const completed = exited
-    .then(async (result) => {
-      await stop();
-      await closed;
-      group.remove();
-      return result;
-    })
-    .catch(async (error) => {
-      await stop();
-      await closed;
-      group.remove();
-      throw error;
-    });
+  const completed = (async () => {
+    let result;
+    let spawnError;
+    try {
+      result = await exited;
+    } catch (error) {
+      spawnError = error;
+    }
+    await stop();
+    await closed;
+    group.remove();
+    if (spawnError) throw spawnError;
+    return result;
+  })();
   void completed.catch(() => {});
   try {
     if (!child.pid) throw new Error("Could not start the blocked workspace launcher.");

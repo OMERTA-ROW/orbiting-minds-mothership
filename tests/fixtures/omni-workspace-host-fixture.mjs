@@ -109,7 +109,6 @@ replaceSection(
     job.control = control;
     const cap = c.limits.outputCapBytes;
     const onData = (stream) => (buffer) => {
-      if (stream === "stderr") console.error("Fixture command stderr:", buffer.toString("utf8"));
       const part = buffer.subarray(0, Math.max(0, cap - job.outBytes));
       job.outBytes += part.length;
       if (part.length) job.events.push({ stream, text: part.toString("utf8") });
