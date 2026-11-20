@@ -40,9 +40,10 @@ These need your decision. Each is separate; approving one does not approve anoth
       rewritten in `docs/OMNI-FUSION-REQUIREMENTS.md`.
 - [x] **Install database change 0067** (separate "Ask Fusion for plans" permission): installed
       2026-11-20 with your approval, plus a notes-only change (0068). It grants no work, spending or Stop control.
-- [ ] **Review Fusion phase 1 rules-only proposals** (built in source, not published;
+- [x] **Review Fusion phase 1 rules-only proposals** (built in source, not published;
       `docs/OMNI-FUSION-PLAN-CONTRACT.md`), including the proposed 10-per-day limit.
-- [ ] **Install database change 0069** (Fusion plan context; proposed, not installed), then publish.
+- [x] **Install database change 0069** (Fusion plan context): installed 2026-11-20 19:30 UTC with your approval.
+- [ ] **Publish the Fusion phase 1 code** (the commit after `7c2f8c1`); until then the live site answers `planner_not_available`.
 - [ ] **Approve plan records and an owner accept/discard screen** (rest of phase 1), before they are built.
 
 ## C. Live checks you run after publishing

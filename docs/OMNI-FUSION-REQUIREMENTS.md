@@ -1,8 +1,9 @@
 # OMNI Fusion — requirements brief
 
 Status 2026-11-20. **Phase 0 (a separate permission and its refusals) is built, installed (0067)
-and published, but not used live yet. Phase 1's rules-only plan proposals are built and tested in
-source; their database change (0069) is proposed, not installed, and not published** (contract:
+and published, but not used live yet. Phase 1's rules-only plan proposals and the 10-per-owner
+limit are owner-approved; their database change (0069) was installed 2026-11-20 19:30 UTC; the code
+that uses it is not published yet** (contract:
 `docs/OMNI-FUSION-PLAN-CONTRACT.md`). Phases 2–4 are a specification. The manifest keeps
 `orchestrationStatus.state: "not_available"` and never sends `orchestration` until a phase passes
 its verification criteria. OMNI web's "Fusion · unverified" stays correct until then.
@@ -41,13 +42,13 @@ Rules that apply to every capability:
 
 ## Status by capability
 
-| Capability                                     | State                                        | Evidence / blocker                                                                                                                                                                                       |
-| ---------------------------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phase 0 — `fusion:plan` permission and consent | **Installed and published, unverified live** | 285 isolated SQL checks + app tests; 0067 installed and published 2026-11-20; needs OMNI web requesting the scope                                                                                        |
-| 1. Plan and route (rules-only proposals)       | **Built, not installed**                     | 295 isolated SQL checks for proposed 0069 + app tests (`omni-fusion-plan.test.ts`); needs owner review, 0069 install, then publishing. Plan records and an owner accept/discard screen are still planned |
-| 2. Compare and combine                         | Planned                                      | Needs phase 2 approval; every model call is paid and goes through the spend guard                                                                                                                        |
-| 3. Shared knowledge                            | Planned                                      | Needs phase 3 approval; PR #25 (repository intake) is related and still open                                                                                                                             |
-| 4. Maintenance coordination                    | Planned                                      | Needs phase 4 approval; backups/updates also need the existing trusted-release rules                                                                                                                     |
+| Capability                                     | State                                        | Evidence / blocker                                                                                                                                                    |
+| ---------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 0 — `fusion:plan` permission and consent | **Installed and published, unverified live** | 285 isolated SQL checks + app tests; 0067 installed and published 2026-11-20; needs OMNI web requesting the scope                                                     |
+| 1. Plan and route (rules-only proposals)       | **Installed (0069), not published**          | 395 isolated SQL checks + 9 concurrent races + app tests; next: publish, then the live owner check. Plan records and an owner accept/discard screen are still planned |
+| 2. Compare and combine                         | Planned                                      | Needs phase 2 approval; every model call is paid and goes through the spend guard                                                                                     |
+| 3. Shared knowledge                            | Planned                                      | Needs phase 3 approval; PR #25 (repository intake) is related and still open                                                                                          |
+| 4. Maintenance coordination                    | Planned                                      | Needs phase 4 approval; backups/updates also need the existing trusted-release rules                                                                                  |
 
 ## 1. Data sources
 
@@ -143,6 +144,6 @@ presenting a planned capability as working.
 
 1. Done: 0067 installed and published 2026-11-20.
 2. OMNI web requests `fusion:plan` as its own opt-in and shows `planner_not_available` as a state.
-3. Done in source (owner chose deterministic rules, no model calls): phase 1 proposals. Next: owner
-   reviews them and the proposed 10-per-day limit, approves installing 0069, then publishing.
+3. Done: phase 1 rules-only proposals and the 10-per-owner rolling-24-hour limit approved and 0069
+   installed 2026-11-20. Next: publish, then one live owner check.
 4. Later, separately approved: plan records and the owner accept/discard screen.

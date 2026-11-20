@@ -157,8 +157,18 @@ describe("Fusion rules-only plan (0069 installed)", () => {
     expect(p.cost).toEqual({
       fusionUsd: 0,
       modelCalls: 0,
-      jobCaps: { perAiCallUsd: 0.5, reservedPerJobUsd: 1, perDayUsd: 5, maxActiveJobs: 1 },
+      requiredJobLimits: {
+        perAiCallUsd: 0.5,
+        reservedPerJobUsd: 1,
+        perDayUsd: 5,
+        maxActiveJobs: 1,
+        basis: "owner_policy",
+        enforcementVerified: false,
+        note: expect.stringContaining("reads no permit"),
+      },
     });
+    // The limits are labelled as policy, never as verified enforcement.
+    expect(JSON.stringify(p)).not.toMatch(/jobCaps|enforces|enforced/);
     expect(p.limits).toEqual({
       plansPerDay: 10,
       plansUsedToday: 1,

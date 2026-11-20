@@ -17,7 +17,7 @@ import { INTENDED_SPEND_LIMITS } from "./omni-spend-evidence";
 export const FUSION_PLAN_SCHEMA = "omni.fusion-plan/v1" as const;
 /** Bump when any rule below changes: the same input then gets a new planId. */
 export const FUSION_RULES_VERSION = 1 as const;
-/** Per-owner plans per 24 hours, enforced in the database (0069). Proposed default. */
+/** Per-owner proposals per rolling 24 hours, enforced in the database (0069). Owner-approved 2026-11-20. */
 export const FUSION_PLANS_PER_DAY = 10;
 
 export const TASK_KINDS = [
@@ -126,12 +126,18 @@ export type FusionPlan = {
   cost: {
     fusionUsd: 0;
     modelCalls: 0;
-    /** Caps Jackboy enforces through signed permits. Not an estimate; not verified by this plan. */
-    jobCaps: {
+    /**
+     * Required policy limits the owner set for any job (from `INTENDED_SPEND_LIMITS`). The planner
+     * reads no permit, so this is NOT evidence that Jackboy currently enforces them.
+     */
+    requiredJobLimits: {
       perAiCallUsd: number;
       reservedPerJobUsd: number;
       perDayUsd: number;
       maxActiveJobs: number;
+      basis: "owner_policy";
+      enforcementVerified: false;
+      note: string;
     };
   };
   statusVisibility: {
@@ -281,7 +287,7 @@ export function buildFusionPlan(ctx: PlanContext, digest: string, now: number): 
           kind: "spend_caps",
           decidedBy: "jackboy",
           where: "Jackboy",
-          detail: `Paid work needs a signed Jackboy permit within ${capText}. Fusion neither requests nor reads permits.`,
+          detail: `Required policy: paid work needs a signed Jackboy permit within ${capText}. Fusion neither requests nor reads permits, so it cannot confirm enforcement.`,
         },
       ],
       state: "not_started",
@@ -338,11 +344,14 @@ export function buildFusionPlan(ctx: PlanContext, digest: string, now: number): 
     cost: {
       fusionUsd: 0,
       modelCalls: 0,
-      jobCaps: {
+      requiredJobLimits: {
         perAiCallUsd: caps.perCallUsd,
         reservedPerJobUsd: caps.perTaskUsd,
         perDayUsd: caps.dailyUsd,
         maxActiveJobs: caps.maxActiveJobs,
+        basis: "owner_policy",
+        enforcementVerified: false,
+        note: "Required policy limits for any job. Fusion reads no permit; whether Jackboy applies them is shown only by a fresh signed permit (manifest spendingCap).",
       },
     },
     statusVisibility: canRead

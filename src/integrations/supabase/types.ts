@@ -3931,6 +3931,10 @@ export type Database = {
         }
         Returns: Json
       }
+      omni_delegation_fusion_plan_context: {
+        Args: { _audience: string; _task_id: string; _token_hash: string }
+        Returns: Json
+      }
       omni_delegation_fusion_plan_gate: {
         Args: { _audience: string; _token_hash: string }
         Returns: Json
@@ -4124,6 +4128,7 @@ export type Database = {
       omni_dock_valid_permissions: { Args: { _p: string[] }; Returns: boolean }
       omni_execution_permit_live: { Args: { _job: string }; Returns: boolean }
       omni_fusion_plan_ready: { Args: never; Returns: boolean }
+      omni_fusion_planner_ready: { Args: never; Returns: boolean }
       omni_memory_delete: {
         Args: { _agent: string; _id: string }
         Returns: boolean

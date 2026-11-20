@@ -1,5 +1,5 @@
-"""Disposable PostgreSQL only: proposed migration 0069 (.lovable/pending/0069_omni_fusion_rules_planner.sql,
-Fusion phase 1 rules-only plan context) on top of every installed migration (through 0068).
+"""Disposable PostgreSQL only: migration 0069 (drizzle/migrations/0069_omni_fusion_rules_planner.sql, installed
+2026-11-20 with owner approval; Fusion phase 1 rules-only plan context) on top of migrations 0000–0068.
 The context check admits only a valid fusion:plan delegation, a released Emergency Stop, the same
 owner's OMNI-created held task with no Jackboy handover, and at most 10 plans a day; it returns task
 metadata plus a digest (never task text), writes exactly one audit row, and changes nothing else.
@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PROPOSED = ROOT / ".lovable/pending/0069_omni_fusion_rules_planner.sql"
+PROPOSED = ROOT / "drizzle/migrations/0069_omni_fusion_rules_planner.sql"
 OWNER = "11111111-1111-4111-8111-111111111111"
 OTHER = "22222222-2222-4222-8222-222222222222"
 CLIENT = "omni-web"
@@ -255,7 +255,170 @@ def main():
         assert sql("SELECT count(*) FROM public.omni_task_handoffs;") == "1"
         assert sql("SELECT string_agg(DISTINCT state, ',') FROM public.omni_terminal_tasks;") == "cancelled,held"
         assert sql("SELECT emergency_stop FROM public.omni_terminal_controls WHERE id=1;") == "f"
-        print(f"PASS: {checks} isolated SQL checks for proposed 0069 (Fusion rules-only plan context): service-only functions, fusion:plan only (no scope implied either way), Emergency Stop engaged/missing refused, owner isolation (unknown/other-owner/terminal-made tasks look the same), held-only and not handed over, 10/day limit, digest instead of task text, one audit row per proposal and no other row or Stop change. No hosted fixtures.")
+        # ---------------- Quota boundaries: 10th succeeds, 11th 429, refusals/rollbacks free ----------------
+        def reset_quota(n=0, actor=OWNER):
+            sql(f"DELETE FROM public.razul_control_audit WHERE action='fusion_plan_proposed';")
+            for _ in range(n):
+                sql(f"INSERT INTO public.razul_control_audit(actor_id,action,record_type,record_id) VALUES('{actor}','fusion_plan_proposed','omni_terminal','fixture');")
+
+        def owner_used():
+            return int(sql(f"SELECT count(*) FROM public.razul_control_audit WHERE actor_id='{OWNER}' AND action='fusion_plan_proposed' AND occurred_at > now()-interval '24 hours';"))
+
+        Q = connect("7", "2", "ARRAY['fusion:plan','tasks:write','safety:emergency-stop']")
+        tq = hold(Q, title="Quota", instr="Quota task")
+        tc = hold(Q, title="Cancel race", instr="Cancel race task")
+        tj = hold(Q, title="Handover race", instr="Handover race task", agent="jackboy", repo="acme/app")
+        reset_quota(9)
+        # Refusals at 9 used consume nothing.
+        sql(f"UPDATE public.omni_terminal_controls SET emergency_stop=true WHERE id=1;")
+        assert ctx(Q, f"'{tq}'")["reason"] == "emergency_stop_engaged"
+        sql(f"UPDATE public.omni_terminal_controls SET emergency_stop=false WHERE id=1;")
+        for tid, reason in [("gen_random_uuid()", "task_not_found"), (f"'{t2}'", "task_not_held"), (f"'{t3}'", "task_already_handed_off"), ("NULL", "invalid_request")]:
+            assert ctx(Q, tid) == {"ok": False, "reason": reason}, reason
+        assert ctx(h("0"), f"'{tq}'")["reason"] == "invalid"
+        assert ctx(T, f"'{tq}'")["reason"] in ("scope_missing", "revoked")
+        # A rolled-back admission leaves no audit row and no quota use.
+        sql(f"BEGIN; SET LOCAL ROLE service_role; SELECT public.omni_delegation_fusion_plan_context('{Q}','{AUD}','{tq}'); ROLLBACK;")
+        assert owner_used() == 9
+        r10 = ctx(Q, f"'{tq}'")
+        assert r10["ok"] is True and r10["plansUsed"] == 10, r10
+        assert ctx(Q, f"'{tq}'") == {"ok": False, "reason": "daily_limit"}
+        assert ctx(Q, f"'{tq}'") == {"ok": False, "reason": "daily_limit"}
+        assert owner_used() == 10, "the 11th and 12th requests must not consume quota"
+        # Successful proposals write exactly one metadata-only audit row each.
+        assert sql(f"SELECT count(*) FROM public.razul_control_audit WHERE action='fusion_plan_proposed' AND record_id='{tq}' AND actor_id='{OWNER}' AND record_type='omni_terminal';") == "1"
+        # Rolling cutoff: a row just older than 24 h frees one slot; just younger does not.
+        sql("UPDATE public.razul_control_audit SET occurred_at=now()-interval '23 hours 59 minutes' WHERE action='fusion_plan_proposed' AND record_id='fixture' AND id=(SELECT id FROM public.razul_control_audit WHERE action='fusion_plan_proposed' AND record_id='fixture' LIMIT 1);")
+        assert ctx(Q, f"'{tq}'") == {"ok": False, "reason": "daily_limit"}
+        sql("UPDATE public.razul_control_audit SET occurred_at=now()-interval '24 hours 1 second' WHERE action='fusion_plan_proposed' AND occurred_at < now()-interval '23 hours';")
+        assert ctx(Q, f"'{tq}'")["ok"] is True
+        assert ctx(Q, f"'{tq}'") == {"ok": False, "reason": "daily_limit"}
+        # Owner isolation: another account's proposals never count against this owner.
+        reset_quota(10, actor=OTHER)
+        assert owner_used() == 0
+        assert ctx(Q, f"'{tq}'")["ok"] is True
+        reset_quota(0)
+
+        # ---------------- Real concurrent sessions on the disposable database ----------------
+        def psql_proc(script):
+            return subprocess.Popen(["psql", "-X", "-v", "ON_ERROR_STOP=1", "-At", "-f", "-"], env=env, preexec_fn=demote,
+                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        def start(script):
+            proc = psql_proc(script)
+            proc.stdin.write(script)
+            proc.stdin.close()
+            return proc
+
+        def finish(proc):
+            out = proc.stdout.read()
+            err = proc.stderr.read()
+            code = proc.wait(timeout=60)
+            assert code == 0, err
+            return out
+
+        def timed_ctx(token, task):
+            t0 = time.monotonic()
+            out = ctx(token, task)
+            return out, time.monotonic() - t0
+
+        def timed_sql(text, ok=True):
+            t0 = time.monotonic()
+            out = sql(text, ok)
+            return out, time.monotonic() - t0
+
+        def holding(text, seconds=2):
+            p = start(f"BEGIN; {text}; SELECT pg_sleep({seconds}); COMMIT;\n")
+            time.sleep(0.6)  # let the background transaction take its locks
+            return p
+
+        as_owner = f"SET ROLE authenticated; SET request.jwt.claim.sub='{OWNER}'; SET request.jwt.claim.aal='aal2'; SET request.jwt.claim.amr='{FRESH}';"
+        PLAN = f"SET ROLE service_role; SELECT public.omni_delegation_fusion_plan_context('{Q}','{AUD}','{{task}}')::text"
+
+        # 1. Cancel commits first: the planner waits on the task row, then sees it is no longer held.
+        a = proposed()
+        bg = holding(f"{as_owner} SELECT id FROM public.omni_terminal_cancel_task('{tc}')")
+        out, waited = timed_ctx(Q, f"'{tc}'")
+        finish(bg)
+        assert out == {"ok": False, "reason": "task_not_held"}, out
+        assert waited > 1.0, f"planner must wait for the in-flight cancel ({waited:.2f}s)"
+        assert proposed() == a
+        # 2. Planner first: a cancel waits for the proposal to commit, then succeeds.
+        tc2 = hold(Q, title="Cancel race 2", instr="Second cancel race")
+        bg = holding(PLAN.format(task=tc2))
+        _, waited = timed_sql(f"{as_owner} SELECT count(*) FROM public.omni_terminal_cancel_task('{tc2}');")
+        assert '"ok": true' in finish(bg)
+        assert waited > 1.0, f"cancel must wait for the in-flight proposal ({waited:.2f}s)"
+        assert sql(f"SELECT state FROM public.omni_terminal_tasks WHERE id='{tc2}';") == "cancelled"
+
+        # 3. Jackboy handover (the real omni_task_handoff_begin) commits first: planner refuses.
+        bg = holding(f"{as_owner} SELECT task_id FROM public.omni_task_handoff_begin('{tj}','test','{h('d')}')")
+        out, waited = timed_ctx(Q, f"'{tj}'")
+        finish(bg)
+        assert out == {"ok": False, "reason": "task_already_handed_off"}, out
+        assert waited > 1.0, f"planner must wait for the in-flight handover ({waited:.2f}s)"
+        # 4. Planner first: the handover waits for the proposal, then proceeds.
+        tj2 = hold(Q, title="Handover race 2", instr="Second handover race", agent="jackboy", repo="acme/app")
+        bg = holding(PLAN.format(task=tj2))
+        _, waited = timed_sql(f"{as_owner} SELECT count(*) FROM public.omni_task_handoff_begin('{tj2}','test','{h('e')}');")
+        assert '"ok": true' in finish(bg)
+        assert waited > 1.0, f"handover must wait for the in-flight proposal ({waited:.2f}s)"
+        assert sql(f"SELECT count(*) FROM public.omni_task_handoffs WHERE task_id='{tj2}';") == "1"
+
+        # 5. Emergency Stop engaged (real owner engage) first: planner waits, then refuses; no audit.
+        tq2 = hold(Q, title="Stop race", instr="Stop race task")
+        a = proposed()
+        bg = holding(f"{as_owner} SELECT public.omni_terminal_engage_stop('race test')")
+        out, waited = timed_ctx(Q, f"'{tq2}'")
+        finish(bg)
+        assert out == {"ok": False, "reason": "emergency_stop_engaged"}, out
+        assert waited > 1.0, f"planner must wait for the in-flight Stop ({waited:.2f}s)"
+        assert proposed() == a
+        sql("UPDATE public.omni_terminal_controls SET emergency_stop=false WHERE id=1;")
+        sql("UPDATE public.omni_stop_outbox SET delivered_at=now() WHERE delivered_at IS NULL;") if sql("SELECT to_regclass('public.omni_stop_outbox') IS NOT NULL;") == "t" else None
+        # 6. Planner first: engaging the Stop waits for the proposal to commit, then engages.
+        bg = holding(PLAN.format(task=tq2))
+        _, waited = timed_sql(f"{as_owner} SELECT public.omni_terminal_engage_stop('race test 2');")
+        assert '"ok": true' in finish(bg)
+        assert waited > 1.0, f"Stop engage must wait for the in-flight proposal ({waited:.2f}s)"
+        assert sql("SELECT emergency_stop FROM public.omni_terminal_controls WHERE id=1;") == "t"
+        assert ctx(Q, f"'{tq2}'")["reason"] == "emergency_stop_engaged"
+        sql("UPDATE public.omni_terminal_controls SET emergency_stop=false WHERE id=1;")
+
+        # 7. Delegation revoked first: planner waits on the delegation row, then sees it revoked.
+        bg = holding(f"SET ROLE service_role; SELECT public.omni_delegation_revoke('{Q}')")
+        out, waited = timed_ctx(Q, f"'{tq2}'")
+        finish(bg)
+        assert out == {"ok": False, "reason": "revoked"}, out
+        assert waited > 1.0, f"planner must wait for the in-flight revoke ({waited:.2f}s)"
+        # 8. Planner first: revoke waits for the proposal, then revokes.
+        R = connect("8", "3", "ARRAY['fusion:plan','tasks:write']")
+        tr = hold(R, title="Revoke race", instr="Revoke race task")
+        bg = holding(f"SET ROLE service_role; SELECT public.omni_delegation_fusion_plan_context('{R}','{AUD}','{tr}')::text")
+        _, waited = timed_sql(f"SET ROLE service_role; SELECT public.omni_delegation_revoke('{R}');")
+        assert '"ok": true' in finish(bg)
+        assert waited > 1.0, f"revoke must wait for the in-flight proposal ({waited:.2f}s)"
+        assert ctx(R, f"'{tr}'") == {"ok": False, "reason": "revoked"}
+
+        # 9. Quota serializes across delegations and processes: 8 used, 6 parallel requests over two
+        #    simultaneously valid delegations -> exactly 2 admitted, 4 refused, never more than 10.
+        D1 = connect("9", "4", "ARRAY['fusion:plan','tasks:write']")
+        tp = hold(D1, title="Parallel", instr="Parallel quota task")
+        D2 = connect("a", "5", "ARRAY['fusion:plan']")
+        sql(f"UPDATE public.omni_delegations SET revoked_at=NULL, revoked_reason=NULL WHERE token_hash='{D1}';")  # two valid at once
+        assert ctx(D1, "NULL")["reason"] == "invalid_request" and ctx(D2, "NULL")["reason"] == "invalid_request"
+        reset_quota(8)
+        procs = [start(f"SET ROLE service_role; BEGIN; SELECT public.omni_delegation_fusion_plan_context('{tok}','{AUD}','{tp}')::text; SELECT pg_sleep(0.4); COMMIT;\n")
+                 for tok in [D1, D2, D1, D2, D1, D2]]
+        outs = [finish(p) for p in procs]
+        admitted = sum('"ok": true' in o for o in outs)
+        limited = sum('"daily_limit"' in o for o in outs)
+        assert (admitted, limited) == (2, 4), outs
+        assert owner_used() == 10
+        used_values = sorted(json.loads(l)["plansUsed"] for o in outs for l in o.splitlines() if l.startswith("{") and '"ok": true' in l)
+        assert used_values == [9, 10], used_values
+        reset_quota(0)
+        print(f"PASS: {checks} isolated SQL checks (plus 9 real concurrent-session races) for 0069 (Fusion rules-only plan context): service-only functions, fusion:plan only (no scope implied either way), Emergency Stop engaged/missing refused, owner isolation (tasks and quota), held-only and not handed over, 10 per rolling 24 h (10th ok, 11th refused, refusals and rollbacks free, cutoff), digest instead of task text, one audit row per proposal; cancel, handover, Stop and revoke serialize with proposals in both orders; quota serializes across delegations. No hosted fixtures.")
     finally:
         if started:
             command(["pg_ctl", "-D", str(base / "db"), "-m", "immediate", "-w", "stop"])

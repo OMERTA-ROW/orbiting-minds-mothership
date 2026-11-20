@@ -1,9 +1,10 @@
 # `omni.fusion-plan/v1` — Fusion plan proposals for OMNI web
 
-Status 2026-11-20: **built and tested in source; its database change (0069,
-`.lovable/pending/0069_omni_fusion_rules_planner.sql`) is proposed, not installed, and not
-published.** Until 0069 is installed the endpoint keeps answering `503 planner_not_available`
-(phase 0). Types live in `src/lib/omni-fusion-plan.ts`; refusals in `src/lib/omni-fusion.ts`.
+Status 2026-11-20: **rules and 10-per-owner limit approved by the owner; database change 0069
+(`drizzle/migrations/0069_omni_fusion_rules_planner.sql`, SHA-256 `e4b7b872…118bd6`) installed
+19:30 UTC. The source that uses it is not published yet:** the live site (`5e50faa`) does not read
+the planner marker and keeps answering `503 planner_not_available` until the next publish; the
+preview already returns proposals. Types live in `src/lib/omni-fusion-plan.ts`; refusals in `src/lib/omni-fusion.ts`.
 
 Fusion is the Mothership's orchestration architecture, not an agent. Phase 1 is a **rules-only
 proposal** for one held task: who is responsible for each step, what it depends on, and which
@@ -31,8 +32,16 @@ Content-Type: application/json
 2. Emergency Stop released (missing or unreadable row = engaged).
 3. Task is this owner's, created by OMNI web through a delegation, still `held`, and not yet sent
    to Jackboy. Unknown ids, other owners' tasks and terminal-made tasks all answer `task_not_found`.
-4. At most **10 proposals per owner per 24 hours** (proposed default; refusals don't count).
-5. One `fusion_plan_proposed` audit row. Nothing else is written or changed.
+4. At most **10 proposals per owner per rolling 24 hours** (owner-approved), counted across every
+   delegation and server process. Refusals and rolled-back calls don't count.
+5. One `fusion_plan_proposed` audit row (owner, task id; no text). Nothing else is written or changed.
+
+**Concurrency.** Locks follow the order existing writers use — delegation row (FOR UPDATE) →
+Emergency Stop row (FOR SHARE) → task row (FOR SHARE) → per-owner advisory lock for the quota —
+so a concurrent revoke, Stop engage, cancel or Jackboy handover either committed first (and is
+seen, so the request is refused) or waits until the proposal commits. A success therefore never
+coexists with a change that committed before it. Engaging the Stop can wait at most as long as
+one proposal transaction (no network inside it).
 
 The database returns task metadata only, plus a SHA-256 digest of title + instructions.
 
@@ -66,8 +75,18 @@ type FusionPlan = {
   cost: {
     fusionUsd: 0;
     modelCalls: 0;
-    jobCaps: { perAiCallUsd: 0.5; reservedPerJobUsd: 1; perDayUsd: 5; maxActiveJobs: 1 };
-  }; // jobCaps = what Jackboy's signed permits enforce; not an estimate
+    // The owner's REQUIRED policy limits for any job — not verified enforcement. The planner
+    // reads no permit; only the manifest's spendingCap (fresh signed permit) shows enforcement.
+    requiredJobLimits: {
+      perAiCallUsd: 0.5;
+      reservedPerJobUsd: 1;
+      perDayUsd: 5;
+      maxActiveJobs: 1;
+      basis: "owner_policy";
+      enforcementVerified: false;
+      note: string;
+    };
+  };
   statusVisibility: {
     omniWebCanReadStatus: boolean; // true only if the delegation also has tasks:read
     path: "/api/omni/held-tasks" | null;
@@ -152,7 +171,12 @@ in `rules_only`; `verified` stays `false` and `orchestration` is never sent, so 
 
 ## Evidence
 
-- `src/test/test_omni_fusion_planner_sql.py` — 295 isolated SQL checks on a throwaway database.
+- `src/test/test_omni_fusion_planner_sql.py` — 395 isolated SQL checks plus 9 real
+  concurrent-session races on a throwaway PostgreSQL 17 database: cancel, handover (the real
+  `omni_task_handoff_begin`), Stop engage (`omni_terminal_engage_stop`) and revoke in both orders;
+  six parallel requests over two valid delegations with 8 used → exactly 2 admitted; 10th ok,
+  11th 429, refusals/rollbacks free, rolling cutoff, other owners' proposals not counted. The same
+  races fail against the earlier draft (it admitted a task while its cancel was committing).
 - `src/lib/omni-fusion-plan.test.ts` + `src/lib/omni-fusion.test.ts` — refusals with exact
   statuses, tampered database answers never become plans, determinism, no network/model calls,
   import allowlist (plan rules import only agent names, intended caps and validation).

@@ -484,6 +484,13 @@
       "when": 1795196928658,
       "tag": "0068_omni_chat_fusion_install_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1795202741143,
+      "tag": "0069_omni_fusion_rules_planner",
+      "breakpoints": true
     }
   ]
 }

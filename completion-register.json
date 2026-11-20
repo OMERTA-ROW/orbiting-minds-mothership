@@ -282,7 +282,7 @@
     },
     "fusion-phase1-rules-planner": {
       "command": "python3 src/test/test_omni_fusion_planner_sql.py + bunx vitest run src/lib/omni-fusion-plan.test.ts src/lib/omni-fusion.test.ts",
-      "result": "2026-11-20 source only: 295 isolated SQL checks for proposed 0069 (service-only one-transaction context: fusion:plan only, Stop engaged/missing refused, owner isolation, held-only, not handed over, 10/day, digest not text, one audit row, nothing else changed) and app tests for the omni.fusion-plan/v1 rules-only proposal (exact refusal statuses, tampered database answers refused, deterministic planId, no network/model calls, import allowlist, manifest rules_only state). 0069 not installed; not published.",
+      "result": "2026-11-20: owner approved rules and 10 per owner per rolling 24 h; 0069 installed 19:30 UTC (applied hash e4b7b872…118bd6 = reviewed SQL; service-only, security definer, pinned search_path). 395 isolated SQL checks + 9 real concurrent-session races (cancel/handover/Stop/revoke both orders; quota across two delegations: exactly 2 of 6 admitted at 8 used; the earlier draft fails them) and app tests (exact refusal statuses, tampered answers refused, deterministic planId, no network/model calls, import allowlist, policy limits labelled unverified). Not published.",
       "passed": true
     },
     "fusion-plan-permission": {

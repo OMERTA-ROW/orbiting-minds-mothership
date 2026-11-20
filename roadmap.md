@@ -15,8 +15,8 @@
 - [x] Migrations 0066 (delegated chat), 0067 (Fusion plan permission) and notes-only 0068 installed 2026-11-20 with owner approval; applied hashes equal reviewed files; 19 isolated SQL suites pass.
 - [ ] OMNI web chat — blocked on: publishing, OMNI requesting `chat:write`, then the owner's first live reply (paid).
 - [x] Published 2026-11-20 18:52 UTC at `5e50faa` (no unpublished changes); evoomni.tech reaches the installed chat and Fusion checks (fake delegation → 401 `invalid`).
-- [x] Fusion phase 1 rules-only plan proposals (`omni.fusion-plan/v1`, `docs/OMNI-FUSION-PLAN-CONTRACT.md`): built and tested in source; proposed database change 0069 not installed; not published.
-- [ ] Fusion phase 1 live — blocked on: owner review, approval to install 0069, then publishing.
+- [x] Fusion phase 1 rules-only plan proposals (`omni.fusion-plan/v1`, `docs/OMNI-FUSION-PLAN-CONTRACT.md`): owner-approved with 10 per owner per rolling 24 h; concurrency-safe 0069 installed 2026-11-20 19:30 UTC; tested with real concurrent sessions.
+- [ ] Fusion phase 1 live — blocked on: owner approving the publish, then OMNI web requesting `fusion:plan` and one owner check.
 - [ ] Fusion plan records + owner accept/discard screen, and phases 2–4 — blocked on: owner approval of each per `docs/OMNI-FUSION-REQUIREMENTS.md`.
 - [x] Fusion requirements brief (`docs/OMNI-FUSION-REQUIREMENTS.md`): data sources, permissions, outputs, verification criteria.
 - [x] Fusion brief rewritten for the owner's definition (orchestration architecture: plan/route, compare answers, permission-aware knowledge, diagnostics/repair/backup/update coordination; not an agent).
