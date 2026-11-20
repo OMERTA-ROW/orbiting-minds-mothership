@@ -41,7 +41,7 @@ export type ObservatoryRun = {
 export function runsToTasks(runs: readonly ObservatoryRun[]) {
   return runs.map((r) => ({
     id: `observatory-run-${r.id}`,
-    title: `Observatory run · ${r.fetched ?? 0} fetched, ${r.inserted ?? 0} saved, ${r.alerts ?? 0} alerts`,
+    title: `Observatory run · ${r.fetched ?? "unknown"} fetched, ${r.inserted ?? "unknown"} saved, ${r.alerts ?? "unknown"} alerts`,
     status: r.status,
     requiresApproval: false as const,
     kind: "observatory-run" as const,
