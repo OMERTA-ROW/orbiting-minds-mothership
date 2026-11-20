@@ -14,19 +14,10 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteNav, SiteFooter } from "../components/SiteNav";
-import { isPreviewPath, visibleNavItems } from "../components/nav-groups";
-import { PreviewHidden } from "../components/PreviewHidden";
-import { useShowPreviews } from "../lib/preview-setting";
+import { navItems } from "../components/nav-groups";
 import { Starfield } from "../components/evo";
 import OrbitalBackground from "../components/OrbitalBackground";
 import { CommandPaletteProvider } from "@/components/CommandPalette";
-import { DemoExchangeProvider } from "@/hooks/use-demo-exchange";
-import { ExchangeLocaleProvider } from "@/hooks/use-exchange-locale";
-import { GenesisProvider } from "@/hooks/use-genesis";
-import { CareProvider } from "@/hooks/use-care";
-import { GuardianProvider } from "@/hooks/use-guardian";
-import { IncidentProvider } from "@/hooks/use-incidents";
-import { TrustedReleaseProvider } from "@/hooks/use-trusted-release";
 import { AccountProvider } from "@/hooks/use-account";
 import { OmniAreaHeader } from "@/components/omnibridge/OmniAreaHeader";
 
@@ -137,49 +128,29 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (state) => state.location.pathname });
-  const omniArea = path.startsWith("/omni") || path === "/beta-omni" || path === "/angel-tech";
+  const omniArea = path.startsWith("/omni") || path === "/beta-omni";
   const calmArea = omniArea || path === "/dashboard";
-  const showPreviews = useShowPreviews();
-  const hidden = isPreviewPath(path) && !showPreviews;
 
   return (
     <QueryClientProvider client={queryClient}>
       <AccountProvider>
-        <GuardianProvider>
-          <CareProvider>
-            <GenesisProvider>
-              <TrustedReleaseProvider>
-                <IncidentProvider>
-                  <DemoExchangeProvider>
-                    <ExchangeLocaleProvider>
-                      <CommandPaletteProvider
-                        pages={visibleNavItems(showPreviews)}
-                        includeDemo={showPreviews}
-                      >
-                        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-                        <div
-                          className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}`}
-                        >
-                          <OrbitalBackground />
-                          <div className="site-cosmos" aria-hidden>
-                            <Starfield count={150} />
-                          </div>
-                          <SiteNav />
-                          <main className="flex-1">
-                            {omniArea && !hidden && <OmniAreaHeader />}
-                            {/* Demo/sample areas are hidden unless design previews are switched on. */}
-                            {hidden ? <PreviewHidden /> : <Outlet />}
-                          </main>
-                          <SiteFooter />
-                        </div>
-                      </CommandPaletteProvider>
-                    </ExchangeLocaleProvider>
-                  </DemoExchangeProvider>
-                </IncidentProvider>
-              </TrustedReleaseProvider>
-            </GenesisProvider>
-          </CareProvider>
-        </GuardianProvider>
+        <CommandPaletteProvider pages={navItems}>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <div
+            className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}`}
+          >
+            <OrbitalBackground />
+            <div className="site-cosmos" aria-hidden>
+              <Starfield count={150} />
+            </div>
+            <SiteNav />
+            <main className="flex-1">
+              {omniArea && <OmniAreaHeader />}
+              <Outlet />
+            </main>
+            <SiteFooter />
+          </div>
+        </CommandPaletteProvider>
       </AccountProvider>
     </QueryClientProvider>
   );

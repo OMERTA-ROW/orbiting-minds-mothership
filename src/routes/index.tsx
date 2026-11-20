@@ -1,27 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  ChevronDown,
-  ShieldCheck,
-  Fingerprint,
-  Layers,
-  Sparkles,
-  Bot,
-  Dna,
-} from "lucide-react";
-import { modules } from "@/data/evolution";
-import { DemoBadge, OrbitExplorer, Section } from "@/components/evo";
+import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
+import { Section } from "@/components/evo";
 import { Button } from "@/components/ui/button";
 import { seo } from "@/lib/seo";
 import { isIndexable } from "@/lib/search-policy";
 import MothershipBackground from "@/components/MothershipBackground";
 import { StatusBadge } from "@/components/StatusBadge";
-import { NAV_STATUS, advancedItems, navGroups, type NavStatus } from "@/components/nav-groups";
+import { NAV_STATUS, navGroups, type NavStatus } from "@/components/nav-groups";
+import { retiredAreas } from "@/lib/retired-areas";
 import { useAccount } from "@/hooks/use-account";
 import { NextSteps } from "@/components/NextSteps";
-import { setShowPreviews, useShowPreviews } from "@/lib/preview-setting";
 
 export const Route = createFileRoute("/")({
   head: () =>
@@ -38,24 +26,6 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const pillars = [
-  {
-    t: "Opt-in by design",
-    d: "Nothing joins the network without its owner's explicit consent. Revoke anytime.",
-    icon: Fingerprint,
-  },
-  {
-    t: "Sandbox first · planned",
-    d: "Current sandbox checks are simulations or proposed tests, not executed code validation.",
-    icon: Layers,
-  },
-  {
-    t: "Signed & reversible · planned",
-    d: "Signed releases and verified rollback are not available. Current previews remain unsigned demonstrations.",
-    icon: ShieldCheck,
-  },
-];
-
 function Index() {
   return (
     <div className="ms-page">
@@ -71,10 +41,9 @@ function Index() {
             <br />
             MOTHERSHIP / 001
           </div>
-          <DemoBadge
-            label="Private beta"
-            className="absolute right-8 top-12 hidden md:inline-flex"
-          />
+          <span className="absolute right-8 top-12 hidden border border-gold/25 bg-background/60 px-3 py-1 font-mono text-[9px] uppercase tracking-widest text-gold-light md:inline-flex">
+            Private beta
+          </span>
           <div className="hero-copy relative z-10 mx-auto max-w-4xl px-6 text-center">
             <p className="eyebrow flex items-center justify-center gap-4">
               <span className="h-px w-8 bg-gold/50" />
@@ -105,7 +74,7 @@ function Index() {
         </section>
 
         <StartHere />
-        <AdvancedView />
+        <NotConnectedYet />
       </div>
     </div>
   );
@@ -223,75 +192,34 @@ function StartHere() {
   );
 }
 
-function AdvancedView() {
-  const previews = useShowPreviews();
+function NotConnectedYet() {
   return (
     <Section className="pt-4">
-      <div className="border-t border-border pt-8">
-        <p className="eyebrow">Advanced</p>
+      <details className="border-t border-border pt-8">
+        <summary className="eyebrow cursor-pointer">
+          Not connected yet ({retiredAreas.length})
+        </summary>
         <p className="mt-3 max-w-xl text-xs leading-6 text-muted-foreground">
-          Design previews are earlier demos with sample or simulated content. Nothing in them works
-          for real, so they're hidden. Turning them on affects only this browser.
+          Earlier ideas that only had sample content. They were removed from the site; each says
+          what a real version would need.
         </p>
-        <Button
-          variant="outline"
-          className="mt-4 gap-2"
-          aria-expanded={previews}
-          aria-controls="advanced-view"
-          onClick={() => setShowPreviews(!previews)}
-        >
-          {previews ? "Hide design previews" : "Show design previews"}
-          <ChevronDown
-            size={14}
-            className={previews ? "rotate-180 transition" : "transition"}
-            aria-hidden
-          />
-        </Button>
-      </div>
-      {previews && (
-        <div id="advanced-view" className="mt-10 space-y-20">
-          <section aria-labelledby="all-areas-h">
-            <h3 id="all-areas-h" className="eyebrow">
-              Design previews · demos
-            </h3>
-            <ul className="mt-4 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
-              {advancedItems.map((n) => (
-                <li key={n.to}>
-                  <Link
-                    to={n.to}
-                    className="flex min-h-11 items-center justify-between border-b border-border py-2 text-xs text-muted-foreground hover:text-gold-light"
-                  >
-                    {n.label}
-                    <ArrowUpRight size={12} className="text-gold" aria-hidden />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <div id="command-core">
-            <p className="eyebrow">Command Core · demo</p>
-            <p className="mt-4 max-w-md text-sm leading-loose text-muted-foreground">
-              Sample modules from the original concept. Select one to read about it.
-            </p>
-            <OrbitExplorer items={modules.filter((m) => m.ring === 0)} />
-          </div>
-
-          <div>
-            <p className="eyebrow">Planned principles · not yet built</p>
-            <div className="mt-8 grid gap-10 md:grid-cols-3 md:gap-14">
-              {pillars.map((p) => (
-                <article key={p.t} className="border-t border-gold/30 pt-7">
-                  <p.icon size={28} strokeWidth={1} className="text-gold" />
-                  <h3 className="mt-6 text-xl text-foreground">{p.t}</h3>
-                  <p className="mt-4 text-sm leading-loose text-muted-foreground">{p.d}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-          <DemoBadge />
-        </div>
-      )}
+        <ul className="mt-4 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+          {retiredAreas.map((a) => (
+            <li key={a.path} className="border-b border-border py-2 text-xs">
+              <span className="text-foreground">{a.name}</span>
+              <span className="block leading-5 text-muted-foreground">{a.needs}</span>
+              {"instead" in a && (
+                <Link
+                  to={a.instead.to}
+                  className="text-gold-light underline-offset-4 hover:underline"
+                >
+                  {a.instead.label}
+                </Link>
+              )}
+            </li>
+          ))}
+        </ul>
+      </details>
     </Section>
   );
 }

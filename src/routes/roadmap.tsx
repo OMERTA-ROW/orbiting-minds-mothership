@@ -1,89 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader, Section, StatusPill } from "@/components/evo";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/roadmap")({
-  head: () =>
-    seo(
-      "Roadmap",
-      "From visual prototype to consented GitHub integration, signed verified updates and partner ecosystems.",
-    ),
-  component: Page,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
-
-const phases = [
-  {
-    n: "Phase 1",
-    t: "Visual Prototype",
-    s: "Prototype",
-    items: [
-      "Mothership command center",
-      "Universe map & demo journey",
-      "Guardian & dashboard mockups",
-    ],
-  },
-  {
-    n: "Phase 2",
-    t: "Developer GitHub Integration",
-    s: "Planned",
-    items: [
-      "Consent-based, read-only repo grants",
-      "Optional CLI: evolution / omni · planned distribution",
-      "Owner-scoped auth, orgs & roles",
-    ],
-  },
-  {
-    n: "Phase 3",
-    t: "Signed Verified Updates",
-    s: "Future",
-    items: [
-      "Signed update packages",
-      "Sandbox evaluation & manual approval",
-      "Rollback snapshots & audit events",
-    ],
-  },
-  {
-    n: "Phase 4",
-    t: "Partner Ecosystems",
-    s: "Future",
-    items: [
-      "Cyberace · DEMO only; integration unconfirmed, owner authorization required",
-      "Agent Embassy at scale",
-      "Optional hosted/team offerings · basic access has no mandatory subscription",
-    ],
-  },
-];
-
-function Page() {
-  return (
-    <>
-      <PageHeader eyebrow="Roadmap" title="The path of evolution">
-        Proposed capabilities carry future status labels. Only Phase 1 exists today.
-      </PageHeader>
-      <Section>
-        <ol className="relative space-y-6 border-l border-gold/30 pl-8">
-          {phases.map((p, i) => (
-            <li key={p.n} className="relative">
-              <span
-                className={`absolute -left-[41px] top-6 h-4 w-4 rounded-full border-2 border-gold ${i === 0 ? "bg-gold animate-pulse-gold" : "bg-background"}`}
-                aria-hidden
-              />
-              <div className="glass p-6">
-                <div className="flex flex-wrap items-center gap-3">
-                  <p className="eyebrow">{p.n}</p>
-                  <StatusPill status={p.s} />
-                </div>
-                <h2 className="mt-2 text-2xl text-ivory">{p.t}</h2>
-                <ul className="mt-3 grid gap-1.5 text-sm text-muted-foreground sm:grid-cols-3">
-                  {p.items.map((x) => (
-                    <li key={x}>◆ {x}</li>
-                  ))}
-                </ul>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </Section>
-    </>
-  );
-}

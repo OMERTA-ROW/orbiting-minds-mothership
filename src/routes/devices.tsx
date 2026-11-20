@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DevicesPage } from "@/components/guardian/Devices";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/devices")({
-  head: () =>
-    seo(
-      "My Devices · Voluntary Enrollment Demo",
-      "Fictional laptops, server, tablet and phone with bounded local pairing codes, explicit scope rehearsal and revocation. No actual endpoint enrollment or remote control.",
-    ),
-  component: DevicesPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

@@ -21,8 +21,6 @@ import { ChatHandoffDialog, HeldTaskCard } from "@/components/omnibridge/ChatHan
 import { changeBetaPause } from "@/lib/beta.functions";
 import { OmniAgentHistory } from "@/components/omnibridge/OmniAgentHistory";
 import { supabase } from "@/integrations/supabase/client";
-import { useGuardian } from "@/hooks/use-guardian";
-import { readCreativePause } from "@/hooks/use-cartoon";
 import { Button } from "@/components/ui/button";
 import {
   Conversation,
@@ -63,8 +61,7 @@ export const Route = createFileRoute("/_authenticated/beta-omni")({
 });
 type ChatItem = { kind: "turn"; turn: ChatTurn } | { kind: "task"; task: HeldTask };
 function LiveOmni() {
-  const { data } = useSuspenseQuery(betaQuery),
-    { store: guardian } = useGuardian();
+  const { data } = useSuspenseQuery(betaQuery);
   const draft = Route.useSearch();
   const qc = useQueryClient(),
     cancelRun = useServerFn(cancelOmniAgent),
@@ -89,7 +86,7 @@ function LiveOmni() {
   const speech = useSpeechInput((spoken) =>
     setText((prev) => (prev ? prev.trimEnd() + " " : "") + spoken),
   );
-  const paused = guardian.paused || data.access?.paused;
+  const paused = data.access?.paused;
   const runsQuery = useQuery({
     queryKey: ["omni-agent-runs", projectId],
     queryFn: () => readRuns({ data: { projectId } }),
@@ -188,7 +185,7 @@ function LiveOmni() {
     speech.stop();
     let input;
     try {
-      if (paused || readCreativePause()) throw new Error("Guardian or Nexus planning is paused.");
+      if (paused) throw new Error("Your access is paused by the owner.");
       input = omniAgentInput.parse({
         projectId,
         message: text.replace(/^@omni\s*/i, ""),

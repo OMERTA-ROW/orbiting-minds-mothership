@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CommonsBoard } from "@/components/CodeExchange";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/commons")({
-  head: () =>
-    seo(
-      "Evolution Commons · Demo Board",
-      "Review Code Exchange demo contributions by proposal state. Shared authenticated collaboration is pending; feedback stays in this browser.",
-    ),
-  component: CommonsBoard,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

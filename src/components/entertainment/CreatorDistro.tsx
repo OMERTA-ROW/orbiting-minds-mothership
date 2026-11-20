@@ -33,7 +33,6 @@ import {
   type Canon,
   type ReleaseDraft,
 } from "@/lib/forge-universe";
-import { readCreativePause } from "@/hooks/use-cartoon";
 import type { Database } from "@/integrations/supabase/types";
 import type { PostEditHandoff } from "@/lib/forge-post-edit";
 
@@ -118,7 +117,7 @@ export function CreatorDistro({
     setBusy(true);
     setNotice("");
     try {
-      if (!withdrawal && (!ready || readCreativePause()))
+      if (!withdrawal && !ready)
         throw new Error("Current account, consent or local planning pause blocks this action.");
       await fn();
     } catch (e) {
@@ -546,8 +545,6 @@ export function CreatorDistro({
                             },
                           });
                           if (!r.archive) throw new Error("No bundle returned.");
-                          if (readCreativePause())
-                            throw new Error("Planning paused; download cancelled.");
                           const bytes = Uint8Array.from(atob(r.archive), (c) => c.charCodeAt(0));
                           const url = URL.createObjectURL(
                             new Blob([bytes], { type: "application/zip" }),

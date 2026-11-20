@@ -10,34 +10,18 @@
 <!-- LOVABLE:END -->
 
 ## Project rules
-- Prototype data stays separate from owned records; no live claims. SEO defaults to noindex; only approved leaves opt in.
-- Visual primitives live in `src/components/evo.tsx`; nav groups/status badges in `src/components/nav-groups.ts`, every page reachable via a group or Advanced, why: consistent design without hiding features.
+- No demo mode (owner, 2026-11-20): working pages show only real records, real statuses and honest empty or "not connected" states; former demo/sample areas are listed in `src/lib/retired-areas.ts` and their routes render `RetiredAreaPage` (what a real version needs, a working alternative, and a download of browser-saved records, never deleted); never reintroduce preview toggles, seeded/sample records, scripted replies or simulated statuses, why: the site must not present simulations as features. SEO defaults to noindex; only approved leaves opt in.
+- Visual primitives live in `src/components/evo.tsx`; nav groups/status badges in `src/components/nav-groups.ts` list working pages only, why: consistent design and one honest menu.
+- The OMNI frontend contract (`/api/omni/*`, `src/lib/omni-contract*.ts`) authenticates owner-issued OMNI API keys service-side; only health/manifest are served (health scope) and chat/tasks/decisions/stop answer 403 with the missing scope or owner step named, why: metadata keys must never authorize chat, approvals or stops.
+- Private OMNI text agent requires verified email/member/AI approval, owned context and saved-text consent; conditional claims, durable provider guard and request-bound stop/revocation polling forbid replay/tools/daemon; the only pause is the server account pause. Readiness proves no inference or native access.
+- Quantum/Forge creative tools use only the server-side studio access pause, why: browser-local pause flags were demo controls, not security.
 - Cosmic art uses deterministic/static motion and accessible tokenized controls; homepage overlays share one image frame, why: alignment.
 - Pathways use internal streaming routes and request-local AI; secrets server-only, why: drafting is not execution.
 - Persist AI denial/credit blocks service-only; clear after owner confirmation, why: prevent billed retries across reloads/restarts.
-- Command search uses typed data and validated parameters/anchors, why: exact results preserve interactions.
-- Exchange uses pure validated local records and separate copy localization, why: no multiuser, repository-provenance or code-translation claims.
-- Genesis uses pure transitions and a versioned local store; SDK APIs remain disabled references, why: local identities/visibility labels cannot enforce multiuser security.
-- Open Call adds optional passport declarations and contribution defaults to Genesis; exports only pending/revoked states, why: preserve old records without implying verification.
-- Twins use synthetic numeric models only, never submitted code/shell/hardware, why: demos are not sandbox or hardware validation.
 
-- Event-load SDK validators; keep schemas SSR-safe: no CommonJS evaluation/JSON transmission.
 
-- CARE uses a separate validated local store, pure consent transitions, fictional inventory, historical releases and additive defaults, why: preserve records without claiming native capabilities or account security.
-- CARE/native references never invoke OS/capture/updater/shell APIs, why: signed software and grants must precede execution.
 
-- CARE rehearsals record channel context in editable local audit, not jobs/receipts, why: no native or trusted audit claims.
-- Guardian/Fleet use separate validated local DEMO consent/expiry/revocation; devices start unpaired and scope-less, why: no trusted ownership or CARE/Genesis effects.
-- Guardian reviews use proposed-only samples, why: no model, scan, source execution or text-based privilege.
-- Guardian pause invalidates local Fleet grants/plans and pauses CARE separately; report failures without remote receipts, why: no secure readiness/containment claim.
-- Robotics uses central scenarios, bounded arithmetic and separate local records, never code/ROS/hardware execution, why: no physics, diagnosis or safety proof.
-- Scenario handoffs only prefill drafts; Guardian stays proposed-only, why: no authority transfer.
-- Debrief/Archives/Accountability share additive local consent/revisions and replay/release references, why: pattern checks prove no fault or provenance.
-- Trusted Release uses separate validated local records, Web Crypto sample digests and consent rehearsals; hardware/deployment blocked, why: hashes/signoffs are not signatures, trusted audit or safety proof.
-- Vault reuses Trust records, owner confirmation, exact comparisons and event-loaded parsers; Lounge uses Genesis consent, why: no signing/enrollment claims.
-- Nexus keeps separate consented local records and isolated base-version drafts; corrected example labels overlay stored data, why: preserve work without secure chat or execution claims.
-- Public OMNI stays DEMO; private text agent requires verified email/member/AI approval, owned context and saved-text consent; conditional claims, durable provider guard and request-bound stop/revocation polling forbid replay/tools/daemon. Readiness proves no inference or native access.
-- Entertainment/Cartoon use separate validated local stores, revision-bound reviews and fresh Guardian/Nexus pause checks, why: samples, timing and preparation exports confer no processing, rights clearance or publication.
+- OMNI presentation is scoped in the root shell with shared workspace navigation (`OmniAreaHeader`), why: one OMNI workspace menu.
 - Subdirectories have their own `AGENTS.md` to read before changing files there; CLI-specific rules live in `cli/AGENTS.md` to keep this shared instruction file bounded.
 - Beta tables isolate owners with composite project ownership, trigger audit and service-managed default-deny AI access; one root auth subscriber and cache-clearing logout, why: demos/declarations cannot authorize.
 - Account recovery presentation is user-bound and validated by the one root subscriber; updates revalidate identity and Cloud authorizes them, why: URL/storage hints alone cannot establish a recovery session and stale async identity must not survive logout.
@@ -47,12 +31,8 @@
 - Creator/Distro use immutable owner-project drafts, digests and row-locked access/review/revoke; post-edit prefills require downloaded WAV QA, why: manual ZIPs never imply hosting, receipts, schedules or recall.
 - OMNI private operations use strict proposals and owner-scoped row-locked social draft/review/stop records with explicit grant revokes and typed non-null consent; no provider endpoints, why: declarations confer no posting, CI, scopes or release authority.
 - Daily knowledge uses one cron-authenticated public route, supported request-bound waitUntil, bounded attempts, token-owned lease and durable pre-provider guard with checked singleton outcomes; approved readers and owner-confirmed recovery only, why: failed pause/result writes must not replay paid/denied requests; acceptance is not delivery or retraining.
-- Racing Arena is deterministic seeded simulation with browser-local points; real-money betting stays a disabled constant, why: no value, wagering or licensing claims.
-- Omni Legal uses session-only synthetic drafts/manual PDFs, confirmed-jurisdiction web library labels, dated official references and event-loaded PDF/ZIP exports; public blanks use fixed IDs, bounded no-redirect fetch and reviewed hashes; CLI stays metadata-only. Real cases/transmission/device sync disabled, why: web classification and references prove neither private access, court applicability nor OS scope.
-- Autonomous tasks block without an executor; Sabrina/Angel Tech local records require owner/human/invitation approval, why: local flags grant no security, credentials or outreach.
 - Reuse RasulChat/All-Seeing Eye; specialist IDs and Guardian deny remain. Private Razul uses NULL-safe verified-owner/aal2 SQL, caller RLS, no-store and metadata audit; bounded source receipts evidence freshness, not leases. No duplicate hub or inspection-triggered jobs, why: declarations confer no authority.
 - OMNI API keys are owner-only MFA-gated RPCs with SHA-256 hash-only storage and show-once secrets generated in the server function; `omni_api_key_verify` is service-role-only for the `/api/public/omni/*` metadata endpoints, every key has an explicit expiry (1–365 days) or an owner-chosen "Never expires" (NULL expiry + `never_expires`, DB-enforced together, valid until revoked; 0061), why: plaintext secrets never persist and key use stays scoped, revocable and auditable.
-- OMNI presentation is scoped in the root shell with shared workspace navigation; local-record hooks preserve unreadable/concurrently changed originals and report unsaved edits, why: simplification must not remove features or silently overwrite data.
 - OMNI Terminal (`/omni-terminal`) is owner/aal2-only; its Emergency Stop fails closed (missing/unreadable = engaged) and gates every outbound or granting Jackboy function, releasing needs fresh TOTP; tasks are `held` only and autonomy/CODE stay off while no executor exists, why: status and records must never imply execution.
 - OMNI Docking Bay (`/omni-dock`, `docs/OMNI-DOCK-PROTOCOL.md`) docks branches with owner-issued single-use hashed codes and device ECDSA P-256 keys; device calls are path-bound signed, nonce/clock-checked and use service-only RPCs; per-device mobile autonomy has no stored state and is refused, why: pairing grants metadata reads, held proposals and stop/pause only; approvals need the Mothership passkey.
 - OMNI Agent Workspace (on `/omni-terminal`) relays chat/commands only via the signed `omni.workspace/v1` link, after owner+aal2, single-use WebAuthn passkey checks, kill switch, Emergency Stop and a passed self-test (<24 h); server-side spend caps, append-only audit/ledger and gated actions always need the owner, why: the browser never holds secrets and readiness must precede execution.

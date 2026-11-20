@@ -86,11 +86,6 @@ function LaunchControl() {
         <Button asChild variant="ghost">
           <Link to="/auth">Sign in / create account</Link>
         </Button>
-        <Button asChild variant="ghost">
-          <Link to="/omni" search={{ world: "nexus-nebula" }}>
-            Local OMNI demo
-          </Link>
-        </Button>
       </nav>
       <label className="mb-6 block text-xs">
         Evidence status
@@ -123,7 +118,7 @@ function LaunchControl() {
                 </span>
                 <p className="mt-2 text-[10px] text-muted-foreground">
                   {g.gating ? "LAUNCH GATE" : "OUTSIDE WEB BETA"}
-                  {g.demoOnly ? " · DEMO ONLY" : ""}
+                  {g.demoOnly ? " · NOT CONNECTED" : ""}
                 </p>
                 <p className="mt-3 text-[10px] text-muted-foreground">Owner: {g.owner}</p>
               </div>

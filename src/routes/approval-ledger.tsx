@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ApprovalLedgerPage } from "@/components/trusted/Ledger";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/approval-ledger")({
-  head: () =>
-    seo(
-      "Approval Ledger and Release Passport",
-      "Unsigned local DEMO release drafts with exact sample-text digest, declared human owner and agent operator, evidence, distinct review, revocation and rollback rehearsal. Trusted audit and deployment remain blocked.",
-    ),
-  component: ApprovalLedgerPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

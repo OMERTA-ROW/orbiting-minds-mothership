@@ -1,17 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ReleasesPage } from "@/components/genesis/Showcases";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
-import { roboticsPresetSearch } from "@/lib/robotics";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/releases")({
-  validateSearch: roboticsPresetSearch,
-  head: () =>
-    seo(
-      "Release Galaxy · Unsigned Previews",
-      "Prepare local demo release manifests and robotics research passports with rollback, license and synthetic records. No signing, distribution or deployment.",
-    ),
-  component: ReleasesRoute,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
-function ReleasesRoute() {
-  const { scenario } = Route.useSearch();
-  return <ReleasesPage scenarioId={scenario} />;
-}

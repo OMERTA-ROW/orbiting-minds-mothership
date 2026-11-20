@@ -1,8 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, Orbit } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { isPreviewPath } from "@/components/nav-groups";
-import { useShowPreviews } from "@/lib/preview-setting";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,23 +9,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const tools = [
-  { to: "/omnibridge", label: "Connections & plans" },
-  { to: "/omni-gateway", label: "Coding · not connected" },
-  { to: "/omni-agents", label: "Agents" },
-  { to: "/omni-models", label: "Models & passports" },
-  { to: "/omni-marketing", label: "Marketing" },
-  { to: "/angel-tech", label: "Sabrina & partnerships" },
-  { to: "/omni-rights", label: "Rights" },
-  { to: "/omni-legal", label: "Legal forms & drafts" },
   { to: "/activation-approvals", label: "Activation approvals · owner only" },
+  { to: "/treasury", label: "Treasury · owner only" },
   { to: "/members", label: "Members · owner only" },
   { to: "/platform", label: "Offline companion · planned" },
 ] as const;
 
 export function OmniAreaHeader() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const previews = useShowPreviews();
-  const shownTools = tools.filter((t) => previews || !isPreviewPath(t.to));
   return (
     <header className="omni-area-header mx-auto max-w-[1440px] border-b border-border px-5 py-6 md:px-10">
       <div className="flex items-center gap-4">
@@ -43,13 +32,6 @@ export function OmniAreaHeader() {
         <Button asChild variant={path === "/beta-omni" ? "secondary" : "ghost"} size="sm">
           <Link to="/beta-omni">Private agent</Link>
         </Button>
-        {previews && (
-          <Button asChild variant={path === "/omni" ? "secondary" : "ghost"} size="sm">
-            <Link to="/omni" search={{ world: "nexus-nebula" }}>
-              Conversation · demo
-            </Link>
-          </Button>
-        )}
         <Button asChild variant={path === "/omni-razul" ? "secondary" : "ghost"} size="sm">
           <Link to="/omni-razul">Observatory & history</Link>
         </Button>
@@ -72,7 +54,7 @@ export function OmniAreaHeader() {
             align="start"
             className="omni-theme max-h-[65svh] w-64 overflow-y-auto bg-popover text-popover-foreground"
           >
-            {shownTools.map((tool) => (
+            {tools.map((tool) => (
               <DropdownMenuItem asChild key={tool.to}>
                 <Link to={tool.to}>{tool.label}</Link>
               </DropdownMenuItem>

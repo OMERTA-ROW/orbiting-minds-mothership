@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { NexusWorkspace } from "@/components/nexus/Workspace";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/command-nexus")({
-  head: () =>
-    seo(
-      "Command Nexus · Unified Developer Studio",
-      "Evolution Mothership project-aware local DEMO workspace: explicit AI draft routing, independent threads, isolated code review, provider planning permissions and inert Unity/Blender references. No connected providers or desktop execution.",
-    ),
-  component: NexusWorkspace,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

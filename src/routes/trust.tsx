@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TrustPage } from "@/components/genesis/Showcases";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/trust")({
-  head: () =>
-    seo(
-      "Trust & Certification Rules",
-      "Proposed provenance, license, test and independent review requirements. No certifications issued and no verified hardware outcomes claimed.",
-    ),
-  component: TrustPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Check, Copy, Terminal, Shield, LockKeyhole, GitBranch } from "lucide-react";
+import { Check, Copy, Terminal, Shield, LockKeyhole, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DemoBadge, CoreGeometry } from "@/components/evo";
+import { CoreGeometry } from "@/components/evo";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cliCommands } from "@/data/evolution";
 import { commandConflictPlan, cliPlatformChecks, type CliPlatform } from "@/lib/cli-reference";
@@ -37,7 +36,9 @@ export function Companion() {
         <div className="relative max-w-4xl">
           <div className="flex flex-wrap items-center gap-3">
             <span className="eyebrow">Platform / lightweight companion</span>
-            <DemoBadge label="PLANNED DISTRIBUTION · NO DOWNLOAD" />
+            <span className="inline-flex items-center border border-warning/50 px-3 py-1 font-mono text-[9px] uppercase tracking-widest text-warning">
+              Planned · no download
+            </span>
           </div>
           <h1 className="mt-6 text-4xl leading-tight md:text-5xl">EVOLUTION CLI</h1>
           <p className="mt-5 text-lg">Your terminal. Your tools. One optional companion.</p>
@@ -46,23 +47,9 @@ export function Companion() {
             replacement IDE, mandatory download or automatic changes to other tools. Basic access
             has no required recurring subscription; external API fees may apply.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild variant="cosmic">
-              <Link to="/omni" search={{ world: "nexus-nebula" }}>
-                Try OMNI in your browser
-                <ArrowUpRight size={15} />
-              </Link>
-            </Button>
-            <Button asChild variant="signal">
-              <Link to="/command-nexus">
-                Open Command Nexus
-                <ArrowUpRight size={15} />
-              </Link>
-            </Button>
-          </div>
           <p className="mt-4 text-xs leading-6 text-warning">
-            OMNI offers a separate verified-account AI channel and a local Demo template. Desktop
-            login and agent execution remain Blocked; nothing is installed.
+            The CLI isn't distributed yet; nothing is installed. For OMNI today, use OMNI chat or
+            OMNI Terminal. Desktop login and agent execution stay blocked.
           </p>
         </div>
       </header>
@@ -293,7 +280,9 @@ export function Companion() {
               ) && <p className="mt-5 text-xs text-muted-foreground">No matching command.</p>}
             </section>
             <section className="min-w-0 border-y border-border py-6">
-              <DemoBadge label="PLANNED PUBLIC COMMAND · REFERENCE ONLY" />
+              <span className="inline-flex items-center border border-warning/50 px-3 py-1 font-mono text-[9px] uppercase tracking-widest text-warning">
+                Planned command · reference only
+              </span>
               <h2 className="mt-5 break-words font-mono text-xl text-gold-light">{command.cmd}</h2>
               <p className="mt-5 text-sm leading-7 text-muted-foreground">{command.desc}</p>
               <pre className="mt-6 whitespace-pre-wrap break-words bg-card/25 p-5 font-mono text-xs leading-7 text-warning">
@@ -414,26 +403,6 @@ export function Companion() {
                   <p className="mt-4 text-xs leading-7 text-muted-foreground">{s.body}</p>
                 </section>
               ))}
-            </div>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Button asChild variant="signal">
-                <Link to="/guardian">
-                  Guardian readiness
-                  <ArrowUpRight size={14} />
-                </Link>
-              </Button>
-              <Button asChild variant="signal">
-                <Link to="/releases">
-                  Release Galaxy · DEMO
-                  <ArrowUpRight size={14} />
-                </Link>
-              </Button>
-              <Button asChild variant="ghost">
-                <Link to="/care-agent">
-                  Native CARE reference
-                  <ArrowUpRight size={14} />
-                </Link>
-              </Button>
             </div>
           </section>
         </TabsContent>

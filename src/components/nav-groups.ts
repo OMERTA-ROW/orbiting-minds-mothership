@@ -142,12 +142,6 @@ export const navGroups = [
         note: "Connection status, shortcuts and API keys (shown once).",
       },
       {
-        to: "/omni-gateway",
-        label: "Coding gateway",
-        status: "off",
-        note: "Blocked until approved and verified.",
-      },
-      {
         to: "/platform",
         label: "Evolution CLI",
         status: "off",

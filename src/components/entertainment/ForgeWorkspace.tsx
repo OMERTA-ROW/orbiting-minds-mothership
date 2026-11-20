@@ -38,7 +38,6 @@ import {
 } from "@/lib/forge";
 import { renderForgeWeb, checkForgeWeb } from "@/lib/forge-web";
 import { inspectWav, STUDIO_BUCKET, studioPath } from "@/lib/quantum";
-import { readCreativePause } from "@/hooks/use-cartoon";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyPostEdit, type PostEditOutput, type PostEditChoice } from "@/lib/forge-post-edit";
@@ -151,7 +150,7 @@ export function ForgeWorkspace({
     }
   };
   const gate = () => {
-    if (!allowed || !consent || paused || readCreativePause())
+    if (!allowed || !consent || paused)
       throw new Error("Current file permissions and unpaused approved media account required.");
   };
   const blob = async (id: string, expectedSha?: string) => {

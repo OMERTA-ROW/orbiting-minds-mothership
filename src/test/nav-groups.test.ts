@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { NAV_STATUS, advancedItems, navGroups, navItems } from "@/components/nav-groups";
+import { NAV_STATUS, navGroups, navItems } from "@/components/nav-groups";
+import { retiredArea, retiredAreas, savedBrowserRecords } from "@/lib/retired-areas";
 
-// Every page the old flat menu linked to must stay reachable after simplification.
+// Every page the old flat menu linked to is either in the menu or an honest "not connected" page.
 const OLD_MENU = [
   "/",
   "/launch-control",
@@ -72,9 +73,9 @@ const OLD_MENU = [
 ];
 
 describe("grouped navigation", () => {
-  it("keeps every page from the old menu reachable", () => {
-    const paths = new Set(navItems.map((n) => n.to));
-    expect(OLD_MENU.filter((p) => !paths.has(p as never))).toEqual([]);
+  it("accounts for every page from the old menu", () => {
+    const paths = new Set<string>(navItems.map((n) => n.to));
+    expect(OLD_MENU.filter((p) => !paths.has(p) && !retiredArea(p))).toEqual([]);
   });
   it("lists each page once", () => {
     const all = navItems.map((n) => n.to);
@@ -108,44 +109,58 @@ describe("grouped navigation", () => {
     const status = Object.fromEntries(
       navGroups.flatMap((g) => g.items.map((i) => [i.to, i.status])),
     );
-    expect(status["/omni-gateway"]).toBe("off");
     expect(status["/platform"]).toBe("off");
   });
-  it("keeps demo labels on advanced demo pages", () => {
-    expect(advancedItems.find((i) => i.to === "/dashboard")?.label).toBe("Demo Dashboard");
-    expect(NAV_STATUS.demo.help).toBe("Simulated example. Nothing real happens.");
+  it("has no demo badge", () => {
+    expect(Object.keys(NAV_STATUS)).not.toContain("demo");
   });
 });
 
-import { isPreviewPath, visibleNavItems } from "@/components/nav-groups";
 import { memberErrorMessage, splitInvitations } from "@/lib/invitations";
 
-describe("design previews are hidden from the working site", () => {
-  it("treats demo pages and their detail pages as previews", () => {
-    for (const p of ["/omni", "/dashboard", "/arena", "/robotics/abc", "/join"])
-      expect(isPreviewPath(p)).toBe(true);
+describe("demo mode is removed", () => {
+  it("former demo pages and their detail pages show a not-connected entry", () => {
+    for (const p of ["/omni", "/dashboard", "/arena", "/robotics/abc", "/join", "/omni-models"])
+      expect(retiredArea(p)).toBeDefined();
   });
-  it("keeps real pages visible", () => {
+  it("working pages are never treated as retired", () => {
     for (const p of [
       "/",
       "/beta",
+      "/beta-omni",
       "/members",
       "/omni-terminal",
       "/omni-dock",
+      "/omni-api-keys",
+      "/activation-approvals",
       "/treasury",
       "/account-security",
       "/invite",
     ])
-      expect(isPreviewPath(p)).toBe(false);
+      expect(retiredArea(p)).toBeUndefined();
   });
-  it("primary groups contain no demo pages", () => {
-    const items = navGroups.flatMap((g): readonly { to: string; status: string }[] => g.items);
-    expect(items.filter((i) => isPreviewPath(i.to))).toEqual([]);
-    expect(items.some((i) => i.status === "demo")).toBe(false);
+  it("menu and search list no retired page", () => {
+    expect(navItems.filter((n) => retiredArea(n.to))).toEqual([]);
   });
-  it("search offers no preview pages while previews are off", () => {
-    expect(visibleNavItems(false).some((n) => isPreviewPath(n.to))).toBe(false);
-    expect(visibleNavItems(true).length).toBe(navItems.length);
+  it("every 'use instead' link points to a working menu page or sign-in", () => {
+    const paths = new Set<string>([...navItems.map((n) => n.to), "/auth"]);
+    for (const a of retiredAreas) if ("instead" in a) expect(paths.has(a.instead.to)).toBe(true);
+  });
+  it("saved browser records exclude sign-in data", () => {
+    const data: Record<string, string> = {
+      "evolution.razul.v1": "{}",
+      "evo.pending-invite": "x",
+      "omni.signin-return": "/",
+      "sb-abc-auth-token": "secret",
+      "evolution-password-recovery": "1",
+    };
+    const keys = Object.keys(data);
+    const storage = {
+      length: keys.length,
+      key: (i: number) => keys[i] ?? null,
+      getItem: (k: string) => data[k] ?? null,
+    };
+    expect(Object.keys(savedBrowserRecords(storage))).toEqual(["evolution.razul.v1"]);
   });
 });
 

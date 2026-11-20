@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComputePage } from "@/components/genesis/Showcases";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/compute-grid")({
-  head: () =>
-    seo(
-      "Opt-in Compute Grid",
-      "Local node configuration and revocable opt-in architecture with USD zero spend caps. No connected devices, remote tasks or shell execution.",
-    ),
-  component: ComputePage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

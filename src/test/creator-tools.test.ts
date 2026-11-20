@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { agents, demoProposals, modules, universe } from "@/data/evolution";
-import { searchCommands, shouldOpenPalette } from "@/lib/command-search";
+import { modules } from "@/data/evolution";
+import { shouldOpenPalette } from "@/components/CommandPalette";
 import { conceptSchema, validatePathway } from "@/lib/pathway";
 import { requiresPersistentPause, safeGatewayFailure } from "@/lib/ai/gateway-errors";
 
@@ -72,32 +72,7 @@ describe("Creator pathway rules", () => {
   });
 });
 
-describe("Global Mothership search", () => {
-  it("can find every module by its name", () => {
-    for (const module of modules)
-      expect(
-        searchCommands(module.name).some((e) => e.kind === "Module" && e.id === module.id),
-      ).toBe(true);
-  });
-  it("can find every demo project, agent and proposal", () => {
-    for (const project of universe.filter((n) => n.category !== "AI Agents"))
-      expect(
-        searchCommands(project.name).some((e) => e.kind === "Project" && e.id === project.id),
-      ).toBe(true);
-    for (const agent of agents)
-      expect(
-        searchCommands(agent.name).some((e) => e.kind === "Agent" && e.id === agent.name),
-      ).toBe(true);
-    for (const proposal of demoProposals)
-      expect(
-        searchCommands(proposal.id).some((e) => e.kind === "Proposal" && e.id === proposal.id),
-      ).toBe(true);
-  });
-  it("searches metadata case-insensitively and handles empty results", () => {
-    expect(searchCommands("  MQTT  ").some((e) => e.id === "helios")).toBe(true);
-    expect(searchCommands("Forge")[0]?.key).toBe("agent:Forge");
-    expect(searchCommands("not-an-existing-world-xx")).toHaveLength(0);
-  });
+describe("page search shortcut", () => {
   it("opens with Ctrl K or Command K without intercepting plain typing", () => {
     const key = { key: "k", metaKey: false, ctrlKey: false, altKey: false, repeat: false };
     expect(shouldOpenPalette(key)).toBe(false);

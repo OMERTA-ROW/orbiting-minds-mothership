@@ -1,17 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChallengeBoard } from "@/components/genesis/Challenges";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
-import { roboticsPresetSearch } from "@/lib/robotics";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/challenges")({
-  validateSearch: roboticsPresetSearch,
-  head: () =>
-    seo(
-      "Innovation Grand Challenges",
-      "Local demo technical challenges, documented submissions and proposed unfunded USD bounties. No shared accounts or external actions.",
-    ),
-  component: ChallengesPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
-function ChallengesPage() {
-  const { scenario } = Route.useSearch();
-  return <ChallengeBoard key={scenario ?? "board"} scenarioId={scenario} />;
-}

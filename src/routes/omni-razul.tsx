@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { RazulArchive } from "@/components/omnibridge/RazulArchive";
 import { RasulChat } from "@/components/omnibridge/RasulChat";
 import { seo } from "@/lib/seo";
 import { AllSeeingEye } from "@/components/razul/AllSeeingEye";
 import { RazulProvisioning } from "@/components/razul/RazulProvisioning";
+import { LiveObservatory } from "@/components/razul/LiveObservatory";
 
 function RazulPage() {
   return (
@@ -18,8 +18,8 @@ function RazulPage() {
         <RasulChat />
       </details>
       <details className="omni-support">
-        <summary>Local archive · Demo</summary>
-        <RazulArchive />
+        <summary>Live observatory findings</summary>
+        <LiveObservatory />
       </details>
     </div>
   );

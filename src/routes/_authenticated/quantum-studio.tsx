@@ -29,8 +29,6 @@ import {
   type PostEditChoice,
 } from "@/lib/forge-post-edit";
 import { Button } from "@/components/ui/button";
-import { useGuardian } from "@/hooks/use-guardian";
-import { readCreativePause } from "@/hooks/use-cartoon";
 import { seo } from "@/lib/seo";
 import studioArt from "@/assets/entertainment-studio.jpg";
 
@@ -54,7 +52,6 @@ function QuantumStudio() {
   const { data: beta } = useSuspenseQuery(betaQuery),
     { data: studio } = useSuspenseQuery(studioQuery),
     query = useQueryClient();
-  const { store: guardian, ready: guardianReady } = useGuardian();
   const reserve = useServerFn(reserveStudioAsset),
     process = useServerFn(processStudioAsset),
     remove = useServerFn(removeStudioAsset);
@@ -74,7 +71,7 @@ function QuantumStudio() {
   const [verifiedOutput, setVerifiedOutput] = useState<PostEditOutput | null>(null);
   const [handoff, setHandoff] = useState<PostEditHandoff | null>(null);
   const openDistro = (output: PostEditOutput, choice: PostEditChoice) => {
-    if (output.projectId !== projectId || !allowed || !consent || readCreativePause()) return;
+    if (output.projectId !== projectId || !allowed || !consent) return;
     setHandoff({ output, choice });
     document
       .getElementById("creator-distro")
@@ -84,7 +81,7 @@ function QuantumStudio() {
     generation = useRef(0),
     fileInput = useRef<HTMLInputElement>(null);
   const consent = rights && privacy,
-    paused = !guardianReady || guardian.paused || studio.access?.paused;
+    paused = studio.access?.paused;
   const allowed = !!studio.access?.studio_approved && !paused;
   const assets = studio.assets.filter((a) => a.project_id === projectId),
     original = assets.find((a) => a.id === selected && a.role === "original");
@@ -128,8 +125,7 @@ function QuantumStudio() {
     }
   };
   const checkPause = () => {
-    if (!allowed || readCreativePause())
-      throw new Error("Account, Guardian or Nexus paused; processing blocked.");
+    if (!allowed) throw new Error("Your studio access is paused; processing blocked.");
   };
   const loadAudio = async (id: string, owner: string, output?: (typeof studio.assets)[number]) => {
     const result = await supabase.storage.from(STUDIO_BUCKET).download(studioPath(owner, id));
@@ -188,7 +184,7 @@ function QuantumStudio() {
         />
         <div className="open-call-shade absolute inset-0" />
         <div className="relative mx-auto max-w-6xl px-5 py-10 md:px-8">
-          <p className="eyebrow">Entertainment Galaxy / private media beta</p>
+          <p className="eyebrow">Private media beta</p>
           <h1 className="mt-4 text-3xl md:text-4xl">Quantum Studio</h1>
           <p className="mt-4 max-w-xl text-sm leading-7">
             One source. New possibilities. Your approval.
@@ -641,12 +637,6 @@ function QuantumStudio() {
               <Link to="/launch-control">
                 <Shield size={14} />
                 Launch evidence
-              </Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link to="/entertainment">
-                Entertainment plans
-                <ArrowUpRight size={14} />
               </Link>
             </Button>
           </div>

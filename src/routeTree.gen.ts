@@ -94,6 +94,11 @@ import { Route as CodeExchangeIdRouteImport } from './routes/code-exchange_.$id'
 import { Route as GuardianIncidentsIdRouteImport } from './routes/guardian-incidents_.$id'
 import { Route as IncidentArchivesIdRouteImport } from './routes/incident-archives_.$id'
 import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
+import { Route as ApiOmniChatRouteImport } from './routes/api/omni/chat'
+import { Route as ApiOmniEmergencyStopRouteImport } from './routes/api/omni/emergency-stop'
+import { Route as ApiOmniHealthRouteImport } from './routes/api/omni/health'
+import { Route as ApiOmniManifestRouteImport } from './routes/api/omni/manifest'
+import { Route as ApiOmniTasksRouteImport } from './routes/api/omni/tasks'
 import { Route as ApiPublicApprovalFlowRouteImport } from './routes/api/public/approval-flow'
 import { Route as ApiPublicJackboyDispatchRouteImport } from './routes/api/public/jackboy/dispatch'
 import { Route as ApiPublicJackboySafetyEventRouteImport } from './routes/api/public/jackboy/safety-event'
@@ -104,6 +109,7 @@ import { Route as ApiPublicOmniHealthRouteImport } from './routes/api/public/omn
 import { Route as ApiPublicOmniJobsRouteImport } from './routes/api/public/omni/jobs'
 import { Route as ApiPublicOmniNoopWorkerRouteImport } from './routes/api/public/omni/noop-worker'
 import { Route as ApiPublicRazulSentinelReportRouteImport } from './routes/api/public/razul-sentinel/report'
+import { Route as ApiOmniTasksIdDecisionRouteImport } from './routes/api/omni/tasks.$id.$decision'
 import { Route as ApiPublicOmniDockAuditRouteImport } from './routes/api/public/omni/dock/audit'
 import { Route as ApiPublicOmniDockCloudRouteImport } from './routes/api/public/omni/dock/cloud'
 import { Route as ApiPublicOmniDockControlRouteImport } from './routes/api/public/omni/dock/control'
@@ -540,6 +546,31 @@ const RoboticsIdRoute = RoboticsIdRouteImport.update({
   path: '/robotics/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOmniChatRoute = ApiOmniChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => ApiOmniRoute,
+} as any)
+const ApiOmniEmergencyStopRoute = ApiOmniEmergencyStopRouteImport.update({
+  id: '/emergency-stop',
+  path: '/emergency-stop',
+  getParentRoute: () => ApiOmniRoute,
+} as any)
+const ApiOmniHealthRoute = ApiOmniHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => ApiOmniRoute,
+} as any)
+const ApiOmniManifestRoute = ApiOmniManifestRouteImport.update({
+  id: '/manifest',
+  path: '/manifest',
+  getParentRoute: () => ApiOmniRoute,
+} as any)
+const ApiOmniTasksRoute = ApiOmniTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => ApiOmniRoute,
+} as any)
 const ApiPublicApprovalFlowRoute = ApiPublicApprovalFlowRouteImport.update({
   id: '/api/public/approval-flow',
   path: '/api/public/approval-flow',
@@ -596,6 +627,11 @@ const ApiPublicRazulSentinelReportRoute =
     path: '/api/public/razul-sentinel/report',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiOmniTasksIdDecisionRoute = ApiOmniTasksIdDecisionRouteImport.update({
+  id: '/$id/$decision',
+  path: '/$id/$decision',
+  getParentRoute: () => ApiOmniTasksRoute,
+} as any)
 const ApiPublicOmniDockAuditRoute = ApiPublicOmniDockAuditRouteImport.update({
   id: '/api/public/omni/dock/audit',
   path: '/api/public/omni/dock/audit',
@@ -717,7 +753,7 @@ export interface FileRoutesByFullPath {
   '/members': typeof AuthenticatedMembersRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
-  '/api/omni': typeof ApiOmniRoute
+  '/api/omni': typeof ApiOmniRouteWithChildren
   '/api/omni-agent': typeof ApiOmniAgentRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
@@ -725,6 +761,11 @@ export interface FileRoutesByFullPath {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/omni/chat': typeof ApiOmniChatRoute
+  '/api/omni/emergency-stop': typeof ApiOmniEmergencyStopRoute
+  '/api/omni/health': typeof ApiOmniHealthRoute
+  '/api/omni/manifest': typeof ApiOmniManifestRoute
+  '/api/omni/tasks': typeof ApiOmniTasksRouteWithChildren
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jackboy/safety-event': typeof ApiPublicJackboySafetyEventRoute
@@ -735,6 +776,7 @@ export interface FileRoutesByFullPath {
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/omni/noop-worker': typeof ApiPublicOmniNoopWorkerRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
+  '/api/omni/tasks/$id/$decision': typeof ApiOmniTasksIdDecisionRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
@@ -821,7 +863,7 @@ export interface FileRoutesByTo {
   '/members': typeof AuthenticatedMembersRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
-  '/api/omni': typeof ApiOmniRoute
+  '/api/omni': typeof ApiOmniRouteWithChildren
   '/api/omni-agent': typeof ApiOmniAgentRoute
   '/capsules/$id': typeof CapsulesIdRoute
   '/challenges/$id': typeof ChallengesIdRoute
@@ -829,6 +871,11 @@ export interface FileRoutesByTo {
   '/guardian-incidents/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives/$id': typeof IncidentArchivesIdRoute
   '/robotics/$id': typeof RoboticsIdRoute
+  '/api/omni/chat': typeof ApiOmniChatRoute
+  '/api/omni/emergency-stop': typeof ApiOmniEmergencyStopRoute
+  '/api/omni/health': typeof ApiOmniHealthRoute
+  '/api/omni/manifest': typeof ApiOmniManifestRoute
+  '/api/omni/tasks': typeof ApiOmniTasksRouteWithChildren
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jackboy/safety-event': typeof ApiPublicJackboySafetyEventRoute
@@ -839,6 +886,7 @@ export interface FileRoutesByTo {
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/omni/noop-worker': typeof ApiPublicOmniNoopWorkerRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
+  '/api/omni/tasks/$id/$decision': typeof ApiOmniTasksIdDecisionRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
@@ -927,7 +975,7 @@ export interface FileRoutesById {
   '/_authenticated/members': typeof AuthenticatedMembersRoute
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
-  '/api/omni': typeof ApiOmniRoute
+  '/api/omni': typeof ApiOmniRouteWithChildren
   '/api/omni-agent': typeof ApiOmniAgentRoute
   '/capsules_/$id': typeof CapsulesIdRoute
   '/challenges_/$id': typeof ChallengesIdRoute
@@ -935,6 +983,11 @@ export interface FileRoutesById {
   '/guardian-incidents_/$id': typeof GuardianIncidentsIdRoute
   '/incident-archives_/$id': typeof IncidentArchivesIdRoute
   '/robotics_/$id': typeof RoboticsIdRoute
+  '/api/omni/chat': typeof ApiOmniChatRoute
+  '/api/omni/emergency-stop': typeof ApiOmniEmergencyStopRoute
+  '/api/omni/health': typeof ApiOmniHealthRoute
+  '/api/omni/manifest': typeof ApiOmniManifestRoute
+  '/api/omni/tasks': typeof ApiOmniTasksRouteWithChildren
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
   '/api/public/jackboy/dispatch': typeof ApiPublicJackboyDispatchRoute
   '/api/public/jackboy/safety-event': typeof ApiPublicJackboySafetyEventRoute
@@ -945,6 +998,7 @@ export interface FileRoutesById {
   '/api/public/omni/jobs': typeof ApiPublicOmniJobsRoute
   '/api/public/omni/noop-worker': typeof ApiPublicOmniNoopWorkerRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
+  '/api/omni/tasks/$id/$decision': typeof ApiOmniTasksIdDecisionRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
@@ -1041,6 +1095,11 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/omni/chat'
+    | '/api/omni/emergency-stop'
+    | '/api/omni/health'
+    | '/api/omni/manifest'
+    | '/api/omni/tasks'
     | '/api/public/approval-flow'
     | '/api/public/jackboy/dispatch'
     | '/api/public/jackboy/safety-event'
@@ -1051,6 +1110,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/jobs'
     | '/api/public/omni/noop-worker'
     | '/api/public/razul-sentinel/report'
+    | '/api/omni/tasks/$id/$decision'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
@@ -1145,6 +1205,11 @@ export interface FileRouteTypes {
     | '/guardian-incidents/$id'
     | '/incident-archives/$id'
     | '/robotics/$id'
+    | '/api/omni/chat'
+    | '/api/omni/emergency-stop'
+    | '/api/omni/health'
+    | '/api/omni/manifest'
+    | '/api/omni/tasks'
     | '/api/public/approval-flow'
     | '/api/public/jackboy/dispatch'
     | '/api/public/jackboy/safety-event'
@@ -1155,6 +1220,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/jobs'
     | '/api/public/omni/noop-worker'
     | '/api/public/razul-sentinel/report'
+    | '/api/omni/tasks/$id/$decision'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
@@ -1250,6 +1316,11 @@ export interface FileRouteTypes {
     | '/guardian-incidents_/$id'
     | '/incident-archives_/$id'
     | '/robotics_/$id'
+    | '/api/omni/chat'
+    | '/api/omni/emergency-stop'
+    | '/api/omni/health'
+    | '/api/omni/manifest'
+    | '/api/omni/tasks'
     | '/api/public/approval-flow'
     | '/api/public/jackboy/dispatch'
     | '/api/public/jackboy/safety-event'
@@ -1260,6 +1331,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/jobs'
     | '/api/public/omni/noop-worker'
     | '/api/public/razul-sentinel/report'
+    | '/api/omni/tasks/$id/$decision'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
@@ -1342,7 +1414,7 @@ export interface RootRouteChildren {
   UpdatesRoute: typeof UpdatesRoute
   VoiceRoute: typeof VoiceRoute
   ApiEvolutionPathwayRoute: typeof ApiEvolutionPathwayRoute
-  ApiOmniRoute: typeof ApiOmniRoute
+  ApiOmniRoute: typeof ApiOmniRouteWithChildren
   ApiOmniAgentRoute: typeof ApiOmniAgentRoute
   CapsulesIdRoute: typeof CapsulesIdRoute
   ChallengesIdRoute: typeof ChallengesIdRoute
@@ -1967,6 +2039,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoboticsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/omni/chat': {
+      id: '/api/omni/chat'
+      path: '/chat'
+      fullPath: '/api/omni/chat'
+      preLoaderRoute: typeof ApiOmniChatRouteImport
+      parentRoute: typeof ApiOmniRoute
+    }
+    '/api/omni/emergency-stop': {
+      id: '/api/omni/emergency-stop'
+      path: '/emergency-stop'
+      fullPath: '/api/omni/emergency-stop'
+      preLoaderRoute: typeof ApiOmniEmergencyStopRouteImport
+      parentRoute: typeof ApiOmniRoute
+    }
+    '/api/omni/health': {
+      id: '/api/omni/health'
+      path: '/health'
+      fullPath: '/api/omni/health'
+      preLoaderRoute: typeof ApiOmniHealthRouteImport
+      parentRoute: typeof ApiOmniRoute
+    }
+    '/api/omni/manifest': {
+      id: '/api/omni/manifest'
+      path: '/manifest'
+      fullPath: '/api/omni/manifest'
+      preLoaderRoute: typeof ApiOmniManifestRouteImport
+      parentRoute: typeof ApiOmniRoute
+    }
+    '/api/omni/tasks': {
+      id: '/api/omni/tasks'
+      path: '/tasks'
+      fullPath: '/api/omni/tasks'
+      preLoaderRoute: typeof ApiOmniTasksRouteImport
+      parentRoute: typeof ApiOmniRoute
+    }
     '/api/public/approval-flow': {
       id: '/api/public/approval-flow'
       path: '/api/public/approval-flow'
@@ -2036,6 +2143,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/razul-sentinel/report'
       preLoaderRoute: typeof ApiPublicRazulSentinelReportRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/omni/tasks/$id/$decision': {
+      id: '/api/omni/tasks/$id/$decision'
+      path: '/$id/$decision'
+      fullPath: '/api/omni/tasks/$id/$decision'
+      preLoaderRoute: typeof ApiOmniTasksIdDecisionRouteImport
+      parentRoute: typeof ApiOmniTasksRoute
     }
     '/api/public/omni/dock/audit': {
       id: '/api/public/omni/dock/audit'
@@ -2117,6 +2231,37 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ApiOmniTasksRouteChildren {
+  ApiOmniTasksIdDecisionRoute: typeof ApiOmniTasksIdDecisionRoute
+}
+
+const ApiOmniTasksRouteChildren: ApiOmniTasksRouteChildren = {
+  ApiOmniTasksIdDecisionRoute: ApiOmniTasksIdDecisionRoute,
+}
+
+const ApiOmniTasksRouteWithChildren = ApiOmniTasksRoute._addFileChildren(
+  ApiOmniTasksRouteChildren,
+)
+
+interface ApiOmniRouteChildren {
+  ApiOmniChatRoute: typeof ApiOmniChatRoute
+  ApiOmniEmergencyStopRoute: typeof ApiOmniEmergencyStopRoute
+  ApiOmniHealthRoute: typeof ApiOmniHealthRoute
+  ApiOmniManifestRoute: typeof ApiOmniManifestRoute
+  ApiOmniTasksRoute: typeof ApiOmniTasksRouteWithChildren
+}
+
+const ApiOmniRouteChildren: ApiOmniRouteChildren = {
+  ApiOmniChatRoute: ApiOmniChatRoute,
+  ApiOmniEmergencyStopRoute: ApiOmniEmergencyStopRoute,
+  ApiOmniHealthRoute: ApiOmniHealthRoute,
+  ApiOmniManifestRoute: ApiOmniManifestRoute,
+  ApiOmniTasksRoute: ApiOmniTasksRouteWithChildren,
+}
+
+const ApiOmniRouteWithChildren =
+  ApiOmniRoute._addFileChildren(ApiOmniRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -2189,7 +2334,7 @@ const rootRouteChildren: RootRouteChildren = {
   UpdatesRoute: UpdatesRoute,
   VoiceRoute: VoiceRoute,
   ApiEvolutionPathwayRoute: ApiEvolutionPathwayRoute,
-  ApiOmniRoute: ApiOmniRoute,
+  ApiOmniRoute: ApiOmniRouteWithChildren,
   ApiOmniAgentRoute: ApiOmniAgentRoute,
   CapsulesIdRoute: CapsulesIdRoute,
   ChallengesIdRoute: ChallengesIdRoute,

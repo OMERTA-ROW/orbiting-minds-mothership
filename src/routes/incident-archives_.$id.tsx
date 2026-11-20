@@ -1,20 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { IncidentCasePage } from "@/components/incidents/Archive";
-import { incidentExamples } from "@/data/evolution";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/incident-archives_/$id")({
-  head: ({ params }) => {
-    const item = incidentExamples.find((c) => c.id === params.id);
-    return seo(
-      item ? `${item.title} · Incident Archive` : "Incident case file",
-      item
-        ? `${item.summary} ${item.status} teaching case; not a verified incident.`
-        : "Local DEMO incident case file with consent, evidence and moderation status.",
-    );
-  },
-  component: CasePage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
-function CasePage() {
-  const { id } = Route.useParams();
-  return <IncidentCasePage key={id} id={id} />;
-}

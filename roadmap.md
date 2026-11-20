@@ -1,5 +1,14 @@
 # Evolution — reconciled blueprint roadmap
 
+## Demo mode removed + OMNI connection paths — 2026-11-20 (preview)
+- [x] Design-preview switch, Advanced demo menu, sample search results and demo providers removed; 61 former demo addresses show an honest "not connected" page with what's needed and a working alternative (`src/lib/retired-areas.ts`); browser-saved records kept and downloadable.
+- [x] Model choices, Coding gateway and the Observatory's local archive retired (browser-only prototypes); Observatory keeps real research, status and live findings; Razul no longer prepares pretend dispatches or lists simulated agents.
+- [x] Demo starting points/links removed from AI Pathway, Launch readiness, CLI page and Quantum Studio; OMNI chat and Quantum Studio use only the server account pause.
+- [x] OMNI frontend contract: `/api/omni/health` + `/manifest` served for health-scoped keys; chat/tasks/decisions/stop answer 403 naming what's missing (`docs/OMNI-FRONTEND-CONNECTION.md`).
+- [x] Database: no sample-only rows found in setup steps; nothing deleted.
+- [ ] Waiting on owner: publish Mothership, then follow `docs/OMNI-FRONTEND-CONNECTION.md` steps 2–5.
+- [ ] Not built (needs owner decision + database change): chat/task/stop key scopes and a founder-verified chat adapter.
+
 ## Owner dashboard and API keys with "Never expires" — 2026-11-20 (preview)
 - [x] `/omni-api-keys` is now the owner dashboard: primary shortcuts, signed connection status (read-only), API keys first, Jackboy manual tools in their own tab; OMNI menu links it directly.
 - [x] One-step key creation: name, plain-language access, expiry (7/30/90/365 days, custom 1–365, or Never expires) and one Create button; allowlisted failure reasons.

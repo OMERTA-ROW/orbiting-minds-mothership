@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OmniModelGateway } from "@/components/omnibridge/OmniModelGateway";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/omni-models")({
-  head: () =>
-    seo(
-      "OMNI Model Gateway · Declarations Only",
-      "Model-agnostic multi-agent gateway: provider adapters, agent passports, routing plans and the Jackboy dispatch loop. No model is connected; credential prerequisites and the acceptance test are listed.",
-    ),
-  component: OmniModelGateway,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

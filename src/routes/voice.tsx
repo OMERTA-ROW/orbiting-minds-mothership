@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { VoicePage } from "@/components/care/Voice";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/voice")({
-  head: () =>
-    seo(
-      "Mothership Voice · Persona Demo",
-      "Original voice persona, privacy preferences and text-only push-to-talk concept. Microphone off, no speech recognition or synthesis.",
-    ),
-  component: VoicePage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AngelTechWorkspace } from "@/components/omnibridge/AngelTechWorkspace";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/angel-tech")({
-  head: () =>
-    seo(
-      "Angel Tech · Sabrina Concept Workspace",
-      "Concept-stage Sabrina marketing intelligence and a private local registry for prospective consenting AI agent and research-group partnerships. No outreach, provider connection or private-data access is active.",
-    ),
-  component: AngelTechWorkspace,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

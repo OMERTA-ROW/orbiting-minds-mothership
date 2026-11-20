@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PaletteTrigger } from "@/components/CommandPalette";
 import {
@@ -12,14 +12,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AccountButton } from "@/components/beta/AccountButton";
 import { StatusBadge } from "@/components/StatusBadge";
-import { advancedItems, navGroups, navItems } from "@/components/nav-groups";
-import { setShowPreviews, useShowPreviews } from "@/lib/preview-setting";
+import { navGroups, navItems } from "@/components/nav-groups";
 
 export { navItems };
 
 export function SiteNav() {
   const [open, setOpen] = useState(false);
-  const previews = useShowPreviews();
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: KeyboardEvent) => {
@@ -72,41 +70,6 @@ export function SiteNav() {
               </DropdownMenuContent>
             </DropdownMenu>
           ))}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-auto gap-1 px-0 text-xs text-muted-foreground">
-                Advanced
-                <ChevronDown size={12} aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="max-h-[70vh] w-72 overflow-y-auto border-gold/25 p-2"
-            >
-              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                Design previews: earlier demos and samples. Hidden unless you turn them on. Nothing
-                in them works for real.
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setShowPreviews(!previews);
-                }}
-                className="py-2.5 text-gold-light"
-              >
-                {previews ? "Hide design previews" : "Show design previews"}
-              </DropdownMenuItem>
-              {previews &&
-                advancedItems.map((n) => (
-                  <DropdownMenuItem key={n.to} asChild>
-                    <Link to={n.to} className="flex justify-between py-2.5">
-                      {n.label}
-                      <ArrowUpRight size={12} className="text-gold" aria-hidden />
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </nav>
         <div className="flex items-center gap-1 sm:gap-2">
           <PaletteTrigger />
@@ -160,40 +123,6 @@ export function SiteNav() {
                 </ul>
               </section>
             ))}
-            <details className="group">
-              <summary className="eyebrow flex min-h-11 cursor-pointer items-center gap-2">
-                Advanced · design previews
-                <ChevronDown size={12} className="transition group-open:rotate-180" aria-hidden />
-              </summary>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Earlier demos and samples. Nothing in them works for real.
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-3"
-                onClick={() => setShowPreviews(!previews)}
-              >
-                {previews ? "Hide design previews" : "Show design previews"}
-              </Button>
-              <ul className="mt-2 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-                {(previews ? [...advancedItems, { to: "/join", label: "Join" } as const] : []).map(
-                  (n) => (
-                    <li key={n.to}>
-                      <Link
-                        to={n.to}
-                        onClick={() => setOpen(false)}
-                        className="block border-b border-border py-3 text-xs text-muted-foreground hover:text-gold-light"
-                        activeProps={{ className: "text-gold-light" }}
-                        activeOptions={{ exact: true }}
-                      >
-                        {n.label}
-                      </Link>
-                    </li>
-                  ),
-                )}
-              </ul>
-            </details>
           </div>
         </nav>
       )}
@@ -212,7 +141,7 @@ export function SiteFooter() {
         <p className="max-w-md text-[10px] leading-loose md:text-right">
           Private beta. Not publicly launched.
           <br />
-          Every link is labeled with what works today. Design previews are hidden by default.
+          Every link is labeled with what works today. Features that aren't connected say so.
           <br />
           AI drafts are suggestions, not tested or executed work.
         </p>

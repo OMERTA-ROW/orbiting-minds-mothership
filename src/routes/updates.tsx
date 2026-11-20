@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { UpdatesPage } from "@/components/care/Updates";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/updates")({
-  head: () =>
-    seo(
-      "Auto-Update Engine · Dry Runs",
-      "Historical source-cited release catalog with local policies, hypothetical verification gates and staged demo approvals. No update installation.",
-    ),
-  component: UpdatesPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

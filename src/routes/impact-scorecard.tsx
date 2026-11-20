@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ImpactScorecardPage } from "@/components/trusted/Impact";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/impact-scorecard")({
-  head: () =>
-    seo(
-      "Idea-to-Impact Scorecard",
-      "Compare paired synthetic baselines and candidates with documented methods, units, limitations and reproducibility gaps. Supplied numbers are not independently verified benefits.",
-    ),
-  component: ImpactScorecardPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

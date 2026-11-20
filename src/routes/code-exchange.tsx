@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ExchangeFeed } from "@/components/CodeExchange";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/code-exchange")({
-  head: () =>
-    seo(
-      "Code Exchange",
-      "Explore original demo code with source attribution, compatibility limits, planned tests and human review. GitHub access, signing and commerce remain disabled.",
-    ),
-  component: ExchangeFeed,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

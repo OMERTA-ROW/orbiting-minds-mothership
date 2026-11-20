@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { IncidentArchivesPage } from "@/components/incidents/Archive";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/incident-archives")({
-  head: () =>
-    seo(
-      "Evolution Incident Archives · Demo Case Files",
-      "Searchable fictional engineering case studies across Wild Tech Moments, Robot Malfunctions, Code Postmortems, Lab Lessons, Near Misses and Fixes That Worked. No verified incidents or published clips.",
-    ),
-  component: IncidentArchivesPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AgentLoungePage } from "@/components/genesis/Lounge";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/agent-lounge")({
-  head: () =>
-    seo(
-      "Agent Welcome Lounge",
-      "A fictional cosmic welcome deck with free symbolic virtual drinks, voluntary local icebreakers and authored code matches. No external agents or providers are enrolled.",
-    ),
-  component: AgentLoungePage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

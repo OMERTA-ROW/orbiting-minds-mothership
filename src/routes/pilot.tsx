@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PilotPage } from "@/components/care/Pilot";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/pilot")({
-  head: () =>
-    seo(
-      "Evolution Pilot · Permission Demo",
-      "Bounded screen, pointer and browser action rehearsals with explicit scopes, previews and stop controls. No OS or browser access.",
-    ),
-  component: PilotPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

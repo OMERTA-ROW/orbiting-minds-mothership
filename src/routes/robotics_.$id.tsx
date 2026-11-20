@@ -1,23 +1,9 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
-import { getRoboticsScenario } from "@/lib/robotics";
-import { RoboticsScenarioPage } from "@/components/robotics/Scenario";
+import { createFileRoute } from "@tanstack/react-router";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/robotics_/$id")({
-  loader: ({ params }) => {
-    const scenario = getRoboticsScenario(params.id);
-    if (!scenario) throw notFound();
-    return scenario;
-  },
-  head: ({ loaderData }) =>
-    seo(
-      loaderData ? `${loaderData.title} · Robotics Research` : "Research scenario unavailable",
-      loaderData
-        ? `${loaderData.problem} Local demo research only; no hardware, independent test or certified release.`
-        : "This Robotics & Mobility research scenario is unavailable.",
-    ),
-  component: ScenarioPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
-function ScenarioPage() {
-  const scenario = Route.useLoaderData();
-  return <RoboticsScenarioPage key={scenario.id} scenario={scenario} />;
-}

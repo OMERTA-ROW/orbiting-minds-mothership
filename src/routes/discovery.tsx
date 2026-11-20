@@ -1,17 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DiscoveryPage } from "@/components/genesis/Showcases";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
-import { roboticsPresetSearch } from "@/lib/robotics";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/discovery")({
-  validateSearch: roboticsPresetSearch,
-  head: () =>
-    seo(
-      "Oracle · Discovery Radar",
-      "Search cited demo contributions, robotics research hypotheses and local knowledge capsules with editorial connections and honest attribution.",
-    ),
-  component: DiscoveryRoute,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
-function DiscoveryRoute() {
-  const { scenario } = Route.useSearch();
-  return <DiscoveryPage key={scenario ?? "discovery"} scenarioId={scenario} />;
-}

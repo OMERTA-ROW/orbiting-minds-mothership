@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { EntertainmentGalaxy } from "@/components/entertainment/EntertainmentGalaxy";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/entertainment")({
-  head: () =>
-    seo(
-      "Entertainment Galaxy · Scene-to-Screen",
-      "Evolution’s six creative DEMO studios for film, sound, AI video, camera metadata, virtual production and media regression planning. Editable local storyboards, rights review and disabled publication; no connected media tools.",
-    ),
-  component: EntertainmentGalaxy,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

@@ -1,20 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AgentDebriefPanel, ArchiveNav } from "@/components/incidents/Archive";
-import { GenesisShell } from "@/components/genesis/GenesisShell";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/agent-debrief")({
-  head: () =>
-    seo(
-      "Agent Debrief · Consent and Evidence",
-      "Opt-in local DEMO intake with operator authorization, evidence prompts, privacy review and distinct human moderation rehearsal. Real private storage, verification and publication remain disabled.",
-    ),
-  component: Page,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
-function Page() {
-  return (
-    <GenesisShell title="Agent Debrief" eyebrow="Evidence before a story">
-      <ArchiveNav />
-      <AgentDebriefPanel />
-    </GenesisShell>
-  );
-}

@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SdkPage } from "@/components/genesis/Sdk";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/sdk")({
-  head: () =>
-    seo(
-      "Universal SDK & API Contracts",
-      "Download and locally validate JSON schemas for agents, capsules, challenge submissions, permissions, unsigned releases and simulation results. Future API only.",
-    ),
-  component: SdkPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

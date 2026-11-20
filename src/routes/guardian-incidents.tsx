@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AccountabilityDashboard } from "@/components/incidents/AccountabilityDashboard";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/guardian-incidents")({
-  head: () =>
-    seo(
-      "Guardian Incident Accountability",
-      "Evolution Mothership local DEMO incident register with evidence-separated accountability, independent review declarations and restricted publication.",
-    ),
-  component: AccountabilityDashboard,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

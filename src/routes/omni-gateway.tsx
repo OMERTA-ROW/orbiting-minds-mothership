@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OmniGateway } from "@/components/omnibridge/OmniGateway";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
+// Former browser-only prototype (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/omni-gateway")({
-  head: () =>
-    seo(
-      "OMNI Coding Gateway · Blocked Runner",
-      "Private planning workspace for the Jackboy coding gateway. No sandbox runner, job API, repository write, merge or deploy is connected; every task stops as blocked.",
-    ),
-  component: OmniGateway,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

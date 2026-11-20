@@ -1,5 +1,4 @@
-import { Link } from "@tanstack/react-router";
-import { Shield, LockKeyhole, ArrowUpRight } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { maintenanceCommands, terminalBoundaries } from "@/data/terminal-boundaries";
 
@@ -17,13 +16,6 @@ export function Maintenance() {
         <Button variant="outline" disabled className="h-auto min-h-11 whitespace-normal">
           <LockKeyhole size={16} />
           Device access · not connected
-        </Button>
-        <Button asChild variant="signal">
-          <Link to="/guardian">
-            <Shield size={16} />
-            Guardian evidence
-            <ArrowUpRight size={16} />
-          </Link>
         </Button>
       </div>
       <div className="mt-8 divide-y divide-border border-y border-border">

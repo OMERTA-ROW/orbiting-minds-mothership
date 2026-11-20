@@ -12,7 +12,7 @@ import {
   Sparkles,
   Square,
 } from "lucide-react";
-import { conceptExamples, modules } from "@/data/evolution";
+import { modules } from "@/data/evolution";
 import { CoreGeometry, PageHeader, Section, moduleIcons } from "@/components/evo";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,10 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { usePathway } from "@/hooks/use-pathway";
 import { seo } from "@/lib/seo";
-import { getRoboticsScenario, roboticsPresetSearch } from "@/lib/robotics";
 
 export const Route = createFileRoute("/pathway")({
-  validateSearch: roboticsPresetSearch,
   head: () =>
     seo(
       "Evolution Pathway Creator",
@@ -33,17 +31,8 @@ export const Route = createFileRoute("/pathway")({
 });
 
 function PathwayPage() {
-  const { scenario } = Route.useSearch();
-  return <PathwayForm key={scenario ?? "original"} scenarioId={scenario} />;
-}
-function PathwayForm({ scenarioId }: { scenarioId?: string | undefined }) {
-  const preset = getRoboticsScenario(scenarioId);
-  const [concept, setConcept] = useState(
-    preset
-      ? `${preset.title}. ${preset.problem} Research/simulation only, no hardware connection or actuation. ${preset.limitation}`
-      : "",
-  );
-  const [goal, setGoal] = useState(preset?.acceptance ?? "");
+  const [concept, setConcept] = useState("");
+  const [goal, setGoal] = useState("");
   const [consent, setConsent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [exportError, setExportError] = useState("");
@@ -78,14 +67,6 @@ function PathwayForm({ scenarioId }: { scenarioId?: string | undefined }) {
         </span>
       </PageHeader>
       <Section>
-        <div className="mb-7 flex flex-wrap gap-3 border-y border-border py-4">
-          <Button asChild variant="signal">
-            <Link to="/code-vault">Code Vault / origin comparison</Link>
-          </Button>
-          <Button asChild variant="ghost">
-            <Link to="/agent-lounge">Welcome Lounge · symbolic demo</Link>
-          </Button>
-        </div>
         <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)]">
           <form
             className="min-w-0 space-y-6 border-t border-gold/30 pt-7"
@@ -96,21 +77,6 @@ function PathwayForm({ scenarioId }: { scenarioId?: string | undefined }) {
               void generate({ concept, goal, consent });
             }}
           >
-            {preset && (
-              <div className="border-l border-gold/40 pl-4">
-                <p className="text-xs leading-loose text-warning">
-                  Robotics DEMO preset · no AI request sent. Hardware execution and release remain
-                  disabled; human consent is still required.
-                </p>
-                <Link
-                  to="/robotics/$id"
-                  params={{ id: preset.id }}
-                  className="mt-3 inline-block text-xs text-gold-light underline"
-                >
-                  Return to scenario evidence
-                </Link>
-              </div>
-            )}
             <div className="flex items-center gap-3">
               <span className="font-mono text-xs text-gold">01</span>
               <h2 className="text-xl">Describe the concept</h2>
@@ -148,27 +114,6 @@ function PathwayForm({ scenarioId }: { scenarioId?: string | undefined }) {
                 className="bg-background/70"
               />
             </div>
-            <fieldset disabled={busy}>
-              <legend className="mb-3 font-mono text-[10px] uppercase text-muted-foreground">
-                Demo starting points
-              </legend>
-              <div className="flex flex-wrap gap-2">
-                {conceptExamples.map((e) => (
-                  <Button
-                    key={e.label}
-                    type="button"
-                    variant="signal"
-                    size="sm"
-                    onClick={() => {
-                      setConcept(e.concept);
-                      setGoal(e.goal);
-                    }}
-                  >
-                    {e.label}
-                  </Button>
-                ))}
-              </div>
-            </fieldset>
             <div className="border-t border-border pt-5">
               <label className="flex cursor-pointer items-start gap-3 text-xs leading-relaxed text-muted-foreground">
                 <Checkbox
@@ -303,23 +248,6 @@ function PathwayForm({ scenarioId }: { scenarioId?: string | undefined }) {
                               {m.rationale}
                             </p>
                             <p className="mt-2 text-xs leading-relaxed">{m.contribution}</p>
-                            {mod && (
-                              <Button
-                                asChild
-                                size="sm"
-                                variant="ghost"
-                                className="mt-3 px-0 text-xs text-gold"
-                              >
-                                <Link
-                                  to="/mothership"
-                                  search={{ module: mod.id }}
-                                  hash="module-explorer"
-                                >
-                                  {mod.status} module
-                                  <ArrowUpRight size={12} />
-                                </Link>
-                              </Button>
-                            )}
                           </article>
                         );
                       })}
@@ -435,12 +363,6 @@ function PathwayForm({ scenarioId }: { scenarioId?: string | undefined }) {
                     <Button variant="signal" size="sm" onClick={exportPathway}>
                       <Download size={14} />
                       Download
-                    </Button>
-                    <Button asChild variant="ghost" size="sm">
-                      <Link to="/sandbox">
-                        Separate simulated journey
-                        <ArrowUpRight size={14} />
-                      </Link>
                     </Button>
                     {exportError && (
                       <p role="alert" className="w-full text-xs text-destructive">

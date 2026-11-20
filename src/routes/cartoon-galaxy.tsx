@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CartoonGalaxy } from "@/components/entertainment/CartoonGalaxy";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/cartoon-galaxy")({
-  head: () =>
-    seo(
-      "Cartoon Galaxy · Original Family Series",
-      "Develop original fictional family-cartoon pitches, character bibles, static storyboard timelines and revision-bound human editorial reviews. Local DEMO with rights and child-privacy gates; no animation services or publication connected.",
-    ),
-  component: CartoonGalaxy,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

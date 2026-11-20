@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { RoboticsCatalog } from "@/components/robotics/Catalog";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/robotics")({
-  head: () =>
-    seo(
-      "Robotics & Mobility Lab",
-      "Browse seven demo robotics, EV, service, rescue, aerospace and public-sector scenarios with research provenance and independent safety gates. No hardware connected.",
-    ),
-  component: RoboticsCatalog,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

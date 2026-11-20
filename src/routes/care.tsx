@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CareDashboard } from "@/components/care/CareDashboard";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/care")({
-  head: () =>
-    seo(
-      "EVOLUTION CARE · Device Demo",
-      "Optional local-care modules, fictional inventory, sample health report and safe virtual storage manifest. No scanning or file changes.",
-    ),
-  component: CareDashboard,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

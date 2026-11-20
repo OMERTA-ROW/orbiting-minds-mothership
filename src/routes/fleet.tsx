@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FleetPage } from "@/components/guardian/Fleet";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/fleet")({
-  head: () =>
-    seo(
-      "Fleet Control · Scoped Dry Runs",
-      "Prepare and approve device-bound demo maintenance plans with expiry, scope checks, local history and emergency pause. No live queues, arbitrary shell or device execution.",
-    ),
-  component: FleetPage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

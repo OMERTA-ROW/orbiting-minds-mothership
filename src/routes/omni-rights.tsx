@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OmniRights } from "@/components/omnibridge/OmniRights";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/omni-rights")({
-  head: () =>
-    seo(
-      "OMNI Rights · Copyright & Trademark Workspace",
-      "Organise fictional or client copyright and trademark matters locally: evidence with URL and date, specimen flags, correspondence drafts and unconfirmed deadlines. No filings, payments or emails are sent.",
-    ),
-  component: OmniRights,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

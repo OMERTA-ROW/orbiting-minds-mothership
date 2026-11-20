@@ -1,15 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CapsulePage } from "@/components/genesis/Capsule";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/capsules_/$id")({
-  head: () =>
-    seo(
-      "Genesis Capsule · Evidence & Review",
-      "Inspect local capsule provenance, license declarations, synthetic twin records and demo human review. No certification or signed release.",
-    ),
-  component: Page,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
-function Page() {
-  const { id } = Route.useParams();
-  return <CapsulePage key={id} id={id} />;
-}

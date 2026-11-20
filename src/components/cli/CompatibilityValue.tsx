@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Download, Shield, Terminal } from "lucide-react";
+import { Download, Shield, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { compatibilityPolicy } from "@/data/evolution";
 
@@ -109,27 +108,14 @@ export function CompatibilityValue() {
             <div>
               <dt className="text-gold-light">Time, cost and context-switching benefit</dt>
               <dd className="mt-1 text-muted-foreground">
-                No measured user savings yet. Compare paired baseline/candidate observations, same
-                task/version, method and limitations in the existing Impact Scorecard. Its declared
-                samples remain DEMO, not independently verified savings or provider telemetry.
+                No measured user savings yet. Nothing here is a sample or an estimate presented as a
+                result.
               </dd>
             </div>
           </dl>
         </section>
       </div>
       <div className="mt-6 flex flex-wrap gap-3">
-        <Button asChild variant="signal">
-          <Link to="/omnibridge">
-            Discover reference capabilities
-            <ArrowUpRight size={14} />
-          </Link>
-        </Button>
-        <Button asChild variant="ghost">
-          <Link to="/impact-scorecard">
-            Compare value evidence · DEMO
-            <ArrowUpRight size={14} />
-          </Link>
-        </Button>
         <Button variant="ghost" onClick={exportPolicy}>
           <Download size={14} />
           Export access policy
@@ -143,11 +129,6 @@ export function CompatibilityValue() {
           {notice}
         </p>
       )}
-      <p className="mt-6 text-xs leading-7 text-warning">
-        Cyberace is an optional DEMO project example, compatibility unconfirmed. Secure owner
-        accounts, authorized adapters, private key custody, native release evidence and owner
-        approval still gate activation.
-      </p>
     </section>
   );
 }

@@ -21,13 +21,8 @@ import { cn } from "@/lib/utils";
 import type { MothershipModule } from "@/data/evolution";
 import { Button } from "@/components/ui/button";
 
-export function DemoBadge({
-  label = "Demo · Simulated",
-  className,
-}: {
-  label?: string;
-  className?: string;
-}) {
+/** Small status tag. Always pass the honest status text; there is no default. */
+export function DemoBadge({ label, className }: { label: string; className?: string }) {
   return (
     <span
       className={cn(

@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OmniLegal } from "@/components/omnibridge/OmniLegal";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/omni-legal")({
-  head: () =>
-    seo(
-      "Omni Legal · Legal Forms Library & Preparation",
-      "Organize limited official blank forms and federal procedural references in Legal Forms by confirmed jurisdiction, with separate synthetic PDF classification. No Desktop sync, private court records or submissions.",
-    ),
-  component: OmniLegal,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

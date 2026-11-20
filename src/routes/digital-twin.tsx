@@ -1,17 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TwinPage } from "@/components/genesis/Twin";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/digital-twin")({
-  validateSearch: (search: Record<string, unknown>): { capsule?: string } =>
-    typeof search["capsule"] === "string" ? { capsule: search["capsule"].slice(0, 100) } : {},
-  head: () =>
-    seo(
-      "Digital Twin Lab",
-      "Configure deterministic synthetic latency models with baseline, target and result records. Submitted code is not executed; no hardware evidence.",
-    ),
-  component: Page,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
-function Page() {
-  const { capsule } = Route.useSearch();
-  return <TwinPage key={capsule ?? ""} capsuleId={capsule ?? ""} />;
-}

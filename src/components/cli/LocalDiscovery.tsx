@@ -1,6 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, ArrowUpRight } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 export function LocalDiscovery() {
   return (
@@ -46,12 +45,6 @@ export function LocalDiscovery() {
             references. Nothing is installed, enrolled or connected. Signed companion distribution
             and native host review remain unavailable.
           </p>
-          <Button asChild variant="ghost" className="mt-4">
-            <Link to="/omnibridge">
-              Compatible adapter references
-              <ArrowUpRight size={14} />
-            </Link>
-          </Button>
         </div>
       </div>
     </section>

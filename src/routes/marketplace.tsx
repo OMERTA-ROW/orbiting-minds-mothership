@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MarketplacePage } from "@/components/genesis/Showcases";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/marketplace")({
-  head: () =>
-    seo(
-      "Creator Marketplace · Demo Listings",
-      "Locally prepare attributed demo capsule listings after simulation and review. USD pricing TBD; checkout, payments and payouts disabled.",
-    ),
-  component: MarketplacePage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AgentReferencePage } from "@/components/care/AgentReference";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/care-agent")({
-  head: () =>
-    seo(
-      "Signed Local Agent · Architecture",
-      "Developer reference for future signed macOS, Windows and Linux inventory adapters, trusted updates, opt-in scopes and supported recovery. Nothing shipped.",
-    ),
-  component: AgentReferencePage,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

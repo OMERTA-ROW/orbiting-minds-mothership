@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OmniMarketing } from "@/components/omnibridge/OmniMarketing";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/omni-marketing")({
-  head: () =>
-    seo(
-      "OMNI Marketing · Project-to-Market Workspace",
-      "Upload a text brief, see extracted evidence, compare three launch routes, draft versioned assets and set an execution policy. Publishing adapters are not connected; jobs stay blocked with exact prerequisites.",
-    ),
-  component: OmniMarketing,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });

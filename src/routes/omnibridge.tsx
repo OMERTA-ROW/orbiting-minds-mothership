@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OmniBridge } from "@/components/omnibridge/OmniBridge";
+import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
+
+// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/omnibridge")({
-  head: () =>
-    seo(
-      "OmniBridge · Capability & Intent Terminal",
-      "Explore Evolution’s cosmic capability graph and explainable local DEMO plans: explicit scopes, independent agent handoffs, human review and disabled official API/desktop/testnet references. No connected tools, wallets or execution.",
-    ),
-  component: OmniBridge,
+  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  component: RetiredAreaPage,
 });
