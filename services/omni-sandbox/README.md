@@ -91,6 +91,15 @@ owner-bound approvals, Stop races or restart recovery.
 The same workflow runs the historical tests directly against the quarantined service on its
 disposable Linux host; it does not bypass quarantine or establish execution readiness.
 
+`cgroup.mjs` contains a preliminary cgroup v2 job-leaf primitive. It requires an already
+delegated parent, applies CPU bandwidth, memory and PID limits, and uses `cgroup.kill` with a
+population check. The opt-in `workspace-cgroup` Linux job exercises this primitive separately;
+it is **not wired into workspace execution**. It does not provide filesystem or namespace
+isolation, renewable Stop, job recovery, or aggregate CPU-time and disk limits. The caller must
+attach a trusted blocked child before allowing untrusted code to run, keep the cgroup filesystem
+inaccessible to that child, and handle startup and Stop races. Do not remove quarantine based on
+this primitive or its tests.
+
 ## Namespace diagnosis
 
 On the disposable Ubuntu 22.04 GitHub-hosted VM in
