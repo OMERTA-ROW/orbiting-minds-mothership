@@ -19,7 +19,6 @@ const tools = [
   { to: "/angel-tech", label: "Sabrina & partnerships" },
   { to: "/omni-rights", label: "Rights" },
   { to: "/omni-legal", label: "Legal forms & drafts" },
-  { to: "/omni-api-keys", label: "API credentials · owner only" },
   { to: "/activation-approvals", label: "Activation approvals · owner only" },
   { to: "/members", label: "Members · owner only" },
   { to: "/platform", label: "Offline companion · planned" },
@@ -56,6 +55,9 @@ export function OmniAreaHeader() {
         </Button>
         <Button asChild variant={path === "/omni-terminal" ? "secondary" : "ghost"} size="sm">
           <Link to="/omni-terminal">Terminal · owner</Link>
+        </Button>
+        <Button asChild variant={path === "/omni-api-keys" ? "secondary" : "ghost"} size="sm">
+          <Link to="/omni-api-keys">Dashboard & API keys · owner</Link>
         </Button>
         <Button asChild variant={path === "/omni-dock" ? "secondary" : "ghost"} size="sm">
           <Link to="/omni-dock">Docking Bay · owner</Link>

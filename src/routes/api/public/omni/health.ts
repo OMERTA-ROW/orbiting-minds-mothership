@@ -1,6 +1,6 @@
 /**
  * OMNI health endpoint. Public-route prefix so owner tooling can reach it;
- * authentication is the owner's own scoped expiring API key (SHA-256 hash
+ * authentication is the owner's own scoped, revocable API key (SHA-256 hash
  * verified in the database by a service-role-only function). Returns service
  * liveness metadata only — no secrets, keys, payloads or private records.
  */

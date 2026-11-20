@@ -147,9 +147,9 @@ export const navGroups = [
       },
       {
         to: "/omni-api-keys",
-        label: "API keys",
+        label: "Owner dashboard & API keys",
         status: "owner",
-        note: "Create, limit and revoke keys. Shown once.",
+        note: "Connection status, shortcuts and API keys (shown once).",
       },
       {
         to: "/omni-gateway",

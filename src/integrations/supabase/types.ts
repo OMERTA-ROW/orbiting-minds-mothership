@@ -1171,12 +1171,13 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          expires_at: string
+          expires_at: string | null
           id: string
           key_hash: string
           key_prefix: string
           last_used_at: string | null
           name: string
+          never_expires: boolean
           rotated_at: string | null
           scopes: string[]
           status: string
@@ -1184,12 +1185,13 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
-          expires_at: string
+          expires_at?: string | null
           id?: string
           key_hash: string
           key_prefix: string
           last_used_at?: string | null
           name: string
+          never_expires?: boolean
           rotated_at?: string | null
           scopes?: string[]
           status?: string
@@ -1197,12 +1199,13 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
-          expires_at?: string
+          expires_at?: string | null
           id?: string
           key_hash?: string
           key_prefix?: string
           last_used_at?: string | null
           name?: string
+          never_expires?: boolean
           rotated_at?: string | null
           scopes?: string[]
           status?: string
@@ -3663,6 +3666,17 @@ export type Database = {
           _key_hash: string
           _key_prefix: string
           _name: string
+          _scopes: string[]
+        }
+        Returns: string
+      }
+      omni_api_key_issue: {
+        Args: {
+          _expiry_days: number
+          _key_hash: string
+          _key_prefix: string
+          _name: string
+          _never_expires: boolean
           _scopes: string[]
         }
         Returns: string

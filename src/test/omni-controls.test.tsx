@@ -35,6 +35,9 @@ vi.mock("@/lib/omni-noop-owner.functions", () => ({
   enqueueNoopJob: vi.fn(),
 }));
 vi.mock("@/lib/jackboy-link.functions", () => ({ requestJackboyLink: vi.fn() }));
+vi.mock("@/lib/unified-activation.functions", () => ({
+  getUnifiedExecutionState: vi.fn().mockRejectedValue(new Error("fixture unavailable")),
+}));
 vi.mock("@/lib/jackboy-dispatch.functions", () => ({
   approveJackboyReceipt: vi.fn(),
   revokeJackboyReceipt: vi.fn(),
@@ -116,7 +119,6 @@ describe("OMNI control reliability", () => {
     render(<OmniApiKeys />);
     await screen.findByRole("button", { name: "Create key" });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Fixture" } });
-    fireEvent.click(screen.getByLabelText(/I approve creating/));
     fireEvent.click(screen.getByRole("button", { name: "Create key" }));
     await screen.findByText("synthetic-show-once-value");
     fireEvent.click(screen.getByRole("button", { name: /^Copy$/ }));
@@ -133,7 +135,6 @@ describe("OMNI control reliability", () => {
     render(<OmniApiKeys />);
     await screen.findByRole("button", { name: "Create key" });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Fixture" } });
-    fireEvent.click(screen.getByLabelText(/I approve creating/));
     fireEvent.click(screen.getByRole("button", { name: "Create key" }));
     await screen.findByText("synthetic-show-once-value");
     fireEvent.click(screen.getByRole("button", { name: /^Copy$/ }));
@@ -150,10 +151,10 @@ describe("OMNI control reliability", () => {
           name: "Fixture key",
           key_prefix: "synthetic",
           scopes: ["health"],
+          status: "active",
           created_at: "2026-11-04T00:00:00Z",
           expires_at: "2099-01-01T00:00:00Z",
           last_used_at: null,
-          revoked_at: null,
           rotated_at: null,
         },
       ]);
@@ -178,11 +179,99 @@ describe("OMNI control reliability", () => {
     render(<OmniApiKeys />);
     await screen.findByRole("button", { name: "Create key" });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Fixture" } });
-    fireEvent.click(screen.getByLabelText(/I approve creating/));
     fireEvent.click(screen.getByRole("button", { name: "Create key" }));
     await screen.findByText(/do not repeat the change/);
     expect(screen.getByText("synthetic-created-value")).toBeInTheDocument();
     expect(mocks.create).toHaveBeenCalledTimes(1);
+  });
+  it("creates a finite key with one Create action and the chosen day count", async () => {
+    mocks.create.mockResolvedValue({ id: "fixture", secret: "synthetic-finite-value" });
+    render(<OmniApiKeys />);
+    await screen.findByRole("button", { name: "Create key" });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Finite" } });
+    fireEvent.change(screen.getByLabelText("Expires"), { target: { value: "90" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create key" }));
+    await screen.findByText("synthetic-finite-value");
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    expect(mocks.create).toHaveBeenCalledWith({
+      data: {
+        name: "Finite",
+        scopes: ["health"],
+        expiry: { kind: "days", days: 90 },
+        confirm: true,
+      },
+    });
+  });
+  it("creates a never-expiring key and warns that only revocation stops it", async () => {
+    mocks.create.mockResolvedValue({ id: "fixture", secret: "synthetic-never-value" });
+    render(<OmniApiKeys />);
+    await screen.findByRole("button", { name: "Create key" });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Forever" } });
+    fireEvent.click(screen.getByLabelText(/Read job history/));
+    fireEvent.change(screen.getByLabelText("Expires"), { target: { value: "never" } });
+    expect(screen.getByText(/keeps working until you revoke it/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Create key" }));
+    await screen.findByText("synthetic-never-value");
+    expect(mocks.create).toHaveBeenCalledWith({
+      data: {
+        name: "Forever",
+        scopes: ["health", "jobs"],
+        expiry: { kind: "never" },
+        confirm: true,
+      },
+    });
+  });
+  it("blocks an invalid custom expiry and explains what is missing", async () => {
+    render(<OmniApiKeys />);
+    await screen.findByRole("button", { name: "Create key" });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Custom" } });
+    fireEvent.change(screen.getByLabelText("Expires"), { target: { value: "custom" } });
+    fireEvent.change(screen.getByLabelText(/Number of days/), { target: { value: "400" } });
+    expect(screen.getByRole("button", { name: "Create key" })).toBeDisabled();
+    expect(screen.getByText(/enter 1–365 days/)).toBeInTheDocument();
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("shows the server's allowlisted reason when creation is refused", async () => {
+    mocks.create.mockRejectedValue(
+      new Error("API key could not be created: owner sign-in with your 6-digit code is required."),
+    );
+    render(<OmniApiKeys />);
+    await screen.findByRole("button", { name: "Create key" });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Refused" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create key" }));
+    await screen.findByText(/6-digit code is required\. Nothing was changed\./);
+  });
+  it("lists never-expiring and older finite keys with their real expiry", async () => {
+    mocks.keys.mockResolvedValue([
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        name: "Forever key",
+        key_prefix: "omni_aaaa",
+        scopes: ["health"],
+        status: "active",
+        created_at: "2026-11-04T00:00:00Z",
+        expires_at: null,
+        never_expires: true,
+        last_used_at: null,
+        rotated_at: null,
+      },
+      {
+        id: "22222222-2222-4222-8222-222222222222",
+        name: "Older key",
+        key_prefix: "omni_bbbb",
+        scopes: ["jobs"],
+        status: "active",
+        created_at: "2026-11-01T00:00:00Z",
+        expires_at: "2099-01-01T00:00:00Z",
+        last_used_at: null,
+        rotated_at: null,
+      },
+    ]);
+    render(<OmniApiKeys />);
+    await screen.findByText("Forever key");
+    expect(screen.getByText("Never expires", { selector: "dd" })).toBeInTheDocument();
+    expect(screen.getByText(/^Expires /, { selector: "dd" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Revoke" })).toHaveLength(2);
   });
   it("denied owner access exposes no provisioning action and allows a read-only retry", async () => {
     mocks.keys.mockRejectedValueOnce(new Error("fixture denied")).mockResolvedValueOnce([]);

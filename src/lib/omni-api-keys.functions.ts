@@ -9,11 +9,25 @@ import { setResponseHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   generateOmniKey,
+  omniExpiryRpcArgs,
   omniKeyCreateInput,
   omniKeyIdInput,
   omniKeyPrefix,
   sha256Hex,
 } from "./omni-api-keys";
+
+/** Allowlisted, value-free reasons; raw database text is never returned. */
+function createFailureMessage(error: { code?: string; message?: string } | null): string {
+  const message = error?.message ?? "";
+  if (error?.code === "42501" || /owner|MFA|aal2/i.test(message))
+    return "API key could not be created: owner sign-in with your 6-digit code is required.";
+  if (/expiry|never expires/i.test(message))
+    return "API key could not be created: choose 1–365 days or Never expires.";
+  if (/scope/i.test(message)) return "API key could not be created: choose at least one access.";
+  if (/name/i.test(message))
+    return "API key could not be created: the name must be 1–60 characters.";
+  return "API key could not be created.";
+}
 
 export const listOmniApiKeys = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -23,7 +37,9 @@ export const listOmniApiKeys = createServerFn({ method: "GET" })
     await requireRazulOwner(context.supabase, context.userId, context.claims);
     const { data, error } = await context.supabase
       .from("omni_api_keys")
-      .select("id,name,key_prefix,scopes,status,expires_at,last_used_at,created_at,rotated_at")
+      .select(
+        "id,name,key_prefix,scopes,status,expires_at,never_expires,last_used_at,created_at,rotated_at",
+      )
       .order("created_at", { ascending: false })
       .limit(100);
     if (error) throw new Error("API keys could not be read.");
@@ -55,16 +71,20 @@ export const createOmniApiKey = createServerFn({ method: "POST" })
     await requireRazulOwner(context.supabase, context.userId, context.claims);
     const secret = generateOmniKey();
     const hash = await sha256Hex(secret);
-    const { data: id, error } = await context.supabase.rpc("omni_api_key_create", {
+    const expiry = omniExpiryRpcArgs(data.expiry);
+    const { data: id, error } = await context.supabase.rpc("omni_api_key_issue", {
       _name: data.name,
       _scopes: data.scopes,
       _key_hash: hash,
       _key_prefix: omniKeyPrefix(secret),
-      _days: data.days,
+      // Generated types mark every SQL argument non-null; NULL here means "never expires" and the
+      // database refuses any other combination.
+      _expiry_days: expiry._expiry_days as number,
+      _never_expires: expiry._never_expires,
     });
-    if (error || !id) throw new Error("API key could not be created.");
+    if (error || !id) throw new Error(createFailureMessage(error));
     // Shown exactly once; only the hash and prefix are stored.
-    return { id, secret };
+    return { id, secret, neverExpires: data.expiry.kind === "never" };
   });
 
 export const rotateOmniApiKey = createServerFn({ method: "POST" })

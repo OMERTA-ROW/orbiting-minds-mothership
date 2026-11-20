@@ -1,5 +1,11 @@
 # Evolution — reconciled blueprint roadmap
 
+## Owner dashboard and API keys with "Never expires" — 2026-11-20 (preview)
+- [x] `/omni-api-keys` is now the owner dashboard: primary shortcuts, signed connection status (read-only), API keys first, Jackboy manual tools in their own tab; OMNI menu links it directly.
+- [x] One-step key creation: name, plain-language access, expiry (7/30/90/365 days, custom 1–365, or Never expires) and one Create button; allowlisted failure reasons.
+- [x] Database 0061 (applied): `never_expires` + nullable expiry enforced together; new owner/MFA `omni_api_key_issue`; verify accepts never-expiring active keys; older finite keys unchanged; old create kept for the published build. 54 isolated SQL checks.
+- [ ] Waiting on owner: publish Mothership; then on the live site create one finite and one never-expiring test key, call `/api/public/omni/health` with each, revoke both and confirm both are refused.
+
 ## One coherent OMNI ↔ Jackboy activation — 2026-11-16 (preview, flow marker 16)
 - [x] Jackboy live build read from its public marker: commit 9081a41, built 21:55 UTC (names the build only).
 - [x] Step 10 now verifies the executor immediately before configuring (Jackboy clears verification on every Step 9 connect and needs it < 15 min, same release).
