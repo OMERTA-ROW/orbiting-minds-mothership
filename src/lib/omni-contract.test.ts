@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   omniContractRead,
   omniContractTasks,
@@ -6,6 +6,11 @@ import {
 } from "./omni-contract.server";
 import { buildManifest, runsToTasks, type ObservatoryRun } from "./omni-contract";
 import { sha256Hex } from "./omni-api-keys";
+
+const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
+vi.mock("@/integrations/supabase/client.server", () => ({
+  supabaseAdmin: { rpc: mocks.rpc },
+}));
 
 const HEALTH_KEY = "omni_" + "a".repeat(48);
 const JOBS_KEY = "omni_" + "b".repeat(48);
@@ -15,7 +20,9 @@ const ready = (async () => {
   keys.set(await sha256Hex(JOBS_KEY), ["jobs"]);
 })();
 const verify = async (hash: string, scope: string) =>
-  keys.get(hash)?.includes(scope) ? "key-id" : null;
+  keys.get(hash)?.includes(scope)
+    ? ({ status: "valid", keyId: "key-id" } as const)
+    : ({ status: "invalid" } as const);
 const req = (path: string, key?: string, method = "GET") =>
   new Request(`https://evoomni.tech${path}`, {
     method,
@@ -42,6 +49,55 @@ describe("OMNI frontend contract", () => {
     const r = await omniContractRead(req("/api/omni/manifest", JOBS_KEY), "manifest", verify);
     expect(r.status).toBe(403);
     expect(await r.json()).toMatchObject({ error: "scope_missing", needs: "health" });
+  });
+  it("reports verification outages without claiming credentials are invalid or reading records", async () => {
+    const unavailable = async () => ({ status: "unavailable" as const });
+    const read = async () => {
+      throw new Error("must not read records");
+    };
+    for (const result of [
+      await omniContractRead(req("/api/omni/health", HEALTH_KEY), "health", unavailable),
+      await omniContractTasks(req("/api/omni/tasks", JOBS_KEY), unavailable, read),
+      await omniContractUnsupported(req("/api/omni/chat", HEALTH_KEY, "POST"), "chat", unavailable),
+    ]) {
+      expect(result.status).toBe(503);
+      expect(result.headers.get("cache-control")).toBe("no-store");
+      expect(await result.json()).toEqual({
+        ok: false,
+        error: "credential_verification_unavailable",
+      });
+    }
+  });
+  it("reports database errors and rejected verification calls as unavailable", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "private details" } });
+      mocks.rpc.mockRejectedValueOnce(new Error("private details"));
+      for (let i = 0; i < 2; i++) {
+        const result = await omniContractRead(req("/api/omni/health", HEALTH_KEY), "health");
+        expect(result.status).toBe(503);
+        expect(await result.json()).toEqual({
+          ok: false,
+          error: "credential_verification_unavailable",
+        });
+      }
+      expect(mocks.rpc).toHaveBeenCalledTimes(2);
+      expect(log).toHaveBeenCalledWith("OMNI credential verification failed.");
+    } finally {
+      log.mockRestore();
+      mocks.rpc.mockReset();
+    }
+  });
+  it("fails closed if checking an alternate scope is unavailable", async () => {
+    let checks = 0;
+    const result = await omniContractRead(req("/api/omni/health", JOBS_KEY), "health", async () =>
+      ++checks === 1 ? { status: "invalid" } : { status: "unavailable" },
+    );
+    expect(result.status).toBe(503);
+    expect(await result.json()).toEqual({
+      ok: false,
+      error: "credential_verification_unavailable",
+    });
   });
   it("manifest never claims autonomy, providers or an enrolled chat agent", () => {
     const m = buildManifest("https://evoomni.tech");
@@ -137,8 +193,11 @@ describe("OMNI frontend contract", () => {
       ).status,
     ).toBe(503);
   });
-  it("runsToTasks shows missing counts as zero in the title", () => {
+  it("runsToTasks distinguishes missing counts from zero", () => {
     expect(runsToTasks([{ ...RUN, fetched: null, inserted: null, alerts: null }])[0]?.title).toBe(
+      "Observatory run · unknown fetched, unknown saved, unknown alerts",
+    );
+    expect(runsToTasks([{ ...RUN, fetched: 0, inserted: 0, alerts: 0 }])[0]?.title).toBe(
       "Observatory run · 0 fetched, 0 saved, 0 alerts",
     );
   });

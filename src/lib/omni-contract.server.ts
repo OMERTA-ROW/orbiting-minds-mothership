@@ -11,15 +11,26 @@ import {
 } from "./omni-contract";
 
 const NO_STORE = { "Cache-Control": "no-store" };
-type Verify = (hash: string, scope: OmniApiScope) => Promise<string | null>;
+type Verification =
+  { status: "valid"; keyId: string } | { status: "invalid" } | { status: "unavailable" };
+type Verify = (hash: string, scope: OmniApiScope) => Promise<Verification>;
 
-async function serviceVerify(hash: string, scope: OmniApiScope): Promise<string | null> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const r = await supabaseAdmin.rpc("omni_api_key_verify", { _key_hash: hash, _scope: scope });
-  return r.error || !r.data ? null : String(r.data);
+async function serviceVerify(hash: string, scope: OmniApiScope): Promise<Verification> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const r = await supabaseAdmin.rpc("omni_api_key_verify", { _key_hash: hash, _scope: scope });
+    if (r.error) {
+      console.error("OMNI credential verification failed.");
+      return { status: "unavailable" };
+    }
+    return r.data ? { status: "valid", keyId: String(r.data) } : { status: "invalid" };
+  } catch {
+    console.error("OMNI credential verification failed.");
+    return { status: "unavailable" };
+  }
 }
 
-/** 401 without a usable key, 403 with a valid key that lacks the scope. */
+/** Verification outages must never be confused with rejected credentials. */
 async function authorize(request: Request, scope: OmniApiScope | null, verify: Verify) {
   const key = parseOmniBearer(request.headers.get("authorization"));
   if (!key)
@@ -29,20 +40,32 @@ async function authorize(request: Request, scope: OmniApiScope | null, verify: V
     );
   const hash = await sha256Hex(key);
   if (scope) {
-    const id = await verify(hash, scope);
-    if (id) return { keyId: id };
+    const result = await verify(hash, scope);
+    if (result.status === "unavailable") return verificationUnavailable();
+    if (result.status === "valid") return { keyId: result.keyId };
   }
-  for (const s of OMNI_API_SCOPES)
-    if (s !== scope && (await verify(hash, s)))
+  for (const s of OMNI_API_SCOPES) {
+    if (s === scope) continue;
+    const result = await verify(hash, s);
+    if (result.status === "unavailable") return verificationUnavailable();
+    if (result.status === "valid")
       return scope
         ? Response.json(
             { ok: false, error: "scope_missing", needs: scope },
             { status: 403, headers: NO_STORE },
           )
         : "valid";
+  }
   return Response.json(
     { ok: false, error: "Credential rejected" },
     { status: 401, headers: NO_STORE },
+  );
+}
+
+function verificationUnavailable() {
+  return Response.json(
+    { ok: false, error: "credential_verification_unavailable" },
+    { status: 503, headers: NO_STORE },
   );
 }
 

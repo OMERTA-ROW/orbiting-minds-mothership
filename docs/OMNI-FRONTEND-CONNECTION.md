@@ -16,8 +16,11 @@ Status 2026-11-20 (preview, not published). Contract source: OMNI project
 | `POST /api/omni/emergency-stop`         | 403 `not_available` — no stop scope; use OMNI Terminal's Emergency Stop           | any valid |
 
 Missing/unknown/expired/revoked key → 401. Valid key without the needed scope → 403 `scope_missing`.
+When credential verification is unavailable, the contract returns 503
+`credential_verification_unavailable`; this does not establish that the key is invalid.
 Nothing is simulated; the existing `health`/`jobs` scopes never authorize chat, approvals or stop.
 Each `/api/omni/tasks` read is recorded in the owner audit log (`use-jobs`); if recording fails the read is refused (503).
+Unknown observatory counts are displayed as unknown, not zero.
 
 ## Owner steps (no values in chat)
 
