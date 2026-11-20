@@ -24,7 +24,9 @@ project is still attempted as a safety reduction. The service responds 503, not 
 signed acknowledgement: the request was not durably claimed, the Stop is not verified, and a
 captured Stop may be repeated within its freshness window while the store is unavailable. Invalid
 signatures, other projects and other actions do not take this fallback. This does not establish
-descendant termination or Stop enforcement during execution.
+descendant termination or Stop enforcement during execution. Stop nonce claims use a 100 ms lock
+timeout, but an earlier synchronous non-Stop SQLite operation can still block the Node
+event loop, so an upper bound on Stop delivery is not established.
 
 The same database records a single decision claim per project, session, job and step, including
 the owner. The signed decision must match the in-memory session owner and pending job; a claim is

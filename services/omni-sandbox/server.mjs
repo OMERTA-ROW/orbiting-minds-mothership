@@ -226,16 +226,21 @@ export function createSandbox(c, opts = {}) {
     "INSERT INTO nonces (nonce, seen_at) VALUES (?, ?) ON CONFLICT DO NOTHING",
   );
   const claimDecision = createDecisionClaims(nonceStore);
-  const claimNonce = (nonce) => {
+  const claimNonce = (nonce, failFast) => {
     const now = Date.now();
-    nonceStore.exec("BEGIN IMMEDIATE");
+    if (failFast) nonceStore.exec("PRAGMA busy_timeout = 100");
     try {
-      const { changes } = insertNonce.run(nonce, now);
-      nonceStore.exec("COMMIT");
-      return changes === 1;
-    } catch (error) {
-      nonceStore.exec("ROLLBACK");
-      throw error;
+      nonceStore.exec("BEGIN IMMEDIATE");
+      try {
+        const { changes } = insertNonce.run(nonce, now);
+        nonceStore.exec("COMMIT");
+        return changes === 1;
+      } catch (error) {
+        nonceStore.exec("ROLLBACK");
+        throw error;
+      }
+    } finally {
+      if (failFast) nonceStore.exec("PRAGMA busy_timeout = 5000");
     }
   };
 
@@ -953,8 +958,20 @@ export function createSandbox(c, opts = {}) {
         res.writeHead(401).end();
         return;
       }
+      let parsed;
       try {
-        if (!claimNonce(nonce)) {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = null;
+      }
+      const safetyStop =
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        parsed.projectId === c.projectId &&
+        (parsed.action === "job.stop" || parsed.action === "agent.stop");
+      try {
+        if (!claimNonce(nonce, Boolean(safetyStop))) {
           res.writeHead(401).end();
           return;
         }
@@ -962,20 +979,13 @@ export function createSandbox(c, opts = {}) {
         console.error("Sandbox nonce store unavailable; request refused.");
         // A verified, fresh Stop is a safety reduction. Try it even when its nonce cannot
         // be recorded, but never acknowledge the request as accepted or replay-protected.
-        try {
-          const b = JSON.parse(raw);
-          if (
-            b &&
-            typeof b === "object" &&
-            !Array.isArray(b) &&
-            b.projectId === c.projectId &&
-            (b.action === "job.stop" || b.action === "agent.stop")
-          ) {
-            await handle(b.action, b);
+        if (safetyStop) {
+          try {
+            await handle(parsed.action, parsed);
             console.error("Sandbox Stop attempted without durable nonce claim; result unverified.");
+          } catch {
+            console.error("Sandbox Stop could not be attempted after nonce store failure.");
           }
-        } catch {
-          console.error("Sandbox Stop could not be attempted after nonce store failure.");
         }
         res.writeHead(503).end();
         return;

@@ -236,7 +236,9 @@ describe("quarantined workspace reference", () => {
         expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, rejected)).status).toBe(503);
       }
       expect(serviceLogs.get(proc)).not.toContain("Stop attempted without durable nonce claim");
+      const started = Date.now();
       expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(503);
+      expect(Date.now() - started).toBeLessThan(2000);
       for (let i = 0; i < 50 && !serviceLogs.get(proc)?.includes("Stop attempted"); i++)
         await new Promise((resolve) => setTimeout(resolve, 10));
       expect(serviceLogs.get(proc)).toContain(
