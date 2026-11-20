@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { createJobCgroup } from "./cgroup.mjs";
 
 /**
- * Experimental host boundary. This does not implement renewable authority,
+ * Experimental boundary. This does not implement renewable authority,
  * crash supervision, a disk quota, or production admission.
  */
 export async function startWorkspaceCommand({ parent, jobId, work, uid, limits, command }) {
@@ -16,6 +16,8 @@ export async function startWorkspaceCommand({ parent, jobId, work, uid, limits, 
   )
     throw new Error("Invalid workspace command configuration.");
   if (!fs.statSync(work).isDirectory()) throw new Error("Workspace must be a directory.");
+  if (process.getuid?.() !== 0 && uid !== process.getuid?.())
+    throw new Error("An unprivileged supervisor cannot select a different host UID.");
 
   const group = createJobCgroup(parent, jobId, {
     cpuQuotaMicros: 50000,
@@ -23,16 +25,22 @@ export async function startWorkspaceCommand({ parent, jobId, work, uid, limits, 
     memoryBytes: limits.memoryMb * 1024 * 1024,
     maxProcesses: limits.maxProcesses,
   });
+  const dropPrivileges =
+    process.getuid?.() === 0
+      ? [
+          "/usr/bin/setpriv",
+          `--reuid=${uid}`,
+          `--regid=${uid}`,
+          "--clear-groups",
+          "--inh-caps=-all",
+          "--ambient-caps=-all",
+          "--bounding-set=-all",
+          "--no-new-privs",
+          "--",
+        ]
+      : [];
   const argv = [
-    "/usr/bin/setpriv",
-    `--reuid=${uid}`,
-    `--regid=${uid}`,
-    "--clear-groups",
-    "--inh-caps=-all",
-    "--ambient-caps=-all",
-    "--bounding-set=-all",
-    "--no-new-privs",
-    "--",
+    ...dropPrivileges,
     "/usr/bin/bwrap",
     "--unshare-user",
     "--unshare-pid",

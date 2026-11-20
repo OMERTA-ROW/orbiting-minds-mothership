@@ -261,87 +261,84 @@ jobs:
         with:
           bun-version: "1.4.4"
       - run: bun install --frozen-lockfile
-      - name: Build image and run all historical tests without bypassing quarantine
+      - name: Build image and run historical tests against a disposable rootless fixture
         run: |
           set -euo pipefail
           git rev-parse HEAD
           uname -a
           docker version --format 'server={{.Server.Version}}'
-          docker info --format 'securityOptions={{json .SecurityOptions}}'
-          for setting in kernel/unprivileged_userns_clone user/max_user_namespaces \
-            user/max_net_namespaces kernel/apparmor_restrict_unprivileged_userns; do
-            if [ -r "/proc/sys/$setting" ]; then
-              printf '%s=' "$setting"
-              cat "/proc/sys/$setting"
-            else
-              echo "$setting=unavailable"
-            fi
-          done
-          echo 'Host security state:'
-          grep -E '^(NoNewPrivs|Seccomp|Seccomp_filters|CapEff):' /proc/self/status
-          cat /proc/self/attr/current || true
-          echo 'Unprivileged host user+network namespace probe:'
-          if sudo setpriv --reuid=20000 --regid=20000 --clear-groups --inh-caps=-all -- \
-            unshare --user --map-current-user --net -- true; then
-            echo 'Host probe: available'
-          else
-            echo 'Host probe: unavailable (see error above)'
-          fi
-          docker buildx build --load --metadata-file /tmp/omni-image-metadata.json \
-            --tag omni-workspace-historical:fixture services/omni-sandbox
-          jq '{buildMetadataDigest: .["containerimage.digest"], configDigest: .["containerimage.config.digest"]}' \
-            /tmp/omni-image-metadata.json
+          docker info --format 'cgroupDriver={{.CgroupDriver}} cgroupVersion={{.CgroupVersion}}'
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/moby/moby/v28.0.4/profiles/seccomp/default.json \
+            -o "$RUNNER_TEMP/omni-seccomp-base.json"
+          echo "9c1025c88ccaa517b648da571961838744ea2137f176bfe6a48b21294cae9c76  $RUNNER_TEMP/omni-seccomp-base.json" | sha256sum --check
+          jq --slurpfile delta services/omni-sandbox/seccomp-bubblewrap-delta.json \
+            '.syscalls += $delta[0]' "$RUNNER_TEMP/omni-seccomp-base.json" > "$RUNNER_TEMP/omni-seccomp.json"
+          sha256sum "$RUNNER_TEMP/omni-seccomp.json"
+          docker build --quiet --tag omni-workspace-historical:base services/omni-sandbox
+          docker build --quiet --file tests/fixtures/Dockerfile.omni-sandbox-image \
+            --tag omni-workspace-historical:fixture .
           docker image inspect omni-workspace-historical:fixture --format 'localImageId={{.Id}}'
-          trap 'docker stop omni-workspace-historical >/dev/null 2>&1 || true' EXIT
-          docker run --detach --rm --name omni-workspace-historical \
-            --network none --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m \
-            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/repo,readonly" \
-            --env PORT=8080 \
-            --env OMNI_SANDBOX_ROOT=/tmp/omni-fixture/root \
-            --env OMNI_SANDBOX_CLIENT_ID=mothership-test \
-            --env OMNI_SANDBOX_HMAC_SECRET=tttttttttttttttttttttttttttttttttttttttttttttttt \
-            --env OMNI_SANDBOX_COMMAND_TIMEOUT_SEC=2 \
-            --env OMNI_REPO_ALLOWLIST=example/allowed \
-            --env OPENAI_API_KEY=sk-test-not-real-key-0000000000 \
-            omni-workspace-historical:fixture
+          slice="omni-image-host-$GITHUB_RUN_ID.slice"
+          unit="omni-image-host-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          sudo systemd-run --quiet --wait --pipe --collect --unit="$unit" \
+            --slice="$slice" --property=Delegate=yes --property=User=runner \
+            --property="WorkingDirectory=$GITHUB_WORKSPACE" --setenv="PATH=$PATH" \
+            --setenv="RUNNER_TEMP=$RUNNER_TEMP" --setenv="OMNI_TEST_SLICE=$slice" \
+            /bin/bash -c '
+              set -euo pipefail
+              root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+              mkdir "$root/manager"
+              echo 0 > "$root/manager/cgroup.procs"
+              echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
+              test "$(docker info --format "{{.CgroupDriver}}")" = systemd
+              sudo chown "$(id -u):$(id -g)" "$(dirname "$root")/cgroup.procs"
+              docker run --detach --rm --name omni-workspace-historical \
+                --user "$(id -u):$(id -g)" --cap-drop ALL \
+                --security-opt no-new-privileges --security-opt "seccomp=$RUNNER_TEMP/omni-seccomp.json" \
+                --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m \
+                --cgroupns host --cgroup-parent "$OMNI_TEST_SLICE" \
+                --mount "type=bind,source=$root,target=/delegated" \
+                --publish 127.0.0.1:18792:8080 \
+                --env OMNI_WORKSPACE_IMAGE_FIXTURE=1 \
+                --env OMNI_WORKSPACE_DELEGATED_CGROUP=/delegated \
+                --env OMNI_SANDBOX_ROOT=/tmp/omni-fixture/root \
+                --env OMNI_SANDBOX_CLIENT_ID=mothership-test \
+                --env OMNI_SANDBOX_HMAC_SECRET=tttttttttttttttttttttttttttttttttttttttttttttttt \
+                --env OMNI_SANDBOX_COMMAND_TIMEOUT_SEC=2 \
+                --env OMNI_REPO_ALLOWLIST=example/allowed \
+                --env OPENAI_API_KEY=sk-test-not-real-key-0000000000 \
+                omni-workspace-historical:fixture
+              trap '"'"'docker stop omni-workspace-historical >/dev/null 2>&1 || true'"'"' EXIT
+              sleep 90
+            ' > "$RUNNER_TEMP/omni-image-systemd.log" 2>&1 &
+          manager_pid=$!
+          trap 'sudo systemctl stop "$unit" 2>/dev/null || true; wait "$manager_pid" || true' EXIT
           ready=false
           for attempt in $(seq 1 50); do
-            if docker exec omni-workspace-historical node -e \
-              "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"; then
+            if curl --silent --fail http://127.0.0.1:18792/healthz >/dev/null; then
               ready=true
               break
             fi
             sleep 0.2
           done
-          if [ "$ready" != true ]; then docker logs omni-workspace-historical; exit 1; fi
-          docker exec omni-workspace-historical node --version
+          if [ "$ready" != true ]; then cat "$RUNNER_TEMP/omni-image-systemd.log"; docker logs omni-workspace-historical || true; exit 1; fi
           docker inspect omni-workspace-historical --format \
             'privileged={{.HostConfig.Privileged}} securityOpt={{json .HostConfig.SecurityOpt}} capAdd={{json .HostConfig.CapAdd}} capDrop={{json .HostConfig.CapDrop}} networkMode={{.HostConfig.NetworkMode}} usernsMode={{.HostConfig.UsernsMode}}'
-          echo 'Container unprivileged security state:'
-          docker exec omni-workspace-historical setpriv --reuid=20000 --regid=20000 \
-            --clear-groups --inh-caps=-all -- sh -c \
-            "grep -E '^(NoNewPrivs|Seccomp|Seccomp_filters|CapEff):' /proc/self/status; cat /proc/self/attr/current"
-          echo 'Container user namespace probe:'
-          if docker exec omni-workspace-historical setpriv --reuid=20000 --regid=20000 \
-            --clear-groups --inh-caps=-all -- unshare --user --map-current-user -- true; then
-            echo 'Container user namespace probe: available'
-          else
-            echo 'Container user namespace probe: unavailable (see error above)'
-          fi
-          if docker exec omni-workspace-historical setpriv --reuid=20000 --regid=20000 \
-            --clear-groups --inh-caps=-all -- unshare --user --map-current-user --net -- true; then
-            echo 'Workspace user+network namespace probe: available'
-          else
-            echo 'Workspace user+network namespace probe: unavailable (see error above)'
-          fi
-          docker exec omni-workspace-historical node -e \
-            "require('fs').writeFileSync('/tmp/omni-test.config.mjs', 'export default { test: { environment: \"node\", globals: true }, resolve: { alias: { \"@\": \"/repo/src\" } } };')"
-          docker exec --workdir /repo \
-            --env OMNI_WORKSPACE_HISTORICAL_TEST=1 \
-            --env OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:8080 \
-            --env OMNI_WORKSPACE_TEST_ROOT=/tmp/omni-fixture \
-            omni-workspace-historical \
-            node node_modules/vitest/vitest.mjs run --config /tmp/omni-test.config.mjs src/test/omni-sandbox-containment.test.ts
+          docker exec omni-workspace-historical sh -c '
+            test "$(id -u)" -ne 0
+            test ! -u /usr/bin/bwrap
+            grep -Eq "^NoNewPrivs:[[:space:]]+1$" /proc/self/status
+            grep -Eq "^CapEff:[[:space:]]+0+$" /proc/self/status
+            grep -Eq "^Seccomp:[[:space:]]+2$" /proc/self/status
+          '
+          OMNI_WORKSPACE_HISTORICAL_TEST=1 \
+            OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:18792 \
+            OMNI_WORKSPACE_TEST_ROOT=/tmp/omni-fixture \
+            bun run test src/test/omni-sandbox-containment.test.ts || {
+              docker logs omni-workspace-historical
+              exit 1
+            }
   workspace-replay:
     if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
     runs-on: ubuntu-22.04

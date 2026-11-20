@@ -4,14 +4,15 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+const imageFixture = process.env.OMNI_WORKSPACE_IMAGE_FIXTURE === "1";
 if (
   process.platform !== "linux" ||
-  process.getuid?.() !== 0 ||
+  (imageFixture ? process.getuid?.() === 0 : process.getuid?.() !== 0) ||
   !process.env.OMNI_WORKSPACE_DELEGATED_CGROUP ||
   process.env.OMNI_SANDBOX_CLIENT_ID !== "mothership-test" ||
   process.env.OMNI_SANDBOX_HMAC_SECRET !== "t".repeat(48)
 )
-  throw new Error("The host fixture requires disposable Linux and synthetic credentials.");
+  throw new Error("The workspace fixture requires disposable Linux and synthetic credentials.");
 
 const serviceDir = path.resolve("services/omni-sandbox");
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "omni-host-fixture-"));
@@ -61,6 +62,36 @@ replaceOnce(
   '        endSession(s, "timeout");',
   '        void endSession(s, "timeout").catch((error) => console.error("Fixture cleanup failed:", error));',
 );
+if (imageFixture) {
+  replaceOnce("          const uid = c.uidBase + slot;", "          const uid = process.getuid();");
+  replaceOnce('          spawnSync("chown", ["-R", `${uid}:${uid}`, dir]);', "");
+  replaceOnce("              perSessionUser: true,", "              perSessionUser: false,");
+  replaceOnce(
+    "  const net = opts.network ?? detectNetwork(c);",
+    '  const initialProbe = probe(c, "isolated");\n' +
+      '  const net = initialProbe.exitCode === 0 && initialProbe.networkBlocked ? "isolated" : "open";',
+  );
+  replaceSection(
+    "function probe(c, net) {",
+    "// ---------------------------------------------------------------- state",
+    `
+function probe(c, net) {
+  const command = 'id -u; timeout 2 bash -c "exec 3<>/dev/tcp/1.1.1.1/443" 2>/dev/null && echo NET_OPEN || echo NET_BLOCKED; env | cut -d= -f1 | grep -v "^PWD$" | grep -v "^SHLVL$" | grep -v "^_$" | sort | tr "\\\\n" ","';
+  const args = ["--unshare-user", "--unshare-pid", "--unshare-net", "--unshare-ipc", "--unshare-uts",
+    "--die-with-parent", "--new-session", "--ro-bind", "/usr", "/usr", "--symlink", "usr/bin", "/bin",
+    "--symlink", "usr/lib", "/lib", "--symlink", "usr/lib64", "/lib64", "--proc", "/proc",
+    "--dev", "/dev", "--tmpfs", "/tmp", "--clearenv", "--setenv", "PATH", "/usr/bin:/bin",
+    "--setenv", "HOME", "/tmp", "--setenv", "LANG", "C.UTF-8", "--setenv", "TERM", "dumb",
+    "--", "/bin/bash", "--noprofile", "--norc", "-c", command];
+  const result = spawnSync("/usr/bin/bwrap", args, { env: {}, timeout: 3500, encoding: "utf8" });
+  const lines = (result.stdout ?? "").trim().split("\\n");
+  return { uid: Number.parseInt(lines[0] ?? "-1", 10), networkBlocked: lines[1] === "NET_BLOCKED",
+    envNames: (lines[2] ?? "").split(",").filter(Boolean), exitCode: result.status ?? -1 };
+}
+
+`,
+  );
+}
 
 replaceSection(
   "  function killJob(job, reason) {",
