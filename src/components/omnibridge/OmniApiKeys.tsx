@@ -17,6 +17,7 @@ import { JackboyLinkPanel } from "./JackboyLinkPanel";
 import { JackboyDispatchReview } from "./JackboyDispatchReview";
 import { OmniNoopWorker } from "./OmniNoopWorker";
 import { OwnerConnectionStatus } from "./OwnerConnectionStatus";
+import { OmniDelegations } from "./OmniDelegations";
 import {
   createOmniApiKey,
   listOmniApiKeyAudit,
@@ -502,6 +503,8 @@ export function OmniApiKeys() {
               </ul>
             )}
           </details>
+
+          <OmniDelegations />
         </TabsContent>
 
         <TabsContent value="jackboy" className="mt-6 space-y-6">

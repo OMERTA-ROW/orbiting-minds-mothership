@@ -83,6 +83,30 @@ export async function omniContractRead(
   return Response.json(body, { headers: NO_STORE });
 }
 
+/**
+ * A metadata API key on a privileged write: 403 naming the owner delegation scope it needs.
+ * Keys never authorize writes, whatever their scopes.
+ */
+export async function omniContractNeedsDelegation(
+  request: Request,
+  scope: "tasks:write" | "safety:emergency-stop",
+  verify: Verify = serviceVerify,
+) {
+  const denied = await authorize(request, null, verify);
+  if (denied instanceof Response) return denied;
+  const origin = httpsOrigin(request.url);
+  return Response.json(
+    {
+      ok: false,
+      error: "delegation_required",
+      needs: scope,
+      reason: "API keys only read metadata. This needs a short-lived owner delegation.",
+      ...(origin ? { authorize: `${origin}/omni-authorize` } : {}),
+    },
+    { status: 403, headers: NO_STORE },
+  );
+}
+
 /** Any valid key gets an honest 403 naming what is missing; never a simulated result. */
 export async function omniContractUnsupported(
   request: Request,

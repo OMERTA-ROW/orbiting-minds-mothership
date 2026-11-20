@@ -2,16 +2,24 @@
  * Mothership side of the OMNI frontend's `/api/omni/*` contract (OMNI project
  * `docs/MOTHERSHIP_BACKEND.md`). Pure and browser-safe: no network, no secrets.
  *
- * What is fully supported today with an owner-issued OMNI API key:
+ * Metadata reads with an owner-issued OMNI API key:
  *   GET /api/omni/health    (key scope "health")
  *   GET /api/omni/manifest  (key scope "health"; truthful service metadata)
  *   GET /api/omni/tasks     (key scope "jobs"; read-only observatory runs, never approvals)
- * Everything else in the contract answers 403 with a named reason: OMNI API keys only
- * carry the "health" and "jobs" scopes, and chat, task decisions and the stop need the
- * owner's own sign-in (two-step code / passkey) on the Mothership. A key never
- * authorizes them, and nothing here is simulated.
+ * Privileged writes with a short-lived owner delegation (docs/OMNI-OWNER-DELEGATION.md):
+ *   POST /api/omni/tasks          ("tasks:write"; stores a HELD task, nothing runs)
+ *   POST /api/omni/emergency-stop ("safety:emergency-stop"; engage only)
+ * An API key never authorizes a write. Chat and task decisions answer 403 with a named reason
+ * for every credential; nothing here is simulated.
  */
 import type { OmniApiScope } from "./omni-api-keys";
+import {
+  DELEGATION_AUDIENCE,
+  DELEGATION_CLIENT,
+  DELEGATION_TOKEN_SECONDS,
+  HELD_TASK_AGENTS,
+  SUPPORTED_DELEGATION_SCOPES,
+} from "./omni-delegation";
 
 export const OMNI_CONTRACT_VERSION = "1.0.0";
 
@@ -50,7 +58,7 @@ export function runsToTasks(runs: readonly ObservatoryRun[]) {
   }));
 }
 
-export type UnsupportedCapability = "chat" | "task-decision" | "emergency-stop";
+export type UnsupportedCapability = "chat" | "task-decision";
 
 /** Plain reason and the Mothership page where the owner does it today. */
 export const UNSUPPORTED: Record<
@@ -58,19 +66,15 @@ export const UNSUPPORTED: Record<
   { reason: string; needs: string; page: string }
 > = {
   chat: {
-    reason: "Chat through an API key is not enabled.",
-    needs: "A chat scope and a founder-verified chat adapter, which don't exist yet.",
+    reason: "Chat through OMNI web is not enabled.",
+    needs:
+      "A founder-verified chat adapter, which doesn't exist yet. Neither API keys nor owner delegations can chat.",
     page: "/beta-omni",
   },
   "task-decision": {
-    reason: "Approving or rejecting through an API key is not allowed.",
+    reason: "Approving or rejecting through OMNI web is not allowed.",
     needs: "Decisions need the owner's two-step sign-in and passkey on the Mothership.",
     page: "/activation-approvals",
-  },
-  "emergency-stop": {
-    reason: "The Emergency Stop can't be pressed through an API key.",
-    needs: "A stop scope, which doesn't exist yet. Use the Emergency Stop in OMNI Terminal.",
-    page: "/omni-terminal",
   },
 };
 
@@ -97,9 +101,9 @@ export function httpsOrigin(requestUrl: string): string | null {
 }
 
 /**
- * Truthful manifest. OMNI is listed but not enrolled for this contract (chat is not
- * enabled through keys); no providers, spending cap or orchestration are claimed;
- * autonomous is always false. Links point at real owner pages on this site.
+ * Truthful manifest. OMNI is listed but not enrolled (chat is not enabled); no providers,
+ * spending cap or orchestration are claimed; autonomous is always false. Task writes and the
+ * Stop are declared because owner delegations can do them; links point at real owner pages.
  */
 export function buildManifest(origin: string | null) {
   return {
@@ -116,13 +120,33 @@ export function buildManifest(origin: string | null) {
     ],
     providers: [] as { id: string; label: string; models: string[] }[],
     autonomous: false as const,
+    // {read, write} per resource, as OMNI reads them. Writes need an owner delegation.
     capabilities: {
-      health: true,
-      manifest: true,
-      chat: false,
-      tasks: true,
-      taskDecisions: false,
-      emergencyStop: false,
+      chat: { read: false, write: false },
+      providers: { read: false, write: false },
+      tasks: { read: true, write: true },
+      taskRetry: { read: false, write: false },
+      taskDecisions: { read: false, write: false },
+      emergencyStop: { read: false, write: true },
+      files: { read: false, write: false },
+      knowledge: { read: false, write: false },
+      automations: { read: false, write: false },
+    },
+    /** Agents a held task may name. Not chat enrollment: `enrolled` above stays the chat flag. */
+    taskAgents: [...HELD_TASK_AGENTS],
+    delegation: {
+      clientId: DELEGATION_CLIENT.id,
+      audience: DELEGATION_AUDIENCE,
+      supportedScopes: [...SUPPORTED_DELEGATION_SCOPES],
+      tokenLifetimeSeconds: DELEGATION_TOKEN_SECONDS,
+      ...(origin
+        ? {
+            authorizeUrl: `${origin}/omni-authorize`,
+            tokenUrl: `${origin}/api/public/omni/delegation/token`,
+            statusUrl: `${origin}/api/public/omni/delegation/status`,
+            revokeUrl: `${origin}/api/public/omni/delegation/revoke`,
+          }
+        : {}),
     },
     links: origin
       ? {

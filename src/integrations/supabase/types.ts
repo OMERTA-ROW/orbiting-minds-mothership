@@ -1416,6 +1416,107 @@ export type Database = {
         }
         Relationships: []
       }
+      omni_delegation_codes: {
+        Row: {
+          audience: string
+          client_id: string
+          code_challenge: string
+          code_hash: string
+          created_at: string
+          delegation_id: string | null
+          expires_at: string
+          id: string
+          owner_id: string
+          redirect_uri: string
+          scopes: string[]
+          used_at: string | null
+        }
+        Insert: {
+          audience: string
+          client_id: string
+          code_challenge: string
+          code_hash: string
+          created_at?: string
+          delegation_id?: string | null
+          expires_at: string
+          id?: string
+          owner_id: string
+          redirect_uri: string
+          scopes: string[]
+          used_at?: string | null
+        }
+        Update: {
+          audience?: string
+          client_id?: string
+          code_challenge?: string
+          code_hash?: string
+          created_at?: string
+          delegation_id?: string | null
+          expires_at?: string
+          id?: string
+          owner_id?: string
+          redirect_uri?: string
+          scopes?: string[]
+          used_at?: string | null
+        }
+        Relationships: []
+      }
+      omni_delegations: {
+        Row: {
+          audience: string
+          client_id: string
+          code_id: string
+          expires_at: string
+          id: string
+          issued_at: string
+          last_used_at: string | null
+          owner_id: string
+          revoked_at: string | null
+          revoked_reason: string | null
+          scopes: string[]
+          token_hash: string
+          token_prefix: string
+        }
+        Insert: {
+          audience: string
+          client_id: string
+          code_id: string
+          expires_at: string
+          id?: string
+          issued_at?: string
+          last_used_at?: string | null
+          owner_id: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          scopes: string[]
+          token_hash: string
+          token_prefix: string
+        }
+        Update: {
+          audience?: string
+          client_id?: string
+          code_id?: string
+          expires_at?: string
+          id?: string
+          issued_at?: string
+          last_used_at?: string | null
+          owner_id?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          scopes?: string[]
+          token_hash?: string
+          token_prefix?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_delegations_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: true
+            referencedRelation: "omni_delegation_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       omni_dock_devices: {
         Row: {
           app_version: string
@@ -2082,6 +2183,7 @@ export type Database = {
           kind: string
           project_label: string
           repository: string | null
+          source_delegation: string | null
           source_device: string | null
           state: string
         }
@@ -2095,6 +2197,7 @@ export type Database = {
           kind: string
           project_label: string
           repository?: string | null
+          source_delegation?: string | null
           source_device?: string | null
           state?: string
         }
@@ -2108,10 +2211,18 @@ export type Database = {
           kind?: string
           project_label?: string
           repository?: string | null
+          source_delegation?: string | null
           source_device?: string | null
           state?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "omni_terminal_tasks_source_delegation_fkey"
+            columns: ["source_delegation"]
+            isOneToOne: false
+            referencedRelation: "omni_delegations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "omni_terminal_tasks_source_device_fkey"
             columns: ["source_device"]
@@ -3698,6 +3809,52 @@ export type Database = {
         Args: { _agent: string; _reason: string }
         Returns: undefined
       }
+      omni_delegation_authorize: {
+        Args: {
+          _audience: string
+          _client_id: string
+          _code_challenge: string
+          _code_hash: string
+          _redirect_uri: string
+          _scopes: string[]
+        }
+        Returns: Json
+      }
+      omni_delegation_engage_stop: {
+        Args: { _audience: string; _token_hash: string }
+        Returns: Json
+      }
+      omni_delegation_exchange: {
+        Args: {
+          _client_id: string
+          _code_challenge: string
+          _code_hash: string
+          _redirect_uri: string
+          _token_hash: string
+          _token_prefix: string
+        }
+        Returns: Json
+      }
+      omni_delegation_hold_task: {
+        Args: {
+          _agent: string
+          _audience: string
+          _id: string
+          _instructions: string
+          _repository: string
+          _title: string
+          _token_hash: string
+        }
+        Returns: Json
+      }
+      omni_delegation_owner_ok: { Args: { _uid: string }; Returns: boolean }
+      omni_delegation_owner_revoke: { Args: { _id: string }; Returns: Json }
+      omni_delegation_revoke: { Args: { _token_hash: string }; Returns: Json }
+      omni_delegation_status: { Args: { _token_hash: string }; Returns: Json }
+      omni_delegation_use: {
+        Args: { _audience: string; _scope: string; _token_hash: string }
+        Returns: Json
+      }
       omni_dock_approve: {
         Args: { _device: string; _permissions: string[] }
         Returns: {
@@ -4005,6 +4162,7 @@ export type Database = {
           kind: string
           project_label: string
           repository: string | null
+          source_delegation: string | null
           source_device: string | null
           state: string
         }[]
@@ -4051,6 +4209,7 @@ export type Database = {
           kind: string
           project_label: string
           repository: string | null
+          source_delegation: string | null
           source_device: string | null
           state: string
         }[]

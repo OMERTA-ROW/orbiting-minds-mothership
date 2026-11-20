@@ -435,6 +435,20 @@
       "when": 1795138829529,
       "tag": "0061_omni_api_key_never_expires",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1795155152393,
+      "tag": "0062_omni_owner_delegation",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1795155906745,
+      "tag": "0063_omni_delegation_privileges",
+      "breakpoints": true
     }
   ]
 }

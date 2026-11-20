@@ -49,6 +49,7 @@ import { Route as MothershipRouteImport } from './routes/mothership'
 import { Route as OmniRouteImport } from './routes/omni'
 import { Route as OmniAgentsRouteImport } from './routes/omni-agents'
 import { Route as OmniApiKeysRouteImport } from './routes/omni-api-keys'
+import { Route as OmniAuthorizeRouteImport } from './routes/omni-authorize'
 import { Route as OmniDockRouteImport } from './routes/omni-dock'
 import { Route as OmniGatewayRouteImport } from './routes/omni-gateway'
 import { Route as OmniLegalRouteImport } from './routes/omni-legal'
@@ -110,6 +111,9 @@ import { Route as ApiPublicOmniJobsRouteImport } from './routes/api/public/omni/
 import { Route as ApiPublicOmniNoopWorkerRouteImport } from './routes/api/public/omni/noop-worker'
 import { Route as ApiPublicRazulSentinelReportRouteImport } from './routes/api/public/razul-sentinel/report'
 import { Route as ApiOmniTasksIdDecisionRouteImport } from './routes/api/omni/tasks.$id.$decision'
+import { Route as ApiPublicOmniDelegationRevokeRouteImport } from './routes/api/public/omni/delegation/revoke'
+import { Route as ApiPublicOmniDelegationStatusRouteImport } from './routes/api/public/omni/delegation/status'
+import { Route as ApiPublicOmniDelegationTokenRouteImport } from './routes/api/public/omni/delegation/token'
 import { Route as ApiPublicOmniDockAuditRouteImport } from './routes/api/public/omni/dock/audit'
 import { Route as ApiPublicOmniDockCloudRouteImport } from './routes/api/public/omni/dock/cloud'
 import { Route as ApiPublicOmniDockControlRouteImport } from './routes/api/public/omni/dock/control'
@@ -316,6 +320,11 @@ const OmniAgentsRoute = OmniAgentsRouteImport.update({
 const OmniApiKeysRoute = OmniApiKeysRouteImport.update({
   id: '/omni-api-keys',
   path: '/omni-api-keys',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OmniAuthorizeRoute = OmniAuthorizeRouteImport.update({
+  id: '/omni-authorize',
+  path: '/omni-authorize',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OmniDockRoute = OmniDockRouteImport.update({
@@ -632,6 +641,24 @@ const ApiOmniTasksIdDecisionRoute = ApiOmniTasksIdDecisionRouteImport.update({
   path: '/$id/$decision',
   getParentRoute: () => ApiOmniTasksRoute,
 } as any)
+const ApiPublicOmniDelegationRevokeRoute =
+  ApiPublicOmniDelegationRevokeRouteImport.update({
+    id: '/api/public/omni/delegation/revoke',
+    path: '/api/public/omni/delegation/revoke',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicOmniDelegationStatusRoute =
+  ApiPublicOmniDelegationStatusRouteImport.update({
+    id: '/api/public/omni/delegation/status',
+    path: '/api/public/omni/delegation/status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicOmniDelegationTokenRoute =
+  ApiPublicOmniDelegationTokenRouteImport.update({
+    id: '/api/public/omni/delegation/token',
+    path: '/api/public/omni/delegation/token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicOmniDockAuditRoute = ApiPublicOmniDockAuditRouteImport.update({
   id: '/api/public/omni/dock/audit',
   path: '/api/public/omni/dock/audit',
@@ -716,6 +743,7 @@ export interface FileRoutesByFullPath {
   '/omni': typeof OmniRoute
   '/omni-agents': typeof OmniAgentsRoute
   '/omni-api-keys': typeof OmniApiKeysRoute
+  '/omni-authorize': typeof OmniAuthorizeRoute
   '/omni-dock': typeof OmniDockRoute
   '/omni-gateway': typeof OmniGatewayRoute
   '/omni-legal': typeof OmniLegalRoute
@@ -777,6 +805,9 @@ export interface FileRoutesByFullPath {
   '/api/public/omni/noop-worker': typeof ApiPublicOmniNoopWorkerRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
   '/api/omni/tasks/$id/$decision': typeof ApiOmniTasksIdDecisionRoute
+  '/api/public/omni/delegation/revoke': typeof ApiPublicOmniDelegationRevokeRoute
+  '/api/public/omni/delegation/status': typeof ApiPublicOmniDelegationStatusRoute
+  '/api/public/omni/delegation/token': typeof ApiPublicOmniDelegationTokenRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
@@ -826,6 +857,7 @@ export interface FileRoutesByTo {
   '/omni': typeof OmniRoute
   '/omni-agents': typeof OmniAgentsRoute
   '/omni-api-keys': typeof OmniApiKeysRoute
+  '/omni-authorize': typeof OmniAuthorizeRoute
   '/omni-dock': typeof OmniDockRoute
   '/omni-gateway': typeof OmniGatewayRoute
   '/omni-legal': typeof OmniLegalRoute
@@ -887,6 +919,9 @@ export interface FileRoutesByTo {
   '/api/public/omni/noop-worker': typeof ApiPublicOmniNoopWorkerRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
   '/api/omni/tasks/$id/$decision': typeof ApiOmniTasksIdDecisionRoute
+  '/api/public/omni/delegation/revoke': typeof ApiPublicOmniDelegationRevokeRoute
+  '/api/public/omni/delegation/status': typeof ApiPublicOmniDelegationStatusRoute
+  '/api/public/omni/delegation/token': typeof ApiPublicOmniDelegationTokenRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
@@ -938,6 +973,7 @@ export interface FileRoutesById {
   '/omni': typeof OmniRoute
   '/omni-agents': typeof OmniAgentsRoute
   '/omni-api-keys': typeof OmniApiKeysRoute
+  '/omni-authorize': typeof OmniAuthorizeRoute
   '/omni-dock': typeof OmniDockRoute
   '/omni-gateway': typeof OmniGatewayRoute
   '/omni-legal': typeof OmniLegalRoute
@@ -999,6 +1035,9 @@ export interface FileRoutesById {
   '/api/public/omni/noop-worker': typeof ApiPublicOmniNoopWorkerRoute
   '/api/public/razul-sentinel/report': typeof ApiPublicRazulSentinelReportRoute
   '/api/omni/tasks/$id/$decision': typeof ApiOmniTasksIdDecisionRoute
+  '/api/public/omni/delegation/revoke': typeof ApiPublicOmniDelegationRevokeRoute
+  '/api/public/omni/delegation/status': typeof ApiPublicOmniDelegationStatusRoute
+  '/api/public/omni/delegation/token': typeof ApiPublicOmniDelegationTokenRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
@@ -1050,6 +1089,7 @@ export interface FileRouteTypes {
     | '/omni'
     | '/omni-agents'
     | '/omni-api-keys'
+    | '/omni-authorize'
     | '/omni-dock'
     | '/omni-gateway'
     | '/omni-legal'
@@ -1111,6 +1151,9 @@ export interface FileRouteTypes {
     | '/api/public/omni/noop-worker'
     | '/api/public/razul-sentinel/report'
     | '/api/omni/tasks/$id/$decision'
+    | '/api/public/omni/delegation/revoke'
+    | '/api/public/omni/delegation/status'
+    | '/api/public/omni/delegation/token'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
@@ -1160,6 +1203,7 @@ export interface FileRouteTypes {
     | '/omni'
     | '/omni-agents'
     | '/omni-api-keys'
+    | '/omni-authorize'
     | '/omni-dock'
     | '/omni-gateway'
     | '/omni-legal'
@@ -1221,6 +1265,9 @@ export interface FileRouteTypes {
     | '/api/public/omni/noop-worker'
     | '/api/public/razul-sentinel/report'
     | '/api/omni/tasks/$id/$decision'
+    | '/api/public/omni/delegation/revoke'
+    | '/api/public/omni/delegation/status'
+    | '/api/public/omni/delegation/token'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
@@ -1271,6 +1318,7 @@ export interface FileRouteTypes {
     | '/omni'
     | '/omni-agents'
     | '/omni-api-keys'
+    | '/omni-authorize'
     | '/omni-dock'
     | '/omni-gateway'
     | '/omni-legal'
@@ -1332,6 +1380,9 @@ export interface FileRouteTypes {
     | '/api/public/omni/noop-worker'
     | '/api/public/razul-sentinel/report'
     | '/api/omni/tasks/$id/$decision'
+    | '/api/public/omni/delegation/revoke'
+    | '/api/public/omni/delegation/status'
+    | '/api/public/omni/delegation/token'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
@@ -1383,6 +1434,7 @@ export interface RootRouteChildren {
   OmniRoute: typeof OmniRoute
   OmniAgentsRoute: typeof OmniAgentsRoute
   OmniApiKeysRoute: typeof OmniApiKeysRoute
+  OmniAuthorizeRoute: typeof OmniAuthorizeRoute
   OmniDockRoute: typeof OmniDockRoute
   OmniGatewayRoute: typeof OmniGatewayRoute
   OmniLegalRoute: typeof OmniLegalRoute
@@ -1432,6 +1484,9 @@ export interface RootRouteChildren {
   ApiPublicOmniJobsRoute: typeof ApiPublicOmniJobsRoute
   ApiPublicOmniNoopWorkerRoute: typeof ApiPublicOmniNoopWorkerRoute
   ApiPublicRazulSentinelReportRoute: typeof ApiPublicRazulSentinelReportRoute
+  ApiPublicOmniDelegationRevokeRoute: typeof ApiPublicOmniDelegationRevokeRoute
+  ApiPublicOmniDelegationStatusRoute: typeof ApiPublicOmniDelegationStatusRoute
+  ApiPublicOmniDelegationTokenRoute: typeof ApiPublicOmniDelegationTokenRoute
   ApiPublicOmniDockAuditRoute: typeof ApiPublicOmniDockAuditRoute
   ApiPublicOmniDockCloudRoute: typeof ApiPublicOmniDockCloudRoute
   ApiPublicOmniDockControlRoute: typeof ApiPublicOmniDockControlRoute
@@ -1722,6 +1777,13 @@ declare module '@tanstack/react-router' {
       path: '/omni-api-keys'
       fullPath: '/omni-api-keys'
       preLoaderRoute: typeof OmniApiKeysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/omni-authorize': {
+      id: '/omni-authorize'
+      path: '/omni-authorize'
+      fullPath: '/omni-authorize'
+      preLoaderRoute: typeof OmniAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/omni-dock': {
@@ -2151,6 +2213,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOmniTasksIdDecisionRouteImport
       parentRoute: typeof ApiOmniTasksRoute
     }
+    '/api/public/omni/delegation/revoke': {
+      id: '/api/public/omni/delegation/revoke'
+      path: '/api/public/omni/delegation/revoke'
+      fullPath: '/api/public/omni/delegation/revoke'
+      preLoaderRoute: typeof ApiPublicOmniDelegationRevokeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/delegation/status': {
+      id: '/api/public/omni/delegation/status'
+      path: '/api/public/omni/delegation/status'
+      fullPath: '/api/public/omni/delegation/status'
+      preLoaderRoute: typeof ApiPublicOmniDelegationStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/delegation/token': {
+      id: '/api/public/omni/delegation/token'
+      path: '/api/public/omni/delegation/token'
+      fullPath: '/api/public/omni/delegation/token'
+      preLoaderRoute: typeof ApiPublicOmniDelegationTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/omni/dock/audit': {
       id: '/api/public/omni/dock/audit'
       path: '/api/public/omni/dock/audit'
@@ -2303,6 +2386,7 @@ const rootRouteChildren: RootRouteChildren = {
   OmniRoute: OmniRoute,
   OmniAgentsRoute: OmniAgentsRoute,
   OmniApiKeysRoute: OmniApiKeysRoute,
+  OmniAuthorizeRoute: OmniAuthorizeRoute,
   OmniDockRoute: OmniDockRoute,
   OmniGatewayRoute: OmniGatewayRoute,
   OmniLegalRoute: OmniLegalRoute,
@@ -2352,6 +2436,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOmniJobsRoute: ApiPublicOmniJobsRoute,
   ApiPublicOmniNoopWorkerRoute: ApiPublicOmniNoopWorkerRoute,
   ApiPublicRazulSentinelReportRoute: ApiPublicRazulSentinelReportRoute,
+  ApiPublicOmniDelegationRevokeRoute: ApiPublicOmniDelegationRevokeRoute,
+  ApiPublicOmniDelegationStatusRoute: ApiPublicOmniDelegationStatusRoute,
+  ApiPublicOmniDelegationTokenRoute: ApiPublicOmniDelegationTokenRoute,
   ApiPublicOmniDockAuditRoute: ApiPublicOmniDockAuditRoute,
   ApiPublicOmniDockCloudRoute: ApiPublicOmniDockCloudRoute,
   ApiPublicOmniDockControlRoute: ApiPublicOmniDockControlRoute,

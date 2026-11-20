@@ -146,7 +146,7 @@ export function recoveryOutcomeMessage(outcome: string): string {
 }
 
 /** Pages a fresh sign-in may return to (same-origin, fixed list). */
-export const SIGNIN_RETURN_PATHS = ["/account-security", "/omni-dock"] as const;
+export const SIGNIN_RETURN_PATHS = ["/account-security", "/omni-dock", "/omni-authorize"] as const;
 const RETURN_KEY = "omni.signin-return";
 
 export function rememberSignInReturn(path: (typeof SIGNIN_RETURN_PATHS)[number]) {

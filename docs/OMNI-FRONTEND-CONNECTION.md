@@ -1,6 +1,6 @@
 # OMNI frontend ↔ Mothership connection checklist
 
-Status 2026-11-20 (preview, not published). Contract source: OMNI project
+Status 2026-11-20 (preview, not published). Owner delegation: `docs/OMNI-OWNER-DELEGATION.md`. Contract source: OMNI project
 `docs/MOTHERSHIP_BACKEND.md` (`src/lib/mothership.functions.ts`). Mothership side:
 `src/lib/omni-contract.ts`, `src/lib/omni-contract.server.ts`, `src/routes/api/omni/*`.
 
@@ -12,8 +12,9 @@ Status 2026-11-20 (preview, not published). Contract source: OMNI project
 | `GET /api/omni/manifest`                | OMNI listed, `enrolled: false`; no providers; `autonomous: false`; owner links      | `health`  |
 | `POST /api/omni/chat`                   | 403 `not_available` — no chat scope or founder-verified chat adapter exists        | any valid |
 | `GET /api/omni/tasks`                   | Read-only: the 10 latest observatory runs (same data and audit as `/api/public/omni/jobs`), `requiresApproval: false`; held OMNI Terminal tasks not included | `jobs`    |
+| `POST /api/omni/tasks`                  | Owner delegation `tasks:write`: stores a **held** task (see `docs/OMNI-OWNER-DELEGATION.md`); API keys → 403 `delegation_required` | delegation |
 | `POST /api/omni/tasks/:id/approve\|reject` | 403 `not_available` — decisions need owner two-step sign-in + passkey           | any valid |
-| `POST /api/omni/emergency-stop`         | 403 `not_available` — no stop scope; use OMNI Terminal's Emergency Stop           | any valid |
+| `POST /api/omni/emergency-stop`         | Owner delegation `safety:emergency-stop`: engage only, `ok:true` after remote cancellation is verified; API keys → 403 `delegation_required` | delegation |
 
 Missing/unknown/expired/revoked key → 401. Valid key without the needed scope → 403 `scope_missing`.
 When credential verification is unavailable, the contract returns 503
@@ -35,9 +36,10 @@ Unknown observatory counts are displayed as unknown, not zero.
    buttons; chat and stop show as unavailable.
 5. Revoke the key on the Mothership and re-check: OMNI must show "Not connected" (401).
 
-## Still missing for chat, tasks, approvals and stop (not built)
+## Still missing for chat and approvals (not built)
 
-- New key scopes (`chat`, `stop:engage`, and a scope for held Terminal tasks) — database change + owner approval.
+- Held tasks and Stop engagement now use short-lived owner delegations (migration 0062,
+  `docs/OMNI-OWNER-DELEGATION.md`), not API key scopes; verification after publishing is pending.
 - A founder-verified chat adapter that routes to the private OMNI agent with its consent, spend and
   stop guards (today the agent needs the owner's signed-in session).
 - Task decisions stay owner-only on the Mothership (two-step + passkey); a key should never decide.

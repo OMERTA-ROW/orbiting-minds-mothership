@@ -105,22 +105,21 @@ describe("OMNI frontend contract", () => {
     expect(m.providers).toEqual([]);
     expect(m.agents.every((a) => !a.enrolled)).toBe(true);
     expect(m.capabilities).toMatchObject({
-      chat: false,
-      tasks: true,
-      taskDecisions: false,
-      emergencyStop: false,
+      chat: { read: false, write: false },
+      tasks: { read: true, write: true },
+      taskDecisions: { read: false, write: false },
+      emergencyStop: { read: false, write: true },
     });
     expect(m.links.terminal).toBe("https://evoomni.tech/omni-terminal");
   });
   it("advertises no links on a non-https origin", () => {
     expect(buildManifest(null).links).toEqual({});
   });
-  it("chat, decisions and stop are refused with 403 even for valid keys", async () => {
+  it("chat and decisions are refused with 403 even for valid keys", async () => {
     await ready;
     for (const [path, cap, method] of [
       ["/api/omni/chat", "chat", "POST"],
       ["/api/omni/tasks/t1/approve", "task-decision", "POST"],
-      ["/api/omni/emergency-stop", "emergency-stop", "POST"],
     ] as const) {
       for (const key of [HEALTH_KEY, JOBS_KEY]) {
         const r = await omniContractUnsupported(req(path, key, method), cap, verify);

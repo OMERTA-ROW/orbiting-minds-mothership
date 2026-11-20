@@ -31,6 +31,10 @@ vi.mock("@/lib/omni-noop-owner.functions", () => ({
   enqueueNoopJob: vi.fn(),
 }));
 vi.mock("@/lib/jackboy-link.functions", () => ({ requestJackboyLink: vi.fn() }));
+vi.mock("@/lib/omni-delegation.functions", () => ({
+  listOmniDelegations: vi.fn(async () => []),
+  revokeOmniDelegation: vi.fn(),
+}));
 vi.mock("@/lib/unified-activation.functions", () => ({
   getUnifiedExecutionState: vi.fn().mockRejectedValue(new Error("fixture unavailable")),
 }));
