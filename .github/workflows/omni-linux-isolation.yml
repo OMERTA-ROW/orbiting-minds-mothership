@@ -107,23 +107,26 @@ jobs:
           docker image inspect omni-workspace-recovery:fixture --format 'localImageId={{.Id}}'
           sudo systemd-run --quiet --wait --pipe --collect \
             --unit="omni-image-ci-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --slice="omni-image-$GITHUB_RUN_ID.slice" \
             --property=Delegate=yes --property=User=runner \
             --property="WorkingDirectory=$GITHUB_WORKSPACE" --setenv="PATH=$PATH" \
             --setenv="GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --setenv="OMNI_TEST_SLICE=omni-image-$GITHUB_RUN_ID.slice" \
             /bin/bash -c '
               set -euo pipefail
               root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
               mkdir "$root/manager"
               echo 0 > "$root/manager/cgroup.procs"
               echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
-              if [ "$(docker info --format "{{.CgroupDriver}}")" != cgroupfs ]; then
-                echo "Fixture requires Docker cgroupfs driver for its delegated parent"
+              if [ "$(docker info --format "{{.CgroupDriver}}")" != systemd ]; then
+                echo "Fixture requires Docker systemd cgroup driver"
                 exit 1
               fi
+              sudo chown "$(id -u):$(id -g)" "$(dirname "$root")/cgroup.procs"
               docker run --rm --user "$(id -u):$(id -g)" \
                 --cap-drop ALL --security-opt no-new-privileges --read-only \
                 --network none --tmpfs /tmp:rw,nosuid,nodev,size=128m \
-                --cgroup-parent "${root#/sys/fs/cgroup}" \
+                --cgroup-parent "$OMNI_TEST_SLICE" \
                 --mount "type=bind,source=$root,target=/delegated" \
                 --mount "type=bind,source=$GITHUB_WORKSPACE,target=/repo,readonly" \
                 --env OMNI_WORKSPACE_DELEGATED_CGROUP=/delegated \
