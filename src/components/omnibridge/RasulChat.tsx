@@ -2,25 +2,22 @@
  * RA'SUL — OMNI Mothership's central cross-project intelligence and coordination agent.
  * Owner-only conversational front door; resident watch-agent coordination remains staged.
  * One consolidated thread (session-only, no persistence by design). Research
- * answers use the authenticated Ask Razul path with citations; status,
- * agent discovery and dispatch planning are transparent about what is
- * verified, simulated, or blocked. Dispatches always require explicit owner
- * approval and never execute while Guardian/runner are unconnected.
+ * answers use the authenticated Ask Razul path with citations; status uses the
+ * owner snapshot. Agent questions show each specialist's real state. Sending
+ * work to specialists is not connected, so nothing is prepared or sent here.
  */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Eye, Send, ShieldCheck, ArrowUpRight, Square } from "lucide-react";
+import { Eye, Send, ArrowUpRight, Square } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "@/hooks/use-account";
 import { getRazulEye } from "@/lib/razul-eye.functions";
 import { askRazul } from "@/lib/razul-feeds.functions";
 import {
-  buildDispatchRequest,
   classifyIntent,
   planHandoffs,
   rasulFallbackAnswer,
-  type DispatchRequest,
   type HandoffNote,
 } from "@/lib/rasul-chat";
 
@@ -38,15 +35,13 @@ interface ChatMessage {
   id: string;
   role: "owner" | "rasul";
   text: string;
-  label: "verified" | "simulated" | "blocked";
+  label: "verified" | "blocked";
   handoffs?: HandoffNote[];
   citations?: Citation[];
-  dispatch?: DispatchRequest | undefined;
 }
 
 const STATUS_STYLE: Record<HandoffNote["status"], string> = {
   verified: "text-success",
-  simulated: "text-warning",
   blocked: "text-destructive",
 };
 
@@ -92,27 +87,22 @@ export function RasulChat() {
     const current = ++generation.current;
     try {
       const intent = classifyIntent(text);
-      const handoffs = planHandoffs(intent, text);
+      const handoffs = planHandoffs(intent);
       const ownerMsg: ChatMessage = { id: nextId(), role: "owner", text, label: "verified" };
       const reply: ChatMessage = {
         id: nextId(),
         role: "rasul",
         text: "",
-        label: "simulated",
+        label: "blocked",
         handoffs,
       };
 
       if (intent === "dispatch") {
-        const req = buildDispatchRequest(nextId(), text);
         reply.label = "blocked";
-        reply.text = req
-          ? `Dispatch request prepared for ${req.target.toUpperCase()}. It needs your explicit approval, and execution stays blocked until the named prerequisite is resolved — I will not simulate a completed job.`
-          : "No specialist was named. Name Jackboy, OMNI, Sabrina, JAX or Guardian so I can prepare a scoped dispatch for your approval.";
-        reply.dispatch = req ?? undefined;
+        reply.text = rasulFallbackAnswer("dispatch", true);
       } else if (intent === "agents") {
-        reply.label = "verified";
-        reply.text =
-          "Current specialist passports and their honest states are listed below. Verified means a real connected path exists; simulated means local concept only; blocked names the missing prerequisite.";
+        reply.label = "blocked";
+        reply.text = rasulFallbackAnswer("agents", true);
       } else if (intent === "status") {
         if (signedIn) {
           try {
@@ -161,28 +151,6 @@ export function RasulChat() {
     } finally {
       if (generation.current === current) setBusy(false);
     }
-  }
-
-  function approveDispatch(id: string) {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.dispatch?.id === id
-          ? {
-              ...m,
-              dispatch: {
-                ...m.dispatch,
-                status: "blocked",
-                // Approval recorded; execution remains blocked by the named
-                // prerequisite. Production changes and external actions always
-                // need separate explicit owner approval.
-              },
-            }
-          : m,
-      ),
-    );
-    setNotice(
-      "Local review recorded for this session only. Dispatch remains blocked; nothing was sent.",
-    );
   }
 
   return (
@@ -284,30 +252,6 @@ export function RasulChat() {
                   ))}
                 </ul>
               )}
-              {m.dispatch && (
-                <div className="mt-2 rounded border border-border p-2 text-xs">
-                  <p>
-                    Dispatch → <strong>{m.dispatch.target.toUpperCase()}</strong>: {m.dispatch.task}
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    Status: {m.dispatch.status}
-                    {m.dispatch.blockedReason ? ` — ${m.dispatch.blockedReason}` : ""}
-                  </p>
-                  {m.dispatch.status === "pending-approval" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-2"
-                      onClick={() => {
-                        if (m.dispatch) approveDispatch(m.dispatch.id);
-                      }}
-                    >
-                      <ShieldCheck className="mr-1 h-3 w-3" aria-hidden /> Record local review · no
-                      dispatch
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
             {m.handoffs && m.handoffs.length > 0 && (
               <ul
@@ -340,7 +284,7 @@ export function RasulChat() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask RA'SUL, or “dispatch … to Jackboy”"
+          placeholder="Ask RA'SUL a research or status question"
           aria-label="Message RA'SUL"
           maxLength={500}
           disabled={busy}

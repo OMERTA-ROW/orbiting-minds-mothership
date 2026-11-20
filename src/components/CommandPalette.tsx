@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowUpRight, Bot, Code2, FileText, Layers, Orbit, Search, Sparkles } from "lucide-react";
+import { ArrowUpRight, Search } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -11,25 +11,25 @@ import {
 } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  searchCommands,
-  shouldOpenPalette,
-  type SearchEntry,
-  type SearchKind,
-} from "@/lib/command-search";
-import type { navItems } from "@/components/SiteNav";
+import type { navItems } from "@/components/nav-groups";
 
 const PaletteContext = createContext<(() => void) | null>(null);
-const kinds: SearchKind[] = ["Module", "Project", "Agent", "Proposal", "Idea", "Code", "Scenario"];
-const icons = {
-  Module: Orbit,
-  Project: Layers,
-  Agent: Bot,
-  Proposal: FileText,
-  Idea: Sparkles,
-  Code: Code2,
-  Scenario: Bot,
-};
+
+/** Ctrl/⌘ K, without Alt and not a held-down repeat. */
+export function shouldOpenPalette(event: {
+  key: string;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  altKey: boolean;
+  repeat: boolean;
+}) {
+  return (
+    event.key.toLowerCase() === "k" &&
+    (event.metaKey || event.ctrlKey) &&
+    !event.altKey &&
+    !event.repeat
+  );
+}
 
 export function PaletteTrigger() {
   const open = useContext(PaletteContext);
@@ -48,19 +48,16 @@ export function PaletteTrigger() {
   );
 }
 
+/** Page search over the working site's pages only. */
 export function CommandPaletteProvider({
   children,
   pages: navigation,
-  includeDemo = false,
 }: {
   children: ReactNode;
   pages: readonly { to: (typeof navItems)[number]["to"]; label: string }[];
-  /** Sample modules/projects/agents only appear when design previews are switched on. */
-  includeDemo?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [value, setValue] = useState("");
   const navigate = useNavigate();
   const reveal = () => {
     setQuery("");
@@ -77,37 +74,8 @@ export function CommandPaletteProvider({
     document.addEventListener("keydown", keydown);
     return () => document.removeEventListener("keydown", keydown);
   }, []);
-  const select = (entry: SearchEntry) => {
-    setOpen(false);
-    if (entry.kind === "Module")
-      void navigate({ to: "/mothership", search: { module: entry.id }, hash: "module-explorer" });
-    else if (entry.kind === "Project")
-      void navigate({ to: "/universe", search: { world: entry.id }, hash: "world-profile" });
-    else if (entry.kind === "Agent")
-      void navigate({ to: "/agents", hash: `agent-${entry.id.toLowerCase()}` });
-    else if (entry.kind === "Proposal")
-      void navigate({
-        to: "/dashboard",
-        search: { proposal: entry.id },
-        hash: `proposal-${entry.id}`,
-      });
-    else if (entry.kind === "Code")
-      void navigate({ to: "/code-exchange/$id", params: { id: entry.id } });
-    else if (entry.kind === "Scenario")
-      void navigate({ to: "/robotics/$id", params: { id: entry.id } });
-    else
-      void navigate({
-        to: "/knowledge-fusion",
-        search: { idea: entry.id },
-        hash: `idea-${entry.id}`,
-      });
-  };
-  const matches = includeDemo ? searchCommands(query) : [];
-  const orderedKinds = query.trim() ? [...new Set(matches.map((entry) => entry.kind))] : kinds;
-  const pages = [
-    ...navigation,
-    ...(includeDemo ? [{ to: "/join", label: "Join" } as const] : []),
-  ].filter((p) => !query.trim() || p.label.toLowerCase().includes(query.toLowerCase().trim()));
+  const q = query.toLowerCase().trim();
+  const pages = navigation.filter((p) => !q || p.label.toLowerCase().includes(q));
   return (
     <PaletteContext.Provider value={reveal}>
       {children}
@@ -122,66 +90,17 @@ export function CommandPaletteProvider({
           }}
         >
           <DialogTitle className="px-5 pb-2 pt-5 font-display text-gold-light">Search</DialogTitle>
-          <DialogDescription className="px-5 pb-4 text-xs">
-            {includeDemo
-              ? "Pages, plus sample modules, projects, agents and code (design previews)"
-              : "Find a page"}
-          </DialogDescription>
-          <Command
-            shouldFilter={false}
-            loop
-            value={value}
-            onValueChange={setValue}
-            className="rounded-none"
-          >
+          <DialogDescription className="px-5 pb-4 text-xs">Find a page</DialogDescription>
+          <Command shouldFilter={false} loop className="rounded-none">
             <CommandInput
               value={query}
-              onValueChange={(text) => {
-                setQuery(text);
-                setValue(includeDemo ? (searchCommands(text)[0]?.key ?? "") : "");
-              }}
+              onValueChange={setQuery}
               autoFocus
-              placeholder={includeDemo ? "Search pages and previews…" : "Search pages…"}
+              placeholder="Search pages…"
               aria-label="Search commands"
             />
             <CommandList className="max-h-[min(55svh,450px)] px-2 py-2">
               <CommandEmpty>No matching pages.</CommandEmpty>
-              {orderedKinds.map((kind) => {
-                const entries = matches.filter((e) => e.kind === kind);
-                const Icon = icons[kind];
-                return (
-                  entries.length > 0 && (
-                    <CommandGroup
-                      key={kind}
-                      heading={
-                        kind === "Module"
-                          ? "Mothership modules"
-                          : kind === "Code"
-                            ? "Demo code contributions"
-                            : `Demo ${kind.toLowerCase()}s`
-                      }
-                    >
-                      {entries.map((entry) => (
-                        <CommandItem
-                          key={entry.key}
-                          value={entry.key}
-                          onSelect={() => select(entry)}
-                          className="gap-3 py-3"
-                        >
-                          <Icon className="text-gold" />
-                          <span className="min-w-0 flex-1">
-                            <span className="block break-words text-sm">{entry.label}</span>
-                            <span className="mt-1 block break-words text-[11px] text-muted-foreground">
-                              {entry.detail}
-                            </span>
-                          </span>
-                          <ArrowUpRight className="text-gold" />
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  )
-                );
-              })}
               {pages.length > 0 && (
                 <CommandGroup heading="Pages">
                   {pages.map((p) => (
@@ -201,11 +120,6 @@ export function CommandPaletteProvider({
               )}
             </CommandList>
           </Command>
-          <div className="border-t border-border px-5 py-3 font-mono text-[9px] uppercase text-muted-foreground">
-            {includeDemo
-              ? "Sample results are demos, not real records"
-              : "Design previews are hidden"}
-          </div>
         </DialogContent>
       </Dialog>
     </PaletteContext.Provider>

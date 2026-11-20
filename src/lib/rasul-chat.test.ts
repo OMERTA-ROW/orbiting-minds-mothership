@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildDispatchRequest,
   classifyIntent,
   dispatchTarget,
   planHandoffs,
@@ -40,30 +39,23 @@ describe("dispatchTarget", () => {
   });
 });
 
-describe("buildDispatchRequest", () => {
-  it("always starts pending owner approval, never auto-executes", () => {
-    const req = buildDispatchRequest("d1", "dispatch a patch to jackboy");
-    expect(req?.status).toBe("pending-approval");
-    expect(req?.target).toBe("jackboy");
+describe("planHandoffs", () => {
+  it("agents intent lists every specialist capability", () => {
+    expect(planHandoffs("agents")).toHaveLength(SPECIALIST_CAPABILITIES.length);
   });
-  it("carries the blocked reason for unconnected specialists", () => {
-    const req = buildDispatchRequest("d2", "dispatch audit to guardian");
-    expect(req?.blockedReason).toMatch(/policy engine/i);
-  });
-  it("returns null without a named target", () => {
-    expect(buildDispatchRequest("d3", "dispatch something")).toBeNull();
+  it("other intents prepare no local plan", () => {
+    for (const intent of ["research", "status", "dispatch"] as const)
+      expect(planHandoffs(intent)).toEqual([]);
   });
 });
 
-describe("planHandoffs", () => {
-  it("dispatch plans name rasul preparation plus the target with its honest status", () => {
-    const plan = planHandoffs("dispatch", "dispatch to sabrina");
-    expect(plan[0]?.agent).toBe("rasul");
-    expect(plan[1]?.agent).toBe("sabrina");
-    expect(plan[1]?.status).toBe("simulated");
+describe("no simulated specialists", () => {
+  it("Sabrina and JAX are blocked, not simulated", () => {
+    expect(SPECIALIST_CAPABILITIES.find((c) => c.agent === "sabrina")?.status).toBe("blocked");
+    expect(SPECIALIST_CAPABILITIES.find((c) => c.agent === "jax")?.status).toBe("blocked");
   });
-  it("agents intent lists every specialist capability", () => {
-    expect(planHandoffs("agents", "")).toHaveLength(SPECIALIST_CAPABILITIES.length);
+  it("a dispatch request names OMNI Terminal and claims nothing was sent", () => {
+    expect(rasulFallbackAnswer("dispatch", true)).toMatch(/nothing was prepared or sent/);
   });
 });
 

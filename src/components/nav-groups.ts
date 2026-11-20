@@ -1,10 +1,11 @@
 /**
  * Grouped site navigation. Pure data so the header, the home page, the
- * command palette and tests share one list. Every page that was reachable
- * from the old flat menu is still listed (primary groups or Advanced).
+ * command palette and tests share one list. Only working pages are listed;
+ * former demo/sample areas live in `src/lib/retired-areas.ts` and show an
+ * honest "not connected" page.
  */
 
-export type NavStatus = "account" | "owner" | "browser" | "ai" | "demo" | "off" | "guide";
+export type NavStatus = "account" | "owner" | "browser" | "ai" | "off" | "guide";
 
 /** Plain-language badge text and tooltip for each status. */
 export const NAV_STATUS: Record<NavStatus, { label: string; help: string; tone: string }> = {
@@ -27,11 +28,6 @@ export const NAV_STATUS: Record<NavStatus, { label: string; help: string; tone: 
     label: "AI draft",
     help: "Real AI writes a suggestion. Nothing is run, sent or published.",
     tone: "border-primary/50 text-primary",
-  },
-  demo: {
-    label: "Demo",
-    help: "Simulated example. Nothing real happens.",
-    tone: "border-muted-foreground/40 text-muted-foreground",
   },
   off: {
     label: "Not connected",
@@ -97,14 +93,8 @@ export const navGroups = [
       {
         to: "/omni-razul",
         label: "Observatory & history",
-        status: "browser",
-        note: "Public-source findings and your local notes.",
-      },
-      {
-        to: "/omni-models",
-        label: "Model choices",
-        status: "browser",
-        note: "Which AI models you plan to use.",
+        status: "owner",
+        note: "Public-source findings and owner research controls.",
       },
     ],
   },
@@ -203,90 +193,8 @@ export const navGroups = [
   items: readonly { to: string; label: string; status: NavStatus; note: string }[];
 }[];
 
-/**
- * Design previews: earlier modules, demos, samples and references with their original
- * labels. Hidden from the site unless "Show design previews" is switched on (Advanced).
- */
-export const advancedItems = [
-  { to: "/omni", label: "OMNI conversation · Scripted demo" },
-  { to: "/omni-agents", label: "OMNI Agent Registry · Concept" },
-  { to: "/agents", label: "Agent Network · Demo" },
-  { to: "/approval-ledger", label: "Approval Ledger · Demo" },
-  { to: "/mothership", label: "Mothership" },
-  { to: "/command-nexus", label: "Command Nexus · Demo" },
-  { to: "/omnibridge", label: "OmniBridge · Demo" },
-  { to: "/omni-marketing", label: "OMNI Marketing · Local" },
-  { to: "/angel-tech", label: "Angel Tech · Sabrina Concept" },
-  { to: "/omni-rights", label: "OMNI Rights · Local" },
-  { to: "/omni-legal", label: "Omni Legal · Synthetic" },
-  { to: "/entertainment", label: "Entertainment Galaxy · Demo" },
-  { to: "/cartoon-galaxy", label: "Cartoon Galaxy · Demo" },
-  { to: "/code-exchange", label: "Code Exchange" },
-  { to: "/code-vault", label: "Code Vault · Demo" },
-  { to: "/commons", label: "Commons · Demo" },
-  { to: "/pulse", label: "Pulse · Local" },
-  { to: "/challenges", label: "Grand Challenges" },
-  { to: "/open-call", label: "Evolution Open Call" },
-  { to: "/embassy", label: "Agent Embassy" },
-  { to: "/agent-lounge", label: "Welcome Lounge · Demo" },
-  { to: "/incident-archives", label: "Incident Archives · Demo" },
-  { to: "/agent-debrief", label: "Agent Debrief · Demo" },
-  { to: "/guardian-incidents", label: "Incident Accountability · Demo" },
-  { to: "/report-incident", label: "Report Incident · Demo" },
-  { to: "/sdk", label: "SDK / API Docs" },
-  { to: "/discovery", label: "Discovery Radar" },
-  { to: "/digital-twin", label: "Digital Twin Lab" },
-  { to: "/robotics", label: "Robotics & Mobility Lab" },
-  { to: "/physical-safety", label: "Physical Safety Lock · Demo" },
-  { to: "/experiment-replay", label: "Oracle Experiment Replay · Demo" },
-  { to: "/impact-scorecard", label: "Idea-to-Impact Scorecard · Demo" },
-  { to: "/trust", label: "Trust & Certification" },
-  { to: "/marketplace", label: "Creator Marketplace" },
-  { to: "/compute-grid", label: "Compute Grid" },
-  { to: "/releases", label: "Release Galaxy" },
-  { to: "/care", label: "Evolution CARE · Demo" },
-  { to: "/updates", label: "Update Engine · Demo" },
-  { to: "/pilot", label: "Evolution Pilot · Demo" },
-  { to: "/voice", label: "Mothership Voice · Demo" },
-  { to: "/care-agent", label: "Native Agent Reference" },
-  { to: "/universe", label: "Universe" },
-  { to: "/knowledge-fusion", label: "Knowledge Fusion" },
-  { to: "/guardian", label: "Guardian" },
-  { to: "/devices", label: "My Devices · Demo" },
-  { to: "/fleet", label: "Fleet Control · Demo" },
-  { to: "/security-report", label: "Health & Security Report" },
-  { to: "/sandbox", label: "Sandbox Lab" },
-  { to: "/roadmap", label: "Roadmap" },
-  { to: "/partnerships", label: "Partnerships" },
-  { to: "/dashboard", label: "Demo Dashboard" },
-  { to: "/arena", label: "Racing Arena · Simulation" },
-] as const;
-
-/** Flat list (Home, groups, Advanced) for the command palette and tests. */
+/** Flat list (Home and groups) for the command palette and tests. */
 export const navItems = [
   { to: "/", label: "Home" },
   ...navGroups.flatMap((g) => g.items.map(({ to, label }) => ({ to, label }))),
-  ...advancedItems,
 ] as const;
-
-/** Detail pages and extras that belong to design previews. */
-const PREVIEW_PREFIXES = [
-  "/capsules/",
-  "/challenges/",
-  "/code-exchange/",
-  "/guardian-incidents/",
-  "/incident-archives/",
-  "/robotics/",
-] as const;
-const PREVIEW_PATHS = new Set<string>([...advancedItems.map((i) => i.to), "/join"]);
-
-/** True for demo/sample/simulated areas that are hidden unless previews are switched on. */
-export function isPreviewPath(pathname: string): boolean {
-  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  return PREVIEW_PATHS.has(path) || PREVIEW_PREFIXES.some((p) => path.startsWith(p));
-}
-
-/** Pages offered in search and menus for the current preview setting. */
-export function visibleNavItems(showPreviews: boolean) {
-  return showPreviews ? navItems : navItems.filter((n) => !isPreviewPath(n.to));
-}

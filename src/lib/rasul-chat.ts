@@ -6,9 +6,9 @@
  * sourced memory/research, inspects authorized status, discovers specialists
  * via Agent Passports, and prepares scoped dispatches. It never replaces
  * specialist agents, never holds blanket credentials, and every dispatch
- * requires explicit owner approval. Execution is honestly labeled:
- * verified (real backend path), simulated (local concept), or blocked
- * (missing prerequisite, named).
+ * requires explicit owner approval. States are honest: verified (real backend
+ * path) or blocked (missing prerequisite, named). Nothing is simulated, and no
+ * dispatch is prepared locally while no specialist path is connected.
  */
 
 /** Conversation selection only; does not activate an agent or confer permissions. */
@@ -17,7 +17,7 @@ export const DEFAULT_OMNI_CONVERSATION = "rasul" as const;
 export const RASUL_SPECIALISTS = ["jackboy", "omni", "sabrina", "jax", "guardian"] as const;
 export type RasulSpecialist = (typeof RASUL_SPECIALISTS)[number];
 
-export type CapabilityStatus = "verified" | "simulated" | "blocked";
+export type CapabilityStatus = "verified" | "blocked";
 
 export interface SpecialistCapability {
   agent: RasulSpecialist;
@@ -43,14 +43,14 @@ export const SPECIALIST_CAPABILITIES: readonly SpecialistCapability[] = [
   {
     agent: "sabrina",
     role: "Marketing intelligence, campaign drafts, partnerships",
-    status: "simulated",
-    reason: "Local concept workspace only; no live discovery or outreach.",
+    status: "blocked",
+    reason: "Not connected; no marketing or outreach accounts are approved.",
   },
   {
     agent: "jax",
     role: "Autonomous broker workflows (scoped, Vault-isolated)",
-    status: "simulated",
-    reason: "Declaration-stage broker rules; no live integration.",
+    status: "blocked",
+    reason: "Not connected; no broker integration exists.",
   },
   {
     agent: "guardian",
@@ -87,93 +87,29 @@ export interface HandoffNote {
   reason: string;
 }
 
-/** Transparent handoff plan for a turn — always shown to the owner. */
-export function planHandoffs(intent: RasulIntent, text: string): HandoffNote[] {
-  if (intent === "dispatch") {
-    const target = dispatchTarget(text);
-    const cap = target ? SPECIALIST_CAPABILITIES.find((c) => c.agent === target) : null;
-    return [
-      {
-        agent: "rasul",
-        action: "Prepare scoped dispatch request for owner approval",
-        status: "verified",
-        reason: "Runs locally; nothing is sent.",
-      },
-      {
-        agent: target ?? "omni",
-        action: cap ? cap.role : "Route the task to the right specialist",
-        status: cap?.status ?? "blocked",
-        reason: cap?.reason ?? "No specialist named; routing requires the connected job API.",
-      },
-    ];
-  }
-  if (intent === "agents") {
-    return SPECIALIST_CAPABILITIES.map((c) => ({
-      agent: c.agent,
-      action: c.role,
-      status: c.status,
-      reason: c.reason,
-    }));
-  }
-  if (intent === "status") {
-    return [
-      {
-        agent: "rasul",
-        action: "Read authorized project status from the observatory and sentinel history",
-        status: "verified",
-        reason: "Requires the signed-in owner account; otherwise reported as not connected.",
-      },
-    ];
-  }
-  return [
-    {
-      agent: "rasul",
-      action: "Answer from sourced observatory memory with citations and evidence class",
-      status: "verified",
-      reason: "Authenticated Ask Razul retrieval; local fallback when not signed in.",
-    },
-  ];
-}
-
-export interface DispatchRequest {
-  id: string;
-  target: RasulSpecialist;
-  task: string;
-  status: "pending-approval" | "approved" | "blocked";
-  blockedReason: string | null;
-}
-
-/**
- * Build a dispatch request. Always starts pending owner approval; approving
- * never executes — execution is blocked until Guardian and the job runner are
- * connected, and production changes/external actions always need separate
- * explicit owner approval.
- */
-export function buildDispatchRequest(id: string, text: string): DispatchRequest | null {
-  const target = dispatchTarget(text);
-  if (!target) return null;
-  const cap = SPECIALIST_CAPABILITIES.find((c) => c.agent === target);
-  return {
-    id,
-    target,
-    task: text.trim().slice(0, 500),
-    status: "pending-approval",
-    blockedReason: cap?.status === "verified" ? null : (cap?.reason ?? "Specialist not connected."),
-  };
+/** Specialist states for an "agents" question; other intents carry no plan. */
+export function planHandoffs(intent: RasulIntent): HandoffNote[] {
+  if (intent !== "agents") return [];
+  return SPECIALIST_CAPABILITIES.map((c) => ({
+    agent: c.agent,
+    action: c.role,
+    status: c.status,
+    reason: c.reason,
+  }));
 }
 
 /** Honest fallback answers when the backend is not connected. */
 export function rasulFallbackAnswer(intent: RasulIntent, signedIn: boolean): string {
   if (!signedIn) {
-    return "I am Razul Central Intelligence — RA'SUL, The Eternal Archivist and OMNI Mothership's default speaking intelligence. My role is All-Seeing Eye, permissioned historical records for OMNI/Evolution and lawful public-source research across enrolled owned projects. Specialized research workers, scoped watchers and dispatch to resident agents remain proposed; the Itanimulli game server is one participating project, not my home or exclusive assignment. Source policies, permissions and rate limits apply, never blanket surveillance or entire-internet monitoring. My live research answers require verified owner access and strong MFA — sign in. Recommendations and dispatch preparation cannot bypass Guardian or owner approval; unconnected execution stays blocked.";
+    return "I am Razul Central Intelligence — RA'SUL, The Eternal Archivist and OMNI Mothership's default speaking intelligence. My role is All-Seeing Eye, permissioned historical records for OMNI/Evolution and lawful public-source research across enrolled owned projects. Specialized research workers, scoped watchers and dispatch to resident agents remain proposed; the Itanimulli game server is one participating project, not my home or exclusive assignment. Source policies, permissions and rate limits apply, never blanket surveillance or entire-internet monitoring. My live research answers require verified owner access and strong MFA — sign in. Recommendations cannot bypass Guardian or owner approval; unconnected execution stays blocked.";
   }
   switch (intent) {
     case "status":
       return "Status inspection needs the connected observatory and sentinel history. The query path is live for approved readers; if this failed, the backend reported an error rather than a fabricated status.";
     case "agents":
-      return "The specialist registry above shows each agent's passport role and its honest current state — verified, simulated, or blocked with the named prerequisite.";
+      return "The list below shows each specialist's role and its current state, with the missing prerequisite named.";
     case "dispatch":
-      return "Dispatch requests are prepared for your explicit approval. Execution stays blocked until the Guardian policy engine and the isolated job runner are connected — I will not simulate a finished job.";
+      return "Sending work to specialists isn't connected here, so nothing was prepared or sent. To hold a task for owner review, use OMNI Terminal.";
     default:
       return "I could not reach the research index for that question. No answer was fabricated; try again once the backend connection is confirmed.";
   }
