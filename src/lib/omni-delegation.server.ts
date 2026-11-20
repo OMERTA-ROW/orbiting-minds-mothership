@@ -5,6 +5,7 @@
  * Bearer secrets are generated here, returned once and stored only as SHA-256 hashes.
  */
 import { sha256Hex } from "./omni-api-keys";
+import { z } from "zod";
 import { unsupportedBody, httpsOrigin, type UnsupportedCapability } from "./omni-contract";
 import {
   AUTH_CODE_PATTERN,
@@ -281,6 +282,39 @@ function refusal(reason: string, scope: DelegationScope) {
     default:
       return json({ ok: false, error: "refused" }, 403);
   }
+}
+
+/** Read only tasks created by this owner through OMNI web, with separately consented scope. */
+export async function omniDelegatedReadTasks(request: Request, rpc: Rpc = serviceRpc) {
+  if (isBrowserRequest(request.headers)) return browserRefused();
+  const bearer = classifyBearer(request.headers.get("authorization"));
+  if (bearer.kind !== "delegation") return needsDelegation();
+  const params = new URL(request.url).searchParams;
+  const keys = [...params.keys()];
+  const id = params.get("id");
+  if (
+    keys.some((key) => key !== "id") ||
+    params.getAll("id").length > 1 ||
+    (id !== null && !z.string().uuid().safeParse(id).success)
+  )
+    return json({ ok: false, error: "invalid_request" }, 400);
+  let r: { data: unknown; error: unknown };
+  try {
+    r = await rpc("omni_delegation_read_tasks", {
+      _token_hash: await sha256Hex(bearer.token),
+      _audience: DELEGATION_AUDIENCE,
+      _task_id: id,
+    });
+  } catch {
+    r = { data: null, error: true };
+  }
+  if (r.error || !r.data || typeof r.data !== "object")
+    return json({ ok: false, error: "tasks_unavailable" }, 503);
+  const result = r.data as { ok?: boolean; reason?: string; tasks?: unknown };
+  if (result.ok === false) return refusal(result.reason ?? "", "tasks:read");
+  if (result.ok !== true || !Array.isArray(result.tasks))
+    return json({ ok: false, error: "tasks_unavailable" }, 503);
+  return json({ ok: true, tasks: result.tasks });
 }
 
 /** POST /api/omni/tasks with an owner delegation ("tasks:write"): stores a held task only. */

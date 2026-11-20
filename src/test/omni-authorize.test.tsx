@@ -77,6 +77,28 @@ describe("OMNI connection approval page", () => {
     await screen.findByText("code form");
     expect(screen.queryByRole("button", { name: /Allow/ })).toBeNull();
   });
+  it("requires explicit consent for reading tasks independently of creating them", async () => {
+    mocks.search = { ...SEARCH, scope: "tasks:read tasks:write" };
+    mocks.describe.mockResolvedValue({
+      valid: true,
+      owner: true,
+      needsSecondStep: false,
+      mfaBlocker: null,
+    });
+    mocks.approve.mockResolvedValue({ ok: true, redirectTo: `${CB}?code=x&state=y` });
+    render(<Page />);
+    const read = await screen.findByRole("checkbox", { name: /Read OMNI web tasks/ });
+    const write = screen.getByRole("checkbox", { name: /Add held tasks/ });
+    expect(read).not.toBeChecked();
+    expect(write).not.toBeChecked();
+    fireEvent.click(read);
+    fireEvent.click(screen.getByRole("button", { name: /Allow/ }));
+    await waitFor(() =>
+      expect(mocks.approve).toHaveBeenCalledWith({
+        data: { request: mocks.search, scopes: ["tasks:read"], confirm: true },
+      }),
+    );
+  });
   it("non-owners cannot approve; declining returns access_denied to the allowlisted callback", async () => {
     mocks.describe.mockResolvedValue({
       valid: true,

@@ -194,6 +194,7 @@ def main():
 
         # Scope, audience, malformed and unknown tokens fail.
         assert use(F, "safety:emergency-stop") == "scope_missing"
+        assert '"scope_missing"' in service(f"SELECT public.omni_delegation_read_tasks('{F}','{AUD}',NULL)::text;")
         assert use(F, "chat:write") == "scope_missing"
         assert use(F, aud="other-audience") == "wrong_audience"
         assert use("not-a-hash") == "invalid"
@@ -306,6 +307,38 @@ def main():
         assert service(f"SELECT coalesce(public.omni_api_key_verify('{KEY}','tasks:write')::text,'null');") == "null"
         assert use(KEY) == "invalid"
         assert service(f"SELECT coalesce(public.omni_api_key_verify('{h('f')}','health')::text,'null');") == "null"
+
+        # A separate read grant can see this owner's web-created tasks, not owner-created or
+        # other-owner tasks. It cannot create tasks or survive revocation.
+        sql("UPDATE public.omni_delegation_codes SET created_at=created_at-interval '11 minutes', expires_at=expires_at-interval '11 minutes';")
+        authorize(h("d"), scopes="ARRAY['tasks:read']")
+        assert '"ok": true' in exchange(h("d"), h("5"))
+        R = h("5")
+        foreign = "aaaaaaaa-0000-4000-8000-0000000000ee"
+        sql(f"INSERT INTO public.omni_terminal_tasks(id,created_by,kind,agent,project_label,instructions,source_delegation) SELECT '{foreign}','{OTHER}','agent.handoff','jax','Other task','Other instructions',id FROM public.omni_delegations WHERE token_hash='{R}';")
+        def read_tasks(token, task="NULL", aud=AUD):
+            return service(f"SELECT public.omni_delegation_read_tasks('{token}','{aud}',{task})::text;")
+        result = read_tasks(R)
+        assert TASK in result and owner_task not in result and foreign not in result, result
+        assert '"tasks": []' in read_tasks(R, f"'{foreign}'")
+        assert TASK in read_tasks(R, f"'{TASK}'")
+        sql(f"INSERT INTO public.omni_task_handoffs(task_id,created_by,job_kind,payload_digest,status) VALUES('{TASK}','{OWNER}','test','{h('a')}','sending');")
+        result = read_tasks(R, f"'{TASK}'")
+        assert '"handoff":' in result and '"status": "sending"' in result, result
+        assert '"scope_missing"' in hold(R)
+        assert '"wrong_audience"' in read_tasks(R, aud="wrong")
+        assert '"invalid"' in read_tasks(KEY)
+        assert sql("SELECT has_function_privilege('authenticated','public.omni_delegation_read_tasks(text,text,uuid)','execute');") == "f"
+        assert sql("SELECT has_function_privilege('anon','public.omni_delegation_read_tasks(text,text,uuid)','execute');") == "f"
+        assert sql("SELECT has_function_privilege('service_role','public.omni_delegation_read_tasks(text,text,uuid)','execute');") == "t"
+        sql(f"UPDATE public.omni_delegations SET issued_at=now()-interval '20 minutes', expires_at=now()-interval '5 minutes' WHERE token_hash='{R}';")
+        assert '"expired"' in read_tasks(R)
+        sql(f"UPDATE public.omni_delegations SET issued_at=now(), expires_at=now()+interval '15 minutes' WHERE token_hash='{R}';")
+        service(f"SELECT public.omni_delegation_revoke('{R}');")
+        assert '"revoked"' in read_tasks(R)
+        authorize(h("e"), scopes="ARRAY['tasks:read','tasks:write','safety:emergency-stop']")
+        assert '"tasks:read"' in exchange(h("e"), h("6"))
+        assert TASK in read_tasks(h("6"))
 
         assert int(sql("SELECT count(*) FROM public.razul_control_audit;")) > audit0
         print(f"PASS: {checks} isolated SQL checks: owner/fresh-MFA consent, exact client/callback, supported scopes only, single-use PKCE codes, replay revocation, concurrent exchange, expiry, client/owner revocation, scope/audience/owner-change refusals, held tasks with idempotency/concurrency/limits, Stop engagement, privileges, hash hiding and API key separation. No hosted fixtures.")

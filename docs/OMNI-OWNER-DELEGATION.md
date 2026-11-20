@@ -1,7 +1,6 @@
 # OMNI owner delegation (Mothership side)
 
-Status 2026-11-20: implemented and tested in preview; migrations `0062_omni_owner_delegation` and `0063_omni_delegation_privileges` (owner reads metadata columns only; codes service-only) applied.
-**Not published, not verified live.** Contract source: OMNI project `docs/MOTHERSHIP_BACKEND.md` (commit `30fe28a`),
+Status 2026-11-20: delegation implemented; migrations `0062_omni_owner_delegation` and `0063_omni_delegation_privileges` (owner reads metadata columns only; codes service-only) applied according to Lovable's deployment check. Migration `0064_omni_delegated_task_reads` and the `tasks:read` endpoint below require separate deployment and verification; the end-to-end owner flow remains unverified. Contract source: OMNI project `docs/MOTHERSHIP_BACKEND.md` (commit `30fe28a`),
 section "Selected owner sign-in + short-lived delegation integration".
 
 Code: `src/lib/omni-delegation.ts` (rules), `src/lib/omni-delegation.server.ts` (handlers),
@@ -22,14 +21,15 @@ No other origin, path, query or trailing slash is accepted. OMNI must create tha
 
 ## Scopes
 
-| Scope                   | Granted? | Effect                                                                                     |
-| ----------------------- | -------- | ------------------------------------------------------------------------------------------ |
-| `tasks:write`           | Yes      | `POST /api/omni/tasks` stores a **held** OMNI Terminal task. Nothing runs or is dispatched. |
-| `safety:emergency-stop` | Yes      | `POST /api/omni/emergency-stop` **engages** the Stop. It can never release it.             |
-| `chat:write`            | No       | Refused at approval; `/api/omni/chat` answers 403 `not_available`.                         |
-| `providers:write`       | No       | Refused; no endpoint.                                                                      |
-| `tasks:retry`           | No       | Refused; held tasks never run.                                                             |
-| `tasks:approve`, `tasks:reject` | No | Refused; decisions stay owner-only on the Mothership (two-step + passkey).          |
+| Scope                           | Granted?        | Effect                                                                                          |
+| ------------------------------- | --------------- | ----------------------------------------------------------------------------------------------- |
+| `tasks:read`                    | Yes, after 0064 | Read this owner's tasks created through OMNI web delegations and their recorded handoff status. |
+| `tasks:write`                   | Yes             | `POST /api/omni/tasks` stores a **held** OMNI Terminal task. Nothing runs or is dispatched.     |
+| `safety:emergency-stop`         | Yes             | `POST /api/omni/emergency-stop` **engages** the Stop. It can never release it.                  |
+| `chat:write`                    | No              | Refused at approval; `/api/omni/chat` answers 403 `not_available`.                              |
+| `providers:write`               | No              | Refused; no endpoint.                                                                           |
+| `tasks:retry`                   | No              | Refused; held tasks never run.                                                                  |
+| `tasks:approve`, `tasks:reject` | No              | Refused; decisions stay owner-only on the Mothership (two-step + passkey).                      |
 
 A scope never bypasses the Mothership's own rules: held tasks stay held (owner hand-off with a fresh
 code is still required), the Stop release still needs the owner, spend caps/permits/autonomy are untouched.
@@ -45,7 +45,7 @@ GET https://evoomni.tech/omni-authorize
   ?response_type=code
   &client_id=omni-web
   &redirect_uri=https%3A%2F%2Fomni-orbit-command-companion.lovable.app%2Fmothership%2Fcallback
-  &scope=tasks%3Awrite%20safety%3Aemergency-stop
+  &scope=tasks%3Aread%20tasks%3Awrite%20safety%3Aemergency-stop
   &state=<state>
   &code_challenge=<BASE64URL(SHA256(code_verifier)), 43 chars>
   &code_challenge_method=S256
@@ -74,10 +74,18 @@ Content-Type: application/json   (application/x-www-form-urlencoded also accepte
 200 (`Cache-Control: no-store`):
 
 ```json
-{ "access_token": "omnid_<64 hex>", "token_type": "Bearer", "expires_in": 900,
-  "issued_at": "ISO", "expires_at": "ISO", "scope": "safety:emergency-stop tasks:write",
-  "scopes": ["safety:emergency-stop", "tasks:write"], "delegation_id": "uuid",
-  "audience": "omni-mothership", "client_id": "omni-web" }
+{
+  "access_token": "omnid_<64 hex>",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "issued_at": "ISO",
+  "expires_at": "ISO",
+  "scope": "safety:emergency-stop tasks:write",
+  "scopes": ["safety:emergency-stop", "tasks:write"],
+  "delegation_id": "uuid",
+  "audience": "omni-mothership",
+  "client_id": "omni-web"
+}
 ```
 
 Errors: 400 `{error:"invalid_grant", error_description}` (unknown, expired, already used, wrong
@@ -121,9 +129,32 @@ for good (`owner_changed`).
 
 ## 5. Delegated operations
 
-Both are server-to-server only (403 for browser-labelled requests) and check the delegation
+All are server-to-server only (403 for browser-labelled requests) and check the delegation
 (not revoked, not expired, audience `omni-mothership`, owner still verified, exact scope) **in the
 same database transaction** as the action.
+
+### GET /api/omni/held-tasks — `tasks:read` (migration 0064; not yet deployed)
+
+Send the delegation in `Authorization: Bearer …`. An optional single `id` query parameter
+must be a UUID. The response is `200 { "ok": true, "tasks": [...] }`; an unknown or
+other-owner ID returns an empty list. Without `id`, at most the 50 newest tasks are returned.
+Only tasks created by this owner through OMNI web delegations are included, including those
+created under an earlier delegation. Ordinary Terminal tasks and observatory history are excluded.
+This permission is independent of `tasks:write` and must be requested and explicitly approved.
+
+Each task contains `id`, `title`, `instruction`, `agentId`, `repository` (string or null),
+`status` (`held` or `cancelled`), `createdAt`, `cancelledAt` (timestamp or null), and
+`handoff` (null or `{ status, jobId, updatedAt, lastCheckedAt }`; job ID and last check may
+be null). Handoff is the last stored record, not a live check or proof of execution; `sending`
+and `error` are not confirmed dispatch. No result, cost, progress or remote logs are invented.
+For owner handoff use the manifest's `links.terminal`; the owner must still satisfy Mothership
+and Jackboy gates.
+
+Malformed or duplicate parameters return 400 `invalid_request`; invalid, expired or revoked
+delegations return 401 `invalid_token`; missing scope returns 403 `scope_missing`; browser
+requests return 403 `server_to_server_only`; database errors return 503 `tasks_unavailable`.
+Metadata keys do not authorize this endpoint. Responses are `no-store` and each successful
+read is audited. Existing `GET /api/omni/tasks` remains the separate metadata-key history API.
 
 ### POST /api/omni/tasks — `tasks:write`
 
@@ -168,14 +199,16 @@ keep working unchanged for health, manifest and job history; delegations do not 
 
 `capabilities` now uses `{read, write}` objects (`tasks {read:true, write:true}`,
 `emergencyStop {read:false, write:true}`, everything else false), plus `taskAgents` and
-`delegation { clientId, audience, supportedScopes, tokenLifetimeSeconds, authorizeUrl, tokenUrl,
-statusUrl, revokeUrl }`.
+`delegation { clientId, audience, supportedScopes, tokenLifetimeSeconds, heldTasksPath,
+authorizeUrl, tokenUrl, statusUrl, revokeUrl }`. The `heldTasksPath` and `tasks:read` are
+available only after migration 0064 and the matching application revision are deployed.
 
 ## Verification still required (not done)
 
-1. Publish the Mothership (these routes exist only in preview until then).
+1. Apply migration 0064, then deploy the corresponding Mothership app revision with owner approval.
 2. In OMNI: build the callback route and server-side state/verifier/token storage; switch
-   `cfg("delegated")` to the stored delegation; use `taskAgents` for task creation.
-3. Live test with the real owner account: approve, exchange, status, one held task, revoke, then
+   `cfg("delegated")` to the stored delegation; use `taskAgents` for task creation, and request
+   `tasks:read` separately when the owner wants task history.
+3. Live test with the real owner account: approve, exchange, status, one held task, read it, revoke, then
    confirm the revoked token gets 401. Test the Stop only when the owner chooses to.
 4. Both sides confirm results before anyone relies on it.

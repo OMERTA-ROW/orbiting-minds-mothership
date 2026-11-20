@@ -7,7 +7,7 @@
  *   2. The verified owner (aal2, authenticator code within 15 minutes) ticks scopes and approves.
  *   3. The browser returns to the one allowlisted callback with a single-use 60-second code.
  *   4. OMNI's server exchanges code + code_verifier server-to-server for a 15-minute bearer.
- * Only "tasks:write" (held tasks) and "safety:emergency-stop" (engage only) can be granted.
+ * Only "tasks:read", "tasks:write" and "safety:emergency-stop" can be granted.
  * The database enforces the same client, callback, scopes and lifetimes (migration 0062).
  */
 import { z } from "zod";
@@ -26,6 +26,7 @@ export const DELEGATION_TOKEN_SECONDS = 15 * 60;
 export const DELEGATION_SCOPES = [
   "chat:write",
   "providers:write",
+  "tasks:read",
   "tasks:write",
   "tasks:retry",
   "tasks:approve",
@@ -35,7 +36,11 @@ export const DELEGATION_SCOPES = [
 export type DelegationScope = (typeof DELEGATION_SCOPES)[number];
 
 /** Scopes this Mothership can actually honour today; the others are refused, never faked. */
-export const SUPPORTED_DELEGATION_SCOPES = ["tasks:write", "safety:emergency-stop"] as const;
+export const SUPPORTED_DELEGATION_SCOPES = [
+  "tasks:read",
+  "tasks:write",
+  "safety:emergency-stop",
+] as const;
 export type SupportedDelegationScope = (typeof SUPPORTED_DELEGATION_SCOPES)[number];
 
 export function isSupportedScope(scope: string): scope is SupportedDelegationScope {
@@ -46,6 +51,12 @@ export const DELEGATION_SCOPE_INFO: Record<
   DelegationScope,
   { title: string; effect: string; supported: boolean }
 > = {
+  "tasks:read": {
+    title: "Read OMNI web tasks",
+    effect:
+      "OMNI can read tasks previously created through your OMNI web delegations, including instructions and recorded handoff status.",
+    supported: true,
+  },
   "tasks:write": {
     title: "Add held tasks",
     effect:

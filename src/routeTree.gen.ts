@@ -98,6 +98,7 @@ import { Route as RoboticsIdRouteImport } from './routes/robotics_.$id'
 import { Route as ApiOmniChatRouteImport } from './routes/api/omni/chat'
 import { Route as ApiOmniEmergencyStopRouteImport } from './routes/api/omni/emergency-stop'
 import { Route as ApiOmniHealthRouteImport } from './routes/api/omni/health'
+import { Route as ApiOmniHeldTasksRouteImport } from './routes/api/omni/held-tasks'
 import { Route as ApiOmniManifestRouteImport } from './routes/api/omni/manifest'
 import { Route as ApiOmniTasksRouteImport } from './routes/api/omni/tasks'
 import { Route as ApiPublicApprovalFlowRouteImport } from './routes/api/public/approval-flow'
@@ -570,6 +571,11 @@ const ApiOmniHealthRoute = ApiOmniHealthRouteImport.update({
   path: '/health',
   getParentRoute: () => ApiOmniRoute,
 } as any)
+const ApiOmniHeldTasksRoute = ApiOmniHeldTasksRouteImport.update({
+  id: '/held-tasks',
+  path: '/held-tasks',
+  getParentRoute: () => ApiOmniRoute,
+} as any)
 const ApiOmniManifestRoute = ApiOmniManifestRouteImport.update({
   id: '/manifest',
   path: '/manifest',
@@ -792,6 +798,7 @@ export interface FileRoutesByFullPath {
   '/api/omni/chat': typeof ApiOmniChatRoute
   '/api/omni/emergency-stop': typeof ApiOmniEmergencyStopRoute
   '/api/omni/health': typeof ApiOmniHealthRoute
+  '/api/omni/held-tasks': typeof ApiOmniHeldTasksRoute
   '/api/omni/manifest': typeof ApiOmniManifestRoute
   '/api/omni/tasks': typeof ApiOmniTasksRouteWithChildren
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
@@ -906,6 +913,7 @@ export interface FileRoutesByTo {
   '/api/omni/chat': typeof ApiOmniChatRoute
   '/api/omni/emergency-stop': typeof ApiOmniEmergencyStopRoute
   '/api/omni/health': typeof ApiOmniHealthRoute
+  '/api/omni/held-tasks': typeof ApiOmniHeldTasksRoute
   '/api/omni/manifest': typeof ApiOmniManifestRoute
   '/api/omni/tasks': typeof ApiOmniTasksRouteWithChildren
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
@@ -1022,6 +1030,7 @@ export interface FileRoutesById {
   '/api/omni/chat': typeof ApiOmniChatRoute
   '/api/omni/emergency-stop': typeof ApiOmniEmergencyStopRoute
   '/api/omni/health': typeof ApiOmniHealthRoute
+  '/api/omni/held-tasks': typeof ApiOmniHeldTasksRoute
   '/api/omni/manifest': typeof ApiOmniManifestRoute
   '/api/omni/tasks': typeof ApiOmniTasksRouteWithChildren
   '/api/public/approval-flow': typeof ApiPublicApprovalFlowRoute
@@ -1138,6 +1147,7 @@ export interface FileRouteTypes {
     | '/api/omni/chat'
     | '/api/omni/emergency-stop'
     | '/api/omni/health'
+    | '/api/omni/held-tasks'
     | '/api/omni/manifest'
     | '/api/omni/tasks'
     | '/api/public/approval-flow'
@@ -1252,6 +1262,7 @@ export interface FileRouteTypes {
     | '/api/omni/chat'
     | '/api/omni/emergency-stop'
     | '/api/omni/health'
+    | '/api/omni/held-tasks'
     | '/api/omni/manifest'
     | '/api/omni/tasks'
     | '/api/public/approval-flow'
@@ -1367,6 +1378,7 @@ export interface FileRouteTypes {
     | '/api/omni/chat'
     | '/api/omni/emergency-stop'
     | '/api/omni/health'
+    | '/api/omni/held-tasks'
     | '/api/omni/manifest'
     | '/api/omni/tasks'
     | '/api/public/approval-flow'
@@ -2122,6 +2134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOmniHealthRouteImport
       parentRoute: typeof ApiOmniRoute
     }
+    '/api/omni/held-tasks': {
+      id: '/api/omni/held-tasks'
+      path: '/held-tasks'
+      fullPath: '/api/omni/held-tasks'
+      preLoaderRoute: typeof ApiOmniHeldTasksRouteImport
+      parentRoute: typeof ApiOmniRoute
+    }
     '/api/omni/manifest': {
       id: '/api/omni/manifest'
       path: '/manifest'
@@ -2330,6 +2349,7 @@ interface ApiOmniRouteChildren {
   ApiOmniChatRoute: typeof ApiOmniChatRoute
   ApiOmniEmergencyStopRoute: typeof ApiOmniEmergencyStopRoute
   ApiOmniHealthRoute: typeof ApiOmniHealthRoute
+  ApiOmniHeldTasksRoute: typeof ApiOmniHeldTasksRoute
   ApiOmniManifestRoute: typeof ApiOmniManifestRoute
   ApiOmniTasksRoute: typeof ApiOmniTasksRouteWithChildren
 }
@@ -2338,6 +2358,7 @@ const ApiOmniRouteChildren: ApiOmniRouteChildren = {
   ApiOmniChatRoute: ApiOmniChatRoute,
   ApiOmniEmergencyStopRoute: ApiOmniEmergencyStopRoute,
   ApiOmniHealthRoute: ApiOmniHealthRoute,
+  ApiOmniHeldTasksRoute: ApiOmniHeldTasksRoute,
   ApiOmniManifestRoute: ApiOmniManifestRoute,
   ApiOmniTasksRoute: ApiOmniTasksRouteWithChildren,
 }
