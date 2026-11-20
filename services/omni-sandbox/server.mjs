@@ -137,6 +137,9 @@ function sandboxArgv(c, uid, net) {
     `--regid=${uid}`,
     "--clear-groups",
     "--inh-caps=-all",
+    "--ambient-caps=-all",
+    "--bounding-set=-all",
+    "--no-new-privs",
     "--",
   ];
   return net === "isolated"
@@ -957,6 +960,23 @@ export function createSandbox(c, opts = {}) {
         }
       } catch {
         console.error("Sandbox nonce store unavailable; request refused.");
+        // A verified, fresh Stop is a safety reduction. Try it even when its nonce cannot
+        // be recorded, but never acknowledge the request as accepted or replay-protected.
+        try {
+          const b = JSON.parse(raw);
+          if (
+            b &&
+            typeof b === "object" &&
+            !Array.isArray(b) &&
+            b.projectId === c.projectId &&
+            (b.action === "job.stop" || b.action === "agent.stop")
+          ) {
+            await handle(b.action, b);
+            console.error("Sandbox Stop attempted without durable nonce claim; result unverified.");
+          }
+        } catch {
+          console.error("Sandbox Stop could not be attempted after nonce store failure.");
+        }
         res.writeHead(503).end();
         return;
       }

@@ -19,6 +19,13 @@ make the in-memory sessions safe to run across replicas or provide restart recov
 Node 22.13 or later with `node:sqlite` is required. Verify volume locking, flush semantics and
 capacity on the actual serving runtime; these are not established by local tests.
 
+If a nonce write fails, a fresh, correctly signed `agent.stop` or `job.stop` for the configured
+project is still attempted as a safety reduction. The service responds 503, not a successful or
+signed acknowledgement: the request was not durably claimed, the Stop is not verified, and a
+captured Stop may be repeated within its freshness window while the store is unavailable. Invalid
+signatures, other projects and other actions do not take this fallback. This does not establish
+descendant termination or Stop enforcement during execution.
+
 The same database records a single decision claim per project, session, job and step, including
 the owner. The signed decision must match the in-memory session owner and pending job; a claim is
 written before a decision can proceed. A failed write refuses the decision, and a crash after a
@@ -79,6 +86,8 @@ no network and uses only synthetic credentials; this outer network restriction m
 would not independently prove per-workspace network isolation. The image test is expected to fail
 while execution is quarantined. It does not cover detached descendants, aggregate limits,
 owner-bound approvals, Stop races or restart recovery.
+The same workflow runs the historical tests directly against the quarantined service on its
+disposable Linux host; it does not bypass quarantine or establish execution readiness.
 
 ## Namespace diagnosis
 

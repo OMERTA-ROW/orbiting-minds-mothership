@@ -20,6 +20,7 @@ const cfg = {
 };
 let proc: ChildProcess;
 let dir: string;
+const serviceLogs = new WeakMap<ChildProcess, string>();
 
 async function startService(servicePort: number) {
   const source = `
@@ -37,8 +38,12 @@ async function startService(servicePort: number) {
       OMNI_SANDBOX_ROOT: path.join(dir, "root"),
       OMNI_SANDBOX_ALLOW_NETWORK: "true",
     },
-    stdio: "ignore",
+    stdio: ["ignore", "ignore", "pipe"],
   });
+  serviceLogs.set(child, "");
+  child.stderr?.on("data", (chunk: Buffer) =>
+    serviceLogs.set(child, `${serviceLogs.get(child) ?? ""}${chunk.toString()}`),
+  );
   for (let i = 0; i < 50; i++) {
     if (child.exitCode !== null) throw new Error("Reference service exited before starting.");
     if (
@@ -61,8 +66,8 @@ async function stopService(child: ChildProcess, signal: NodeJS.Signals = "SIGTER
   await exit;
 }
 
-function signedStop(nonce: string) {
-  const body = JSON.stringify({ action: "agent.stop", projectId: "omni" });
+function signedStop(nonce: string, action = "agent.stop", projectId = "omni") {
+  const body = JSON.stringify({ action, projectId });
   const ts = String(Math.floor(Date.now() / 1000));
   const hash = createHash("sha256").update(body).digest("hex");
   const message = `omni.workspace/v1\nPOST\n/api/public/omni/workspace\n${ts}\n${nonce}\n${hash}`;
@@ -219,10 +224,27 @@ describe("quarantined workspace reference", () => {
         lock.once("exit", () => reject(new Error("SQLite lock process exited before readiness.")));
         lock.once("error", reject);
       });
+      const invalid = {
+        ...request,
+        headers: { ...request.headers, "x-omni-signature": "0".repeat(64) },
+      };
+      expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, invalid)).status).toBe(401);
+      for (const rejected of [
+        signedStop("1".repeat(32), "agent.stop", "other"),
+        signedStop("2".repeat(32), "session.end"),
+      ]) {
+        expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, rejected)).status).toBe(503);
+      }
+      expect(serviceLogs.get(proc)).not.toContain("Stop attempted without durable nonce claim");
       expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(503);
+      for (let i = 0; i < 50 && !serviceLogs.get(proc)?.includes("Stop attempted"); i++)
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(serviceLogs.get(proc)).toContain(
+        "Sandbox Stop attempted without durable nonce claim; result unverified.",
+      );
     } finally {
       await stopService(lock);
     }
     expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(200);
-  }, 12_000);
+  }, 25_000);
 });
