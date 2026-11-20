@@ -141,11 +141,9 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
 
   it("terminates a detached descendant before acknowledging Stop", async () => {
     const sessionId = await startSession();
-    const script = [
-      `setsid bash -c 'echo "DETACHED_PID=$$"; echo "DETACHED_SID=$(ps -o sid= -p $$ | tr -d " ")"; exec sleep 30' &`,
-      "cat /proc/self/cgroup",
-      "sleep 30",
-    ].join("; ");
+    const script =
+      `setsid bash -c 'echo "DETACHED_PID=$$"; echo "DETACHED_SID=$(ps -o sid= -p $$ | tr -d " ")"; exec sleep 30' & ` +
+      "cat /proc/self/cgroup; sleep 30";
     try {
       const { jobId, reply } = await startCommand(sessionId, script);
       let output = reply.steps
@@ -162,7 +160,7 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
       }
       const pid = /^DETACHED_PID=(\d+)$/m.exec(output)?.[1];
       const sid = /^DETACHED_SID=(\d+)$/m.exec(output)?.[1];
-      expect(pid).toBeDefined();
+      expect(pid, output).toBeDefined();
       expect(sid).toBe(pid);
       const cgroup = /^0::(\/[^\n]+)$/m.exec(output)?.[1];
       expect(cgroup).toMatch(new RegExp(`/job-${jobId}$`));
