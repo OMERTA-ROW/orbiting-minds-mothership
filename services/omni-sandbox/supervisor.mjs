@@ -124,7 +124,14 @@ export async function startWorkspaceCommand({ parent, jobId, work, uid, limits, 
     child.stdio[3].end("go\n");
   } catch (error) {
     child.stdio[3].destroy();
-    await completed.catch(() => {});
+    try {
+      await completed;
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Workspace startup failed and cgroup cleanup was not confirmed.",
+      );
+    }
     throw error;
   }
   return { child, stop, completed };

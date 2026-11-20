@@ -138,4 +138,42 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
       await call("session.end", { sessionId });
     }
   }, 15_000);
+
+  it("terminates a detached descendant before acknowledging Stop", async () => {
+    const sessionId = await startSession();
+    const script = [
+      `setsid bash -c 'echo "DETACHED_PID=$$"; echo "DETACHED_SID=$(ps -o sid= -p $$ | tr -d " ")"; exec sleep 30' &`,
+      "cat /proc/self/cgroup",
+      "sleep 30",
+    ].join("; ");
+    try {
+      const { jobId, reply } = await startCommand(sessionId, script);
+      let output = reply.steps
+        .filter((step) => step.stream === "stdout")
+        .map((step) => step.body)
+        .join("");
+      for (let i = 0; i < 10 && !output.includes("DETACHED_SID="); i++) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        const polled = await call("events.poll", { sessionId, jobId });
+        output += polled.steps
+          .filter((step) => step.stream === "stdout")
+          .map((step) => step.body)
+          .join("");
+      }
+      const pid = /^DETACHED_PID=(\d+)$/m.exec(output)?.[1];
+      const sid = /^DETACHED_SID=(\d+)$/m.exec(output)?.[1];
+      expect(pid).toBeDefined();
+      expect(sid).toBe(pid);
+      const cgroup = /^0::(\/[^\n]+)$/m.exec(output)?.[1];
+      expect(cgroup).toMatch(new RegExp(`/job-${jobId}$`));
+      if (!cgroup || cgroup.includes("..")) throw new Error("Invalid job cgroup path.");
+      const groupPath = `/sys/fs/cgroup${cgroup}`;
+      expect(fs.readFileSync(`${groupPath}/cgroup.events`, "utf8")).toMatch(/^populated 1$/m);
+      await call("job.stop", { sessionId, jobId });
+      expect(fs.existsSync(groupPath)).toBe(false);
+      expect((await call("events.poll", { sessionId, jobId })).job?.status).toBe("stopped");
+    } finally {
+      await call("session.end", { sessionId });
+    }
+  }, 15_000);
 });
