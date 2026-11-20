@@ -14,6 +14,7 @@ import {
 } from "./omni-delegation";
 import {
   omniDelegatedHoldTask,
+  omniDelegatedReadTasks,
   omniDelegatedStop,
   omniDelegatedUnsupported,
   omniDelegationRevoke,
@@ -522,6 +523,66 @@ describe("delegated writes", () => {
   });
 });
 
+describe("delegated task reads", () => {
+  it("uses a separate scope and returns only the database result with no-store", async () => {
+    const tasks = [{ id: TASK_BODY.idempotencyKey, status: "held", handoff: null }];
+    const { rpc, calls } = fakeRpc({ omni_delegation_read_tasks: { ok: true, tasks } });
+    const r = await omniDelegatedReadTasks(
+      req(`/api/omni/held-tasks?id=${TASK_BODY.idempotencyKey}`, {
+        method: "GET",
+        bearer: TOKEN,
+      }),
+      rpc,
+    );
+    expect(await r.json()).toEqual({ ok: true, tasks });
+    expect(r.headers.get("cache-control")).toBe("no-store");
+    expect(calls[0]?.args).toEqual({
+      _token_hash: await sha256Hex(TOKEN),
+      _audience: "omni-mothership",
+      _task_id: TASK_BODY.idempotencyKey,
+    });
+  });
+  it("refuses metadata keys, browser requests and malformed query parameters before the database", async () => {
+    const { rpc, calls } = fakeRpc({});
+    for (const request of [
+      req("/api/omni/held-tasks", { method: "GET", bearer: KEY }),
+      req("/api/omni/held-tasks", {
+        method: "GET",
+        bearer: TOKEN,
+        headers: { origin: DELEGATION_CLIENT.origin },
+      }),
+      req("/api/omni/held-tasks?id=x", { method: "GET", bearer: TOKEN }),
+      req("/api/omni/held-tasks?id=x&id=y", { method: "GET", bearer: TOKEN }),
+      req("/api/omni/held-tasks?other=x", { method: "GET", bearer: TOKEN }),
+    ]) {
+      expect((await omniDelegatedReadTasks(request, rpc)).status).toBeGreaterThanOrEqual(400);
+    }
+    expect(calls).toHaveLength(0);
+  });
+  it("fails closed for missing scope, invalid or revoked tokens and database failures", async () => {
+    for (const [reason, status] of [
+      ["scope_missing", 403],
+      ["expired", 401],
+      ["revoked", 401],
+      ["wrong_audience", 401],
+      ["owner_unverified", 401],
+    ] as const) {
+      const r = await omniDelegatedReadTasks(
+        req("/api/omni/held-tasks", { method: "GET", bearer: TOKEN }),
+        fakeRpc({ omni_delegation_read_tasks: { ok: false, reason } }).rpc,
+      );
+      expect(r.status).toBe(status);
+    }
+    for (const result of [new Error("down"), { ok: true, tasks: null }]) {
+      const r = await omniDelegatedReadTasks(
+        req("/api/omni/held-tasks", { method: "GET", bearer: TOKEN }),
+        fakeRpc({ omni_delegation_read_tasks: result }).rpc,
+      );
+      expect(r.status).toBe(503);
+    }
+  });
+});
+
 describe("metadata API keys stay separate", () => {
   const verify = async (hash: string) =>
     hash === (await sha256Hex(KEY))
@@ -568,7 +629,11 @@ describe("metadata API keys stay separate", () => {
     expect(m.capabilities.emergencyStop).toEqual({ read: false, write: true });
     expect(m.capabilities.chat).toEqual({ read: false, write: false });
     expect(m.capabilities.taskDecisions).toEqual({ read: false, write: false });
-    expect(m.delegation.supportedScopes).toEqual(["tasks:write", "safety:emergency-stop"]);
+    expect(m.delegation.supportedScopes).toEqual([
+      "tasks:read",
+      "tasks:write",
+      "safety:emergency-stop",
+    ]);
     expect(m.delegation.tokenLifetimeSeconds).toBe(900);
     expect(m.autonomous).toBe(false);
   });

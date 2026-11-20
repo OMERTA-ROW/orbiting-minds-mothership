@@ -139,6 +139,7 @@ export function buildManifest(origin: string | null) {
       audience: DELEGATION_AUDIENCE,
       supportedScopes: [...SUPPORTED_DELEGATION_SCOPES],
       tokenLifetimeSeconds: DELEGATION_TOKEN_SECONDS,
+      heldTasksPath: "/api/omni/held-tasks",
       ...(origin
         ? {
             authorizeUrl: `${origin}/omni-authorize`,
