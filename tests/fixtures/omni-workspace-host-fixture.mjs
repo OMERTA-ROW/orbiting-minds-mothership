@@ -100,6 +100,7 @@ replaceSection(
         jobId: job.id, work: s.work, uid: s.uid, limits: c.limits, command,
       });
     } catch (error) {
+      console.error("Fixture supervisor startup failed:", error.message);
       job.state = "failed";
       job.events.push({ stream: "system", text: \`Supervisor startup failed: \${error.message}\` });
       job.events.push({ stream: "exit", code: -1, signal: null });
@@ -108,6 +109,7 @@ replaceSection(
     job.control = control;
     const cap = c.limits.outputCapBytes;
     const onData = (stream) => (buffer) => {
+      if (stream === "stderr") console.error("Fixture command stderr:", buffer.toString("utf8"));
       const part = buffer.subarray(0, Math.max(0, cap - job.outBytes));
       job.outBytes += part.length;
       if (part.length) job.events.push({ stream, text: part.toString("utf8") });
