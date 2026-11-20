@@ -1,11 +1,23 @@
 # OMNI cloud sandbox (reference service for Railway)
 
 **Execution quarantined:** this reference does not establish filesystem or PID isolation,
-aggregate resource limits, durable replay protection, restart quarantine, or cancellation of
+aggregate resource limits, restart quarantine, or cancellation of
 descendants that escape a process group. Its network probe and signed health reply do not prove
 containment. Session creation and all work are refused; signed health and stop/end requests remain
 available. Mothership also rejects historical self-test passes and keeps the workspace gate closed.
 Do not deploy or enable this reference as a working sandbox.
+
+Signed request nonces are claimed transactionally in SQLite before an action is handled. A replay
+is rejected across concurrent processes and restarts **only when they use the same intact,
+locking-capable persistent filesystem**. The private `.state/nonces.sqlite` database lives under
+`OMNI_SANDBOX_ROOT`; use a dedicated durable volume, preserve it across restarts and rollbacks,
+and never replace or clear it while old signed requests could be accepted. State loss can permit
+replay, so it requires credential rotation before the service is contacted again. SQLite lock or
+write failures refuse the request. Nonces are retained indefinitely to avoid making a clock change
+re-enable a previously accepted request; capacity must be monitored. This replay store does not
+make the in-memory sessions safe to run across replicas or provide restart recovery for jobs.
+Node 22.13 or later with `node:sqlite` is required. Verify volume locking, flush semantics and
+capacity on the actual serving runtime; these are not established by local tests.
 
 Implements `omni.workspace/v1` for Mothership's cloud shell. **Not deployed by Lovable.** Copy this
 folder only after the missing containment and replay guarantees have been implemented and verified.
@@ -55,5 +67,5 @@ credentials. It does not verify Linux containment.
 ## Known limits
 
 - Disk use per session is bounded only by per-file size and the 60-minute session; Railway's disk limit applies overall.
-- Session and nonce state live in memory, so a restart does not provide durable replay protection.
+- Sessions and jobs live in memory, and unfinished jobs are not durably quarantined on restart.
 - One instance only (nonces and sessions are not shared). Do not scale replicas above 1.

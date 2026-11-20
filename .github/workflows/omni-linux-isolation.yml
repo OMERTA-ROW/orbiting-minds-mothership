@@ -6,11 +6,31 @@ on:
     paths:
       - .github/workflows/omni-linux-isolation.yml
       - services/omni-autonomous/**
+      - services/omni-sandbox/**
       - tests/omni-autonomous*.test.mjs
+      - src/test/omni-sandbox-*.test.ts
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
+  workspace-replay:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.4.4"
+      - run: bun install --frozen-lockfile
+      - name: Test durable replay and report quarantined workspace execution tests
+        run: |
+          node --version
+          bun run test src/test/omni-sandbox-interop.test.ts src/test/omni-sandbox-containment.test.ts
   activation-sql:
     runs-on: ubuntu-22.04
     timeout-minutes: 5

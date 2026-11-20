@@ -5,6 +5,7 @@
 import http from "node:http";
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
+import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -154,13 +155,46 @@ function probe(c, net) {
 export function createSandbox(c, opts = {}) {
   const net = opts.network ?? detectNetwork(c);
   const sessions = new Map();
-  const nonces = new Map();
   const status = {
     providers: {},
     github: { configured: Boolean(c.githubToken), repositories: [], checkedAt: null },
   };
   fs.mkdirSync(c.root, { recursive: true, mode: 0o711 });
   fs.mkdirSync(path.join(c.root, ".mirrors"), { recursive: true, mode: 0o700 });
+  const stateDir = path.join(c.root, ".state");
+  fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+  const stateInfo = fs.lstatSync(stateDir);
+  if (
+    !stateInfo.isDirectory() ||
+    stateInfo.isSymbolicLink() ||
+    (process.getuid && stateInfo.uid !== process.getuid())
+  )
+    throw new Error("Sandbox state directory must be a private, service-owned directory.");
+  fs.chmodSync(stateDir, 0o700);
+  const nonceStore = new DatabaseSync(path.join(stateDir, "nonces.sqlite"));
+  nonceStore.exec(`
+    PRAGMA busy_timeout = 5000;
+    PRAGMA synchronous = FULL;
+    CREATE TABLE IF NOT EXISTS nonces (
+      nonce TEXT PRIMARY KEY NOT NULL,
+      seen_at INTEGER NOT NULL
+    ) WITHOUT ROWID;
+  `);
+  const insertNonce = nonceStore.prepare(
+    "INSERT INTO nonces (nonce, seen_at) VALUES (?, ?) ON CONFLICT DO NOTHING",
+  );
+  const claimNonce = (nonce) => {
+    const now = Date.now();
+    nonceStore.exec("BEGIN IMMEDIATE");
+    try {
+      const { changes } = insertNonce.run(nonce, now);
+      nonceStore.exec("COMMIT");
+      return changes === 1;
+    } catch (error) {
+      nonceStore.exec("ROLLBACK");
+      throw error;
+    }
+  };
 
   const slotFree = () => {
     for (let i = 1; i <= c.limits.maxSessions; i++)
@@ -195,7 +229,6 @@ export function createSandbox(c, opts = {}) {
         now - s.startedAt > c.limits.sessionMinutes * 60_000
       )
         endSession(s, "timeout");
-    for (const [n, t] of nonces) if (now - t > 300_000) nonces.delete(n);
   }, 15_000);
   reaper.unref();
 
@@ -856,13 +889,21 @@ export function createSandbox(c, opts = {}) {
         h("x-omni-client") !== c.clientId ||
         !fresh ||
         !/^[0-9a-f]{32}$/.test(nonce) ||
-        nonces.has(nonce) ||
         !safeEqual(h("x-omni-signature"), hmac(c.secret, message))
       ) {
         res.writeHead(401).end();
         return;
       }
-      nonces.set(nonce, Date.now());
+      try {
+        if (!claimNonce(nonce)) {
+          res.writeHead(401).end();
+          return;
+        }
+      } catch {
+        console.error("Sandbox nonce store unavailable; request refused.");
+        res.writeHead(503).end();
+        return;
+      }
       let status = 200;
       let payload;
       try {
@@ -901,6 +942,7 @@ export function createSandbox(c, opts = {}) {
       clearInterval(reaper);
       for (const s of [...sessions.values()]) endSession(s, "shutdown");
       server.close();
+      nonceStore.close();
     },
   };
 }

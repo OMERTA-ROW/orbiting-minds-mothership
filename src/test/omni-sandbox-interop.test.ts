@@ -7,6 +7,7 @@ import { createHash, createHmac, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { workspaceRequest } from "@/lib/omni-workspace-link.server";
 
@@ -21,45 +22,72 @@ const cfg = {
 let proc: ChildProcess;
 let dir: string;
 
-describe("quarantined workspace reference", () => {
-  beforeAll(async () => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-sbx-"));
-    const source = `
+async function startService(servicePort: number) {
+  const source = `
       import { loadConfig, createSandbox } from "./services/omni-sandbox/server.mjs";
       const sandbox = createSandbox(loadConfig(), { network: "isolated" });
       sandbox.server.listen(Number(process.env.PORT), "127.0.0.1");
       process.on("SIGTERM", () => sandbox.close());
     `;
-    proc = spawn(process.execPath, ["--input-type=module", "-e", source], {
-      env: {
-        PATH: process.env["PATH"] ?? "/usr/bin:/bin",
-        PORT: String(port),
-        OMNI_SANDBOX_CLIENT_ID: cfg.clientId,
-        OMNI_SANDBOX_HMAC_SECRET: secret,
-        OMNI_SANDBOX_ROOT: path.join(dir, "root"),
-        OMNI_SANDBOX_ALLOW_NETWORK: "true",
-      },
-      stdio: "ignore",
-    });
-    for (let i = 0; i < 50; i++) {
-      if (
-        await fetch(`${cfg.origin}/healthz`).then(
-          (r) => r.ok,
-          () => false,
-        )
+  const child = spawn(process.execPath, ["--input-type=module", "-e", source], {
+    env: {
+      PATH: process.env["PATH"] ?? "/usr/bin:/bin",
+      PORT: String(servicePort),
+      OMNI_SANDBOX_CLIENT_ID: cfg.clientId,
+      OMNI_SANDBOX_HMAC_SECRET: secret,
+      OMNI_SANDBOX_ROOT: path.join(dir, "root"),
+      OMNI_SANDBOX_ALLOW_NETWORK: "true",
+    },
+    stdio: "ignore",
+  });
+  for (let i = 0; i < 50; i++) {
+    if (child.exitCode !== null) throw new Error("Reference service exited before starting.");
+    if (
+      await fetch(`http://127.0.0.1:${servicePort}/healthz`).then(
+        (r) => r.ok,
+        () => false,
       )
-        return;
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-    throw new Error("Reference service did not start.");
+    )
+      return child;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  child.kill("SIGTERM");
+  throw new Error("Reference service did not start.");
+}
+
+async function stopService(child: ChildProcess, signal: NodeJS.Signals = "SIGTERM") {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  const exit = new Promise<void>((resolve) => child.once("exit", () => resolve()));
+  child.kill(signal);
+  await exit;
+}
+
+function signedStop(nonce: string) {
+  const body = JSON.stringify({ action: "agent.stop", projectId: "omni" });
+  const ts = String(Math.floor(Date.now() / 1000));
+  const hash = createHash("sha256").update(body).digest("hex");
+  const message = `omni.workspace/v1\nPOST\n/api/public/omni/workspace\n${ts}\n${nonce}\n${hash}`;
+  return {
+    method: "POST",
+    body,
+    headers: {
+      "content-type": "application/json",
+      "x-omni-client": cfg.clientId,
+      "x-omni-timestamp": ts,
+      "x-omni-nonce": nonce,
+      "x-omni-signature": createHmac("sha256", secret).update(message).digest("hex"),
+    },
+  };
+}
+
+describe("quarantined workspace reference", () => {
+  beforeAll(async () => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-sbx-"));
+    proc = await startService(port);
   }, 10_000);
 
   afterAll(async () => {
-    if (proc && proc.exitCode === null) {
-      const exit = new Promise<void>((resolve) => proc.once("exit", () => resolve()));
-      proc.kill("SIGTERM");
-      await exit;
-    }
+    if (proc) await stopService(proc);
     if (dir) fs.rmSync(dir, { recursive: true, force: true });
   });
 
@@ -99,6 +127,17 @@ describe("quarantined workspace reference", () => {
     ).rejects.toThrow(/signature/);
   });
 
+  it("does not consume a nonce from an invalid signature", async () => {
+    const request = signedStop("f".repeat(32));
+    const url = `${cfg.origin}/api/public/omni/workspace`;
+    const invalid = {
+      ...request,
+      headers: { ...request.headers, "x-omni-signature": "0".repeat(64) },
+    };
+    expect((await fetch(url, invalid)).status).toBe(401);
+    expect((await fetch(url, request)).status).toBe(200);
+  });
+
   it("rejects an expired signed request", async () => {
     const body = JSON.stringify({ action: "agent.stop", projectId: "omni" });
     const ts = String(Math.floor(Date.now() / 1000) - 120);
@@ -120,23 +159,47 @@ describe("quarantined workspace reference", () => {
   });
 
   it("rejects a concurrent replay while the process is running", async () => {
-    const body = JSON.stringify({ action: "agent.stop", projectId: "omni" });
-    const ts = String(Math.floor(Date.now() / 1000));
-    const nonce = "a".repeat(32);
-    const hash = createHash("sha256").update(body).digest("hex");
-    const message = `omni.workspace/v1\nPOST\n/api/public/omni/workspace\n${ts}\n${nonce}\n${hash}`;
-    const headers = {
-      "content-type": "application/json",
-      "x-omni-client": cfg.clientId,
-      "x-omni-timestamp": ts,
-      "x-omni-nonce": nonce,
-      "x-omni-signature": createHmac("sha256", secret).update(message).digest("hex"),
-    };
+    const request = signedStop("a".repeat(32));
     const replies = await Promise.all(
-      [0, 1].map(() =>
-        fetch(`${cfg.origin}/api/public/omni/workspace`, { method: "POST", headers, body }),
-      ),
+      [0, 1].map(() => fetch(`${cfg.origin}/api/public/omni/workspace`, request)),
     );
     expect(replies.map((r) => r.status).sort()).toEqual([200, 401]);
   });
+
+  it("atomically rejects concurrent replay across service processes sharing the state volume", async () => {
+    const second = await startService(port + 1);
+    try {
+      const request = signedStop("c".repeat(32));
+      const replies = await Promise.all(
+        [port, port + 1].map((p) =>
+          fetch(`http://127.0.0.1:${p}/api/public/omni/workspace`, request),
+        ),
+      );
+      expect(replies.map((r) => r.status).sort()).toEqual([200, 401]);
+    } finally {
+      await stopService(second);
+    }
+  }, 10_000);
+
+  it("rejects a previously accepted request after an abrupt service restart", async () => {
+    const request = signedStop("d".repeat(32));
+    const url = `${cfg.origin}/api/public/omni/workspace`;
+    expect((await fetch(url, request)).status).toBe(200);
+    await stopService(proc, "SIGKILL");
+    proc = await startService(port);
+    expect((await fetch(url, request)).status).toBe(401);
+  }, 10_000);
+
+  it("refuses requests when the durable nonce store cannot be locked", async () => {
+    const db = new DatabaseSync(path.join(dir, "root", ".state", "nonces.sqlite"));
+    db.exec("BEGIN EXCLUSIVE");
+    const request = signedStop("e".repeat(32));
+    try {
+      expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(503);
+    } finally {
+      db.exec("ROLLBACK");
+      db.close();
+    }
+    expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(200);
+  }, 12_000);
 });
