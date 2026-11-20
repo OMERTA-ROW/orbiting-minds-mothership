@@ -34,6 +34,26 @@ jobs:
           git rev-parse HEAD
           uname -a
           docker version --format 'server={{.Server.Version}}'
+          docker info --format 'securityOptions={{json .SecurityOptions}}'
+          for setting in kernel/unprivileged_userns_clone user/max_user_namespaces \
+            user/max_net_namespaces kernel/apparmor_restrict_unprivileged_userns; do
+            if [ -r "/proc/sys/$setting" ]; then
+              printf '%s=' "$setting"
+              cat "/proc/sys/$setting"
+            else
+              echo "$setting=unavailable"
+            fi
+          done
+          echo 'Host security state:'
+          grep -E '^(NoNewPrivs|Seccomp|Seccomp_filters|CapEff):' /proc/self/status
+          cat /proc/self/attr/current || true
+          echo 'Unprivileged host user+network namespace probe:'
+          if sudo setpriv --reuid=20000 --regid=20000 --clear-groups --inh-caps=-all -- \
+            unshare --user --map-current-user --net -- true; then
+            echo 'Host probe: available'
+          else
+            echo 'Host probe: unavailable (see error above)'
+          fi
           docker buildx build --load --metadata-file /tmp/omni-image-metadata.json \
             --tag omni-workspace-historical:fixture services/omni-sandbox
           jq '{buildMetadataDigest: .["containerimage.digest"], configDigest: .["containerimage.config.digest"]}' \
@@ -62,6 +82,19 @@ jobs:
           done
           if [ "$ready" != true ]; then docker logs omni-workspace-historical; exit 1; fi
           docker exec omni-workspace-historical node --version
+          docker inspect omni-workspace-historical --format \
+            'privileged={{.HostConfig.Privileged}} securityOpt={{json .HostConfig.SecurityOpt}} capAdd={{json .HostConfig.CapAdd}} capDrop={{json .HostConfig.CapDrop}} networkMode={{.HostConfig.NetworkMode}} usernsMode={{.HostConfig.UsernsMode}}'
+          echo 'Container unprivileged security state:'
+          docker exec omni-workspace-historical setpriv --reuid=20000 --regid=20000 \
+            --clear-groups --inh-caps=-all -- sh -c \
+            "grep -E '^(NoNewPrivs|Seccomp|Seccomp_filters|CapEff):' /proc/self/status; cat /proc/self/attr/current"
+          echo 'Container user namespace probe:'
+          if docker exec omni-workspace-historical setpriv --reuid=20000 --regid=20000 \
+            --clear-groups --inh-caps=-all -- unshare --user --map-current-user -- true; then
+            echo 'Container user namespace probe: available'
+          else
+            echo 'Container user namespace probe: unavailable (see error above)'
+          fi
           if docker exec omni-workspace-historical setpriv --reuid=20000 --regid=20000 \
             --clear-groups --inh-caps=-all -- unshare --user --map-current-user --net -- true; then
             echo 'Workspace user+network namespace probe: available'
