@@ -73,6 +73,34 @@ would not independently prove per-workspace network isolation. The image test is
 while execution is quarantined. It does not cover detached descendants, aggregate limits,
 owner-bound approvals, Stop races or restart recovery.
 
+## Namespace diagnosis
+
+On the disposable Ubuntu 22.04 GitHub-hosted VM in
+[run 44799837115](https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/44799837115),
+unprivileged user namespaces were enabled and the following probe succeeded on the host after
+dropping to UID/GID 20000:
+
+```
+setpriv --reuid=20000 --regid=20000 --clear-groups --inh-caps=-all -- \
+  unshare --user --map-current-user --net -- true
+```
+
+The same probe, and a user-namespace-only probe, failed with `Operation not permitted` inside the
+unprivileged image under Docker 28.0.4's default seccomp and AppArmor profiles. The container used
+no added capabilities, no custom security options and `--network none`. Its effective capabilities
+were empty and seccomp filter mode was active. Docker's
+[28.0.4 default profile](https://github.com/moby/moby/blob/v28.0.4/profiles/seccomp/default.json)
+allows `unshare` only with `CAP_SYS_ADMIN`; the default action otherwise returns an error.
+This identifies a blocking default seccomp rule; the available evidence does not independently
+exclude additional AppArmor or runtime restrictions.
+
+The host probe demonstrates only that this namespace primitive is available on that VM. It does
+not establish filesystem or PID isolation, cgroup delegation, aggregate resource limits, safe
+cancellation or any production runtime capability. A future executor must use a reviewed runtime
+that supports all required primitives without privileged containers or broad capability grants,
+and must verify them on its actual serving host. Do not disable seccomp or add `CAP_SYS_ADMIN`
+to make this reference pass.
+
 ## Known limits
 
 - Disk use per session is bounded only by per-file size and the 60-minute session; Railway's disk limit applies overall.
