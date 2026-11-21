@@ -35,7 +35,7 @@ parentPort.on("message", ({ id, nonce }) => {
       throw error;
     }
   } catch (error) {
-    if (error.errcode === 5 && !unavailable) {
+    if (error.errcode === 5 && !unavailable && phase !== "committed lookup") {
       let committed, lookupError;
       try {
         // One read reconciles a completed competing claim; no write is retried.

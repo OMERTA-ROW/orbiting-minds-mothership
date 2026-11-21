@@ -45,6 +45,14 @@ Stop is not guaranteed; extending the lock wait or guessing that an invisible cl
 would respectively delay Stop or risk rejecting a fresh request. The strict concurrent replay
 regression runs 100 fresh-nonce races requiring exactly 200/401; a separately held external
 writer still requires 503 and an attempted but unverified Stop, never a guessed acknowledgement.
+Run 44876949721 caught SQLite `BUSY` in round 2 even after off-thread reconciliation.
+After the single failed claim attempt, the reconciler now performs one **nonblocking**
+committed-state observation: only a visible committed nonce becomes 401. Missing or unreadable
+evidence remains 503. It never retries an insert, extends the writer timeout, changes the
+database journal mode or treats an uncommitted row as a replay. Failed commit is rolled back
+before this observation; failed rollback poisons the reconciler until service restart.
+The read-snapshot regression proves that an unsuccessful commit does not consume its nonce,
+and the blocked ordinary-writer case uses a fresh nonce rather than a previously committed replay.
 
 The same database records a single decision claim per project, session, job and step, including
 the owner. The signed decision must match the in-memory session owner and pending job; a claim is
