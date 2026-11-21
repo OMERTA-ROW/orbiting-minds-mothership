@@ -419,7 +419,10 @@ describe("Dread and Draco owner memory in chat", () => {
     const names = calls.map((c) => c.fn);
     expect(names).not.toContain("omni_delegation_chat_memory");
     expect(names).not.toContain("omni_delegation_chat_save");
-    expect((await r.json()).memory).toEqual({ status: "not_available", chatSaved: "not_available" });
+    expect((await r.json()).memory).toEqual({
+      status: "not_available",
+      chatSaved: "not_available",
+    });
   });
 
   it("with the owner switch on, the reply gets only that agent's saved entries", async () => {
@@ -479,7 +482,10 @@ describe("Dread and Draco owner memory in chat", () => {
   });
 
   it("memory that can't be read never blocks a reply and never invents entries", async () => {
-    for (const answer of [new Error("missing"), { ok: true, enabled: true, entries: [{ id: 1 }], omitted: 0 }]) {
+    for (const answer of [
+      new Error("missing"),
+      { ok: true, enabled: true, entries: [{ id: 1 }], omitted: 0 },
+    ]) {
       const { rpc } = fakeRpc({ omni_delegation_chat_memory: answer });
       const infer = vi.fn<ChatInference>(async () => reply());
       const out = await (await omniDelegatedChat(req(dread), deps(rpc, infer))).json();
@@ -493,7 +499,13 @@ describe("Dread and Draco owner memory in chat", () => {
     const { rpc, calls } = fakeRpc({
       omni_delegation_chat_memory: { ok: true, enabled: false, entries: [], omitted: 0 },
     });
-    await omniDelegatedChat(req(dread), deps(rpc, vi.fn(async () => reply({ text: "" }))));
+    await omniDelegatedChat(
+      req(dread),
+      deps(
+        rpc,
+        vi.fn(async () => reply({ text: "" })),
+      ),
+    );
     expect(calls.map((c) => c.fn)).not.toContain("omni_delegation_chat_save");
   });
 });

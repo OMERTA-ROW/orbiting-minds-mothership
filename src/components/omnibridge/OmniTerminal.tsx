@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { OmniWorkspace } from "./OmniWorkspace";
 import { AgentMemory } from "./AgentMemory";
+import { FusionDuo } from "./FusionDuo";
 import { CodeService } from "./CodeService";
 import { TaskHandoff, type HandoffRow } from "./TaskHandoff";
 import { readTaskHandoffs } from "@/lib/jackboy-handoff.functions";
@@ -625,6 +626,7 @@ export function OmniTerminal() {
           <TabsTrigger value="terminal">Terminal</TabsTrigger>
           <TabsTrigger value="code">CODE & tasks ({held.length})</TabsTrigger>
           <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="fusion">Fusion</TabsTrigger>
           <TabsTrigger value="memory">Memory</TabsTrigger>
           <TabsTrigger value="health">Health</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
@@ -854,6 +856,10 @@ export function OmniTerminal() {
               </li>
             ))}
           </ul>
+        </TabsContent>
+
+        <TabsContent value="fusion" className="pt-4">
+          <FusionDuo />
         </TabsContent>
 
         <TabsContent value="memory" className="pt-4">

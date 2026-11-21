@@ -284,7 +284,14 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
           failure: undefined,
           threw: false,
         }
-      : await infer({ request, apiKey, messages: context.messages, signal, agent, memory: memoryText });
+      : await infer({
+          request,
+          apiKey,
+          messages: context.messages,
+          signal,
+          agent,
+          memory: memoryText,
+        });
   } catch {
     result = {
       text: "",

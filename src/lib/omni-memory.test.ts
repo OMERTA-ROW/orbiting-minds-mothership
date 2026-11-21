@@ -73,11 +73,17 @@ const entry = (n: number, body = "Keep answers short.") => ({
 
 describe("Dread and Draco memory controls", () => {
   it("accepts entries longer than 280 characters (up to 8,000)", () => {
-    expect(memorySaveInput.safeParse({ ...ok, agent: "dread", body: "a b ".repeat(500) }).success).toBe(true);
+    expect(
+      memorySaveInput.safeParse({ ...ok, agent: "dread", body: "a b ".repeat(500) }).success,
+    ).toBe(true);
   });
   it("only Dread and Draco have chat switches, and delete-all needs explicit confirmation", () => {
-    expect(memorySetChatUseInput.safeParse({ agent: "dread", setting: "save_chats", on: true }).success).toBe(true);
-    expect(memorySetChatUseInput.safeParse({ agent: "omni", setting: "use_in_chat", on: true }).success).toBe(false);
+    expect(
+      memorySetChatUseInput.safeParse({ agent: "dread", setting: "save_chats", on: true }).success,
+    ).toBe(true);
+    expect(
+      memorySetChatUseInput.safeParse({ agent: "omni", setting: "use_in_chat", on: true }).success,
+    ).toBe(false);
     expect(memoryDeleteAllInput.safeParse({ agent: "draco" }).success).toBe(false);
     expect(memoryDeleteAllInput.safeParse({ agent: "draco", confirm: true }).success).toBe(true);
   });
@@ -95,10 +101,14 @@ describe("Dread and Draco memory controls", () => {
       omitted: 0,
     });
     expect(r.entries.map((e) => e.title)).toEqual(["Entry 1"]);
-    expect(readChatMemory({ ok: true, enabled: true, entries: [{ id: "x" }], omitted: 0 }).report).toEqual({
+    expect(
+      readChatMemory({ ok: true, enabled: true, entries: [{ id: "x" }], omitted: 0 }).report,
+    ).toEqual({
       status: "unavailable",
     });
-    expect(readChatMemory({ ok: true, enabled: false, entries: [], omitted: 0 }).report).toEqual({ status: "off" });
+    expect(readChatMemory({ ok: true, enabled: false, entries: [], omitted: 0 }).report).toEqual({
+      status: "off",
+    });
   });
   it("labels memory as owner-saved context that grants no authority", () => {
     const block = memoryPromptBlock("Draco", [entry(1)]);

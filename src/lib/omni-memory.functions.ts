@@ -131,7 +131,10 @@ export const getAgentMemoryChatSettings = createServerFn({ method: "POST" })
         .maybeSingle(),
     ]);
     if (settings.error || used.error || saved.error)
-      return { ok: false as const, message: "Memory settings could not be read. Refresh and retry." };
+      return {
+        ok: false as const,
+        message: "Memory settings could not be read. Refresh and retry.",
+      };
     return {
       ok: true as const,
       useInChat: settings.data?.use_in_chat ?? false,
@@ -149,8 +152,14 @@ export const setAgentMemoryChatSetting = createServerFn({ method: "POST" })
     await owner(context);
     const { error } =
       data.setting === "use_in_chat"
-        ? await context.supabase.rpc("omni_memory_set_chat_use", { _agent: data.agent, _on: data.on })
-        : await context.supabase.rpc("omni_memory_set_save_chats", { _agent: data.agent, _on: data.on });
+        ? await context.supabase.rpc("omni_memory_set_chat_use", {
+            _agent: data.agent,
+            _on: data.on,
+          })
+        : await context.supabase.rpc("omni_memory_set_save_chats", {
+            _agent: data.agent,
+            _on: data.on,
+          });
     const message = memoryErrorMessage(error);
     if (message) return { ok: false as const, message };
     return { ok: true as const, on: data.on };

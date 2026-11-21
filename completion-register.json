@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-10-22",
-  "updated_at": "2026-11-20T16:20:00Z",
+  "updated_at": "2026-11-21T06:55:00Z",
   "project_name": "Evolution Mothership",
   "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
   "source_note_urls": [
@@ -288,6 +288,16 @@
     "fusion-plan-permission": {
       "command": "python3 src/test/test_omni_fusion_plan_sql.py + bunx vitest run src/lib/omni-fusion.test.ts + python3 scripts/smoke_site.py",
       "result": "2026-11-20 preview: 285 isolated SQL checks for 0067 (separate owner-consented fusion:plan; cannot create/read/hand off tasks, chat/spend, touch permits or engage/release the Stop; refused while Stop engaged or missing; both install orders with 0066) and 18 app tests (refusals, no network/model/task/permit/Stop calls, import allowlist, manifest). 0066 (160) and delegation (239) SQL checks still pass; 1,314 app tests pass. 0067 not installed; not published.",
+      "passed": true
+    },
+    "dread-draco-memory": {
+      "command": "python3 src/test/test_omni_dread_draco_memory_sql.py + python3 src/test/test_omni_agent_memory_sql.py + bunx vitest run src/lib/omni-memory.test.ts src/lib/omni-delegated-chat.test.ts",
+      "result": "2026-11-21 preview: 194 isolated SQL checks for installed 0070-0071 (owner/aal2 switches off by default, Dread/Draco/owner isolation, read once per reply inside delegation/Stop/AI-approval checks, 40-entry/6,000-char budget, completed-only single chat save with secret refusal and 500 cap, delete-all, metadata-only audit); 26 existing memory SQL checks; 37 app tests. Not published.",
+      "passed": true
+    },
+    "fusion-dread-draco-sessions": {
+      "command": "python3 src/test/test_omni_fusion_duo_sql.py + bunx vitest run src/lib/fusion-duo.test.ts",
+      "result": "2026-11-21 preview: 159 isolated SQL checks for installed 0072-0073 (fresh-code owner approval, 2-4 replies, alternating speakers, one reply/session at a time, Stop/AI-approval/guard at begin and re-check, attempt/session/daily limits counted from append-only audit, service-only outcomes, stop/delete, isolation); 14 app tests; 1,378 app tests total. No paid reply run. Not published.",
       "passed": true
     }
   },

@@ -1,4 +1,4 @@
--- 0072 (PROPOSED; renumbered because installed 0070–0071 are Dread/Draco memory; not applied; needs owner install approval): separate read-only "diagnostics:read"
+-- PROPOSED (number assigned at install; installed 0070+ are newer changes; not applied; needs owner install approval): separate read-only "diagnostics:read"
 -- delegation scope. Grants nothing by itself: owner must tick it on /omni-authorize (owner + aal2 +
 -- fresh code). The gate returns only Stop state and server time; it never touches tasks, permits,
 -- spend, AI guards or the Stop itself. Install the consent-function update together with app code

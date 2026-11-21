@@ -1881,6 +1881,101 @@ export type Database = {
           },
         ]
       }
+      omni_fusion_sessions: {
+        Row: {
+          created_at: string
+          finished_at: string | null
+          first_agent: string
+          id: string
+          max_replies: number
+          owner_id: string
+          status: string
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          finished_at?: string | null
+          first_agent: string
+          id?: string
+          max_replies: number
+          owner_id: string
+          status?: string
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          finished_at?: string | null
+          first_agent?: string
+          id?: string
+          max_replies?: number
+          owner_id?: string
+          status?: string
+          topic?: string
+        }
+        Relationships: []
+      }
+      omni_fusion_turns: {
+        Row: {
+          agent_id: string
+          error_reason: string | null
+          error_status: number | null
+          finished_at: string | null
+          gateway_run_id: string | null
+          id: string
+          input_tokens: number | null
+          output_tokens: number | null
+          owner_id: string
+          reply: string | null
+          session_id: string
+          started_at: string
+          status: string
+          total_tokens: number | null
+          turn_no: number
+        }
+        Insert: {
+          agent_id: string
+          error_reason?: string | null
+          error_status?: number | null
+          finished_at?: string | null
+          gateway_run_id?: string | null
+          id?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          owner_id: string
+          reply?: string | null
+          session_id: string
+          started_at?: string
+          status?: string
+          total_tokens?: number | null
+          turn_no: number
+        }
+        Update: {
+          agent_id?: string
+          error_reason?: string | null
+          error_status?: number | null
+          finished_at?: string | null
+          gateway_run_id?: string | null
+          id?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          owner_id?: string
+          reply?: string | null
+          session_id?: string
+          started_at?: string
+          status?: string
+          total_tokens?: number | null
+          turn_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "omni_fusion_turns_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "omni_fusion_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       omni_mac_folder_grants: {
         Row: {
           created_at: string
@@ -4178,6 +4273,36 @@ export type Database = {
       omni_execution_permit_live: { Args: { _job: string }; Returns: boolean }
       omni_fusion_plan_ready: { Args: never; Returns: boolean }
       omni_fusion_planner_ready: { Args: never; Returns: boolean }
+      omni_fusion_session_create: {
+        Args: { _first_agent: string; _max_replies: number; _topic: string }
+        Returns: string
+      }
+      omni_fusion_session_delete: {
+        Args: { _session_id: string }
+        Returns: boolean
+      }
+      omni_fusion_session_stop: {
+        Args: { _session_id: string }
+        Returns: boolean
+      }
+      omni_fusion_turn_begin: { Args: { _session_id: string }; Returns: Json }
+      omni_fusion_turn_check: { Args: { _turn_id: string }; Returns: Json }
+      omni_fusion_turn_finish: {
+        Args: {
+          _error_reason: string
+          _error_status: number
+          _gateway_run_id: string
+          _input_tokens: number
+          _output_tokens: number
+          _pause_message: string
+          _pause_status: number
+          _reply: string
+          _status: string
+          _total_tokens: number
+          _turn_id: string
+        }
+        Returns: Json
+      }
       omni_memory_delete: {
         Args: { _agent: string; _id: string }
         Returns: boolean

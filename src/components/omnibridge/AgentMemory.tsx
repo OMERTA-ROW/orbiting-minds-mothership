@@ -367,7 +367,12 @@ export function AgentMemory() {
               >
                 Confirm: delete all of {MEMORY_AGENT_LABEL[agent]}'s memory
               </Button>
-              <Button size="sm" variant="ghost" disabled={busy} onClick={() => setConfirmAll(false)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                onClick={() => setConfirmAll(false)}
+              >
                 Keep
               </Button>
             </>

@@ -142,7 +142,14 @@ const chatEntry = z
   })
   .strict();
 const chatMemoryResult = z.discriminatedUnion("enabled", [
-  z.object({ ok: z.literal(true), enabled: z.literal(false), entries: z.array(z.never()), omitted: z.literal(0) }).strict(),
+  z
+    .object({
+      ok: z.literal(true),
+      enabled: z.literal(false),
+      entries: z.array(z.never()),
+      omitted: z.literal(0),
+    })
+    .strict(),
   z
     .object({
       ok: z.literal(true),
@@ -165,7 +172,10 @@ export type ChatMemoryReport =
  * Validates the database answer and drops anything that looks like a key or token
  * (saves already refuse them; this is defence in depth). Malformed answers give no memory.
  */
-export function readChatMemory(raw: unknown): { entries: ChatMemoryEntry[]; report: ChatMemoryReport } {
+export function readChatMemory(raw: unknown): {
+  entries: ChatMemoryEntry[];
+  report: ChatMemoryReport;
+} {
   const parsed = chatMemoryResult.safeParse(raw);
   if (!parsed.success) return { entries: [], report: { status: "unavailable" } };
   if (!parsed.data.enabled) return { entries: [], report: { status: "off" } };
