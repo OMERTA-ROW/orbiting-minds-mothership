@@ -17,6 +17,12 @@ subuid/subgid allocation. No service may claim subordinate mappings have been es
   backend for exact unit/verb/identity checks. Ubuntu 22.04's Polkit 0.105 does not
   supply it; do not substitute a broad `.pkla` manage-units grant. Validate a supported
   distro/backend separately, without disabling user namespace restrictions or AppArmor.
+  The Ubuntu 24.04 fixture keeps `apparmor_restrict_unprivileged_userns=1` and loads a
+  confined, executable-specific bubblewrap profile in disposable CI only. Kernel audit
+  proved the default `unprivileged_userns` profile denied namespace-local `net_admin`
+  and `setpcap`. The candidate profile mediates namespace setup mounts at exact targets;
+  it grants no host capability and the worker's bounding/effective sets remain empty.
+  Final commands must prove empty capabilities and enforcing confinement.
 - Inspect `user.max_user_namespaces` (positive and adequate for bounded concurrency),
   `kernel.unprivileged_userns_clone` where present (must permit user namespaces),
   and `kernel.apparmor_restrict_unprivileged_userns` where present. The passing

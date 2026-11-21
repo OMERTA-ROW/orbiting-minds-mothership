@@ -573,6 +573,7 @@ jobs:
           dpkg-query -W polkitd || true
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends bubblewrap polkitd
+          sudo apparmor_parser -r -W tests/fixtures/omni-leased-bwrap-apparmor
           sudo useradd --uid 21000 --user-group --no-create-home omni-worker-fixture
           sudo useradd --uid 22000 --user-group --no-create-home omni-watchdog-fixture
           sudo useradd --uid 23000 --user-group --no-create-home omni-coordinator-fixture

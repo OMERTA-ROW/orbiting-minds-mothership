@@ -124,9 +124,12 @@ for (const scenario of [
         },
         command:
           scenario === "happy path"
-            ? "test ! -e previous; mkdir -m 000 private; touch ready; " +
+            ? "set -e; test ! -e previous; mkdir -m 000 private; touch ready; " +
               'test "$(stat -f -c %T /work)" = tmpfs; test "$(stat -f -c %T /tmp)" = tmpfs; ' +
-              'test -z "$OMNI_LEAK_PROBE"; touch previous; echo real-tmpfs-response'
+              'test -z "$OMNI_LEAK_PROBE"; ' +
+              "grep -Eq '^CapEff:[[:space:]]+0+$' /proc/self/status; " +
+              "grep -Eq '^NoNewPrivs:[[:space:]]+1$' /proc/self/status; " +
+              "cat /proc/self/attr/current; touch previous; echo real-tmpfs-response"
             : "mkdir -m 000 private; touch ready; setsid sleep 30 & sleep 30",
       };
       writePrivate(
@@ -309,6 +312,7 @@ for (const scenario of [
         const reply = JSON.parse(completed.stdout.trim());
         if (scenario === "happy path") {
           assert.match(reply.result.stdout, /real-tmpfs-response/);
+          assert.match(reply.result.stdout, /omni-leased-bwrap-fixture \(enforce\)/);
           assert.notEqual(reply.cleanup.invocationId, reply.cleanup.previousInvocationId);
           assert.equal(reply.cleanup.outcome, "terminated_and_wiped");
           assert.match(reply.reuse.result.stdout, /fresh-workspace/);
