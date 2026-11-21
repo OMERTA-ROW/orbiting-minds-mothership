@@ -13,7 +13,9 @@ containment. Session creation and all work are refused; signed health and stop/e
 available. Mothership also rejects historical self-test passes and keeps the workspace gate closed.
 Do not deploy or enable this reference as a working sandbox.
 
-Signed request nonces are claimed transactionally in SQLite before an action is handled. A replay
+Ordinary signed requests claim their nonces transactionally in SQLite before handling an action.
+Fresh authenticated Stop instead attempts the safety reduction first, including a replayed Stop,
+and only then reconciles its nonce. A replay
 is rejected across concurrent processes and restarts **only when they use the same intact,
 locking-capable persistent filesystem**. The private `.state/nonces.sqlite` database lives under
 `OMNI_SANDBOX_ROOT`; use a dedicated durable volume, preserve it across restarts and rollbacks,
@@ -25,20 +27,24 @@ make the in-memory sessions safe to run across replicas or provide restart recov
 Node 22.13 or later with `node:sqlite` is required. Verify volume locking, flush semantics and
 capacity on the actual serving runtime; these are not established by local tests.
 
-If a nonce write fails, a fresh, correctly signed `agent.stop` or `job.stop` for the configured
-project is still attempted as a safety reduction. The service responds 503, not a successful or
+If nonce reconciliation fails, a fresh, correctly signed `agent.stop` or `job.stop` for the configured
+project has already been attempted as a safety reduction. The service responds 503, not a successful or
 signed acknowledgement: the request was not durably claimed, the Stop is not verified, and a
 captured Stop may be repeated within its freshness window while the store is unavailable. Invalid
 signatures, other projects and other actions do not take this fallback. This does not establish
-descendant termination or Stop enforcement during execution. Stop nonce claims use a 100 ms lock
-timeout, but an earlier synchronous non-Stop SQLite operation can still block the Node
-event loop, so an upper bound on Stop delivery is not established.
+descendant termination or Stop enforcement during execution. Stop nonce claims use one 100 ms lock
+attempt, without retries. Stop and ordinary nonce reconciliation use separate worker threads
+against the original durable table, so an ordinary writer's five-second wait cannot block the
+request event loop or delay the Stop attempt. This removes nonce-lock-before-kill ordering,
+not every possible serving-runtime scheduling or persistence delay.
 An already committed nonce is checked without taking a write lock, so a replay remains 401
 under a concurrent SQLite reserved writer lock. An uncommitted competing claim is not visible:
 if its transaction holds the lock for more than 100 ms, the other Stop must return 503 and
 attempt the unverified safety fallback. Thus a strict 200/401 outcome for every concurrent
 Stop is not guaranteed; extending the lock wait or guessing that an invisible claim committed
-would respectively delay Stop or risk rejecting a fresh request.
+would respectively delay Stop or risk rejecting a fresh request. The strict concurrent replay
+regression runs 100 fresh-nonce races requiring exactly 200/401; a separately held external
+writer still requires 503 and an attempted but unverified Stop, never a guessed acknowledgement.
 
 The same database records a single decision claim per project, session, job and step, including
 the owner. The signed decision must match the in-memory session owner and pending job; a claim is

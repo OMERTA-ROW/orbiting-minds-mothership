@@ -122,6 +122,9 @@ Before any separate reviewed rollout, the serving runtime must match these invar
   lock for the entire process lifetime, including recovery. On restart, recover unfinished
   leases before any new admission, terminate/recycle only, and never send the old command.
   Worker sockets accept one assignment per invocation and reject old invocation IDs.
+  A fresh authenticated recovery for the same full lease binding joins any in-flight watchdog
+  cleanup instead of starting a second controller. Different leases and normal duplicate
+  watches are refused; recovery revokes authority before joining and never replays a command.
 - Owner command approval binds the complete lease identity and SHA-256 command digest.
   The separate renewal callback must verify current owner consent, Stop, revocation and
   spending controls; this PR's fixture issues synthetic records only. Renewal runs every
