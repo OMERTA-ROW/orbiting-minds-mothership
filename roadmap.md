@@ -540,4 +540,5 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 - [ ] files:read / knowledge:read — awaiting owner choice of which records
 - [x] Dread/Draco — built as Mothership chat agents (same model/caps/Stop as OMNI, browser-voice hints); live after publish
 - [ ] Dread/Draco live reply — needs publish, owner chat:write consent and a fresh signed spend cap (OMNI web gate)
+- [ ] Dread/Draco collaboration through Fusion — needs a reviewed Fusion multi-agent design (phase 1 is rules-only plans; no fan-out of paid calls)
 - [ ] Workspace/CODE/automations/retry — locked pending PR #28 sandbox
