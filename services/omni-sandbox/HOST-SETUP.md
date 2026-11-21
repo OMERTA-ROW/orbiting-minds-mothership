@@ -22,6 +22,8 @@ subuid/subgid allocation. No service may claim subordinate mappings have been es
 - Verify mount, user, PID, network, IPC and UTS namespaces under the exact unit;
   `RestrictNamespaces` allows these only, not cgroup namespaces. The sandbox must not
   inherit the service environment or mount its private state, configuration or cgroups.
+  Bubblewrap requires `AF_NETLINK` to configure loopback in its isolated network
+  namespace; that address family must remain allowed. This does not provide a host route.
 - Delegate CPU, memory and PID controllers with `Delegate=yes` on each worker service
   in `omni-workspace.slice`. Delegation belongs to the service, not the slice. The
   launcher moves itself into a manager leaf before enabling controllers. Never grant
