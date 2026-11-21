@@ -7,7 +7,7 @@ General: 55 old demo areas are already retired (they show an honest "not connect
 | # | Item | Where | What it shows now | What it needs | Live now? |
 |---|---|---|---|---|---|
 | 1 | OMNI chat route | `/api/omni/chat`, manifest `chat` | Installed (0066). Manifest says `delegation_required`. No real reply sent yet | Code: none. Owner: two-step sign-in, connect OMNI web with `chat:write`, approve AI use, Stop released for chat | Yes, waits only on the owner (one small paid reply) |
-| 2 | Dread and Draco agents | manifest `agents` / `HELD_TASK_AGENTS` | Not listed at all. Only Jackboy, Jax, Razul and the other existing held-task agents appear | Owner must confirm these are real agents and where they run. Then a small code change adds them as held-task names (not chat, no live status) | Blocked until owner confirms they exist; then code only |
+| 2 | Dread and Draco agents | manifest `agents`, `chat.agentIds`, `/api/omni/chat` | Built 2026-11-21 (source; live after publish): two chat-enrolled Mothership agents with their own personalities and browser-voice hints, same model, caps, Stop and approvals as OMNI. Not held-task agents | Publish; then owner `chat:write` consent. OMNI web also needs a fresh signed spend cap before it sends any paid chat | After publish |
 | 3 | Provider/model discovery and add-provider | manifest `providers`, `capabilities.providers` | Read: lists Lovable AI and its one model when configured. Write: `false` (no add-provider API) | Discovery: already real. Add-provider: new owner-only, MFA-gated server endpoint storing keys as server secrets only, plus a migration for provider records | Discovery yes. Add-provider: buildable, not urgent (free path is Lovable AI) |
 | 4 | Fusion planner `omni.fusion-plan/v1` | `/api/omni/fusion/plans`, 0067 + 0069 | Published and installed. Answers 401 without delegation. Rules-only plans, 10 per owner per day | Owner: connect with `fusion:plan`, make one held task, ask for one plan (free) | Yes, waits only on the owner |
 | 5 | Migration 0064 and `tasks:read` | `drizzle/migrations/0064`, `GET /api/omni/tasks` | Installed. Key reads (jobs scope) and delegated reads both work | Owner: one live delegated read | Yes |
@@ -27,7 +27,7 @@ Step 3 — Jackboy link refresh (free). Run Step 8 self-test and Steps 9–10 on
 
 Step 4 — Small code batch (free, one migration). Add read-only `files:read`, `knowledge:read` and `diagnostics:read` scopes and endpoints over records that already exist, with owner isolation, Stop check, audit and tests. Manifest flips those `read` flags to true only when the migration is detected. Automations stays "locked pending sandbox".
 
-Step 5 — Dread and Draco, only after you confirm they are real agents: add them as held-task names. Nothing runs for them.
+Step 5 — Dread and Draco (owner confirmed 2026-11-21: planned agents, build on the Mothership): done in source as chat agents on the same model and limits as OMNI, browser voices only. Live after publish.
 
 Step 6 — Add-provider API (optional, later). Owner-only, MFA-gated, keys kept as server secrets. Skip for now to save budget; Lovable AI is enough.
 
@@ -36,7 +36,7 @@ Step 7 — After PR #28 is merged: separate review to unlock workspace, CODE exe
 Unchanged throughout: $0.50 per call, $1 per job, $5 per day, one active job; approval gates, passkey checks and the Stop control. No new secrets exposed. Nothing is published without your approval.
 
 ## Questions for the owner
-- Are Dread and Draco real agents, and which system runs them?
+- ~~Are Dread and Draco real agents?~~ Answered: build them as Mothership chat agents (same provider, browser voices).
 - Should Files cover Quantum Studio media only, or also Creator/Distro drafts?
 
 ## Technical details

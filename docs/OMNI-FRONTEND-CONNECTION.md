@@ -79,6 +79,12 @@ anything on the published site (it still runs the earlier release until the owne
 - Chat: the delegated adapter is built (`src/lib/omni-delegated-chat*.ts`) with its own `chat:write`
   consent, owner AI approval, Stop, daily limit and the shared AI guard; migration 0066 is installed
   (2026-11-20); it waits on publishing, OMNI requesting `chat:write`, and the owner's first paid reply.
+- Dread and Draco (2026-11-21): chat-enrolled Mothership agents (`src/lib/omni-chat-agents.ts`) on the
+  same route, model, delegation and limits as OMNI. The manifest lists them by exact ID/name with
+  `voice` hints for the caller's browser speech and the `chat` block carries `agentIds` instead of a
+  single `agentId` (OMNI web refuses every other agent when `agentId` is set). `@both` stays blocked
+  by OMNI web; there is no multi-agent chat. OMNI web also refuses paid chat until the manifest
+  carries a verified `spendingCapUsd` (fresh signed Jackboy permit).
 - Fusion: no Fusion orchestrator or handshake exists on the Mothership, so the manifest never reports
   `orchestration`. OMNI's "Fusion · unverified" is the correct state until it is built and verified; requirements: `docs/OMNI-FUSION-REQUIREMENTS.md`; phase 1 proposal schema: `docs/OMNI-FUSION-PLAN-CONTRACT.md`.
 - Task decisions stay owner-only on the Mothership (two-step + passkey); a key should never decide.

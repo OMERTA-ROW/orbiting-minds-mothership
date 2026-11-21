@@ -131,6 +131,46 @@ describe("POST /api/omni/chat with an owner delegation", () => {
     expect(finishArgs(calls)).toMatchObject({ _status: "completed", _pause_status: null });
     expect(calls.some((c) => c.fn === "omni_delegation_check_chat")).toBe(true);
   });
+  it("Dread and Draco answer as themselves through the same model, guard and limits", async () => {
+    for (const [id, name] of [
+      ["dread", "Dread"],
+      ["draco", "Draco"],
+    ] as const) {
+      const { rpc, calls } = fakeRpc();
+      const infer = vi.fn<ChatInference>(async () => reply());
+      const r = await omniDelegatedChat(
+        req(body({ agentId: id, model: CHAT_MODEL_REF })),
+        deps(rpc, infer),
+      );
+      expect(r.status).toBe(200);
+      expect(await r.json()).toMatchObject({
+        ok: true,
+        agentId: id,
+        agentName: name,
+        model: CHAT_MODEL_REF,
+      });
+      const agent = infer.mock.calls[0]![0].agent;
+      expect(agent.id).toBe(id);
+      expect(agent.persona).toContain(`You are ${name}`);
+      // Same admission (scope, AI approval, Stop, daily limit, one-at-a-time guard) as OMNI.
+      expect(calls.map((c) => c.fn)[0]).toBe("omni_delegation_begin_chat");
+      expect(calls[0]!.args["_model"]).toBe("openai/gpt-6-astra");
+      expect(finishArgs(calls)).toMatchObject({ _status: "completed" });
+    }
+  });
+  it("Dread and Draco are refused like OMNI when the database refuses (Stop, limit)", async () => {
+    for (const [reason, status] of [
+      ["emergency_stop_engaged", 423],
+      ["daily_limit", 429],
+      ["ai_not_approved", 403],
+    ] as const) {
+      const { rpc } = fakeRpc({ omni_delegation_begin_chat: { ok: false, reason } });
+      const infer = vi.fn(async () => reply());
+      const r = await omniDelegatedChat(req(body({ agentId: "draco" })), deps(rpc, infer));
+      expect(r.status).toBe(status);
+      expect(infer).not.toHaveBeenCalled();
+    }
+  });
   it("refuses before any database or model call: browser, no delegation, other agent, model, secrets", async () => {
     const { rpc, calls } = fakeRpc();
     const infer = vi.fn(async () => reply());
@@ -138,6 +178,8 @@ describe("POST /api/omni/chat with an owner delegation", () => {
       [req(body(), { origin: "https://evil.example" }), 403, "server_to_server_only"],
       [req(body(), { authorization: "Bearer omni_metadata" }), 401],
       [req(body({ agentId: "jackboy" })), 403, "agent_not_enrolled"],
+      [req(body({ agentId: "Dread" })), 403, "agent_not_enrolled"],
+      [req(body({ agentId: "both" })), 403, "agent_not_enrolled"],
       [req(body({ model: "lovable-ai:other" })), 422, "model_not_available"],
       [req(body({ autonomous: true })), 422, "invalid_request"],
       [req("{nope"), 422, "invalid_request"],
@@ -305,9 +347,22 @@ describe("manifest and consent reflect only what is installed and configured", (
     expect(m.delegation.supportedScopes).not.toContain("chat:write");
     expect(m.chat.state).toBe("not_available");
   });
-  it("enrolls only OMNI for chat once 0066 is installed and AI is configured", () => {
+  it("enrolls OMNI, Dread and Draco (never held-task agents) once 0066 is installed and AI is configured", () => {
     const m = buildManifest("https://evoomni.tech", { aiConfigured: true, chatInstalled: true });
-    expect(m.agents.filter((a) => a.enrolled).map((a) => a.id)).toEqual(["omni"]);
+    expect(m.agents.filter((a) => a.enrolled).map((a) => a.id)).toEqual(["omni", "dread", "draco"]);
+    // OMNI web refuses every other agent when the chat block names one agentId.
+    expect("agentId" in m.chat).toBe(false);
+    expect(m.chat.agentIds).toEqual(["omni", "dread", "draco"]);
+    const names = Object.fromEntries(m.agents.map((a) => [a.id, a.name]));
+    expect(names).toMatchObject({ dread: "Dread", draco: "Draco" });
+    // OMNI web's resolveTerminalRoute: exactly one manifest identity per @dread / @draco.
+    for (const id of ["dread", "draco"])
+      expect(m.agents.filter((a) => a.id === id || a.name.toLowerCase() === id)).toHaveLength(1);
+    const voices = m.agents
+      .filter((a) => "voice" in a)
+      .map((a) => (a as { voice: { engine: string; pitch: number } }).voice);
+    expect(voices.every((v) => v.engine === "browser")).toBe(true);
+    expect(new Set(voices.map((v) => v.pitch)).size).toBe(3);
     expect(m.capabilities.chat).toEqual({ read: false, write: true });
     expect(m.delegation.supportedScopes).toContain("chat:write");
     expect(m.chat).toMatchObject({ state: "delegation_required", verified: false, dailyLimit: 30 });

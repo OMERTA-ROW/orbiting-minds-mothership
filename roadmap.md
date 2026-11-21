@@ -538,5 +538,6 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 - [ ] Jackboy Step 8 self-test + Steps 9–10 refresh (owner MFA)
 - [ ] diagnostics:read — proposal in .lovable/pending/0070, awaiting owner install approval
 - [ ] files:read / knowledge:read — awaiting owner choice of which records
-- [ ] Dread/Draco — awaiting owner confirmation they are real agents
+- [x] Dread/Draco — built as Mothership chat agents (same model/caps/Stop as OMNI, browser-voice hints); live after publish
+- [ ] Dread/Draco live reply — needs publish, owner chat:write consent and a fresh signed spend cap (OMNI web gate)
 - [ ] Workspace/CODE/automations/retry — locked pending PR #28 sandbox

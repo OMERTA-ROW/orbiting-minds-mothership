@@ -12,7 +12,6 @@ import { DELEGATION_AUDIENCE, classifyBearer, isBrowserRequest } from "./omni-de
 import { browserRefused, needsDelegation, type Rpc } from "./omni-delegation.server";
 import { requiresPersistentPause } from "./ai/gateway-errors";
 import {
-  CHAT_AGENT,
   CHAT_MODEL_REF,
   CHAT_REFUSALS,
   DELEGATED_CHAT_LIMITS,
@@ -21,6 +20,7 @@ import {
   selectChatContext,
   type DelegatedChatMessage,
 } from "./omni-delegated-chat";
+import { chatAgentById, type ChatAgent } from "./omni-chat-agents";
 
 const NO_STORE = { "Cache-Control": "no-store", Pragma: "no-cache" };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: NO_STORE });
@@ -59,10 +59,11 @@ export type ChatInference = (args: {
   apiKey: string;
   messages: DelegatedChatMessage[];
   signal: AbortSignal;
+  agent: ChatAgent;
 }) => Promise<InferenceResult>;
 
 /** The existing OMNI text agent call (same model, prompt and gateway handling), collected. */
-const serviceInference: ChatInference = async ({ request, apiKey, messages, signal }) => {
+const serviceInference: ChatInference = async ({ request, apiKey, messages, signal, agent }) => {
   const { createOmniCall } = await import("./ai/omni-responses.server");
   const last = messages[messages.length - 1]!;
   const call = createOmniCall(
@@ -72,6 +73,7 @@ const serviceInference: ChatInference = async ({ request, apiKey, messages, sign
     last.content,
     signal,
     messages.slice(0, -1),
+    agent.persona,
   );
   let text = "";
   try {
@@ -176,7 +178,8 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
   }
   const parsed = delegatedChatBody.safeParse(body);
   if (!parsed.success) return refuse("invalid_request");
-  if (parsed.data.agentId !== CHAT_AGENT.id) return refuse("agent_not_enrolled");
+  const agent = chatAgentById(parsed.data.agentId);
+  if (!agent) return refuse("agent_not_enrolled");
   const model = resolveChatModel(parsed.data.model);
   if (!model) return refuse("model_not_available");
   const context = selectChatContext(parsed.data.messages);
@@ -227,7 +230,7 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
   }, deps.pollMs ?? DELEGATED_CHAT_LIMITS.pollMs);
   let result: InferenceResult;
   try {
-    result = await infer({ request, apiKey, messages: context.messages, signal });
+    result = await infer({ request, apiKey, messages: context.messages, signal, agent });
   } catch {
     result = {
       text: "",
@@ -324,10 +327,10 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
         message:
           known?.message ??
           (stopReason
-            ? "The owner delegation changed while OMNI was answering, so the reply was stopped."
+            ? `The owner delegation changed while ${agent.name} was answering, so the reply was stopped.`
             : pause
               ? `${pause.message} AI is paused until the owner reviews it.`
-              : "OMNI did not finish a reply. No tools ran; nothing is retried automatically."),
+              : `${agent.name} did not finish a reply. No tools ran; nothing is retried automatically.`),
         ...(finish["guard_released"] === false && !pause ? { aiPaused: true } : {}),
       },
       httpStatus,
@@ -336,8 +339,8 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
   return json({
     ok: true,
     reply: result.text,
-    agentId: CHAT_AGENT.id,
-    agentName: CHAT_AGENT.name,
+    agentId: agent.id,
+    agentName: agent.name,
     model: CHAT_MODEL_REF,
     runId,
     contextMessages: context.messages.length,

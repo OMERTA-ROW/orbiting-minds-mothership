@@ -208,7 +208,12 @@ Request (OMNI's existing body; extra fields ignored; at most 512 KB):
 }
 ```
 
-- `agentId` must be `omni` (403 `agent_not_enrolled` otherwise). `model` is optional; only
+- `agentId` must be exactly `omni`, `dread` or `draco` (403 `agent_not_enrolled` otherwise; no
+  names, case changes or `both`). Dread (calm analyst) and Draco (bold strategist) are Mothership
+  chat agents with their own identity and personality prompt; they use the same model, admission,
+  re-checks, limits and guard below as OMNI — one shared daily limit and one request at a time
+  across all three. The success reply echoes the requested `agentId`/`agentName`. The run record
+  does not store which of the three answered (0066 has no agent column). `model` is optional; only
   `lovable-ai:openai/gpt-6-astra` (or the bare model ID) is accepted (422 `model_not_available`).
 - The most recent messages that fit **20 messages / 24,000 characters** are used (reported as
   `contextMessages` / `omittedMessages`); the last must be a non-empty user message (422 `invalid_request`).

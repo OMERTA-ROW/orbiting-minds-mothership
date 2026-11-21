@@ -81,7 +81,11 @@ describe("OMNI frontend contract", () => {
     };
     // OMNI web counts "Models discovered" as the sum of provider models.
     expect(raw.providers.reduce((n, p) => n + p.models.length, 0)).toBe(1);
-    expect(raw.agents.filter((a) => a.enrolled).map((a) => a.id)).toEqual(["omni"]);
+    expect(raw.agents.filter((a) => a.enrolled).map((a) => a.id)).toEqual([
+      "omni",
+      "dread",
+      "draco",
+    ]);
   });
   it("a jobs-only key is valid but gets 403 for health and manifest", async () => {
     await ready;

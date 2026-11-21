@@ -1,7 +1,8 @@
 /**
  * OMNI web chat through an owner delegation ("chat:write") — shared, browser-safe rules.
  * The database (migration `drizzle/migrations/0066_omni_delegated_chat.sql`, installed 2026-11-20) enforces the
- * scope, owner AI approval, Emergency Stop, daily limit and the one-at-a-time AI guard; this
+ * scope, owner AI approval, Emergency Stop, daily limit and the one-at-a-time AI guard, shared by
+ * every chat agent (OMNI, Dread, Draco: one daily limit, one request at a time); this
  * file only shapes the request. No network, no secrets.
  */
 import { z } from "zod";
@@ -11,8 +12,10 @@ import { OMNI_MODEL } from "./ai/omni-model";
 export const CHAT_PROVIDER = { id: "lovable-ai", label: "Lovable AI" } as const;
 /** OMNI web selects models as `<provider id>:<model id>` (its isVerifiedModel). */
 export const CHAT_MODEL_REF = `${CHAT_PROVIDER.id}:${OMNI_MODEL}`;
-/** The only agent that can chat through OMNI web: the Mothership's OMNI text agent. */
+/** OMNI, the Mothership's OMNI text agent (default chat agent). */
 export const CHAT_AGENT = { id: "omni", name: "OMNI" } as const;
+/** Every agent OMNI web can chat with (OMNI, Dread, Draco); see omni-chat-agents.ts. */
+export { CHAT_AGENTS, CHAT_AGENT_IDS, chatAgentById } from "./omni-chat-agents";
 
 export const DELEGATED_CHAT_LIMITS = {
   /** Started requests per owner per 24 hours (database-enforced). */
@@ -89,7 +92,7 @@ export const CHAT_REFUSALS: Record<string, { status: number; error: string; mess
   agent_not_enrolled: {
     status: 403,
     error: "agent_not_enrolled",
-    message: "Only OMNI can chat through OMNI web. Other agents take held tasks.",
+    message: "Only OMNI, Dread and Draco can chat through OMNI web. Other agents take held tasks.",
   },
   model_not_available: {
     status: 422,

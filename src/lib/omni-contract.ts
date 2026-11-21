@@ -24,6 +24,7 @@ import {
 import { OMNI_MODEL } from "./ai/omni-model";
 import { FUSION_PLAN_LIMITS, FUSION_PLAN_PATH, FUSION_PLAN_SCOPE } from "./omni-fusion";
 import { FUSION_PLAN_SCHEMA, FUSION_PLANS_PER_DAY } from "./omni-fusion-plan";
+import { CHAT_AGENTS, CHAT_AGENT_IDS } from "./omni-chat-agents";
 import {
   CHAT_AGENT,
   CHAT_MODEL_REF,
@@ -175,9 +176,9 @@ export function fusionStatus(fusionPlanInstalled: boolean, plannerInstalled = fa
 
 /**
  * Truthful manifest. Providers list only what is configured on the Mothership (the OMNI text
- * agent's Lovable AI model); being listed is configuration, not a verified reply. OMNI is
- * chat-enrolled only when the chat:write delegation is installed and the provider is
- * configured; held-task agents are never chat-enrolled. `spendingCapUsd` is sent only while a
+ * agent's Lovable AI model); being listed is configuration, not a verified reply. OMNI, Dread
+ * and Draco are chat-enrolled only when the chat:write delegation is installed and the provider
+ * is configured; held-task agents are never chat-enrolled. `spendingCapUsd` is sent only while a
  * fresh signed Jackboy permit proves the cap (see omni-spend-evidence.ts); orchestration is never
  * claimed; autonomous is always false. Links point at real owner pages.
  */
@@ -199,12 +200,26 @@ export function buildManifest(origin: string | null, live: ManifestLive = NOT_LI
         name: CHAT_AGENT.name,
         kind: "omni" as const,
         enrolled: chatEnrolled,
+        voice: CHAT_AGENTS[0]!.voice,
         description: chatEnrolled
           ? "Mothership's private text agent. Chat needs an owner delegation with chat:write; it has no tools and runs nothing."
           : !live.chatInstalled
             ? "Mothership's private text agent. Chat through OMNI web couldn't be confirmed as installed (database change 0066)."
             : "Mothership's private text agent. Lovable AI isn't configured on the Mothership, so chat is unavailable.",
       },
+      // Dread and Draco: Mothership chat agents with their own identity and personality, on the
+      // same provider, model, delegation, AI approval, Stop, daily limit and AI guard as OMNI.
+      // Listed (with browser-voice hints) only; being listed is not a verified reply.
+      ...CHAT_AGENTS.filter((a) => a.id !== CHAT_AGENT.id).map((a) => ({
+        id: a.id,
+        name: a.name,
+        kind: "external" as const,
+        enrolled: chatEnrolled,
+        description: chatEnrolled
+          ? `Mothership chat agent. ${a.role} Same model and limits as OMNI; chat needs an owner delegation with chat:write; it has no tools and runs nothing.`
+          : `Mothership chat agent. ${a.role} Chat is unavailable until chat through OMNI web is installed and Lovable AI is configured.`,
+        voice: a.voice,
+      })),
       // OMNI web offers task assignment only to agents present here AND in `taskAgents`, so
       // each held-task agent is listed, never chat-enrolled and with no claimed live status.
       ...HELD_TASK_AGENTS.map((id) => ({
@@ -241,7 +256,9 @@ export function buildManifest(origin: string | null, live: ManifestLive = NOT_LI
       state: chatEnrolled ? ("delegation_required" as const) : ("not_available" as const),
       path: "/api/omni/chat",
       scope: "chat:write",
-      agentId: CHAT_AGENT.id,
+      // No single `agentId`: OMNI web would then refuse every other agent. These share the route,
+      // model and limits (one daily limit and one request at a time across all of them).
+      agentIds: [...CHAT_AGENT_IDS],
       model: CHAT_MODEL_REF,
       dailyLimit: DELEGATED_CHAT_LIMITS.daily,
       maxMessages: DELEGATED_CHAT_LIMITS.maxMessages,
