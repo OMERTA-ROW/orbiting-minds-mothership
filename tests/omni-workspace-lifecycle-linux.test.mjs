@@ -139,6 +139,7 @@ for (const scenario of [
               'test -z "$OMNI_LEAK_PROBE"; ' +
               "grep -Eq '^CapEff:[[:space:]]+0+$' /proc/self/status; " +
               "grep -Eq '^NoNewPrivs:[[:space:]]+1$' /proc/self/status; " +
+              "test ! -w /proc/sys/kernel/hostname; test ! -r /proc/kcore; test ! -r /proc/kmsg; " +
               "cat /proc/self/attr/current; touch previous; echo real-tmpfs-response"
             : "set -e; mkdir -m 000 private; " +
               `setsid /bin/bash -c 'trap "" TERM; exec sleep 30' & detached=$!; ` +
@@ -174,8 +175,8 @@ for (const scenario of [
       writePrivate(coordinatorConfig, config, coordinatorUid);
       const hardening =
         "Type=exec\nNoNewPrivileges=yes\nCapabilityBoundingSet=\nAmbientCapabilities=\nProtectSystem=strict\n" +
-        "ProtectHome=yes\nPrivateTmp=yes\nRestrictSUIDSGID=yes\nProtectKernelTunables=yes\n" +
-        "ProtectKernelModules=yes\nProtectKernelLogs=yes\nUMask=0077\nKillMode=control-group\n" +
+        "ProtectHome=yes\nPrivateTmp=yes\nRestrictSUIDSGID=yes\n" +
+        "ProtectKernelModules=yes\nUMask=0077\nKillMode=control-group\n" +
         "TimeoutStopSec=1s\nRestart=no\n";
       const socketUnit = (socket, user, service) =>
         `[Socket]\nListenStream=${socket}\nSocketUser=${user}\nSocketGroup=omni-coordinator-fixture\n` +
@@ -201,6 +202,7 @@ for (const scenario of [
           `ExecStart=${process.execPath} ${installed}/tests/fixtures/omni-leased-service.mjs ${workerConfig}\n` +
           "Environment=OMNI_LEAK_PROBE=synthetic-parent-value\n" +
           hardening +
+          "ProtectKernelTunables=no\nProtectKernelLogs=no\n" +
           "TasksMax=64\nMemoryMax=256M\nMemorySwapMax=0\nCPUQuota=50%\n" +
           "RestrictNamespaces=user mnt pid net ipc uts\nRestrictAddressFamilies=AF_UNIX AF_NETLINK\n",
         0,
@@ -213,6 +215,7 @@ for (const scenario of [
           `Group=omni-watchdog-fixture\nExecStart=${process.execPath} ` +
           `${installed}/tests/fixtures/omni-leased-service.mjs ${watchdogConfig}\n` +
           hardening +
+          "ProtectKernelTunables=yes\nProtectKernelLogs=yes\n" +
           "RestrictAddressFamilies=AF_UNIX\n",
         0,
         0,

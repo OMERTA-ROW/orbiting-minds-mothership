@@ -9,7 +9,6 @@ profile omni-leased-bwrap-fixture /usr/bin/bwrap flags=(attach_disconnected,medi
   capability setpcap,
   capability sys_admin,
   capability sys_chroot,
-  capability sys_ptrace,
 
   network netlink raw,
   network unix stream,
@@ -18,10 +17,15 @@ profile omni-leased-bwrap-fixture /usr/bin/bwrap flags=(attach_disconnected,medi
   ptrace (readby) peer=unconfined,
   ptrace (trace,read,tracedby,readby) peer=omni-leased-bwrap-fixture,
 
+  / r,
   /usr/** rix,
   /bin/** rix,
   /lib{,32,64}/** mr,
   /proc/** r,
+  deny /proc/sys/** w,
+  deny /proc/{kcore,kmsg,keys} rw,
+  deny /dev/{mem,kmem,kmsg} rw,
+  deny /sys/** w,
   owner /proc/[0-9]*/{uid_map,gid_map,setgroups} rw,
   /tmp/ rw,
   /tmp/** rwkl,

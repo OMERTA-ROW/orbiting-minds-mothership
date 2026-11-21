@@ -133,6 +133,21 @@ The experimental coordinator requires the existing trusted Mothership approval/r
 adapter; it is not connected to the quarantined production HTTP entrypoint. Actual serving
 runtime, permissions and transport still require independent verification before rollout.
 
+The disposable Ubuntu 24.04 lifecycle fixture uses the Polkit JavaScript rules backend
+(the Ubuntu 22.04 package lacks it). In run 44876136879, holding UID, capabilities,
+no-new-privileges, strict system/home protection, PrivateTmp and resource bounds constant,
+either `ProtectKernelTunables=yes` or `ProtectKernelLogs=yes` prevented the unprivileged
+fresh procfs mount. With both off, bubblewrap passed that mount and reached an independently
+audited AppArmor denial for reading `/`. `ProtectKernelModules=yes` remained compatible.
+The test worker therefore leaves its pre-sandbox procfs unclipped; the watchdog retains
+both proc protections. The worker's initial host UID has no capabilities or root DAC
+authority. Its confined bubblewrap profile permits the exact root-directory read and
+explicitly denies proc sysctl writes, kernel memory/log reads and sysfs writes. The command
+gets a new PID namespace and fresh procfs, not the host proc tree, and drops every capability.
+The lifecycle happy-path checks kernel-interface denial as well as effective capabilities,
+no-new-privileges and confinement. This is a test-only namespace-aware hardening candidate,
+not a change to packaged production units or permission to disable host AppArmor/sysctls.
+
 `workspace-host-gate` combines the unchanged 11 historical host assertions and
 the hardened-unit worker, independent-watchdog and integrated socket lifecycle checks. The historical fixture remains a root-started test-only
 coordinator; its passing result alone does not verify the non-root package. Worker tests
