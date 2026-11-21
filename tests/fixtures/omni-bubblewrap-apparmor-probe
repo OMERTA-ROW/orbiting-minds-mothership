@@ -30,4 +30,5 @@ profile omni-bubblewrap-probe flags=(attach_disconnected,mediate_deleted) {
   deny /sys/kernel/security/** rwklx,
 
   audit mount options=(rw,silent,rslave) -> /,
+  audit mount fstype=tmpfs options=(rw,nosuid,nodev) tmpfs -> /tmp/,
 }
