@@ -531,3 +531,12 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 - [ ] M5 Jackboy package handoff: build the `jackboy.omni-handoff/v1` payload with artifact digest + comparison report; held until owner fresh-TOTP send; Jackboy keeps passkey/spend gates.
 - [ ] M6 Model-assisted conversion (OpenAI/Claude in sandbox) — blocked on live sandbox, verified provider and spend caps.
       Blockers: M2–M6 need the deployed Railway sandbox (cloud shell priority stays first); M5 also needs the Jackboy handoff settings; autonomy stays off.
+
+## Go-live audit (2026-11-21) — see docs/OMNI-GO-LIVE-AUDIT-2026-11-21.md
+- [ ] Owner live checks: tasks:read, fusion:plan plan, one held task + cancel (owner two-step sign-in)
+- [ ] One paid chat reply via chat:write (owner approval)
+- [ ] Jackboy Step 8 self-test + Steps 9–10 refresh (owner MFA)
+- [ ] diagnostics:read — proposal in .lovable/pending/0070, awaiting owner install approval
+- [ ] files:read / knowledge:read — awaiting owner choice of which records
+- [ ] Dread/Draco — awaiting owner confirmation they are real agents
+- [ ] Workspace/CODE/automations/retry — locked pending PR #28 sandbox
