@@ -23,6 +23,9 @@ subuid/subgid allocation. No service may claim subordinate mappings have been es
   and `setpcap`. The candidate profile mediates namespace setup mounts at exact targets;
   it grants no host capability and the worker's bounding/effective sets remain empty.
   Final commands must prove empty capabilities and enforcing confinement.
+  A subsequent confined run recorded namespace-local `sys_ptrace` mediation denied
+  at the new PID namespace's procfs mount; the fixture permits that capability check
+  while ptrace peers remain limited to the same profile and host capability sets stay empty.
 - Inspect `user.max_user_namespaces` (positive and adequate for bounded concurrency),
   `kernel.unprivileged_userns_clone` where present (must permit user namespaces),
   and `kernel.apparmor_restrict_unprivileged_userns` where present. The passing

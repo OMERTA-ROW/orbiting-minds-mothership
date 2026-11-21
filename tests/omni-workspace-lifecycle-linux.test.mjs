@@ -54,7 +54,15 @@ async function runningSandbox() {
       .trim()
       .split("\n")) {
       try {
-        if (fs.existsSync(`/proc/${pid}/root/work/ready`)) return { pid, root };
+        if (fs.existsSync(`/proc/${pid}/root/work/ready`))
+          return {
+            pid,
+            root,
+            pids: fs
+              .readFileSync(path.join(root, dir, "cgroup.procs"), "utf8")
+              .trim()
+              .split("\n"),
+          };
       } catch (error) {
         if (error.code !== "ENOENT" && error.code !== "ESRCH") throw error;
       }
@@ -130,7 +138,10 @@ for (const scenario of [
               "grep -Eq '^CapEff:[[:space:]]+0+$' /proc/self/status; " +
               "grep -Eq '^NoNewPrivs:[[:space:]]+1$' /proc/self/status; " +
               "cat /proc/self/attr/current; touch previous; echo real-tmpfs-response"
-            : "mkdir -m 000 private; touch ready; setsid sleep 30 & sleep 30",
+            : "set -e; mkdir -m 000 private; " +
+              `setsid /bin/bash -c 'trap "" TERM; exec sleep 30' & detached=$!; ` +
+              `while [ "$(ps -o sid= -p "$detached" | tr -d ' ')" != "$detached" ]; do sleep .01; done; ` +
+              'touch ready; wait "$detached"',
       };
       writePrivate(
         workerConfig,
@@ -218,7 +229,7 @@ for (const scenario of [
         0,
         0o644,
       );
-      let child, childResult;
+      let child, childResult, running;
       const startCoordinator = () => {
         child = spawn(
           "/usr/bin/setpriv",
@@ -272,9 +283,24 @@ for (const scenario of [
           }, "Coordinator did not acquire its durable lease.");
           child.stdin.write("stop\n");
         } else if (scenario !== "happy path") {
-          await waitFor(
+          running = await waitFor(
             runningSandbox,
             "Worker did not execute inside its real tmpfs/PID namespace.",
+          );
+          assert.ok(
+            running.pids.some((pid) => {
+              const stat = fs.readFileSync(`/proc/${pid}/stat`, "utf8");
+              return (
+                /\(sleep\)/.test(stat) &&
+                stat.slice(stat.lastIndexOf(")") + 2).split(" ")[3] === pid
+              );
+            }),
+            "A detached session-leading descendant must exist before Stop/crash.",
+          );
+          const activeWorker = await control.inspect();
+          fs.writeFileSync(
+            `/proc/${activeWorker.MainPID}/root/tmp/private-unit-marker`,
+            "synthetic",
           );
           if (scenario === "mid-job Stop") child.stdin.write("stop\n");
           else if (scenario === "renewal loss") child.stdin.write("renewal loss\n");
@@ -329,6 +355,10 @@ for (const scenario of [
         if (!retained) {
           assert.equal(current.ActiveState, "active");
           assert.notEqual(current.InvocationID, initial.InvocationID);
+          assert.equal(
+            fs.existsSync(`/proc/${current.MainPID}/root/tmp/private-unit-marker`),
+            false,
+          );
         } else {
           await waitFor(
             async () => ["inactive", "failed"].includes((await control.inspect()).ActiveState),
@@ -339,6 +369,8 @@ for (const scenario of [
           fs.existsSync(`/sys/fs/cgroup${initial.ControlGroup}/job-${config.identity.jobId}`),
           false,
         );
+        for (const pid of running?.pids ?? [])
+          assert.equal(fs.existsSync(`/proc/${pid}`), false, `Descendant ${pid} survived cleanup.`);
         const db = new DatabaseSync(database);
         try {
           const leases = db.prepare("SELECT state FROM workspace_worker_leases").all();
