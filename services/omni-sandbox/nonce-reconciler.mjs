@@ -20,7 +20,9 @@ export function nonceReconciler(database, busyTimeout) {
     if (!request) return;
     pending.delete(reply.id);
     if (reply.error)
-      request.reject(Object.assign(new Error(reply.error), { errcode: reply.errcode }));
+      request.reject(
+        Object.assign(new Error(reply.error), { errcode: reply.errcode, phase: reply.phase }),
+      );
     else request.resolve(reply.accepted);
   });
   return {

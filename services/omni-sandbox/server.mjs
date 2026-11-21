@@ -1044,6 +1044,9 @@ export function createSandbox(c, opts = {}) {
       } catch (error) {
         const code = Number.isInteger(error?.errcode) ? error.errcode : "unknown";
         console.error(`Sandbox nonce store unavailable; request refused (SQLite code ${code}).`);
+        console.error(
+          `Nonce reconciliation failed during ${error.phase ?? "unknown"}: ${error.message}`,
+        );
         if (safetyStop)
           console.error("Sandbox Stop attempted without durable nonce claim; result unverified.");
         res.writeHead(503).end();

@@ -292,6 +292,42 @@ describe("quarantined workspace reference", () => {
     expect((await fetch(url, pending)).status).toBe(200);
   }, 10_000);
 
+  it("does not consume a Stop nonce when a read snapshot prevents its commit", async () => {
+    const reader = spawn(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        `
+          import { DatabaseSync } from "node:sqlite";
+          const db = new DatabaseSync(process.argv[1]);
+          db.exec("BEGIN");
+          db.prepare("SELECT COUNT(*) FROM nonces").get();
+          process.stdout.write("reading\\n");
+          process.on("SIGTERM", () => { db.exec("ROLLBACK"); db.close(); process.exit(0); });
+          setInterval(() => {}, 1000);
+        `,
+        path.join(dir, "root", ".state", "nonces.sqlite"),
+      ],
+      { stdio: ["ignore", "pipe", "ignore"] },
+    );
+    try {
+      await new Promise<void>((resolve, reject) => {
+        reader.stdout.once("data", () => resolve());
+        reader.once("error", reject);
+        reader.once("exit", () => reject(new Error("Reader exited before holding its snapshot.")));
+      });
+      const request = signedRequest(randomUUID().replaceAll("-", ""));
+      const url = `${cfg.origin}/api/public/omni/workspace`;
+      expect((await fetch(url, request)).status).toBe(503);
+      await stopService(reader);
+      expect((await fetch(url, request)).status).toBe(200);
+      expect((await fetch(url, request)).status).toBe(401);
+    } finally {
+      await stopService(reader);
+    }
+  }, 10_000);
+
   it("refuses requests when the durable nonce store cannot be locked", async () => {
     const alreadyClaimed = signedRequest("9".repeat(32));
     const url = `${cfg.origin}/api/public/omni/workspace`;
@@ -332,7 +368,10 @@ describe("quarantined workspace reference", () => {
         "Stop attempted without durable nonce claim",
       );
       let ordinaryFinished = false;
-      const ordinary = fetch(url, signedRequest("f".repeat(32), "session.end")).then((reply) => {
+      const ordinary = fetch(
+        url,
+        signedRequest(randomUUID().replaceAll("-", ""), "session.end"),
+      ).then((reply) => {
         ordinaryFinished = true;
         return reply;
       });
