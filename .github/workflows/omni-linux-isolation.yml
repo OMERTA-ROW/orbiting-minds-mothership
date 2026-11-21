@@ -321,7 +321,7 @@ jobs:
               cat "$RUNNER_TEMP/omni-workspace-host.log"
               exit 1
             }
-          OMNI_WORKSPACE_HISTORICAL_TEST=1 \
+          sudo env "PATH=$PATH" OMNI_WORKSPACE_HISTORICAL_TEST=1 \
             OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:18791 \
             OMNI_WORKSPACE_TEST_ROOT="$workspace_root" \
             bun run test src/test/omni-sandbox-supervisor.test.ts || {
@@ -356,7 +356,7 @@ jobs:
             sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin "omni-worker-$slot"
             sudo install -m 600 /dev/null "/etc/omni-workspace/worker-$slot.env"
             sudo install -d "/run/systemd/system/omni-workspace@$slot.service.d"
-            printf '[Service]\nExecStart=\nExecStart=%s --test /opt/omni-workspace/tests/omni-workspace-host-worker.test.mjs\nEnvironment=OMNI_WORKSPACE_WORKER_TEST=1\n' "$(command -v node)" \
+            printf '[Service]\nExecStart=\nExecStart=%s /opt/omni-workspace/tests/omni-workspace-host-worker.test.mjs\nEnvironment=OMNI_WORKSPACE_WORKER_TEST=1\n' "$(command -v node)" \
               | sudo tee "/run/systemd/system/omni-workspace@$slot.service.d/test.conf" >/dev/null
           done
           test "$(id -u omni-worker-ci1)" != "$(id -u omni-worker-ci2)"
