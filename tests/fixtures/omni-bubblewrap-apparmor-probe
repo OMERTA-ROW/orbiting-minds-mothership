@@ -34,7 +34,7 @@ profile omni-bubblewrap-probe flags=(attach_disconnected,mediate_deleted) {
   audit mount options=(rw,rbind) /tmp/newroot/ -> /tmp/newroot/,
   audit pivot_root oldroot=/tmp/oldroot/ /tmp/,
   audit mount options=(rw,rbind) /oldroot/usr/ -> /newroot/usr/,
-  audit mount options=(ro,nosuid,nodev,remount,bind,relatime) -> /newroot/usr/,
+  audit mount options=(ro,nosuid,nodev,remount,bind,silent,relatime) -> /newroot/usr/,
   audit mount fstype=proc options=(rw,nosuid,nodev,noexec) proc -> /newroot/proc/,
   audit mount fstype=tmpfs options=(rw,nosuid,nodev) tmpfs -> /newroot/{dev,tmp}/,
   audit mount options=(rw,rbind) /oldroot/dev/null -> /newroot/dev/null,
