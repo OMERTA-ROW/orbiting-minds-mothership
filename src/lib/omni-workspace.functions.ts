@@ -24,6 +24,7 @@ import {
   evaluateSandboxHealth,
   stopDrillInput,
   STOP_DRILL_COMMAND,
+  WORKSPACE_CONTAINMENT_BLOCKER,
 } from "./omni-workspace";
 import { summarizeOmniLedger } from "./treasury";
 
@@ -282,7 +283,7 @@ export const setKillSwitch = createServerFn({ method: "POST" })
 
 /**
  * Asks the sandbox for its live health probe over the signed link and records the result.
- * Passes only if isolation and limits check out; the reply proof is verified first.
+ * The signed report is a preliminary probe, not proof of containment.
  */
 export const runSandboxSelfTest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -318,6 +319,8 @@ export const runSandboxSelfTest = createServerFn({ method: "POST" })
         return { ok: false as const, message: "The sandbox did not send a health report." };
       }
       const verdict = evaluateSandboxHealth(health);
+      verdict.failures.push(WORKSPACE_CONTAINMENT_BLOCKER);
+      verdict.passed = false;
       await ws.audit(admin, {
         actor: "owner",
         event: verdict.passed ? "sandbox_self_test_passed" : "sandbox_self_test_failed",
@@ -369,6 +372,7 @@ export const startSession = createServerFn({ method: "POST" })
       try {
         const reply = await ws.relay(link, "session.start", {
           sessionId: row.id,
+          ownerId: uid,
           agentId: agent.id,
           allowedActions: agent.allowed_actions,
           provider: data.provider,
@@ -653,35 +657,59 @@ export const stopWork = createServerFn({ method: "POST" })
       .in("status", ["queued", "running"]);
     if (data.sessionId) q = q.eq("session_id", data.sessionId);
     if (data.agentId) q = q.eq("agent_id", data.agentId);
-    await q;
+    const failures: string[] = [];
+    try {
+      const { error } = await q;
+      if (error) failures.push("Could not mark local jobs stopped.");
+    } catch {
+      failures.push("Could not mark local jobs stopped.");
+    }
     let agentId = data.agentId ?? null;
     if (!agentId && data.sessionId) {
-      const { data: s } = await db
-        .from("omni_workspace_sessions")
-        .select("agent_id")
-        .eq("id", data.sessionId)
-        .maybeSingle();
-      agentId = s?.agent_id ?? null;
+      try {
+        const { data: s, error } = await db
+          .from("omni_workspace_sessions")
+          .select("agent_id")
+          .eq("id", data.sessionId)
+          .maybeSingle();
+        if (error) failures.push("Could not determine the session's agent.");
+        agentId = s?.agent_id ?? null;
+      } catch {
+        failures.push("Could not determine the session's agent.");
+      }
     }
-    await ws.endAutonomy(admin, agentId, "stop");
+    try {
+      const { error } = await ws.endAutonomy(admin, agentId, "stop");
+      if (error) failures.push("Could not end local autonomy windows.");
+    } catch {
+      failures.push("Could not end local autonomy windows.");
+    }
     let remote = "not sent (link not configured)";
     const link = await ws.linkState(admin);
     if (link.configured) {
       remote = await ws
-        .relay(link, data.agentId ? "agent.stop" : "job.stop", {
+        .relay(link, data.agentId || !data.sessionId ? "agent.stop" : "job.stop", {
           sessionId: data.sessionId,
           agentId,
         })
-        .then(() => "confirmed by OMNI")
-        .catch((e: unknown) => `not confirmed: ${e instanceof Error ? e.message : "error"}`);
+        .then(() => "request acknowledged; remote cancellation is unverified")
+        .catch((e: unknown) => {
+          failures.push("Remote Stop could not be delivered.");
+          return `not confirmed: ${e instanceof Error ? e.message : "error"}`;
+        });
+    } else {
+      failures.push("Remote Stop was not sent because the link is not configured.");
     }
     await ws.audit(admin, {
       actor: "owner",
       event: data.agentId ? "agent_stop" : "stop",
       agentId,
       sessionId: data.sessionId,
-      detail: { remote },
+      detail: { remote, failures },
     });
+    if (failures.length) {
+      return { ok: false as const, message: `${failures.join(" ")} Remote Stop: ${remote}` };
+    }
     return { ok: true as const, remote };
   });
 
@@ -780,6 +808,23 @@ export const decideStep = createServerFn({ method: "POST" })
         if (gated) throw new Error("This step needs a passkey approval in Approvals waiting.");
         ({ job_id: jobId, remote_id: remoteId, session_id: sessionId, agent_id: agentId } = s);
       } else throw new Error("Nothing to decide.");
+      const { data: session, error: sessionError } = await db
+        .from("omni_workspace_sessions")
+        .select("owner_id, agent_id")
+        .eq("id", sessionId)
+        .maybeSingle();
+      if (sessionError || session?.owner_id !== uid)
+        throw new Error("The decision does not belong to this owner.");
+      if (session.agent_id !== agentId)
+        throw new Error("The decision does not match its session and agent.");
+      const { data: job, error: jobError } = await db
+        .from("omni_agent_jobs")
+        .select("id")
+        .eq("id", jobId)
+        .eq("session_id", sessionId)
+        .eq("agent_id", agentId)
+        .maybeSingle();
+      if (jobError || !job) throw new Error("The decision does not match its session and job.");
       const { gate, link } = await ws.gateFor(db, admin, uid, true);
       if (data.approve && !gate.open)
         throw new Error(`Not sent: ${gate.blockers[0] ?? "not connected"}`);
@@ -811,6 +856,7 @@ export const decideStep = createServerFn({ method: "POST" })
       if (gate.open) {
         const { agent } = await ws.activeSession(db, admin, sessionId);
         const reply = await ws.relay(link, "step.decide", {
+          ownerId: uid,
           sessionId,
           jobId,
           stepId: remoteId,
@@ -872,7 +918,8 @@ export const runStopDrill = createServerFn({ method: "POST" })
       await pk.consumePasskeyCheck(admin, uid, data.checkId, ["autonomy"]);
       const { gate, link } = await ws.gateFor(db, admin, uid, true);
       if (!gate.open) throw new Error(gate.blockers[0] ?? "Not connected.");
-      const { agent } = await ws.activeSession(db, admin, data.sessionId);
+      const { session, agent } = await ws.activeSession(db, admin, data.sessionId);
+      if (session.owner_id !== uid) throw new Error("This session belongs to a different owner.");
       const sessionId = data.sessionId;
       const { data: job, error } = await admin
         .from("omni_agent_jobs")
@@ -912,7 +959,12 @@ export const runStopDrill = createServerFn({ method: "POST" })
           agent,
           sessionId,
           job.id,
-          await ws.relay(link, "step.decide", { ...base, stepId: "cmd", approve: true }),
+          await ws.relay(link, "step.decide", {
+            ...base,
+            ownerId: uid,
+            stepId: "cmd",
+            approve: true,
+          }),
         );
         await admin
           .from("omni_agent_steps")

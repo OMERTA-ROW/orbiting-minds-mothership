@@ -14,6 +14,7 @@ import {
   sandboxHealth,
   sessionEndReason,
   workspaceGate,
+  WORKSPACE_CONTAINMENT_BLOCKER,
   type RemoteReply,
   type Spend,
 } from "./omni-workspace";
@@ -59,27 +60,22 @@ export async function linkState(admin: Db) {
     .order("at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const { data: passed } = await admin
-    .from("omni_workspace_audit")
-    .select("at")
-    .eq("event", "sandbox_self_test_passed")
-    .order("at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
   const parsed = sandboxHealth.safeParse((data?.detail as { health?: unknown } | null)?.health);
   return {
     configured: state.configured,
     enabled: state.enabled,
     problem: state.problem,
     config,
-    selfTestPassedAt: passed?.at ? Date.parse(passed.at) : null,
+    selfTestPassedAt: null,
     lastCheck: data
       ? {
           at: data.at,
-          passed: data.event === "sandbox_self_test_passed",
+          passed: false,
           failures:
-            ((data.detail as { failures?: unknown } | null)?.failures as string[] | undefined) ??
-            [],
+            data.event === "sandbox_self_test_passed"
+              ? [WORKSPACE_CONTAINMENT_BLOCKER]
+              : (((data.detail as { failures?: unknown } | null)?.failures as
+                  string[] | undefined) ?? []),
           health: parsed.success ? parsed.data : null,
         }
       : null,
@@ -175,7 +171,7 @@ export async function endAutonomy(admin: Db, agentId: string | null, reason: str
     .update({ ended_at: new Date().toISOString(), end_reason: reason })
     .is("ended_at", null);
   if (agentId) q = q.eq("agent_id", agentId);
-  await q;
+  return await q;
 }
 
 /** Loads an active session, ending it if idle or too old. */

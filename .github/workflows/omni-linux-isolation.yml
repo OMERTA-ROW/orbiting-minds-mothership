@@ -6,12 +6,612 @@ on:
     paths:
       - .github/workflows/omni-linux-isolation.yml
       - services/omni-autonomous/**
+      - services/omni-sandbox/**
       - tests/omni-autonomous*.test.mjs
+      - src/test/omni-sandbox-*.test.ts
   workflow_dispatch:
+    inputs:
+      host_only:
+        description: Run only the disposable historical workspace host fixture
+        type: boolean
+        default: false
+      namespace_trace:
+        description: Trace namespace syscalls on disposable Linux host only
+        type: boolean
+        default: false
+      unsupported_docker_diagnostics:
+        description: Run unsupported workspace Docker diagnostics (not a host gate)
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
+  workspace-image-diagnosis:
+    if: github.event_name == 'workflow_dispatch' && inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Compare namespace denial with seccomp logging
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          uname -a
+          docker version --format 'server={{.Server.Version}}'
+          for setting in kernel/apparmor_restrict_unprivileged_userns user/max_user_namespaces kernel/unprivileged_userns_clone; do
+            if [ -r "/proc/sys/$setting" ]; then
+              printf '%s=' "$setting"
+              cat "/proc/sys/$setting"
+            else
+              echo "$setting=unavailable"
+            fi
+          done
+          cat /sys/kernel/security/lsm 2>/dev/null || true
+          sudo cat /proc/sys/kernel/seccomp/actions_logged
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/moby/moby/v28.0.4/profiles/seccomp/default.json \
+            -o "$RUNNER_TEMP/omni-seccomp-base.json"
+          echo "9c1025c88ccaa517b648da571961838744ea2137f176bfe6a48b21294cae9c76  $RUNNER_TEMP/omni-seccomp-base.json" | sha256sum --check
+          jq --slurpfile delta tests/fixtures/omni-bubblewrap-seccomp-delta.json \
+            '.syscalls += $delta[0]' "$RUNNER_TEMP/omni-seccomp-base.json" > "$RUNNER_TEMP/omni-seccomp-enforce.json"
+          jq '.defaultAction = "SCMP_ACT_LOG" | del(.defaultErrnoRet)' \
+            "$RUNNER_TEMP/omni-seccomp-enforce.json" > "$RUNNER_TEMP/omni-seccomp-log.json"
+          sha256sum "$RUNNER_TEMP/omni-seccomp-enforce.json" "$RUNNER_TEMP/omni-seccomp-log.json"
+          docker build --quiet --tag omni-workspace-historical:base services/omni-sandbox
+          docker build --quiet --file tests/fixtures/Dockerfile.omni-sandbox-image \
+            --tag omni-workspace-historical:fixture .
+          docker build --quiet --file tests/fixtures/Dockerfile.omni-sandbox-diagnostic \
+            --tag omni-workspace-diagnostic:fixture .
+          docker image inspect omni-workspace-diagnostic:fixture --format 'localImageId={{.Id}}'
+          sudo apparmor_parser -r -W tests/fixtures/omni-bubblewrap-apparmor-probe
+          for mode in enforce log apparmor apparmor-log; do
+            echo "=== $mode ==="
+            profile="$RUNNER_TEMP/omni-seccomp-$mode.json"
+            apparmor_option=apparmor=docker-default
+            if [ "$mode" = apparmor ]; then
+              profile="$RUNNER_TEMP/omni-seccomp-enforce.json"
+              apparmor_option=apparmor=omni-bubblewrap-probe
+            fi
+            if [ "$mode" = apparmor-log ]; then
+              profile="$RUNNER_TEMP/omni-seccomp-log.json"
+              apparmor_option=apparmor=omni-bubblewrap-probe
+            fi
+            set +e
+            docker run --rm --user 1001:1001 --cap-drop ALL \
+              --security-opt no-new-privileges --security-opt "$apparmor_option" \
+              --security-opt "seccomp=$profile" \
+              --network none --read-only --tmpfs /tmp:rw,nosuid,nodev,size=16m \
+              --entrypoint /bin/sh omni-workspace-diagnostic:fixture -c '
+                id
+                cat /proc/self/attr/current
+                grep -E "^(NoNewPrivs|Seccomp|CapEff):" /proc/self/status
+                strace -f -e trace=clone,clone3,unshare,setns,mount,umount2,pivot_root \
+                  -o /tmp/trace bwrap --unshare-user --unshare-pid --unshare-net \
+                  --unshare-ipc --unshare-uts --die-with-parent --new-session \
+                  --ro-bind /usr /usr --symlink usr/bin /bin \
+                  --symlink usr/lib /lib --symlink usr/lib64 /lib64 \
+                  --proc /proc --dev /dev --tmpfs /tmp --clearenv \
+                  --setenv PATH /usr/bin:/bin -- /bin/true
+                result=$?
+                cat /tmp/trace
+                exit "$result"
+              '
+            result=$?
+            set -e
+            echo "$mode exit=$result"
+          done
+          echo '=== kernel audit for fixture ==='
+          sudo journalctl -k --no-pager -b | grep -E 'apparmor="DENIED".*(bwrap|strace)|seccomp.*(bwrap|strace)' | tail -40 || true
+  workspace-namespace-trace:
+    if: github.event_name == 'workflow_dispatch' && inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Trace unprivileged bubblewrap namespace setup
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap strace
+          bwrap --version
+          sudo -u runner strace -f -e trace=clone,clone3,unshare,setns,mount,umount2,pivot_root \
+            -o /tmp/omni-bwrap-trace \
+            bwrap --unshare-user --unshare-pid --unshare-net --unshare-ipc --unshare-uts \
+              --die-with-parent --new-session --ro-bind /usr /usr \
+              --symlink usr/bin /bin --symlink usr/lib /lib --symlink usr/lib64 /lib64 \
+              --proc /proc --dev /dev --tmpfs /tmp --clearenv \
+              --setenv PATH /usr/bin:/bin -- /bin/true
+          cat /tmp/omni-bwrap-trace
+  workspace-seccomp-probe:
+    if: github.event_name == 'workflow_dispatch' && inputs.unsupported_docker_diagnostics
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Probe a narrow namespace delta on Docker's pinned default profile
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          docker version --format 'server={{.Server.Version}}'
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/moby/moby/v28.0.4/profiles/seccomp/default.json \
+            -o "$RUNNER_TEMP/omni-seccomp-base.json"
+          echo "9c1025c88ccaa517b648da571961838744ea2137f176bfe6a48b21294cae9c76  $RUNNER_TEMP/omni-seccomp-base.json" | sha256sum --check
+          jq '.syscalls += [
+            {"names":["unshare"],"action":"SCMP_ACT_ALLOW","args":[{"index":0,"value":268435456,"op":"SCMP_CMP_EQ"}]},
+            {"names":["unshare"],"action":"SCMP_ACT_ALLOW","args":[{"index":0,"value":1342177280,"op":"SCMP_CMP_EQ"}]}
+          ]' "$RUNNER_TEMP/omni-seccomp-base.json" > "$RUNNER_TEMP/omni-seccomp-probe.json"
+          sha256sum "$RUNNER_TEMP/omni-seccomp-probe.json"
+          docker build --quiet --tag omni-seccomp-probe:fixture services/omni-sandbox
+          docker image inspect omni-seccomp-probe:fixture --format 'localImageId={{.Id}}'
+          docker run --rm --read-only --user 20000:20000 --cap-drop ALL \
+            --security-opt no-new-privileges --security-opt "seccomp=$RUNNER_TEMP/omni-seccomp-probe.json" \
+            --entrypoint /bin/sh omni-seccomp-probe:fixture -c '
+              set -eu
+              parent=$(readlink /proc/self/ns/net)
+              export OMNI_PROBE_PARENT_NET="$parent"
+              exec unshare --user --map-current-user --net -- /bin/sh -c '"'"'
+                set -eu
+                test "$(id -u)" = 20000
+                test "$(readlink /proc/self/ns/net)" != "$OMNI_PROBE_PARENT_NET"
+                grep -Eq "^NoNewPrivs:[[:space:]]+1$" /proc/self/status
+                grep -Eq "^CapEff:[[:space:]]+0+$" /proc/self/status
+                grep -Eq "^Seccomp:[[:space:]]+2$" /proc/self/status
+                echo "rootless namespace probe passed"
+              '"'"'
+            '
+  workspace-cgroup:
+    if: github.event_name == 'workflow_dispatch' && !inputs.host_only && !inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - name: Test a rootless job cgroup in a delegated systemd service
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          uname -a
+          sudo systemd-run --quiet --wait --pipe --collect \
+            --unit="omni-workspace-ci-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --property=Delegate=yes --property=User=runner \
+            --property="WorkingDirectory=$GITHUB_WORKSPACE" --setenv="PATH=$PATH" \
+            /bin/bash -c '
+              set -euo pipefail
+              root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+              printf "service cgroup=%s\n" "$root"
+              cat /proc/self/cgroup
+              stat -f -c "filesystem=%T" /sys/fs/cgroup
+              cat "$root/cgroup.type" "$root/cgroup.controllers"
+              mkdir "$root/manager"
+              cat "$root/manager/cgroup.type"
+              echo 0 > "$root/manager/cgroup.procs"
+              echo "service moved; enabling delegated controllers"
+              echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
+              export OMNI_WORKSPACE_DELEGATED_CGROUP="$root"
+              exec node --test --test-concurrency=1 \
+                tests/omni-workspace-cgroup.test.mjs tests/omni-workspace-recovery.test.mjs
+            '
+  workspace-image-recovery:
+    if: github.event_name == 'workflow_dispatch' && inputs.unsupported_docker_diagnostics
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Build image and test recovery using a delegated cgroup
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          docker version --format 'server={{.Server.Version}}'
+          docker info --format 'cgroupDriver={{.CgroupDriver}} cgroupVersion={{.CgroupVersion}}'
+          docker build --quiet --tag omni-workspace-recovery:fixture services/omni-sandbox
+          docker image inspect omni-workspace-recovery:fixture --format 'localImageId={{.Id}}'
+          sudo systemd-run --quiet --wait --pipe --collect \
+            --unit="omni-image-ci-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --slice="omni-image-$GITHUB_RUN_ID.slice" \
+            --property=Delegate=yes --property=User=runner \
+            --property="WorkingDirectory=$GITHUB_WORKSPACE" --setenv="PATH=$PATH" \
+            --setenv="GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --setenv="OMNI_TEST_SLICE=omni-image-$GITHUB_RUN_ID.slice" \
+            /bin/bash -c '
+              set -euo pipefail
+              root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+              mkdir "$root/manager"
+              echo 0 > "$root/manager/cgroup.procs"
+              echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
+              if [ "$(docker info --format "{{.CgroupDriver}}")" != systemd ]; then
+                echo "Fixture requires Docker systemd cgroup driver"
+                exit 1
+              fi
+              sudo chown "$(id -u):$(id -g)" "$(dirname "$root")/cgroup.procs"
+              container="omni-recovery-${OMNI_TEST_SLICE%.slice}"
+              trap '"'"'docker stop "$container" >/dev/null 2>&1 || true'"'"' EXIT
+              timeout --signal=TERM --kill-after=5s 90s \
+                docker run --rm --name "$container" --user "$(id -u):$(id -g)" \
+                --cap-drop ALL --security-opt no-new-privileges --read-only \
+                --cgroupns host \
+                --network none --tmpfs /tmp:rw,nosuid,nodev,size=128m \
+                --cgroup-parent "$OMNI_TEST_SLICE" \
+                --mount "type=bind,source=$root,target=/delegated" \
+                --mount "type=bind,source=$GITHUB_WORKSPACE,target=/repo,readonly" \
+                --env OMNI_WORKSPACE_DELEGATED_CGROUP=/delegated \
+                --entrypoint /bin/sh omni-workspace-recovery:fixture -c '"'"'
+                  set -eu
+                  grep -Eq "^NoNewPrivs:[[:space:]]+1$" /proc/self/status
+                  grep -Eq "^CapEff:[[:space:]]+0+$" /proc/self/status
+                  id
+                  stat -f -c "delegatedFilesystem=%T" /delegated
+                  mkdir -p /tmp/fixture/services /tmp/fixture/tests
+                  ln -s /app /tmp/fixture/services/omni-sandbox
+                  cp /repo/tests/omni-workspace-cgroup.test.mjs /repo/tests/omni-workspace-recovery.test.mjs /tmp/fixture/tests/
+                  exec node --test --test-concurrency=1 /tmp/fixture/tests/omni-workspace-cgroup.test.mjs /tmp/fixture/tests/omni-workspace-recovery.test.mjs
+                '"'"'
+            '
+  workspace-host-historical:
+    if: github.event_name != 'workflow_dispatch' || !inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.4.4"
+      - run: bun install --frozen-lockfile
+      - name: Install host namespace supervisor
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap
+      - name: Run unchanged historical tests against the disposable host fixture
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          uname -a
+          node --version
+          bwrap --version
+          unit="omni-host-fixture-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          workspace_root="$(mktemp -d /tmp/omni-workspace-ci.XXXXXXXX)"
+          chmod 711 "$workspace_root"
+          sudo systemd-run --quiet --wait --pipe --collect --unit="$unit" \
+            --property=Delegate=yes --property="WorkingDirectory=$GITHUB_WORKSPACE" \
+            --setenv="PATH=$PATH" --setenv=PORT=18791 \
+            --setenv="OMNI_SANDBOX_ROOT=$workspace_root/root" \
+            --setenv=OMNI_SANDBOX_CLIENT_ID=mothership-test \
+            --setenv=OMNI_SANDBOX_HMAC_SECRET=tttttttttttttttttttttttttttttttttttttttttttttttt \
+            --setenv=OMNI_SANDBOX_COMMAND_TIMEOUT_SEC=2 \
+            --setenv=OMNI_REPO_ALLOWLIST=example/allowed \
+            --setenv=OPENAI_API_KEY=sk-test-not-real-key-0000000000 \
+            /bin/bash -c '
+              set -euo pipefail
+              root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+              mkdir "$root/manager"
+              echo 0 > "$root/manager/cgroup.procs"
+              echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
+              export OMNI_WORKSPACE_DELEGATED_CGROUP="$root"
+              exec node tests/fixtures/omni-workspace-host-fixture.mjs
+            ' > "$RUNNER_TEMP/omni-workspace-host.log" 2>&1 &
+          sandbox_pid=$!
+          trap 'sudo systemctl stop "$unit" 2>/dev/null || true; wait "$sandbox_pid" || true' EXIT
+          ready=false
+          for attempt in $(seq 1 50); do
+            if curl --silent --fail http://127.0.0.1:18791/healthz >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 0.2
+          done
+          if [ "$ready" != true ]; then cat "$RUNNER_TEMP/omni-workspace-host.log"; exit 1; fi
+          OMNI_WORKSPACE_HISTORICAL_TEST=1 \
+            OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:18791 \
+            OMNI_WORKSPACE_TEST_ROOT="$workspace_root" \
+            bun run test src/test/omni-sandbox-containment.test.ts || {
+              cat "$RUNNER_TEMP/omni-workspace-host.log"
+              exit 1
+            }
+          sudo env "PATH=$PATH" OMNI_WORKSPACE_HISTORICAL_TEST=1 \
+            OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:18791 \
+            OMNI_WORKSPACE_TEST_ROOT="$workspace_root" \
+            bun run test src/test/omni-sandbox-supervisor.test.ts || {
+              cat "$RUNNER_TEMP/omni-workspace-host.log"
+              exit 1
+            }
+  workspace-host-workers:
+    if: github.event_name != 'workflow_dispatch' || !inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - name: Test two pre-provisioned workers under the packaged hardened unit
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          uname -a
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap
+          test ! -u /usr/bin/bwrap
+          sudo install -d -m 755 /opt/omni-workspace/services/omni-sandbox /opt/omni-workspace/tests /etc/omni-workspace
+          sudo cp services/omni-sandbox/*.mjs /opt/omni-workspace/services/omni-sandbox/
+          sudo cp tests/omni-workspace-host-worker.test.mjs /opt/omni-workspace/tests/
+          sudo install -m 644 services/omni-sandbox/systemd/omni-workspace.slice /run/systemd/system/
+          sudo install -m 644 services/omni-sandbox/systemd/omni-workspace@.service /run/systemd/system/
+          for slot in ci1 ci2; do
+            sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin "omni-worker-$slot"
+            sudo install -m 600 /dev/null "/etc/omni-workspace/worker-$slot.env"
+            sudo install -d "/run/systemd/system/omni-workspace@$slot.service.d"
+            printf '[Service]\nExecStart=\nExecStart=%s /opt/omni-workspace/tests/omni-workspace-host-worker.test.mjs\nEnvironment=OMNI_WORKSPACE_WORKER_TEST=1\n' "$(command -v node)" \
+              | sudo tee "/run/systemd/system/omni-workspace@$slot.service.d/test.conf" >/dev/null
+          done
+          test "$(id -u omni-worker-ci1)" != "$(id -u omni-worker-ci2)"
+          test "$(id -g omni-worker-ci1)" != "$(id -g omni-worker-ci2)"
+          sudo systemctl daemon-reload
+          sudo systemd-analyze verify omni-workspace@ci1.service omni-workspace@ci2.service
+          for slot in ci1 ci2; do
+            set +e
+            sudo systemctl start "omni-workspace@$slot.service"
+            result=$?
+            set -e
+            while [ "$(systemctl show -p ActiveState --value "omni-workspace@$slot.service")" = active ]; do sleep 0.2; done
+            sudo journalctl --no-pager -u "omni-workspace@$slot.service"
+            test "$result" = 0
+            test "$(systemctl show -p Result --value "omni-workspace@$slot.service")" = success
+          done
+          printf '[Service]\nExecStart=\nExecStart=%s /opt/omni-workspace/services/omni-sandbox/host-service.mjs\n' "$(command -v node)" \
+            | sudo tee /run/systemd/system/omni-workspace@ci1.service.d/test.conf >/dev/null
+          printf 'PORT=18801\nOMNI_SANDBOX_CLIENT_ID=mothership-test\nOMNI_SANDBOX_HMAC_SECRET=%s\n' \
+            tttttttttttttttttttttttttttttttttttttttttttttttt \
+            | sudo tee /etc/omni-workspace/worker-ci1.env >/dev/null
+          sudo systemctl daemon-reload
+          trap 'sudo systemctl stop omni-workspace@ci1.service; sudo journalctl --no-pager -u omni-workspace@ci1.service' EXIT
+          export OMNI_WORKSPACE_WORKER_SMOKE=1 OMNI_WORKER_SMOKE_TIMESTAMP="$(date +%s)"
+          for phase in claim replay; do
+            sudo systemctl start omni-workspace@ci1.service
+            ready=false
+            for attempt in $(seq 1 50); do
+              if curl --silent --fail http://127.0.0.1:18801/healthz >/dev/null; then ready=true; break; fi
+              sleep 0.2
+            done
+            test "$ready" = true
+            node tests/fixtures/omni-workspace-host-smoke.mjs "$phase"
+            sudo systemctl stop omni-workspace@ci1.service
+          done
+  workspace-host-gate:
+    if: always() && (github.event_name != 'workflow_dispatch' || !inputs.namespace_trace)
+    needs:
+      [workspace-host-historical, workspace-host-workers, workspace-watchdog, workspace-lifecycle]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Require both historical and hardened worker evidence
+        env:
+          HISTORICAL: ${{ needs.workspace-host-historical.result }}
+          WORKERS: ${{ needs.workspace-host-workers.result }}
+          WATCHDOG: ${{ needs.workspace-watchdog.result }}
+          LIFECYCLE: ${{ needs.workspace-lifecycle.result }}
+        run: test "$HISTORICAL" = success && test "$WORKERS" = success && test "$WATCHDOG" = success && test "$LIFECYCLE" = success
+  workspace-image-historical:
+    if: github.event_name == 'workflow_dispatch' && inputs.unsupported_docker_diagnostics
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.4.4"
+      - run: bun install --frozen-lockfile
+      - name: Build image and run historical tests against a disposable rootless fixture
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          uname -a
+          docker version --format 'server={{.Server.Version}}'
+          docker info --format 'cgroupDriver={{.CgroupDriver}} cgroupVersion={{.CgroupVersion}}'
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/moby/moby/v28.0.4/profiles/seccomp/default.json \
+            -o "$RUNNER_TEMP/omni-seccomp-base.json"
+          echo "9c1025c88ccaa517b648da571961838744ea2137f176bfe6a48b21294cae9c76  $RUNNER_TEMP/omni-seccomp-base.json" | sha256sum --check
+          jq --slurpfile delta tests/fixtures/omni-bubblewrap-seccomp-delta.json \
+            '.syscalls += $delta[0]' "$RUNNER_TEMP/omni-seccomp-base.json" > "$RUNNER_TEMP/omni-seccomp.json"
+          sha256sum "$RUNNER_TEMP/omni-seccomp.json"
+          docker build --quiet --tag omni-workspace-historical:base services/omni-sandbox
+          docker build --quiet --file tests/fixtures/Dockerfile.omni-sandbox-image \
+            --tag omni-workspace-historical:fixture .
+          docker image inspect omni-workspace-historical:fixture --format 'localImageId={{.Id}}'
+          slice="omni-image-host-$GITHUB_RUN_ID.slice"
+          unit="omni-image-host-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          sudo systemd-run --quiet --wait --pipe --collect --unit="$unit" \
+            --slice="$slice" --property=Delegate=yes --property=User=runner \
+            --property="WorkingDirectory=$GITHUB_WORKSPACE" --setenv="PATH=$PATH" \
+            --setenv="RUNNER_TEMP=$RUNNER_TEMP" --setenv="OMNI_TEST_SLICE=$slice" \
+            /bin/bash -c '
+              set -euo pipefail
+              root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+              mkdir "$root/manager"
+              echo 0 > "$root/manager/cgroup.procs"
+              echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
+              test "$(docker info --format "{{.CgroupDriver}}")" = systemd
+              sudo chown "$(id -u):$(id -g)" "$(dirname "$root")/cgroup.procs"
+              docker run --detach --rm --name omni-workspace-historical \
+                --user "$(id -u):$(id -g)" --cap-drop ALL \
+                --security-opt no-new-privileges --security-opt "seccomp=$RUNNER_TEMP/omni-seccomp.json" \
+                --read-only --tmpfs /tmp:rw,nosuid,nodev,size=128m \
+                --cgroupns host --cgroup-parent "$OMNI_TEST_SLICE" \
+                --mount "type=bind,source=$root,target=/delegated" \
+                --publish 127.0.0.1:18792:8080 \
+                --env OMNI_WORKSPACE_IMAGE_FIXTURE=1 \
+                --env OMNI_WORKSPACE_DELEGATED_CGROUP=/delegated \
+                --env OMNI_SANDBOX_ROOT=/tmp/omni-fixture/root \
+                --env OMNI_SANDBOX_CLIENT_ID=mothership-test \
+                --env OMNI_SANDBOX_HMAC_SECRET=tttttttttttttttttttttttttttttttttttttttttttttttt \
+                --env OMNI_SANDBOX_COMMAND_TIMEOUT_SEC=2 \
+                --env OMNI_REPO_ALLOWLIST=example/allowed \
+                --env OPENAI_API_KEY=sk-test-not-real-key-0000000000 \
+                omni-workspace-historical:fixture
+              trap '"'"'docker stop omni-workspace-historical >/dev/null 2>&1 || true'"'"' EXIT
+              sleep 90
+            ' > "$RUNNER_TEMP/omni-image-systemd.log" 2>&1 &
+          manager_pid=$!
+          trap 'sudo systemctl stop "$unit" 2>/dev/null || true; wait "$manager_pid" || true' EXIT
+          ready=false
+          for attempt in $(seq 1 50); do
+            if curl --silent --fail http://127.0.0.1:18792/healthz >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 0.2
+          done
+          if [ "$ready" != true ]; then cat "$RUNNER_TEMP/omni-image-systemd.log"; docker logs omni-workspace-historical || true; exit 1; fi
+          docker inspect omni-workspace-historical --format \
+            'privileged={{.HostConfig.Privileged}} securityOpt={{json .HostConfig.SecurityOpt}} capAdd={{json .HostConfig.CapAdd}} capDrop={{json .HostConfig.CapDrop}} networkMode={{.HostConfig.NetworkMode}} usernsMode={{.HostConfig.UsernsMode}}'
+          docker exec omni-workspace-historical sh -c '
+            test "$(id -u)" -ne 0
+            test ! -u /usr/bin/bwrap
+            grep -Eq "^NoNewPrivs:[[:space:]]+1$" /proc/self/status
+            grep -Eq "^CapEff:[[:space:]]+0+$" /proc/self/status
+            grep -Eq "^Seccomp:[[:space:]]+2$" /proc/self/status
+          '
+          OMNI_WORKSPACE_HISTORICAL_TEST=1 \
+            OMNI_WORKSPACE_TEST_ORIGIN=http://127.0.0.1:18792 \
+            OMNI_WORKSPACE_TEST_ROOT=/tmp/omni-fixture \
+            bun run test src/test/omni-sandbox-containment.test.ts || {
+              docker logs omni-workspace-historical
+              echo 'Container LSM label:'
+              docker exec omni-workspace-historical cat /proc/self/attr/current || true
+              echo 'Matching bubblewrap AppArmor audit denials:'
+              sudo journalctl -k --no-pager | grep 'apparmor="DENIED"' | grep 'bwrap' | tail -10 || true
+              exit 1
+            }
+  workspace-replay:
+    if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.4.4"
+      - run: bun install --frozen-lockfile
+      - name: Test durable replay and report quarantined workspace execution tests
+        run: |
+          node --version
+          node --test tests/omni-workspace-decision.test.mjs
+          node --test tests/omni-workspace-worker-leases.test.mjs
+          bun run test src/test/omni-sandbox-interop.test.ts src/test/omni-sandbox-containment.test.ts
+  workspace-watchdog:
+    if: github.event_name != 'workflow_dispatch' || !inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - name: Test independent watchdog identities on delegated disposable cgroups
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          sudo install -d -m 755 /opt/omni-watchdog-fixture/services/omni-sandbox /opt/omni-watchdog-fixture/tests/fixtures
+          sudo install -m 644 services/omni-sandbox/{cgroup,worker-leases,worker-watchdog,worker-authority}.mjs /opt/omni-watchdog-fixture/services/omni-sandbox/
+          sudo install -m 644 tests/fixtures/omni-worker-watchdog-process.mjs /opt/omni-watchdog-fixture/tests/fixtures/
+          sudo systemd-run --quiet --wait --pipe --collect \
+            --unit="omni-watchdog-fixture-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --property=Delegate=yes --property="WorkingDirectory=$GITHUB_WORKSPACE" \
+            --setenv="PATH=$PATH" /bin/bash -c '
+              set -euo pipefail
+              root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+              mkdir "$root/manager"
+              echo 0 > "$root/manager/cgroup.procs"
+              echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
+              export OMNI_WORKSPACE_DELEGATED_CGROUP="$root" OMNI_WORKSPACE_WATCHDOG_TEST=1
+              exec node --test --test-concurrency=1 tests/omni-workspace-watchdog-linux.test.mjs
+            '
+  workspace-lifecycle:
+    if: github.event_name != 'workflow_dispatch' || !inputs.namespace_trace
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - name: Test socket routing, independent watchdog and ephemeral workspaces on disposable systemd
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          uname -a
+          sysctl user.max_user_namespaces kernel.apparmor_restrict_unprivileged_userns
+          dpkg-query -W polkitd || true
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap polkitd
+          node --version
+          systemd --version | head -1
+          bwrap --version
+          stat -c 'bubblewrap uid=%u gid=%g mode=%a' /usr/bin/bwrap
+          sha256sum /usr/bin/bwrap tests/fixtures/omni-leased-bwrap-apparmor
+          sudo apparmor_parser -r -W tests/fixtures/omni-leased-bwrap-apparmor
+          sudo useradd --uid 21000 --user-group --no-create-home omni-worker-fixture
+          sudo useradd --uid 22000 --user-group --no-create-home omni-watchdog-fixture
+          sudo useradd --uid 23000 --user-group --no-create-home omni-coordinator-fixture
+          for settings in yes:yes:yes no:yes:yes yes:no:yes no:no:yes no:no:no; do
+            IFS=: read -r tunables logs modules <<< "$settings"
+            echo "=== disposable proc visibility: tunables=$tunables logs=$logs modules=$modules ==="
+            set +e
+            sudo systemd-run --quiet --wait --pipe --collect \
+              --unit="omni-proc-probe-$tunables-$logs-$modules-$GITHUB_RUN_ID" \
+              --property=Type=exec --property=User=omni-worker-fixture \
+              --property=NoNewPrivileges=yes --property=CapabilityBoundingSet= \
+              --property=AmbientCapabilities= --property=ProtectSystem=strict \
+              --property=ProtectHome=yes --property=PrivateTmp=yes \
+              --property="ProtectKernelTunables=$tunables" --property="ProtectKernelLogs=$logs" \
+              --property="ProtectKernelModules=$modules" \
+              --property=MemoryMax=128M --property=MemorySwapMax=0 --property=TasksMax=32 --property=CPUQuota=50% \
+              /usr/bin/bwrap --unshare-user --unshare-pid --unshare-net --unshare-ipc --unshare-uts \
+              --cap-drop ALL --die-with-parent --new-session --ro-bind /usr /usr \
+              --symlink usr/bin /bin --symlink usr/lib /lib --symlink usr/lib64 /lib64 \
+              --proc /proc --dev /dev --tmpfs /tmp --tmpfs /work --chdir /work \
+              --clearenv --setenv PATH /usr/bin:/bin -- \
+              /bin/sh -c 'id; grep -E "^(CapEff|NoNewPrivs):" /proc/self/status'
+            result=$?
+            set -e
+            echo "proc visibility probe exit=$result"
+          done
+          sudo install -d -m 755 /opt/omni-watchdog-fixture/services/omni-sandbox /opt/omni-watchdog-fixture/tests/fixtures
+          sudo install -m 644 services/omni-sandbox/*.mjs /opt/omni-watchdog-fixture/services/omni-sandbox/
+          sudo install -m 644 tests/fixtures/omni-leased-{service,coordinator}.mjs /opt/omni-watchdog-fixture/tests/fixtures/
+          sudo env PATH="$PATH" OMNI_WORKSPACE_LIFECYCLE_TEST=1 \
+            node --test --test-concurrency=1 tests/omni-workspace-lifecycle-linux.test.mjs
   activation-sql:
+    if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
@@ -25,6 +625,7 @@ jobs:
           python3 src/test/test_jackboy_safety_sql.py
           python3 src/test/test_activation_approvals_sql.py
   actual-linux:
+    if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:

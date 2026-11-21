@@ -1,0 +1,44 @@
+[Unit]
+Description=OMNI quarantined workspace worker %i
+After=local-fs.target
+
+[Service]
+Type=simple
+User=omni-worker-%i
+Group=omni-worker-%i
+Slice=omni-workspace.slice
+Delegate=yes
+WorkingDirectory=/opt/omni-workspace
+ExecStart=/usr/bin/node services/omni-sandbox/host-service.mjs
+EnvironmentFile=/etc/omni-workspace/worker-%i.env
+Environment=OMNI_SANDBOX_ROOT=/var/lib/omni-workspace-%i
+StateDirectory=omni-workspace-%i
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+ProtectControlGroups=no
+RestrictNamespaces=user mnt pid net ipc uts
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+TasksMax=256
+MemoryMax=1G
+MemorySwapMax=0
+CPUQuota=100%
+KillMode=control-group
+TimeoutStopSec=10s
+SendSIGKILL=yes
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

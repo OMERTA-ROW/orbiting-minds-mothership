@@ -183,7 +183,7 @@ export function OmniWorkspace() {
     termRef.current?.scrollTo({ top: termRef.current.scrollHeight });
   }, [steps]);
 
-  async function act<T extends { ok: boolean; message?: string }>(
+  async function act<T extends { ok: boolean; message?: string; remote?: string }>(
     label: string,
     fn: () => Promise<T>,
   ) {
@@ -193,7 +193,7 @@ export function OmniWorkspace() {
     try {
       const r = await fn();
       if (!r.ok) setError(r.message ?? `${label} failed.`);
-      else setNotice(`${label}: done.`);
+      else setNotice(r.remote ? `${label}: ${r.remote}` : `${label}: done.`);
       await refresh().catch(() => {});
       return r;
     } catch (e) {
