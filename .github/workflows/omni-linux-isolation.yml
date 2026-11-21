@@ -22,6 +22,73 @@ on:
 permissions:
   contents: read
 jobs:
+  workspace-image-diagnosis:
+    if: github.event_name == 'workflow_dispatch' && inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Compare namespace denial with seccomp logging
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          uname -a
+          docker version --format 'server={{.Server.Version}}'
+          for setting in kernel/apparmor_restrict_unprivileged_userns user/max_user_namespaces kernel/unprivileged_userns_clone; do
+            if [ -r "/proc/sys/$setting" ]; then
+              printf '%s=' "$setting"
+              cat "/proc/sys/$setting"
+            else
+              echo "$setting=unavailable"
+            fi
+          done
+          cat /sys/kernel/security/lsm 2>/dev/null || true
+          sudo cat /proc/sys/kernel/seccomp/actions_logged
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/moby/moby/v28.0.4/profiles/seccomp/default.json \
+            -o "$RUNNER_TEMP/omni-seccomp-base.json"
+          echo "9c1025c88ccaa517b648da571961838744ea2137f176bfe6a48b21294cae9c76  $RUNNER_TEMP/omni-seccomp-base.json" | sha256sum --check
+          jq --slurpfile delta tests/fixtures/omni-bubblewrap-seccomp-delta.json \
+            '.syscalls += $delta[0]' "$RUNNER_TEMP/omni-seccomp-base.json" > "$RUNNER_TEMP/omni-seccomp-enforce.json"
+          jq '.defaultAction = "SCMP_ACT_LOG" | del(.defaultErrnoRet)' \
+            "$RUNNER_TEMP/omni-seccomp-enforce.json" > "$RUNNER_TEMP/omni-seccomp-log.json"
+          sha256sum "$RUNNER_TEMP/omni-seccomp-enforce.json" "$RUNNER_TEMP/omni-seccomp-log.json"
+          docker build --quiet --tag omni-workspace-historical:base services/omni-sandbox
+          docker build --quiet --file tests/fixtures/Dockerfile.omni-sandbox-image \
+            --tag omni-workspace-historical:fixture .
+          docker build --quiet --file tests/fixtures/Dockerfile.omni-sandbox-diagnostic \
+            --tag omni-workspace-diagnostic:fixture .
+          docker image inspect omni-workspace-diagnostic:fixture --format 'localImageId={{.Id}}'
+          for mode in enforce log; do
+            echo "=== $mode ==="
+            set +e
+            docker run --rm --user 1001:1001 --cap-drop ALL \
+              --security-opt no-new-privileges \
+              --security-opt "seccomp=$RUNNER_TEMP/omni-seccomp-$mode.json" \
+              --network none --read-only --tmpfs /tmp:rw,nosuid,nodev,size=16m \
+              --entrypoint /bin/sh omni-workspace-diagnostic:fixture -c '
+                id
+                cat /proc/self/attr/current
+                grep -E "^(NoNewPrivs|Seccomp|CapEff):" /proc/self/status
+                strace -f -e trace=clone,clone3,unshare,setns,mount,umount2,pivot_root \
+                  -o /tmp/trace bwrap --unshare-user --unshare-pid --unshare-net \
+                  --unshare-ipc --unshare-uts --die-with-parent --new-session \
+                  --ro-bind /usr /usr --symlink usr/bin /bin \
+                  --symlink usr/lib /lib --symlink usr/lib64 /lib64 \
+                  --proc /proc --dev /dev --tmpfs /tmp --clearenv \
+                  --setenv PATH /usr/bin:/bin -- /bin/true
+                result=$?
+                cat /tmp/trace
+                exit "$result"
+              '
+            result=$?
+            set -e
+            echo "$mode exit=$result"
+          done
+          echo '=== kernel audit for fixture ==='
+          sudo journalctl -k --no-pager -b | grep -E 'apparmor="DENIED".*(bwrap|strace)|seccomp.*(bwrap|strace)' | tail -40 || true
   workspace-namespace-trace:
     if: github.event_name == 'workflow_dispatch' && inputs.namespace_trace
     runs-on: ubuntu-22.04
