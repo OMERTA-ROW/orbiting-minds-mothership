@@ -337,6 +337,10 @@ jobs:
             OMNI_WORKSPACE_TEST_ROOT=/tmp/omni-fixture \
             bun run test src/test/omni-sandbox-containment.test.ts || {
               docker logs omni-workspace-historical
+              echo 'Container LSM label:'
+              docker exec omni-workspace-historical cat /proc/self/attr/current || true
+              echo 'Matching bubblewrap AppArmor audit denials:'
+              sudo journalctl -k --no-pager | grep 'apparmor="DENIED"' | grep 'bwrap' | tail -10 || true
               exit 1
             }
   workspace-replay:
