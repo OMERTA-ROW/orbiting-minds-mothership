@@ -7,9 +7,13 @@ export async function serveLeasedWorker({ parent, workerId, secret, socketPath, 
   const uid = process.getuid?.();
   const status = fs.readFileSync("/proc/self/status", "utf8");
   const socketInfo = fs.lstatSync(socketPath);
+  const bubblewrap = fs.lstatSync("/usr/bin/bwrap");
   if (
     process.platform !== "linux" ||
     !uid ||
+    !bubblewrap.isFile() ||
+    bubblewrap.uid !== 0 ||
+    (bubblewrap.mode & 0o6022) !== 0 ||
     !/^NoNewPrivs:\s+1$/m.test(status) ||
     !/^CapEff:\s+0+$/m.test(status) ||
     !socketInfo.isSocket() ||

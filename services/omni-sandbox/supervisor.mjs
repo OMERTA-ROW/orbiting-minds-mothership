@@ -55,6 +55,8 @@ export async function startWorkspaceCommand({
     "--unshare-net",
     "--unshare-ipc",
     "--unshare-uts",
+    "--cap-drop",
+    "ALL",
     "--die-with-parent",
     "--new-session",
     "--ro-bind",

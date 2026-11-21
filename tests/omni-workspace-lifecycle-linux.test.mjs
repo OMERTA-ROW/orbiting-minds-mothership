@@ -132,7 +132,9 @@ for (const scenario of [
         },
         command:
           scenario === "happy path"
-            ? "set -e; test ! -e previous; mkdir -m 000 private; touch ready; " +
+            ? "set -e; id; stat -c '%u:%g %a %n' /work /tmp; " +
+              "grep -E '^(CapEff|NoNewPrivs):' /proc/self/status; " +
+              "test ! -e previous; mkdir -m 000 private; touch ready; " +
               'test "$(stat -f -c %T /work)" = tmpfs; test "$(stat -f -c %T /tmp)" = tmpfs; ' +
               'test -z "$OMNI_LEAK_PROBE"; ' +
               "grep -Eq '^CapEff:[[:space:]]+0+$' /proc/self/status; " +
@@ -382,6 +384,7 @@ for (const scenario of [
         }
         assert.equal(await runningSandbox(), null, "Recycled workers must not resume jobs.");
       } catch (error) {
+        console.error("Original lifecycle failure:", error);
         const logs = await systemctl("status", workerUnit, watchdogUnit).catch(
           (failure) => failure,
         );
@@ -395,13 +398,20 @@ for (const scenario of [
           "-n",
           "60",
         ]).then((logs) => console.error(logs.stdout));
-        await execute("/usr/bin/journalctl", [
-          "--no-pager",
-          "-k",
-          "--grep=apparmor=.*DENIED.*bwrap",
-          "-n",
-          "20",
-        ]).then((logs) => console.error(logs.stdout));
+        try {
+          const audit = await execute("/usr/bin/journalctl", [
+            "--no-pager",
+            "-k",
+            "--grep=apparmor=.*DENIED.*bwrap",
+            "-n",
+            "20",
+          ]);
+          console.error(audit.stdout);
+        } catch (auditError) {
+          if (auditError.code !== 1 || !/-- No entries --/.test(auditError.stdout ?? ""))
+            throw new AggregateError([error, auditError], "Lifecycle and audit retrieval failed.");
+          console.error("No matching bubblewrap AppArmor denials:", auditError.stdout);
+        }
         throw error;
       } finally {
         if (child?.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
