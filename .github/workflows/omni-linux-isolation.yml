@@ -62,12 +62,16 @@ jobs:
             --tag omni-workspace-diagnostic:fixture .
           docker image inspect omni-workspace-diagnostic:fixture --format 'localImageId={{.Id}}'
           sudo apparmor_parser -r -W tests/fixtures/omni-bubblewrap-apparmor-probe
-          for mode in enforce log apparmor; do
+          for mode in enforce log apparmor apparmor-log; do
             echo "=== $mode ==="
             profile="$RUNNER_TEMP/omni-seccomp-$mode.json"
             apparmor_option=apparmor=docker-default
             if [ "$mode" = apparmor ]; then
               profile="$RUNNER_TEMP/omni-seccomp-enforce.json"
+              apparmor_option=apparmor=omni-bubblewrap-probe
+            fi
+            if [ "$mode" = apparmor-log ]; then
+              profile="$RUNNER_TEMP/omni-seccomp-log.json"
               apparmor_option=apparmor=omni-bubblewrap-probe
             fi
             set +e
