@@ -21,6 +21,7 @@ profile omni-leased-bwrap-fixture /usr/bin/bwrap flags=(attach_disconnected,medi
   /usr/** rix,
   /bin/** rix,
   /lib{,32,64}/** mr,
+  /proc/ r,
   /proc/** r,
   deny /proc/sys/** w,
   deny /proc/{kcore,kmsg,keys} rw,
