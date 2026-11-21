@@ -18,12 +18,11 @@ export async function serveLeasedWatchdog(config) {
     !/^CapEff:\s+0+$/m.test(status)
   )
     throw new Error("Watchdog requires a separate hardened identity and private activated socket.");
-  let watching = false;
+  let watching;
   const server = workerSocketServer(async (envelope) => {
     const binding = envelope?.record;
     const record = verifyWorkerRecord(config.secret, envelope, binding);
     if (
-      watching ||
       record.workerId !== config.workerId ||
       record.kind !== "watch" ||
       typeof record.recover !== "boolean" ||
@@ -31,18 +30,27 @@ export async function serveLeasedWatchdog(config) {
       record.expiresAt > Date.now() + 2000
     )
       throw new Error("Watchdog route is busy or its authenticated request is invalid.");
-    watching = true;
-    try {
-      return await watchSystemdWorker({
+    if (watching) {
+      if (!record.recover) throw new Error("Watchdog route is exclusively assigned.");
+      verifyWorkerRecord(config.secret, envelope, watching.binding);
+      return watching.promise;
+    }
+    const bindingIdentity = Object.fromEntries(
+      ["leaseId", "workerId", "ownerId", "projectId", "sessionId", "jobId"].map((key) => [
+        key,
+        record[key],
+      ]),
+    );
+    watching = {
+      binding: bindingIdentity,
+      promise: watchSystemdWorker({
         ...config,
-        binding: Object.fromEntries(
-          ["leaseId", "workerId", "ownerId", "projectId", "sessionId", "jobId"].map((key) => [
-            key,
-            record[key],
-          ]),
-        ),
+        binding: bindingIdentity,
         recover: record.recover,
-      });
+      }),
+    };
+    try {
+      return await watching.promise;
     } catch (error) {
       // BindsTo + After on the worker stop it if the independent watchdog fails.
       console.error(
@@ -52,7 +60,7 @@ export async function serveLeasedWatchdog(config) {
       setImmediate(() => process.exit(1));
       throw error;
     } finally {
-      watching = false;
+      watching = undefined;
     }
   });
   await new Promise((resolve, reject) => {

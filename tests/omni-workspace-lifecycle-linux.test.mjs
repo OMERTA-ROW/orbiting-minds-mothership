@@ -87,9 +87,11 @@ for (const scenario of [
   "renewal loss",
   "worker crash",
   "coordinator restart",
+  "overlapping recovery",
   "watchdog crash",
   "cleanup refused",
 ]) {
+  const recoveringCoordinator = ["coordinator restart", "overlapping recovery"].includes(scenario);
   test(
     `integrated socket/tmpfs lifecycle: ${scenario}`,
     { skip: !enabled, timeout: 45000 },
@@ -323,12 +325,14 @@ for (const scenario of [
           } else {
             child.kill("SIGKILL");
             await childResult;
-            await waitFor(async () => {
-              const current = await control.inspect();
-              return (
-                current.ActiveState === "active" && current.InvocationID !== initial.InvocationID
-              );
-            }, "Independent watchdog did not recycle after coordinator death.");
+            if (scenario === "coordinator restart")
+              await waitFor(async () => {
+                const current = await control.inspect();
+                return (
+                  current.ActiveState === "active" &&
+                  current.InvocationID !== activeWorker.InvocationID
+                );
+              }, "Independent watchdog did not recycle after coordinator death.");
             config.recover = true;
             writePrivate(coordinatorConfig, config, coordinatorUid);
             startCoordinator();
@@ -337,7 +341,7 @@ for (const scenario of [
         const completed = await childResult;
         assert.equal(
           completed.code,
-          ["happy path", "coordinator restart"].includes(scenario) ? 0 : 1,
+          scenario === "happy path" || recoveringCoordinator ? 0 : 1,
           `${completed.stdout}\n${completed.stderr}`,
         );
         const reply = JSON.parse(completed.stdout.trim());
@@ -349,7 +353,7 @@ for (const scenario of [
           assert.match(reply.reuse.result.stdout, /fresh-workspace/);
           assert.equal(reply.binding.workerId, reply.reuse.binding.workerId);
           assert.notEqual(reply.binding.leaseId, reply.reuse.binding.leaseId);
-        } else if (scenario === "coordinator restart") assert.equal(reply.recovered, true);
+        } else if (recoveringCoordinator) assert.equal(reply.recovered, true);
         else
           assert.match(
             reply.error,
