@@ -81,7 +81,7 @@ try {
     console.log(JSON.stringify(result));
   }
 } catch (error) {
-  console.log(JSON.stringify({ error: error.message }));
+  console.log(JSON.stringify({ error: error.message, result: error.result }));
   process.exitCode = 1;
 } finally {
   input.close();

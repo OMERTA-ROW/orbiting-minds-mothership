@@ -167,7 +167,9 @@ export function createLeasedCoordinator({
         const ack = first.ack ?? (await watch);
         pool.release(ack, worker.watchdogSecret);
         if (!jobResult || jobResult.failure || jobResult.code !== 0)
-          throw new Error(`Workspace did not complete: ${ack.record.reason}.`);
+          throw Object.assign(new Error(`Workspace did not complete: ${ack.record.reason}.`), {
+            result: jobResult,
+          });
         return { binding, result: jobResult, cleanup: ack.record };
       } catch (error) {
         if (pool.read(binding.leaseId).state === "released") throw error;

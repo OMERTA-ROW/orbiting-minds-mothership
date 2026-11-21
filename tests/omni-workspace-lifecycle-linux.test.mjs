@@ -359,6 +359,13 @@ for (const scenario of [
           "-n",
           "60",
         ]).then((logs) => console.error(logs.stdout));
+        await execute("/usr/bin/journalctl", [
+          "--no-pager",
+          "-k",
+          "--grep=apparmor=.*DENIED.*bwrap",
+          "-n",
+          "20",
+        ]).then((logs) => console.error(logs.stdout));
         throw error;
       } finally {
         if (child?.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
