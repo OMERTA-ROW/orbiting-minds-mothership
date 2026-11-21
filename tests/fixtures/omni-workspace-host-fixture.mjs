@@ -84,6 +84,7 @@ function probe(c, net) {
     "--setenv", "HOME", "/tmp", "--setenv", "LANG", "C.UTF-8", "--setenv", "TERM", "dumb",
     "--", "/bin/bash", "--noprofile", "--norc", "-c", command];
   const result = spawnSync("/usr/bin/bwrap", args, { env: {}, timeout: 3500, encoding: "utf8" });
+  if (result.status !== 0) console.error("Image bubblewrap probe failed:", result.stderr, result.error);
   const lines = (result.stdout ?? "").trim().split("\\n");
   return { uid: Number.parseInt(lines[0] ?? "-1", 10), networkBlocked: lines[1] === "NET_BLOCKED",
     envNames: (lines[2] ?? "").split(",").filter(Boolean), exitCode: result.status ?? -1 };
