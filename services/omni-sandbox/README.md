@@ -164,9 +164,38 @@ The production Dockerfile and quarantined entrypoint are unchanged.
 On the disposable Docker 28.0.4 runner, the rootless fixture with `cap-drop ALL`,
 `no-new-privileges`, and the candidate policy still reported
 `bwrap: Failed to make / slave: Permission denied`. Its LSM label was `docker-default
-(enforce)`; no matching AppArmor audit denial was observed, so the precise denying layer is
-not established. Docker's default AppArmor policy is a possible further restriction. Do not
-disable AppArmor, grant broad capabilities, or treat a namespace probe as a working image.
+(enforce)`. A controlled comparison in
+[run 44843562698](https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/44843562698)
+used the same enforcing seccomp policy, non-root UID, empty effective capabilities and
+no-new-privileges with a test-only AppArmor profile. The exact `rw,silent,rslave` propagation
+rule permitted that mount; Docker's default profile denies mounts. This identifies AppArmor as
+the initial denial. A temporary seccomp-log-default comparison under `docker-default` also
+returned `EACCES` at the same mount.
+
+The incomplete diagnostic policy `tests/fixtures/omni-bubblewrap-apparmor-probe` is confined
+and test-only. It is not a production profile: it has not passed the service or negative security
+tests and its rules are inherited by the process it launches. In
+[run 44844125400](https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/44844125400)
+it allowed the observed initial mount sequence but the new PID-namespace procfs mount returned
+`EPERM`, both with the enforcing seccomp policy and the throwaway log-default variant. The exact
+kernel/runtime cause remains to be verified; Docker's masked or readonly proc paths are one
+possible restriction. Do not remove those protections or disable AppArmor to bypass the failure.
+The diagnostic run records syscall outcomes; its successful workflow status does not mean
+bubblewrap or the image tests passed.
+
+Those disposable runners had `kernel.apparmor_restrict_unprivileged_userns=0`,
+`user.max_user_namespaces=63848` and `kernel.unprivileged_userns_clone=1`; the fixture used
+Docker 28.0.4, Linux 6.8.0-1070-azure, a delegated cgroup v2 subtree, `cap-drop ALL`,
+no-new-privileges, and no setuid bubblewrap. A future serving runtime must independently
+demonstrate compatible namespace and procfs operations under reviewed AppArmor and seccomp
+policies, isolated UID/GID mappings, and delegated cgroup limits. These observed settings alone
+are not a complete or approved production configuration.
+
+Distinct session host identities require an actual non-overlapping subordinate UID/GID mapping
+established by a trusted runtime outside the no-new-privileges container or an equivalent
+reviewed mechanism. Different namespace-local IDs alone do not prove host identity separation;
+the test image currently uses one host UID and reports `perSessionUser: false`. Neither such a
+mapping nor its cross-session isolation has been verified here.
 
 ## Namespace diagnosis
 
