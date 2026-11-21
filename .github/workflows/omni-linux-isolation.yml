@@ -582,6 +582,29 @@ jobs:
           sudo useradd --uid 21000 --user-group --no-create-home omni-worker-fixture
           sudo useradd --uid 22000 --user-group --no-create-home omni-watchdog-fixture
           sudo useradd --uid 23000 --user-group --no-create-home omni-coordinator-fixture
+          for settings in yes:yes:yes no:yes:yes yes:no:yes no:no:yes no:no:no; do
+            IFS=: read -r tunables logs modules <<< "$settings"
+            echo "=== disposable proc visibility: tunables=$tunables logs=$logs modules=$modules ==="
+            set +e
+            sudo systemd-run --quiet --wait --pipe --collect \
+              --unit="omni-proc-probe-$tunables-$logs-$modules-$GITHUB_RUN_ID" \
+              --property=Type=exec --property=User=omni-worker-fixture \
+              --property=NoNewPrivileges=yes --property=CapabilityBoundingSet= \
+              --property=AmbientCapabilities= --property=ProtectSystem=strict \
+              --property=ProtectHome=yes --property=PrivateTmp=yes \
+              --property="ProtectKernelTunables=$tunables" --property="ProtectKernelLogs=$logs" \
+              --property="ProtectKernelModules=$modules" \
+              --property=MemoryMax=128M --property=MemorySwapMax=0 --property=TasksMax=32 --property=CPUQuota=50% \
+              /usr/bin/bwrap --unshare-user --unshare-pid --unshare-net --unshare-ipc --unshare-uts \
+              --cap-drop ALL --die-with-parent --new-session --ro-bind /usr /usr \
+              --symlink usr/bin /bin --symlink usr/lib /lib --symlink usr/lib64 /lib64 \
+              --proc /proc --dev /dev --tmpfs /tmp --tmpfs /work --chdir /work \
+              --clearenv --setenv PATH /usr/bin:/bin -- \
+              /bin/sh -c 'id; grep -E "^(CapEff|NoNewPrivs):" /proc/self/status'
+            result=$?
+            set -e
+            echo "proc visibility probe exit=$result"
+          done
           sudo install -d -m 755 /opt/omni-watchdog-fixture/services/omni-sandbox /opt/omni-watchdog-fixture/tests/fixtures
           sudo install -m 644 services/omni-sandbox/*.mjs /opt/omni-watchdog-fixture/services/omni-sandbox/
           sudo install -m 644 tests/fixtures/omni-leased-{service,coordinator}.mjs /opt/omni-watchdog-fixture/tests/fixtures/
