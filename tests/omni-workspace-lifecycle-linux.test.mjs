@@ -100,7 +100,10 @@ for (const scenario of [
       const workerConfig = path.join(base, "worker.json");
       const watchdogConfig = path.join(base, "watchdog.json");
       const coordinatorConfig = path.join(state, "config.json");
-      const database = path.join(state, "leases.sqlite");
+      const privateState = path.join(state, "private");
+      fs.mkdirSync(privateState, { mode: 0o700 });
+      fs.chownSync(privateState, coordinatorUid, coordinatorUid);
+      const database = path.join(privateState, "leases.sqlite");
       const config = {
         database,
         workerId,
@@ -234,6 +237,20 @@ for (const scenario of [
         await systemctl("daemon-reload");
         await systemctl("start", watchdogSocketUnit, watchdogUnit, workerSocketUnit, workerUnit);
         const initial = await control.inspect();
+        assert.match(
+          fs.readFileSync(`/proc/${initial.MainPID}/status`, "utf8"),
+          new RegExp(`^Uid:\\s+${workerUid}\\s+${workerUid}\\s+${workerUid}\\s+${workerUid}$`, "m"),
+        );
+        const watchdogPid = (
+          await systemctl("show", watchdogUnit, "--property=MainPID", "--value")
+        ).stdout.trim();
+        assert.match(
+          fs.readFileSync(`/proc/${watchdogPid}/status`, "utf8"),
+          new RegExp(
+            `^Uid:\\s+${watchdogUid}\\s+${watchdogUid}\\s+${watchdogUid}\\s+${watchdogUid}$`,
+            "m",
+          ),
+        );
         startCoordinator();
         if (scenario === "startup Stop") {
           await waitFor(async () => {

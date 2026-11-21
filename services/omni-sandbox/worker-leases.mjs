@@ -11,6 +11,12 @@ export function signWorkerRecord(secret, record) {
 
 export function verifyWorkerRecord(secret, envelope, binding) {
   if (
+    !["leaseId", "ownerId", "sessionId", "jobId"].every((key) => UUID.test(binding?.[key] ?? "")) ||
+    !/^[a-z0-9-]{1,32}$/.test(binding?.workerId ?? "") ||
+    !/^[A-Za-z0-9_.:-]{1,80}$/.test(binding?.projectId ?? "")
+  )
+    throw new Error("Invalid worker control identity.");
+  if (
     !envelope ||
     typeof envelope.signature !== "string" ||
     !/^[a-f0-9]{64}$/.test(envelope.signature)
@@ -48,6 +54,8 @@ export function createWorkerLeases(database, workers) {
       ON workspace_worker_leases(worker_id) WHERE state != 'released';
     CREATE UNIQUE INDEX IF NOT EXISTS workspace_session_exclusive
       ON workspace_worker_leases(session_id) WHERE state != 'released';
+    CREATE UNIQUE INDEX IF NOT EXISTS workspace_job_single_use
+      ON workspace_worker_leases(job_id);
   `);
   const expected = JSON.stringify([...workers].sort());
   database
@@ -83,6 +91,8 @@ export function createWorkerLeases(database, workers) {
         throw new Error("Invalid worker lease identity.");
       database.exec("BEGIN IMMEDIATE");
       try {
+        if (database.prepare("SELECT 1 FROM workspace_worker_leases WHERE job_id=?").get(jobId))
+          throw new Error("Workspace job already has a durable claim.");
         if (
           database
             .prepare(

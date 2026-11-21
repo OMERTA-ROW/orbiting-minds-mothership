@@ -13,6 +13,10 @@ subuid/subgid allocation. No service may claim subordinate mappings have been es
 - Node 22.13+ at `/usr/bin/node` (required for `node:sqlite`), bubblewrap without a setuid
   bit, util-linux, bash, coreutils, systemd and AppArmor inspection tools. Root-owned
   executable code under `/opt/omni-workspace`, not writable by any worker.
+- The experimental socket lifecycle additionally requires Polkit's JavaScript rules
+  backend for exact unit/verb/identity checks. Ubuntu 22.04's Polkit 0.105 does not
+  supply it; do not substitute a broad `.pkla` manage-units grant. Validate a supported
+  distro/backend separately, without disabling user namespace restrictions or AppArmor.
 - Inspect `user.max_user_namespaces` (positive and adequate for bounded concurrency),
   `kernel.unprivileged_userns_clone` where present (must permit user namespaces),
   and `kernel.apparmor_restrict_unprivileged_userns` where present. The passing

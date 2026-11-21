@@ -11,8 +11,6 @@ import { systemdWorkerControl } from "../../services/omni-sandbox/systemd-worker
 
 const config = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const db = new DatabaseSync(config.database);
-const leadership = new DatabaseSync(`${config.database}.coordinator-lock`);
-leadership.exec("PRAGMA busy_timeout=0; BEGIN IMMEDIATE");
 const pool = createWorkerLeases(db, [config.workerId]);
 let authority = true;
 const worker = {
@@ -23,6 +21,7 @@ const worker = {
 const envelope = (secret, record) => ({ record, signature: signWorkerRecord(secret, record) });
 const coordinator = createLeasedCoordinator({
   pool,
+  databaseFile: config.database,
   workers: [worker],
   approvalSecret: config.approvalSecret,
   approve: async (binding, commandDigest) => {
@@ -80,5 +79,5 @@ try {
 } finally {
   input.close();
   db.close();
-  leadership.close();
+  coordinator.close();
 }

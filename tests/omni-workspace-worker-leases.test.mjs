@@ -89,6 +89,18 @@ test("restart retains unfinished leases, never makes crashed workers available",
     f.close();
   }
 });
+test("a released job cannot be claimed again under another lease or session", () => {
+  const f = fixture();
+  const secret = "k".repeat(48);
+  try {
+    const binding = f.pool.claim(identity());
+    const record = { ...binding, outcome: "terminated_and_wiped" };
+    f.pool.release({ record, signature: signWorkerRecord(secret, record) }, secret);
+    assert.throws(() => f.pool.claim({ ...identity(), jobId: binding.jobId }), /durable claim/);
+  } finally {
+    f.close();
+  }
+});
 test("concurrent processes cannot double-allocate either worker", async () => {
   const f = fixture();
   try {

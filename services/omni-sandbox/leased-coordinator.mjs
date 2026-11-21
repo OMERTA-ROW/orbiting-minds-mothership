@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
+import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { signWorkerRecord, verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerRequest } from "./worker-socket.mjs";
 
@@ -9,11 +11,27 @@ const digest = (command) => createHash("sha256").update(command).digest("hex");
 export function createLeasedCoordinator({
   pool,
   workers,
+  databaseFile,
   approvalSecret,
   approve,
   renew,
   monitor,
 }) {
+  const privateState = fs.lstatSync(path.dirname(databaseFile));
+  if (
+    !privateState.isDirectory() ||
+    privateState.isSymbolicLink() ||
+    privateState.uid !== process.getuid?.() ||
+    (privateState.mode & 0o077) !== 0
+  )
+    throw new Error("Coordinator database requires a private identity-owned directory.");
+  const leadership = new DatabaseSync(`${databaseFile}.coordinator-lock`);
+  try {
+    leadership.exec("PRAGMA busy_timeout=0; BEGIN IMMEDIATE");
+  } catch (error) {
+    leadership.close();
+    throw new Error("Coordinator leadership is already held or unreadable.", { cause: error });
+  }
   const active = new Map();
   let recovering = false;
   const workerFor = (binding) => {
@@ -182,7 +200,19 @@ export function createLeasedCoordinator({
       }
     },
     stop() {
-      for (const revoke of active.values()) revoke();
+      const failures = [];
+      for (const revoke of active.values()) {
+        try {
+          revoke();
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      if (failures.length)
+        throw new AggregateError(
+          failures,
+          "Stop persistence failed; all authority renewals ceased.",
+        );
     },
     async recover() {
       if (active.size || recovering) throw new Error("Recovery must be exclusive with admission.");
@@ -197,6 +227,11 @@ export function createLeasedCoordinator({
       } finally {
         recovering = false;
       }
+    },
+    close() {
+      if (active.size || recovering)
+        throw new Error("Cannot release active coordinator leadership.");
+      leadership.close();
     },
   };
 }
