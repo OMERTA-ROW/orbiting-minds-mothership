@@ -373,6 +373,25 @@ jobs:
             test "$result" = 0
             test "$(systemctl show -p Result --value "omni-workspace@$slot.service")" = success
           done
+          printf '[Service]\nExecStart=\nExecStart=%s /opt/omni-workspace/services/omni-sandbox/host-service.mjs\n' "$(command -v node)" \
+            | sudo tee /run/systemd/system/omni-workspace@ci1.service.d/test.conf >/dev/null
+          printf 'PORT=18801\nOMNI_SANDBOX_CLIENT_ID=mothership-test\nOMNI_SANDBOX_HMAC_SECRET=%s\n' \
+            tttttttttttttttttttttttttttttttttttttttttttttttt \
+            | sudo tee /etc/omni-workspace/worker-ci1.env >/dev/null
+          sudo systemctl daemon-reload
+          trap 'sudo systemctl stop omni-workspace@ci1.service; sudo journalctl --no-pager -u omni-workspace@ci1.service' EXIT
+          export OMNI_WORKSPACE_WORKER_SMOKE=1 OMNI_WORKER_SMOKE_TIMESTAMP="$(date +%s)"
+          for phase in claim replay; do
+            sudo systemctl start omni-workspace@ci1.service
+            ready=false
+            for attempt in $(seq 1 50); do
+              if curl --silent --fail http://127.0.0.1:18801/healthz >/dev/null; then ready=true; break; fi
+              sleep 0.2
+            done
+            test "$ready" = true
+            node tests/fixtures/omni-workspace-host-smoke.mjs "$phase"
+            sudo systemctl stop omni-workspace@ci1.service
+          done
   workspace-host-gate:
     if: always() && (github.event_name != 'workflow_dispatch' || !inputs.namespace_trace)
     needs: [workspace-host-historical, workspace-host-workers]
