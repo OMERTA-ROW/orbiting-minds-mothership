@@ -63,6 +63,10 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
       'echo "pid=$(readlink /proc/self/ns/pid)"',
       'echo "net=$(readlink /proc/self/ns/net)"',
       'echo "mnt=$(readlink /proc/self/ns/mnt)"',
+      'echo "uid=$(id -u)"',
+      'echo "gid=$(id -g)"',
+      'echo "uidmap=$(cat /proc/self/uid_map | xargs)"',
+      'echo "gidmap=$(cat /proc/self/gid_map | xargs)"',
       "cat /proc/self/cgroup",
       "sleep 1",
     ].join("; ");
@@ -81,18 +85,24 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
         const values = Object.fromEntries(
           result.stdout
             .split("\n")
-            .filter((line) => /^(pid|net|mnt)=/.test(line))
+            .filter((line) => /^(pid|net|mnt|uid|gid|uidmap|gidmap)=/.test(line))
             .map((line) => line.split("=")),
         );
         for (const kind of ["pid", "net", "mnt"]) {
           expect(values[kind]).toMatch(new RegExp(`^${kind}:\\[\\d+\\]$`));
           expect(values[kind]).not.toBe(fs.readlinkSync(`/proc/self/ns/${kind}`));
         }
+        expect(Number(values["uid"])).toBeGreaterThan(0);
+        expect(values["gid"]).toBe(values["uid"]);
+        expect(values["uidmap"]).toBe(`${values["uid"]} ${values["uid"]} 1`);
+        expect(values["gidmap"]).toBe(`${values["gid"]} ${values["gid"]} 1`);
         return values;
       };
       const firstIds = namespaceIds(firstResult, firstJob.jobId);
       const secondIds = namespaceIds(secondResult, secondJob.jobId);
       for (const kind of ["pid", "net", "mnt"]) expect(firstIds[kind]).not.toBe(secondIds[kind]);
+      expect(firstIds["uid"]).not.toBe(secondIds["uid"]);
+      expect(firstIds["gid"]).not.toBe(secondIds["gid"]);
     } finally {
       await call("session.end", { sessionId: firstSession });
       await call("session.end", { sessionId: secondSession });

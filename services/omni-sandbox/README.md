@@ -1,4 +1,10 @@
-# OMNI cloud sandbox (reference service for Railway)
+# OMNI workspace sandbox (quarantined)
+
+The selected workspace runtime is a dedicated Linux host, not Docker or Railway.
+See [HOST-SETUP.md](HOST-SETUP.md) for the quarantined non-root systemd worker package,
+pre-provisioned session identity design, requirements and rollback. Docker image execution
+is unsupported; retained image diagnostics are optional and not workspace gates.
+The host historical fixture does not by itself certify the packaged service or Vultr.
 
 **Execution quarantined:** this reference does not establish filesystem or PID isolation,
 aggregate resource limits, restart quarantine, or cancellation of

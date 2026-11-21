@@ -19,6 +19,10 @@ on:
         description: Trace namespace syscalls on disposable Linux host only
         type: boolean
         default: false
+      unsupported_docker_diagnostics:
+        description: Run unsupported workspace Docker diagnostics (not a host gate)
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -120,7 +124,7 @@ jobs:
               --setenv PATH /usr/bin:/bin -- /bin/true
           cat /tmp/omni-bwrap-trace
   workspace-seccomp-probe:
-    if: github.event_name == 'workflow_dispatch' && !inputs.host_only && !inputs.namespace_trace
+    if: github.event_name == 'workflow_dispatch' && inputs.unsupported_docker_diagnostics
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -196,7 +200,7 @@ jobs:
                 tests/omni-workspace-cgroup.test.mjs tests/omni-workspace-recovery.test.mjs
             '
   workspace-image-recovery:
-    if: github.event_name == 'workflow_dispatch' && !inputs.host_only && !inputs.namespace_trace
+    if: github.event_name == 'workflow_dispatch' && inputs.unsupported_docker_diagnostics
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -253,7 +257,7 @@ jobs:
                 '"'"'
             '
   workspace-host-historical:
-    if: github.event_name == 'workflow_dispatch' && !inputs.namespace_trace
+    if: github.event_name != 'workflow_dispatch' || !inputs.namespace_trace
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
@@ -324,8 +328,63 @@ jobs:
               cat "$RUNNER_TEMP/omni-workspace-host.log"
               exit 1
             }
+  workspace-host-workers:
+    if: github.event_name != 'workflow_dispatch' || !inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - name: Test two pre-provisioned workers under the packaged hardened unit
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          uname -a
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap
+          test ! -u /usr/bin/bwrap
+          sudo install -d -m 755 /opt/omni-workspace/services/omni-sandbox /opt/omni-workspace/tests /etc/omni-workspace
+          sudo cp services/omni-sandbox/*.mjs /opt/omni-workspace/services/omni-sandbox/
+          sudo cp tests/omni-workspace-host-worker.test.mjs /opt/omni-workspace/tests/
+          sudo install -m 644 services/omni-sandbox/systemd/omni-workspace.slice /run/systemd/system/
+          sudo install -m 644 services/omni-sandbox/systemd/omni-workspace@.service /run/systemd/system/
+          for slot in ci1 ci2; do
+            sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin "omni-worker-$slot"
+            sudo install -m 600 /dev/null "/etc/omni-workspace/worker-$slot.env"
+            sudo install -d "/run/systemd/system/omni-workspace@$slot.service.d"
+            printf '[Service]\nExecStart=\nExecStart=%s --test /opt/omni-workspace/tests/omni-workspace-host-worker.test.mjs\nEnvironment=OMNI_WORKSPACE_WORKER_TEST=1\n' "$(command -v node)" \
+              | sudo tee "/run/systemd/system/omni-workspace@$slot.service.d/test.conf" >/dev/null
+          done
+          test "$(id -u omni-worker-ci1)" != "$(id -u omni-worker-ci2)"
+          test "$(id -g omni-worker-ci1)" != "$(id -g omni-worker-ci2)"
+          sudo systemctl daemon-reload
+          sudo systemd-analyze verify /run/systemd/system/omni-workspace@.service
+          for slot in ci1 ci2; do
+            set +e
+            sudo systemctl start "omni-workspace@$slot.service"
+            result=$?
+            set -e
+            while [ "$(systemctl show -p ActiveState --value "omni-workspace@$slot.service")" = active ]; do sleep 0.2; done
+            sudo journalctl --no-pager -u "omni-workspace@$slot.service"
+            test "$result" = 0
+            test "$(systemctl show -p Result --value "omni-workspace@$slot.service")" = success
+          done
+  workspace-host-gate:
+    if: always() && (github.event_name != 'workflow_dispatch' || !inputs.namespace_trace)
+    needs: [workspace-host-historical, workspace-host-workers]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Require both historical and hardened worker evidence
+        env:
+          HISTORICAL: ${{ needs.workspace-host-historical.result }}
+          WORKERS: ${{ needs.workspace-host-workers.result }}
+        run: test "$HISTORICAL" = success && test "$WORKERS" = success
   workspace-image-historical:
-    if: github.event_name == 'workflow_dispatch' && !inputs.host_only && !inputs.namespace_trace
+    if: github.event_name == 'workflow_dispatch' && inputs.unsupported_docker_diagnostics
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:

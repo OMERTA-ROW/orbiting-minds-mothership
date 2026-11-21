@@ -1,0 +1,7 @@
+[Unit]
+Description=OMNI quarantined workspace workers
+
+[Slice]
+CPUAccounting=yes
+MemoryAccounting=yes
+TasksAccounting=yes
