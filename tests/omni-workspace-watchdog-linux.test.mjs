@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
-import { createJobCgroup } from "../services/omni-sandbox/cgroup.mjs";
+import { createWorkerCgroup } from "../services/omni-sandbox/cgroup.mjs";
 import { createWorkerLeases, signWorkerRecord } from "../services/omni-sandbox/worker-leases.mjs";
 
 const enabled = process.env.OMNI_WORKSPACE_WATCHDOG_TEST === "1";
@@ -40,7 +40,9 @@ for (const scenario of [
       watchdogUid = 22000;
     const base = fs.mkdtempSync(path.join(os.tmpdir(), "omni-watchdog-"));
     fs.chmodSync(base, 0o711);
-    const db = new DatabaseSync(path.join(base, "leases.sqlite"));
+    const coordinator = path.join(base, "coordinator");
+    fs.mkdirSync(coordinator, { mode: 0o700 });
+    const db = new DatabaseSync(path.join(coordinator, "leases.sqlite"));
     const pool = createWorkerLeases(db, ["one"]);
     const binding = pool.claim({
       projectId: "omni",
@@ -52,22 +54,24 @@ for (const scenario of [
     fs.mkdirSync(delegated);
     fs.writeFileSync(`${delegated}/cgroup.subtree_control`, "+cpu +memory +pids");
     fs.chownSync(delegated, watchdogUid, watchdogUid);
-    const original = createJobCgroup(delegated, binding.jobId, {
+    const original = createWorkerCgroup(delegated, binding.leaseId, {
       cpuQuotaMicros: 50000,
       cpuPeriodMicros: 100000,
       memoryBytes: 128 * 1024 ** 2,
       maxProcesses: 32,
     });
     const root = path.join(delegated, `worker-${binding.leaseId}`);
-    fs.renameSync(original.path, root);
     fs.chownSync(root, watchdogUid, watchdogUid);
     for (const entry of fs.readdirSync(root))
       fs.chownSync(path.join(root, entry), watchdogUid, watchdogUid);
-    const workspace = path.join(base, binding.leaseId);
+    const watchHome = path.join(base, "watchdog");
+    fs.mkdirSync(watchHome, { mode: 0o711 });
+    fs.chownSync(watchHome, watchdogUid, watchdogUid);
+    const workspace = path.join(watchHome, binding.leaseId);
     fs.mkdirSync(workspace);
     fs.chownSync(workspace, watchdogUid, workerUid);
     fs.chmodSync(workspace, 0o770);
-    const control = path.join(base, "control");
+    const control = path.join(watchHome, "control");
     fs.mkdirSync(control, { mode: 0o700 });
     fs.chownSync(control, watchdogUid, watchdogUid);
     const authorityFile = path.join(control, "authority.json");

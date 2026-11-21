@@ -26,9 +26,9 @@ export function delegatedCgroupRoot(parent) {
   return fs.realpathSync(parent);
 }
 
-function jobPath(parent, jobId) {
+function jobPath(parent, jobId, prefix = "job") {
   if (typeof jobId !== "string" || !UUID.test(jobId)) throw new Error("Invalid job ID.");
-  return path.join(delegatedCgroupRoot(parent), `job-${jobId}`);
+  return path.join(delegatedCgroupRoot(parent), `${prefix}-${jobId}`);
 }
 
 function jobGroup(group, allowAttach) {
@@ -63,7 +63,15 @@ function jobGroup(group, allowAttach) {
  * only a trusted, blocked child before allowing it to start untrusted code.
  */
 export function createJobCgroup(parent, jobId, limits) {
-  const group = jobPath(parent, jobId);
+  return createLimitedCgroup(parent, jobId, limits, "job");
+}
+
+export function createWorkerCgroup(parent, leaseId, limits) {
+  return createLimitedCgroup(parent, leaseId, limits, "worker");
+}
+
+function createLimitedCgroup(parent, jobId, limits, prefix) {
+  const group = jobPath(parent, jobId, prefix);
   const quota = boundedInteger(limits.cpuQuotaMicros, 1000, 1000000, "CPU quota");
   const period = boundedInteger(limits.cpuPeriodMicros, 1000, 1000000, "CPU period");
   const memory = boundedInteger(limits.memoryBytes, 16 * 1024 * 1024, 8 * 1024 ** 3, "memory");

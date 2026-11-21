@@ -394,14 +394,15 @@ jobs:
           done
   workspace-host-gate:
     if: always() && (github.event_name != 'workflow_dispatch' || !inputs.namespace_trace)
-    needs: [workspace-host-historical, workspace-host-workers]
+    needs: [workspace-host-historical, workspace-host-workers, workspace-watchdog]
     runs-on: ubuntu-22.04
     steps:
       - name: Require both historical and hardened worker evidence
         env:
           HISTORICAL: ${{ needs.workspace-host-historical.result }}
           WORKERS: ${{ needs.workspace-host-workers.result }}
-        run: test "$HISTORICAL" = success && test "$WORKERS" = success
+          WATCHDOG: ${{ needs.workspace-watchdog.result }}
+        run: test "$HISTORICAL" = success && test "$WORKERS" = success && test "$WATCHDOG" = success
   workspace-image-historical:
     if: github.event_name == 'workflow_dispatch' && inputs.unsupported_docker_diagnostics
     runs-on: ubuntu-22.04
@@ -521,7 +522,7 @@ jobs:
           node --test tests/omni-workspace-worker-leases.test.mjs
           bun run test src/test/omni-sandbox-interop.test.ts src/test/omni-sandbox-containment.test.ts
   workspace-watchdog:
-    if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
+    if: github.event_name != 'workflow_dispatch' || !inputs.namespace_trace
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
