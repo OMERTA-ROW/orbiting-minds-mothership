@@ -29,6 +29,7 @@ for (const scenario of [
   "startup Stop",
   "execution Stop",
   "expiry",
+  "renewal failure",
   "restart quarantine",
   "wipe failure",
 ]) {
@@ -89,15 +90,19 @@ for (const scenario of [
     };
     publish(scenario !== "startup Stop");
     let worker, watchdog;
+    let renewal;
     try {
       const script =
         `IFS= read -r gate <&3; [ "$gate" = go ] || exit 1; ` +
         `kill -TERM "$WATCHDOG_PID" 2>&1 && { echo WATCHDOG_SIGNAL_ALLOWED; exit 77; }; ` +
-        `echo WATCHDOG_SIGNAL_BLOCKED; touch ready; ` +
+        `echo WATCHDOG_SIGNAL_BLOCKED; ` +
+        `if cat '${authorityFile}' >/dev/null 2>&1; then echo CONTROL_READ_ALLOWED; exit 78; else echo CONTROL_READ_BLOCKED; fi; ` +
+        `if [ -w '${root}/cgroup.procs' ]; then echo CGROUP_WRITE_ALLOWED; exit 79; else echo CGROUP_WRITE_BLOCKED; fi; ` +
+        `/usr/bin/python3 -c 'import ctypes,os; c=ctypes.CDLL(None,use_errno=True); r=c.ptrace(16,int(os.environ["WATCHDOG_PID"]),None,None); assert r == -1 and ctypes.get_errno() == 1; print("WATCHDOG_PTRACE_BLOCKED")'; ` +
         (scenario === "wipe failure"
           ? "mkdir private; chmod 700 private; touch private/file; "
           : "") +
-        "setsid sleep 30 & sleep 30";
+        "touch ready; setsid sleep 30 & sleep 30";
       worker = spawn(
         "/usr/bin/setpriv",
         [
@@ -155,7 +160,14 @@ for (const scenario of [
         while (!fs.existsSync(path.join(workspace, "ready")) && performance.now() < deadline)
           await new Promise((resolve) => setTimeout(resolve, 10));
         assert.ok(fs.existsSync(path.join(workspace, "ready")), "Worker did not enter execution.");
-        if (scenario !== "expiry") publish(false);
+        if (scenario === "renewal failure") {
+          renewal = setInterval(() => publish(true), 100);
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+          clearInterval(renewal);
+          assert.equal(watchdog.exitCode, null, "Renewed authority must keep the watchdog active.");
+          assert.equal(worker.exitCode, null, "Renewed authority must keep the job alive.");
+          fs.unlinkSync(authorityFile);
+        } else if (scenario !== "expiry") publish(false);
       }
       const result = await watchdogResult;
       assert.equal(result.code, scenario === "wipe failure" ? 1 : 0, result.stderr);
@@ -165,6 +177,9 @@ for (const scenario of [
         assert.match(child.stdout, /Operation not permitted/);
         assert.match(child.stdout, /WATCHDOG_SIGNAL_BLOCKED/);
         assert.doesNotMatch(child.stdout, /WATCHDOG_SIGNAL_ALLOWED/);
+        assert.match(child.stdout, /CONTROL_READ_BLOCKED/);
+        assert.match(child.stdout, /CGROUP_WRITE_BLOCKED/);
+        assert.match(child.stdout, /WATCHDOG_PTRACE_BLOCKED/);
       }
       assert.equal(fs.existsSync(root), false, result.stderr);
       if (scenario === "wipe failure") {
@@ -188,6 +203,7 @@ for (const scenario of [
         assert.equal(pool.read(binding.leaseId).state, "released");
       }
     } finally {
+      clearInterval(renewal);
       worker?.stdio[3].destroy();
       if (fs.existsSync(root)) {
         fs.writeFileSync(`${root}/cgroup.kill`, "1");

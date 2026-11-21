@@ -23,6 +23,14 @@ export async function watchWorker({
     throw new Error("Unsupported worker watchdog configuration.");
   const root = delegatedCgroupRoot(parent);
   if (
+    !["leaseId", "ownerId", "sessionId", "jobId"].every((key) =>
+      /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(binding?.[key] ?? ""),
+    ) ||
+    !/^[a-z0-9-]{1,32}$/.test(binding?.workerId ?? "") ||
+    !/^[A-Za-z0-9_.:-]{1,80}$/.test(binding?.projectId ?? "")
+  )
+    throw new Error("Invalid watchdog lease binding.");
+  if (
     !Number.isSafeInteger(workerUid) ||
     workerUid < 1 ||
     !Number.isSafeInteger(watchdogUid) ||

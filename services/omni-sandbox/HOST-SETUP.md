@@ -62,8 +62,30 @@ subuid/subgid allocation. No service may claim subordinate mappings have been es
 
 ## Required evidence before rollout
 
+The subsequent experimental `worker-leases.mjs` registry atomically reserves workers with
+unique live worker/session indexes and refuses exhaustion. It retains unfinished reservations
+after restart; no reservation becomes free without a lease-bound authenticated cleanup
+acknowledgement. The database must be private to the coordinator on one durable locking-capable
+filesystem. Losing or replacing it is not a safe way to recover capacity.
+
+`worker-watchdog.mjs` is tested as a **different non-root UID** outside the complete worker
+cgroup, with the worker UID unable to write that subtree. It checks short-lived signed
+owner/project/session/job/worker/lease-bound records every 50 ms, using a monotonic deadline;
+Stop, unreadable/invalid control and expiry kill the whole cgroup. It closes the empty cgroup
+against late attachment and signs an acknowledgement only after workspace removal. These
+are experimental control primitives, not a deployed daemon or integrated Mothership renewal
+endpoint. The disposable fixture's root provisioning/launch oracle is not a production broker.
+
+Two integration requirements remain: an explicitly reviewed systemd launch/attachment channel
+for the worker UID under the watchdog UID's delegation (neither non-root UID may switch to the
+other), and a trusted post-termination wipe mechanism for job-created UID-owned mode-0700
+directories. A different unprivileged watchdog cannot traverse those directories. The test
+deliberately retains a quarantined lease on that failure, rather than granting DAC override or
+claiming a wipe. No pool allocator, watchdog daemon or renewable Mothership authority issuer
+has been connected to production admission.
+
 `workspace-host-gate` combines the unchanged 11 historical host assertions and
-the hardened-unit worker checks. The historical fixture remains a root-started test-only
+the hardened-unit worker and independent-watchdog checks. The historical fixture remains a root-started test-only
 coordinator; its passing result alone does not verify the non-root package. Worker tests
 run two distinct pre-provisioned identities under the packaged unit with a test-only
 `ExecStart` override, check actual UID/GID maps and reject selecting another host UID.
