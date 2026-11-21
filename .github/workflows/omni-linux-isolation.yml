@@ -536,6 +536,9 @@ jobs:
         run: |
           set -euo pipefail
           git rev-parse HEAD
+          sudo install -d -m 755 /opt/omni-watchdog-fixture/services/omni-sandbox /opt/omni-watchdog-fixture/tests/fixtures
+          sudo install -m 644 services/omni-sandbox/{cgroup,worker-leases,worker-watchdog}.mjs /opt/omni-watchdog-fixture/services/omni-sandbox/
+          sudo install -m 644 tests/fixtures/omni-worker-watchdog-process.mjs /opt/omni-watchdog-fixture/tests/fixtures/
           sudo systemd-run --quiet --wait --pipe --collect \
             --unit="omni-watchdog-fixture-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
             --property=Delegate=yes --property="WorkingDirectory=$GITHUB_WORKSPACE" \

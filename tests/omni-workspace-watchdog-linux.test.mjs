@@ -131,7 +131,7 @@ for (const scenario of [
           "--bounding-set=-all",
           "--no-new-privs",
           process.execPath,
-          "tests/fixtures/omni-worker-watchdog-process.mjs",
+          "/opt/omni-watchdog-fixture/tests/fixtures/omni-worker-watchdog-process.mjs",
         ],
         { env: { PATH: "/usr/bin:/bin" }, stdio: ["pipe", "pipe", "pipe"] },
       );
@@ -158,6 +158,7 @@ for (const scenario of [
         if (scenario !== "expiry") publish(false);
       }
       const result = await watchdogResult;
+      assert.equal(result.code, scenario === "wipe failure" ? 1 : 0, result.stderr);
       const child = await workerResult;
       assert.equal(child.signal, "SIGKILL", child.stderr);
       if (!["startup Stop", "restart quarantine"].includes(scenario)) {
