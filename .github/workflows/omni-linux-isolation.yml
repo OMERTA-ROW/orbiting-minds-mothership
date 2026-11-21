@@ -518,7 +518,35 @@ jobs:
         run: |
           node --version
           node --test tests/omni-workspace-decision.test.mjs
+          node --test tests/omni-workspace-worker-leases.test.mjs
           bun run test src/test/omni-sandbox-interop.test.ts src/test/omni-sandbox-containment.test.ts
+  workspace-watchdog:
+    if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - name: Test independent watchdog identities on delegated disposable cgroups
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          sudo systemd-run --quiet --wait --pipe --collect \
+            --unit="omni-watchdog-fixture-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --property=Delegate=yes --property="WorkingDirectory=$GITHUB_WORKSPACE" \
+            --setenv="PATH=$PATH" /bin/bash -c '
+              set -euo pipefail
+              root="/sys/fs/cgroup$(cut -d: -f3 /proc/self/cgroup)"
+              mkdir "$root/manager"
+              echo 0 > "$root/manager/cgroup.procs"
+              echo "+cpu +memory +pids" > "$root/cgroup.subtree_control"
+              export OMNI_WORKSPACE_DELEGATED_CGROUP="$root" OMNI_WORKSPACE_WATCHDOG_TEST=1
+              exec node --test --test-concurrency=1 tests/omni-workspace-watchdog-linux.test.mjs
+            '
   activation-sql:
     if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
     runs-on: ubuntu-22.04

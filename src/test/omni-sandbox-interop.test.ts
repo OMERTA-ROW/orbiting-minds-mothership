@@ -238,6 +238,40 @@ describe("quarantined workspace reference", () => {
     expect((await fetch(url, request)).status).toBe(401);
   }, 10_000);
 
+  it("recognizes a committed replay without taking a contended write lock", async () => {
+    const url = `${cfg.origin}/api/public/omni/workspace`;
+    const replay = signedRequest("7".repeat(32));
+    const pending = signedRequest("6".repeat(32));
+    expect((await fetch(url, replay)).status).toBe(200);
+    const source = `
+      import { DatabaseSync } from "node:sqlite";
+      const db = new DatabaseSync(process.argv[1]);
+      db.exec("BEGIN IMMEDIATE");
+      db.prepare("INSERT INTO nonces (nonce, seen_at) VALUES (?, ?)").run("6".repeat(32), Date.now());
+      process.stdout.write("locked\\n");
+      process.on("SIGTERM", () => { db.exec("ROLLBACK"); db.close(); process.exit(0); });
+      setInterval(() => {}, 1000);
+    `;
+    const lock = spawn(
+      process.execPath,
+      ["--input-type=module", "-e", source, path.join(dir, "root", ".state", "nonces.sqlite")],
+      { stdio: ["ignore", "pipe", "ignore"] },
+    );
+    try {
+      await new Promise<void>((resolve, reject) => {
+        lock.stdout.once("data", () => resolve());
+        lock.once("exit", () => reject(new Error("SQLite lock process exited before readiness.")));
+        lock.once("error", reject);
+      });
+      expect((await fetch(url, replay)).status).toBe(401);
+      // An uncommitted nonce is not evidence of replay and must still fail closed.
+      expect((await fetch(url, pending)).status).toBe(503);
+    } finally {
+      await stopService(lock);
+    }
+    expect((await fetch(url, pending)).status).toBe(200);
+  }, 10_000);
+
   it("refuses requests when the durable nonce store cannot be locked", async () => {
     const alreadyClaimed = signedRequest("9".repeat(32));
     const url = `${cfg.origin}/api/public/omni/workspace`;
@@ -266,6 +300,7 @@ describe("quarantined workspace reference", () => {
         ...request,
         headers: { ...request.headers, "x-omni-signature": "0".repeat(64) },
       };
+      const logOffset = (serviceLogs.get(proc) ?? "").length;
       expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, invalid)).status).toBe(401);
       for (const rejected of [
         signedRequest("1".repeat(32), "agent.stop", "other"),
@@ -273,7 +308,9 @@ describe("quarantined workspace reference", () => {
       ]) {
         expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, rejected)).status).toBe(503);
       }
-      expect(serviceLogs.get(proc)).not.toContain("Stop attempted without durable nonce claim");
+      expect((serviceLogs.get(proc) ?? "").slice(logOffset)).not.toContain(
+        "Stop attempted without durable nonce claim",
+      );
       const started = Date.now();
       expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(503);
       expect(Date.now() - started).toBeLessThan(2000);

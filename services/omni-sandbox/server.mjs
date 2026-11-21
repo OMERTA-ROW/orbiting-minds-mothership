@@ -250,6 +250,7 @@ export function createSandbox(c, opts = {}) {
   const insertNonce = nonceStore.prepare(
     "INSERT INTO nonces (nonce, seen_at) VALUES (?, ?) ON CONFLICT DO NOTHING",
   );
+  const findNonce = nonceStore.prepare("SELECT 1 FROM nonces WHERE nonce = ?");
   const claimDecision = createDecisionClaims(nonceStore);
   createWorkspaceJournal(nonceStore);
   const claimCommand = createCommandClaims(nonceStore);
@@ -292,6 +293,8 @@ export function createSandbox(c, opts = {}) {
     const now = Date.now();
     if (failFast) nonceStore.exec("PRAGMA busy_timeout = 100");
     try {
+      // Nonces are never deleted. A committed replay needs no write lock.
+      if (findNonce.get(nonce)) return false;
       nonceStore.exec("BEGIN IMMEDIATE");
       try {
         const { changes } = insertNonce.run(nonce, now);

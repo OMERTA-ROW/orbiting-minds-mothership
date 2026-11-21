@@ -33,6 +33,12 @@ signatures, other projects and other actions do not take this fallback. This doe
 descendant termination or Stop enforcement during execution. Stop nonce claims use a 100 ms lock
 timeout, but an earlier synchronous non-Stop SQLite operation can still block the Node
 event loop, so an upper bound on Stop delivery is not established.
+An already committed nonce is checked without taking a write lock, so a replay remains 401
+under a concurrent SQLite reserved writer lock. An uncommitted competing claim is not visible:
+if its transaction holds the lock for more than 100 ms, the other Stop must return 503 and
+attempt the unverified safety fallback. Thus a strict 200/401 outcome for every concurrent
+Stop is not guaranteed; extending the lock wait or guessing that an invisible claim committed
+would respectively delay Stop or risk rejecting a fresh request.
 
 The same database records a single decision claim per project, session, job and step, including
 the owner. The signed decision must match the in-memory session owner and pending job; a claim is
@@ -118,6 +124,11 @@ lock, or failed cleanup prevents readiness. Once a parent is recorded, omitting 
 startup. The state directory and cgroup parent must be dedicated to the same service and shared
 among all of its potential instances; a second state directory using the same parent would not
 share the lock. Configure neither in production until a complete reviewed boundary exists.
+
+Removal of the empty cgroup precedes recording termination. If the process crashes or the
+database write fails between those steps, startup refuses the missing unfinished cgroup and
+requires manual investigation. This deliberately sacrifices automatic recovery rather than
+recording a termination before cleanup. It does not wipe or verify session storage.
 
 The existing command handler does not yet write the job journal or use cgroups for execution.
 This recovery path therefore does not make the service safe to execute commands. It does not stop

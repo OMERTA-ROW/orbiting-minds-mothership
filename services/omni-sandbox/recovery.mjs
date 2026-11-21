@@ -85,8 +85,8 @@ export async function recoverWorkspaceJobs(database, parent, projectId) {
     }
     const group = openJobCgroupForRecovery(root, job.job_id);
     await group.stop();
+    group.remove();
     if (job.state !== "terminated" && terminate.run(Date.now(), job.job_id).changes !== 1)
       throw new Error("Could not durably record workspace termination.");
-    group.remove();
   }
 }

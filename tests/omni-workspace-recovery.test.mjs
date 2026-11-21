@@ -184,7 +184,7 @@ test(
       assert.equal(
         read.prepare("SELECT state FROM workspace_job_journal WHERE job_id = ?").get(job.jobId)
           .state,
-        "terminated",
+        "claimed",
       );
       read.close();
     } finally {
