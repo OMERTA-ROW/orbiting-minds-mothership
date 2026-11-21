@@ -362,7 +362,7 @@ jobs:
           test "$(id -u omni-worker-ci1)" != "$(id -u omni-worker-ci2)"
           test "$(id -g omni-worker-ci1)" != "$(id -g omni-worker-ci2)"
           sudo systemctl daemon-reload
-          sudo systemd-analyze verify /run/systemd/system/omni-workspace@.service
+          sudo systemd-analyze verify omni-workspace@ci1.service omni-workspace@ci2.service
           for slot in ci1 ci2; do
             set +e
             sudo systemctl start "omni-workspace@$slot.service"

@@ -67,6 +67,7 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
       'echo "gid=$(id -g)"',
       'echo "uidmap=$(cat /proc/self/uid_map | xargs)"',
       'echo "gidmap=$(cat /proc/self/gid_map | xargs)"',
+      "touch /work/identity-proof",
       "cat /proc/self/cgroup",
       "sleep 1",
     ].join("; ");
@@ -94,8 +95,8 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
         }
         expect(Number(values["uid"])).toBeGreaterThan(0);
         expect(values["gid"]).toBe(values["uid"]);
-        expect(values["uidmap"]).toBe(`${values["uid"]} ${values["uid"]} 1`);
-        expect(values["gidmap"]).toBe(`${values["gid"]} ${values["gid"]} 1`);
+        expect(values["uidmap"]).toBe(`${values["uid"]} 0 1`);
+        expect(values["gidmap"]).toBe(`${values["gid"]} 0 1`);
         return values;
       };
       const firstIds = namespaceIds(firstResult, firstJob.jobId);
@@ -103,6 +104,15 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
       for (const kind of ["pid", "net", "mnt"]) expect(firstIds[kind]).not.toBe(secondIds[kind]);
       expect(firstIds["uid"]).not.toBe(secondIds["uid"]);
       expect(firstIds["gid"]).not.toBe(secondIds["gid"]);
+      const root = process.env["OMNI_WORKSPACE_TEST_ROOT"] ?? "";
+      for (const [sessionId, ids] of [
+        [firstSession, firstIds],
+        [secondSession, secondIds],
+      ] as const) {
+        const proof = fs.statSync(`${root}/root/${sessionId}/work/identity-proof`);
+        expect(proof.uid).toBe(Number(ids["uid"]));
+        expect(proof.gid).toBe(Number(ids["gid"]));
+      }
     } finally {
       await call("session.end", { sessionId: firstSession });
       await call("session.end", { sessionId: secondSession });

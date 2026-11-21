@@ -26,7 +26,7 @@ test("pre-provisioned non-root worker uses its real host identity inside bubblew
     const control = await startWorkspaceCommand({
       parent, jobId: randomUUID(), uid, work,
       limits: { memoryMb: 128, maxProcesses: 32 },
-      command: "id -u; id -g; cat /proc/self/uid_map; cat /proc/self/gid_map; test ! -e /sys; test ! -e /etc/omni-workspace; test ! -e /var/lib; printf WORKER_ISOLATED",
+      command: "id -u; id -g; cat /proc/self/uid_map; cat /proc/self/gid_map; touch /work/identity-proof; test ! -e /sys; test ! -e /etc/omni-workspace; test ! -e /var/lib; printf WORKER_ISOLATED",
     });
     let stdout = "";
     let stderr = "";
@@ -36,9 +36,11 @@ test("pre-provisioned non-root worker uses its real host identity inside bubblew
     const lines = stdout.trim().split("\n");
     assert.equal(Number(lines[0]), uid);
     assert.equal(Number(lines[1]), gid);
-    assert.deepEqual(lines[2].trim().split(/\s+/).map(Number), [uid, uid, 1]);
-    assert.deepEqual(lines[3].trim().split(/\s+/).map(Number), [gid, gid, 1]);
+    assert.deepEqual(lines[2].trim().split(/\s+/).map(Number), [uid, 0, 1]);
+    assert.deepEqual(lines[3].trim().split(/\s+/).map(Number), [gid, 0, 1]);
     assert.equal(lines[4], "WORKER_ISOLATED");
+    assert.equal(fs.statSync(path.join(work, "identity-proof")).uid, uid);
+    assert.equal(fs.statSync(path.join(work, "identity-proof")).gid, gid);
     await assert.rejects(startWorkspaceCommand({
       parent, jobId: randomUUID(), uid: uid + 1, work,
       limits: { memoryMb: 128, maxProcesses: 32 }, command: "true",
