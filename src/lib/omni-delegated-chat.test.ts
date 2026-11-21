@@ -402,3 +402,98 @@ describe("manifest and consent reflect only what is installed and configured", (
     expect(grantableScopes(true)).not.toContain("providers:write");
   });
 });
+
+describe("Dread and Draco owner memory in chat", () => {
+  const ENTRY = {
+    id: "5f0c7a2e-3b7f-4f5e-9d1a-0a1b2c3d4e5f",
+    kind: "preference",
+    title: "Tone",
+    body: "Keep answers short.",
+    created_at: "2026-11-21T06:00:00Z",
+  };
+  const dread = body({ agentId: "dread", messages: [{ role: "user", content: "Status?" }] });
+
+  it("OMNI never reads or saves memory", async () => {
+    const { rpc, calls } = fakeRpc();
+    const r = await omniDelegatedChat(req(body()), deps(rpc));
+    const names = calls.map((c) => c.fn);
+    expect(names).not.toContain("omni_delegation_chat_memory");
+    expect(names).not.toContain("omni_delegation_chat_save");
+    expect((await r.json()).memory).toEqual({ status: "not_available", chatSaved: "not_available" });
+  });
+
+  it("with the owner switch on, the reply gets only that agent's saved entries", async () => {
+    const { rpc, calls } = fakeRpc({
+      omni_delegation_chat_memory: { ok: true, enabled: true, entries: [ENTRY], omitted: 2 },
+      omni_delegation_chat_save: { ok: true, memory_id: ENTRY.id },
+    });
+    const infer = vi.fn<ChatInference>(async () => reply());
+    const r = await omniDelegatedChat(req(dread), deps(rpc, infer));
+    const out = await r.json();
+    expect(out.memory).toEqual({ status: "used", entries: 1, omitted: 2, chatSaved: "saved" });
+    expect(calls.find((c) => c.fn === "omni_delegation_chat_memory")?.args["_agent"]).toBe("dread");
+    expect(infer.mock.calls[0]![0].memory).toContain("Owner-saved memory for Dread");
+    expect(infer.mock.calls[0]![0].memory).toContain("Tone: Keep answers short.");
+    // Memory is read after admission and before the model call; the save comes after the outcome.
+    const order = calls.map((c) => c.fn);
+    expect(order.indexOf("omni_delegation_begin_chat")).toBeLessThan(
+      order.indexOf("omni_delegation_chat_memory"),
+    );
+    expect(order.indexOf("omni_delegation_finish_chat")).toBeLessThan(
+      order.indexOf("omni_delegation_chat_save"),
+    );
+    const save = calls.find((c) => c.fn === "omni_delegation_chat_save")!.args;
+    expect(save["_body"]).toBe("Owner: Status?\n\nDread: Hi, owner.");
+  });
+
+  it("with the switch off, the model gets no memory and the reply says so", async () => {
+    const { rpc } = fakeRpc({
+      omni_delegation_chat_memory: { ok: true, enabled: false, entries: [], omitted: 0 },
+      omni_delegation_chat_save: { ok: false, reason: "save_chats_off" },
+    });
+    const infer = vi.fn<ChatInference>(async () => reply());
+    const out = await (await omniDelegatedChat(req(dread), deps(rpc, infer))).json();
+    expect(infer.mock.calls[0]![0].memory).toBe("");
+    expect(out.memory).toEqual({ status: "off", chatSaved: "off" });
+  });
+
+  it("a refused memory check (e.g. Emergency Stop) means no model call and no save", async () => {
+    const { rpc, calls } = fakeRpc({
+      omni_delegation_chat_memory: { ok: false, reason: "emergency_stop_engaged" },
+      omni_delegation_check_chat: { ok: false, reason: "emergency_stop_engaged" },
+    });
+    const infer = vi.fn<ChatInference>(async () => reply());
+    const r = await omniDelegatedChat(req(dread), deps(rpc, infer));
+    expect(r.status).toBe(423);
+    expect(infer).not.toHaveBeenCalled();
+    expect(finishArgs(calls)?.["_status"]).toBe("denied");
+    expect(calls.map((c) => c.fn)).not.toContain("omni_delegation_chat_save");
+  });
+
+  it("revocation during the memory check stops the reply", async () => {
+    const { rpc } = fakeRpc({ omni_delegation_chat_memory: { ok: false, reason: "revoked" } });
+    const infer = vi.fn<ChatInference>(async () => reply());
+    const r = await omniDelegatedChat(req(dread), deps(rpc, infer));
+    expect(r.status).toBe(401);
+    expect(infer).not.toHaveBeenCalled();
+  });
+
+  it("memory that can't be read never blocks a reply and never invents entries", async () => {
+    for (const answer of [new Error("missing"), { ok: true, enabled: true, entries: [{ id: 1 }], omitted: 0 }]) {
+      const { rpc } = fakeRpc({ omni_delegation_chat_memory: answer });
+      const infer = vi.fn<ChatInference>(async () => reply());
+      const out = await (await omniDelegatedChat(req(dread), deps(rpc, infer))).json();
+      expect(out.ok).toBe(true);
+      expect(infer.mock.calls[0]![0].memory).toBe("");
+      expect(out.memory.status).toBe("unavailable");
+    }
+  });
+
+  it("a failed reply is never saved to memory", async () => {
+    const { rpc, calls } = fakeRpc({
+      omni_delegation_chat_memory: { ok: true, enabled: false, entries: [], omitted: 0 },
+    });
+    await omniDelegatedChat(req(dread), deps(rpc, vi.fn(async () => reply({ text: "" }))));
+    expect(calls.map((c) => c.fn)).not.toContain("omni_delegation_chat_save");
+  });
+});

@@ -4,12 +4,24 @@ import { Brain, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { deleteAgentMemory, listAgentMemories, saveAgentMemory } from "@/lib/omni-memory.functions";
+import { Switch } from "@/components/ui/switch";
+import {
+  deleteAgentMemory,
+  deleteAllAgentMemories,
+  getAgentMemoryChatSettings,
+  listAgentMemories,
+  saveAgentMemory,
+  setAgentMemoryChatSetting,
+} from "@/lib/omni-memory.functions";
 import {
   MEMORY_AGENTS,
   MEMORY_AGENT_LABEL,
+  CHAT_MEMORY_LIMITS,
   MEMORY_BACKEND,
   MEMORY_KINDS,
+  STORED_SOURCE_LABEL,
+  isChatMemoryAgent,
+  type ChatMemoryAgent,
   MEMORY_KIND_LABEL,
   MEMORY_LIMITS,
   MEMORY_SOURCES,
@@ -31,11 +43,121 @@ const empty = {
   sourceRef: "",
 };
 
-/** Owner-controlled memory for one agent at a time. Nothing is shared with any agent yet. */
+type ChatSettings = {
+  useInChat: boolean;
+  saveChats: boolean;
+  lastUsed: { at: string; entries: number } | null;
+  lastSavedAt: string | null;
+};
+
+/** Dread/Draco owner switches: read own memory in chat replies, and save every chat. */
+function ChatMemorySwitches({
+  agent,
+  onChanged,
+}: {
+  agent: ChatMemoryAgent;
+  onChanged: () => void;
+}) {
+  const read = useServerFn(getAgentMemoryChatSettings);
+  const write = useServerFn(setAgentMemoryChatSetting);
+  const [state, setState] = useState<ChatSettings | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const name = MEMORY_AGENT_LABEL[agent];
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const r = await read({ data: { agent } });
+      if (!r.ok) return setError(r.message);
+      setState(r);
+    } catch {
+      setError("Memory settings could not be read. Refresh and retry.");
+    }
+  }, [agent, read]);
+  useEffect(() => {
+    setState(null);
+    void load();
+  }, [load]);
+
+  async function flip(setting: "use_in_chat" | "save_chats", on: boolean) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await write({ data: { agent, setting, on } });
+      if (!r.ok) setError(r.message);
+      await load();
+      onChanged();
+    } catch {
+      setError("Not confirmed. Refresh before retrying.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="space-y-3 rounded-lg border bg-card p-4 text-sm"
+      aria-label={`${name} chat memory`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <p className="font-medium">Use these in {name}'s chat replies</p>
+          <p className="text-xs text-muted-foreground">
+            {name} reads only its own entries below (newest first, up to{" "}
+            {CHAT_MEMORY_LIMITS.entries} entries or {CHAT_MEMORY_LIMITS.chars.toLocaleString()}{" "}
+            characters per reply), only while your connection, AI approval and the Emergency Stop
+            allow the reply. Deletions apply from the next reply.
+          </p>
+        </div>
+        <Switch
+          aria-label={`Use memory in ${name}'s chat replies`}
+          checked={state?.useInChat ?? false}
+          disabled={busy || !state}
+          onCheckedChange={(on) => void flip("use_in_chat", on)}
+        />
+      </div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <p className="font-medium">Save every chat with {name}</p>
+          <p className="text-xs text-muted-foreground">
+            Each finished reply is kept here with your message, marked "Saved from an OMNI web
+            chat", so you can review or delete it. Anything that looks like a key or token is not
+            saved. Off means nothing from chats is kept.
+          </p>
+        </div>
+        <Switch
+          aria-label={`Save every chat with ${name}`}
+          checked={state?.saveChats ?? false}
+          disabled={busy || !state}
+          onCheckedChange={(on) => void flip("save_chats", on)}
+        />
+      </div>
+      <p className="text-xs text-muted-foreground" role="status">
+        {error ??
+          (state === null
+            ? "Reading settings…"
+            : [
+                state.lastUsed
+                  ? `Last read in a reply: ${new Date(state.lastUsed.at).toLocaleString()} (${state.lastUsed.entries} entries).`
+                  : "Not read in any reply yet.",
+                state.lastSavedAt
+                  ? `Last chat saved: ${new Date(state.lastSavedAt).toLocaleString()}.`
+                  : "No chats saved yet.",
+              ].join(" "))}
+      </p>
+    </div>
+  );
+}
+
+/** Owner-controlled memory, one agent at a time. Only Dread and Draco read theirs, in chat, when switched on. */
 export function AgentMemory() {
   const list = useServerFn(listAgentMemories);
   const save = useServerFn(saveAgentMemory);
   const remove = useServerFn(deleteAgentMemory);
+  const removeAll = useServerFn(deleteAllAgentMemories);
+  const [confirmAll, setConfirmAll] = useState(false);
   const [agent, setAgent] = useState<MemoryAgent>("omni");
   const [rows, setRows] = useState<MemoryRow[] | null>(null);
   const [form, setForm] = useState(empty);
@@ -64,6 +186,7 @@ export function AgentMemory() {
 
   useEffect(() => {
     setConfirmId(null);
+    setConfirmAll(false);
     void load(agent);
   }, [agent, load]);
 
@@ -102,6 +225,24 @@ export function AgentMemory() {
     }
   }
 
+  async function onDeleteAll() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await removeAll({ data: { agent, confirm: true } });
+      if (!r.ok) return setNotice(r.message);
+      setConfirmAll(false);
+      await load(agent);
+      setNotice(
+        `Deleted ${r.deleted} ${r.deleted === 1 ? "entry" : "entries"} for ${MEMORY_AGENT_LABEL[agent]}.`,
+      );
+    } catch {
+      setNotice("Not confirmed. Refresh before retrying.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section aria-labelledby="agent-memory" className="space-y-4">
       <div className="space-y-1">
@@ -109,10 +250,11 @@ export function AgentMemory() {
           <Brain size={16} aria-hidden /> Agent memory
         </h2>
         <p role="note" className="rounded-lg border bg-card p-3 text-xs text-muted-foreground">
-          Each agent has its own separate memory. Stored in {MEMORY_BACKEND.storedIn}. No agent,
-          model, OMNI on Railway or Jackboy reads these yet — there is no outside memory service
-          connected. You save, view and delete every entry yourself; saves, views and deletions are
-          logged without their text.
+          Each agent has its own separate memory, stored in {MEMORY_BACKEND.storedIn}. Only Dread
+          and Draco can read theirs — each only its own, in chat replies, and only when you switch
+          it on. No other agent, OMNI on Railway or Jackboy reads these, and there is no outside
+          memory service. You review and delete every entry yourself; saves, reads, switch changes
+          and deletions are logged without their text.
         </p>
       </div>
 
@@ -131,6 +273,10 @@ export function AgentMemory() {
           ))}
         </select>
       </label>
+
+      {isChatMemoryAgent(agent) && (
+        <ChatMemorySwitches agent={agent} onChanged={() => void load(agent)} />
+      )}
 
       <form
         className="grid gap-3 rounded-lg border bg-card p-4 md:grid-cols-2"
@@ -206,6 +352,33 @@ export function AgentMemory() {
         </div>
       </form>
 
+      {rows && rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">
+            {rows.length} {rows.length === 1 ? "entry" : "entries"} shown (newest first)
+          </span>
+          {confirmAll ? (
+            <>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={busy}
+                onClick={() => void onDeleteAll()}
+              >
+                Confirm: delete all of {MEMORY_AGENT_LABEL[agent]}'s memory
+              </Button>
+              <Button size="sm" variant="ghost" disabled={busy} onClick={() => setConfirmAll(false)}>
+                Keep
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => setConfirmAll(true)}>
+              <Trash2 size={14} aria-hidden /> Delete all
+            </Button>
+          )}
+        </div>
+      )}
+
       <ul className="space-y-2" aria-label={`${MEMORY_AGENT_LABEL[agent]} memories`}>
         {rows === null && <li className="text-sm text-muted-foreground">Loading…</li>}
         {rows?.length === 0 && (
@@ -223,7 +396,7 @@ export function AgentMemory() {
             </div>
             <p className="whitespace-pre-wrap break-words">{m.body}</p>
             <p className="text-xs text-muted-foreground">
-              Source: {MEMORY_SOURCE_LABEL[m.source_kind as MemorySource] ?? m.source_kind}
+              Source: {STORED_SOURCE_LABEL[m.source_kind] ?? m.source_kind}
               {m.source_ref ? ` · ${m.source_ref}` : ""} · {new Date(m.created_at).toLocaleString()}{" "}
               · fingerprint {m.body_sha256.slice(0, 12)}
             </p>

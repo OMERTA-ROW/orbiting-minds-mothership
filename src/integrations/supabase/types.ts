@@ -988,6 +988,30 @@ export type Database = {
         }
         Relationships: []
       }
+      omni_agent_memory_settings: {
+        Row: {
+          agent_id: string
+          owner_id: string
+          save_chats: boolean
+          updated_at: string
+          use_in_chat: boolean
+        }
+        Insert: {
+          agent_id: string
+          owner_id: string
+          save_chats?: boolean
+          updated_at?: string
+          use_in_chat?: boolean
+        }
+        Update: {
+          agent_id?: string
+          owner_id?: string
+          save_chats?: boolean
+          updated_at?: string
+          use_in_chat?: boolean
+        }
+        Relationships: []
+      }
       omni_agent_runs: {
         Row: {
           consent: boolean
@@ -1426,11 +1450,15 @@ export type Database = {
           id: string
           input_chars: number
           input_tokens: number | null
+          memory_agent_id: string | null
+          memory_chars: number | null
+          memory_entries: number | null
           message_count: number
           model: string
           output_tokens: number | null
           owner_id: string
           reply_chars: number | null
+          saved_memory_id: string | null
           started_at: string
           status: string
           total_tokens: number | null
@@ -1444,11 +1472,15 @@ export type Database = {
           id?: string
           input_chars: number
           input_tokens?: number | null
+          memory_agent_id?: string | null
+          memory_chars?: number | null
+          memory_entries?: number | null
           message_count: number
           model: string
           output_tokens?: number | null
           owner_id: string
           reply_chars?: number | null
+          saved_memory_id?: string | null
           started_at?: string
           status?: string
           total_tokens?: number | null
@@ -1462,11 +1494,15 @@ export type Database = {
           id?: string
           input_chars?: number
           input_tokens?: number | null
+          memory_agent_id?: string | null
+          memory_chars?: number | null
+          memory_entries?: number | null
           message_count?: number
           model?: string
           output_tokens?: number | null
           owner_id?: string
           reply_chars?: number | null
+          saved_memory_id?: string | null
           started_at?: string
           status?: string
           total_tokens?: number | null
@@ -3896,6 +3932,19 @@ export type Database = {
         }
         Returns: Json
       }
+      omni_delegation_chat_memory: {
+        Args: {
+          _agent: string
+          _audience: string
+          _run_id: string
+          _token_hash: string
+        }
+        Returns: Json
+      }
+      omni_delegation_chat_save: {
+        Args: { _agent: string; _body: string; _run_id: string; _title: string }
+        Returns: Json
+      }
       omni_delegation_check_chat: {
         Args: { _audience: string; _run_id: string; _token_hash: string }
         Returns: Json
@@ -4133,6 +4182,7 @@ export type Database = {
         Args: { _agent: string; _id: string }
         Returns: boolean
       }
+      omni_memory_delete_all: { Args: { _agent: string }; Returns: number }
       omni_memory_list: {
         Args: { _agent: string }
         Returns: {
@@ -4164,6 +4214,14 @@ export type Database = {
           _title: string
         }
         Returns: string
+      }
+      omni_memory_set_chat_use: {
+        Args: { _agent: string; _on: boolean }
+        Returns: boolean
+      }
+      omni_memory_set_save_chats: {
+        Args: { _agent: string; _on: boolean }
+        Returns: boolean
       }
       omni_memory_valid_agent: { Args: { _agent: string }; Returns: boolean }
       omni_noop_enqueue: { Args: { _duration_ms: number }; Returns: string }

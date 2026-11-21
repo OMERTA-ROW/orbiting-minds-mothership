@@ -284,6 +284,11 @@ export function validateExpiry(value: string | null | undefined, now: number): s
 const SECRET_LIKE =
   /(sk-[A-Za-z0-9_-]{8,}|eyJ[A-Za-z0-9_-]{10,}|omni_[0-9a-f]{4,8}_[A-Za-z0-9_-]{8,}|[A-Fa-f0-9]{32,}|[A-Za-z0-9+/_=-]{40,})/;
 
+/** Whether text looks like a key or token (no length limit; noteProblem adds the note limit). */
+export function looksLikeSecret(text: string): boolean {
+  return SECRET_LIKE.test(text.trim());
+}
+
 export function noteProblem(note: string): string | null {
   const clean = note.trim();
   if (clean.length > NOTE_MAX) return `Notes are limited to ${NOTE_MAX} characters.`;

@@ -536,9 +536,11 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 - [ ] Owner live checks: tasks:read, fusion:plan plan, one held task + cancel (owner two-step sign-in)
 - [ ] One paid chat reply via chat:write (owner approval)
 - [ ] Jackboy Step 8 self-test + Steps 9–10 refresh (owner MFA)
-- [ ] diagnostics:read — proposal in .lovable/pending/0070, awaiting owner install approval
+- [ ] diagnostics:read — proposal in .lovable/pending/0072 (renumbered; installed 0070–0071 are Dread/Draco memory), awaiting owner install approval
 - [ ] files:read / knowledge:read — awaiting owner choice of which records
 - [x] Dread/Draco — built as Mothership chat agents (same model/caps/Stop as OMNI, browser-voice hints); live after publish
 - [ ] Dread/Draco live reply — needs publish, owner chat:write consent and a fresh signed spend cap (OMNI web gate)
-- [ ] Dread/Draco collaboration through Fusion — needs a reviewed Fusion multi-agent design (phase 1 is rules-only plans; no fan-out of paid calls)
+- [x] Dread/Draco owner memory — owner saves/reviews/deletes per-agent entries; owner switch lets replies read own memory (0070 installed; live after publish)
+- [x] Dread/Draco "save all" — owner switch saves every completed chat exchange to that agent's memory, reviewable/deletable
+- [ ] Dread/Draco collaboration through Fusion — owner-approved workflow: owner starts each session, fixed reply limits, every paid turn gated by approval, Stop, caps
 - [ ] Workspace/CODE/automations/retry — locked pending PR #28 sandbox
