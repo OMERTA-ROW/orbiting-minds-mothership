@@ -331,9 +331,17 @@ describe("quarantined workspace reference", () => {
       expect((serviceLogs.get(proc) ?? "").slice(logOffset)).not.toContain(
         "Stop attempted without durable nonce claim",
       );
+      let ordinaryFinished = false;
+      const ordinary = fetch(url, signedRequest("f".repeat(32), "session.end")).then((reply) => {
+        ordinaryFinished = true;
+        return reply;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 20));
       const started = Date.now();
       expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(503);
       expect(Date.now() - started).toBeLessThan(2000);
+      expect(ordinaryFinished, "A blocked ordinary nonce writer must not block Stop.").toBe(false);
+      expect((await ordinary).status).toBe(503);
       for (let i = 0; i < 50 && !serviceLogs.get(proc)?.includes("Stop attempted"); i++)
         await new Promise((resolve) => setTimeout(resolve, 10));
       expect(serviceLogs.get(proc)).toContain(

@@ -115,6 +115,7 @@ for (const scenario of [
         watchdogSecret: "d".repeat(48),
         approvalSecret: "a".repeat(48),
         startupDelay: scenario === "startup Stop" ? 1000 : 0,
+        again: scenario === "happy path",
         identity: {
           ownerId: randomUUID(),
           projectId: "omni",
@@ -156,7 +157,7 @@ for (const scenario of [
       );
       writePrivate(coordinatorConfig, config, coordinatorUid);
       const hardening =
-        "NoNewPrivileges=yes\nCapabilityBoundingSet=\nAmbientCapabilities=\nProtectSystem=strict\n" +
+        "Type=exec\nNoNewPrivileges=yes\nCapabilityBoundingSet=\nAmbientCapabilities=\nProtectSystem=strict\n" +
         "ProtectHome=yes\nPrivateTmp=yes\nRestrictSUIDSGID=yes\nProtectKernelTunables=yes\n" +
         "ProtectKernelModules=yes\nProtectKernelLogs=yes\nUMask=0077\nKillMode=control-group\n" +
         "TimeoutStopSec=1s\nRestart=no\n";
@@ -182,6 +183,7 @@ for (const scenario of [
         `[Unit]\nRequires=${workerSocketUnit}\nBindsTo=${watchdogUnit}\nAfter=${watchdogUnit}\n` +
           `[Service]\nUser=${workerUser}\nGroup=${workerUser}\nDelegate=yes\n` +
           `ExecStart=${process.execPath} ${installed}/tests/fixtures/omni-leased-service.mjs ${workerConfig}\n` +
+          "Environment=OMNI_LEAK_PROBE=synthetic-parent-value\n" +
           hardening +
           "TasksMax=64\nMemoryMax=256M\nMemorySwapMax=0\nCPUQuota=50%\n" +
           "RestrictNamespaces=user mnt pid net ipc uts\nRestrictAddressFamilies=AF_UNIX AF_NETLINK\n",
@@ -309,6 +311,9 @@ for (const scenario of [
           assert.match(reply.result.stdout, /real-tmpfs-response/);
           assert.notEqual(reply.cleanup.invocationId, reply.cleanup.previousInvocationId);
           assert.equal(reply.cleanup.outcome, "terminated_and_wiped");
+          assert.match(reply.reuse.result.stdout, /fresh-workspace/);
+          assert.equal(reply.binding.workerId, reply.reuse.binding.workerId);
+          assert.notEqual(reply.binding.leaseId, reply.reuse.binding.leaseId);
         } else if (scenario === "coordinator restart") assert.equal(reply.recovered, true);
         else
           assert.match(
@@ -332,10 +337,10 @@ for (const scenario of [
         );
         const db = new DatabaseSync(database);
         try {
-          assert.equal(
-            db.prepare("SELECT state FROM workspace_worker_leases").get().state,
-            retained ? "quarantined" : "released",
-          );
+          const leases = db.prepare("SELECT state FROM workspace_worker_leases").all();
+          assert.equal(leases.length, scenario === "happy path" ? 2 : 1);
+          for (const lease of leases)
+            assert.equal(lease.state, retained ? "quarantined" : "released");
         } finally {
           db.close();
         }

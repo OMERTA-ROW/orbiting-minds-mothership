@@ -76,8 +76,8 @@ export async function serveLeasedWorker({ parent, workerId, secret, socketPath, 
       ["stdout", job.child.stdout],
       ["stderr", job.child.stderr],
     ])
-      pipe.on("data", (part) => {
-        bytes += part.length;
+      pipe.setEncoding("utf8").on("data", (part) => {
+        bytes += Buffer.byteLength(part);
         if (bytes > record.limits.outputBytes) stop("output limit");
         else if (name === "stdout") stdout += part.toString("utf8");
         else stderr += part.toString("utf8");

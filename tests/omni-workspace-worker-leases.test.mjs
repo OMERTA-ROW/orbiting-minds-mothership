@@ -7,6 +7,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import { createWorkerLeases, signWorkerRecord } from "../services/omni-sandbox/worker-leases.mjs";
+import { createLeasedCoordinator } from "../services/omni-sandbox/leased-coordinator.mjs";
 
 const identity = () => ({
   ownerId: randomUUID(),
@@ -98,6 +99,56 @@ test("a released job cannot be claimed again under another lease or session", ()
     f.pool.release({ record, signature: signWorkerRecord(secret, record) }, secret);
     assert.throws(() => f.pool.claim({ ...identity(), jobId: binding.jobId }), /durable claim/);
   } finally {
+    f.close();
+  }
+});
+test("coordinator leadership is exclusive and becomes available only after close", () => {
+  const f = fixture();
+  const options = { pool: f.pool, workers: [], databaseFile: f.file };
+  try {
+    const leader = createLeasedCoordinator(options);
+    try {
+      assert.throws(() => createLeasedCoordinator(options), /leadership/);
+    } finally {
+      leader.close();
+    }
+    createLeasedCoordinator(options).close();
+  } finally {
+    f.close();
+  }
+});
+test("controller refuses wrong-owner approval before renewal or worker dispatch", async () => {
+  const f = fixture();
+  const secret = "s".repeat(48);
+  let cleanups = 0;
+  const sign = (record) => ({ record, signature: signWorkerRecord(secret, record) });
+  const coordinator = createLeasedCoordinator({
+    pool: f.pool,
+    databaseFile: f.file,
+    workers: [
+      {
+        workerId: "one",
+        watchdogSecret: secret,
+        authorityFile: path.join(path.dirname(f.file), "authority.json"),
+      },
+    ],
+    approvalSecret: secret,
+    approve: async (binding) => sign({ ...binding, ownerId: randomUUID() }),
+    renew: async () => {
+      assert.fail("Invalid approval must not reach renewal.");
+    },
+    monitor: async (_worker, binding, recover) => {
+      assert.equal(recover, true);
+      cleanups++;
+      return sign({ ...binding, outcome: "terminated_and_wiped" });
+    },
+  });
+  try {
+    await assert.rejects(coordinator.execute(identity(), "echo denied", {}), /identity mismatch/);
+    assert.equal(cleanups, 1);
+    assert.equal(f.pool.unfinished().length, 0);
+  } finally {
+    coordinator.close();
     f.close();
   }
 });

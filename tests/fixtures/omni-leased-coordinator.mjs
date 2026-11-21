@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { randomUUID } from "node:crypto";
 import { createInterface } from "node:readline";
 import { DatabaseSync } from "node:sqlite";
 import { createLeasedCoordinator } from "../../services/omni-sandbox/leased-coordinator.mjs";
@@ -71,6 +72,12 @@ try {
       outputBytes: 16384,
       commandTimeoutSec: 10,
     });
+    if (config.again)
+      result.reuse = await coordinator.execute(
+        { ...config.identity, sessionId: randomUUID(), jobId: randomUUID() },
+        "test ! -e previous && test ! -e private && echo fresh-workspace",
+        { memoryMb: 128, maxProcesses: 32, outputBytes: 16384, commandTimeoutSec: 10 },
+      );
     console.log(JSON.stringify(result));
   }
 } catch (error) {

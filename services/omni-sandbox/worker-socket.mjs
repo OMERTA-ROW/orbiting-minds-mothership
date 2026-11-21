@@ -3,6 +3,7 @@ import net from "node:net";
 export function workerRequest(socketPath, envelope, timeoutMs = 3000) {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection(socketPath);
+    socket.setEncoding("utf8");
     let data = "";
     const timer = setTimeout(
       () => socket.destroy(new Error("Worker socket timed out.")),
@@ -32,6 +33,7 @@ export function workerRequest(socketPath, envelope, timeoutMs = 3000) {
 
 export function workerSocketServer(handle) {
   return net.createServer((socket) => {
+    socket.setEncoding("utf8");
     let data = "";
     let dispatched = false;
     socket.setTimeout(2000, () => socket.destroy());
