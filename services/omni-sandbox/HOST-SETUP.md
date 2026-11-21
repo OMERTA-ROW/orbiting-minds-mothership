@@ -55,8 +55,8 @@ subuid/subgid allocation. No service may claim subordinate mappings have been es
    preserves production command quarantine; it deliberately reports network unverified
    rather than running the historical root-only probe.
 5. Admission/routing must bind one session to one worker identity, exclude simultaneous
-   assignment and prevent slot reuse until durable termination. **That allocator and
-   the renewable authority/crash watchdog are not implemented.** The unit is a
+   assignment and prevent slot reuse until durable termination. The experimental
+   socket lifecycle described below is separate from this existing unit. The unit is a
    quarantined package, not an executable production service. Do not turn on execution,
    release Stop, issue permits or configure an external listener.
 
@@ -76,16 +76,52 @@ against late attachment and signs an acknowledgement only after workspace remova
 are experimental control primitives, not a deployed daemon or integrated Mothership renewal
 endpoint. The disposable fixture's root provisioning/launch oracle is not a production broker.
 
-Two integration requirements remain: an explicitly reviewed systemd launch/attachment channel
-for the worker UID under the watchdog UID's delegation (neither non-root UID may switch to the
-other), and a trusted post-termination wipe mechanism for job-created UID-owned mode-0700
-directories. A different unprivileged watchdog cannot traverse those directories. The test
-deliberately retains a quarantined lease on that failure, rather than granting DAC override or
-claiming a wipe. No pool allocator, watchdog daemon or renewable Mothership authority issuer
-has been connected to production admission.
+The new `leased-coordinator.mjs`, `leased-worker.mjs` and `leased-watchdog.mjs` compose an
+experimental socket lifecycle. Neither coordinator nor watchdog switches UID. Each worker
+launches bubblewrap from its own delegated service. `/work` and `/tmp` are namespace-private
+tmpfs mounts, charged to the job's aggregate memory limit; no job-owned disk directory is
+left for another UID to traverse. The previous direct-cgroup wipe-failure test remains
+unchanged as evidence of why disk-backed cross-UID removal is not used in the new path.
+
+The disposable lifecycle fixture provisions **test-only** socket units and narrowly scoped
+Polkit authorization. It does not modify the packaged production units or provision Vultr.
+Before any separate reviewed rollout, the serving runtime must match these invariants:
+
+- Worker and watchdog each have a different stable non-root UID/GID; neither has the
+  coordinator group as a supplementary job identity. Socket activation, not `chgrp` by
+  the worker, creates each AF_UNIX listener with `SocketUser=<service user>`,
+  `SocketGroup=<coordinator group>`, `SocketMode=0660` and `RemoveOnStop=yes`.
+  The worker validates its inherited listening FD and rejects shared coordinator groups.
+- `omni-worker@<slot>.service` has `BindsTo=omni-watchdog@<slot>.service` and matching
+  `After=`. Both services retain no-new-privileges, empty capabilities, strict system
+  protection, private temporary storage and `Restart=no`. A failed watchdog exits;
+  systemd stops its bound worker, including all descendant cgroups. No job is resumed.
+- The watchdog's service-manager permission allows only `start` and `stop` on its exact
+  `omni-worker@<slot>.service` and `.socket`, for that watchdog identity only. No wildcard
+  units, shell broker, sudo grant, general systemd management or capabilities. Missing
+  permission must prevent startup admission. Do not copy the fixture policy to production.
+- Before isolated spawn, the watchdog proves it can stop socket activation, stop the
+  complete worker unit, observe its old cgroup gone and start a fresh invocation.
+  After completion or Stop, the same sequence destroys the job's namespaces and unit
+  `PrivateTmp`, and produces a fully lease-bound signed cleanup acknowledgement.
+  Failed Stop, stale invocation, failed restart or missing acknowledgement retains quarantine.
+- Coordinator state lives on one private durable filesystem. Hold an exclusive leadership
+  lock for the entire process lifetime, including recovery. On restart, recover unfinished
+  leases before any new admission, terminate/recycle only, and never send the old command.
+  Worker sockets accept one assignment per invocation and reject old invocation IDs.
+- Owner command approval binds the complete lease identity and SHA-256 command digest.
+  The separate renewal callback must verify current owner consent, Stop, revocation and
+  spending controls; this PR's fixture issues synthetic records only. Renewal runs every
+  100 ms; signed authority lasts 500 ms, with a monotonic, non-extendable watchdog deadline.
+  Delayed/unreadable renewal cannot extend authority. No control key, service socket,
+  coordinator database, cgroup filesystem or inherited environment is mounted in the job.
+
+The experimental coordinator requires the existing trusted Mothership approval/renewal
+adapter; it is not connected to the quarantined production HTTP entrypoint. Actual serving
+runtime, permissions and transport still require independent verification before rollout.
 
 `workspace-host-gate` combines the unchanged 11 historical host assertions and
-the hardened-unit worker and independent-watchdog checks. The historical fixture remains a root-started test-only
+the hardened-unit worker, independent-watchdog and integrated socket lifecycle checks. The historical fixture remains a root-started test-only
 coordinator; its passing result alone does not verify the non-root package. Worker tests
 run two distinct pre-provisioned identities under the packaged unit with a test-only
 `ExecStart` override, check actual UID/GID maps and reject selecting another host UID.
@@ -111,4 +147,5 @@ must be reported as unconfirmed, not success. Restore a reviewed earlier package
 commits; do not rewrite Lovable history. Preserve private SQLite nonce/decision/journal state
 and identity ownership; never delete it to get startup to succeed. State loss requires the
 separate owner-approved credential-rotation procedure before reconnecting. Do not resume jobs
-or automatically restart workers. Unit rollback does not authorize deployment or execution.
+or automatically resume workers. The experimental watchdog recycles an empty worker explicitly;
+that is not a job restart. Unit rollback does not authorize deployment or execution.

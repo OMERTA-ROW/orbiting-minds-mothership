@@ -229,6 +229,26 @@ describe("quarantined workspace reference", () => {
     }
   }, 10_000);
 
+  it("keeps the strict concurrent Stop replay result across 100 independent races", async () => {
+    const second = await startService(port + 1);
+    try {
+      for (let round = 0; round < 100; round++) {
+        const request = signedRequest(randomUUID().replaceAll("-", ""));
+        const replies = await Promise.all(
+          [port, port + 1].map((p) =>
+            fetch(`http://127.0.0.1:${p}/api/public/omni/workspace`, request),
+          ),
+        );
+        expect(
+          replies.map((reply) => reply.status).sort(),
+          `Round ${round}: ${serviceLogs.get(proc)}; ${serviceLogs.get(second)}`,
+        ).toEqual([200, 401]);
+      }
+    } finally {
+      await stopService(second);
+    }
+  }, 30_000);
+
   it("rejects a previously accepted request after an abrupt service restart", async () => {
     const request = signedRequest("d".repeat(32));
     const url = `${cfg.origin}/api/public/omni/workspace`;
@@ -318,6 +338,10 @@ describe("quarantined workspace reference", () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
       expect(serviceLogs.get(proc)).toContain(
         "Sandbox Stop attempted without durable nonce claim; result unverified.",
+      );
+      const stopLogs = (serviceLogs.get(proc) ?? "").slice(logOffset);
+      expect(stopLogs.indexOf("Stop attempted before durable nonce reconciliation")).toBeLessThan(
+        stopLogs.lastIndexOf("Stop attempted without durable nonce claim"),
       );
       expect((await fetch(url, alreadyClaimed)).status).toBe(503);
       expect(serviceLogs.get(proc)).toContain("SQLite code 5");

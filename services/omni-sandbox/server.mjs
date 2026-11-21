@@ -6,6 +6,7 @@ import http from "node:http";
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
+import { nonceReconciler } from "./nonce-reconciler.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createWorkspaceJournal, recoverWorkspaceJobs } from "./recovery.mjs";
@@ -247,10 +248,6 @@ export function createSandbox(c, opts = {}) {
       seen_at INTEGER NOT NULL
     ) WITHOUT ROWID;
   `);
-  const insertNonce = nonceStore.prepare(
-    "INSERT INTO nonces (nonce, seen_at) VALUES (?, ?) ON CONFLICT DO NOTHING",
-  );
-  const findNonce = nonceStore.prepare("SELECT 1 FROM nonces WHERE nonce = ?");
   const claimDecision = createDecisionClaims(nonceStore);
   createWorkspaceJournal(nonceStore);
   const claimCommand = createCommandClaims(nonceStore);
@@ -289,25 +286,8 @@ export function createSandbox(c, opts = {}) {
       )
     : Promise.resolve();
   void ready.catch(() => {});
-  const claimNonce = (nonce, failFast) => {
-    const now = Date.now();
-    if (failFast) nonceStore.exec("PRAGMA busy_timeout = 100");
-    try {
-      // Nonces are never deleted. A committed replay needs no write lock.
-      if (findNonce.get(nonce)) return false;
-      nonceStore.exec("BEGIN IMMEDIATE");
-      try {
-        const { changes } = insertNonce.run(nonce, now);
-        nonceStore.exec("COMMIT");
-        return changes === 1;
-      } catch (error) {
-        nonceStore.exec("ROLLBACK");
-        throw error;
-      }
-    } finally {
-      if (failFast) nonceStore.exec("PRAGMA busy_timeout = 5000");
-    }
-  };
+  const stopNonces = nonceReconciler(path.join(stateDir, "nonces.sqlite"), 100);
+  const requestNonces = nonceReconciler(path.join(stateDir, "nonces.sqlite"), 5000);
 
   const slotFree = () => {
     for (let i = 1; i <= c.limits.maxSessions; i++)
@@ -1045,24 +1025,27 @@ export function createSandbox(c, opts = {}) {
         !Array.isArray(parsed) &&
         parsed.projectId === c.projectId &&
         (parsed.action === "job.stop" || parsed.action === "agent.stop");
+      let stopPayload;
+      if (safetyStop) {
+        try {
+          stopPayload = await handle(parsed.action, parsed);
+          console.error("Sandbox Stop attempted before durable nonce reconciliation.");
+        } catch (error) {
+          console.error("Sandbox Stop failed before nonce reconciliation:", error.message);
+          res.writeHead(503).end();
+          return;
+        }
+      }
       try {
-        if (!claimNonce(nonce, Boolean(safetyStop))) {
+        if (!(await (safetyStop ? stopNonces : requestNonces).claim(nonce))) {
           res.writeHead(401).end();
           return;
         }
       } catch (error) {
         const code = Number.isInteger(error?.errcode) ? error.errcode : "unknown";
         console.error(`Sandbox nonce store unavailable; request refused (SQLite code ${code}).`);
-        // A verified, fresh Stop is a safety reduction. Try it even when its nonce cannot
-        // be recorded, but never acknowledge the request as accepted or replay-protected.
-        if (safetyStop) {
-          try {
-            await handle(parsed.action, parsed);
-            console.error("Sandbox Stop attempted without durable nonce claim; result unverified.");
-          } catch {
-            console.error("Sandbox Stop could not be attempted after nonce store failure.");
-          }
-        }
+        if (safetyStop)
+          console.error("Sandbox Stop attempted without durable nonce claim; result unverified.");
         res.writeHead(503).end();
         return;
       }
@@ -1075,7 +1058,7 @@ export function createSandbox(c, opts = {}) {
           contract: CONTRACT,
           requestNonce: nonce,
           steps: [],
-          ...(await handle(String(b.action), b)),
+          ...(safetyStop ? stopPayload : await handle(String(b.action), b)),
         };
       } catch (e) {
         status = 409;
@@ -1103,6 +1086,8 @@ export function createSandbox(c, opts = {}) {
     verifyProviders,
     close: () => {
       clearInterval(reaper);
+      void stopNonces.close();
+      void requestNonces.close();
       for (const s of [...sessions.values()]) endSession(s, "shutdown");
       server.close();
       const closeStores = () => {

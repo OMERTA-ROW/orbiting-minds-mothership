@@ -394,7 +394,8 @@ jobs:
           done
   workspace-host-gate:
     if: always() && (github.event_name != 'workflow_dispatch' || !inputs.namespace_trace)
-    needs: [workspace-host-historical, workspace-host-workers, workspace-watchdog]
+    needs:
+      [workspace-host-historical, workspace-host-workers, workspace-watchdog, workspace-lifecycle]
     runs-on: ubuntu-22.04
     steps:
       - name: Require both historical and hardened worker evidence
@@ -402,7 +403,8 @@ jobs:
           HISTORICAL: ${{ needs.workspace-host-historical.result }}
           WORKERS: ${{ needs.workspace-host-workers.result }}
           WATCHDOG: ${{ needs.workspace-watchdog.result }}
-        run: test "$HISTORICAL" = success && test "$WORKERS" = success && test "$WATCHDOG" = success
+          LIFECYCLE: ${{ needs.workspace-lifecycle.result }}
+        run: test "$HISTORICAL" = success && test "$WORKERS" = success && test "$WATCHDOG" = success && test "$LIFECYCLE" = success
   workspace-image-historical:
     if: github.event_name == 'workflow_dispatch' && inputs.unsupported_docker_diagnostics
     runs-on: ubuntu-22.04
@@ -537,7 +539,7 @@ jobs:
           set -euo pipefail
           git rev-parse HEAD
           sudo install -d -m 755 /opt/omni-watchdog-fixture/services/omni-sandbox /opt/omni-watchdog-fixture/tests/fixtures
-          sudo install -m 644 services/omni-sandbox/{cgroup,worker-leases,worker-watchdog}.mjs /opt/omni-watchdog-fixture/services/omni-sandbox/
+          sudo install -m 644 services/omni-sandbox/{cgroup,worker-leases,worker-watchdog,worker-authority}.mjs /opt/omni-watchdog-fixture/services/omni-sandbox/
           sudo install -m 644 tests/fixtures/omni-worker-watchdog-process.mjs /opt/omni-watchdog-fixture/tests/fixtures/
           sudo systemd-run --quiet --wait --pipe --collect \
             --unit="omni-watchdog-fixture-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
@@ -551,6 +553,32 @@ jobs:
               export OMNI_WORKSPACE_DELEGATED_CGROUP="$root" OMNI_WORKSPACE_WATCHDOG_TEST=1
               exec node --test --test-concurrency=1 tests/omni-workspace-watchdog-linux.test.mjs
             '
+  workspace-lifecycle:
+    if: github.event_name != 'workflow_dispatch' || !inputs.namespace_trace
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - name: Test socket routing, independent watchdog and ephemeral workspaces on disposable systemd
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          uname -a
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bubblewrap policykit-1
+          sudo useradd --uid 21000 --user-group --no-create-home omni-worker-fixture
+          sudo useradd --uid 22000 --user-group --no-create-home omni-watchdog-fixture
+          sudo useradd --uid 23000 --user-group --no-create-home omni-coordinator-fixture
+          sudo install -d -m 755 /opt/omni-watchdog-fixture/services/omni-sandbox /opt/omni-watchdog-fixture/tests/fixtures
+          sudo install -m 644 services/omni-sandbox/*.mjs /opt/omni-watchdog-fixture/services/omni-sandbox/
+          sudo install -m 644 tests/fixtures/omni-leased-{service,coordinator}.mjs /opt/omni-watchdog-fixture/tests/fixtures/
+          sudo env PATH="$PATH" OMNI_WORKSPACE_LIFECYCLE_TEST=1 \
+            node --test --test-concurrency=1 tests/omni-workspace-lifecycle-linux.test.mjs
   activation-sql:
     if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
     runs-on: ubuntu-22.04

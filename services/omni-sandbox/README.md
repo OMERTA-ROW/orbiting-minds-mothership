@@ -151,6 +151,37 @@ project, session, job and pending command and writes the decision and job claim 
 hard refusal precedes it until the isolated supervisor exists, in addition to the outer quarantine.
 No approved command is claimed or started by the running service while that refusal remains.
 
+## Experimental leased host lifecycle
+
+`leased-coordinator.mjs` composes durable exclusive leases, command-digest-bound owner approval,
+per-worker authenticated Unix sockets and 100 ms authority renewal. `leased-worker.mjs` accepts
+one assignment per systemd invocation and launches bubblewrap itself under its own non-root UID.
+Its job filesystem uses `/work` and `/tmp` tmpfs mounts, not worker-owned disk directories.
+Memory, PID, CPU, wall-time and output bounds remain enforced; results are returned through the
+authenticated socket, not persisted from inside the job.
+
+The separate `leased-watchdog.mjs` service validates signed, renewable authority with a
+monotonic deadline. It uses exact-unit systemd authorization to stop socket activation, stop
+the complete worker cgroup, verify namespace destruction and start a different invocation.
+The worker must be bound to its independent watchdog with systemd `BindsTo` and `After`;
+watchdog crash or cleanup failure also stops the worker but cannot fabricate a cleanup
+acknowledgement. Leases stay quarantined without verified, signed cleanup. Startup recovery
+terminates/recycles unfinished leases and never resubmits their commands.
+
+`tests/omni-workspace-lifecycle-linux.test.mjs` exercises real non-root services on disposable
+Linux. Its unit files, Polkit rule and synthetic approval issuer are fixtures only, not
+production configuration or permission grants. The existing production entrypoints still
+refuse execution. See [HOST-SETUP.md](HOST-SETUP.md) for required runtime invariants and rollback.
+
+Signed fresh Stop now executes **before** durable nonce reconciliation, including replayed
+Stop (a safety reduction only). Normal and Stop nonce writes use separate worker threads:
+an ordinary lock wait cannot block the request thread from attempting Stop. Both still use
+the same durable nonce table and atomic transaction. Stop reconciliation retains the 100 ms
+deadline and never retries: lock failure returns 503/unverified, not an accepted or
+termination-proven acknowledgement. Committed replay remains 401. Invalid signatures and
+wrong projects never enter the safety path. The strict cross-process replay regression is
+also exercised for 100 fresh-nonce races without accepting 503 as a pass.
+
 The opt-in `workspace-image-recovery` fixture runs the recovery tests against modules from the
 built image, with a delegated cgroup and all container capabilities dropped. It invokes the service
 through its module API with synthetic settings. The fixture shares the host cgroup namespace to

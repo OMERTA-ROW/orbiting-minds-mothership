@@ -6,7 +6,15 @@ import { createJobCgroup } from "./cgroup.mjs";
  * Experimental boundary. This does not implement renewable authority,
  * crash supervision, a disk quota, or production admission.
  */
-export async function startWorkspaceCommand({ parent, jobId, work, uid, limits, command }) {
+export async function startWorkspaceCommand({
+  parent,
+  jobId,
+  work,
+  uid,
+  limits,
+  command,
+  ephemeral = false,
+}) {
   if (
     process.platform !== "linux" ||
     !Number.isSafeInteger(uid) ||
@@ -70,9 +78,7 @@ export async function startWorkspaceCommand({ parent, jobId, work, uid, limits, 
     "/dev",
     "--tmpfs",
     "/tmp",
-    "--bind",
-    work,
-    "/work",
+    ...(ephemeral ? ["--tmpfs", "/work"] : ["--bind", work, "/work"]),
     "--chdir",
     "/work",
     "--clearenv",

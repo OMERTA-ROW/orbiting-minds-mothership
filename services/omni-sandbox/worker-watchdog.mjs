@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { delegatedCgroupRoot } from "./cgroup.mjs";
-import { signWorkerRecord, verifyWorkerRecord } from "./worker-leases.mjs";
+import { signWorkerRecord } from "./worker-leases.mjs";
+import { renewableWorkerAuthority } from "./worker-authority.mjs";
 
 export async function watchWorker({
   parent,
@@ -60,27 +61,12 @@ export async function watchWorker({
     path.basename(workspace) !== binding.leaseId
   )
     throw new Error("Workspace must be a pre-provisioned real directory.");
-  let lastSequence = -1;
-  let deadline = 0;
+  const check = renewableWorkerAuthority(secret, binding);
   let reason = recover ? "restart quarantine" : "";
   while (!reason) {
     try {
       const envelope = JSON.parse(fs.readFileSync(authorityFile, "utf8"));
-      const record = verifyWorkerRecord(secret, envelope, binding);
-      if (record.active !== true) throw new Error("Worker authority revoked or stopped.");
-      if (!Number.isSafeInteger(record.sequence) || record.sequence < lastSequence)
-        throw new Error("Worker authority replay.");
-      if (
-        !Number.isSafeInteger(record.expiresAt) ||
-        record.expiresAt <= Date.now() ||
-        record.expiresAt > Date.now() + 2000
-      )
-        throw new Error("Worker authority expired or exceeds its maximum lifetime.");
-      if (record.sequence > lastSequence) {
-        lastSequence = record.sequence;
-        deadline = performance.now() + Math.min(2000, record.expiresAt - Date.now());
-      }
-      if (performance.now() >= deadline) throw new Error("Worker authority renewal expired.");
+      check(envelope);
     } catch (error) {
       reason = error.message;
       break;

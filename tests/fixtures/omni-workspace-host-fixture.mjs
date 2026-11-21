@@ -39,6 +39,10 @@ replaceOnce(
     `import { startWorkspaceCommand } from ${JSON.stringify(pathToFileURL(path.join(serviceDir, "supervisor.mjs")).href)};`,
 );
 replaceOnce(
+  'from "./nonce-reconciler.mjs";',
+  `from ${JSON.stringify(pathToFileURL(path.join(serviceDir, "nonce-reconciler.mjs")).href)};`,
+);
+replaceOnce(
   'if (!["health.check", "job.stop", "agent.stop", "session.end"].includes(action)) {',
   'if (false && !["health.check", "job.stop", "agent.stop", "session.end"].includes(action)) {',
 );
