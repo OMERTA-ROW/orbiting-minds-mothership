@@ -149,6 +149,25 @@ This delta does not cover the full supervisor's unknown namespace and syscall ne
 default profile is not a minimal service syscall allowlist. It is not a production policy and
 does not validate the image's existing root/setuid service.
 
+The separate disposable image fixture builds `tests/fixtures/Dockerfile.omni-sandbox-image`
+and generates a test policy by appending `tests/fixtures/omni-bubblewrap-seccomp-delta.json`
+to the pinned Docker 28.0.4 default profile. A host trace observed bubblewrap creating namespaces
+with `clone` flags `2080505873`, then using `unshare(CLONE_NEWUSER)`, `mount` and `pivot_root`.
+The candidate delta permits that exact clone, that exact unshare, selected traced mount flags and
+`pivot_root`. It is **not a production seccomp policy**: seccomp cannot constrain mount paths
+through pointer arguments, `pivot_root` has no argument restriction here, and the same filter
+is inherited by the command. Do not deploy it or treat the delta as a complete syscall allowlist.
+The image fixture uses one unprivileged host UID for all sessions; it correctly reports
+`perSessionUser: false`, rather than treating separate mount namespaces as separate host users.
+The production Dockerfile and quarantined entrypoint are unchanged.
+
+On the disposable Docker 28.0.4 runner, the rootless fixture with `cap-drop ALL`,
+`no-new-privileges`, and the candidate policy still reported
+`bwrap: Failed to make / slave: Permission denied`. Its LSM label was `docker-default
+(enforce)`; no matching AppArmor audit denial was observed, so the precise denying layer is
+not established. Docker's default AppArmor policy is a possible further restriction. Do not
+disable AppArmor, grant broad capabilities, or treat a namespace probe as a working image.
+
 ## Namespace diagnosis
 
 On the disposable Ubuntu 22.04 GitHub-hosted VM in

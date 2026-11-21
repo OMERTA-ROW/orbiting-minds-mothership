@@ -272,7 +272,7 @@ jobs:
             https://raw.githubusercontent.com/moby/moby/v28.0.4/profiles/seccomp/default.json \
             -o "$RUNNER_TEMP/omni-seccomp-base.json"
           echo "9c1025c88ccaa517b648da571961838744ea2137f176bfe6a48b21294cae9c76  $RUNNER_TEMP/omni-seccomp-base.json" | sha256sum --check
-          jq --slurpfile delta services/omni-sandbox/seccomp-bubblewrap-delta.json \
+          jq --slurpfile delta tests/fixtures/omni-bubblewrap-seccomp-delta.json \
             '.syscalls += $delta[0]' "$RUNNER_TEMP/omni-seccomp-base.json" > "$RUNNER_TEMP/omni-seccomp.json"
           sha256sum "$RUNNER_TEMP/omni-seccomp.json"
           docker build --quiet --tag omni-workspace-historical:base services/omni-sandbox
