@@ -175,7 +175,7 @@ try {
   const c = loadConfig();
   const sb = createSandbox(c);
   await sb.ready;
-  sb.server.listen(c.port, "127.0.0.1");
+  sb.server.listen(c.port, imageFixture ? "0.0.0.0" : "127.0.0.1");
   for (const signal of ["SIGINT", "SIGTERM"])
     process.on(signal, () => {
       sb.close();
