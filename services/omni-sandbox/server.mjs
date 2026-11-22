@@ -5,8 +5,11 @@
 import http from "node:http";
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { spawn, spawnSync } from "node:child_process";
+import { DatabaseSync } from "node:sqlite";
+import { nonceReconciler } from "./nonce-reconciler.mjs";
 import fs from "node:fs";
 import path from "node:path";
+import { createWorkspaceJournal, recoverWorkspaceJobs } from "./recovery.mjs";
 
 export const CONTRACT = "omni.workspace/v1";
 export const PATH = "/api/public/omni/workspace";
@@ -28,6 +31,7 @@ export function loadConfig(env = process.env) {
     secret: env.OMNI_SANDBOX_HMAC_SECRET ?? "",
     projectId: env.OMNI_SANDBOX_PROJECT_ID ?? "omni",
     root: env.OMNI_SANDBOX_ROOT ?? "/sandbox",
+    cgroupParent: env.OMNI_SANDBOX_CGROUP_PARENT ?? "",
     uidBase: int(env.OMNI_SANDBOX_UID_BASE, 20000, 1000, 60000),
     limits: {
       commandTimeoutSec: int(env.OMNI_SANDBOX_COMMAND_TIMEOUT_SEC, 60, 1, 300),
@@ -78,6 +82,68 @@ const safeEqual = (a, b) => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
+export function boundDecision(projectId, session, body) {
+  if (
+    body.projectId !== projectId ||
+    typeof body.ownerId !== "string" ||
+    !UUID.test(body.ownerId) ||
+    body.ownerId !== session.ownerId ||
+    body.sessionId !== session.id ||
+    typeof body.jobId !== "string" ||
+    !UUID.test(body.jobId) ||
+    typeof body.approve !== "boolean"
+  )
+    throw new Refusal("Decision does not match the owner, project, session and job.");
+  const job = session.jobs.get(body.jobId);
+  if (!job || job.id !== body.jobId || job.state !== "awaiting_approval" || !job.pending)
+    throw new Refusal("Nothing is waiting for a decision.");
+  return job;
+}
+
+export function createDecisionClaims(database) {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS decision_claims (
+      project_id TEXT NOT NULL,
+      session_id TEXT NOT NULL,
+      job_id TEXT NOT NULL,
+      step_id TEXT NOT NULL,
+      owner_id TEXT NOT NULL,
+      claimed_at INTEGER NOT NULL,
+      PRIMARY KEY (project_id, session_id, job_id, step_id)
+    ) WITHOUT ROWID;
+  `);
+  const insert = database.prepare(`
+    INSERT INTO decision_claims (project_id, session_id, job_id, step_id, owner_id, claimed_at)
+    VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING
+  `);
+  return (body) =>
+    insert.run(body.projectId, body.sessionId, body.jobId, body.stepId, body.ownerId, Date.now())
+      .changes === 1;
+}
+
+export function createCommandClaims(database) {
+  const claimDecision = createDecisionClaims(database);
+  const journal = createWorkspaceJournal(database);
+  return (projectId, session, body) => {
+    const job = boundDecision(projectId, session, body);
+    if (body.approve !== true || body.stepId !== "cmd" || job.pending.kind !== "command")
+      throw new Refusal("An approved command decision is required.");
+    database.exec("BEGIN IMMEDIATE");
+    try {
+      if (!claimDecision(body)) {
+        database.exec("ROLLBACK");
+        return false;
+      }
+      journal.claim(body);
+      database.exec("COMMIT");
+      return true;
+    } catch (error) {
+      database.exec("ROLLBACK");
+      throw error;
+    }
+  };
+}
+
 // ---------------------------------------------------------------- isolation
 
 /** argv that runs `bash -c "$OMNI_CMD"` as `uid` with limits and, when possible, no network. */
@@ -97,6 +163,9 @@ function sandboxArgv(c, uid, net) {
     `--regid=${uid}`,
     "--clear-groups",
     "--inh-caps=-all",
+    "--ambient-caps=-all",
+    "--bounding-set=-all",
+    "--no-new-privs",
     "--",
   ];
   return net === "isolated"
@@ -154,13 +223,71 @@ function probe(c, net) {
 export function createSandbox(c, opts = {}) {
   const net = opts.network ?? detectNetwork(c);
   const sessions = new Map();
-  const nonces = new Map();
   const status = {
     providers: {},
     github: { configured: Boolean(c.githubToken), repositories: [], checkedAt: null },
   };
   fs.mkdirSync(c.root, { recursive: true, mode: 0o711 });
   fs.mkdirSync(path.join(c.root, ".mirrors"), { recursive: true, mode: 0o700 });
+  const stateDir = path.join(c.root, ".state");
+  fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+  const stateInfo = fs.lstatSync(stateDir);
+  if (
+    !stateInfo.isDirectory() ||
+    stateInfo.isSymbolicLink() ||
+    (process.getuid && stateInfo.uid !== process.getuid())
+  )
+    throw new Error("Sandbox state directory must be a private, service-owned directory.");
+  fs.chmodSync(stateDir, 0o700);
+  const nonceStore = new DatabaseSync(path.join(stateDir, "nonces.sqlite"));
+  nonceStore.exec(`
+    PRAGMA busy_timeout = 5000;
+    PRAGMA synchronous = FULL;
+    CREATE TABLE IF NOT EXISTS nonces (
+      nonce TEXT PRIMARY KEY NOT NULL,
+      seen_at INTEGER NOT NULL
+    ) WITHOUT ROWID;
+  `);
+  const claimDecision = createDecisionClaims(nonceStore);
+  createWorkspaceJournal(nonceStore);
+  const claimCommand = createCommandClaims(nonceStore);
+  const recoveryBinding = nonceStore
+    .prepare("SELECT cgroup_parent FROM workspace_recovery_config WHERE singleton = 1")
+    .get();
+  const unfinishedJob = nonceStore
+    .prepare("SELECT job_id FROM workspace_job_journal WHERE state != 'terminated' LIMIT 1")
+    .get();
+  if ((recoveryBinding || unfinishedJob) && !c.cgroupParent) {
+    nonceStore.close();
+    throw new Error("The recorded workspace recovery parent must be configured at startup.");
+  }
+  let recoveryLock;
+  if (c.cgroupParent) {
+    try {
+      recoveryLock = new DatabaseSync(path.join(stateDir, "workspace-lock.sqlite"));
+      recoveryLock.exec("PRAGMA busy_timeout = 0; BEGIN IMMEDIATE;");
+    } catch (error) {
+      recoveryLock?.close();
+      nonceStore.close();
+      throw new Error("Cannot exclusively lock workspace recovery state.", { cause: error });
+    }
+  }
+  let recoveryState = c.cgroupParent ? "pending" : "ready";
+  const ready = c.cgroupParent
+    ? recoverWorkspaceJobs(nonceStore, c.cgroupParent, c.projectId).then(
+        () => {
+          recoveryState = "ready";
+        },
+        (error) => {
+          recoveryState = "failed";
+          console.error("Workspace startup recovery failed:", error.message);
+          throw error;
+        },
+      )
+    : Promise.resolve();
+  void ready.catch(() => {});
+  const stopNonces = nonceReconciler(path.join(stateDir, "nonces.sqlite"), 100);
+  const requestNonces = nonceReconciler(path.join(stateDir, "nonces.sqlite"), 5000);
 
   const slotFree = () => {
     for (let i = 1; i <= c.limits.maxSessions; i++)
@@ -195,7 +322,6 @@ export function createSandbox(c, opts = {}) {
         now - s.startedAt > c.limits.sessionMinutes * 60_000
       )
         endSession(s, "timeout");
-    for (const [n, t] of nonces) if (now - t > 300_000) nonces.delete(n);
   }, 15_000);
   reaper.unref();
 
@@ -663,6 +789,11 @@ export function createSandbox(c, opts = {}) {
   }
 
   async function handle(action, b) {
+    if (!["health.check", "job.stop", "agent.stop", "session.end"].includes(action)) {
+      throw new Refusal(
+        "Workspace execution is disabled: filesystem/PID isolation, descendant cancellation and durable replay protection are not verified.",
+      );
+    }
     switch (action) {
       case "health.check": {
         const pr = probe(c, net);
@@ -695,10 +826,18 @@ export function createSandbox(c, opts = {}) {
         };
       }
       case "session.start": {
-        if (!UUID.test(b.sessionId ?? "")) throw new Refusal("Invalid session ID.");
+        if (
+          typeof b.sessionId !== "string" ||
+          !UUID.test(b.sessionId) ||
+          typeof b.ownerId !== "string" ||
+          !UUID.test(b.ownerId)
+        )
+          throw new Refusal("Invalid session or owner ID.");
         if (net !== "isolated" && !c.allowNetwork)
           throw new Refusal("Network isolation is unavailable on this host; commands are refused.");
         let s = sessions.get(b.sessionId);
+        if (s && s.ownerId !== b.ownerId)
+          throw new Refusal("Session belongs to a different owner.");
         if (!s) {
           const slot = slotFree();
           if (!slot) throw new Refusal(`At most ${c.limits.maxSessions} sessions at once.`);
@@ -711,6 +850,7 @@ export function createSandbox(c, opts = {}) {
           const provider = ["openai", "anthropic"].includes(b.provider) ? b.provider : "none";
           s = {
             id: b.sessionId,
+            ownerId: b.ownerId,
             slot,
             uid,
             dir,
@@ -774,10 +914,23 @@ export function createSandbox(c, opts = {}) {
       }
       case "step.decide": {
         const s = getSession(b.sessionId);
-        const job = s.jobs.get(b.jobId);
-        if (!job || !job.pending) throw new Refusal("Nothing is waiting for a decision.");
+        const job = boundDecision(c.projectId, s, b);
         const want = job.pending.kind === "pr" ? "pr" : "cmd";
         if (b.stepId !== want) throw new Refusal("That step is not waiting.");
+        // Do not consume an approval until a real supervisor can accept it.
+        if (b.approve && job.pending.kind === "command")
+          throw new Refusal("The isolated workspace command supervisor is unavailable.");
+        let claimed;
+        try {
+          claimed =
+            b.approve && job.pending.kind === "command"
+              ? claimCommand(c.projectId, s, b)
+              : claimDecision(b);
+        } catch {
+          console.error("Sandbox decision store unavailable; request refused.");
+          throw new Refusal("Decision store unavailable; nothing was started.");
+        }
+        if (!claimed) throw new Refusal("This decision has already been consumed.");
         if (b.approve !== true) {
           job.pending = null;
           job.state = "stopped";
@@ -825,6 +978,10 @@ export function createSandbox(c, opts = {}) {
   // -------------------------------------------------------------- HTTP
 
   const server = http.createServer((req, res) => {
+    if (recoveryState !== "ready") {
+      res.writeHead(503, { "content-type": "application/json" }).end('{"ok":false}');
+      return;
+    }
     if (req.method === "GET" && req.url === "/healthz") {
       res.writeHead(200, { "content-type": "application/json" }).end('{"ok":true}');
       return;
@@ -851,13 +1008,50 @@ export function createSandbox(c, opts = {}) {
         h("x-omni-client") !== c.clientId ||
         !fresh ||
         !/^[0-9a-f]{32}$/.test(nonce) ||
-        nonces.has(nonce) ||
         !safeEqual(h("x-omni-signature"), hmac(c.secret, message))
       ) {
         res.writeHead(401).end();
         return;
       }
-      nonces.set(nonce, Date.now());
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = null;
+      }
+      const safetyStop =
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        parsed.projectId === c.projectId &&
+        (parsed.action === "job.stop" || parsed.action === "agent.stop");
+      let stopPayload;
+      if (safetyStop) {
+        try {
+          stopPayload = await handle(parsed.action, parsed);
+          console.error("Sandbox Stop attempted before durable nonce reconciliation.");
+        } catch (error) {
+          console.error("Sandbox Stop failed before nonce reconciliation:", error.message);
+          res.writeHead(503).end();
+          return;
+        }
+      }
+      try {
+        if (!(await (safetyStop ? stopNonces : requestNonces).claim(nonce))) {
+          res.writeHead(401).end();
+          return;
+        }
+      } catch (error) {
+        const code = Number.isInteger(error?.errcode) ? error.errcode : "unknown";
+        console.error(`Sandbox nonce store unavailable; request refused (SQLite code ${code}).`);
+        console.error(
+          `Nonce reconciliation failed during ${error.phase ?? "unknown"}: ${error.message}`,
+        );
+        if (safetyStop)
+          console.error("Sandbox Stop attempted without durable nonce claim; result unverified.");
+        res.writeHead(503).end();
+        return;
+      }
       let status = 200;
       let payload;
       try {
@@ -867,7 +1061,7 @@ export function createSandbox(c, opts = {}) {
           contract: CONTRACT,
           requestNonce: nonce,
           steps: [],
-          ...(await handle(String(b.action), b)),
+          ...(safetyStop ? stopPayload : await handle(String(b.action), b)),
         };
       } catch (e) {
         status = 409;
@@ -891,11 +1085,20 @@ export function createSandbox(c, opts = {}) {
   return {
     server,
     network: net,
+    ready,
     verifyProviders,
     close: () => {
       clearInterval(reaper);
+      void stopNonces.close();
+      void requestNonces.close();
       for (const s of [...sessions.values()]) endSession(s, "shutdown");
       server.close();
+      const closeStores = () => {
+        nonceStore.close();
+        recoveryLock?.close();
+      };
+      if (recoveryState === "pending") void ready.then(closeStores, closeStores);
+      else closeStores();
     },
   };
 }
@@ -911,6 +1114,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   const c = loadConfig();
   const sb = createSandbox(c);
+  await sb.ready;
   console.log(
     `omni-sandbox ${VERSION}: network ${sb.network}; ${c.repoAllowlist.length} allowed repositories`,
   );

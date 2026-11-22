@@ -53,7 +53,7 @@ const all: AutonomyEvidence = {
 };
 const failing = (e: AutonomyEvidence) =>
   autonomyGates(e)
-    .gates.filter((g) => !g.ok)
+    .gates.filter((g) => !g.ok && g.id !== "isolation")
     .map((g) => g.id);
 
 describe("Autonomous Mode stays off in this build", () => {
@@ -79,7 +79,6 @@ describe("Autonomous Mode stays off in this build", () => {
       expect.arrayContaining([
         "verified_release",
         "signed_self_test",
-        "isolation",
         "sandbox_autonomy",
         "stop_drill",
         "spend_meter",
@@ -91,7 +90,10 @@ describe("Autonomous Mode stays off in this build", () => {
 });
 
 describe("autonomy gates", () => {
-  it("allows only when every gate is met", () => expect(autonomyGates(all).allowed).toBe(true));
+  it("does not treat a signed probe as verified containment", () => {
+    expect(autonomyGates(all).allowed).toBe(false);
+    expect(autonomyGates(all).gates.find((g) => g.id === "isolation")?.ok).toBe(false);
+  });
   it("needs a self-test from the last 24 hours", () =>
     expect(failing({ ...all, sandboxSelfTestPassedAt: NOW - 25 * 3600_000 })).toEqual([
       "signed_self_test",
@@ -100,17 +102,17 @@ describe("autonomy gates", () => {
     expect(failing({ ...all, stopDrillPassedAt: NOW - 25 * 3600_000 })).toEqual(["stop_drill"]));
   it("needs network isolation and a per-session user", () => {
     expect(
-      failing({
+      autonomyGates({
         ...all,
         sandboxHealth: { ...health, isolation: { ...health.isolation, network: "open" } },
-      }),
-    ).toEqual(["isolation"]);
+      }).gates.find((g) => g.id === "isolation")?.ok,
+    ).toBe(false);
     expect(
-      failing({
+      autonomyGates({
         ...all,
         sandboxHealth: { ...health, isolation: { ...health.isolation, perSessionUser: false } },
-      }),
-    ).toEqual(["isolation"]);
+      }).gates.find((g) => g.id === "isolation")?.ok,
+    ).toBe(false);
   });
   it("needs a sandbox that implements time-bounded autonomy", () =>
     expect(failing({ ...all, sandboxHealth: { ...health, autonomy: "off" } })).toEqual([

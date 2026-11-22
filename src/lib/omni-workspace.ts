@@ -5,6 +5,8 @@
 import { z } from "zod";
 
 export const WORKSPACE_CONTRACT = "omni.workspace/v1";
+export const WORKSPACE_CONTAINMENT_BLOCKER =
+  "Workspace containment and durable replay protection are not verified; execution is disabled.";
 export const PASSKEY_FRESH_SECONDS = 300;
 export const IDLE_LIMIT_MS = 10 * 60_000;
 export const SESSION_MAX_MS = 60 * 60_000;
@@ -123,7 +125,7 @@ export type Gate = { open: boolean; blockers: string[] };
 
 /** Every item must be true. Missing or unreadable state counts as closed. */
 export function workspaceGate(g: GateInput): Gate {
-  const blockers: string[] = [];
+  const blockers: string[] = [WORKSPACE_CONTAINMENT_BLOCKER];
   if (!g.linkConfigured) blockers.push("Cloud sandbox settings are missing or invalid.");
   if (!g.sandboxEnabled) blockers.push("Cloud sandbox switch (OMNI_SANDBOX_ENABLED) is off.");
   if (g.selfTestPassedAt === null || g.now - g.selfTestPassedAt > SELF_TEST_VALID_MS)
@@ -264,7 +266,7 @@ export const SANDBOX_CEILINGS = {
   sessionMinutes: 60,
 } as const;
 
-/** Self-test passes only when isolation is proven by the live probe and every limit is within ceilings. */
+/** Check the reported probe and limits; these claims do not prove containment. */
 export function evaluateSandboxHealth(h: SandboxHealth): { passed: boolean; failures: string[] } {
   const f: string[] = [];
   if (h.isolation.network !== "isolated")
@@ -349,12 +351,11 @@ export function autonomyGates(e: AutonomyEvidence): { allowed: boolean; gates: A
     {
       id: "isolation",
       label: "Isolated shell: no network, per-session user, no leaked settings",
-      ok: Boolean(verdict?.passed && h?.isolation.perSessionUser),
-      detail: verdict
-        ? verdict.passed
-          ? "Live probe passed."
-          : verdict.failures[0]!
-        : "No health report.",
+      ok: false,
+      detail:
+        verdict && !verdict.passed
+          ? `${WORKSPACE_CONTAINMENT_BLOCKER} ${verdict.failures[0]}`
+          : WORKSPACE_CONTAINMENT_BLOCKER,
     },
     {
       id: "sandbox_autonomy",

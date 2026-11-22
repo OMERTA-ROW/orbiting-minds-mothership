@@ -1,0 +1,11 @@
+FROM omni-workspace-historical:base
+USER root
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends bubblewrap \
+ && chmod u-s /usr/bin/bwrap \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /fixture
+COPY services/omni-sandbox/server.mjs services/omni-sandbox/cgroup.mjs services/omni-sandbox/recovery.mjs services/omni-sandbox/supervisor.mjs /fixture/services/omni-sandbox/
+COPY tests/fixtures/omni-workspace-host-fixture.mjs /fixture/tests/fixtures/
+USER 1001:1001
+CMD ["node", "/fixture/tests/fixtures/omni-workspace-host-fixture.mjs"]

@@ -1,0 +1,154 @@
+import { spawn } from "node:child_process";
+import fs from "node:fs";
+import { createJobCgroup } from "./cgroup.mjs";
+
+/**
+ * Experimental boundary. This does not implement renewable authority,
+ * crash supervision, a disk quota, or production admission.
+ */
+export async function startWorkspaceCommand({
+  parent,
+  jobId,
+  work,
+  uid,
+  limits,
+  command,
+  ephemeral = false,
+}) {
+  if (
+    process.platform !== "linux" ||
+    !Number.isSafeInteger(uid) ||
+    uid < 1 ||
+    typeof command !== "string" ||
+    !command.trim()
+  )
+    throw new Error("Invalid workspace command configuration.");
+  if (!fs.statSync(work).isDirectory()) throw new Error("Workspace must be a directory.");
+  if (process.getuid?.() !== 0 && uid !== process.getuid?.())
+    throw new Error("An unprivileged supervisor cannot select a different host UID.");
+
+  const group = createJobCgroup(parent, jobId, {
+    cpuQuotaMicros: 50000,
+    cpuPeriodMicros: 100000,
+    memoryBytes: limits.memoryMb * 1024 * 1024,
+    maxProcesses: limits.maxProcesses,
+  });
+  const dropPrivileges =
+    process.getuid?.() === 0
+      ? [
+          "/usr/bin/setpriv",
+          `--reuid=${uid}`,
+          `--regid=${uid}`,
+          "--clear-groups",
+          "--inh-caps=-all",
+          "--ambient-caps=-all",
+          "--bounding-set=-all",
+          "--no-new-privs",
+          "--",
+        ]
+      : [];
+  const argv = [
+    ...dropPrivileges,
+    "/usr/bin/bwrap",
+    "--unshare-user",
+    "--unshare-pid",
+    "--unshare-net",
+    "--unshare-ipc",
+    "--unshare-uts",
+    "--cap-drop",
+    "ALL",
+    "--die-with-parent",
+    "--new-session",
+    "--ro-bind",
+    "/usr",
+    "/usr",
+    "--symlink",
+    "usr/bin",
+    "/bin",
+    "--symlink",
+    "usr/sbin",
+    "/sbin",
+    "--symlink",
+    "usr/lib",
+    "/lib",
+    "--symlink",
+    "usr/lib64",
+    "/lib64",
+    "--proc",
+    "/proc",
+    "--dev",
+    "/dev",
+    "--tmpfs",
+    "/tmp",
+    ...(ephemeral ? ["--tmpfs", "/work"] : ["--bind", work, "/work"]),
+    "--chdir",
+    "/work",
+    "--clearenv",
+    "--setenv",
+    "PATH",
+    "/usr/bin:/bin",
+    "--setenv",
+    "HOME",
+    "/work",
+    "--setenv",
+    "LANG",
+    "C.UTF-8",
+    "--setenv",
+    "TERM",
+    "dumb",
+    "--",
+    "/bin/bash",
+    "--noprofile",
+    "--norc",
+    "-c",
+    command,
+  ];
+  const child = spawn(
+    "/bin/sh",
+    ["-c", 'IFS= read -r gate <&3 && [ "$gate" = go ] && exec "$@"', "sh", ...argv],
+    {
+      cwd: "/",
+      env: { PATH: "/usr/bin:/bin" },
+      stdio: ["ignore", "pipe", "pipe", "pipe"],
+    },
+  );
+  const exited = new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code, signal) => resolve({ code, signal }));
+  });
+  const closed = new Promise((resolve) => child.once("close", resolve));
+  let stopping;
+  const stop = () => (stopping ??= group.stop());
+  const completed = (async () => {
+    let result;
+    let spawnError;
+    try {
+      result = await exited;
+    } catch (error) {
+      spawnError = error;
+    }
+    await stop();
+    await closed;
+    group.remove();
+    if (spawnError) throw spawnError;
+    return result;
+  })();
+  void completed.catch(() => {});
+  try {
+    if (!child.pid) throw new Error("Could not start the blocked workspace launcher.");
+    group.attach(child.pid);
+    child.stdio[3].end("go\n");
+  } catch (error) {
+    child.stdio[3].destroy();
+    try {
+      await completed;
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        "Workspace startup failed and cgroup cleanup was not confirmed.",
+      );
+    }
+    throw error;
+  }
+  return { child, stop, completed };
+}

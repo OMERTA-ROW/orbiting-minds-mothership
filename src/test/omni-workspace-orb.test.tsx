@@ -71,7 +71,11 @@ vi.mock("@/lib/omni-workspace.functions", () => {
     setAutonomy: no,
     setKillSwitch: no,
     startSession: no,
-    stopWork: no,
+    stopWork: () =>
+      Promise.resolve({
+        ok: true,
+        remote: "request acknowledged; remote cancellation is unverified",
+      }),
     updateAgent: no,
   };
 });
@@ -79,6 +83,12 @@ vi.mock("@/lib/omni-workspace.functions", () => {
 import { OmniWorkspace } from "@/components/omnibridge/OmniWorkspace";
 
 describe("OMNI terminal orb", () => {
+  it("does not present a Stop acknowledgement as verified remote cancellation", async () => {
+    render(<OmniWorkspace />);
+    fireEvent.click(await screen.findByRole("button", { name: "STOP" }));
+    expect(await screen.findByText(/remote cancellation is unverified/)).toBeInTheDocument();
+  });
+
   it("shows the real terminal as not connected, with the recorded blockers", async () => {
     render(<OmniWorkspace />);
     await waitFor(() => expect(screen.getByTestId("orb-status")).toBeInTheDocument());
