@@ -32,6 +32,10 @@ isolation, owner-approval evidence and deployment verification remain blocked.
 
 These container checks improve supply-chain and runtime evidence; they do not
 prove filesystem/PID/network isolation or certify a production host.
+The sandbox smoke test retains only CHOWN, SETUID, SETGID and SETPCAP for its
+root-starting entrypoint and checks that a child drops its IDs and capabilities.
+The autonomous smoke test still drops all capabilities. Sandbox health alone
+does not establish that its network-isolation probe succeeded or permit sessions.
 
 ## Verification
 
