@@ -43,7 +43,14 @@ export async function callClaude(args: {
     });
     if (!res.ok) {
       await res.body?.cancel().catch(() => undefined);
-      return { text: "", stopReason: null, inputTokens: null, outputTokens: null, failureStatus: res.status, threw: false };
+      return {
+        text: "",
+        stopReason: null,
+        inputTokens: null,
+        outputTokens: null,
+        failureStatus: res.status,
+        threw: false,
+      };
     }
     const data = (await res.json()) as {
       content?: { type: string; text?: string }[];
@@ -63,6 +70,13 @@ export async function callClaude(args: {
       threw: false,
     };
   } catch {
-    return { text: "", stopReason: null, inputTokens: null, outputTokens: null, failureStatus: null, threw: true };
+    return {
+      text: "",
+      stopReason: null,
+      inputTokens: null,
+      outputTokens: null,
+      failureStatus: null,
+      threw: true,
+    };
   }
 }

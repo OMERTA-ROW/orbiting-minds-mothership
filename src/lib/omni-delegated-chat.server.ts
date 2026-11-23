@@ -9,7 +9,12 @@
  * chat" switch on they read their own saved memory once, inside the same checks, before the model
  * call. If anything can't be recorded, no reply is returned.
  */
-import { CLAUDE_MAX_OUTPUT_TOKENS, attributionLine, claudeEngineFor, type ClaudeEngineId } from "./omni-engines";
+import {
+  CLAUDE_MAX_OUTPUT_TOKENS,
+  attributionLine,
+  claudeEngineFor,
+  type ClaudeEngineId,
+} from "./omni-engines";
 import { sha256Hex } from "./omni-api-keys";
 import { assertNonSensitive } from "./beta";
 import { DELEGATION_AUDIENCE, classifyBearer, isBrowserRequest } from "./omni-delegation";
@@ -143,14 +148,25 @@ function claudeInference(model: ClaudeEngineId, fetchImpl?: typeof fetch): ChatI
     });
     const usage =
       r.inputTokens !== null && r.outputTokens !== null
-        ? { inputTokens: r.inputTokens, outputTokens: r.outputTokens, totalTokens: r.inputTokens + r.outputTokens }
+        ? {
+            inputTokens: r.inputTokens,
+            outputTokens: r.outputTokens,
+            totalTokens: r.inputTokens + r.outputTokens,
+          }
         : undefined;
     return {
       text: r.text,
-      finishReason: r.stopReason === "max_tokens" ? "length" : r.stopReason === "refusal" ? "content-filter" : "stop",
+      finishReason:
+        r.stopReason === "max_tokens"
+          ? "length"
+          : r.stopReason === "refusal"
+            ? "content-filter"
+            : "stop",
       usage,
       gatewayRunId: null,
-      failure: r.failureStatus ? { status: r.failureStatus, message: `Anthropic HTTP ${r.failureStatus}` } : undefined,
+      failure: r.failureStatus
+        ? { status: r.failureStatus, message: `Anthropic HTTP ${r.failureStatus}` }
+        : undefined,
       threw: r.threw,
     } as InferenceResult;
   };
@@ -300,9 +316,7 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
     else if (r.ok !== true) stopReason = r.reason || "check_unavailable";
     else claudeEstimate = typeof r["estimate_cents"] === "number" ? r["estimate_cents"] : null;
   }
-  const runInfer: ChatInference = claude
-    ? claudeInference(claude, deps.claudeFetch)
-    : infer;
+  const runInfer: ChatInference = claude ? claudeInference(claude, deps.claudeFetch) : infer;
 
   const controller = new AbortController();
   const deadline = AbortSignal.timeout(deps.timeoutMs ?? DELEGATED_CHAT_LIMITS.timeoutMs);
@@ -410,11 +424,13 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
   if (claude && claudeEstimate !== null) {
     const settled = await callRpc(rpc, "claude_settle", {
       _run_id: runId,
-      _status: status === "completed" ? "completed" : status === "cancelled" ? "cancelled" : "failed",
+      _status:
+        status === "completed" ? "completed" : status === "cancelled" ? "cancelled" : "failed",
       _input_tokens: result.usage?.inputTokens ?? null,
       _output_tokens: result.usage?.outputTokens ?? null,
     });
-    claudeActual = settled && typeof settled["actual_cents"] === "number" ? settled["actual_cents"] : null;
+    claudeActual =
+      settled && typeof settled["actual_cents"] === "number" ? settled["actual_cents"] : null;
   }
 
   const finish = await callRpc(rpc, "omni_delegation_finish_chat", {

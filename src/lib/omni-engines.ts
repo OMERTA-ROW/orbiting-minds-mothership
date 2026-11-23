@@ -67,7 +67,10 @@ export function estimateClaudeCents(
 ): number | null {
   if (!(inCentsPerMtok > 0) || !(outCentsPerMtok > 0)) return null;
   const inTokens = Math.ceil(inputChars / 3) + 200;
-  return Math.max(1, Math.ceil((inTokens * inCentsPerMtok + maxOutputTokens * outCentsPerMtok) / 1e6));
+  return Math.max(
+    1,
+    Math.ceil((inTokens * inCentsPerMtok + maxOutputTokens * outCentsPerMtok) / 1e6),
+  );
 }
 
 export const CLAUDE_CAPS = { perCallCents: 50, perDayCents: 500 } as const;
