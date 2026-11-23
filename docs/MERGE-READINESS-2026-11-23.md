@@ -61,6 +61,9 @@ Local results for this update:
 - Workflow YAML parse: passed.
 - Docker daemon verification: blocked locally because `/Users/omertarow/.docker/run/docker.sock`
   is unavailable. The new CI job performs synthetic no-network/container-hardening checks.
+- A container image smoke failure found and is addressed by copying the sandbox
+  nonce reconciler and worker modules into the runtime image. The new CI run
+  must pass again before readiness can advance.
 
 ## Remaining blockers
 
