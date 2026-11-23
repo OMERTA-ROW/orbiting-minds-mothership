@@ -49,8 +49,9 @@ export function ClaudeEngine() {
         <p className="text-sm text-muted-foreground">
           Anthropic key: {ready ? "saved on the server" : "not connected"}. Today:{" "}
           {usd(s.todayCents)} of {usd(CLAUDE_CAPS.perDayCents)} · each reply at most{" "}
-          {usd(CLAUDE_CAPS.perCallCents)}. Emergency Stop and AI approval apply. This total is shared
-          by chat, the terminal agent and Fusion. Claude never runs code; coding goes to Jackboy.
+          {usd(CLAUDE_CAPS.perCallCents)}. Emergency Stop and AI approval apply. This total is
+          shared by chat, the terminal agent and Fusion. Claude never runs code; coding goes to
+          Jackboy.
         </p>
       </section>
 
