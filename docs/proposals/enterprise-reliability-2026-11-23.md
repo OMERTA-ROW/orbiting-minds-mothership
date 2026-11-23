@@ -17,3 +17,16 @@ Verified isolation, reproducible builds, staging tests, rollback simulation, fai
 
 ## Non-negotiable controls
 Do not lift quarantine, enable Autonomous Mode, disable Emergency Stop, alter production secrets, merge or deploy without explicit owner authorization. Containerization alone is not proof of isolation.
+
+## Advanced capabilities — Phase 2 (proposed, gated)
+1. Fusion orchestration: agent registry, role/capability discovery, multi-agent dispatch, result provenance, conflict resolution, cost-aware model routing and traceable tool invocation.
+2. Agent intelligence: isolated project memory, searchable task history, explicit memory retention controls and permission-scoped retrieval.
+3. Durable task workflows: plan/preview/approve/execute/checkpoint/resume/cancel, dependency tracking, schedules and deadlines; prevent replay of irreversible actions.
+4. Owner terminal: secure command preview, scoped approvals, live output, searchable execution history, agent switching and distinct personal/public permissions.
+5. Voice experience: speech input/output interface with agent attribution and safe confirmation for consequential commands; graceful fallback when providers unavailable.
+6. Jackboy delegation: signed scoped software-engineering jobs, PR links, test evidence, status synchronization, bounded retries and explicit owner merge/deploy authorization.
+7. Connected task capabilities: modular adapters for publishing, business documents, forms and administrative workflows, with provider permissions, human review and legal/compliance gates where applicable.
+8. Resilience and intelligence: failure classification, safe retries, agent health metrics, spending telemetry, recovery controls and an owner-only operations dashboard.
+9. Evaluation: Fusion dispatch tests, prompt-injection resistance, cross-agent data isolation, tool permission denials, cost ceilings, session recovery and emergency stop.
+
+Implement incrementally only after executor isolation and approval gates are verified. Do not activate quarantined execution or claim live integrations without end-to-end proof.
