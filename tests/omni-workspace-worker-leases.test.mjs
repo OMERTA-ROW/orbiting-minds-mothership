@@ -133,6 +133,10 @@ test("controller refuses wrong-owner approval before renewal or worker dispatch"
       },
     ],
     approvalSecret: secret,
+    getApproval: () => ({ approved: true }),
+    isStopped: () => false,
+    spend: () => ({ callUsd: 0, jobUsd: 0, dayUsd: 0, totalUsd: 0 }),
+    flagEnabled: () => true,
     approve: async (binding) => sign({ ...binding, ownerId: randomUUID() }),
     renew: async () => {
       assert.fail("Invalid approval must not reach renewal.");

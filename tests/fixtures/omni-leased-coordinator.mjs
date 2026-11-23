@@ -25,6 +25,10 @@ const coordinator = createLeasedCoordinator({
   databaseFile: config.database,
   workers: [worker],
   approvalSecret: config.approvalSecret,
+  getApproval: () => ({ approved: true }),
+  isStopped: () => false,
+  spend: () => ({ callUsd: 0, jobUsd: 0, dayUsd: 0, totalUsd: 0 }),
+  flagEnabled: () => true,
   approve: async (binding, commandDigest) => {
     if (config.startupDelay)
       await new Promise((resolve) => setTimeout(resolve, config.startupDelay));
