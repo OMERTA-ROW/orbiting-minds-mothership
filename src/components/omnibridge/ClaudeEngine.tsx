@@ -3,7 +3,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { readClaudeStatus, setClaudeEngine, setClaudePrice } from "@/lib/claude-engine.functions";
-import { CLAUDE_CAPS, CLAUDE_ENGINE_IDS, engineById, type ClaudeEngineId } from "@/lib/omni-engines";
+import {
+  CLAUDE_CAPS,
+  CLAUDE_ENGINE_IDS,
+  CLAUDE_SOURCE_LABEL,
+  engineById,
+  type ClaudeEngineId,
+} from "@/lib/omni-engines";
 
 type Status = Awaited<ReturnType<typeof readClaudeStatus>>;
 const AGENTS = [
@@ -26,7 +32,9 @@ export function ClaudeEngine() {
   const [outC, setOutC] = useState("");
 
   const load = useCallback(() => {
-    read().then(setS).catch(() => setS({ ok: false, message: "Owner sign-in with two-step code is needed." }));
+    read()
+      .then(setS)
+      .catch(() => setS({ ok: false, message: "Owner sign-in with two-step code is needed." }));
   }, [read]);
   useEffect(load, [load]);
 
@@ -39,9 +47,11 @@ export function ClaudeEngine() {
       <section className="space-y-1">
         <h3 className="font-medium">Claude engine</h3>
         <p className="text-sm text-muted-foreground">
-          Anthropic key: {ready ? "saved on the server" : "not connected"}. Today: {usd(s.todayCents)} of{" "}
-          {usd(CLAUDE_CAPS.perDayCents)} · each reply at most {usd(CLAUDE_CAPS.perCallCents)}. Emergency Stop and
-          AI approval apply. Claude never runs code; coding goes to Jackboy.
+          Anthropic key: {ready ? "saved on the server" : "not connected"}. Today:{" "}
+          {usd(s.todayCents)} of {usd(CLAUDE_CAPS.perDayCents)} · each reply at most{" "}
+          {usd(CLAUDE_CAPS.perCallCents)}. Emergency Stop and AI approval apply. This total is
+          shared by chat, the terminal agent and Fusion. Claude never runs code; coding goes to
+          Jackboy.
         </p>
       </section>
 
@@ -58,20 +68,30 @@ export function ClaudeEngine() {
                 value={model}
                 aria-label={`${a.name} Claude model`}
                 onChange={async (e) => {
-                  const r = await saveEngine({ data: { agent: a.id, model: e.target.value as ClaudeEngineId, enabled: row?.enabled ?? false } });
+                  const r = await saveEngine({
+                    data: {
+                      agent: a.id,
+                      model: e.target.value as ClaudeEngineId,
+                      enabled: row?.enabled ?? false,
+                    },
+                  });
                   setNote(r.ok ? "Saved." : r.message);
                   load();
                 }}
               >
                 {CLAUDE_ENGINE_IDS.map((m) => (
-                  <option key={m} value={m}>{engineById(m)?.label}</option>
+                  <option key={m} value={m}>
+                    {engineById(m)?.label}
+                  </option>
                 ))}
               </select>
               <Button
                 size="sm"
                 variant={row?.enabled ? "default" : "outline"}
                 onClick={async () => {
-                  const r = await saveEngine({ data: { agent: a.id, model, enabled: !row?.enabled } });
+                  const r = await saveEngine({
+                    data: { agent: a.id, model, enabled: !row?.enabled },
+                  });
                   setNote(r.ok ? "Saved." : r.message);
                   load();
                 }}
@@ -84,26 +104,54 @@ export function ClaudeEngine() {
       </section>
 
       <section className="space-y-2">
-        <h4 className="text-sm font-medium">Confirmed prices (cents per million tokens, from Anthropic's pricing page)</h4>
+        <h4 className="text-sm font-medium">
+          Confirmed prices (cents per million tokens, from Anthropic's pricing page)
+        </h4>
         {CLAUDE_ENGINE_IDS.map((m) => {
           const p = s.prices.find((x) => x.model === m);
           return (
             <p key={m} className="text-sm text-muted-foreground">
               {engineById(m)?.label}:{" "}
-              {p ? `${p.in_cents_per_mtok} in / ${p.out_cents_per_mtok} out, confirmed ${new Date(p.confirmed_at).toLocaleDateString()}` : "not set (calls refused)"}
+              {p
+                ? `${p.in_cents_per_mtok} in / ${p.out_cents_per_mtok} out, confirmed ${new Date(p.confirmed_at).toLocaleDateString()}`
+                : "not set (calls refused)"}
             </p>
           );
         })}
         <div className="flex flex-wrap gap-2">
-          <select className={selectClass} value={priceModel} aria-label="Price model" onChange={(e) => setPriceModel(e.target.value as ClaudeEngineId)}>
-            {CLAUDE_ENGINE_IDS.map((m) => <option key={m} value={m}>{engineById(m)?.label}</option>)}
+          <select
+            className={selectClass}
+            value={priceModel}
+            aria-label="Price model"
+            onChange={(e) => setPriceModel(e.target.value as ClaudeEngineId)}
+          >
+            {CLAUDE_ENGINE_IDS.map((m) => (
+              <option key={m} value={m}>
+                {engineById(m)?.label}
+              </option>
+            ))}
           </select>
-          <Input className="w-28" inputMode="decimal" placeholder="Input" aria-label="Input price" value={inC} onChange={(e) => setInC(e.target.value)} />
-          <Input className="w-28" inputMode="decimal" placeholder="Output" aria-label="Output price" value={outC} onChange={(e) => setOutC(e.target.value)} />
+          <Input
+            className="w-28"
+            inputMode="decimal"
+            placeholder="Input"
+            aria-label="Input price"
+            value={inC}
+            onChange={(e) => setInC(e.target.value)}
+          />
+          <Input
+            className="w-28"
+            inputMode="decimal"
+            placeholder="Output"
+            aria-label="Output price"
+            value={outC}
+            onChange={(e) => setOutC(e.target.value)}
+          />
           <Button
             size="sm"
             onClick={async () => {
-              const i = Number(inC), o = Number(outC);
+              const i = Number(inC),
+                o = Number(outC);
               if (!(i > 0) || !(o > 0)) return setNote("Enter both prices.");
               const r = await savePrice({ data: { model: priceModel, inCents: i, outCents: o } });
               setNote(r.ok ? "Prices confirmed." : r.message);
@@ -114,7 +162,11 @@ export function ClaudeEngine() {
           </Button>
         </div>
       </section>
-      {note && <p className="text-sm" role="status">{note}</p>}
+      {note && (
+        <p className="text-sm" role="status">
+          {note}
+        </p>
+      )}
 
       <section className="space-y-2">
         <h4 className="text-sm font-medium">Usage (last 50, no message text)</h4>
@@ -124,8 +176,9 @@ export function ClaudeEngine() {
           <ul className="space-y-1 text-sm">
             {s.usage.map((u) => (
               <li key={u.run_id} className="text-muted-foreground">
-                {new Date(u.reserved_at).toLocaleString()} · {u.agent_id} · {engineById(u.model)?.label} · {u.status} · est{" "}
-                {usd(u.estimate_cents)}
+                {new Date(u.reserved_at).toLocaleString()} ·{" "}
+                {CLAUDE_SOURCE_LABEL[u.source] ?? u.source} · {u.agent_id} ·{" "}
+                {engineById(u.model)?.label} · {u.status} · est {usd(u.estimate_cents)}
                 {u.actual_cents !== null ? ` · actual ${usd(u.actual_cents)}` : ""}
                 {u.input_tokens !== null ? ` · ${u.input_tokens}/${u.output_tokens} tokens` : ""}
               </li>

@@ -13,17 +13,25 @@ import {
   type DuoSessionRow,
 } from "@/lib/fusion-duo.functions";
 import {
+  DEFAULT_FUSION_ENGINES,
   FUSION_DUO_LIMITS,
   FUSION_DUO_NAME,
+  fusionClaudeWorstCaseCents,
   fusionReasonText,
   fusionSessionInput,
   speakerFor,
   type FusionDuoAgent,
+  type FusionEngines,
 } from "@/lib/fusion-duo";
+import { readClaudeStatus } from "@/lib/claude-engine.functions";
+import { DEFAULT_ENGINE_ID, ENGINE_IDS, engineById } from "@/lib/omni-engines";
 
 const selectClass =
   "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground disabled:opacity-60";
 const nameOf = (a: string) => FUSION_DUO_NAME[a as FusionDuoAgent] ?? a;
+const engineLabel = (id: string) => engineById(id)?.label ?? "Unknown engine";
+const usd = (c: number) => `$${(c / 100).toFixed(2)}`;
+type EngineId = (typeof ENGINE_IDS)[number];
 
 /** Owner-approved Fusion sessions where Dread and Draco take turns, one owner click per reply. */
 export function FusionDuo() {
@@ -32,6 +40,10 @@ export function FusionDuo() {
   const run = useServerFn(runFusionReply);
   const stop = useServerFn(stopFusionSession);
   const remove = useServerFn(deleteFusionSession);
+  const readClaude = useServerFn(readClaudeStatus);
+  const [engines, setEngines] = useState<FusionEngines>(DEFAULT_FUSION_ENGINES);
+  /** Claude model the owner has switched on per agent (Claude tab), or null. */
+  const [claudeFor, setClaudeFor] = useState<Partial<Record<FusionDuoAgent, string>>>({});
   const [sessions, setSessions] = useState<DuoSessionRow[] | null>(null);
   const [topic, setTopic] = useState("");
   const [firstAgent, setFirstAgent] = useState<FusionDuoAgent>("draco");
@@ -57,12 +69,31 @@ export function FusionDuo() {
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    readClaude()
+      .then((r) => {
+        if (!r.ok) return;
+        const on: Partial<Record<FusionDuoAgent, string>> = {};
+        for (const row of r.settings)
+          if ((row.agent_id === "dread" || row.agent_id === "draco") && row.enabled)
+            on[row.agent_id] = row.model;
+        setClaudeFor(on);
+      })
+      .catch(() => setClaudeFor({}));
+  }, [readClaude]);
+  const worstCase = fusionClaudeWorstCaseCents(firstAgent, maxReplies, engines);
 
   const open = sessions?.find((s) => s.status === "open") ?? null;
   const past = sessions?.filter((s) => s.status !== "open") ?? [];
 
   function startApproval() {
-    const parsed = fusionSessionInput.safeParse({ topic, firstAgent, maxReplies });
+    const parsed = fusionSessionInput.safeParse({
+      topic,
+      firstAgent,
+      maxReplies,
+      dreadEngine: engines.dread,
+      dracoEngine: engines.draco,
+    });
     if (!parsed.success) return setNotice(parsed.error.issues[0]?.message ?? "Check the session.");
     setNotice(null);
     setAskCode(true);
@@ -72,7 +103,15 @@ export function FusionDuo() {
     setBusy("create");
     setNotice("Approving session…");
     try {
-      const r = await create({ data: { topic, firstAgent, maxReplies } });
+      const r = await create({
+        data: {
+          topic,
+          firstAgent,
+          maxReplies,
+          dreadEngine: engines.dread as EngineId,
+          dracoEngine: engines.draco as EngineId,
+        },
+      });
       if (!r.ok) return setNotice(r.message);
       setTopic("");
       setAskCode(false);
@@ -149,6 +188,10 @@ export function FusionDuo() {
         <div className="space-y-3 rounded-lg border bg-card p-4 text-sm">
           <p className="font-medium">Open session</p>
           <p className="whitespace-pre-wrap break-words text-muted-foreground">{open.topic}</p>
+          <p className="text-xs text-muted-foreground">
+            Engines (fixed for this session): Dread · {engineLabel(open.engines.dread)}, Draco ·{" "}
+            {engineLabel(open.engines.draco)}
+          </p>
           <Transcript session={open} />
           {(() => {
             const done = open.turns.filter((t) => t.status === "completed").length;
@@ -225,6 +268,34 @@ export function FusionDuo() {
               ))}
             </select>
           </label>
+          {(["dread", "draco"] as const).map((a) => {
+            const claude = claudeFor[a];
+            return (
+              <label key={a} className="space-y-1 text-sm">
+                {FUSION_DUO_NAME[a]}'s engine
+                <select
+                  className={selectClass}
+                  value={engines[a]}
+                  disabled={askCode}
+                  onChange={(e) => setEngines((prev) => ({ ...prev, [a]: e.target.value }))}
+                >
+                  <option value={DEFAULT_ENGINE_ID}>{engineLabel(DEFAULT_ENGINE_ID)}</option>
+                  {claude && <option value={claude}>{engineLabel(claude)}</option>}
+                </select>
+                {!claude && (
+                  <span className="block text-xs text-muted-foreground">
+                    Claude is off for {FUSION_DUO_NAME[a]}. Turn it on in the Claude tab to choose
+                    it.
+                  </span>
+                )}
+              </label>
+            );
+          })}
+          <p className="text-xs text-muted-foreground md:col-span-2">
+            {worstCase > 0
+              ? `Claude cost for this session: at most ${usd(worstCase)} (each Claude reply or retry up to $0.50). The $5-a-day Claude limit still applies, and the engines can't change after you approve.`
+              : "Both agents use the current engine. The engines can't change after you approve."}
+          </p>
           <div className="md:col-span-2">
             {askCode ? (
               <div className="space-y-2">
@@ -292,7 +363,8 @@ function Transcript({ session }: { session: DuoSessionRow }) {
       {session.turns.map((t) => (
         <li key={t.id} className="space-y-1 rounded-md border p-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            {nameOf(t.agent_id)} · reply {t.turn_no} · {t.status}
+            {nameOf(t.agent_id)} · reply {t.turn_no} · {t.status}·{" "}
+            {engineById(t.model)?.attribution ?? "Unknown engine"}
           </p>
           {t.reply ? (
             <p className="whitespace-pre-wrap break-words">{t.reply}</p>

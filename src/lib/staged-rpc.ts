@@ -51,6 +51,25 @@ type StagedFunctions = {
     Returns: string;
   };
   omni_noop_worker_revoke: { Args: { _id: string }; Returns: undefined };
+  // Migration 0075 (pending): Claude for the terminal agent and Fusion. Service-only; callers fail closed.
+  claude_reserve_agent_run: {
+    Args: { _run_id: string; _model: string; _input_chars: number; _max_output_tokens: number };
+    Returns: Json;
+  };
+  claude_reserve_fusion_turn: {
+    Args: { _turn_id: string; _input_chars: number; _max_output_tokens: number };
+    Returns: Json;
+  };
+  claude_settle_source: {
+    Args: {
+      _source: string;
+      _run_id: string;
+      _status: string;
+      _input_tokens: number | null;
+      _output_tokens: number | null;
+    };
+    Returns: Json;
+  };
   omni_noop_enqueue: { Args: { _duration_ms: number }; Returns: string };
 };
 

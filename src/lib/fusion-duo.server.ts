@@ -1,10 +1,18 @@
 /**
  * Runs one owner-clicked reply in a Dread & Draco Fusion session (see fusion-duo.ts).
- * Owner database calls (begin, re-check) run as the signed-in owner; only the outcome is
- * recorded with the service role. One model call at most, no tools, no retries.
+ * Owner database calls (begin, re-check) run as the signed-in owner; only the outcome (and, for a
+ * Claude-bound speaker, the cost reservation and settlement) is recorded with the service role.
+ * One model call at most, no tools, no retries.
  */
 import { requiresPersistentPause } from "./ai/gateway-errors";
 import { chatAgentById } from "./omni-chat-agents";
+import {
+  DEFAULT_ENGINE_ID,
+  ENGINE_IDS,
+  attributionLine,
+  claudeEngineFor,
+  type ClaudeEngineId,
+} from "./omni-engines";
 import {
   FUSION_DUO_LIMITS,
   boundReply,
@@ -40,12 +48,36 @@ export type DuoInference = (args: {
   signal: AbortSignal;
 }) => Promise<DuoInferenceResult>;
 
+const FUSION_CONTEXT = JSON.stringify({
+  project: null,
+  source: "Owner-approved OMNI Fusion session",
+});
+
+/** Claude for a speaker bound to Claude at approval (text only, fixed output length). */
+function claudeDuoInference(model: ClaudeEngineId, fetchImpl?: typeof fetch): DuoInference {
+  return async ({ apiKey, persona, message, signal }) => {
+    const [{ inferClaude }, { omniSystemPrompt }] = await Promise.all([
+      import("./ai/claude-turn.server"),
+      import("./ai/omni-responses.server"),
+    ]);
+    const r = await inferClaude({
+      apiKey,
+      model,
+      system: omniSystemPrompt(persona, FUSION_CONTEXT),
+      messages: [{ role: "user", content: message }],
+      signal,
+      fetchImpl,
+    });
+    return { ...r, gatewayRunId: null };
+  };
+}
+
 const serviceInference: DuoInference = async ({ apiKey, persona, message, signal }) => {
   const { createOmniCall } = await import("./ai/omni-responses.server");
   const call = createOmniCall(
     new Request("https://evoomni.tech/internal/fusion-session"),
     apiKey,
-    JSON.stringify({ project: null, source: "Owner-approved OMNI Fusion session" }),
+    FUSION_CONTEXT,
     message,
     signal,
     [],
@@ -97,7 +129,11 @@ export type DuoTurnDeps = {
   /** Service role, used only to record the outcome. */
   serviceRpc: DuoRpc;
   infer?: DuoInference;
+  /** Lovable AI key (current engine). */
   apiKey?: string | undefined;
+  /** Anthropic key (server secret), used only for a speaker bound to Claude at approval. */
+  anthropicKey?: string | undefined;
+  claudeFetch?: typeof fetch;
   timeoutMs?: number;
   pollMs?: number;
 };
@@ -110,14 +146,16 @@ export type DuoTurnResult =
       agentId: FusionDuoAgent;
       reply: string;
       sessionFinished: boolean;
+      engine: string;
+      attribution: string;
+      cost?: { estimateCents: number; actualCents: number };
     }
   | { ok: false; reason: string; turnNo?: number; agentId?: FusionDuoAgent };
 
 const isAgent = (a: unknown): a is FusionDuoAgent => a === "dread" || a === "draco";
 
 export async function runDuoTurn(sessionId: string, deps: DuoTurnDeps): Promise<DuoTurnResult> {
-  const infer = deps.infer ?? serviceInference;
-  if (!deps.apiKey) return { ok: false, reason: "provider_not_configured" };
+  if (!deps.apiKey && !deps.anthropicKey) return { ok: false, reason: "provider_not_configured" };
   const begin = await call(deps.ownerRpc, "omni_fusion_turn_begin", { _session_id: sessionId });
   if (!begin) return { ok: false, reason: "check_unavailable" };
   if (begin["ok"] !== true)
@@ -128,6 +166,8 @@ export async function runDuoTurn(sessionId: string, deps: DuoTurnDeps): Promise<
   const agentId = begin["agent_id"];
   const topic = begin["topic"];
   const transcript = begin["transcript"];
+  // Installed 0075 names the engine bound at approval; before it every turn uses the current engine.
+  const model = begin["model"] === undefined ? DEFAULT_ENGINE_ID : begin["model"];
   const agent = isAgent(agentId) ? chatAgentById(agentId) : null;
   const wellFormed =
     typeof turnId === "string" &&
@@ -135,8 +175,10 @@ export async function runDuoTurn(sessionId: string, deps: DuoTurnDeps): Promise<
     typeof maxReplies === "number" &&
     typeof topic === "string" &&
     Array.isArray(transcript) &&
-    transcript.every((t) => t && isAgent(t.agent_id) && typeof t.reply === "string");
-  if (!agent || !wellFormed || !isAgent(agentId)) {
+    transcript.every((t) => t && isAgent(t.agent_id) && typeof t.reply === "string") &&
+    typeof model === "string" &&
+    (ENGINE_IDS as readonly string[]).includes(model);
+  if (!agent || !wellFormed || !isAgent(agentId) || typeof model !== "string") {
     // Release the guard if we got one; nothing was sent to the model.
     if (typeof turnId === "string")
       await call(
@@ -146,6 +188,49 @@ export async function runDuoTurn(sessionId: string, deps: DuoTurnDeps): Promise<
       );
     return { ok: false, reason: "check_unavailable" };
   }
+  const claude = claudeEngineFor(model);
+  const key = claude ? deps.anthropicKey : deps.apiKey;
+  const refuseTurn = async (reason: string, httpStatus: number) => {
+    const done = await call(
+      deps.serviceRpc,
+      "omni_fusion_turn_finish",
+      finishArgs(
+        turnId,
+        reason === "session_stopped"
+          ? "cancelled"
+          : DENIED_BEFORE_CALL.has(reason)
+            ? "denied"
+            : "failed",
+        null,
+        undefined,
+        httpStatus,
+        reason,
+        null,
+      ),
+    );
+    return done && done["ok"] === true
+      ? ({ ok: false, reason, turnNo, agentId } as const)
+      : ({ ok: false, reason: "outcome_not_recorded", turnNo, agentId } as const);
+  };
+  if (!key) return refuseTurn("provider_not_configured", 503);
+  const persona = `${agent.persona}\n\n${fusionTurnInstructions(agentId, turnNo, maxReplies)}`;
+  const message = fusionTurnMessage(topic, transcript as TranscriptEntry[]);
+  // Claude: reserve the estimated cost against the shared caps before any call (Stop, turn, session, ledger).
+  let estimate: number | null = null;
+  if (claude) {
+    const { reserveClaude } = await import("./ai/claude-turn.server");
+    const r = await reserveClaude(deps.serviceRpc, "fusion", {
+      runId: turnId,
+      model: claude,
+      inputChars: persona.length + message.length + FUSION_CONTEXT.length,
+    });
+    if (!r.ok)
+      return refuseTurn(r.reason, r.reason === "call_cap" || r.reason === "daily_cap" ? 402 : 409);
+    estimate = r.estimateCents;
+  }
+  const infer = claude
+    ? claudeDuoInference(claude, deps.claudeFetch)
+    : (deps.infer ?? serviceInference);
 
   const controller = new AbortController();
   const deadline = AbortSignal.timeout(deps.timeoutMs ?? FUSION_DUO_LIMITS.timeoutMs);
@@ -167,12 +252,7 @@ export async function runDuoTurn(sessionId: string, deps: DuoTurnDeps): Promise<
   }, deps.pollMs ?? FUSION_DUO_LIMITS.pollMs);
   let result: DuoInferenceResult;
   try {
-    result = await infer({
-      apiKey: deps.apiKey,
-      persona: `${agent.persona}\n\n${fusionTurnInstructions(agentId, turnNo, maxReplies)}`,
-      message: fusionTurnMessage(topic, transcript as TranscriptEntry[]),
-      signal,
-    });
+    result = await infer({ apiKey: key, persona, message, signal });
   } catch {
     result = {
       text: "",
@@ -224,6 +304,24 @@ export async function runDuoTurn(sessionId: string, deps: DuoTurnDeps): Promise<
     httpStatus = 502;
   } else status = "completed";
 
+  // Claude: settle once. If the cost can't be recorded the estimate stays counted and the reply is withheld.
+  let actual: number | null = null;
+  if (claude && estimate !== null) {
+    const { settleClaude, claudeOutcomeFor } = await import("./ai/claude-turn.server");
+    actual = await settleClaude(
+      deps.serviceRpc,
+      "fusion",
+      turnId,
+      claudeOutcomeFor(status),
+      result.usage,
+    );
+    if (actual === null) {
+      if (status === "completed") status = "failed";
+      reason = "outcome_not_recorded";
+      httpStatus = 503;
+    }
+  }
+
   const reply = status === "completed" ? boundReply(result.text) : null;
   const finish = await call(
     deps.serviceRpc,
@@ -241,8 +339,24 @@ export async function runDuoTurn(sessionId: string, deps: DuoTurnDeps): Promise<
     agentId,
     reply,
     sessionFinished: finish["session_finished"] === true,
+    engine: model,
+    attribution: attributionLine(model, agent.name),
+    ...(claude && estimate !== null && actual !== null
+      ? { cost: { estimateCents: estimate, actualCents: actual } }
+      : {}),
   };
 }
+
+/** Reservation refusals recorded as "denied" (a control said no) rather than "failed". */
+const DENIED_BEFORE_CALL = new Set([
+  "emergency_stop_engaged",
+  "ai_not_approved",
+  "engine_not_enabled",
+  "price_not_confirmed",
+  "call_cap",
+  "daily_cap",
+  "owner_unverified",
+]);
 
 function finishArgs(
   turnId: string,

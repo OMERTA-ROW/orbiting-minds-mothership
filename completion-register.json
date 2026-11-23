@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-10-22",
-  "updated_at": "2026-11-21T06:55:00Z",
+  "updated_at": "2026-11-23T20:20:00Z",
   "project_name": "Evolution Mothership",
   "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
   "source_note_urls": [
@@ -298,6 +298,11 @@
     "fusion-dread-draco-sessions": {
       "command": "python3 src/test/test_omni_fusion_duo_sql.py + bunx vitest run src/lib/fusion-duo.test.ts",
       "result": "2026-11-21 preview: 159 isolated SQL checks for installed 0072-0073 (fresh-code owner approval, 2-4 replies, alternating speakers, one reply/session at a time, Stop/AI-approval/guard at begin and re-check, attempt/session/daily limits counted from append-only audit, service-only outcomes, stop/delete, isolation); 14 app tests; 1,378 app tests total. No paid reply run. Not published.",
+      "passed": true
+    },
+    "claude-terminal-fusion": {
+      "command": "python3 src/test/test_claude_terminal_fusion_sql.py (PostgreSQL 17) + bunx vitest run src/test/claude-terminal-agent.test.ts src/lib/claude-fusion.test.ts",
+      "result": "2026-11-23 preview: 226 isolated SQL checks for pending 0075 on 0019+0020-0074 (service-only reserve/settle, cap core callable by no API role; every refusal: Stop engaged/missing, run not running, wrong model, member not owner, AI approval/pause, switch off or other model, stale price, 50-cent call cap, 500-cent rolling daily cap shared by chat/agent/Fusion, already reserved; Fusion engines bound at approval with switch/price checks, switch-off mid-session refuses; settle once with wrong-source refusal; metadata-only ledger; 4 real concurrent-session races: Stop vs reserve both orders, cancel vs reserve, session stop vs reserve). 19 app tests with fake Anthropic (owner-only, key required, no call on refusal or missing install, one call + one settle, reply withheld if cost unrecorded, Stop mid-reply aborts and charges the estimate, no retries, default engine unchanged). 0075 not installed; no paid call; not published.",
       "passed": true
     }
   },

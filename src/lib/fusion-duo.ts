@@ -9,6 +9,13 @@
  */
 import { z } from "zod";
 import { looksLikeSecret } from "./activation-approvals";
+import {
+  CLAUDE_CAPS,
+  DEFAULT_ENGINE_ID,
+  ENGINE_IDS,
+  claudeEngineFor,
+  claudeRefusal,
+} from "./omni-engines";
 
 export const FUSION_DUO_AGENTS = ["dread", "draco"] as const;
 export type FusionDuoAgent = (typeof FUSION_DUO_AGENTS)[number];
@@ -43,8 +50,34 @@ export const fusionSessionInput = z
       .int()
       .min(FUSION_DUO_LIMITS.minReplies)
       .max(FUSION_DUO_LIMITS.maxReplies),
+    /** Engine bound at approval for each agent (migration 0075); the current engine when omitted. */
+    dreadEngine: z.enum(ENGINE_IDS).optional(),
+    dracoEngine: z.enum(ENGINE_IDS).optional(),
   })
   .strict();
+
+export type FusionEngines = Record<FusionDuoAgent, string>;
+export const DEFAULT_FUSION_ENGINES: FusionEngines = {
+  dread: DEFAULT_ENGINE_ID,
+  draco: DEFAULT_ENGINE_ID,
+};
+
+/**
+ * Most a session can cost on Claude: every reply by a Claude-bound speaker, plus the extra attempts
+ * (a failed or stopped Claude call is still charged its estimate), each at the per-call cap.
+ * The shared daily cap still applies on top. Zero when neither agent uses Claude.
+ */
+export function fusionClaudeWorstCaseCents(
+  first: FusionDuoAgent,
+  maxReplies: number,
+  engines: FusionEngines,
+): number {
+  let claudeReplies = 0;
+  for (let n = 1; n <= maxReplies; n++)
+    if (claudeEngineFor(engines[speakerFor(first, n)])) claudeReplies++;
+  if (claudeReplies === 0) return 0;
+  return (claudeReplies + FUSION_DUO_LIMITS.extraAttempts) * CLAUDE_CAPS.perCallCents;
+}
 export const fusionSessionIdInput = z.object({ sessionId: z.string().uuid() }).strict();
 
 export const other = (a: FusionDuoAgent): FusionDuoAgent => (a === "dread" ? "draco" : "dread");
@@ -106,7 +139,7 @@ const REASONS: Record<string, string> = {
   attempt_limit: "This session used all its attempts. Start a new one.",
   daily_limit: `Daily limit reached (${FUSION_DUO_LIMITS.repliesPerDay} replies per 24 hours).`,
   ai_busy_or_paused: "Another AI request is running, or AI is paused for your review.",
-  provider_not_configured: "The AI provider isn't configured.",
+  provider_not_configured: "The AI provider for this agent's engine isn't configured.",
   check_unavailable: "Safety checks couldn't be confirmed, so nothing ran.",
   outcome_not_recorded:
     "The outcome couldn't be recorded, so the reply isn't shown and AI stays paused for your review.",
@@ -118,6 +151,19 @@ const REASONS: Record<string, string> = {
   turn_finished: "This reply already finished.",
   turn_not_found: "That reply was not found.",
 };
+const CLAUDE_REASONS = new Set([
+  "engine_not_enabled",
+  "price_not_confirmed",
+  "call_cap",
+  "daily_cap",
+  "claude_not_installed",
+  "owner_unverified",
+  "already_reserved",
+  "invalid_request",
+]);
 export function fusionReasonText(reason: string): string {
-  return REASONS[reason] ?? "Not confirmed. Refresh and retry.";
+  const known = REASONS[reason];
+  if (known) return known;
+  if (CLAUDE_REASONS.has(reason)) return claudeRefusal(reason).message;
+  return "Not confirmed. Refresh and retry.";
 }

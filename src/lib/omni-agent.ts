@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { liveOmniInput } from "./beta";
+import { ENGINE_IDS } from "./omni-engines";
 
 /** Earlier saved turns the owner may attach to one request. Keep in sync with omni-chat MAX_CONTEXT_TURNS. */
 const MAX_CONTEXT = 6;
@@ -7,6 +8,8 @@ export const omniAgentInput = liveOmniInput
   .extend({
     requestId: z.string().uuid(),
     contextTurns: z.number().int().min(0).max(MAX_CONTEXT).default(0),
+    /** Exact engine ID; Claude is owner-only and needs migration 0075 (omitted = current engine). */
+    engine: z.enum(ENGINE_IDS).optional(),
   })
   .strict();
 export const agentStates = [
@@ -42,6 +45,13 @@ export type AgentEvent =
   | { type: "result"; run: OmniAgentRun }
   /** Saved run IDs actually sent as context with this request. */
   | { type: "context"; ids: string[] }
+  /** Which engine answered and, for Claude, the reserved estimate and recorded cost in cents. */
+  | {
+      type: "engine";
+      engine: string;
+      attribution: string;
+      cost: { estimateCents: number; actualCents: number } | null;
+    }
   | { type: "error"; status: number; message: string };
 export function assertAgentMembership(role: unknown) {
   if (role !== "owner" && role !== "admin" && role !== "tester")
