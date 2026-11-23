@@ -544,3 +544,10 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 - [x] Dread/Draco "save all" — owner switch saves every completed chat exchange to that agent's memory, reviewable/deletable
 - [x] Dread/Draco collaboration through Fusion — owner-approved sessions on OMNI Terminal Fusion tab (0072–0073); live after publish; first paid reply needs owner
 - [ ] Workspace/CODE/automations/retry — locked pending PR #28 sandbox
+
+## Claude engine (2026-11-23)
+- [x] Engine registry, server-only Anthropic call, cost ledger 0074 with reserve/settle and caps, owner Claude tab, tests.
+- [ ] Owner: confirm Claude prices in the Claude tab, turn on per agent, set an Anthropic console spending limit.
+- [ ] Jackboy signed PR report endpoint — blocked on Jackboy's report format.
+- [ ] Claude for owner terminal agent and Fusion sessions — later step.
+- [ ] ElevenLabs voices (Jax) — later, hook only.

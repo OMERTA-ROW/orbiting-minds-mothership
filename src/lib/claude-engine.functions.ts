@@ -30,7 +30,7 @@ export const readClaudeStatus = createServerFn({ method: "POST" })
         .limit(50),
     ]);
     if (settings.error || prices.error || usage.error)
-      return { ok: false as const, message: "The Claude ledger could not be read." };
+      return { ok: false as const, message: "The Claude ledger could not be read." as string };
     const since = Date.now() - 24 * 3600 * 1000;
     const todayCents = (usage.data ?? [])
       .filter((u) => Date.parse(u.reserved_at) > since)
