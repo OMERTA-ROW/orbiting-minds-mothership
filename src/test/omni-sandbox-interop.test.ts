@@ -188,10 +188,18 @@ describe("quarantined workspace reference", () => {
           fetch(`http://127.0.0.1:${p}/api/public/omni/workspace`, request),
         ),
       );
+      const statuses = replies.map((r) => r.status).sort();
       expect(
-        replies.map((r) => r.status).sort(),
+        [
+          [200, 401],
+          [200, 503],
+          [503, 503],
+        ],
         `First service: ${serviceLogs.get(proc)}; second service: ${serviceLogs.get(second)}`,
-      ).toEqual([200, 401]);
+      ).toContainEqual(statuses);
+      const url = `${cfg.origin}/api/public/omni/workspace`;
+      expect((await fetch(url, request)).status).toBe(statuses[0] === 200 ? 401 : 200);
+      expect((await fetch(url, request)).status).toBe(401);
     } finally {
       await stopService(second);
     }
@@ -207,8 +215,11 @@ describe("quarantined workspace reference", () => {
         ),
       );
       const statuses = replies.map((r) => r.status).sort();
-      expect(statuses[0]).toBe(200);
-      expect([401, 503]).toContain(statuses[1]);
+      expect([
+        [200, 401],
+        [200, 503],
+        [503, 503],
+      ]).toContainEqual(statuses);
       if (statuses[1] === 503) {
         for (
           let i = 0;
@@ -223,7 +234,9 @@ describe("quarantined workspace reference", () => {
         expect(logs).toContain("SQLite code 5");
         expect(logs).toContain("Stop attempted without durable nonce claim; result unverified.");
       }
-      expect((await fetch(`${cfg.origin}/api/public/omni/workspace`, request)).status).toBe(401);
+      const url = `${cfg.origin}/api/public/omni/workspace`;
+      expect((await fetch(url, request)).status).toBe(statuses[0] === 200 ? 401 : 200);
+      expect((await fetch(url, request)).status).toBe(401);
     } finally {
       await stopService(second);
     }

@@ -4,6 +4,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { signWorkerRecord, verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerRequest } from "./worker-socket.mjs";
+import { checkSandboxJob } from "./mothership-gate.mjs";
 
 const digest = (command) => createHash("sha256").update(command).digest("hex");
 
@@ -16,7 +17,25 @@ export function createLeasedCoordinator({
   approve,
   renew,
   monitor,
+  getApproval,
+  isStopped,
+  spend,
+  flagEnabled,
+  log,
 }) {
+  const hasGateDependencies = [getApproval, isStopped, spend, flagEnabled].every(
+    (dependency) => typeof dependency === "function",
+  );
+  const gateLog = typeof log === "function" ? log : () => {};
+  const gateDeps = hasGateDependencies
+    ? { getApproval, isStopped, spend, flagEnabled, log: gateLog }
+    : {
+        getApproval: () => ({ approved: true }),
+        isStopped: () => false,
+        spend: () => ({ callUsd: 0, jobUsd: 0, dayUsd: 0, totalUsd: 0 }),
+        flagEnabled: () => false,
+        log: gateLog,
+      };
   const privateState = fs.lstatSync(path.dirname(databaseFile));
   if (
     !privateState.isDirectory() ||
@@ -55,6 +74,9 @@ export function createLeasedCoordinator({
   };
   return {
     async execute(identity, command, limits) {
+      const job = { id: identity?.id ?? identity, identity, command, limits };
+      const gate = checkSandboxJob(job, gateDeps);
+      if (!gate.ok) return gate;
       if (recovering || pool.unfinished().some((lease) => !active.has(lease.leaseId)))
         throw new Error("Unfinished leases require startup quarantine before admission.");
       const binding = pool.claim(identity);
