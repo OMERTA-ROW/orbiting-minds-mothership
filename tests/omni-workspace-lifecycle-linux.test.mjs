@@ -284,6 +284,9 @@ for (const scenario of [
                 .prepare("SELECT 1 FROM sqlite_master WHERE name='workspace_worker_leases'")
                 .get();
               return table && db.prepare("SELECT 1 FROM workspace_worker_leases").get();
+            } catch (error) {
+              if (error.code === "ERR_SQLITE_ERROR" && error.errcode === 5) return false;
+              throw error;
             } finally {
               db.close();
             }

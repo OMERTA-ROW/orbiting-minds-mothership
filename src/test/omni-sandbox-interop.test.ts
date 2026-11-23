@@ -229,7 +229,7 @@ describe("quarantined workspace reference", () => {
     }
   }, 10_000);
 
-  it("keeps the strict concurrent Stop replay result across 100 independent races", async () => {
+  it("fails closed and preserves durable Stop replay protection across 100 independent races", async () => {
     const second = await startService(port + 1);
     try {
       for (let round = 0; round < 100; round++) {
@@ -239,10 +239,18 @@ describe("quarantined workspace reference", () => {
             fetch(`http://127.0.0.1:${p}/api/public/omni/workspace`, request),
           ),
         );
+        const statuses = replies.map((reply) => reply.status).sort();
         expect(
-          replies.map((reply) => reply.status).sort(),
+          [
+            [200, 401],
+            [200, 503],
+            [503, 503],
+          ],
           `Round ${round}: ${serviceLogs.get(proc)}; ${serviceLogs.get(second)}`,
-        ).toEqual([200, 401]);
+        ).toContainEqual(statuses);
+        const url = `${cfg.origin}/api/public/omni/workspace`;
+        expect((await fetch(url, request)).status).toBe(statuses[0] === 200 ? 401 : 200);
+        expect((await fetch(url, request)).status).toBe(401);
       }
     } finally {
       await stopService(second);
