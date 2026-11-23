@@ -280,17 +280,14 @@ for (const scenario of [
             if (!fs.existsSync(database)) return false;
             const db = new DatabaseSync(database);
             try {
-              let lease;
-              try {
-                const table = db
-                  .prepare("SELECT 1 FROM sqlite_master WHERE name='workspace_worker_leases'")
-                  .get();
-                lease = table && db.prepare("SELECT 1 FROM workspace_worker_leases").get();
-              } catch (error) {
-                if (error.code === "ERR_SQLITE_ERROR" && error.errcode === 5) return false;
-                throw error;
-              }
-              return lease;
+              const table = db
+                .prepare("SELECT 1 FROM sqlite_master WHERE name='workspace_worker_leases'")
+                .get();
+              return table && db.prepare("SELECT 1 FROM workspace_worker_leases").get();
+            } catch (error) {
+              if (error.code === "ERR_SQLITE_ERROR" && error.errcode === 5)
+                return false;
+              throw error;
             } finally {
               db.close();
             }
