@@ -5,6 +5,18 @@ for workspace execution and its image diagnostics are not a workspace gate. The 
 alternative is pre-provisioned workers with distinct real host UID/GID pairs, not dynamic
 subuid/subgid allocation. No service may claim subordinate mappings have been established.
 
+## Mothership gate (`mothership-gate.mjs`)
+
+Every sandbox job must pass `checkSandboxJob` before a worker lease is issued. The gate
+checks owner approval, Stop, spend caps ($0.50 per call, $1 per job, $5 per day and $10
+total), and the execution flag. The flag is off by default; without gate controls, the
+coordinator refuses execution with `execution_disabled`.
+
+To enable execution later, the owner must wire real `getApproval`, `isStopped`, `spend`
+and `flagEnabled` controls from the Mothership, then test on the Vultr host with a
+synthetic job, Stop and cleanup. Enable the flag only after those checks pass. Never
+enable it on production first.
+
 ## Runtime prerequisites
 
 - Dedicated VM, unified writable cgroup v2, systemd 249 or newer. Linux 5.14 is the minimum
