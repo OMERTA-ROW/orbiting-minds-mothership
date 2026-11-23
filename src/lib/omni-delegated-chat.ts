@@ -1,3 +1,4 @@
+import { claudeEngineFor } from "./omni-engines";
 /**
  * OMNI web chat through an owner delegation ("chat:write") — shared, browser-safe rules.
  * The database (migration `drizzle/migrations/0066_omni_delegated_chat.sql`, installed 2026-11-20) enforces the
@@ -49,7 +50,8 @@ export const delegatedChatBody = z.object({
 /** Accepts no model, the bare model ID or OMNI's `<provider>:<model>` form; nothing else. */
 export function resolveChatModel(model: string | undefined): string | null {
   if (model === undefined || model === OMNI_MODEL || model === CHAT_MODEL_REF) return OMNI_MODEL;
-  return null;
+  // Optional Claude engines: exact IDs only; owner switch, price and caps are checked in SQL.
+  return claudeEngineFor(model);
 }
 
 export type ChatContext =
@@ -84,6 +86,11 @@ export function selectChatContext(messages: readonly DelegatedChatMessage[]): Ch
 
 /** Plain refusals for OMNI. Status codes are stable so OMNI can classify them. */
 export const CHAT_REFUSALS: Record<string, { status: number; error: string; message: string }> = {
+  engine_not_enabled: { status: 403, error: "engine_not_enabled", message: "Claude is not turned on for this agent." },
+  price_not_confirmed: { status: 503, error: "price_not_confirmed", message: "Claude prices are missing or older than 30 days." },
+  call_cap: { status: 402, error: "call_cap", message: "This reply could cost more than $0.50." },
+  daily_cap: { status: 402, error: "daily_cap", message: "Today's $5 AI limit would be passed." },
+  claude_not_installed: { status: 503, error: "claude_not_installed", message: "The Claude cost ledger is not available." },
   scope_missing: {
     status: 403,
     error: "scope_missing",
