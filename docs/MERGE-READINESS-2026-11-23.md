@@ -44,6 +44,15 @@ Before this update, the latest branch CI was green for:
 - `Railway startup verification`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45234836572
 - `Bounded OMNI Linux isolation`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45234836576
 
+The implementation commit `37296e0` passed:
+
+- `Railway startup verification`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238261235
+- `Bounded OMNI Linux isolation`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238261022
+
+The subsequent branch synchronization/merge commit `2351922` has
+`action_required` workflow conclusions pending external execution approval.
+It is not evidence of a code failure or a passing merge gate.
+
 Local verification after each commit should include:
 
 ```sh
