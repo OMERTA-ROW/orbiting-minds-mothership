@@ -193,8 +193,9 @@ an ordinary lock wait cannot block the request thread from attempting Stop. Both
 the same durable nonce table and atomic transaction. Stop reconciliation retains the 100 ms
 deadline and never retries: lock failure returns 503/unverified, not an accepted or
 termination-proven acknowledgement. Committed replay remains 401. Invalid signatures and
-wrong projects never enter the safety path. The strict cross-process replay regression is
-also exercised for 100 fresh-nonce races without accepting 503 as a pass.
+wrong projects never enter the safety path. The cross-process replay regression exercises
+100 fresh-nonce races, checks that at most one request is accepted, and verifies durable
+replay rejection even when contention produces a 503.
 
 The opt-in `workspace-image-recovery` fixture runs the recovery tests against modules from the
 built image, with a delegated cgroup and all container capabilities dropped. It invokes the service
