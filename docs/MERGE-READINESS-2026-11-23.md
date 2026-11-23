@@ -64,6 +64,8 @@ Local results for this update:
 - A container image smoke failure found and is addressed by copying the sandbox
   nonce reconciler and worker modules into the runtime image. The new CI run
   must pass again before readiness can advance.
+- The container smoke uses only `CHOWN`, `SETUID` and `SETGID` for the sandbox
+  reference image; the autonomous image remains at `cap-drop ALL`.
 
 ## Remaining blockers
 

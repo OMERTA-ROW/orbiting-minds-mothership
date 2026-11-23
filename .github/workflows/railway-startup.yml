@@ -26,7 +26,8 @@ jobs:
             --read-only --network none --tmpfs /tmp:rw,nosuid,nodev,size=64m \
             --tmpfs /sandbox:rw,nosuid,nodev,size=64m \
             --memory 512m --cpus 1 --pids-limit 128 \
-            --cap-drop ALL --security-opt no-new-privileges \
+            --cap-drop ALL --cap-add CHOWN --cap-add SETUID --cap-add SETGID \
+            --security-opt no-new-privileges \
             --env OMNI_SANDBOX_CLIENT_ID=mothership-test \
             --env OMNI_SANDBOX_HMAC_SECRET=tttttttttttttttttttttttttttttttttttttttttttttttt \
             omni-sandbox:pr
