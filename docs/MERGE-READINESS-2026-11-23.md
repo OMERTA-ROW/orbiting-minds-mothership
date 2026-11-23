@@ -49,9 +49,13 @@ The implementation commit `37296e0` passed:
 - `Railway startup verification`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238261235
 - `Bounded OMNI Linux isolation`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238261022
 
-The subsequent branch synchronization/merge commit `2351922` has
-`action_required` workflow conclusions pending external execution approval.
-It is not evidence of a code failure or a passing merge gate.
+The final head `fed8156` passed:
+
+- `Railway startup verification`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238817003
+- `Bounded OMNI Linux isolation`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238816903
+
+An earlier synchronization/merge run for `2351922` reported
+`action_required`; it was superseded by the passing final-head runs above.
 
 Local verification after each commit should include:
 
