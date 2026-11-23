@@ -285,8 +285,7 @@ for (const scenario of [
                 .get();
               return table && db.prepare("SELECT 1 FROM workspace_worker_leases").get();
             } catch (error) {
-              if (error.code === "ERR_SQLITE_ERROR" && error.errcode === 5)
-                return false;
+              if (error.code === "ERR_SQLITE_ERROR" && error.errcode === 5) return false;
               throw error;
             } finally {
               db.close();
