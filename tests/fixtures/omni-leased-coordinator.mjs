@@ -76,6 +76,7 @@ try {
       outputBytes: 16384,
       commandTimeoutSec: 10,
     });
+    if (result.ok === false) throw new Error(`Fixture admission refused: ${result.reason}.`);
     if (config.again)
       result.reuse = await coordinator.execute(
         { ...config.identity, sessionId: randomUUID(), jobId: randomUUID() },
