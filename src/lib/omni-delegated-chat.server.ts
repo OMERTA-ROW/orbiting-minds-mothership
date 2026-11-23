@@ -9,6 +9,7 @@
  * chat" switch on they read their own saved memory once, inside the same checks, before the model
  * call. If anything can't be recorded, no reply is returned.
  */
+import { CLAUDE_MAX_OUTPUT_TOKENS, attributionLine, claudeEngineFor, type ClaudeEngineId } from "./omni-engines";
 import { sha256Hex } from "./omni-api-keys";
 import { assertNonSensitive } from "./beta";
 import { DELEGATION_AUDIENCE, classifyBearer, isBrowserRequest } from "./omni-delegation";
@@ -127,6 +128,34 @@ const serviceInference: ChatInference = async ({
   }
 };
 
+/** Claude engine call (Anthropic Messages, text only, fixed reply length). */
+function claudeInference(model: ClaudeEngineId, fetchImpl?: typeof fetch): ChatInference {
+  return async ({ apiKey, messages, signal, agent, memory }) => {
+    const { callClaude } = await import("./ai/anthropic.server");
+    const r = await callClaude({
+      apiKey,
+      model,
+      system: memory ? `${agent.persona}\n\n${memory}` : agent.persona,
+      messages,
+      maxTokens: CLAUDE_MAX_OUTPUT_TOKENS,
+      signal,
+      ...(fetchImpl ? { fetchImpl } : {}),
+    });
+    const usage =
+      r.inputTokens !== null && r.outputTokens !== null
+        ? { inputTokens: r.inputTokens, outputTokens: r.outputTokens, totalTokens: r.inputTokens + r.outputTokens }
+        : undefined;
+    return {
+      text: r.text,
+      finishReason: r.stopReason === "max_tokens" ? "length" : r.stopReason === "refusal" ? "content-filter" : "stop",
+      usage,
+      gatewayRunId: null,
+      failure: r.failureStatus ? { status: r.failureStatus, message: `Anthropic HTTP ${r.failureStatus}` } : undefined,
+      threw: r.threw,
+    } as InferenceResult;
+  };
+}
+
 const serviceRpc: Rpc = async (fn, args) => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return (supabaseAdmin.rpc as unknown as Rpc)(fn, args);
@@ -136,6 +165,9 @@ export type ChatDeps = {
   rpc?: Rpc;
   infer?: ChatInference;
   apiKey?: () => string | undefined;
+  /** Anthropic key reader (server secret); Claude engines only. */
+  anthropicKey?: () => string | undefined;
+  claudeFetch?: typeof fetch;
   timeoutMs?: number;
   pollMs?: number;
 };
@@ -213,7 +245,10 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
       return refuse("secret_like");
     }
   }
-  const apiKey = (deps.apiKey ?? (() => process.env["LOVABLE_API_KEY"]))();
+  const claude = claudeEngineFor(model);
+  const apiKey = claude
+    ? (deps.anthropicKey ?? (() => process.env["ANTHROPIC_API_KEY"]))()
+    : (deps.apiKey ?? (() => process.env["LOVABLE_API_KEY"]))();
   if (!apiKey) return refuse("provider_not_configured");
 
   const tokenHash = await sha256Hex(bearer.token);
@@ -251,6 +286,24 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
     }
   }
 
+  // Claude: reserve the estimated cost against the per-call and daily caps before any call.
+  let claudeEstimate: number | null = null;
+  if (claude && !stopReason) {
+    const r = await callRpc(rpc, "claude_reserve", {
+      _run_id: runId,
+      _agent: agent.id,
+      _model: claude,
+      _input_chars: context.inputChars,
+      _max_output_tokens: CLAUDE_MAX_OUTPUT_TOKENS,
+    });
+    if (!r) stopReason = "claude_not_installed";
+    else if (r.ok !== true) stopReason = r.reason || "check_unavailable";
+    else claudeEstimate = typeof r["estimate_cents"] === "number" ? r["estimate_cents"] : null;
+  }
+  const runInfer: ChatInference = claude
+    ? claudeInference(claude, deps.claudeFetch)
+    : infer;
+
   const controller = new AbortController();
   const deadline = AbortSignal.timeout(deps.timeoutMs ?? DELEGATED_CHAT_LIMITS.timeoutMs);
   const signal = AbortSignal.any([controller.signal, deadline, request.signal]);
@@ -284,7 +337,7 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
           failure: undefined,
           threw: false,
         }
-      : await infer({
+      : await runInfer({
           request,
           apiKey,
           messages: context.messages,
@@ -353,6 +406,17 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
     reason = "empty_reply";
   } else status = "completed";
 
+  let claudeActual: number | null = null;
+  if (claude && claudeEstimate !== null) {
+    const settled = await callRpc(rpc, "claude_settle", {
+      _run_id: runId,
+      _status: status === "completed" ? "completed" : status === "cancelled" ? "cancelled" : "failed",
+      _input_tokens: result.usage?.inputTokens ?? null,
+      _output_tokens: result.usage?.outputTokens ?? null,
+    });
+    claudeActual = settled && typeof settled["actual_cents"] === "number" ? settled["actual_cents"] : null;
+  }
+
   const finish = await callRpc(rpc, "omni_delegation_finish_chat", {
     _run_id: runId,
     _status: status,
@@ -418,7 +482,10 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
     reply: result.text,
     agentId: agent.id,
     agentName: agent.name,
-    model: CHAT_MODEL_REF,
+    model: claude ?? CHAT_MODEL_REF,
+    engine: claude ?? model,
+    attribution: attributionLine(claude ?? model, agent.name),
+    ...(claude ? { cost: { estimateCents: claudeEstimate, actualCents: claudeActual } } : {}),
     runId,
     contextMessages: context.messages.length,
     omittedMessages: context.omitted,

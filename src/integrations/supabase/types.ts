@@ -265,6 +265,99 @@ export type Database = {
         }
         Relationships: []
       }
+      claude_engine_settings: {
+        Row: {
+          agent_id: string
+          enabled: boolean
+          model: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          enabled?: boolean
+          model: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          enabled?: boolean
+          model?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      claude_prices: {
+        Row: {
+          confirmed_at: string
+          confirmed_by: string
+          in_cents_per_mtok: number
+          model: string
+          out_cents_per_mtok: number
+        }
+        Insert: {
+          confirmed_at?: string
+          confirmed_by: string
+          in_cents_per_mtok: number
+          model: string
+          out_cents_per_mtok: number
+        }
+        Update: {
+          confirmed_at?: string
+          confirmed_by?: string
+          in_cents_per_mtok?: number
+          model?: string
+          out_cents_per_mtok?: number
+        }
+        Relationships: []
+      }
+      claude_usage: {
+        Row: {
+          actual_cents: number | null
+          agent_id: string
+          estimate_cents: number
+          id: string
+          input_tokens: number | null
+          model: string
+          output_tokens: number | null
+          owner_id: string
+          reserved_at: string
+          run_id: string
+          settled_at: string | null
+          status: string
+        }
+        Insert: {
+          actual_cents?: number | null
+          agent_id: string
+          estimate_cents: number
+          id?: string
+          input_tokens?: number | null
+          model: string
+          output_tokens?: number | null
+          owner_id: string
+          reserved_at?: string
+          run_id: string
+          settled_at?: string | null
+          status?: string
+        }
+        Update: {
+          actual_cents?: number | null
+          agent_id?: string
+          estimate_cents?: number
+          id?: string
+          input_tokens?: number | null
+          model?: string
+          output_tokens?: number | null
+          owner_id?: string
+          reserved_at?: string
+          run_id?: string
+          settled_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       forge_creator_versions: {
         Row: {
           asset_id: string | null
@@ -3746,6 +3839,42 @@ export type Database = {
         Returns: boolean
       }
       claim_owner: { Args: never; Returns: boolean }
+      claude_estimate_cents: {
+        Args: {
+          _in_price: number
+          _in_tokens: number
+          _out_price: number
+          _out_tokens: number
+        }
+        Returns: number
+      }
+      claude_owner_set_engine: {
+        Args: { _agent: string; _enabled: boolean; _model: string }
+        Returns: Json
+      }
+      claude_owner_set_price: {
+        Args: { _in: number; _model: string; _out: number }
+        Returns: Json
+      }
+      claude_reserve: {
+        Args: {
+          _agent: string
+          _input_chars: number
+          _max_output_tokens: number
+          _model: string
+          _run_id: string
+        }
+        Returns: Json
+      }
+      claude_settle: {
+        Args: {
+          _input_tokens: number
+          _output_tokens: number
+          _run_id: string
+          _status: string
+        }
+        Returns: Json
+      }
       create_invitation: {
         Args: {
           _email: string
