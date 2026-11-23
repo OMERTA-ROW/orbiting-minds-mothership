@@ -7,7 +7,22 @@ import {
   type AgentState,
   type OmniAgentRun,
 } from "@/lib/omni-agent";
-import { createOmniCall } from "./omni-responses.server.ts";
+import { createOmniCall, omniSystemPrompt, OMNI_AGENT_PERSONA } from "./omni-responses.server.ts";
+import {
+  attributionLine,
+  claudeEngineFor,
+  claudeRefusal,
+  DEFAULT_ENGINE_ID,
+} from "@/lib/omni-engines";
+import { stopReleased } from "@/lib/omni-terminal";
+import {
+  claudeOutcomeFor,
+  inferClaude,
+  reserveClaude,
+  settleClaude,
+  type ClaudeInference,
+} from "./claude-turn.server.ts";
+import type { GatewayFailure } from "./gateway-errors";
 import { contextFromRuns, type ContextMessage } from "@/lib/omni-chat";
 import { getLovableAiGatewayResponseHeaders } from "./run-id.server.ts";
 import { requiresPersistentPause } from "./gateway-errors";
@@ -33,6 +48,16 @@ export async function handleOmniAgent(request: Request) {
     if (!parsed.success)
       return jsonError(400, parsed.error.issues[0]?.message ?? "Invalid request or consent.");
     const input = parsed.data;
+    // Claude (migration 0075) is owner-only: the switches, prices and ledger are the owner's records.
+    const claude = input.engine ? claudeEngineFor(input.engine) : null;
+    if (claude) {
+      const own = await (client.rpc as unknown as Rpc).call(client, "is_razul_owner", {});
+      if (own.error || own.data !== true)
+        return jsonError(
+          403,
+          "Claude is for the verified owner with two-step sign-in only. No request started.",
+        );
+    }
     const project = await client
       .from("beta_projects")
       .select("name, brief")
@@ -66,8 +91,14 @@ export async function handleOmniAgent(request: Request) {
       history = picked.messages;
       contextIds = picked.ids;
     }
-    const apiKey = process.env["LOVABLE_API_KEY"];
-    if (!apiKey) return jsonError(503, "Lovable AI is not configured. No request started.");
+    const apiKey = claude ? process.env["ANTHROPIC_API_KEY"] : process.env["LOVABLE_API_KEY"];
+    if (!apiKey)
+      return jsonError(
+        503,
+        claude
+          ? "The Anthropic key is not saved on the server. No request started."
+          : "Lovable AI is not configured. No request started.",
+      );
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const state = await supabaseAdmin
       .from("ai_gateway_state")
@@ -136,6 +167,36 @@ export async function handleOmniAgent(request: Request) {
     let call: ReturnType<typeof createOmniCall> | undefined;
     let terminalStatus = 200,
       terminalMessage = "";
+    // Claude path state: reservation, single non-streamed answer, settlement exactly once.
+    const adminRpc: Rpc = (fn, args) =>
+      (supabaseAdmin.rpc as unknown as Rpc).call(supabaseAdmin, fn, args);
+    let claudeEstimate: number | null = null,
+      claudeActual: number | null = null,
+      claudeSettled = false,
+      claudeRefused = false,
+      claudeResult: ClaudeInference | undefined,
+      claudeFailure: GatewayFailure | undefined;
+    const failureNow = () => claudeFailure ?? call?.getFailure();
+    const settleOnce = async (status: string) => {
+      if (!claude || claudeEstimate === null || claudeSettled) return true;
+      claudeSettled = true;
+      claudeActual = await settleClaude(
+        adminRpc,
+        "agent",
+        input.requestId,
+        claudeOutcomeFor(status),
+        claudeResult?.usage,
+      );
+      return claudeActual !== null;
+    };
+    // Built only for Claude; the current engine path builds its own prompt in createOmniCall.
+    const claudeSystem = claude
+      ? omniSystemPrompt(OMNI_AGENT_PERSONA, JSON.stringify(project.data))
+      : "";
+    const claudeInputChars =
+      claudeSystem.length +
+      input.message.length +
+      history.reduce((n, m) => n + m.content.length, 0);
     let ready: () => void = () => {};
     const providerReady = new Promise<void>((resolve) => {
       ready = resolve;
@@ -177,6 +238,30 @@ export async function handleOmniAgent(request: Request) {
             .maybeSingle();
           if (owned.error || !owned.data)
             throw new BetaHttpError(403, "Project permission was revoked.");
+          if (claude) {
+            // Claude path also re-reads the Emergency Stop, owner sign-in and AI approval every second.
+            const stop = await supabaseAdmin
+              .from("omni_terminal_controls")
+              .select("emergency_stop")
+              .eq("id", 1)
+              .maybeSingle();
+            if (!stopReleased(stop.data, Boolean(stop.error)))
+              throw new BetaHttpError(423, "The Emergency Stop is engaged, so Claude was stopped.");
+            const own = await (auth.client.rpc as unknown as Rpc).call(
+              auth.client,
+              "is_razul_owner",
+              {},
+            );
+            if (own.error || own.data !== true)
+              throw new BetaHttpError(403, "Owner two-step sign-in is required for Claude.");
+            const access = await auth.client
+              .from("beta_access")
+              .select("ai_approved, paused")
+              .eq("user_id", userId)
+              .maybeSingle();
+            if (access.error || !access.data?.ai_approved || access.data.paused !== false)
+              throw new BetaHttpError(403, "AI approval was withdrawn, so Claude was stopped.");
+          }
         };
         const interval = setInterval(() => {
           if (checking || signal.aborted) return;
@@ -196,28 +281,60 @@ export async function handleOmniAgent(request: Request) {
           if (signal.aborted) throw new DOMException("Stopped", "AbortError");
           send({ type: "state", id: input.requestId, status: "running" });
           if (contextIds.length) send({ type: "context", ids: contextIds });
-          call = createOmniCall(
-            request,
-            apiKey,
-            JSON.stringify(project.data),
-            input.message,
-            signal,
-            history,
-          );
-          ready();
-          for await (const part of call.result.fullStream) {
-            if (signal.aborted) break;
-            if (part.type === "text-delta") {
-              text += part.text;
-              send({ type: "text", text: part.text });
+          let reason: string | undefined;
+          if (claude) {
+            // Reserve against the shared caps (Stop row, run row, ledger) before any Anthropic call.
+            const reserved = await reserveClaude(adminRpc, "agent", {
+              runId: input.requestId,
+              model: claude,
+              inputChars: claudeInputChars,
+            });
+            if (!reserved.ok) {
+              claudeRefused = true;
+              const refusal = claudeRefusal(reserved.reason);
+              throw new BetaHttpError(
+                refusal.status,
+                `${refusal.message} No Claude request was sent.`,
+              );
             }
-            if (part.type === "reasoning-delta") send({ type: "thinking", text: part.text });
-            if (part.type === "error") throw part.error;
+            claudeEstimate = reserved.estimateCents;
+            ready();
+            claudeResult = await inferClaude({
+              apiKey,
+              model: claude,
+              system: claudeSystem,
+              messages: [...history, { role: "user", content: input.message }],
+              signal,
+            });
+            claudeFailure = claudeResult.failure;
+            if (signal.aborted) throw new DOMException("Stopped", "AbortError");
+            if (claudeFailure || claudeResult.threw) throw new Error("Claude did not finish.");
+            text = claudeResult.text;
+            reason = claudeResult.finishReason;
+          } else {
+            call = createOmniCall(
+              request,
+              apiKey,
+              JSON.stringify(project.data),
+              input.message,
+              signal,
+              history,
+            );
+            ready();
+            for await (const part of call.result.fullStream) {
+              if (signal.aborted) break;
+              if (part.type === "text-delta") {
+                text += part.text;
+                send({ type: "text", text: part.text });
+              }
+              if (part.type === "reasoning-delta") send({ type: "thinking", text: part.text });
+              if (part.type === "error") throw part.error;
+            }
           }
           if (signal.aborted) throw new DOMException("Stopped", "AbortError");
           await check();
           if (signal.aborted) throw new DOMException("Stopped", "AbortError");
-          const reason = await call.result.finishReason;
+          if (call) reason = await call.result.finishReason;
           if (reason === "content-filter") {
             stopped = "refused";
             terminalStatus = 422;
@@ -231,8 +348,18 @@ export async function handleOmniAgent(request: Request) {
             terminalStatus = 502;
             terminalMessage = "The model returned no answer. No tools ran.";
           } else stopped = "completed";
+          if (claude) {
+            // Claude's answer is shown only once its cost is recorded; otherwise it is withheld.
+            if (!(await settleOnce(stopped))) {
+              stopped = "failed";
+              terminalStatus = 503;
+              terminalMessage =
+                "Claude's cost couldn't be recorded, so the reply is withheld. Its full estimate stays counted against today's limit.";
+              text = "";
+            } else if (text) send({ type: "text", text });
+          }
         } catch (error) {
-          const failure = call?.getFailure();
+          const failure = failureNow();
           if (failure) {
             terminalStatus = failure.status;
             terminalMessage = failure.message;
@@ -241,6 +368,10 @@ export async function handleOmniAgent(request: Request) {
             stopped ??= "cancelled";
             terminalStatus = stopped === "cancelled" ? 499 : 403;
             terminalMessage ||= "Stopped. Partial text retained; billed usage may apply.";
+          } else if (claudeRefused) {
+            stopped = "denied";
+            terminalStatus = error instanceof BetaHttpError ? error.status : 503;
+            terminalMessage = error instanceof Error ? error.message : "Claude was refused.";
           } else {
             stopped = "failed";
             terminalStatus = error instanceof BetaHttpError ? error.status : 502;
@@ -253,10 +384,15 @@ export async function handleOmniAgent(request: Request) {
           ready();
           clearInterval(interval);
           if (checking) await checking;
-          const failure = call?.getFailure();
+          const failure = failureNow();
           const status = stopped ?? "failed";
-          const usage =
-            call && !signal.aborted
+          // Any reserved Claude call that didn't settle above (stopped, failed) settles here, once.
+          if (claude && !(await settleOnce(status)))
+            terminalMessage ||=
+              "Claude's cost couldn't be recorded; its full estimate stays counted.";
+          const usage = claude
+            ? claudeResult?.usage
+            : call && !signal.aborted
               ? await Promise.resolve(call.result.totalUsage).catch(() => undefined)
               : undefined;
           const result = await runs()
@@ -322,6 +458,16 @@ export async function handleOmniAgent(request: Request) {
                 status: terminalStatus,
                 message: terminalMessage || "Agent stopped. No tools ran.",
               });
+            const engine = claude && claudeEstimate !== null ? claude : DEFAULT_ENGINE_ID;
+            send({
+              type: "engine",
+              engine,
+              attribution: attributionLine(engine, "OMNI"),
+              cost:
+                claude && claudeEstimate !== null && claudeActual !== null
+                  ? { estimateCents: claudeEstimate, actualCents: claudeActual }
+                  : null,
+            });
             send({ type: "result", run: readback.data as unknown as OmniAgentRun });
           }
           if (!cancelled) controller.close();
@@ -340,7 +486,7 @@ export async function handleOmniAgent(request: Request) {
         await new Response(body).text();
         return jsonError(failure.status, failure.message);
       }
-    } else {
+    } else if (claudeEstimate === null) {
       await new Response(body).text();
       return jsonError(
         signal.aborted ? 499 : terminalStatus,
@@ -357,7 +503,9 @@ export async function handleOmniAgent(request: Request) {
       "X-Content-Type-Options": "nosniff",
     };
     return new Response(body, {
-      headers: getLovableAiGatewayResponseHeaders(call.getResponseHeaders(), headers),
+      headers: call
+        ? getLovableAiGatewayResponseHeaders(call.getResponseHeaders(), headers)
+        : headers,
     });
   } catch (error) {
     return jsonError(

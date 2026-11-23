@@ -6,6 +6,7 @@ import { readClaudeStatus, setClaudeEngine, setClaudePrice } from "@/lib/claude-
 import {
   CLAUDE_CAPS,
   CLAUDE_ENGINE_IDS,
+  CLAUDE_SOURCE_LABEL,
   engineById,
   type ClaudeEngineId,
 } from "@/lib/omni-engines";
@@ -48,8 +49,8 @@ export function ClaudeEngine() {
         <p className="text-sm text-muted-foreground">
           Anthropic key: {ready ? "saved on the server" : "not connected"}. Today:{" "}
           {usd(s.todayCents)} of {usd(CLAUDE_CAPS.perDayCents)} · each reply at most{" "}
-          {usd(CLAUDE_CAPS.perCallCents)}. Emergency Stop and AI approval apply. Claude never runs
-          code; coding goes to Jackboy.
+          {usd(CLAUDE_CAPS.perCallCents)}. Emergency Stop and AI approval apply. This total is shared
+          by chat, the terminal agent and Fusion. Claude never runs code; coding goes to Jackboy.
         </p>
       </section>
 
@@ -174,7 +175,8 @@ export function ClaudeEngine() {
           <ul className="space-y-1 text-sm">
             {s.usage.map((u) => (
               <li key={u.run_id} className="text-muted-foreground">
-                {new Date(u.reserved_at).toLocaleString()} · {u.agent_id} ·{" "}
+                {new Date(u.reserved_at).toLocaleString()} ·{" "}
+                {CLAUDE_SOURCE_LABEL[u.source] ?? u.source} · {u.agent_id} ·{" "}
                 {engineById(u.model)?.label} · {u.status} · est {usd(u.estimate_cents)}
                 {u.actual_cents !== null ? ` · actual ${usd(u.actual_cents)}` : ""}
                 {u.input_tokens !== null ? ` · ${u.input_tokens}/${u.output_tokens} tokens` : ""}

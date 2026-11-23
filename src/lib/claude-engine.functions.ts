@@ -15,6 +15,9 @@ async function owner(context: {
   await requireRazulOwner(context.supabase, context.userId, context.claims);
 }
 
+const sourceOf = (v: unknown): "chat" | "agent" | "fusion" =>
+  v === "agent" || v === "fusion" ? v : "chat";
+
 export const readClaudeStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -25,9 +28,8 @@ export const readClaudeStatus = createServerFn({ method: "POST" })
       sb.from("claude_prices").select("model, in_cents_per_mtok, out_cents_per_mtok, confirmed_at"),
       sb
         .from("claude_usage")
-        .select(
-          "run_id, agent_id, model, status, estimate_cents, actual_cents, input_tokens, output_tokens, reserved_at",
-        )
+        // "*" also returns `source` once migration 0075 is installed (earlier rows are chat).
+        .select("*")
         .order("reserved_at", { ascending: false })
         .limit(50),
     ]);
@@ -50,7 +52,18 @@ export const readClaudeStatus = createServerFn({ method: "POST" })
         in_cents_per_mtok: Number(p.in_cents_per_mtok),
         out_cents_per_mtok: Number(p.out_cents_per_mtok),
       })),
-      usage: usage.data ?? [],
+      usage: (usage.data ?? []).map((u) => ({
+        run_id: u.run_id,
+        agent_id: u.agent_id,
+        model: u.model,
+        status: u.status,
+        estimate_cents: u.estimate_cents,
+        actual_cents: u.actual_cents,
+        input_tokens: u.input_tokens,
+        output_tokens: u.output_tokens,
+        reserved_at: u.reserved_at,
+        source: sourceOf((u as { source?: unknown }).source),
+      })),
       todayCents,
     };
   });

@@ -46,3 +46,7 @@ endpoint. Sessions do not read Dread/Draco chat memory. Multi-model comparison, 
 diagnostics coordination remain planned Fusion capabilities.
 
 Tests: `src/lib/fusion-duo.test.ts`, `src/test/test_omni_fusion_duo_sql.py`.
+
+## Engines (migration 0075, pending owner approval)
+
+At approval the owner picks each agent's engine: the current engine, or Claude when that agent's Claude switch is on (Claude tab). The choice is bound to the session and can't change. A Claude reply adds `claude_reserve_fusion_turn` before the call and `claude_settle_source('fusion', …)` after it, under the shared $0.50 per call and $5 per day Claude limits. If the cost can't be recorded, the reply is withheld (`outcome_not_recorded`). Turning the switch off, a stale price, Stop or a stopped session refuses the next Claude reply. See `docs/OMNI-CLAUDE-ENGINE.md`.

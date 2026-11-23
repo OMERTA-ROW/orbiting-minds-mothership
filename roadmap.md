@@ -549,5 +549,6 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 - [x] Engine registry, server-only Anthropic call, cost ledger 0074 with reserve/settle and caps, owner Claude tab, tests.
 - [ ] Owner: confirm Claude prices in the Claude tab, turn on per agent, set an Anthropic console spending limit.
 - [ ] Jackboy signed PR report endpoint — blocked on Jackboy's report format.
-- [ ] Claude for owner terminal agent and Fusion sessions — later step.
+- [x] Claude for owner terminal agent and Fusion sessions — code, tests and proposed migration 0075 (`.lovable/pending/`); fails closed until installed.
+- [ ] Owner: approve installing 0075, then turn Claude on for OMNI (terminal agent) and Dread/Draco (Fusion); publish after review.
 - [ ] ElevenLabs voices (Jax) — later, hook only.

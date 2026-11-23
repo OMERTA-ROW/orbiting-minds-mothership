@@ -6,6 +6,8 @@ import { betaQuery } from "@/lib/beta-query";
 import { type OmniEvent } from "@/lib/beta";
 import { omniAgentInput, type AgentEvent } from "@/lib/omni-agent";
 import { cancelOmniAgent, readOmniAgentRuns, readOmniChatStatus } from "@/lib/omni-agent.functions";
+import { readClaudeStatus } from "@/lib/claude-engine.functions";
+import { DEFAULT_ENGINE_ID, claudeEngineFor, engineById } from "@/lib/omni-engines";
 import {
   CONTEXT_TURN_CHOICES,
   RUN_STATUS_LABEL,
@@ -67,7 +69,8 @@ function LiveOmni() {
     cancelRun = useServerFn(cancelOmniAgent),
     pauseAccount = useServerFn(changeBetaPause),
     readRuns = useServerFn(readOmniAgentRuns),
-    readStatus = useServerFn(readOmniChatStatus);
+    readStatus = useServerFn(readOmniChatStatus),
+    readClaude = useServerFn(readClaudeStatus);
   const activeId = useRef<string | null>(null);
   const [projectId, setProject] = useState(
       data.projects.find((p) => p.id === draft.studioProject)?.id ?? data.projects[0]?.id ?? "",
@@ -100,6 +103,26 @@ function LiveOmni() {
   });
   const provider = providerState(statusQuery.data, !!statusQuery.error);
   const models = chatModels(statusQuery.data);
+  // Owner only: Claude appears when it is switched on for OMNI in the Claude tab (members never see it).
+  const claudeQuery = useQuery({
+    queryKey: ["claude-status"],
+    queryFn: () => readClaude(),
+    retry: false,
+  });
+  const omniClaude = (() => {
+    const r = claudeQuery.data;
+    if (!r || !r.ok || !r.keyConfigured) return null;
+    const row = r.settings.find((x) => x.agent_id === "omni" && x.enabled);
+    return row ? claudeEngineFor(row.model) : null;
+  })();
+  const [engine, setEngine] = useState<string>(DEFAULT_ENGINE_ID);
+  const useClaude = omniClaude !== null && engine === omniClaude;
+  const [engineInfo, setEngineInfo] = useState<
+    Record<
+      string,
+      { attribution: string; cost: { estimateCents: number; actualCents: number } | null }
+    >
+  >({});
   const sessionRunIds = useMemo(
     () =>
       new Set(items.flatMap((it) => (it.kind === "turn" && it.turn.runId ? [it.turn.runId] : []))),
@@ -192,6 +215,7 @@ function LiveOmni() {
         consent,
         requestId: crypto.randomUUID(),
         contextTurns,
+        ...(useClaude && omniClaude ? { engine: omniClaude } : {}),
       });
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Invalid input");
@@ -271,6 +295,11 @@ function LiveOmni() {
         if (event.type === "text") reply += event.text;
         if (event.type === "text") patch(`${runId}:a`, (t) => ({ text: t.text + event.text }));
         if (event.type === "context") patch(`${runId}:u`, () => ({ contextIds: event.ids }));
+        if (event.type === "engine")
+          setEngineInfo((prev) => ({
+            ...prev,
+            [runId]: { attribution: event.attribution, cost: event.cost },
+          }));
         if (event.type === "thinking") setThinking((prev) => prev + event.text);
         if (event.type === "result") {
           const run = event.run;
@@ -353,7 +382,14 @@ function LiveOmni() {
           <span>
             {m.status ? RUN_STATUS_LABEL[m.status] : "Unknown"}
             {m.at ? ` · ${new Date(m.at).toLocaleString()}` : ""}
-            {m.model ? ` · ${m.model}` : ""}
+            {m.runId && engineInfo[m.runId]
+              ? ` · ${engineInfo[m.runId]!.attribution}`
+              : m.model
+                ? ` · ${engineById(m.model)?.attribution ?? m.model}`
+                : ""}
+            {m.runId && engineInfo[m.runId]?.cost
+              ? ` · est $${(engineInfo[m.runId]!.cost!.estimateCents / 100).toFixed(2)}, cost $${(engineInfo[m.runId]!.cost!.actualCents / 100).toFixed(2)}`
+              : ""}
             {m.runId ? ` · ref ${m.runId.slice(0, 8)}` : ""}
           </span>
           {m.status === "completed" && m.text.trim() && (
@@ -451,8 +487,11 @@ function LiveOmni() {
           <label className="mt-4 block text-xs">
             Model
             <select
-              value={models[0]?.id ?? ""}
-              disabled
+              value={useClaude ? engine : (models[0]?.id ?? "")}
+              disabled={busy || omniClaude === null}
+              onChange={(e) =>
+                setEngine(e.target.value === omniClaude ? omniClaude : DEFAULT_ENGINE_ID)
+              }
               aria-describedby="model-note"
               className="exchange-select mt-2 w-full"
             >
@@ -465,15 +504,22 @@ function LiveOmni() {
               ) : (
                 <option value="">No configured model</option>
               )}
+              {omniClaude && (
+                <option value={omniClaude}>{engineById(omniClaude)?.attribution}</option>
+              )}
             </select>
             <span id="model-note" className="mt-1 block text-[10px] text-muted-foreground">
-              {statusQuery.error
-                ? "Model status could not be read."
-                : models.length === 1
-                  ? "Only one model is set up for this agent, so there is nothing else to pick."
-                  : models.length
-                    ? "Configured models only."
-                    : "No model provider is set up."}
+              {useClaude
+                ? "Claude: the reply arrives in one piece when it's finished. At most $0.50 per reply and $5 a day; Emergency Stop and AI approval are checked every second."
+                : statusQuery.error
+                  ? "Model status could not be read."
+                  : omniClaude
+                    ? "You can switch this message to Claude (owner only)."
+                    : models.length === 1
+                      ? "Only one model is set up for this agent, so there is nothing else to pick."
+                      : models.length
+                        ? "Configured models only."
+                        : "No model provider is set up."}
             </span>
           </label>
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
