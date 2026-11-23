@@ -1,5 +1,10 @@
 # Railway production startup
 
+This guide covers the Mothership **web application**, not the workspace sandbox
+or bounded executor. Railway startup and container health do not prove execution
+isolation. The selected execution design and deployment gates are in
+[OMNI execution architecture](OMNI-EXECUTION-ARCHITECTURE.md).
+
 ## Reproduced root cause
 
 At base commit `af67266cebd4dd141ad28dfebd258379f5425486`, `bun run build`
@@ -103,22 +108,16 @@ Expect a sustained listener, asset/homepage **200**, and unauthenticated API
 ## Security and release blockers
 
 - Dependency remediation updates the affected packages and migrates the
-  application schemas to Zod 4. `bun audit` now reports **zero vulnerabilities
-  across 851 packages**. The pre-fix advisory paths, their production exposure
-  assessment and patched versions are documented in
-  [DEPENDENCY-SECURITY.md](DEPENDENCY-SECURITY.md). No advisory is suppressed.
-- Full repository lint remains **FAIL** at **5,902 errors and 35 warnings**.
-  All remaining errors are Prettier findings; warnings are 32
-  `react-refresh/only-export-components` and 3 `react-hooks/exhaustive-deps`.
-  The baseline was 6,196 errors and 35 warnings, including ten substantive
-  lint errors. Those ten have been fixed; touched-file lint passes. The
-  unrelated formatting baseline is not hidden or disabled.
-- The new read-only PR workflow runs app/types/build/startup checks, full lint
-  and dependency audit as separate jobs. The app/type/build/startup and
-  dependency checks pass locally; the repository-lint job will remain red on
-  the documented formatting baseline until that baseline is remediated.
-  Actions are SHA-pinned; no production secrets, write permissions, dispatch
-  or deployment steps.
+  application schemas to Zod 4. An earlier audit reported zero vulnerabilities
+  across 851 packages; check the current head's audit rather than treating that
+  historical count as current. See [DEPENDENCY-SECURITY.md](DEPENDENCY-SECURITY.md).
+- An earlier local repository-lint baseline had 5,902 errors and 35 warnings.
+  The parent head `c4e6a96` subsequently passed the hosted `repository-lint`
+  job. Inspect the current head's job rather than assuming either historical
+  result applies.
+- The read-only PR workflow runs app/types/build/startup checks, full lint
+  and dependency audit as separate jobs. Actions are SHA-pinned; there are no
+  production secrets, write permissions, dispatch or deployment steps.
 - [Tracked environment audit](ENVIRONMENT-AUDIT.md): only public Supabase
   configuration was found; no credential rotation or history rewrite was
   performed. Removal from tracking is a separate owner decision.
@@ -130,8 +129,8 @@ Expect a sustained listener, asset/homepage **200**, and unauthenticated API
   part of this startup repair. Database migrations and production rollback
   verification remain outside this PR.
 
-Production readiness remains **BLOCKED** pending updated hosted CI, review of
-the remaining repository formatting baseline and authorized live Railway
-verification.
+Production readiness remains **BLOCKED** pending current hosted CI and
+separately authorized live verification, including the
+[execution deployment gates](OMNI-EXECUTION-ARCHITECTURE.md).
 References: [Railway start command](https://docs.railway.com/deployments/start-command)
 and [Nitro Node deployment](https://nitro.build/deploy/runtimes/node).

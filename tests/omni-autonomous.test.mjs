@@ -1,7 +1,9 @@
-import { test } from "node:test";
+// @vitest-environment node
 import assert from "node:assert/strict";
 import { randomUUID, createHmac } from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import {
   createExecutor,
   isolationArguments,
@@ -14,6 +16,7 @@ import {
   PATH,
 } from "../services/omni-autonomous/executor.mjs";
 
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const config = { enabled: true, reviewedRelease: RELEASE, controlSecret: "c".repeat(32) };
 const plan = () => ({
   jobId: randomUUID(),
@@ -28,7 +31,11 @@ const complete = async () => ({
   cancelled: false,
   exceeded: false,
 });
-const workspace = (prefix) => fs.mkdtemp(`/tmp/${prefix}-test-`);
+const workspace = async (prefix) => {
+  const directory = path.join(os.tmpdir(), `${prefix}-test-${randomUUID()}`);
+  await fs.mkdir(directory, { mode: 0o700 });
+  return directory;
+};
 test("isolation launcher clears the environment without changing approved argv", () => {
   const argv = Object.freeze([
     "/usr/bin/printf",
@@ -77,43 +84,53 @@ test("permission failure and unknown safety are fail closed with no command", as
   await assert.rejects(executor.runPlan(plan()));
   assert.equal(calls, 0);
 });
-test("self-test requires an empty environment and a ready escaped descendant", async () => {
-  for (const [environmentOutput, ready, timedOut, cancelled, expected] of [
-    ["", true, false, false, true],
-    ["SYNTHETIC_SECRET=value", true, false, false, false],
-    ["PWD=/workspace\0", true, false, false, false],
-    ["", true, true, false, false],
-    ["", true, false, true, false],
-    ["", false, false, false, false],
-  ]) {
-    let runs = 0;
-    const executor = createExecutor(
-      { enabled: false },
-      {
-        workspace,
-        run: async (command, signal, dir) => {
-          runs++;
-          if (runs === 1) {
-            assert.deepEqual(command.argv, ["/usr/bin/env", "-0"]);
-            return { exitCode: 0, output: environmentOutput, exceeded: false, timedOut, cancelled };
-          }
-          if (runs === 2) return { exitCode: 0, exceeded: false };
-          if (ready) await fs.writeFile(`${dir}/child-ready`, "");
-          if (!signal.aborted)
-            await new Promise((resolve) =>
-              signal.addEventListener("abort", resolve, { once: true }),
-            );
-          return { cancelled: true };
+test(
+  "self-test requires an empty environment and a ready escaped descendant",
+  { timeout: 15_000 },
+  async () => {
+    for (const [environmentOutput, ready, timedOut, cancelled, expected] of [
+      ["", true, false, false, true],
+      ["SYNTHETIC_SECRET=value", true, false, false, false],
+      ["PWD=/workspace\0", true, false, false, false],
+      ["", true, true, false, false],
+      ["", true, false, true, false],
+      ["", false, false, false, false],
+    ]) {
+      let runs = 0;
+      const executor = createExecutor(
+        { enabled: false },
+        {
+          workspace,
+          run: async (command, signal, dir) => {
+            runs++;
+            if (runs === 1) {
+              assert.deepEqual(command.argv, ["/usr/bin/env", "-0"]);
+              return {
+                exitCode: 0,
+                output: environmentOutput,
+                exceeded: false,
+                timedOut,
+                cancelled,
+              };
+            }
+            if (runs === 2) return { exitCode: 0, exceeded: false };
+            if (ready) await fs.writeFile(`${dir}/child-ready`, "");
+            if (!signal.aborted)
+              await new Promise((resolve) =>
+                signal.addEventListener("abort", resolve, { once: true }),
+              );
+            return { cancelled: true };
+          },
         },
-      },
-    );
-    try {
-      assert.equal((await executor.selfTest()).passed, expected);
-    } finally {
-      await executor.close();
+      );
+      try {
+        assert.equal((await executor.selfTest()).passed, expected);
+      } finally {
+        await executor.close();
+      }
     }
-  }
-});
+  },
+);
 test("duplicate concurrent jobs claim once; Stop cancellation waits for process exit", async () => {
   const value = plan();
   let notify;

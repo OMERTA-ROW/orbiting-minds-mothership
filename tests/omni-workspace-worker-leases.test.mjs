@@ -1,3 +1,4 @@
+// @vitest-environment node
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -5,10 +6,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import test from "node:test";
 import { createWorkerLeases, signWorkerRecord } from "../services/omni-sandbox/worker-leases.mjs";
 import { createLeasedCoordinator } from "../services/omni-sandbox/leased-coordinator.mjs";
 
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const identity = () => ({
   ownerId: randomUUID(),
   sessionId: randomUUID(),
@@ -87,6 +88,75 @@ test("restart retains unfinished leases, never makes crashed workers available",
       other.close();
     }
   } finally {
+    f.close();
+  }
+});
+test("coordinator recovery releases a lease only after signed cleanup, without replay", async () => {
+  const f = fixture();
+  const secret = "r".repeat(48);
+  const lease = f.pool.claim(identity());
+  let recoveries = 0;
+  const coordinator = createLeasedCoordinator({
+    pool: f.pool,
+    databaseFile: f.file,
+    workers: [
+      {
+        workerId: lease.workerId,
+        watchdogSecret: secret,
+        authorityFile: path.join(path.dirname(f.file), "authority.json"),
+      },
+    ],
+    monitor: async (_worker, binding, recover) => {
+      assert.equal(recover, true);
+      assert.equal(binding.leaseId, lease.leaseId);
+      recoveries++;
+      const record = { ...binding, outcome: "terminated_and_wiped" };
+      return { record, signature: signWorkerRecord(secret, record) };
+    },
+  });
+  try {
+    await coordinator.recover();
+    assert.equal(recoveries, 1);
+    assert.equal(f.pool.read(lease.leaseId).state, "released");
+    assert.equal(f.pool.unfinished().length, 0);
+    assert.throws(() => f.pool.claim({ ...identity(), jobId: lease.jobId }), /durable claim/);
+  } finally {
+    coordinator.close();
+    f.close();
+  }
+});
+test("unverified recovery leaves a lease quarantined until cleanup is verified", async () => {
+  const f = fixture();
+  const secret = "r".repeat(48);
+  const lease = f.pool.claim(identity());
+  let cleaned = false;
+  const coordinator = createLeasedCoordinator({
+    pool: f.pool,
+    databaseFile: f.file,
+    workers: [
+      {
+        workerId: lease.workerId,
+        watchdogSecret: secret,
+        authorityFile: path.join(path.dirname(f.file), "authority.json"),
+      },
+    ],
+    monitor: async (_worker, binding) => {
+      const record = {
+        ...binding,
+        outcome: cleaned ? "terminated_and_wiped" : "cleanup_failed",
+      };
+      return { record, signature: signWorkerRecord(secret, record) };
+    },
+  });
+  try {
+    await assert.rejects(coordinator.recover(), /wipe/);
+    assert.equal(f.pool.read(lease.leaseId).state, "quarantined");
+    assert.equal(f.pool.unfinished().length, 1);
+    cleaned = true;
+    await coordinator.recover();
+    assert.equal(f.pool.read(lease.leaseId).state, "released");
+  } finally {
+    coordinator.close();
     f.close();
   }
 });

@@ -86,11 +86,23 @@ export function selectChatContext(messages: readonly DelegatedChatMessage[]): Ch
 
 /** Plain refusals for OMNI. Status codes are stable so OMNI can classify them. */
 export const CHAT_REFUSALS: Record<string, { status: number; error: string; message: string }> = {
-  engine_not_enabled: { status: 403, error: "engine_not_enabled", message: "Claude is not turned on for this agent." },
-  price_not_confirmed: { status: 503, error: "price_not_confirmed", message: "Claude prices are missing or older than 30 days." },
+  engine_not_enabled: {
+    status: 403,
+    error: "engine_not_enabled",
+    message: "Claude is not turned on for this agent.",
+  },
+  price_not_confirmed: {
+    status: 503,
+    error: "price_not_confirmed",
+    message: "Claude prices are missing or older than 30 days.",
+  },
   call_cap: { status: 402, error: "call_cap", message: "This reply could cost more than $0.50." },
   daily_cap: { status: 402, error: "daily_cap", message: "Today's $5 AI limit would be passed." },
-  claude_not_installed: { status: 503, error: "claude_not_installed", message: "The Claude cost ledger is not available." },
+  claude_not_installed: {
+    status: 503,
+    error: "claude_not_installed",
+    message: "The Claude cost ledger is not available.",
+  },
   scope_missing: {
     status: 403,
     error: "scope_missing",

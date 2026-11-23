@@ -1,3 +1,4 @@
+// @vitest-environment node
 import assert from "node:assert/strict";
 import { spawn, execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -5,9 +6,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import { DatabaseSync } from "node:sqlite";
-import test from "node:test";
 import { systemdWorkerControl } from "../services/omni-sandbox/systemd-worker.mjs";
 
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const enabled = process.env.OMNI_WORKSPACE_LIFECYCLE_TEST === "1";
 const execute = promisify(execFile);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

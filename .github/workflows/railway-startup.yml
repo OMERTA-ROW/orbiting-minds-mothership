@@ -7,6 +7,75 @@ permissions:
   contents: read
 
 jobs:
+  container-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Build both OMNI reference images
+        run: |
+          set -euo pipefail
+          docker build --pull --tag omni-sandbox:pr services/omni-sandbox
+          docker build --pull --tag omni-autonomous:pr services/omni-autonomous
+      - name: Verify sandbox container defaults and read-only/no-network startup
+        run: |
+          set -euo pipefail
+          docker run --detach --name omni-sandbox-pr \
+            --read-only --network none --tmpfs /tmp:rw,nosuid,nodev,size=64m \
+            --tmpfs /sandbox:rw,nosuid,nodev,size=64m \
+            --memory 512m --cpus 1 --pids-limit 128 \
+            --cap-drop ALL --cap-add CHOWN --cap-add SETUID --cap-add SETGID --cap-add SETPCAP \
+            --security-opt no-new-privileges \
+            --env OMNI_SANDBOX_CLIENT_ID=mothership-test \
+            --env OMNI_SANDBOX_HMAC_SECRET=tttttttttttttttttttttttttttttttttttttttttttttttt \
+            omni-sandbox:pr
+          for attempt in $(seq 1 30); do
+            if docker exec omni-sandbox-pr node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
+              docker exec omni-sandbox-pr setpriv \
+                --reuid=20000 --regid=20000 --clear-groups \
+                --inh-caps=-all --ambient-caps=-all --bounding-set=-all --no-new-privs \
+                -- sh -c 'test "$(id -u)" = 20000 && test "$(id -g)" = 20000 &&
+                  ! grep -E "^Cap(Inh|Prm|Eff|Bnd|Amb):[[:space:]]+0*[1-9a-f]" /proc/self/status &&
+                  grep -q "^NoNewPrivs:[[:space:]]*1" /proc/self/status'
+              docker inspect omni-sandbox-pr --format \
+                'privileged={{.HostConfig.Privileged}} capAdd={{json .HostConfig.CapAdd}} capDrop={{json .HostConfig.CapDrop}} networkMode={{.HostConfig.NetworkMode}} readonlyRootfs={{.HostConfig.ReadonlyRootfs}}'
+              docker rm --force omni-sandbox-pr
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs omni-sandbox-pr
+          docker rm --force omni-sandbox-pr
+          exit 1
+      - name: Verify disabled autonomous container health under the same host ceilings
+        run: |
+          set -euo pipefail
+          docker run --detach --name omni-autonomous-pr \
+            --read-only --network none --tmpfs /tmp:rw,nosuid,nodev,size=64m \
+            --memory 512m --cpus 1 --pids-limit 128 \
+            --cap-drop ALL --security-opt no-new-privileges \
+            --env OMNI_AUTONOMOUS_ENABLED=false \
+            --env OMNI_AUTONOMY_REVIEWED_RELEASE=never-activate \
+            --env OMNI_EXECUTOR_CONTROL_SECRET=cccccccccccccccccccccccccccccccc \
+            --env OMNI_EXECUTOR_PERMISSION_SECRET=pppppppppppppppppppppppppppppppp \
+            --env OMNI_EXECUTOR_PERMISSION_TOKEN=permission-token-at-least-32-characters \
+            --env OMNI_LINK_CLIENT_ID=mothership-test \
+            --env JACKBOY_LINK_ORIGIN=https://jackboy.example \
+            omni-autonomous:pr
+          for attempt in $(seq 1 30); do
+            if docker exec omni-autonomous-pr node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
+              docker inspect omni-autonomous-pr --format \
+                'privileged={{.HostConfig.Privileged}} capAdd={{json .HostConfig.CapAdd}} capDrop={{json .HostConfig.CapDrop}} networkMode={{.HostConfig.NetworkMode}} readonlyRootfs={{.HostConfig.ReadonlyRootfs}}'
+              docker rm --force omni-autonomous-pr
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs omni-autonomous-pr
+          docker rm --force omni-autonomous-pr
+          exit 1
   jackboy-link-interop:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -52,6 +121,10 @@ jobs:
           JACKBOY_TEST_ROOT: ${{ github.workspace }}/jackboy-interop
       - name: Test scoped dispatch and callbacks across isolated databases
         run: node --test tests/jackboy-dispatch-quarantine.test.mjs tests/jackboy-dispatch-integration.test.mjs
+        env:
+          JACKBOY_TEST_ROOT: ${{ github.workspace }}/jackboy-interop
+      - name: Test cross-system Stop against an isolated no-op worker
+        run: node --import tsx --test tests/jackboy-noop-worker-integration.test.mjs
         env:
           JACKBOY_TEST_ROOT: ${{ github.workspace }}/jackboy-interop
   application:

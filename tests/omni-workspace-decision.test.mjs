@@ -1,3 +1,4 @@
+// @vitest-environment node
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -5,7 +6,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { test } from "node:test";
 import {
   boundDecision,
   createCommandClaims,
@@ -13,6 +13,7 @@ import {
 } from "../services/omni-sandbox/server.mjs";
 import { createWorkspaceJournal } from "../services/omni-sandbox/recovery.mjs";
 
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const ownerId = randomUUID();
 const sessionId = randomUUID();
 const jobId = randomUUID();

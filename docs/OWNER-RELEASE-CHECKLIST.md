@@ -60,8 +60,9 @@ Each needs you signed in on the live site. Some cost money; those are marked.
       then check the daily count went up by one.
 - [ ] **Spending cap shows verified**: authorize one job so Jackboy issues a fresh signed permit;
       the label turns verified for 15 minutes, then returns to Unverified.
-- [ ] **Staging executor (Vultr)** before arming autonomy: edit the executor's env file on the
-      Vultr server and restart `omni-executor.service`. Arming stays its own separate step.
+- [ ] **Staging executor (Vultr candidate)**: separately authorize and verify the actual Linux
+      host, isolation and Stop behavior before any configuration or restart. Arming remains
+      a distinct owner decision; see [execution gates](OMNI-EXECUTION-ARCHITECTURE.md).
 - [ ] **Emergency Stop**: from OMNI web, engage only; confirm it shows engaged on the Mothership.
       Releasing stays on the Mothership with a fresh code.
 

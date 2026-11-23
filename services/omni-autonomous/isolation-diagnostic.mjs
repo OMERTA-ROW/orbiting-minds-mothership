@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHmac, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import fs from "node:fs/promises";
 import { createServer } from "node:net";
-import { createExecutor, runIsolated, RELEASE } from "./executor.mjs";
+import { createExecutor, runIsolated, planHash, PATH, RELEASE } from "./executor.mjs";
 
 if (process.platform !== "linux") throw new Error("Linux isolation diagnostics require Linux");
 const options = {};
@@ -36,6 +37,132 @@ test("isolated argv preserves spaces and shell metacharacters literally", option
   assert.equal(result.timedOut, false);
   assert.equal(result.cancelled, false);
   assert.equal(result.exceeded, false);
+});
+
+test(
+  "signed executor plan invokes the real isolated launcher with synthetic authorization",
+  options,
+  async (t) => {
+    const controlSecret = "c".repeat(32);
+    const operations = [];
+    const dir = await workspace(t);
+    const executor = createExecutor(
+      { enabled: true, reviewedRelease: RELEASE, controlSecret },
+      {
+        workspace: async () => dir,
+        permission: async (_config, operation) => {
+          operations.push(operation);
+          return true;
+        },
+      },
+    );
+    const values = ["space here", "$(not a shell)", "-i"];
+    const plan = {
+      jobId: randomUUID(),
+      projectId: randomUUID(),
+      expiresAt: new Date(Date.now() + 50_000).toISOString(),
+      release: RELEASE,
+      commands: [{ argv: ["/usr/bin/printf", "%s\n", ...values], timeoutMs: 3000 }],
+    };
+    const body = JSON.stringify({ operation: "run", args: plan });
+    const nonce = randomUUID().replaceAll("-", "");
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = createHmac("sha256", controlSecret)
+      .update(`omni.autonomous/v1\n${PATH}\n${timestamp}\n${nonce}\n${body}`)
+      .digest("hex");
+    try {
+      const response = await executor.handle(
+        new Request(`http://127.0.0.1${PATH}`, {
+          method: "POST",
+          body,
+          headers: {
+            "X-Executor-Timestamp": timestamp,
+            "X-Executor-Nonce": nonce,
+            "X-Executor-Signature": signature,
+          },
+        }),
+      );
+      assert.equal(response.status, 200);
+      const responseBody = await response.text();
+      assert.equal(
+        response.headers.get("X-Executor-Proof"),
+        createHmac("sha256", controlSecret)
+          .update(`omni.autonomous/v1\nresponse\n${nonce}\n200\n${responseBody}`)
+          .digest("hex"),
+      );
+      const result = JSON.parse(responseBody);
+      assert.equal(result.jobId, plan.jobId);
+      assert.equal(result.outcome, "completed");
+      assert.equal(result.providerCostUsd, 0);
+      assert.equal(result.outputs.length, 1);
+      assert.equal(result.outputs[0].exitCode, 0);
+      assert.equal(result.outputs[0].output, `${values.join("\n")}\n`);
+      assert.equal(result.outputs[0].exceeded, false);
+      assert.equal(result.outputs[0].timedOut, false);
+      assert.equal(result.outputs[0].cancelled, false);
+      assert.equal(operations[0], "claim");
+      assert.equal(operations.at(-1), "finish");
+      assert.ok(operations.slice(1, -1).every((operation) => operation === "permission"));
+      assert.ok(operations.includes("permission"));
+      await assert.rejects(fs.stat(dir), { code: "ENOENT" });
+    } finally {
+      await executor.close();
+    }
+  },
+);
+
+test("executor cancellation waits for the real isolated command to exit", options, async (t) => {
+  const dir = await workspace(t);
+  const executor = createExecutor(
+    { enabled: true, reviewedRelease: RELEASE },
+    { workspace: async () => dir, permission: async () => true },
+  );
+  const plan = {
+    jobId: randomUUID(),
+    projectId: randomUUID(),
+    expiresAt: new Date(Date.now() + 50_000).toISOString(),
+    release: RELEASE,
+    commands: [
+      {
+        argv: [
+          "/usr/bin/python3",
+          "-c",
+          "import time; open('/workspace/ready','w').close(); time.sleep(10)",
+        ],
+        timeoutMs: 8000,
+      },
+    ],
+  };
+  const running = executor.runPlan(plan).then(
+    (result) => ({ result }),
+    (error) => ({ error }),
+  );
+  try {
+    const deadline = Date.now() + 5000;
+    let ready = false;
+    while (!ready && Date.now() < deadline) {
+      ready = await fs.stat(`${dir}/ready`).then(
+        () => true,
+        (error) => {
+          if (error.code !== "ENOENT") throw error;
+          return false;
+        },
+      );
+      if (!ready) await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert.ok(ready, "isolated command did not start");
+    assert.deepEqual(await executor.cancel({ jobId: plan.jobId, planSha256: planHash(plan) }), {
+      cancelled: true,
+    });
+    const reply = await running;
+    if ("error" in reply) throw reply.error;
+    assert.equal(reply.result.outcome, "cancelled");
+    assert.equal(reply.result.outputs[0].cancelled, true);
+    await assert.rejects(fs.stat(dir), { code: "ENOENT" });
+  } finally {
+    await executor.close();
+    await running;
+  }
 });
 
 test(
