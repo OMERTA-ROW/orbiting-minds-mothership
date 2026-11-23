@@ -29,6 +29,20 @@ isolation, owner-approval evidence and deployment verification remain blocked.
 - Added minimal Docker build contexts that exclude secret and build artifacts.
 - Added CI container builds plus synthetic read-only/no-network startup checks
   with memory, CPU and PID ceilings.
+- Identified the dedicated Linux workspace architecture and the separate bounded
+  executor; removed superseded Railway workspace deployment instructions.
+- Included portable executor, decision and worker-lease lifecycle tests in the
+  normal Vitest suite while preserving standalone Node test execution. Vitest
+  also discovers the systemd lifecycle cases; the disposable Linux CI job
+  explicitly provisions their fixture and executes them.
+- Added signed-plan and cancellation coverage through the actual bounded executor
+  launcher on the disposable Linux host, with synthetic authorization only.
+- Repaired the isolated cross-system Stop/no-op integration fixture's missing
+  migrations and included it in the existing interop CI job.
+
+The [architecture and deployment gates](OMNI-EXECUTION-ARCHITECTURE.md) are
+authoritative for the distinction between Railway web hosting, the selected
+dedicated Linux workspace host and the separate bounded executor.
 
 These container checks improve supply-chain and runtime evidence; they do not
 prove filesystem/PID/network isolation or certify a production host.
@@ -49,13 +63,23 @@ The implementation commit `37296e0` passed:
 - `Railway startup verification`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238261235
 - `Bounded OMNI Linux isolation`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238261022
 
-The final head `fed8156` passed:
+The earlier head `fed8156` passed:
 
 - `Railway startup verification`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238817003
 - `Bounded OMNI Linux isolation`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45238816903
 
 An earlier synchronization/merge run for `2351922` reported
 `action_required`; it was superseded by the passing final-head runs above.
+
+The parent head `c4e6a96` passed its automatically triggered checks:
+
+- `Railway startup verification`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45239289174
+- `Bounded OMNI Linux isolation`: https://github.com/OMERTA-ROW/orbiting-minds-mothership/actions/runs/45239289138
+
+These are historical parent-head results, not evidence for later commits. Check
+the current PR head's runs before any review or release decision. Opt-in image,
+namespace and cgroup diagnostics skipped in the normal PR run are not host
+passes.
 
 Local verification after each commit should include:
 
@@ -71,6 +95,24 @@ docker build --pull --tag omni-autonomous:pr services/omni-autonomous
 
 Local results for this update:
 
+- Current isolated worktree, Node 26: the normal Vitest suite passed **1,420**
+  tests; **23 skipped** (nine Linux/systemd lifecycle cases and 14 historical
+  host-only containment/supervisor cases). The Linux PR workflow is responsible
+  for executing those host fixtures.
+- The portable executor/decision/lease suites also passed **27** tests under
+  standalone `node --test`. Additional security/isolation suites passed **22**
+  and skipped **27** Linux-only cases on macOS.
+- Disposable local SQL passed **164 activation**, **36 safety** and
+  **47 approval** checks. The local fixture used a private Unix socket, not a
+  hosted database.
+- Cross-repository tests using the CI-pinned Jackboy and OMNI sources passed
+  **20** TLS/dispatch, **27** protocol/Go interop and **1** cross-system Stop
+  test, with synthetic credentials and isolated databases.
+- Type-check, changed-file lint, the default build and Railway startup build
+  plus its **2** listener tests passed. Local runs excluded the tracked `.env`
+  and inherited no production credentials.
+- Repository-wide lint passed with **14 warnings** after excluding only local
+  validation fixtures from the isolated worktree.
 - `node --test tests/omni-sandbox-mothership-gate.test.mjs tests/omni-sandbox-coordinator-gate.test.mjs`: passed 11 tests.
 - `bunx tsc --noEmit`: passed.
 - `bunx eslint tests/omni-sandbox-mothership-gate.test.mjs`: passed.
@@ -86,15 +128,17 @@ Local results for this update:
 
 ## Remaining blockers
 
-- Docker/Moby and production host isolation must be verified independently.
+- Reference image checks do not certify the selected host; workspace execution
+  in Docker remains unsupported.
 - Bubblewrap, AppArmor, seccomp, UID/GID mapping and descendant cancellation
-  evidence is experimental and not a production runtime gate.
+  CI evidence is experimental, not proof satisfying the deployment gates.
+- Live RLS/audit, production monitoring, Vultr isolation and backup/restore
+  verification are deployment-gated and remain unverified. They require
+  separate owner authorization and the evidence listed in the architecture
+  document.
 - No live Railway, Vultr, database, provider credential or production secret
-  verification was available.
-- Repository-wide lint has a documented formatting baseline that remains to be
-  remediated by the repository owner.
-- Release rollback, live health and RLS/audit behavior require explicit owner
-  authorization after a separate deployment.
+  verification was performed. The actual live executor host and deployed
+  identity remain unresolved.
 
 ## Rollback
 

@@ -8,7 +8,13 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    include: [
+      "src/**/*.{test,spec}.{ts,tsx}",
+      "tests/omni-autonomous.test.mjs",
+      "tests/omni-workspace-decision.test.mjs",
+      "tests/omni-workspace-lifecycle-linux.test.mjs",
+      "tests/omni-workspace-worker-leases.test.mjs",
+    ],
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },

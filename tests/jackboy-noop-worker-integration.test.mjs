@@ -123,6 +123,8 @@ test(
         55,
         56,
         57,
+        58,
+        59,
       ]) {
         const file = files.find(
           (f) => f.startsWith(`${String(n).padStart(4, "0")}_`) && f.endsWith(".sql"),

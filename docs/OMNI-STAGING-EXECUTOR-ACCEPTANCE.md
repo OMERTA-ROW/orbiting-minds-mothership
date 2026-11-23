@@ -1,5 +1,12 @@
 # OMNI staging executor acceptance: runbook and troubleshooting blueprint
 
+**Historical staging record, not a current deployment or activation plan.**
+The reported executor ran on a separate Linux host, not the Railway web service;
+its current host, configuration and isolation are unverified. The
+[execution architecture](OMNI-EXECUTION-ARCHITECTURE.md) supersedes any
+conflicting host or enablement instructions below. No step is authorized by
+this PR.
+
 Written 2026-11-17 after the first staging acceptance run. It records what was done, in order, and how to
 fix each failure we hit. It applies to both repos (Mothership and Jackboy Dev Control); the same file is
 kept in each. No secrets, hostnames or IDs belong in this file.

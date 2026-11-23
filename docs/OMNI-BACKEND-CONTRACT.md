@@ -1,13 +1,16 @@
 # OMNI backend contract: GitHub source, Railway backend, Lovable UI
 
 Status audited 2026-11-12 (read-only checks; no secret values read, nothing sent to Railway or Jackboy).
+This document includes historical proposals and observations, not current live
+state. The [execution architecture and deployment gates](OMNI-EXECUTION-ARCHITECTURE.md)
+are authoritative where older Railway sandbox or executor instructions conflict.
 
 ## 1. Who owns what
 
 | Part                                          | Holds                                                                                                                                                                                                   | Never holds                                                                                                           |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | **GitHub** (source)                           | Code for Mothership (synced by Lovable Git sync, one branch), and separately the OMNI/Jackboy repositories.                                                                                             | Running state, approvals, secrets. Mothership cannot see whether Git sync is connected; check Project settings → Git. |
-| **Railway** (backend)                         | The OMNI service and Jackboy CODE, their own secrets (for example `CODE_PROVIDER_API_KEY`), and — later — the isolated sandbox.                                                                         | Mothership's database credentials or owner sessions.                                                                  |
+| **Railway** (web / restricted runner)         | Web services and the separate fixed-protocol runner where configured.                                                                                                                                   | A verified general-purpose workspace sandbox or bounded executor.                                                     |
 | **Lovable / Mothership** (UI + control plane) | Owner sign-in and two-step codes, passkeys, Activation Approvals, Emergency Stop, kill switch, held tasks, Docking Bay, audit, per-agent memory records, the secure-link settings (names listed in §3). | Any provider API key for CODE, any shell or executor.                                                                 |
 
 Each counterpart keeps its own knowledge: Mothership keeps owner-saved per-agent memory (§5); OMNI and Jackboy keep whatever they store on Railway. Nothing is shared between them today.
@@ -47,20 +50,24 @@ All use HTTPS POST, platform certificate checks, refused redirects, a 5-second t
 - Signature: HMAC-SHA256(secret, `omni.workspace/v1\nPOST\n/api/public/omni/workspace\n<ts>\n<nonce>\n<sha256(body)>`).
 - Body: `{ action, projectId, ...payload }` with actions `health.check {}` (live isolation probe, limits, provider and GitHub status), `repo.checkout {sessionId, jobId, repository, ref}`, `pr.propose {sessionId, jobId, title}` (returns a `pull_request`-gated diff step), `session.start {sessionId, agentId, allowedActions, provider}`, `chat.send {sessionId, jobId, agentId, autonomous, text}`, `command.run {… command}`, `events.poll {sessionId, jobId, cursor}`, `job.stop`, `agent.stop`, `session.end`, `step.decide {sessionId, jobId, stepId, approve}`.
 - Reply: HTTP 200/202, `x-omni-proof` = HMAC(secret, `omni.workspace/v1\nresponse\n<nonce>\n<status>\n<raw body>`), JSON `{ contract, requestNonce, session?: {sandboxId, sandboxName, model}, job?: {status, cursor}, steps[] }` (schema `remoteReply` in `src/lib/omni-workspace.ts`). 404 is reported as "OMNI has no workspace endpoint yet". HTTP 409 is a signed refusal whose `error` text is shown; nothing ran.
-- `command.run` never executes on arrival: it returns a `command` step with `pending_approval`; only `step.decide {stepId:"cmd", approve:true}` runs it. Output comes back through `events.poll` as `output` steps (`stdout`/`stderr`/`system`) and a final `result` step with `exitCode`.
+- Historically, `command.run` proposed an owner-approved step and `events.poll` returned output. The current reference remains quarantined: neither `command.run` nor `step.decide` starts a command.
 
 ### `omni.dock/v1` and `jackboy.omni-handoff/v1`
 
 See `docs/OMNI-DOCK-PROTOCOL.md`. Docked devices get status, held proposals and stop-engage only.
 
-## 4. Isolated sandbox prerequisites (Railway side, before any command can run)
+## 4. Isolated workspace prerequisites (dedicated Linux host)
 
-The reference service (`services/omni-sandbox/`, deploy steps in its README) implements items 1–9 and was tested end to end **on Lovable's build machine only** (`src/test/omni-sandbox-interop.test.ts`, 11 checks). Whether Railway's container allows the no-network namespace is **unverified**: the service logs `network isolated` or `network open` at startup, and Mothership's self-test fails on `open`. If Railway reports `open`, the options are a host that allows user namespaces, or a sandbox provider with per-sandbox network off; Mothership's contract stays the same.
+The quarantined reference service does **not** implement or prove all of the
+requirements below. Signed-protocol tests and a network probe do not establish
+isolation. The selected workspace architecture is a dedicated Linux host, not
+Railway or the reference Docker image; Vultr is a candidate whose live isolation
+has not been verified. See `services/omni-sandbox/HOST-SETUP.md`.
 
 Mothership will not relay a command until **all** of these are true and evidenced:
 
-1. A separate Railway service/project for the sandbox with **no** production secrets, database URLs or provider keys in its environment.
-2. One short-lived container per session; non-root user; read-only base image plus a size-capped scratch directory wiped at session end.
+1. A separate dedicated Linux workspace host with **no** production secrets, database URLs or provider keys in job environments.
+2. A separate non-root worker identity and isolated, bounded, ephemeral workspace per session; verified cleanup before reuse.
 3. CPU, memory, process-count and wall-clock limits per command; output streamed in capped chunks.
 4. Network egress denied by default; any allow-list (for example a package registry) is an owner-approved, logged change.
 5. No Docker socket, host mounts, SSH keys or cloud metadata access.
@@ -69,9 +76,10 @@ Mothership will not relay a command until **all** of these are true and evidence
 8. Merge, deploy, publish, secrets, GitHub-permission and network actions come back as `gated` steps for the owner, never auto-run.
 9. The `omni.workspace/v1` endpoint above, with proofs, plus the `omni.link/v2` self-test passing within 24 hours.
 
-Mothership side for the cloud shell, in order: deploy sandbox → add `OMNI_SANDBOX_ORIGIN`, `OMNI_SANDBOX_CLIENT_ID`, `OMNI_SANDBOX_HMAC_SECRET` → `OMNI_SANDBOX_ENABLED=true` → kill switch enabled (passkey) → **Run sandbox self-test** (passkey; must pass within 24 h) → start session (passkey) → each command approved by you. Emergency Stop engaged at any time blocks every step. Activation Approvals 1–10 and the Jackboy link switches remain the gate for Jackboy CODE only.
-
-Mothership's self-test passes only when the live probe shows: network isolated, non-root per-session user, no environment names beyond `HOME, LANG, OLDPWD, PATH, TERM`, clean probe exit, and limits within ceilings (≤300 s per command, ≤8 GB memory, ≤1 MB output, ≤5 sessions, 10 min idle, 60 min session). Providers show "Connected" only when the sandbox reports the key was accepted by the provider's model list.
+Do not configure or enable this reference as a working sandbox. Any future
+rollout requires separate owner approval, the deployment-gated host evidence,
+current owner approvals, spend controls and fail-closed Emergency Stop. A
+signed self-test or provider status is not proof of containment.
 
 ## 5. Per-agent memory (built in Mothership; no outside backend)
 
@@ -98,7 +106,7 @@ Autonomous Mode is **OFF** and cannot be turned on in this build. The Mothership
 
 | Gate                          | Evidence the Mothership checks                                                                                                    | Status today                               |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| Reviewed live verification    | `AUTONOMY_VERIFIED_RELEASE` set in code after a reviewed live Railway run of every gate                                           | **Missing** (null)                         |
+| Reviewed live verification    | A separately reviewed live run of every gate on the actual dedicated execution host                                              | **Missing** (null)                         |
 | Signed connection + self-test | A `sandbox_self_test_passed` audit row from a signed, proof-checked reply, last 24 h, `OMNI_SANDBOX_*` configured and enabled     | **Missing** (not configured)               |
 | Isolated shell                | Self-test health: network `isolated`, per-session user, non-root, only allowed env names, limits within ceilings                  | **Missing**                                |
 | Sandbox supports windows      | Health reports `autonomy: "windowed"` (reference service v0.1 reports `"off"` and always waits for approval)                      | **Missing**                                |
@@ -111,7 +119,7 @@ Autonomous Mode is **OFF** and cannot be turned on in this build. The Mothership
 
 Windows are 15, 30 or 60 minutes. The database (migration 0047) also refuses any other length, refuses Jackboy, refuses opening while Emergency Stop is engaged/unreadable, the kill switch is off or the agent is not enrolled, forbids extending/reassigning/reopening, and ends every open window when Emergency Stop is engaged, the kill switch is turned off, or the agent is paused. Per-agent Stop and global STOP also end windows.
 
-### What the sandbox must add for v0.2 (OMNI GitHub repo / Railway, not this project)
+### What a future sandbox must add for v0.2 (not implemented)
 
 1. Report `autonomy: "windowed"` only once implemented.
 2. Accept `autonomous: true` plus `autonomyExpiresAt` (ISO) on `command.run`/`chat.send`; re-check the expiry on **every** step server-side and fall back to waiting for `step.decide` once expired.
@@ -240,8 +248,8 @@ self-test and Linux diagnostic still require an entirely empty child environment
 The diagnostic tests host-loopback isolation against a listener on the host's
 `127.0.0.1`, not a listener inside the sandbox's own network namespace.
 Before each command and every 250 ms during a command, authenticated
-Jackboy permission is rechecked (1.5-second transport deadline; replies older than
-2 seconds are refused). Unknown safety aborts; cancellation waits for process
+Jackboy permission is rechecked (6-second transport deadline; replies older than
+6 seconds are refused). Unknown safety aborts; cancellation waits for process
 termination, including descendants. Thus remote loss detection is bounded, not
 instantaneous propagation. An instance with no matching active job refuses an
 acknowledgement; it cannot prove termination on another instance or after restart.
@@ -309,7 +317,7 @@ The owner's current restriction permits only the explicitly approved `printf`
 arguments at the provider; any synthetic network or descendant-kill probes
 require separate permission. Mock results do not prove provider isolation.
 
-### Railway staging dependencies (preparation only)
+### Staging dependencies (historical preparation only)
 
 Use distinct staging databases/projects and managed staging secrets; do not copy
 production keys into a test or the worker. Values are intentionally not recorded.
@@ -318,11 +326,11 @@ production keys into a test or the worker. Values are intentionally not recorded
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Both web apps            | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`; matching build-time `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`; Railway Node-server artifact (`NITRO_PRESET=node-server`), `PORT`, existing owner/MFA/passkey enrollment.                                                                                                                                                                                                                            |
 | Shared signed link       | Matching `OMNI_LINK_CLIENT_ID`, `OMNI_LINK_PROJECT_ID`, `OMNI_LINK_BOOTSTRAP_KEY`, `OMNI_LINK_HMAC_SECRET`; current `OMNI_LINK_APPROVAL_ID` and approval expiry covering Step 7. Jackboy also requires `OMNI_LINK_OWNER_ID`, `OMNI_LINK_ENABLED=true` and its saved owned-project approval. Mothership requires `JACKBOY_LINK_ENABLED=true`, `JACKBOY_LINK_ORIGIN`, `OMNI_LINK_APPROVAL_EXPIRES_AT`. Existing protocol-runner settings and signed Step 8 self-test remain prerequisites. |
-| Mothership + Jackboy     | Dedicated public HTTPS `.up.railway.app` `OMNI_EXECUTOR_ORIGIN`, `OMNI_EXECUTOR_CONTROL_SECRET`, reviewed `OMNI_AUTONOMY_REVIEWED_RELEASE`. Never reuse protocol-runner/manual origins.                                                                                                                                                                                                                                                                                                  |
+| Mothership + Jackboy     | Independently verified dedicated Linux executor HTTPS origin, `OMNI_EXECUTOR_CONTROL_SECRET`, reviewed `OMNI_AUTONOMY_REVIEWED_RELEASE`. Never reuse protocol-runner/manual origins.                                                                                                                                                                                                                                                                                                   |
 | Jackboy + bounded worker | Separate matching `OMNI_EXECUTOR_PERMISSION_SECRET` / `OMNI_EXECUTOR_PERMISSION_TOKEN`; worker additionally needs `OMNI_EXECUTOR_CONTROL_SECRET`, `JACKBOY_LINK_ORIGIN`, `OMNI_LINK_CLIENT_ID`, `OMNI_AUTONOMY_REVIEWED_RELEASE`, `PORT` and initially `OMNI_AUTONOMOUS_ENABLED=false`. No Supabase, bootstrap, provider, GitHub or manual-sandbox keys on the worker.                                                                                                                   |
 | Existing CODE dependency | Preserve owner-approved workflow/repository SHA pins, runner and CODE environment policy, enrollment/passkeys, gateway verification, pricing, spend meter and provider hard-cap proof. Exact existing gateway configuration is specified in Jackboy `docs/CODE-PROVIDER-GATEWAY.md` and `docs/CODE-LIVE-ACCEPTANCE.md`; Step 10 refuses missing prerequisites and does not enable these lanes.                                                                                           |
 | Database history         | Owner inspects actual hosted journals first. Review only missing Mothership 0053–0058 and Jackboy 0063–0070 after explicit authorization and backups. Published Jackboy 0063–0067 are unchanged; upstream records an owner-installed 0066, not a new hosted verification here. Our additive Mothership 0057–0058 and Jackboy 0068–0070 remain unapplied. Never reapply or overwrite installed history.                                                                                   |
-| Linux worker             | Build the dedicated Dockerfile; Node 26, Python3, bubblewrap, util-linux/prlimit, host UID/GID transition and permitted unprivileged user/PID/mount/network namespaces. No privileged container or weakened host policy. Railway namespace support, exact image identity, resource sizing, service TLS, secret separation and sub-second lease-renewal latency must be verified on staging; otherwise execution stays blocked.                                                           |
+| Linux worker             | Dedicated Linux runtime with Node 26, Python3, bubblewrap, util-linux/prlimit, host UID/GID transition and permitted unprivileged user/PID/mount/network namespaces. The Dockerfile is a reference image, not proof of a supported runtime. Verify the actual host, packaging, resource sizing, service TLS, secret separation and lease-renewal latency; otherwise execution stays blocked. No privileged container or weakened host policy. |
 
 ### Exact remaining owner actions (none performed by this branch)
 
@@ -333,7 +341,7 @@ production keys into a test or the worker. Values are intentionally not recorded
    anything; do not duplicate the upstream owner-reported 0066 installation.
    The separate intelligence branch also has a historical 0053: reconcile that
    branch's migration ordering before combining it; none is applied here.
-2. Provision the dedicated Linux executor using its Dockerfile, initially
+2. Under a separately approved plan, provision the dedicated Linux executor, initially
    `OMNI_AUTONOMOUS_ENABLED=false`. Do not reuse the legacy protocol/manual service.
    Configure `OMNI_EXECUTOR_ORIGIN` and `OMNI_EXECUTOR_CONTROL_SECRET` on Mothership
    and Jackboy; control secret on the executor. Configure separate
@@ -341,7 +349,7 @@ production keys into a test or the worker. Values are intentionally not recorded
    and the executor, plus executor `JACKBOY_LINK_ORIGIN` and `OMNI_LINK_CLIENT_ID`.
    Existing production credentials must not be rotated or copied into tests.
 3. Independently prove Linux isolation/resource/descendant cancellation on the
-   exact staging image:
+   exact staging runtime and kernel:
    `OMNI_LINUX_ISOLATION_TEST=true node --test tests/omni-autonomous-linux.test.mjs`.
    Test signed cross-system Stop, expiry, network loss and restart against staging.
    Never use privileged containers or weaken isolation to make verification pass.
@@ -386,8 +394,8 @@ The executor image includes an opt-in diagnostic at
 including an empty child environment, resource breaches and cancellation of a
 ready descendant that creates a separate session. It does not need or enable
 autonomous execution and is not run at startup. Run it on the exact staging
-image and kernel only after separate owner approval; a local or CI result does
-not prove Railway isolation. Its resource limits are process limits, not
+runtime and kernel only after separate owner approval; a local or CI result does
+not prove live host isolation. Its resource limits are process limits, not
 aggregate job cgroup quotas. The diagnostic is separate from the shorter signed
 executor self-test and does not prove cross-service Stop.
 
@@ -397,7 +405,7 @@ pushed for review; no main-branch merge, deployment, owner approval, Stop releas
 or production activation occurred. Docker's daemon is unavailable on this macOS
 host; real Linux checks run instead in a credential-free ephemeral GitHub-hosted VM,
 never a mocked replacement. Live cross-system connection/cancellation and the
-exact Railway worker image remain **unverified**; the executor stays disabled.
+exact dedicated executor runtime remain **unverified**; the executor stays disabled.
 Public build markers identify deployed screens only, not authenticated safety or
 feature-branch runtime. Verification results below distinguish local and Linux evidence.
 

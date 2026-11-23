@@ -1,7 +1,8 @@
 # OMNI workspace sandbox (quarantined)
 
 The selected workspace runtime is a dedicated Linux host, not Docker or Railway.
-See [HOST-SETUP.md](HOST-SETUP.md) for the quarantined non-root systemd worker package,
+See the [execution architecture](../../docs/OMNI-EXECUTION-ARCHITECTURE.md) and
+[HOST-SETUP.md](HOST-SETUP.md) for the quarantined non-root systemd worker package,
 pre-provisioned session identity design, requirements and rollback. Docker image execution
 is unsupported; retained image diagnostics are optional and not workspace gates.
 The host historical fixture does not by itself certify the packaged service or Vultr.
@@ -73,33 +74,14 @@ Historical design (not currently available):
 - Optional OpenAI and Claude adapters. Keys stay in this service; a provider shows "connected" only after its key is accepted by the provider's model list.
 - Autonomy is ignored: commands always wait for approval.
 
-## Deploy on Railway (owner steps)
+## Superseded Railway instructions
 
-The steps below are historical and insufficient for safe execution. Do not follow them until a
-reviewed implementation and real Linux containment tests establish the missing guarantees above.
-
-1. In the OMNI GitHub repository, add this folder (for example `omni-sandbox/`).
-2. Railway → your project → **New service → GitHub repo** → set **Root directory** to that folder. Railway builds the `Dockerfile`.
-3. Do **not** attach a database, shared variables, private networking to other services, or volumes holding secrets.
-4. **Settings → Networking → Generate domain**. Note the `https://…up.railway.app` address.
-5. **Variables** (this service only):
-
-| Name                                                                      | Required   | Value                                                                                                                         |
-| ------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `OMNI_SANDBOX_CLIENT_ID`                                                  | yes        | e.g. `mothership`                                                                                                             |
-| `OMNI_SANDBOX_HMAC_SECRET`                                                | yes        | new random value, ≥32 chars (`openssl rand -hex 32`). Not the Jackboy secret.                                                 |
-| `OMNI_SANDBOX_PROJECT_ID`                                                 | no         | defaults to `omni`; must match Mothership                                                                                     |
-| `OMNI_REPO_ALLOWLIST`                                                     | for GitHub | `owner/repo,owner/repo2`                                                                                                      |
-| `GITHUB_TOKEN`                                                            | for GitHub | fine-grained token for **only** those repos: Contents read/write, Pull requests read/write. No admin, workflow or org scopes. |
-| `OPENAI_API_KEY`, `OPENAI_MODEL`                                          | for OpenAI | key and model name you are entitled to                                                                                        |
-| `OPENAI_PRICE_IN_CENTS_PER_MTOK`, `OPENAI_PRICE_OUT_CENTS_PER_MTOK`       | for OpenAI | your model's prices in cents per million tokens (chat is refused without them)                                                |
-| `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`                                    | for Claude | key and model name                                                                                                            |
-| `ANTHROPIC_PRICE_IN_CENTS_PER_MTOK`, `ANTHROPIC_PRICE_OUT_CENTS_PER_MTOK` | for Claude | prices in cents per million tokens                                                                                            |
-| `OMNI_SANDBOX_COMMAND_TIMEOUT_SEC` etc.                                   | no         | limits; Mothership refuses values above its ceilings                                                                          |
-
-6. Deploy, then open the service logs. The first line must say `network isolated`. If it says `network open`, this host cannot cut the network and Mothership's self-test will fail (by design). Do **not** set `OMNI_SANDBOX_ALLOW_NETWORK` to work around it; see the backend guide for alternatives.
-7. In Lovable → Project settings → Secrets, add `OMNI_SANDBOX_ORIGIN` (the Railway address), `OMNI_SANDBOX_CLIENT_ID`, `OMNI_SANDBOX_HMAC_SECRET` (same value as step 5), optionally `OMNI_SANDBOX_PROJECT_ID`, and finally `OMNI_SANDBOX_ENABLED=true`.
-8. In Mothership → OMNI Terminal → agent workspace: **Enable terminal** (passkey), **Run sandbox self-test** (passkey). It must pass before any session starts.
+The former Railway service and enablement steps are not a supported workspace
+deployment path. A Railway web service or a healthy reference container does
+not establish the required host, namespace, cgroup, watchdog or Stop boundary.
+Do not configure or enable this sandbox using those historical instructions.
+Any future rollout requires the separate deployment gates in the architecture
+document and explicit owner authorization.
 
 ## Historical tests
 

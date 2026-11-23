@@ -8,6 +8,7 @@ on:
       - services/omni-autonomous/**
       - services/omni-sandbox/**
       - tests/omni-autonomous*.test.mjs
+      - tests/omni-workspace-*.test.mjs
       - src/test/omni-sandbox-*.test.ts
   workflow_dispatch:
     inputs:
@@ -564,6 +565,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "22"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.4.4"
+      - run: bun install --frozen-lockfile
       - name: Test socket routing, independent watchdog and ephemeral workspaces on disposable systemd
         run: |
           set -euo pipefail
@@ -609,7 +614,7 @@ jobs:
           sudo install -m 644 services/omni-sandbox/*.mjs /opt/omni-watchdog-fixture/services/omni-sandbox/
           sudo install -m 644 tests/fixtures/omni-leased-{service,coordinator}.mjs /opt/omni-watchdog-fixture/tests/fixtures/
           sudo env PATH="$PATH" OMNI_WORKSPACE_LIFECYCLE_TEST=1 \
-            node --test --test-concurrency=1 tests/omni-workspace-lifecycle-linux.test.mjs
+            node ./node_modules/vitest/vitest.mjs run tests/omni-workspace-lifecycle-linux.test.mjs
   activation-sql:
     if: github.event_name != 'workflow_dispatch' || (!inputs.host_only && !inputs.namespace_trace)
     runs-on: ubuntu-22.04

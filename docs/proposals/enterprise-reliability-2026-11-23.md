@@ -1,7 +1,7 @@
 # OMNI Mothership Enterprise Infrastructure & Fusion Reliability Upgrade
 
 ## Objective
-Audit and strengthen container execution, CI/CD, release rollback, observability and strict isolation for Fusion, agents and terminal jobs. This PR is an implementation brief only, not a completed infrastructure upgrade.
+Audit and strengthen container execution, CI/CD, release rollback, observability and strict isolation for Fusion, agents and terminal jobs. This PR combines a proposal with limited reference-image, CI and test hardening; it is not a completed infrastructure upgrade. The [execution architecture and deployment gates](../OMNI-EXECUTION-ARCHITECTURE.md) supersede older Railway sandbox instructions.
 
 ## Work plan
 1. Audit GitHub Actions, Railway, Vultr, sandbox supervisor, Fusion routing, agent permissions and existing owner authorization. Reconcile live vs code state, including quarantined workspace execution.

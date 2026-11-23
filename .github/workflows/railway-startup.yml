@@ -123,6 +123,10 @@ jobs:
         run: node --test tests/jackboy-dispatch-quarantine.test.mjs tests/jackboy-dispatch-integration.test.mjs
         env:
           JACKBOY_TEST_ROOT: ${{ github.workspace }}/jackboy-interop
+      - name: Test cross-system Stop against an isolated no-op worker
+        run: node --import tsx --test tests/jackboy-noop-worker-integration.test.mjs
+        env:
+          JACKBOY_TEST_ROOT: ${{ github.workspace }}/jackboy-interop
   application:
     runs-on: ubuntu-latest
     timeout-minutes: 15
