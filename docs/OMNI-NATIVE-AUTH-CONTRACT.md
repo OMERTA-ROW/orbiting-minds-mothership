@@ -10,6 +10,9 @@ native text chat is added in `.lovable/pending/0077_omni_native_cli_chat.sql`. B
 readiness marker is available. The native CLI must implement the client side before these flows
 can be used end to end.
 
+See [OMNI-NATIVE-MIGRATION-RECOVERY.md](./OMNI-NATIVE-MIGRATION-RECOVERY.md) for migration
+dependencies, containment and recovery; it does not authorize applying or deploying them.
+
 ## Browser authorization request
 
 The CLI starts a loopback HTTP listener on `127.0.0.1` using an OS-assigned ephemeral port, then
