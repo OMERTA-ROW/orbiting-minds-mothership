@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import { pathToFileURL } from "node:url";
 
-export const RELEASE = "omni-bounded-plan-2";
+export const RELEASE = "omni-bounded-plan-3-unreviewed";
 /** Jackboy runs on a serverless host whose cold replies can take about 3 s. */
 export const PERMISSION_TIMEOUT_MS = 6000;
 export const PERMISSION_MAX_AGE_MS = 6000;
@@ -402,14 +402,25 @@ export function createExecutor(
             abort.abort();
             break;
           }
+          if (abort.signal.aborted || Date.now() >= Date.parse(plan.expiresAt)) {
+            abort.abort();
+            break;
+          }
           const result = await run(command, abort.signal, workspace);
           outputs.push(result);
-          if (result.exitCode !== 0 || result.exceeded || result.cancelled) break;
+          if (result.exitCode !== 0 || result.exceeded || result.timedOut || result.cancelled)
+            break;
         }
         outcome = abort.signal.aborted
           ? "cancelled"
           : outputs.length === plan.commands.length &&
-              outputs.every((result) => result.exitCode === 0 && !result.exceeded)
+              outputs.every(
+                (result) =>
+                  result.exitCode === 0 &&
+                  !result.exceeded &&
+                  !result.timedOut &&
+                  !result.cancelled,
+              )
             ? "completed"
             : "failed";
       } finally {
@@ -440,7 +451,8 @@ export function createExecutor(
     if (!job) throw new Error("Cancellation is unverified on this executor instance");
     if (job.hash !== args.planSha256) throw new Error("Cancellation scope mismatch");
     job.abort.abort();
-    await job.done;
+    const result = await job.done;
+    if (result.outcome !== "cancelled") throw new Error("Cancellation was not confirmed");
     return { cancelled: true };
   }
   async function handle(request) {
