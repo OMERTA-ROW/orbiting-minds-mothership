@@ -108,6 +108,49 @@ Device revocation takes effect on the next request. Rotation replaces the key an
 device's prior nonces in the same transaction, increments its revision, and makes signatures
 from the old key fail.
 
+## Device status and interrupted rotation
+
+Migration `.lovable/pending/0078_omni_native_device_status.sql` is source-only until owner
+approval and application. It adds `POST /api/public/omni/dock/native-device-status`, a signed
+`omni.dock/v1` request with body `{}`, the ordinary 8 KiB limit, a fresh nonce and a timestamp
+within 60 seconds. The route requires a paired native CLI device and verified owner; it needs no
+additional device permission and is available while Emergency Stop is engaged. It cannot grant,
+rotate or revoke anything. A service-only transaction locks the device and checks that its current
+fingerprint matches the key whose request signature was verified, rechecks timestamp and owner,
+and consumes a replay nonce preserved across key rotations.
+
+On success the response is:
+
+```json
+{
+  "ok": true,
+  "protocol": "omni.native-device-status/v1",
+  "deviceId": "uuid",
+  "status": "paired",
+  "revision": 3,
+  "keyFingerprint": "<64 lowercase hex>",
+  "permissions": ["status.read"],
+  "checkedAt": "<RFC 3339 timestamp>"
+}
+```
+
+The client must validate the protocol, device ID and fingerprint against its candidate key and
+treat the revision and permissions as a snapshot, not an exchange receipt or future authorization.
+`409 replay` or `device_changed`, `401` invalid signature/clock, `403` not permitted and `503`
+unavailable must not be interpreted as proof that an exchange failed. A lost response remains
+ambiguous: keep candidate keys until an authenticated snapshot or an explicit owner recovery
+resolves the state. Later rotation, revocation or permission change can invalidate the snapshot.
+Every new request rechecks current authority.
+
+For initial enrollment, a lost exchange response can also lose the device ID; the status endpoint
+cannot find a device without it. No initial-enrollment recovery endpoint exists. An owner may
+revoke the correctly identified device in Docking Bay and start a fresh enrollment with a new key
+and consent, but the displayed abbreviated fingerprint/safety code alone is not a full identity
+proof; do not revoke an ambiguous match. A future automated recovery flow would need fresh verified
+owner/MFA consent, proof of possession of the original key, an exact key-bound one-use authorization
+and callback/PKCE exchange, owner-scoped audited lookup, and fail-closed handling of revoked or
+changed devices. A public fingerprint-only lookup is not a recovery contract.
+
 ## Signed Dock requests
 
 After exchange, the client uses the existing `omni.dock/v1` headers and canonical request format

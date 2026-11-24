@@ -125,6 +125,7 @@ import { Route as ApiPublicOmniDockControlRouteImport } from './routes/api/publi
 import { Route as ApiPublicOmniDockHeartbeatRouteImport } from './routes/api/public/omni/dock/heartbeat'
 import { Route as ApiPublicOmniDockJobsRouteImport } from './routes/api/public/omni/dock/jobs'
 import { Route as ApiPublicOmniDockJobsStatusRouteImport } from './routes/api/public/omni/dock/jobs-status'
+import { Route as ApiPublicOmniDockNativeDeviceStatusRouteImport } from './routes/api/public/omni/dock/native-device-status'
 import { Route as ApiPublicOmniDockPairRouteImport } from './routes/api/public/omni/dock/pair'
 import { Route as ApiPublicOmniDockProjectsRouteImport } from './routes/api/public/omni/dock/projects'
 import { Route as ApiPublicOmniDockStopRouteImport } from './routes/api/public/omni/dock/stop'
@@ -725,6 +726,12 @@ const ApiPublicOmniDockJobsStatusRoute =
     path: '/api/public/omni/dock/jobs-status',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOmniDockNativeDeviceStatusRoute =
+  ApiPublicOmniDockNativeDeviceStatusRouteImport.update({
+    id: '/api/public/omni/dock/native-device-status',
+    path: '/api/public/omni/dock/native-device-status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicOmniDockPairRoute = ApiPublicOmniDockPairRouteImport.update({
   id: '/api/public/omni/dock/pair',
   path: '/api/public/omni/dock/pair',
@@ -864,6 +871,7 @@ export interface FileRoutesByFullPath {
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
   '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
+  '/api/public/omni/dock/native-device-status': typeof ApiPublicOmniDockNativeDeviceStatusRoute
   '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
   '/api/public/omni/dock/projects': typeof ApiPublicOmniDockProjectsRoute
   '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
@@ -985,6 +993,7 @@ export interface FileRoutesByTo {
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
   '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
+  '/api/public/omni/dock/native-device-status': typeof ApiPublicOmniDockNativeDeviceStatusRoute
   '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
   '/api/public/omni/dock/projects': typeof ApiPublicOmniDockProjectsRoute
   '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
@@ -1108,6 +1117,7 @@ export interface FileRoutesById {
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
   '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
+  '/api/public/omni/dock/native-device-status': typeof ApiPublicOmniDockNativeDeviceStatusRoute
   '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
   '/api/public/omni/dock/projects': typeof ApiPublicOmniDockProjectsRoute
   '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
@@ -1231,6 +1241,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/dock/heartbeat'
     | '/api/public/omni/dock/jobs'
     | '/api/public/omni/dock/jobs-status'
+    | '/api/public/omni/dock/native-device-status'
     | '/api/public/omni/dock/pair'
     | '/api/public/omni/dock/projects'
     | '/api/public/omni/dock/stop'
@@ -1352,6 +1363,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/dock/heartbeat'
     | '/api/public/omni/dock/jobs'
     | '/api/public/omni/dock/jobs-status'
+    | '/api/public/omni/dock/native-device-status'
     | '/api/public/omni/dock/pair'
     | '/api/public/omni/dock/projects'
     | '/api/public/omni/dock/stop'
@@ -1474,6 +1486,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/dock/heartbeat'
     | '/api/public/omni/dock/jobs'
     | '/api/public/omni/dock/jobs-status'
+    | '/api/public/omni/dock/native-device-status'
     | '/api/public/omni/dock/pair'
     | '/api/public/omni/dock/projects'
     | '/api/public/omni/dock/stop'
@@ -1583,6 +1596,7 @@ export interface RootRouteChildren {
   ApiPublicOmniDockHeartbeatRoute: typeof ApiPublicOmniDockHeartbeatRoute
   ApiPublicOmniDockJobsRoute: typeof ApiPublicOmniDockJobsRoute
   ApiPublicOmniDockJobsStatusRoute: typeof ApiPublicOmniDockJobsStatusRoute
+  ApiPublicOmniDockNativeDeviceStatusRoute: typeof ApiPublicOmniDockNativeDeviceStatusRoute
   ApiPublicOmniDockPairRoute: typeof ApiPublicOmniDockPairRoute
   ApiPublicOmniDockProjectsRoute: typeof ApiPublicOmniDockProjectsRoute
   ApiPublicOmniDockStopRoute: typeof ApiPublicOmniDockStopRoute
@@ -2403,6 +2417,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOmniDockJobsStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/omni/dock/native-device-status': {
+      id: '/api/public/omni/dock/native-device-status'
+      path: '/api/public/omni/dock/native-device-status'
+      fullPath: '/api/public/omni/dock/native-device-status'
+      preLoaderRoute: typeof ApiPublicOmniDockNativeDeviceStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/omni/dock/pair': {
       id: '/api/public/omni/dock/pair'
       path: '/api/public/omni/dock/pair'
@@ -2593,6 +2614,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOmniDockHeartbeatRoute: ApiPublicOmniDockHeartbeatRoute,
   ApiPublicOmniDockJobsRoute: ApiPublicOmniDockJobsRoute,
   ApiPublicOmniDockJobsStatusRoute: ApiPublicOmniDockJobsStatusRoute,
+  ApiPublicOmniDockNativeDeviceStatusRoute:
+    ApiPublicOmniDockNativeDeviceStatusRoute,
   ApiPublicOmniDockPairRoute: ApiPublicOmniDockPairRoute,
   ApiPublicOmniDockProjectsRoute: ApiPublicOmniDockProjectsRoute,
   ApiPublicOmniDockStopRoute: ApiPublicOmniDockStopRoute,

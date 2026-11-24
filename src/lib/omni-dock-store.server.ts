@@ -4,6 +4,7 @@
  * (PostgREST needs every key).
  */
 import type { DockStore, StoreReply } from "./omni-dock.server";
+import { staged } from "./staged-rpc";
 
 function asReply(data: unknown, error: unknown): StoreReply {
   if (error || !data || typeof data !== "object") return { ok: false, reason: "unavailable" };
@@ -40,6 +41,15 @@ export async function adminDockStore(): Promise<DockStore> {
         _event: a.event,
         _capabilities: (a.capabilities ?? null) as unknown as string[],
         _app_version: (a.appVersion ?? null) as unknown as string,
+      });
+      return asReply(data, error);
+    },
+    async nativeDeviceStatus(device, fingerprint, nonce, timestamp) {
+      const { data, error } = await staged(db).rpc("omni_native_device_status", {
+        _device: device,
+        _fingerprint: fingerprint,
+        _nonce: nonce,
+        _timestamp_ms: timestamp,
       });
       return asReply(data, error);
     },

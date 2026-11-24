@@ -36,6 +36,18 @@ function fakeStore(
       if (over.status === "revoked") return { ok: false, reason: "revoked" };
       return { ok: true, status: over.status ?? "paired", permissions: over.permissions ?? [] };
     },
+    nativeDeviceStatus: async (device, fingerprint, nonce) => {
+      if (nonces.has(nonce)) return { ok: false, reason: "replay" };
+      nonces.add(nonce);
+      return {
+        ok: true,
+        device_id: device,
+        key_fingerprint: fingerprint,
+        revision: 3,
+        permissions: ["status.read"],
+        checked_at: "2027-01-15T08:00:00+00:00",
+      };
+    },
     log: async (_d, e, o) => void calls.push(`log:${e}:${o}`),
     stopEngaged: async () => true,
     handoffStatus: async () => [],
@@ -167,6 +179,48 @@ describe("signed pairing", () => {
 });
 
 describe("signed device requests", () => {
+  it("reconciles the signed key and rejects replay and changed keys without consulting Stop", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const nonce = "nonce-aaaaaaaaaaaaaaaa";
+    const { store } = fakeStore({ jwk: publicJwk });
+    const req = () => signed(DOCK_PATHS.nativeDeviceStatus, DEVICE, "{}", privateKey, { nonce });
+    const result = await handleSigned(await req(), "nativeDeviceStatus", store, NOW);
+    expect(result.status).toBe(200);
+    expect(result.body).toMatchObject({
+      protocol: "omni.native-device-status/v1",
+      deviceId: DEVICE,
+      keyFingerprint: await keyFingerprint(publicJwk),
+      revision: 3,
+      status: "paired",
+      permissions: ["status.read"],
+    });
+    expect((await handleSigned(await req(), "nativeDeviceStatus", store, NOW)).status).toBe(409);
+    const changed = fakeStore({
+      jwk: publicJwk,
+      nativeDeviceStatus: async () => ({ ok: false, reason: "device_changed" }),
+    });
+    expect(
+      (await handleSigned(await req(), "nativeDeviceStatus", changed.store, NOW)).body["reason"],
+    ).toBe("device_changed");
+    const invalid = fakeStore({
+      jwk: publicJwk,
+      nativeDeviceStatus: async () => ({ ok: true, device_id: DEVICE, revision: 3 }),
+    });
+    expect((await handleSigned(await req(), "nativeDeviceStatus", invalid.store, NOW)).status).toBe(
+      503,
+    );
+    const wrong = await generateDockKey();
+    expect(
+      (
+        await handleSigned(
+          await signed(DOCK_PATHS.nativeDeviceStatus, DEVICE, "{}", wrong.privateKey),
+          "nativeDeviceStatus",
+          store,
+          NOW,
+        )
+      ).status,
+    ).toBe(401);
+  });
   it("heartbeat reports Emergency Stop and every autonomy switch off; replays are refused", async () => {
     const { privateKey, publicJwk } = await generateDockKey();
     const { store } = fakeStore({ jwk: publicJwk, permissions: ["status.read"] });

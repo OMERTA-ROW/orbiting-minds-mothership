@@ -41,6 +41,7 @@ def migrations():
     found.append(ROOT / ".lovable/pending/0075_claude_engine_terminal_fusion.sql")
     found.append(ROOT / ".lovable/pending/0076_omni_native_cli_authorization.sql")
     found.append(ROOT / ".lovable/pending/0077_omni_native_cli_chat.sql")
+    found.append(ROOT / ".lovable/pending/0078_omni_native_device_status.sql")
     return found
 
 
@@ -236,6 +237,45 @@ def main():
         assert owner(
             f"SELECT key_fingerprint FROM public.omni_dock_devices WHERE id='{device}';"
         ).endswith(fingerprint(JWK2))
+        now_ms = int(time.time() * 1000)
+        nonce = "status-nonce-abcdefghijkl"
+        def status_query(key, current_nonce=nonce, timestamp=now_ms):
+            return (
+                f"SELECT public.omni_native_device_status('{device}','{fingerprint(key)}',"
+                f"'{current_nonce}',{timestamp});"
+            )
+        for role in ["anon", "authenticated"]:
+            assert sql(
+                f"SELECT has_function_privilege('{role}',"
+                "'public.omni_native_device_status(uuid,text,text,bigint)','execute');"
+            ) == "f"
+            checks += 1
+        assert '"device_changed"' in service(status_query(JWK1))
+        status = json.loads(service(status_query(JWK2)))
+        assert status["ok"] and status["device_id"] == device
+        assert status["revision"] == int(revision) + 1
+        assert status["key_fingerprint"] == fingerprint(JWK2)
+        assert status["permissions"] == ["jobs.propose", "status.read"]
+        assert '"replay"' in service(status_query(JWK2))
+        service(f"DELETE FROM public.omni_dock_nonces WHERE device_id='{device}';")
+        assert '"replay"' in service(status_query(JWK2))
+        service(
+            f"UPDATE public.omni_dock_devices SET key_fingerprint='{fingerprint(JWK1)}',"
+            f"revision=revision+1 WHERE id='{device}';"
+        )
+        assert '"device_changed"' in service(status_query(JWK2, "status-nonce-race-abcdef"))
+        service(
+            f"UPDATE public.omni_dock_devices SET key_fingerprint='{fingerprint(JWK2)}',"
+            f"revision=revision+1 WHERE id='{device}';"
+        )
+        assert '"replay"' in service(status_query(JWK2))
+        assert '"stale_request"' in service(status_query(JWK2, "status-nonce-stale-abcdef", now_ms - 61000))
+        service(f"UPDATE public.omni_dock_devices SET native_client_id=NULL WHERE id='{device}';")
+        assert '"not_permitted"' in service(status_query(JWK2, "status-nonce-legacy-abcdef"))
+        service(f"UPDATE public.omni_dock_devices SET native_client_id='omni-native-cli' WHERE id='{device}';")
+        sql(f"UPDATE auth.users SET email_confirmed_at=NULL WHERE id='{OWNER}';")
+        assert '"not_permitted"' in service(status_query(JWK2, "status-nonce-owner-abcdef"))
+        sql(f"UPDATE auth.users SET email_confirmed_at=now() WHERE id='{OWNER}';")
 
         # Native-only consent grants the separate chat capability; chat is never added
         # to legacy Dock permissions. Project discovery and chat runs remain owner-scoped.
@@ -324,6 +364,7 @@ def main():
         assert '"rotation_stale"' in exchange("e" * 64)
 
         owner(f"SELECT count(*) FROM public.omni_dock_revoke('{device}','CLI retired');")
+        assert '"not_permitted"' in service(status_query(JWK2, "status-nonce-revoked-abc"))
         assert owner(
             f"SELECT status || '/' || cardinality(permissions) FROM public.omni_dock_devices WHERE id='{device}';"
         ).endswith("revoked/0")

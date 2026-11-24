@@ -73,6 +73,10 @@ type StagedFunctions = {
   omni_noop_enqueue: { Args: { _duration_ms: number }; Returns: string };
   omni_native_authorization_ready: { Args: never; Returns: boolean };
   omni_native_chat_ready: { Args: never; Returns: boolean };
+  omni_native_device_status: {
+    Args: { _device: string; _fingerprint: string; _nonce: string; _timestamp_ms: number };
+    Returns: Json;
+  };
   omni_native_authorize: {
     Args: {
       _client_id: string;

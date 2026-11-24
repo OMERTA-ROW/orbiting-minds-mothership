@@ -19,6 +19,7 @@ export const DOCK_HEARTBEAT_INTERVAL_MS = 30_000;
 export const DOCK_PATHS = {
   pair: "/api/public/omni/dock/pair",
   heartbeat: "/api/public/omni/dock/heartbeat",
+  nativeDeviceStatus: "/api/public/omni/dock/native-device-status",
   jobs: "/api/public/omni/dock/jobs",
   stop: "/api/public/omni/dock/stop",
   jobsStatus: "/api/public/omni/dock/jobs-status",

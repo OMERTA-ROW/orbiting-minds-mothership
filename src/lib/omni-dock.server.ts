@@ -38,6 +38,7 @@ import {
   nativeChatBodySchema,
   type NativeChatInput,
 } from "./omni-native-chat";
+import { z } from "zod";
 
 type Reply = { ok?: boolean; reason?: string } & Record<string, unknown>;
 export type StoreReply = Reply;
@@ -60,6 +61,12 @@ export interface DockStore {
     capabilities?: string[] | undefined;
     appVersion?: string | undefined;
   }): Promise<Reply>;
+  nativeDeviceStatus(
+    device: string,
+    fingerprint: string,
+    nonce: string,
+    timestamp: number,
+  ): Promise<Reply>;
   log(
     device: string | null,
     event: string,
@@ -235,6 +242,7 @@ export async function handlePair(
 
 type SignedKind =
   | "heartbeat"
+  | "nativeDeviceStatus"
   | "jobs"
   | "stop"
   | "jobsStatus"
@@ -246,6 +254,7 @@ type SignedKind =
   | "chat";
 const EVENT: Record<SignedKind, string> = {
   heartbeat: "heartbeat",
+  nativeDeviceStatus: "native_device_status",
   jobs: "job_request",
   stop: "stop_request",
   jobsStatus: "jobs_status",
@@ -258,6 +267,7 @@ const EVENT: Record<SignedKind, string> = {
 };
 const SCHEMA = {
   heartbeat: heartbeatBodySchema,
+  nativeDeviceStatus: cloudBodySchema,
   jobs: jobBodySchema,
   stop: stopBodySchema,
   jobsStatus: jobsStatusBodySchema,
@@ -301,6 +311,56 @@ export async function handleSigned(
   }
   const body = SCHEMA[kind].safeParse(parseJson(text));
   if (!body.success) return fail(400, "invalid_body");
+  if (kind === "nativeDeviceStatus") {
+    const fingerprint = await keyFingerprint(jwk.data);
+    const result = await store.nativeDeviceStatus(
+      headers.device,
+      fingerprint,
+      headers.nonce,
+      Number(headers.timestamp),
+    );
+    if (result.ok !== true) {
+      const reason = typeof result.reason === "string" ? result.reason : "unavailable";
+      return fail(
+        reason === "replay" || reason === "device_changed"
+          ? 409
+          : reason === "stale_request"
+            ? 401
+            : reason === "unavailable"
+              ? 503
+              : 403,
+        reason,
+      );
+    }
+    const parsed = z
+      .object({
+        device_id: z.string().uuid(),
+        revision: z.number().int().nonnegative(),
+        key_fingerprint: z.string().regex(/^[0-9a-f]{64}$/),
+        permissions: z.array(z.string()),
+        checked_at: z.string().datetime({ offset: true }),
+      })
+      .safeParse(result);
+    if (
+      !parsed.success ||
+      parsed.data.device_id !== headers.device ||
+      parsed.data.key_fingerprint !== fingerprint
+    )
+      return fail(503, "unavailable");
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        protocol: "omni.native-device-status/v1",
+        deviceId: parsed.data.device_id,
+        status: "paired",
+        revision: parsed.data.revision,
+        keyFingerprint: parsed.data.key_fingerprint,
+        permissions: parsed.data.permissions,
+        checkedAt: parsed.data.checked_at,
+      },
+    };
+  }
   const hb =
     kind === "heartbeat" ? (body.data as { appVersion?: string; capabilities?: string[] }) : {};
   const touched = await store.touch({

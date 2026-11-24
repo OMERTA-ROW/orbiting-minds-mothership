@@ -1,8 +1,8 @@
 # OMNI Docking Bay — protocol `omni.dock/v1`
 
 Status (2026-11-24): Mothership Dock endpoints are implemented; **no branch has docked**. Honeycomb Terminal's dock
-screen is not built yet. Native CLI browser authorization and native chat are source-only in migrations 0076 and 0077,
-pending owner approval; neither is deployed. See [OMNI-NATIVE-AUTH-CONTRACT.md](./OMNI-NATIVE-AUTH-CONTRACT.md) for the
+screen is not built yet. Native CLI browser authorization, chat and status reconciliation are source-only in migrations
+0076–0078, pending owner approval; none is deployed. See [OMNI-NATIVE-AUTH-CONTRACT.md](./OMNI-NATIVE-AUTH-CONTRACT.md) for the
 separate, no-pairing-code flow and native-chat contract.
 Nothing in this protocol executes commands, dispatches jobs or enables autonomy.
 
@@ -84,6 +84,7 @@ the signature, so a request cannot be replayed on another endpoint. Reference cl
 | Path | Body | Needs | Result |
 | --- | --- | --- | --- |
 | `/heartbeat` | `{ appVersion?, capabilities? }` | any non-revoked device | status, permissions; with `status.read`: Emergency Stop, all autonomy `off`, `executor: "none"` |
+| `/native-device-status` | `{}` | paired native CLI + verified owner | verified signing key fingerprint, current revision and permissions; available while Stop is engaged; pending migration 0078 |
 | `/jobs` | `{ id (uuid), kind, agent, project, repository?, instructions, autonomous? }` | paired + `jobs.propose` | `202` held in OMNI Terminal (never dispatched); `autonomous: true` → `409 autonomy_off` with blockers, nothing stored |
 | `/stop` | `{}` | paired + `stop.engage` | engages the Emergency Stop (cannot release) |
 | `/catalog` | `{}` | paired + `cloud.read` | server-read provider/model/agent configuration and honest native capability limits; refused under Emergency Stop |
