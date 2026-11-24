@@ -199,6 +199,7 @@ describe("Claude on the terminal agent", () => {
     const res = await handleOmniAgent(request("claude-sonnet-5-5"));
     expect(res.status).toBe(503);
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(mocks.db.get("ai_gateway_state")).toHaveLength(1);
   });
 
   it("reserves, calls once, settles once and attributes the reply", async () => {
@@ -243,6 +244,7 @@ describe("Claude on the terminal agent", () => {
     expect(result["status"]).toBe("failed");
     expect(String(result["error_message"])).toContain("withheld");
     expect(fn("admin").filter((f) => f === "claude_settle_source")).toHaveLength(1);
+    expect(mocks.db.get("ai_gateway_state")).toHaveLength(1);
   });
 
   it("settles a provider failure as failed without retrying", async () => {

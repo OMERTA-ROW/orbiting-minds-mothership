@@ -46,8 +46,10 @@ history have not been independently verified by this runbook.
   usage ledger, reservations, native sessions/runs, authorization codes and audit records. Do not
   clear the shared guard, retry a request, or invent a settlement when the outcome is uncertain.
   An owner reviews and reconciles the actual outcome through the existing controls before restoring
-  service. Revoke a device only after the owner has confidently identified it; revocation is a
-  separate reduction and cancels that device's held tasks.
+  service. Delegated and Fusion turns with ambiguous Claude accounting deliberately remain running
+  with their guard retained; the private agent records a failed outcome but retains the guard.
+  Revoke a device only after the owner has confidently identified it; revocation is a separate
+  reduction and cancels that device's held tasks.
 - If an exchange reply is lost, preserve candidate keys. For rotation, the signed 0078 status
   snapshot can identify the currently accepted key and revision, but is not a receipt or future
   authority. If initial enrollment lost its device ID, that endpoint cannot recover it: avoid

@@ -13,9 +13,22 @@ export type ClaudeRpc = (
   args: Record<string, unknown>,
 ) => Promise<{ data: unknown; error: unknown }>;
 export type ClaudeSource = "agent" | "fusion";
-export type Reservation = { ok: true; estimateCents: number } | { ok: false; reason: string };
+export type Reservation =
+  { ok: true; estimateCents: number } | { ok: false; reason: string; uncertain: boolean };
 
 const REASON = /^[a-z_]{1,60}$/;
+const RESERVATION_REFUSALS = new Set([
+  "invalid_request",
+  "run_not_running",
+  "session_stopped",
+  "emergency_stop_engaged",
+  "owner_unverified",
+  "ai_not_approved",
+  "engine_not_enabled",
+  "price_not_confirmed",
+  "call_cap",
+  "daily_cap",
+]);
 
 export async function reserveClaude(
   rpc: ClaudeRpc,
@@ -42,16 +55,19 @@ export async function reserveClaude(
       params,
     );
   } catch {
-    return { ok: false, reason: "claude_not_installed" };
+    return { ok: false, reason: "claude_not_installed", uncertain: true };
   }
   if (r.error || !r.data || typeof r.data !== "object")
-    return { ok: false, reason: "claude_not_installed" };
+    return { ok: false, reason: "claude_not_installed", uncertain: true };
   const d = r.data as Record<string, unknown>;
   if (d["ok"] !== true) {
     const reason = d["reason"];
+    const validReason =
+      typeof reason === "string" && REASON.test(reason) ? reason : "check_unavailable";
     return {
       ok: false,
-      reason: typeof reason === "string" && REASON.test(reason) ? reason : "check_unavailable",
+      reason: validReason,
+      uncertain: d["ok"] !== false || !RESERVATION_REFUSALS.has(validReason),
     };
   }
   const est = d["estimate_cents"];
@@ -61,7 +77,7 @@ export async function reserveClaude(
     est < 1 ||
     est > CLAUDE_CAPS.perCallCents
   )
-    return { ok: false, reason: "check_unavailable" };
+    return { ok: false, reason: "check_unavailable", uncertain: true };
   return { ok: true, estimateCents: est };
 }
 
@@ -85,7 +101,12 @@ export async function settleClaude(
     });
     if (r.error || !r.data || typeof r.data !== "object") return null;
     const d = r.data as Record<string, unknown>;
-    return d["ok"] === true && typeof d["actual_cents"] === "number" ? d["actual_cents"] : null;
+    return d["ok"] === true &&
+      typeof d["actual_cents"] === "number" &&
+      Number.isInteger(d["actual_cents"]) &&
+      d["actual_cents"] >= 0
+      ? d["actual_cents"]
+      : null;
   } catch {
     return null;
   }

@@ -168,6 +168,29 @@ describe("native OMNI chat", () => {
     });
   });
 
+  it("does not accept an invalid settlement amount as recorded", async () => {
+    const h = harness({
+      settlement: { ok: true, actual_cents: -1 },
+      finish: {
+        ok: true,
+        guard_released: false,
+        final_status: "denied",
+        authorization_reason: "settlement_unresolved",
+      },
+    });
+    const result = await runNativeChat(DEVICE, IDENTITY, INPUT, new AbortController().signal, {
+      ...h.deps,
+      anthropicKey: () => "test-key",
+    });
+    expect(result).toMatchObject({ ok: false, reason: "settlement_unresolved", status: 503 });
+    expect(result).not.toHaveProperty("reply");
+    expect(
+      h.calls.find((call) => call.fn === "omni_native_chat_finish_authorized")?.args,
+    ).toMatchObject({
+      _release_guard: false,
+    });
+  });
+
   it("withholds a settled reply when the device changes during finalization", async () => {
     const h = harness({
       finish: {

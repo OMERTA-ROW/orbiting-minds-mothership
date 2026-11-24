@@ -447,7 +447,10 @@ async function settle(
     _input_tokens: inputTokens ?? null,
     _output_tokens: outputTokens ?? null,
   });
-  return result?.ok === true && typeof result["actual_cents"] === "number"
+  return result?.ok === true &&
+    typeof result["actual_cents"] === "number" &&
+    Number.isInteger(result["actual_cents"]) &&
+    result["actual_cents"] >= 0
     ? result["actual_cents"]
     : null;
 }
