@@ -416,6 +416,7 @@ export const REASON_MESSAGE: Record<string, string> = {
   unavailable: "Status is unavailable right now. Retry later.",
   secret_like: "That looks like a key or token. It was not saved.",
   id_conflict: "That task id was used for a different task.",
+  task_cancelled: "This task was cancelled. No new task was queued.",
   daily_limit: "This device has proposed 20 tasks today.",
   not_found: "That job or agent was not found.",
 };

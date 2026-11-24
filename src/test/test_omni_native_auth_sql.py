@@ -164,8 +164,43 @@ def main():
         )
         sql((ROOT / ".lovable/pending/owner-invitations.sql").read_text())
         sql((ROOT / "drizzle/migrations/0019_omni_agent_runs.sql").read_text())
-        for path in migrations():
+        paths = migrations()
+        for path in paths[:-6]:
             sql(path.read_text())
+        # A partial/out-of-order rollout must not be mistaken for an installed
+        # native stack: test failure inside a transaction and its rollback.
+        bad_order = subprocess.run(
+            ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-At", "-c",
+             "BEGIN;\n" + paths[-5].read_text() + "\n" + paths[-4].read_text() + "\nCOMMIT;"],
+            env=env, capture_output=True, text=True,
+        )
+        assert bad_order.returncode != 0 and "claude_usage_source_check" in bad_order.stderr, bad_order.stderr
+        checks += 1
+        assert sql("SELECT to_regclass('public.omni_native_authorization_codes') IS NULL;") == "t"
+        checks += 1
+        for path in paths[-6:]:
+            sql(path.read_text())
+            if path.name.startswith("0078_"):
+                assert sql(
+                    "SELECT to_regprocedure('public.omni_native_bound_touch"
+                    "(uuid,text,integer,text,bigint,text,text[],text)') IS NULL "
+                    "AND to_regprocedure('public.omni_native_chat_finish_authorized"
+                    "(uuid,text,integer,integer,integer,integer,text,boolean,integer,text)') IS NULL;"
+                ) == "t"
+                checks += 1
+        bound_functions = (
+            "FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
+            "WHERE n.nspname='public' AND "
+            "(p.proname LIKE 'omni_native_bound_%' "
+            "OR p.proname='omni_native_chat_finish_authorized')"
+        )
+        assert sql(f"SELECT count(*) {bound_functions};") == "9"
+        assert sql(
+            "SELECT bool_and(has_function_privilege('service_role',p.oid,'execute') "
+            "AND NOT has_function_privilege('authenticated',p.oid,'execute') "
+            "AND NOT has_function_privilege('anon',p.oid,'execute')) " + bound_functions + ";"
+        ) == "t"
+        checks += 2
         sql(
             f"INSERT INTO auth.users VALUES('{OWNER}','owner@fixture.invalid',now()),"
             f"('{OTHER}','other@fixture.invalid',now()); "
@@ -271,6 +306,9 @@ def main():
         assert '"device_changed"' in service(held_query(JWK1, revision))
         assert service(f"SELECT count(*) FROM public.omni_terminal_tasks WHERE id='{held_id}';") == "0"
         assert '"ok": true' in service(held_query(JWK2, current_revision))
+        held_duplicate = json.loads(service(held_query(JWK2, current_revision)))
+        assert held_duplicate["task_id"] == held_id
+        assert held_duplicate["state"] == "held" and held_duplicate["duplicate"] is True
         assert '"device_changed"' in service(
             f"SELECT public.omni_native_bound_handoff_status('{device}','{fingerprint(JWK1)}',{revision});"
         )
@@ -292,6 +330,10 @@ def main():
         assert service(f"SELECT status FROM public.omni_code_jobs WHERE id='{code_job}';") == "queued"
         assert '"not_found"' in service(control_query(JWK2, current_revision, held_id))
         assert service(f"SELECT state FROM public.omni_terminal_tasks WHERE id='{held_id}';") == "held"
+        owner(f"SELECT id FROM public.omni_terminal_cancel_task('{held_id}');")
+        cancelled_duplicate = json.loads(service(held_query(JWK2, current_revision)))
+        assert cancelled_duplicate["task_id"] == held_id
+        assert cancelled_duplicate["state"] == "cancelled" and cancelled_duplicate["duplicate"] is True
         assert '"ok": true' in service(control_query(JWK2, current_revision, code_job))
         assert service(f"SELECT status FROM public.omni_code_jobs WHERE id='{code_job}';") == "stopped"
         assert '"device_changed"' in service(
@@ -459,6 +501,30 @@ def main():
         assert started_run["ok"] is True, started_run
         run_id = started_run["run_id"]
         assert started_run["project_name"] == "Native fixture project"
+        # Metadata is visible only to the verified, aal2 owner of the record;
+        # neither authenticated owners nor anonymous callers can write it.
+        second_owner = "88888888-8888-4888-8888-888888888888"
+        sql(
+            f"INSERT INTO auth.users VALUES('{second_owner}','second@fixture.invalid',now()); "
+            f"INSERT INTO public.user_roles(user_id,role) VALUES('{second_owner}','owner');"
+        )
+        for table in ["omni_native_chat_sessions", "omni_native_chat_runs"]:
+            assert owner(f"SELECT count(*) FROM public.{table};").endswith("1")
+            assert caller(second_owner, "aal2", fresh, f"SELECT count(*) FROM public.{table};").endswith("0")
+            assert caller(OTHER, "aal2", fresh, f"SELECT count(*) FROM public.{table};").endswith("0")
+            assert caller(OWNER, "aal1", fresh, f"SELECT count(*) FROM public.{table};").endswith("0")
+            caller(OWNER, "aal2", fresh, f"DELETE FROM public.{table};", False)
+            sql(f"SET ROLE anon; SELECT * FROM public.{table};", False)
+            checks += 1
+        sql(f"UPDATE auth.users SET email_confirmed_at=NULL WHERE id='{OWNER}';")
+        for table in ["omni_native_chat_sessions", "omni_native_chat_runs"]:
+            assert owner(f"SELECT count(*) FROM public.{table};").endswith("0")
+        sql(f"UPDATE auth.users SET email_confirmed_at=now() WHERE id='{OWNER}';")
+        for table in ["omni_native_authorization_codes", "omni_native_status_nonces"]:
+            for role in ["anon", "authenticated"]:
+                sql(f"SET ROLE {role}; SELECT * FROM public.{table};", False)
+                checks += 1
+            assert service(f"SELECT count(*) >= 0 FROM public.{table};") == "t"
         assert '"duplicate_request"' in service(
             f"SELECT public.omni_native_chat_begin('{chat_device}','{request_id}',"
             f"'{chat_session}','{project}','omni','claude-sonnet-5-5',1,500);"
@@ -591,6 +657,27 @@ def main():
         assert service(
             f"SELECT status FROM public.claude_usage WHERE run_id='{unresolved_run}';"
         ) == "reserved"
+
+        # Reverting 0077's ledger constraint would reject existing native
+        # rows. The failed repair must leave the ledger and guard intact.
+        bad_repair = subprocess.run(
+            ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-At", "-c",
+             "BEGIN; ALTER TABLE public.claude_usage DROP CONSTRAINT claude_usage_source_check; "
+             "ALTER TABLE public.claude_usage ADD CONSTRAINT claude_usage_source_check "
+             "CHECK (source IN ('chat','agent','fusion')); COMMIT;"],
+            env=env, capture_output=True, text=True,
+        )
+        assert bad_repair.returncode != 0 and "violated by some row" in bad_repair.stderr, bad_repair.stderr
+        checks += 1
+        assert service(
+            f"SELECT source || '/' || status FROM public.claude_usage WHERE run_id='{unresolved_run}';"
+        ) == "native/reserved"
+        assert service("SELECT count(*) FROM public.ai_gateway_state WHERE feature='evolution-omni';") == "1"
+        assert sql(
+            "SELECT pg_get_constraintdef(oid) LIKE '%native%' FROM pg_constraint "
+            "WHERE conrelid='public.claude_usage'::regclass AND conname='claude_usage_source_check';"
+        ) == "t"
+        checks += 1
 
         # A concurrent device change invalidates a previously consented rotation.
         assert '"ok": true' in owner(

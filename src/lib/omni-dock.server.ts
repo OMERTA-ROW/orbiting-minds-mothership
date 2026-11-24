@@ -569,6 +569,9 @@ export async function handleSigned(
               : 403,
       String(held.reason),
     );
+  if (held["task_id"] !== job.id) return fail(503, "unavailable");
+  if (held["state"] === "cancelled") return fail(409, "task_cancelled");
+  if (held["state"] !== "held") return fail(503, "unavailable");
   return {
     status: 202,
     body: {

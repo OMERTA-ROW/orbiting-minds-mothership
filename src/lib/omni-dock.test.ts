@@ -77,7 +77,7 @@ function fakeStore(
     engageStop: async () => (calls.push("engage"), true),
     holdTask: async (_d, j) => (
       calls.push(`hold:${j.kind}`),
-      { ok: true, task_id: j.id, duplicate: false }
+      { ok: true, task_id: j.id, state: "held", duplicate: false }
     ),
     ...over,
   };
@@ -426,6 +426,7 @@ describe("signed device requests", () => {
     );
     expect(held.status).toBe(202);
     expect(held.body["state"]).toBe("held");
+    expect(held.body["taskId"]).toBe(job.id);
     const auto = await handleSigned(
       await signed(
         DOCK_PATHS.jobs,
@@ -459,6 +460,40 @@ describe("signed device requests", () => {
       NOW,
     );
     expect(wrongAgent.status).toBe(400);
+  });
+
+  it("does not report a cancelled or invalid duplicate as a held task", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const job = {
+      id: "6b1f1c2a-8a43-4b1e-9d2c-3f6a7b8c9d0e",
+      kind: "code.test",
+      agent: "jackboy",
+      project: "Mothership",
+      instructions: "Add a test",
+    };
+    const send = async (result: Record<string, unknown>) => {
+      const { store } = fakeStore({
+        jwk: publicJwk,
+        permissions: ["jobs.propose"],
+        stopEngaged: async () => false,
+        holdTask: async () => ({ ok: true, ...result }),
+      });
+      return handleSigned(
+        await signed(DOCK_PATHS.jobs, DEVICE, JSON.stringify(job), privateKey),
+        "jobs",
+        store,
+        NOW,
+      );
+    };
+    const cancelled = await send({ task_id: job.id, state: "cancelled", duplicate: true });
+    expect(cancelled.status).toBe(409);
+    expect(cancelled.body["reason"]).toBe("task_cancelled");
+    expect(cancelled.body["state"]).toBeUndefined();
+    const duplicate = await send({ task_id: job.id, state: "held", duplicate: true });
+    expect(duplicate.status).toBe(202);
+    expect(duplicate.body).toMatchObject({ taskId: job.id, state: "held", duplicate: true });
+    expect((await send({ task_id: DEVICE, state: "held" })).status).toBe(503);
+    expect((await send({ task_id: job.id, state: "unknown" })).status).toBe(503);
   });
 
   it("Emergency Stop refuses proposals and the status list", async () => {

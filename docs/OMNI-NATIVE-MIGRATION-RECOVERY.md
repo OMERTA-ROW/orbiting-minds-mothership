@@ -70,6 +70,11 @@ history have not been independently verified by this runbook.
   If trustworthy reconciliation is unavailable, keep affected routes disabled and re-establish
   authority through fresh owner consent rather than trusting restored records.
 
+The disposable PostgreSQL fixture `python3 src/test/test_omni_native_auth_sql.py` exercises the
+reviewed order, one out-of-order transactional failure, native table RLS and service-only grants,
+and refusal to restore the older ledger constraint while native rows exist. This is not a tested
+production rollback or restore and does not establish a serving database's migration history.
+
 ## Return to service
 
 Only after a separately approved repair: confirm actual database history, function signatures,

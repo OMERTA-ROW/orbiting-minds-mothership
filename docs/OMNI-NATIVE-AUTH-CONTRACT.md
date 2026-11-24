@@ -211,6 +211,13 @@ the specific signed endpoint and owner-approved permission for each operation:
 | Pause an agent or stop a job | `/control` | Reductions only; never resume, approve, or start |
 | Discover configuration and capabilities | `/catalog` | Requires `cloud.read`; Stop-gated |
 
+`/jobs` returns the submitted `id` as `taskId` when its database result is held. An exact
+duplicate returns `duplicate: true`; an ID reused for different content returns `id_conflict`.
+If an exact duplicate was cancelled, it returns HTTP 409 `task_cancelled` rather than claiming
+the task was held again. This is a snapshot, not a guarantee against a subsequent owner
+cancellation or handoff. Do not retry an uncertain submission automatically; `/jobs-status`
+is the device-scoped metadata view and cannot cancel a task.
+
 ## Native project discovery and chat
 
 These are device-signed `omni.dock/v1` requests. Both require a paired native CLI device with the
