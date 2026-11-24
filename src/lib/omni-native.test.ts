@@ -102,7 +102,7 @@ describe("native authorization request", () => {
 });
 
 describe("native catalog", () => {
-  it("separates server configuration and web enrollment from unavailable native execution", () => {
+  it("separates configured providers from unavailable native capabilities", () => {
     const manifest = buildManifest(null, {
       aiConfigured: true,
       chatInstalled: true,
@@ -129,5 +129,49 @@ describe("native catalog", () => {
       orchestratorAvailable: false,
       nativePlanningAvailable: false,
     });
+  });
+
+  it("advertises native chat only when its permission, migration and Anthropic provider are present", () => {
+    const manifest = buildManifest(null, {
+      aiConfigured: false,
+      chatInstalled: true,
+      fusionPlanInstalled: true,
+      fusionPlannerInstalled: true,
+      now: NOW,
+    });
+    const unavailable = buildNativeCatalog(manifest, ["chat.send"], {
+      nativeChatInstalled: true,
+      anthropicConfigured: false,
+    });
+    expect(unavailable.chat).toMatchObject({
+      available: false,
+      reason: "anthropic_not_configured",
+      perCallCapCents: 50,
+      rolling24HourCapCents: 500,
+      transcriptStored: false,
+      toolsAvailable: false,
+      taskExecutionAvailable: false,
+    });
+
+    const available = buildNativeCatalog(manifest, ["chat.send"], {
+      nativeChatInstalled: true,
+      anthropicConfigured: true,
+    });
+    expect(available.chat).toMatchObject({
+      available: true,
+      protocol: "omni.native-chat/v1",
+      responseDelivery: "settlement-gated-ndjson",
+      models: ["claude-sonnet-5-5", "claude-opus-5-5"],
+      ownerAiApprovalRequired: true,
+      ownerEngineSwitchRequired: true,
+    });
+    expect(available.models.filter((model) => model.provider === "anthropic")).toHaveLength(2);
+    expect(available.agents.some((agent) => agent.nativeChatAvailable)).toBe(true);
+    expect(
+      buildNativeCatalog(manifest, [], {
+        nativeChatInstalled: true,
+        anthropicConfigured: true,
+      }).chat,
+    ).toMatchObject({ available: false, reason: "chat_permission_not_granted" });
   });
 });

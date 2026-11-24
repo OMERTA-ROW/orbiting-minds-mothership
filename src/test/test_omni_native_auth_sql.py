@@ -15,10 +15,13 @@ X1 = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
 Y1 = "AQECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
 X2 = "AgECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
 Y2 = "AwECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
+X3 = "BAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
+Y3 = "BQECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
 CHALLENGE = "A" * 43
 PERMISSIONS = "ARRAY['status.read','jobs.propose']"
 JWK1 = {"crv": "P-256", "kty": "EC", "x": X1, "y": Y1}
 JWK2 = {"crv": "P-256", "kty": "EC", "x": X2, "y": Y2}
+JWK3 = {"crv": "P-256", "kty": "EC", "x": X3, "y": Y3}
 
 
 def fingerprint(jwk):
@@ -37,6 +40,7 @@ def migrations():
     assert found[-1].name.startswith("0074_"), found[-1]
     found.append(ROOT / ".lovable/pending/0075_claude_engine_terminal_fusion.sql")
     found.append(ROOT / ".lovable/pending/0076_omni_native_cli_authorization.sql")
+    found.append(ROOT / ".lovable/pending/0077_omni_native_cli_chat.sql")
     return found
 
 
@@ -163,6 +167,20 @@ def main():
             f"('{OTHER}','other@fixture.invalid',now()); "
             f"INSERT INTO public.user_roles(user_id,role) VALUES('{OWNER}','owner'),('{OTHER}','admin');"
         )
+        project = "33333333-3333-4333-8333-333333333333"
+        chat_session = "44444444-4444-4444-8444-444444444444"
+        request_id = "55555555-5555-4555-8555-555555555555"
+        sql(
+            f"INSERT INTO public.beta_access(user_id,ai_approved) VALUES('{OWNER}',true); "
+            f"INSERT INTO public.beta_projects(id,owner_id,name,brief) "
+            f"VALUES('{project}','{OWNER}','Native fixture project','Private owner project'); "
+            f"INSERT INTO public.omni_terminal_controls(id,emergency_stop,changed_by) "
+            f"VALUES(1,false,'{OWNER}'); "
+            f"INSERT INTO public.claude_prices(model,in_cents_per_mtok,out_cents_per_mtok,confirmed_by,confirmed_at) "
+            f"VALUES('claude-sonnet-5-5',1000,1000,'{OWNER}',now()); "
+            f"INSERT INTO public.claude_engine_settings(owner_id,agent_id,model,enabled) "
+            f"VALUES('{OWNER}','omni','claude-sonnet-5-5',true);"
+        )
         assert caller(OWNER, "aal1", fresh, "SELECT public.omni_native_authorization_ready();").endswith("t")
         for role in ["anon", "authenticated"]:
             assert sql(
@@ -219,6 +237,77 @@ def main():
             f"SELECT key_fingerprint FROM public.omni_dock_devices WHERE id='{device}';"
         ).endswith(fingerprint(JWK2))
 
+        # Native-only consent grants the separate chat capability; chat is never added
+        # to legacy Dock permissions. Project discovery and chat runs remain owner-scoped.
+        assert service("SELECT public.omni_native_chat_ready();") == "t"
+        assert '"ok": true' in owner(
+            authorize(
+                "f" * 64,
+                "6" * 64,
+                JWK3,
+                permissions="ARRAY['chat.send','status.read']",
+            )
+        )
+        chat_enrolled = exchange("f" * 64)
+        assert '"ok": true' in chat_enrolled, chat_enrolled
+        chat_device = json.loads(chat_enrolled)["device_id"]
+        assert json.loads(chat_enrolled)["permissions"] == ["chat.send", "status.read"]
+        project_list = service(f"SELECT public.omni_native_chat_projects('{chat_device}');")
+        assert '"name": "Native fixture project"' in project_list, project_list
+        assert '"ok": false' in service(
+            f"SELECT public.omni_native_chat_projects('{device}');"
+        )
+        started_run = json.loads(
+            service(
+                f"SELECT public.omni_native_chat_begin('{chat_device}','{request_id}',"
+                f"'{chat_session}','{project}','omni','claude-sonnet-5-5',1,500);"
+            )
+        )
+        assert started_run["ok"] is True, started_run
+        run_id = started_run["run_id"]
+        assert started_run["project_name"] == "Native fixture project"
+        assert '"duplicate_request"' in service(
+            f"SELECT public.omni_native_chat_begin('{chat_device}','{request_id}',"
+            f"'{chat_session}','{project}','omni','claude-sonnet-5-5',1,500);"
+        )
+        reserve = service(
+            f"SELECT public.claude_reserve_native_chat('{run_id}',500,1024);"
+        )
+        assert '"ok": true' in reserve, reserve
+        assert service(
+            f"SELECT source || '/' || status FROM public.claude_usage WHERE run_id='{run_id}';"
+        ) == "native/reserved"
+        assert '"ok": true' in service(
+            f"SELECT public.claude_settle_source('native','{run_id}','completed',120,12);"
+        )
+        assert '"guard_released": true' in service(
+            f"SELECT public.omni_native_chat_finish('{run_id}','completed',18,120,12,"
+            "NULL,NULL,true,NULL,NULL);"
+        )
+        assert service(
+            "SELECT count(*) FROM public.ai_gateway_state WHERE feature='evolution-omni';"
+        ) == "0"
+        assert service(
+            f"SELECT status || '/' || actual_cents FROM public.claude_usage WHERE run_id='{run_id}';"
+        ) == "completed/1"
+
+        # A device revision change (key rotation or permission change) stops an in-flight reply.
+        next_request = "66666666-6666-4666-8666-666666666666"
+        next_session = "77777777-7777-4777-8777-777777777777"
+        in_flight = json.loads(
+            service(
+                f"SELECT public.omni_native_chat_begin('{chat_device}','{next_request}',"
+                f"'{next_session}','{project}','omni','claude-sonnet-5-5',1,100);"
+            )
+        )
+        assert in_flight["ok"] is True, in_flight
+        service(
+            f"UPDATE public.omni_dock_devices SET revision=revision+1 WHERE id='{chat_device}';"
+        )
+        assert '"device_rotated"' in service(
+            f"SELECT public.omni_native_chat_check('{chat_device}','{in_flight['run_id']}');"
+        )
+
         # A concurrent device change invalidates a previously consented rotation.
         assert '"ok": true' in owner(
             authorize(
@@ -241,7 +330,8 @@ def main():
         print(
             f"PASS: {checks} disposable PostgreSQL checks: owner + fresh MFA consent, code hashing, "
             "service-only one-use PKCE exchange, owner isolation, PKCE/expiry refusal, permission-preserving "
-            "key rotation, stale-rotation refusal and device revocation."
+            "key rotation, stale-rotation refusal, native-only chat consent, owner project isolation, "
+            "Claude reserve/settle, request replay and rotation-stop enforcement, and device revocation."
         )
     finally:
         if started:

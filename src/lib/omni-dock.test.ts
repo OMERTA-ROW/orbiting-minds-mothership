@@ -45,6 +45,20 @@ function fakeStore(
       calls.push("catalog"),
       { permissions: [...permissions], chatAvailable: false }
     ),
+    nativeProjects: async (device) => (
+      calls.push(`projects:${device}`),
+      [{ id: "project-1", name: "Owner project" }]
+    ),
+    nativeChat: async (device, input) => (
+      calls.push(`chat:${device}:${input.requestId}`),
+      {
+        ok: true,
+        reply: "Settled reply",
+        requestId: input.requestId,
+        toolsAvailable: false,
+        taskExecutionAvailable: false,
+      }
+    ),
     control: async (_d, c) => (calls.push(`control:${c.action}`), { ok: true }),
     engageStop: async () => (calls.push("engage"), true),
     holdTask: async (_d, j) => (
@@ -434,6 +448,71 @@ describe("signed device requests", () => {
       chatAvailable: false,
     });
     expect(allowed.calls).toContain("catalog");
+  });
+
+  it("native projects and chat require chat.send, a paired device and released Emergency Stop", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const chat = {
+      protocol: "omni.native-chat/v1",
+      requestId: "a1b2c3d4-e5f6-4789-8abc-123456789012",
+      sessionId: "b1b2c3d4-e5f6-4789-8abc-123456789012",
+      projectId: "c1b2c3d4-e5f6-4789-8abc-123456789012",
+      agentId: "omni",
+      model: "claude-sonnet-5-5",
+      messages: [{ role: "user", content: "Hello" }],
+      consent: true,
+      autonomous: false,
+    };
+    const signedRequest = (kind: "projects" | "chat", body: unknown) =>
+      signed(DOCK_PATHS[kind], DEVICE, JSON.stringify(body), privateKey);
+
+    const denied = fakeStore({
+      jwk: publicJwk,
+      permissions: ["cloud.read"],
+      stopEngaged: async () => false,
+    });
+    expect(
+      (await handleSigned(await signedRequest("projects", {}), "projects", denied.store, NOW))
+        .status,
+    ).toBe(403);
+    expect(denied.calls.some((call) => call.startsWith("projects:"))).toBe(false);
+
+    const stopped = fakeStore({
+      jwk: publicJwk,
+      permissions: ["chat.send"],
+      stopEngaged: async () => true,
+    });
+    expect(
+      (await handleSigned(await signedRequest("chat", chat), "chat", stopped.store, NOW)).status,
+    ).toBe(423);
+    expect(stopped.calls.some((call) => call.startsWith("chat:"))).toBe(false);
+
+    const allowed = fakeStore({
+      jwk: publicJwk,
+      permissions: ["chat.send"],
+      stopEngaged: async () => false,
+    });
+    const projects = await handleSigned(
+      await signedRequest("projects", {}),
+      "projects",
+      allowed.store,
+      NOW,
+    );
+    expect(projects.body["projects"]).toEqual([{ id: "project-1", name: "Owner project" }]);
+    const response = await handleSigned(
+      await signedRequest("chat", chat),
+      "chat",
+      allowed.store,
+      NOW,
+    );
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      ok: true,
+      reply: "Settled reply",
+      toolsAvailable: false,
+      taskExecutionAvailable: false,
+    });
+    expect(allowed.calls).toContain(`chat:${DEVICE}:${chat.requestId}`);
   });
 
   it("control only pauses or stops, needs jobs.pause, and still works under Emergency Stop", async () => {

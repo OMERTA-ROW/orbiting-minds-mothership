@@ -9,6 +9,7 @@ import { sha256Hex } from "./omni-api-keys";
 import { safetyCode } from "./omni-dock";
 import {
   NATIVE_AUTH_CODE_SECONDS,
+  NATIVE_BASE_DEVICE_PERMISSIONS,
   NATIVE_CLIENT,
   NATIVE_DEVICE_PERMISSIONS,
   nativeAuthorizeSearchSchema,
@@ -25,15 +26,25 @@ type Ctx = {
   claims: Record<string, unknown>;
 };
 
-const grantable = [...NATIVE_DEVICE_PERMISSIONS];
-
 export type NativeAuthorizationReadiness = "ready" | "not_installed" | "unavailable";
 
 export async function nativeAuthorizationReadiness(
   client: Parameters<typeof staged>[0],
 ): Promise<NativeAuthorizationReadiness> {
+  return readiness(staged(client).rpc("omni_native_authorization_ready"));
+}
+
+export async function nativeChatReadiness(
+  client: Parameters<typeof staged>[0],
+): Promise<NativeAuthorizationReadiness> {
+  return readiness(staged(client).rpc("omni_native_chat_ready"));
+}
+
+async function readiness(
+  resultPromise: PromiseLike<{ data: unknown; error: unknown }>,
+): Promise<NativeAuthorizationReadiness> {
   try {
-    const result = await staged(client).rpc("omni_native_authorization_ready");
+    const result = await resultPromise;
     if (!result.error) return result.data === true ? "ready" : "not_installed";
     return isMissingReadinessFunction(result.error) ? "not_installed" : "unavailable";
   } catch {
@@ -84,6 +95,11 @@ export const describeNativeAuthorization = createServerFn({ method: "POST" })
         valid: false as const,
         error: "Native sign-in status could not be checked. Try again shortly.",
       };
+    const chatReadiness = await nativeChatReadiness(context.supabase);
+    const grantable: NativeDevicePermission[] = [
+      ...NATIVE_BASE_DEVICE_PERMISSIONS,
+      ...(chatReadiness === "ready" ? (["chat.send"] as const) : []),
+    ];
     const role = await context.supabase.rpc("is_razul_owner");
     const isOwner = !role.error && role.data === true;
     return {
@@ -105,6 +121,7 @@ export const describeNativeAuthorization = createServerFn({ method: "POST" })
       grantable,
       codeLifetimeSeconds: NATIVE_AUTH_CODE_SECONDS,
       permissions: parsed.request.rotationDeviceId ? [] : grantable,
+      chatPermissionAvailable: chatReadiness === "ready",
       notice:
         "The Mothership verifies the P-256 key proof, but cannot verify whether macOS Keychain or Secure Enclave hardware protects that key.",
     };
@@ -134,6 +151,24 @@ export const approveNativeAuthorization = createServerFn({ method: "POST" })
           readiness === "not_installed"
             ? "Native sign-in is unavailable because its database migration is not installed."
             : "Native sign-in readiness could not be checked. Nothing was shared; try again shortly.",
+      };
+    const chatReadiness = await nativeChatReadiness(context.supabase);
+    if (data.permissions.includes("chat.send") && chatReadiness !== "ready")
+      return {
+        ok: false as const,
+        message:
+          chatReadiness === "not_installed"
+            ? "Native chat permission is not available until its database migration is installed."
+            : "Native chat permission status could not be checked. Nothing was shared; try again shortly.",
+      };
+    const available = [
+      ...NATIVE_BASE_DEVICE_PERMISSIONS,
+      ...(chatReadiness === "ready" ? (["chat.send"] as const) : []),
+    ];
+    if (data.permissions.some((permission) => !available.includes(permission)))
+      return {
+        ok: false as const,
+        message: "Choose only the device permissions shown on this page.",
       };
     const rotation = parsed.request.rotationDeviceId !== null;
     if (

@@ -26,6 +26,8 @@ export const DOCK_PATHS = {
   audit: "/api/public/omni/dock/audit",
   control: "/api/public/omni/dock/control",
   catalog: "/api/public/omni/dock/catalog",
+  projects: "/api/public/omni/dock/projects",
+  chat: "/api/public/omni/dock/chat",
 } as const;
 
 /** Honeycomb Terminal origins allowed to call the dock from a browser. Native apps send no Origin. */
@@ -98,9 +100,9 @@ export const PERMISSION_INFO: Record<DockPermission, { label: string; detail: st
       "Pause an agent or stop a job or agent from the device. It can never resume, approve or start anything.",
   },
   "chat.send": {
-    label: "Chat with OMNI",
+    label: "Chat with OMNI, Dread or Draco",
     detail:
-      "Reserved: needs a verified cloud sandbox and a mobile chat window you open with your passkey. No effect yet.",
+      "Send text-only messages using an owner-enabled Claude model. Each call is capped at $0.50 and shares the owner's $5 rolling 24-hour limit. No tools, task execution or transcript storage on the Mothership.",
   },
 };
 export const DEFAULT_MOBILE_PERMISSIONS: DockPermission[] = [

@@ -4,9 +4,11 @@ This contract adds owner-approved browser enrollment for the native OMNI CLI. It
 the `omni-web` bearer delegation and issues no access or refresh token. The result is a device
 record whose P-256 public key authenticates every subsequent `omni.dock/v1` request.
 
-The backend implementation is `.lovable/pending/0076_omni_native_cli_authorization.sql` and is
-**source-only until owner-approved and applied**. The native CLI must implement
-the client side before this flow can be used end to end.
+Authentication is implemented in `.lovable/pending/0076_omni_native_cli_authorization.sql`;
+native text chat is added in `.lovable/pending/0077_omni_native_cli_chat.sql`. Both migrations are
+**source-only until owner-approved and applied**. Chat permission is offered only when the 0077
+readiness marker is available. The native CLI must implement the client side before these flows
+can be used end to end.
 
 ## Browser authorization request
 
@@ -120,10 +122,12 @@ The response contains a `catalog` with `protocol: "omni.native-catalog/v1"` and 
 
 - `providers` reports providers actually configured on the Mothership; configuration is not
   proof that inference succeeded.
-- `models` identifies the model the Mothership may configure, reports whether its provider is
-  configured, and always reports `nativeChatAvailable: false`.
+- `models` identifies models and provider configuration. The OpenAI/Lovable web model is not
+  available to native chat. Claude models report native availability only when the device has
+  `chat.send`, migration 0077 is installed and the server Anthropic key is configured; each still
+  requires owner AI approval, that agent's Claude switch and price confirmation within 30 days.
 - `agents` lists real Mothership agent identities and separates `webChatConfigured` from native
-  availability; every entry reports `nativeChatAvailable: false`.
+  availability. Native inference is limited to OMNI, Dread and Draco and remains text-only.
 - `tasks.proposal` reports whether this device can submit a task and the existing `/jobs` route;
   that route creates a **held** task only. `tasks.status` is bounded to this device's own tasks.
   Approval requests remain on the Mothership, and `tasks.execution` reports `executor: "none"`.
@@ -144,14 +148,74 @@ the specific signed endpoint and owner-approved permission for each operation:
 | Pause an agent or stop a job | `/control` | Reductions only; never resume, approve, or start |
 | Discover configuration and capabilities | `/catalog` | Requires `cloud.read`; Stop-gated |
 
+## Native project discovery and chat
+
+These are device-signed `omni.dock/v1` requests. Both require a paired native CLI device with the
+separately consented `chat.send` permission and a readable, released Emergency Stop. The SQL
+functions also check `native_client_id = "omni-native-cli"`; legacy Dock devices cannot use these
+routes even if they hold the older reserved permission.
+
+`POST /api/public/omni/dock/projects` takes `{}` and returns only the owner's project UUIDs and
+names. It also requires verified owner status and current AI approval (approved and not paused).
+Project briefs and records are not returned by discovery.
+
+`POST /api/public/omni/dock/chat` requires JSON up to 128 KiB and this strict request shape:
+
+```json
+{
+  "protocol": "omni.native-chat/v1",
+  "requestId": "uuid",
+  "sessionId": "uuid",
+  "projectId": "uuid",
+  "agentId": "omni",
+  "model": "claude-sonnet-5-5",
+  "messages": [{ "role": "user", "content": "..." }],
+  "consent": true,
+  "autonomous": false
+}
+```
+
+`agentId` is `omni`, `dread` or `draco`; `model` is `claude-sonnet-5-5` or
+`claude-opus-5-5`. The request may include up to 100 message records, but the server selects at
+most the latest 20 and 12,000 UTF-16 code units; the last message must be from the user. Each
+message is secret-screened. `requestId`, `sessionId` and `projectId` are UUIDs. The client must
+set `consent: true` for each turn and `autonomous: false`; no tool, CODE or task execution path
+exists.
+
+Before calling Anthropic, the server verifies device ownership/revision and `chat.send`, current
+owner verification and AI approval, Stop release, project ownership, and an open session bound to
+that device revision, project, agent and model. A device revision change, revocation, project
+deletion, AI pause or Stop engagement aborts the request. The session ID is reused for continuity;
+the client keeps its own transcript and sends the bounded context each time. Start a new session
+when switching project, agent or model. The Mothership stores only session/run metadata and never
+stores message or reply text.
+
+Only Anthropic Claude engines are available. Each agent/model needs its owner-enabled Claude
+switch and a price confirmed within 30 days. A service-only reservation uses the shared Claude
+ledger before inference, with a conservative UTF-8 input-byte upper bound, a maximum 1,024 output
+tokens, the existing **$0.50 per-call** cap, and the shared **$5 rolling 24-hour** cap. Native chat
+also limits an owner to 30 started native requests per rolling 24 hours. Every call settles once;
+if settlement or outcome recording fails, reply text is withheld and the shared OMNI AI guard
+stays blocked for owner review. Provider credit/permission refusals also preserve a service pause.
+
+The route returns NDJSON. It first emits a `status: validating` frame. On success, the model call
+and ledger settlement complete before a `status: settled` frame, `text` frames, and a final `done`
+frame containing run ID, model, attribution, usage and actual/reserved cost. Errors are terminal
+`error` frames with the HTTP-like status in the frame; clients must inspect the terminal frame and
+must never automatically retry a failed or ambiguous request. This is settlement-gated chunked
+delivery, not live token streaming.
+
+`tasks` remain held proposals and status metadata; approvals remain Mothership-only and execution
+reports `executor: "none"`. Native Fusion/CODE remains unavailable. No native route performs a
+handoff, executes code, invokes a tool, changes Stop, or starts Autonomous Mode.
+
 ## Explicitly unavailable in this contract
 
-Native authenticated chat, streaming, conversation history, agent switching for inference,
-provider calls, native Fusion plans, task approval, task execution, and CODE dispatch are not
-implemented. The existing OMNI-web chat delegation is browser/web-specific and cannot be reused
-as a native credential. Native model use also has no verified per-call `$0.50` settlement contract;
-therefore no native chat endpoint is exposed. Tasks remain held and the executor remains `none`.
-Existing Stop, owner approval, audit, and signed Jackboy handoff controls are not bypassed.
+Native Fusion plans, task approval, task execution and CODE dispatch are not implemented. Chat is
+not the OMNI-web delegation: it authenticates each call with the native device signature and the
+separate device permission. The native response is chunked only after settlement, not streamed
+live. Tasks remain held and the executor remains `none`. Existing Stop, owner approval, audit,
+and signed Jackboy handoff controls are not bypassed.
 
 The server validates possession of the supplied P-256 private key but cannot attest Keychain,
 Secure Enclave, hardware backing, or non-extractability. The native client must use a dedicated
@@ -161,10 +225,12 @@ backend must not claim hardware assurance based only on a valid signature.
 
 ## Verification
 
-`src/lib/omni-native.test.ts`, `src/lib/omni-native.server.test.ts`, and
-`src/lib/omni-dock.test.ts` cover browser authorization proof/callback validation, PKCE exchange,
-no-bearer responses, catalog truthfulness, permission/Stop gating, and signed request behavior.
-`python3 src/test/test_omni_native_auth_sql.py` runs disposable PostgreSQL checks for owner/MFA
-consent, one-use exchange, owner isolation, PKCE/expiry refusal, rotation, stale-revision refusal,
-and revocation. No hosted database, deployment, paid build, or Autonomous Mode activation is
-needed for these tests.
+`src/lib/omni-native.test.ts`, `src/lib/omni-native.server.test.ts`,
+`src/lib/omni-native-chat.server.test.ts`, and `src/lib/omni-dock.test.ts` cover browser
+authorization proof/callback validation, PKCE exchange, no-bearer responses, catalog truthfulness,
+signed permission/Stop gating, settlement ordering, reply withholding and refusal of duplicate
+requests. `python3 src/test/test_omni_native_auth_sql.py` runs disposable PostgreSQL checks for
+owner/MFA consent, one-use exchange, owner isolation, PKCE/expiry refusal, permission-preserving
+rotation, native-only chat consent, project ownership, Claude reserve/settle, request replay and
+rotation-stop enforcement. No hosted database, deployment, paid build, or Autonomous Mode
+activation is needed for these tests.

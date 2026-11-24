@@ -169,16 +169,19 @@ export async function adminDockStore(): Promise<DockStore> {
     },
     async nativeCatalog(permissions) {
       try {
-        const [{ buildManifest }, chat, fusion] = await Promise.all([
+        const [{ buildManifest }, chat, fusion, nativeChat] = await Promise.all([
           import("./omni-contract"),
           import("./omni-delegated-chat.server"),
           import("./omni-fusion.server"),
+          import("./omni-native-chat.server"),
         ]);
-        const [chatInstalled, fusionPlanInstalled, fusionPlannerInstalled] = await Promise.all([
-          chat.delegatedChatInstalled(),
-          fusion.fusionPlanInstalled(),
-          fusion.fusionPlannerInstalled(),
-        ]);
+        const [chatInstalled, fusionPlanInstalled, fusionPlannerInstalled, nativeChatInstalled] =
+          await Promise.all([
+            chat.delegatedChatInstalled(),
+            fusion.fusionPlanInstalled(),
+            fusion.fusionPlannerInstalled(),
+            nativeChat.nativeChatBackendInstalled(),
+          ]);
         const manifest = buildManifest(null, {
           aiConfigured: Boolean(process.env["LOVABLE_API_KEY"]),
           chatInstalled,
@@ -186,10 +189,21 @@ export async function adminDockStore(): Promise<DockStore> {
           fusionPlannerInstalled,
         });
         const { buildNativeCatalog } = await import("./omni-native-catalog");
-        return buildNativeCatalog(manifest, permissions);
+        return buildNativeCatalog(manifest, permissions, {
+          nativeChatInstalled,
+          anthropicConfigured: Boolean(process.env["ANTHROPIC_API_KEY"]),
+        });
       } catch {
         return null;
       }
+    },
+    async nativeProjects(device) {
+      const { nativeProjects } = await import("./omni-native-chat.server");
+      return nativeProjects(device);
+    },
+    async nativeChat(device, input, signal) {
+      const { runNativeChat } = await import("./omni-native-chat.server");
+      return runNativeChat(device, input, signal);
     },
     async control(device, c) {
       const now = new Date().toISOString();

@@ -119,12 +119,14 @@ import { Route as ApiPublicOmniDelegationStatusRouteImport } from './routes/api/
 import { Route as ApiPublicOmniDelegationTokenRouteImport } from './routes/api/public/omni/delegation/token'
 import { Route as ApiPublicOmniDockAuditRouteImport } from './routes/api/public/omni/dock/audit'
 import { Route as ApiPublicOmniDockCatalogRouteImport } from './routes/api/public/omni/dock/catalog'
+import { Route as ApiPublicOmniDockChatRouteImport } from './routes/api/public/omni/dock/chat'
 import { Route as ApiPublicOmniDockCloudRouteImport } from './routes/api/public/omni/dock/cloud'
 import { Route as ApiPublicOmniDockControlRouteImport } from './routes/api/public/omni/dock/control'
 import { Route as ApiPublicOmniDockHeartbeatRouteImport } from './routes/api/public/omni/dock/heartbeat'
 import { Route as ApiPublicOmniDockJobsRouteImport } from './routes/api/public/omni/dock/jobs'
 import { Route as ApiPublicOmniDockJobsStatusRouteImport } from './routes/api/public/omni/dock/jobs-status'
 import { Route as ApiPublicOmniDockPairRouteImport } from './routes/api/public/omni/dock/pair'
+import { Route as ApiPublicOmniDockProjectsRouteImport } from './routes/api/public/omni/dock/projects'
 import { Route as ApiPublicOmniDockStopRouteImport } from './routes/api/public/omni/dock/stop'
 import { Route as ApiPublicOmniNativeTokenRouteImport } from './routes/api/public/omni/native/token'
 
@@ -690,6 +692,11 @@ const ApiPublicOmniDockCatalogRoute =
     path: '/api/public/omni/dock/catalog',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicOmniDockChatRoute = ApiPublicOmniDockChatRouteImport.update({
+  id: '/api/public/omni/dock/chat',
+  path: '/api/public/omni/dock/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicOmniDockCloudRoute = ApiPublicOmniDockCloudRouteImport.update({
   id: '/api/public/omni/dock/cloud',
   path: '/api/public/omni/dock/cloud',
@@ -723,6 +730,12 @@ const ApiPublicOmniDockPairRoute = ApiPublicOmniDockPairRouteImport.update({
   path: '/api/public/omni/dock/pair',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOmniDockProjectsRoute =
+  ApiPublicOmniDockProjectsRouteImport.update({
+    id: '/api/public/omni/dock/projects',
+    path: '/api/public/omni/dock/projects',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicOmniDockStopRoute = ApiPublicOmniDockStopRouteImport.update({
   id: '/api/public/omni/dock/stop',
   path: '/api/public/omni/dock/stop',
@@ -845,12 +858,14 @@ export interface FileRoutesByFullPath {
   '/api/public/omni/delegation/token': typeof ApiPublicOmniDelegationTokenRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/catalog': typeof ApiPublicOmniDockCatalogRoute
+  '/api/public/omni/dock/chat': typeof ApiPublicOmniDockChatRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
   '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
   '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
+  '/api/public/omni/dock/projects': typeof ApiPublicOmniDockProjectsRoute
   '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
   '/api/public/omni/native/token': typeof ApiPublicOmniNativeTokenRoute
 }
@@ -964,12 +979,14 @@ export interface FileRoutesByTo {
   '/api/public/omni/delegation/token': typeof ApiPublicOmniDelegationTokenRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/catalog': typeof ApiPublicOmniDockCatalogRoute
+  '/api/public/omni/dock/chat': typeof ApiPublicOmniDockChatRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
   '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
   '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
+  '/api/public/omni/dock/projects': typeof ApiPublicOmniDockProjectsRoute
   '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
   '/api/public/omni/native/token': typeof ApiPublicOmniNativeTokenRoute
 }
@@ -1085,12 +1102,14 @@ export interface FileRoutesById {
   '/api/public/omni/delegation/token': typeof ApiPublicOmniDelegationTokenRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
   '/api/public/omni/dock/catalog': typeof ApiPublicOmniDockCatalogRoute
+  '/api/public/omni/dock/chat': typeof ApiPublicOmniDockChatRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
   '/api/public/omni/dock/jobs': typeof ApiPublicOmniDockJobsRoute
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
   '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
+  '/api/public/omni/dock/projects': typeof ApiPublicOmniDockProjectsRoute
   '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
   '/api/public/omni/native/token': typeof ApiPublicOmniNativeTokenRoute
 }
@@ -1206,12 +1225,14 @@ export interface FileRouteTypes {
     | '/api/public/omni/delegation/token'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/catalog'
+    | '/api/public/omni/dock/chat'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
     | '/api/public/omni/dock/heartbeat'
     | '/api/public/omni/dock/jobs'
     | '/api/public/omni/dock/jobs-status'
     | '/api/public/omni/dock/pair'
+    | '/api/public/omni/dock/projects'
     | '/api/public/omni/dock/stop'
     | '/api/public/omni/native/token'
   fileRoutesByTo: FileRoutesByTo
@@ -1325,12 +1346,14 @@ export interface FileRouteTypes {
     | '/api/public/omni/delegation/token'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/catalog'
+    | '/api/public/omni/dock/chat'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
     | '/api/public/omni/dock/heartbeat'
     | '/api/public/omni/dock/jobs'
     | '/api/public/omni/dock/jobs-status'
     | '/api/public/omni/dock/pair'
+    | '/api/public/omni/dock/projects'
     | '/api/public/omni/dock/stop'
     | '/api/public/omni/native/token'
   id:
@@ -1445,12 +1468,14 @@ export interface FileRouteTypes {
     | '/api/public/omni/delegation/token'
     | '/api/public/omni/dock/audit'
     | '/api/public/omni/dock/catalog'
+    | '/api/public/omni/dock/chat'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
     | '/api/public/omni/dock/heartbeat'
     | '/api/public/omni/dock/jobs'
     | '/api/public/omni/dock/jobs-status'
     | '/api/public/omni/dock/pair'
+    | '/api/public/omni/dock/projects'
     | '/api/public/omni/dock/stop'
     | '/api/public/omni/native/token'
   fileRoutesById: FileRoutesById
@@ -1552,12 +1577,14 @@ export interface RootRouteChildren {
   ApiPublicOmniDelegationTokenRoute: typeof ApiPublicOmniDelegationTokenRoute
   ApiPublicOmniDockAuditRoute: typeof ApiPublicOmniDockAuditRoute
   ApiPublicOmniDockCatalogRoute: typeof ApiPublicOmniDockCatalogRoute
+  ApiPublicOmniDockChatRoute: typeof ApiPublicOmniDockChatRoute
   ApiPublicOmniDockCloudRoute: typeof ApiPublicOmniDockCloudRoute
   ApiPublicOmniDockControlRoute: typeof ApiPublicOmniDockControlRoute
   ApiPublicOmniDockHeartbeatRoute: typeof ApiPublicOmniDockHeartbeatRoute
   ApiPublicOmniDockJobsRoute: typeof ApiPublicOmniDockJobsRoute
   ApiPublicOmniDockJobsStatusRoute: typeof ApiPublicOmniDockJobsStatusRoute
   ApiPublicOmniDockPairRoute: typeof ApiPublicOmniDockPairRoute
+  ApiPublicOmniDockProjectsRoute: typeof ApiPublicOmniDockProjectsRoute
   ApiPublicOmniDockStopRoute: typeof ApiPublicOmniDockStopRoute
   ApiPublicOmniNativeTokenRoute: typeof ApiPublicOmniNativeTokenRoute
 }
@@ -2334,6 +2361,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOmniDockCatalogRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/omni/dock/chat': {
+      id: '/api/public/omni/dock/chat'
+      path: '/api/public/omni/dock/chat'
+      fullPath: '/api/public/omni/dock/chat'
+      preLoaderRoute: typeof ApiPublicOmniDockChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/omni/dock/cloud': {
       id: '/api/public/omni/dock/cloud'
       path: '/api/public/omni/dock/cloud'
@@ -2374,6 +2408,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/omni/dock/pair'
       fullPath: '/api/public/omni/dock/pair'
       preLoaderRoute: typeof ApiPublicOmniDockPairRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/dock/projects': {
+      id: '/api/public/omni/dock/projects'
+      path: '/api/public/omni/dock/projects'
+      fullPath: '/api/public/omni/dock/projects'
+      preLoaderRoute: typeof ApiPublicOmniDockProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/omni/dock/stop': {
@@ -2546,12 +2587,14 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOmniDelegationTokenRoute: ApiPublicOmniDelegationTokenRoute,
   ApiPublicOmniDockAuditRoute: ApiPublicOmniDockAuditRoute,
   ApiPublicOmniDockCatalogRoute: ApiPublicOmniDockCatalogRoute,
+  ApiPublicOmniDockChatRoute: ApiPublicOmniDockChatRoute,
   ApiPublicOmniDockCloudRoute: ApiPublicOmniDockCloudRoute,
   ApiPublicOmniDockControlRoute: ApiPublicOmniDockControlRoute,
   ApiPublicOmniDockHeartbeatRoute: ApiPublicOmniDockHeartbeatRoute,
   ApiPublicOmniDockJobsRoute: ApiPublicOmniDockJobsRoute,
   ApiPublicOmniDockJobsStatusRoute: ApiPublicOmniDockJobsStatusRoute,
   ApiPublicOmniDockPairRoute: ApiPublicOmniDockPairRoute,
+  ApiPublicOmniDockProjectsRoute: ApiPublicOmniDockProjectsRoute,
   ApiPublicOmniDockStopRoute: ApiPublicOmniDockStopRoute,
   ApiPublicOmniNativeTokenRoute: ApiPublicOmniNativeTokenRoute,
 }

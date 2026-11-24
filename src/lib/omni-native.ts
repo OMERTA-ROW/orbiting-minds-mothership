@@ -38,7 +38,7 @@ function isValidDeviceLabel(value: string | undefined): value is string {
   return true;
 }
 
-export const NATIVE_DEVICE_PERMISSIONS = [
+export const NATIVE_BASE_DEVICE_PERMISSIONS = [
   "status.read",
   "jobs.propose",
   "stop.engage",
@@ -46,6 +46,7 @@ export const NATIVE_DEVICE_PERMISSIONS = [
   "audit.read",
   "jobs.pause",
 ] as const;
+export const NATIVE_DEVICE_PERMISSIONS = [...NATIVE_BASE_DEVICE_PERMISSIONS, "chat.send"] as const;
 export type NativeDevicePermission = (typeof NATIVE_DEVICE_PERMISSIONS)[number];
 
 export const nativeAuthorizeSearchSchema = z

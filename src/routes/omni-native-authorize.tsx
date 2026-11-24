@@ -70,6 +70,7 @@ type Description =
       rotationDeviceId: string | null;
       grantable: NativeDevicePermission[];
       permissions: NativeDevicePermission[];
+      chatPermissionAvailable: boolean;
       codeLifetimeSeconds: number;
       notice: string;
     };
@@ -287,7 +288,9 @@ function NativeAuthorizePage() {
         <p className="text-xs text-muted-foreground">
           The authorization code expires in {description.codeLifetimeSeconds} seconds and is
           single-use. The CLI receives no bearer token. You can revoke this device from Docking Bay.
-          Chat streaming and task execution are not enabled by this consent.
+          {description.chatPermissionAvailable
+            ? " Chat uses text-only Claude replies and never stores your transcript. Task execution remains unavailable."
+            : " Native chat and task execution are not available."}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button

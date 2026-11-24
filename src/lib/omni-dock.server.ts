@@ -33,6 +33,11 @@ import {
   type DockControl,
   type DockPublicJwk,
 } from "./omni-dock";
+import {
+  NATIVE_CHAT_MAX_BODY_BYTES,
+  nativeChatBodySchema,
+  type NativeChatInput,
+} from "./omni-native-chat";
 
 type Reply = { ok?: boolean; reason?: string } & Record<string, unknown>;
 export type StoreReply = Reply;
@@ -73,6 +78,10 @@ export interface DockStore {
   auditTail(device: string): Promise<unknown[] | null>;
   /** Current, server-read native capability catalog; null when a dependency is unreadable. */
   nativeCatalog(permissions: readonly string[]): Promise<Record<string, unknown> | null>;
+  /** Owner-scoped project names only; returns null on any authorization/read failure. */
+  nativeProjects(device: string): Promise<Record<string, unknown>[] | null>;
+  /** Text-only Claude turn; provider output is returned only after settlement. */
+  nativeChat(device: string, input: NativeChatInput, signal: AbortSignal): Promise<Reply>;
   /** Reductions only (pause/stop). Returns what changed, or a refusal reason. */
   control(device: string, c: DockControl): Promise<Reply>;
 }
@@ -101,12 +110,28 @@ export function dockPreflight(request: Request): Response {
   return new Response(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
 }
 
-async function readBody(request: Request): Promise<string | DockResult> {
+async function readBody(
+  request: Request,
+  limit = DOCK_MAX_BODY_BYTES,
+): Promise<string | DockResult> {
   const declared = Number(request.headers.get("content-length") ?? "0");
-  if (declared > DOCK_MAX_BODY_BYTES) return fail(413, "too_large");
-  const text = await request.text();
-  if (new TextEncoder().encode(text).length > DOCK_MAX_BODY_BYTES) return fail(413, "too_large");
-  return text;
+  if (declared > limit) return fail(413, "too_large");
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = "";
+  for (;;) {
+    const part = await reader.read();
+    if (part.done) break;
+    bytes += part.value.byteLength;
+    if (bytes > limit) {
+      await reader.cancel();
+      return fail(413, "too_large");
+    }
+    text += decoder.decode(part.value, { stream: true });
+  }
+  return text + decoder.decode();
 }
 
 function signedHeaders(request: Request, now: number) {
@@ -209,7 +234,16 @@ export async function handlePair(
 }
 
 type SignedKind =
-  "heartbeat" | "jobs" | "stop" | "jobsStatus" | "cloud" | "audit" | "control" | "catalog";
+  | "heartbeat"
+  | "jobs"
+  | "stop"
+  | "jobsStatus"
+  | "cloud"
+  | "audit"
+  | "control"
+  | "catalog"
+  | "projects"
+  | "chat";
 const EVENT: Record<SignedKind, string> = {
   heartbeat: "heartbeat",
   jobs: "job_request",
@@ -219,6 +253,8 @@ const EVENT: Record<SignedKind, string> = {
   audit: "audit_read",
   control: "control_request",
   catalog: "catalog_read",
+  projects: "native_projects_read",
+  chat: "native_chat_request",
 };
 const SCHEMA = {
   heartbeat: heartbeatBodySchema,
@@ -229,6 +265,8 @@ const SCHEMA = {
   audit: auditBodySchema,
   control: controlBodySchema,
   catalog: cloudBodySchema,
+  projects: cloudBodySchema,
+  chat: nativeChatBodySchema,
 };
 
 export async function handleSigned(
@@ -236,8 +274,12 @@ export async function handleSigned(
   kind: SignedKind,
   store: DockStore,
   now: number,
+  signal: AbortSignal = request.signal,
 ): Promise<DockResult> {
-  const text = await readBody(request);
+  const text = await readBody(
+    request,
+    kind === "chat" ? NATIVE_CHAT_MAX_BODY_BYTES : DOCK_MAX_BODY_BYTES,
+  );
   if (typeof text !== "string") return text;
   const headers = signedHeaders(request, now);
   if ("status" in headers) return headers;
@@ -347,6 +389,27 @@ export async function handleSigned(
     const catalog = await store.nativeCatalog(permissions);
     if (!catalog) return fail(503, "unavailable");
     return { status: 200, body: { ...state, catalog } };
+  }
+
+  if (kind === "projects") {
+    if (!paired || !permissions.includes("chat.send")) return fail(403, "not_permitted");
+    if (engaged) return fail(423, "stop_engaged");
+    const projects = await store.nativeProjects(headers.device);
+    if (!projects) return fail(503, "unavailable");
+    return { status: 200, body: { ...state, projects } };
+  }
+
+  if (kind === "chat") {
+    if (!paired || !permissions.includes("chat.send")) return fail(403, "not_permitted");
+    if (engaged) return fail(423, "stop_engaged");
+    const input = body.data as NativeChatInput;
+    const result = await store.nativeChat(headers.device, input, signal);
+    if (result.ok !== true) {
+      const status = typeof result["status"] === "number" ? result["status"] : 503;
+      const { status: _status, reason, ...detail } = result;
+      return fail(status, String(reason ?? "unavailable"), detail);
+    }
+    return { status: 200, body: { ...state, ...result } };
   }
 
   const job = body.data as import("zod").infer<typeof jobBodySchema>;
