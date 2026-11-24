@@ -42,8 +42,8 @@ function harness(
             ? (over.check ?? { ok: true })
             : fn === "claude_settle_source"
               ? (over.settlement ?? { ok: true, actual_cents: 1 })
-              : fn === "omni_native_chat_finish"
-                ? (over.finish ?? { ok: true, guard_released: true })
+              : fn === "omni_native_chat_finish_authorized"
+                ? (over.finish ?? { ok: true, guard_released: true, final_status: "completed" })
                 : { ok: false, reason: "unknown_rpc" };
     return { data, error: null };
   };
@@ -103,7 +103,7 @@ describe("native OMNI chat", () => {
       "omni_native_chat_check",
       "omni_native_chat_check",
       "claude_settle_source",
-      "omni_native_chat_finish",
+      "omni_native_chat_finish_authorized",
     ]);
     expect(h.calls.find((call) => call.fn === "claude_settle_source")?.args).toMatchObject({
       _source: "native",
@@ -149,7 +149,7 @@ describe("native OMNI chat", () => {
   it("withholds the reply and preserves the guard if settlement is not recorded", async () => {
     const h = harness({
       settlement: { ok: false, reason: "not_reserved" },
-      finish: { ok: true, guard_released: false },
+      finish: { ok: true, guard_released: false, final_status: "completed" },
     });
     const result = await runNativeChat(DEVICE, IDENTITY, INPUT, new AbortController().signal, {
       ...h.deps,
@@ -161,9 +161,29 @@ describe("native OMNI chat", () => {
       status: 503,
     });
     expect(result).not.toHaveProperty("reply");
-    expect(h.calls.find((call) => call.fn === "omni_native_chat_finish")?.args).toMatchObject({
+    expect(
+      h.calls.find((call) => call.fn === "omni_native_chat_finish_authorized")?.args,
+    ).toMatchObject({
       _release_guard: false,
     });
+  });
+
+  it("withholds a settled reply when the device changes during finalization", async () => {
+    const h = harness({
+      finish: {
+        ok: true,
+        guard_released: true,
+        final_status: "denied",
+        authorization_reason: "device_rotated",
+      },
+    });
+    const result = await runNativeChat(DEVICE, IDENTITY, INPUT, new AbortController().signal, {
+      ...h.deps,
+      anthropicKey: () => "test-key",
+    });
+    expect(result).toMatchObject({ ok: false, reason: "device_rotated", status: 409 });
+    expect(result).not.toHaveProperty("reply");
+    expect(h.calls.map((call) => call.fn)).toContain("claude_settle_source");
   });
 
   it("does not retry a duplicate request or exceed the per-call cap", async () => {
@@ -183,10 +203,10 @@ describe("native OMNI chat", () => {
     });
     expect(result).toMatchObject({ ok: false, reason: "reservation_invalid" });
     expect(overCap.fetchCalls()).toBe(0);
-    expect(overCap.calls.find((call) => call.fn === "omni_native_chat_finish")?.args).toMatchObject(
-      {
-        _release_guard: true,
-      },
-    );
+    expect(
+      overCap.calls.find((call) => call.fn === "omni_native_chat_finish_authorized")?.args,
+    ).toMatchObject({
+      _release_guard: true,
+    });
   });
 });

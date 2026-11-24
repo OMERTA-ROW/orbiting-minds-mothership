@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,6 +44,7 @@ def migrations():
     found.append(ROOT / ".lovable/pending/0077_omni_native_cli_chat.sql")
     found.append(ROOT / ".lovable/pending/0078_omni_native_device_status.sql")
     found.append(ROOT / ".lovable/pending/0079_omni_native_bound_admission.sql")
+    found.append(ROOT / ".lovable/pending/0080_omni_native_chat_finish_authorization.sql")
     return found
 
 
@@ -472,7 +474,7 @@ def main():
             f"SELECT public.claude_settle_source('native','{run_id}','completed',120,12);"
         )
         assert '"guard_released": true' in service(
-            f"SELECT public.omni_native_chat_finish('{run_id}','completed',18,120,12,"
+            f"SELECT public.omni_native_chat_finish_authorized('{run_id}','completed',18,120,12,"
             "NULL,NULL,true,NULL,NULL);"
         )
         assert service(
@@ -492,12 +494,103 @@ def main():
             )
         )
         assert in_flight["ok"] is True, in_flight
+        assert '"ok": true' in service(
+            f"SELECT public.claude_reserve_native_chat('{in_flight['run_id']}',100,1024);"
+        )
+        assert '"ok": true' in service(
+            f"SELECT public.claude_settle_source('native','{in_flight['run_id']}','completed',120,12);"
+        )
+        assert '"ok": true' in service(
+            f"SELECT public.omni_native_chat_check('{chat_device}','{in_flight['run_id']}');"
+        )
         service(
             f"UPDATE public.omni_dock_devices SET revision=revision+1 WHERE id='{chat_device}';"
         )
         assert '"device_rotated"' in service(
             f"SELECT public.omni_native_chat_check('{chat_device}','{in_flight['run_id']}');"
         )
+        finalized = json.loads(service(
+            f"SELECT public.omni_native_chat_finish_authorized('{in_flight['run_id']}',"
+            "'completed',18,120,12,NULL,NULL,true,NULL,NULL);"
+        ))
+        assert finalized["ok"] and finalized["final_status"] == "denied"
+        assert finalized["authorization_reason"] == "device_rotated"
+        assert finalized["guard_released"] is True
+        assert service(
+            f"SELECT status || '/' || reply_chars FROM public.omni_native_chat_runs WHERE id='{in_flight['run_id']}';"
+        ) == "denied/0"
+        assert service(
+            f"SELECT status || '/' || actual_cents FROM public.claude_usage WHERE run_id='{in_flight['run_id']}';"
+        ) == "completed/1"
+        chat_revision += 1
+        conditions = [
+            ("emergency_stop_engaged",
+             "UPDATE public.omni_terminal_controls SET emergency_stop=true WHERE id=1;",
+             "UPDATE public.omni_terminal_controls SET emergency_stop=false WHERE id=1;"),
+            ("owner_unverified",
+             f"UPDATE auth.users SET email_confirmed_at=NULL WHERE id='{OWNER}';",
+             f"UPDATE auth.users SET email_confirmed_at=now() WHERE id='{OWNER}';"),
+            ("ai_not_approved",
+             f"UPDATE public.beta_access SET paused=true WHERE user_id='{OWNER}';",
+             f"UPDATE public.beta_access SET paused=false WHERE user_id='{OWNER}';"),
+            ("session_stopped", None, None),
+        ]
+        for expected_reason, apply_change, restore_change in conditions:
+            session = str(uuid.uuid4())
+            request = str(uuid.uuid4())
+            run = json.loads(service(
+                f"SELECT public.omni_native_bound_chat_begin('{chat_device}','{fingerprint(JWK3)}',"
+                f"{chat_revision},'{request}','{session}','{project}','omni','claude-sonnet-5-5',1,100);"
+            ))
+            assert run["ok"], run
+            run_id = run["run_id"]
+            assert '"ok": true' in service(f"SELECT public.claude_reserve_native_chat('{run_id}',100,1024);")
+            assert '"ok": true' in service(
+                f"SELECT public.claude_settle_source('native','{run_id}','completed',120,12);"
+            )
+            assert '"ok": true' in service(f"SELECT public.omni_native_chat_check('{chat_device}','{run_id}');")
+            if expected_reason == "session_stopped":
+                service(f"UPDATE public.omni_native_chat_sessions SET status='closed' WHERE id='{session}';")
+            else:
+                sql(apply_change)
+            finalized = json.loads(service(
+                f"SELECT public.omni_native_chat_finish_authorized('{run_id}',"
+                "'completed',18,120,12,NULL,NULL,true,NULL,NULL);"
+            ))
+            assert finalized["ok"] and finalized["final_status"] == "denied", finalized
+            assert finalized["authorization_reason"] == expected_reason, finalized
+            assert finalized["guard_released"] is True, finalized
+            assert service(
+                f"SELECT status || '/' || reply_chars FROM public.omni_native_chat_runs WHERE id='{run_id}';"
+            ) == "denied/0"
+            if restore_change:
+                sql(restore_change)
+
+        unresolved_session = str(uuid.uuid4())
+        unresolved_request = str(uuid.uuid4())
+        unresolved = json.loads(service(
+            f"SELECT public.omni_native_bound_chat_begin('{chat_device}','{fingerprint(JWK3)}',"
+            f"{chat_revision},'{unresolved_request}','{unresolved_session}','{project}',"
+            "'omni','claude-sonnet-5-5',1,100);"
+        ))
+        assert unresolved["ok"], unresolved
+        unresolved_run = unresolved["run_id"]
+        assert '"ok": true' in service(
+            f"SELECT public.claude_reserve_native_chat('{unresolved_run}',100,1024);"
+        )
+        unresolved_finish = json.loads(service(
+            f"SELECT public.omni_native_chat_finish_authorized('{unresolved_run}',"
+            "'completed',18,120,12,NULL,NULL,false,NULL,NULL);"
+        ))
+        assert unresolved_finish["final_status"] == "denied"
+        assert unresolved_finish["authorization_reason"] == "settlement_unresolved"
+        assert unresolved_finish["guard_released"] is False
+        assert service(
+            "SELECT count(*) FROM public.ai_gateway_state WHERE feature='evolution-omni';"
+        ) == "1"
+        assert service(
+            f"SELECT status FROM public.claude_usage WHERE run_id='{unresolved_run}';"
+        ) == "reserved"
 
         # A concurrent device change invalidates a previously consented rotation.
         assert '"ok": true' in owner(

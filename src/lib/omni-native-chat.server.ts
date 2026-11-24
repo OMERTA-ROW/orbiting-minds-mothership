@@ -383,6 +383,21 @@ export async function runNativeChat(
       503,
       "The outcome could not be recorded. No reply is returned; OMNI chat stays paused for owner review.",
     );
+  if (status === "completed" && finish["final_status"] !== "completed") {
+    const deniedReason =
+      typeof finish["authorization_reason"] === "string"
+        ? finish["authorization_reason"]
+        : "outcome_not_recorded";
+    return failure(
+      deniedReason,
+      deniedReason === "emergency_stop_engaged"
+        ? 423
+        : deniedReason === "settlement_unresolved" || deniedReason === "outcome_not_recorded"
+          ? 503
+          : 409,
+      "The turn was not authorized at completion. No reply was returned.",
+    );
+  }
   if (status !== "completed" || finish["guard_released"] !== true)
     return failure(
       status === "completed" ? "outcome_not_recorded" : (reason ?? "provider_error"),
@@ -475,7 +490,7 @@ async function finishRun(
     outputTokens?: number | null;
   },
 ) {
-  return rpcReply(rpc, "omni_native_chat_finish", {
+  return rpcReply(rpc, "omni_native_chat_finish_authorized", {
     _run_id: args.runId,
     _status: args.status,
     _reply_chars: args.replyChars,
