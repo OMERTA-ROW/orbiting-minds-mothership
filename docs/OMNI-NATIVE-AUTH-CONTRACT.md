@@ -117,9 +117,18 @@ nonce, ±60-second timestamp, exact-body SHA-256, 8 KiB request-body limit, pair
 and replay rejection as all other Dock requests. It additionally requires `cloud.read` and a
 readable, released Emergency Stop. The request body is `{}`.
 
-The response contains a `catalog` with `protocol: "omni.native-catalog/v1"` and a server
+The response contains a `catalog` with `protocol: "omni.native-catalog/v2"` and a server
 `checkedAt` timestamp:
 
+- Catalog v2 versions the native-chat capability change. Catalog v1 always reported
+  `chat.available: false`, `chat.streamingAvailable: false`, and `nativeChatAvailable: false`;
+  clients must treat that version as no native-chat capability. V2 may report the chat endpoint as
+  available when `chat.send`, migration 0077, and Anthropic configuration are present.
+- `chat.streamingAvailable` remains `false`: the endpoint streams only already-settled NDJSON
+  frames, not live model tokens. `chat.responseDelivery` is `settlement-gated-ndjson`.
+- Catalog availability is capability discovery, not per-turn authorization or readiness. Every
+  chat request still rechecks owner approval, Stop, project/session ownership, engine switch,
+  current price confirmation, and spend limits.
 - `providers` reports providers actually configured on the Mothership; configuration is not
   proof that inference succeeded.
 - `models` identifies models and provider configuration. The OpenAI/Lovable web model is not

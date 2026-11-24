@@ -33,7 +33,7 @@ export function buildNativeCatalog(
         ? "anthropic_not_configured"
         : null;
   return {
-    protocol: "omni.native-catalog/v1",
+    protocol: "omni.native-catalog/v2",
     checkedAt: manifest.checkedAt,
     providers: [
       ...manifest.providers.map(({ id, label }) => ({ id, label, configured: true })),
@@ -73,6 +73,7 @@ export function buildNativeCatalog(
       agentIds: [...CHAT_AGENT_IDS],
       models: [...CLAUDE_ENGINE_IDS],
       protocol: NATIVE_CHAT_PROTOCOL,
+      streamingAvailable: false,
       responseDelivery: "settlement-gated-ndjson",
       maxOutputTokens: NATIVE_CHAT_MAX_OUTPUT_TOKENS,
       dailyCallLimit: NATIVE_CHAT_DAILY_LIMIT,

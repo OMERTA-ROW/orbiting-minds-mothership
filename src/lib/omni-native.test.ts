@@ -160,11 +160,13 @@ describe("native catalog", () => {
     expect(available.chat).toMatchObject({
       available: true,
       protocol: "omni.native-chat/v1",
+      streamingAvailable: false,
       responseDelivery: "settlement-gated-ndjson",
       models: ["claude-sonnet-5-5", "claude-opus-5-5"],
       ownerAiApprovalRequired: true,
       ownerEngineSwitchRequired: true,
     });
+    expect(available.protocol).toBe("omni.native-catalog/v2");
     expect(available.models.filter((model) => model.provider === "anthropic")).toHaveLength(2);
     expect(available.agents.some((agent) => agent.nativeChatAvailable)).toBe(true);
     expect(
