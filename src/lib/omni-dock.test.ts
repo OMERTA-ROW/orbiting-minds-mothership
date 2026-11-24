@@ -41,6 +41,10 @@ function fakeStore(
     handoffStatus: async () => [],
     cloudSnapshot: async () => (calls.push("cloud"), { agents: [], cloudJobs: [], alerts: [] }),
     auditTail: async () => (calls.push("audit"), []),
+    nativeCatalog: async (permissions) => (
+      calls.push("catalog"),
+      { permissions: [...permissions], chatAvailable: false }
+    ),
     control: async (_d, c) => (calls.push(`control:${c.action}`), { ok: true }),
     engageStop: async () => (calls.push("engage"), true),
     holdTask: async (_d, j) => (
@@ -401,6 +405,35 @@ describe("signed device requests", () => {
     const stopped = await run("cloud", ["cloud.read"], true);
     expect(stopped.status).toBe(423);
     expect(stopped.calls).not.toContain("cloud");
+  });
+
+  it("native catalog is signed, permission-scoped, and unavailable under Emergency Stop", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const request = () => signed(DOCK_PATHS.catalog, DEVICE, "{}", privateKey);
+    const denied = fakeStore({ jwk: publicJwk, permissions: ["status.read"] });
+    expect((await handleSigned(await request(), "catalog", denied.store, NOW)).status).toBe(403);
+    expect(denied.calls).not.toContain("catalog");
+
+    const stopped = fakeStore({
+      jwk: publicJwk,
+      permissions: ["cloud.read"],
+      stopEngaged: async () => true,
+    });
+    expect((await handleSigned(await request(), "catalog", stopped.store, NOW)).status).toBe(423);
+    expect(stopped.calls).not.toContain("catalog");
+
+    const allowed = fakeStore({
+      jwk: publicJwk,
+      permissions: ["cloud.read", "jobs.propose"],
+      stopEngaged: async () => false,
+    });
+    const result = await handleSigned(await request(), "catalog", allowed.store, NOW);
+    expect(result.status).toBe(200);
+    expect(result.body["catalog"]).toEqual({
+      permissions: ["cloud.read", "jobs.propose"],
+      chatAvailable: false,
+    });
+    expect(allowed.calls).toContain("catalog");
   });
 
   it("control only pauses or stops, needs jobs.pause, and still works under Emergency Stop", async () => {

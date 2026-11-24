@@ -167,6 +167,30 @@ export async function adminDockStore(): Promise<DockStore> {
         .limit(50);
       return error ? null : (data ?? []);
     },
+    async nativeCatalog(permissions) {
+      try {
+        const [{ buildManifest }, chat, fusion] = await Promise.all([
+          import("./omni-contract"),
+          import("./omni-delegated-chat.server"),
+          import("./omni-fusion.server"),
+        ]);
+        const [chatInstalled, fusionPlanInstalled, fusionPlannerInstalled] = await Promise.all([
+          chat.delegatedChatInstalled(),
+          fusion.fusionPlanInstalled(),
+          fusion.fusionPlannerInstalled(),
+        ]);
+        const manifest = buildManifest(null, {
+          aiConfigured: Boolean(process.env["LOVABLE_API_KEY"]),
+          chatInstalled,
+          fusionPlanInstalled,
+          fusionPlannerInstalled,
+        });
+        const { buildNativeCatalog } = await import("./omni-native-catalog");
+        return buildNativeCatalog(manifest, permissions);
+      } catch {
+        return null;
+      }
+    },
     async control(device, c) {
       const now = new Date().toISOString();
       const actor = `device:${device.slice(0, 8)}`;

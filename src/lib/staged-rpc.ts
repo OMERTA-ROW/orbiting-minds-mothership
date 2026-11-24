@@ -71,6 +71,35 @@ type StagedFunctions = {
     Returns: Json;
   };
   omni_noop_enqueue: { Args: { _duration_ms: number }; Returns: string };
+  omni_native_authorization_ready: { Args: never; Returns: boolean };
+  omni_native_authorize: {
+    Args: {
+      _client_id: string;
+      _audience: string;
+      _port: number;
+      _code_hash: string;
+      _code_challenge: string;
+      _proof_nonce_hash: string;
+      _proof_timestamp_ms: number;
+      _public_key: Json;
+      _fingerprint: string;
+      _label: string;
+      _platform: string;
+      _permissions: string[];
+      _rotation_device: string | null;
+    };
+    Returns: Json;
+  };
+  omni_native_exchange: {
+    Args: {
+      _code_hash: string;
+      _code_challenge: string;
+      _client_id: string;
+      _audience: string;
+      _port: number;
+    };
+    Returns: Json;
+  };
 };
 
 type Pub = Database["public"];

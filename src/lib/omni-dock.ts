@@ -25,6 +25,7 @@ export const DOCK_PATHS = {
   cloud: "/api/public/omni/dock/cloud",
   audit: "/api/public/omni/dock/audit",
   control: "/api/public/omni/dock/control",
+  catalog: "/api/public/omni/dock/catalog",
 } as const;
 
 /** Honeycomb Terminal origins allowed to call the dock from a browser. Native apps send no Origin. */
@@ -85,7 +86,7 @@ export const PERMISSION_INFO: Record<DockPermission, { label: string; detail: st
   "cloud.read": {
     label: "See cloud tasks",
     detail:
-      "Running OMNI cloud and CODE jobs, agents, spend, approvals waiting and alerts. No commands, output or secrets.",
+      "Metadata-only cloud/CODE jobs, agent status, spend, pending approvals and alerts, plus server-read provider/model/agent configuration. No commands, outputs or secrets; configuration does not enable native chat.",
   },
   "audit.read": {
     label: "See the audit log",

@@ -55,6 +55,7 @@ import { Route as OmniGatewayRouteImport } from './routes/omni-gateway'
 import { Route as OmniLegalRouteImport } from './routes/omni-legal'
 import { Route as OmniMarketingRouteImport } from './routes/omni-marketing'
 import { Route as OmniModelsRouteImport } from './routes/omni-models'
+import { Route as OmniNativeAuthorizeRouteImport } from './routes/omni-native-authorize'
 import { Route as OmniRazulRouteImport } from './routes/omni-razul'
 import { Route as OmniRightsRouteImport } from './routes/omni-rights'
 import { Route as OmniTerminalRouteImport } from './routes/omni-terminal'
@@ -117,6 +118,7 @@ import { Route as ApiPublicOmniDelegationRevokeRouteImport } from './routes/api/
 import { Route as ApiPublicOmniDelegationStatusRouteImport } from './routes/api/public/omni/delegation/status'
 import { Route as ApiPublicOmniDelegationTokenRouteImport } from './routes/api/public/omni/delegation/token'
 import { Route as ApiPublicOmniDockAuditRouteImport } from './routes/api/public/omni/dock/audit'
+import { Route as ApiPublicOmniDockCatalogRouteImport } from './routes/api/public/omni/dock/catalog'
 import { Route as ApiPublicOmniDockCloudRouteImport } from './routes/api/public/omni/dock/cloud'
 import { Route as ApiPublicOmniDockControlRouteImport } from './routes/api/public/omni/dock/control'
 import { Route as ApiPublicOmniDockHeartbeatRouteImport } from './routes/api/public/omni/dock/heartbeat'
@@ -124,6 +126,7 @@ import { Route as ApiPublicOmniDockJobsRouteImport } from './routes/api/public/o
 import { Route as ApiPublicOmniDockJobsStatusRouteImport } from './routes/api/public/omni/dock/jobs-status'
 import { Route as ApiPublicOmniDockPairRouteImport } from './routes/api/public/omni/dock/pair'
 import { Route as ApiPublicOmniDockStopRouteImport } from './routes/api/public/omni/dock/stop'
+import { Route as ApiPublicOmniNativeTokenRouteImport } from './routes/api/public/omni/native/token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -352,6 +355,11 @@ const OmniMarketingRoute = OmniMarketingRouteImport.update({
 const OmniModelsRoute = OmniModelsRouteImport.update({
   id: '/omni-models',
   path: '/omni-models',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OmniNativeAuthorizeRoute = OmniNativeAuthorizeRouteImport.update({
+  id: '/omni-native-authorize',
+  path: '/omni-native-authorize',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OmniRazulRoute = OmniRazulRouteImport.update({
@@ -676,6 +684,12 @@ const ApiPublicOmniDockAuditRoute = ApiPublicOmniDockAuditRouteImport.update({
   path: '/api/public/omni/dock/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOmniDockCatalogRoute =
+  ApiPublicOmniDockCatalogRouteImport.update({
+    id: '/api/public/omni/dock/catalog',
+    path: '/api/public/omni/dock/catalog',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicOmniDockCloudRoute = ApiPublicOmniDockCloudRouteImport.update({
   id: '/api/public/omni/dock/cloud',
   path: '/api/public/omni/dock/cloud',
@@ -714,6 +728,12 @@ const ApiPublicOmniDockStopRoute = ApiPublicOmniDockStopRouteImport.update({
   path: '/api/public/omni/dock/stop',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOmniNativeTokenRoute =
+  ApiPublicOmniNativeTokenRouteImport.update({
+    id: '/api/public/omni/native/token',
+    path: '/api/public/omni/native/token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -761,6 +781,7 @@ export interface FileRoutesByFullPath {
   '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
   '/omni-models': typeof OmniModelsRoute
+  '/omni-native-authorize': typeof OmniNativeAuthorizeRoute
   '/omni-razul': typeof OmniRazulRoute
   '/omni-rights': typeof OmniRightsRoute
   '/omni-terminal': typeof OmniTerminalRoute
@@ -823,6 +844,7 @@ export interface FileRoutesByFullPath {
   '/api/public/omni/delegation/status': typeof ApiPublicOmniDelegationStatusRoute
   '/api/public/omni/delegation/token': typeof ApiPublicOmniDelegationTokenRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
+  '/api/public/omni/dock/catalog': typeof ApiPublicOmniDockCatalogRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
@@ -830,6 +852,7 @@ export interface FileRoutesByFullPath {
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
   '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
   '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
+  '/api/public/omni/native/token': typeof ApiPublicOmniNativeTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -877,6 +900,7 @@ export interface FileRoutesByTo {
   '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
   '/omni-models': typeof OmniModelsRoute
+  '/omni-native-authorize': typeof OmniNativeAuthorizeRoute
   '/omni-razul': typeof OmniRazulRoute
   '/omni-rights': typeof OmniRightsRoute
   '/omni-terminal': typeof OmniTerminalRoute
@@ -939,6 +963,7 @@ export interface FileRoutesByTo {
   '/api/public/omni/delegation/status': typeof ApiPublicOmniDelegationStatusRoute
   '/api/public/omni/delegation/token': typeof ApiPublicOmniDelegationTokenRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
+  '/api/public/omni/dock/catalog': typeof ApiPublicOmniDockCatalogRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
@@ -946,6 +971,7 @@ export interface FileRoutesByTo {
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
   '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
   '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
+  '/api/public/omni/native/token': typeof ApiPublicOmniNativeTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -995,6 +1021,7 @@ export interface FileRoutesById {
   '/omni-legal': typeof OmniLegalRoute
   '/omni-marketing': typeof OmniMarketingRoute
   '/omni-models': typeof OmniModelsRoute
+  '/omni-native-authorize': typeof OmniNativeAuthorizeRoute
   '/omni-razul': typeof OmniRazulRoute
   '/omni-rights': typeof OmniRightsRoute
   '/omni-terminal': typeof OmniTerminalRoute
@@ -1057,6 +1084,7 @@ export interface FileRoutesById {
   '/api/public/omni/delegation/status': typeof ApiPublicOmniDelegationStatusRoute
   '/api/public/omni/delegation/token': typeof ApiPublicOmniDelegationTokenRoute
   '/api/public/omni/dock/audit': typeof ApiPublicOmniDockAuditRoute
+  '/api/public/omni/dock/catalog': typeof ApiPublicOmniDockCatalogRoute
   '/api/public/omni/dock/cloud': typeof ApiPublicOmniDockCloudRoute
   '/api/public/omni/dock/control': typeof ApiPublicOmniDockControlRoute
   '/api/public/omni/dock/heartbeat': typeof ApiPublicOmniDockHeartbeatRoute
@@ -1064,6 +1092,7 @@ export interface FileRoutesById {
   '/api/public/omni/dock/jobs-status': typeof ApiPublicOmniDockJobsStatusRoute
   '/api/public/omni/dock/pair': typeof ApiPublicOmniDockPairRoute
   '/api/public/omni/dock/stop': typeof ApiPublicOmniDockStopRoute
+  '/api/public/omni/native/token': typeof ApiPublicOmniNativeTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1113,6 +1142,7 @@ export interface FileRouteTypes {
     | '/omni-legal'
     | '/omni-marketing'
     | '/omni-models'
+    | '/omni-native-authorize'
     | '/omni-razul'
     | '/omni-rights'
     | '/omni-terminal'
@@ -1175,6 +1205,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/delegation/status'
     | '/api/public/omni/delegation/token'
     | '/api/public/omni/dock/audit'
+    | '/api/public/omni/dock/catalog'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
     | '/api/public/omni/dock/heartbeat'
@@ -1182,6 +1213,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/dock/jobs-status'
     | '/api/public/omni/dock/pair'
     | '/api/public/omni/dock/stop'
+    | '/api/public/omni/native/token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1229,6 +1261,7 @@ export interface FileRouteTypes {
     | '/omni-legal'
     | '/omni-marketing'
     | '/omni-models'
+    | '/omni-native-authorize'
     | '/omni-razul'
     | '/omni-rights'
     | '/omni-terminal'
@@ -1291,6 +1324,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/delegation/status'
     | '/api/public/omni/delegation/token'
     | '/api/public/omni/dock/audit'
+    | '/api/public/omni/dock/catalog'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
     | '/api/public/omni/dock/heartbeat'
@@ -1298,6 +1332,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/dock/jobs-status'
     | '/api/public/omni/dock/pair'
     | '/api/public/omni/dock/stop'
+    | '/api/public/omni/native/token'
   id:
     | '__root__'
     | '/'
@@ -1346,6 +1381,7 @@ export interface FileRouteTypes {
     | '/omni-legal'
     | '/omni-marketing'
     | '/omni-models'
+    | '/omni-native-authorize'
     | '/omni-razul'
     | '/omni-rights'
     | '/omni-terminal'
@@ -1408,6 +1444,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/delegation/status'
     | '/api/public/omni/delegation/token'
     | '/api/public/omni/dock/audit'
+    | '/api/public/omni/dock/catalog'
     | '/api/public/omni/dock/cloud'
     | '/api/public/omni/dock/control'
     | '/api/public/omni/dock/heartbeat'
@@ -1415,6 +1452,7 @@ export interface FileRouteTypes {
     | '/api/public/omni/dock/jobs-status'
     | '/api/public/omni/dock/pair'
     | '/api/public/omni/dock/stop'
+    | '/api/public/omni/native/token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1464,6 +1502,7 @@ export interface RootRouteChildren {
   OmniLegalRoute: typeof OmniLegalRoute
   OmniMarketingRoute: typeof OmniMarketingRoute
   OmniModelsRoute: typeof OmniModelsRoute
+  OmniNativeAuthorizeRoute: typeof OmniNativeAuthorizeRoute
   OmniRazulRoute: typeof OmniRazulRoute
   OmniRightsRoute: typeof OmniRightsRoute
   OmniTerminalRoute: typeof OmniTerminalRoute
@@ -1512,6 +1551,7 @@ export interface RootRouteChildren {
   ApiPublicOmniDelegationStatusRoute: typeof ApiPublicOmniDelegationStatusRoute
   ApiPublicOmniDelegationTokenRoute: typeof ApiPublicOmniDelegationTokenRoute
   ApiPublicOmniDockAuditRoute: typeof ApiPublicOmniDockAuditRoute
+  ApiPublicOmniDockCatalogRoute: typeof ApiPublicOmniDockCatalogRoute
   ApiPublicOmniDockCloudRoute: typeof ApiPublicOmniDockCloudRoute
   ApiPublicOmniDockControlRoute: typeof ApiPublicOmniDockControlRoute
   ApiPublicOmniDockHeartbeatRoute: typeof ApiPublicOmniDockHeartbeatRoute
@@ -1519,6 +1559,7 @@ export interface RootRouteChildren {
   ApiPublicOmniDockJobsStatusRoute: typeof ApiPublicOmniDockJobsStatusRoute
   ApiPublicOmniDockPairRoute: typeof ApiPublicOmniDockPairRoute
   ApiPublicOmniDockStopRoute: typeof ApiPublicOmniDockStopRoute
+  ApiPublicOmniNativeTokenRoute: typeof ApiPublicOmniNativeTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1843,6 +1884,13 @@ declare module '@tanstack/react-router' {
       path: '/omni-models'
       fullPath: '/omni-models'
       preLoaderRoute: typeof OmniModelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/omni-native-authorize': {
+      id: '/omni-native-authorize'
+      path: '/omni-native-authorize'
+      fullPath: '/omni-native-authorize'
+      preLoaderRoute: typeof OmniNativeAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/omni-razul': {
@@ -2279,6 +2327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOmniDockAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/omni/dock/catalog': {
+      id: '/api/public/omni/dock/catalog'
+      path: '/api/public/omni/dock/catalog'
+      fullPath: '/api/public/omni/dock/catalog'
+      preLoaderRoute: typeof ApiPublicOmniDockCatalogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/omni/dock/cloud': {
       id: '/api/public/omni/dock/cloud'
       path: '/api/public/omni/dock/cloud'
@@ -2326,6 +2381,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/omni/dock/stop'
       fullPath: '/api/public/omni/dock/stop'
       preLoaderRoute: typeof ApiPublicOmniDockStopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/omni/native/token': {
+      id: '/api/public/omni/native/token'
+      path: '/api/public/omni/native/token'
+      fullPath: '/api/public/omni/native/token'
+      preLoaderRoute: typeof ApiPublicOmniNativeTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -2434,6 +2496,7 @@ const rootRouteChildren: RootRouteChildren = {
   OmniLegalRoute: OmniLegalRoute,
   OmniMarketingRoute: OmniMarketingRoute,
   OmniModelsRoute: OmniModelsRoute,
+  OmniNativeAuthorizeRoute: OmniNativeAuthorizeRoute,
   OmniRazulRoute: OmniRazulRoute,
   OmniRightsRoute: OmniRightsRoute,
   OmniTerminalRoute: OmniTerminalRoute,
@@ -2482,6 +2545,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOmniDelegationStatusRoute: ApiPublicOmniDelegationStatusRoute,
   ApiPublicOmniDelegationTokenRoute: ApiPublicOmniDelegationTokenRoute,
   ApiPublicOmniDockAuditRoute: ApiPublicOmniDockAuditRoute,
+  ApiPublicOmniDockCatalogRoute: ApiPublicOmniDockCatalogRoute,
   ApiPublicOmniDockCloudRoute: ApiPublicOmniDockCloudRoute,
   ApiPublicOmniDockControlRoute: ApiPublicOmniDockControlRoute,
   ApiPublicOmniDockHeartbeatRoute: ApiPublicOmniDockHeartbeatRoute,
@@ -2489,6 +2553,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOmniDockJobsStatusRoute: ApiPublicOmniDockJobsStatusRoute,
   ApiPublicOmniDockPairRoute: ApiPublicOmniDockPairRoute,
   ApiPublicOmniDockStopRoute: ApiPublicOmniDockStopRoute,
+  ApiPublicOmniNativeTokenRoute: ApiPublicOmniNativeTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

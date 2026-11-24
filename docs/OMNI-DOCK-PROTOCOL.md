@@ -1,7 +1,9 @@
 # OMNI Docking Bay — protocol `omni.dock/v1`
 
-Status (2026-11-07): Mothership side implemented and tested; **no branch has docked**. Honeycomb Terminal's dock
-screen is not built yet. Nothing in this protocol executes commands, dispatches jobs or enables autonomy.
+Status (2026-11-24): Mothership Dock endpoints are implemented; **no branch has docked**. Honeycomb Terminal's dock
+screen is not built yet. Native CLI browser authorization is pending owner approval as migration 0076 and is not deployed;
+see [OMNI-NATIVE-AUTH-CONTRACT.md](./OMNI-NATIVE-AUTH-CONTRACT.md) for its separate, no-pairing-code flow.
+Nothing in this protocol executes commands, dispatches jobs or enables autonomy.
 
 ## Roles
 
@@ -47,6 +49,11 @@ executor, dispatcher, per-job scope, cost cap, Guardian approval and a fresh own
    code requested. Unapproved devices expire after 30 minutes. Fifty failed pair attempts in ten minutes pause
    pairing for everyone (a deliberate trade-off: an attacker can delay pairing but cannot guess codes).
 
+**Native OMNI CLI exception:** a normal CLI installation uses browser owner sign-in, PKCE, a signed device-key proof,
+and explicit owner/MFA consent instead of this manual pairing code. Its protocol, callback, permissions, and current
+unavailable features are specified in [OMNI-NATIVE-AUTH-CONTRACT.md](./OMNI-NATIVE-AUTH-CONTRACT.md). That backend
+flow is not usable until migration 0076 is owner-approved/applied and the native client implements the contract.
+
 ## Signed requests
 
 Headers on every request (including pair):
@@ -76,6 +83,7 @@ Reference client: `src/lib/omni-dock-client.ts` (copy it; it only signs).
 | `/heartbeat` | `{ appVersion?, capabilities? }` | any non-revoked device | status, permissions; with `status.read`: Emergency Stop, all autonomy `off`, `executor: "none"` |
 | `/jobs` | `{ id (uuid), kind, agent, project, repository?, instructions, autonomous? }` | paired + `jobs.propose` | `202` held in OMNI Terminal (never dispatched); `autonomous: true` → `409 autonomy_off` with blockers, nothing stored |
 | `/stop` | `{}` | paired + `stop.engage` | engages the Emergency Stop (cannot release) |
+| `/catalog` | `{}` | paired + `cloud.read` | server-read provider/model/agent configuration and honest native capability limits; refused under Emergency Stop |
 
 `kind`: code.generate, code.edit, code.test, code.debug (agent must be `jackboy`), agent.handoff (jackboy, jax,
 razul, sabrina, guardian, hercules). 20 proposals per device per 24 h. Text that looks like a key is refused.

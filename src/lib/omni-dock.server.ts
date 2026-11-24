@@ -71,6 +71,8 @@ export interface DockStore {
   cloudSnapshot(device: string, now: number): Promise<Record<string, unknown> | null>;
   /** Metadata-only recent audit entries; null when unreadable. */
   auditTail(device: string): Promise<unknown[] | null>;
+  /** Current, server-read native capability catalog; null when a dependency is unreadable. */
+  nativeCatalog(permissions: readonly string[]): Promise<Record<string, unknown> | null>;
   /** Reductions only (pause/stop). Returns what changed, or a refusal reason. */
   control(device: string, c: DockControl): Promise<Reply>;
 }
@@ -206,7 +208,8 @@ export async function handlePair(
   };
 }
 
-type SignedKind = "heartbeat" | "jobs" | "stop" | "jobsStatus" | "cloud" | "audit" | "control";
+type SignedKind =
+  "heartbeat" | "jobs" | "stop" | "jobsStatus" | "cloud" | "audit" | "control" | "catalog";
 const EVENT: Record<SignedKind, string> = {
   heartbeat: "heartbeat",
   jobs: "job_request",
@@ -215,6 +218,7 @@ const EVENT: Record<SignedKind, string> = {
   cloud: "cloud_read",
   audit: "audit_read",
   control: "control_request",
+  catalog: "catalog_read",
 };
 const SCHEMA = {
   heartbeat: heartbeatBodySchema,
@@ -224,6 +228,7 @@ const SCHEMA = {
   cloud: cloudBodySchema,
   audit: auditBodySchema,
   control: controlBodySchema,
+  catalog: cloudBodySchema,
 };
 
 export async function handleSigned(
@@ -334,6 +339,14 @@ export async function handleSigned(
     const entries = await store.auditTail(headers.device);
     if (!entries) return fail(503, "unavailable");
     return { status: 200, body: { ...state, entries } };
+  }
+
+  if (kind === "catalog") {
+    if (!paired || !permissions.includes("cloud.read")) return fail(403, "not_permitted");
+    if (engaged) return fail(423, "stop_engaged");
+    const catalog = await store.nativeCatalog(permissions);
+    if (!catalog) return fail(503, "unavailable");
+    return { status: 200, body: { ...state, catalog } };
   }
 
   const job = body.data as import("zod").infer<typeof jobBodySchema>;
