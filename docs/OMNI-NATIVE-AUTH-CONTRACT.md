@@ -10,6 +10,12 @@ native text chat is added in `.lovable/pending/0077_omni_native_cli_chat.sql`. B
 readiness marker is available. The native CLI must implement the client side before these flows
 can be used end to end.
 
+Pending migration 0079 and its matching server check the verified native key and device revision
+at nonce admission and again at operation admission or snapshot release. Requests admitted before a
+rotation may complete; a later request cannot use an old key. A remote stop reduction admitted
+before rotation can be sent after rotation and is not a remotely fenced revocation guarantee.
+Chat completion has a separate, unresolved revocation race and must not be considered release-ready.
+
 See [OMNI-NATIVE-MIGRATION-RECOVERY.md](./OMNI-NATIVE-MIGRATION-RECOVERY.md) for migration
 dependencies, containment and recovery; it does not authorize applying or deploying them.
 

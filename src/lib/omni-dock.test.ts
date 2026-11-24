@@ -28,7 +28,8 @@ function fakeStore(
       calls.push(`claim:${a.codeHash.slice(0, 6)}`);
       return { ok: true, device_id: DEVICE, branch_kind: "honeycomb_mobile" };
     },
-    loadDevice: async () => (over.jwk ? { public_key: over.jwk } : null),
+    loadDevice: async () =>
+      over.jwk ? { public_key: over.jwk, revision: 0, native_client_id: "omni-native-cli" } : null,
     touch: async (a) => {
       if (nonces.has(a.nonce)) return { ok: false, reason: "replay" };
       nonces.add(a.nonce);
@@ -53,6 +54,7 @@ function fakeStore(
     handoffStatus: async () => [],
     cloudSnapshot: async () => (calls.push("cloud"), { agents: [], cloudJobs: [], alerts: [] }),
     auditTail: async () => (calls.push("audit"), []),
+    authorizeNativeRead: async () => true,
     nativeCatalog: async (permissions) => (
       calls.push("catalog"),
       { permissions: [...permissions], chatAvailable: false }
@@ -61,7 +63,7 @@ function fakeStore(
       calls.push(`projects:${device}`),
       [{ id: "project-1", name: "Owner project" }]
     ),
-    nativeChat: async (device, input) => (
+    nativeChat: async (device, _identity, input) => (
       calls.push(`chat:${device}:${input.requestId}`),
       {
         ok: true,
@@ -179,6 +181,91 @@ describe("signed pairing", () => {
 });
 
 describe("signed device requests", () => {
+  it("binds native admission to the verified key and loaded revision and stops on a rotation refusal", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const { store, calls } = fakeStore({
+      jwk: publicJwk,
+      permissions: ["stop.engage"],
+      loadDevice: async () => ({
+        public_key: publicJwk,
+        revision: 7,
+        native_client_id: "omni-native-cli",
+      }),
+      touch: async (args) => {
+        expect(args.nativeIdentity).toEqual({
+          fingerprint: await keyFingerprint(publicJwk),
+          revision: 7,
+          timestamp: NOW,
+        });
+        return { ok: false, reason: "device_changed" };
+      },
+    });
+    const result = await handleSigned(
+      await signed(DOCK_PATHS.stop, DEVICE, "{}", privateKey),
+      "stop",
+      store,
+      NOW,
+    );
+    expect(result.status).toBe(409);
+    expect(result.body["reason"]).toBe("device_changed");
+    expect(calls).not.toContain("engage");
+  });
+
+  it("keeps legacy pending-device heartbeat on the legacy admission path", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const { store } = fakeStore({
+      jwk: publicJwk,
+      loadDevice: async () => ({ public_key: publicJwk, revision: 0, native_client_id: null }),
+      touch: async (args) => {
+        expect(args.nativeIdentity).toBeUndefined();
+        return { ok: true, status: "pending", permissions: [] };
+      },
+    });
+    const result = await handleSigned(
+      await signed(DOCK_PATHS.heartbeat, DEVICE, "{}", privateKey),
+      "heartbeat",
+      store,
+      NOW,
+    );
+    expect(result.body["status"]).toBe("awaiting_approval");
+  });
+
+  it("withholds a native cloud snapshot if authorization changes after its reads", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const { store, calls } = fakeStore({
+      jwk: publicJwk,
+      permissions: ["cloud.read"],
+      stopEngaged: async () => false,
+      authorizeNativeRead: async () => false,
+    });
+    const result = await handleSigned(
+      await signed(DOCK_PATHS.cloud, DEVICE, "{}", privateKey),
+      "cloud",
+      store,
+      NOW,
+    );
+    expect(calls).toContain("cloud");
+    expect(result.status).toBe(403);
+    expect(result.body).not.toHaveProperty("agents");
+  });
+
+  it("fails closed when the native admission migration is unavailable", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const { store, calls } = fakeStore({
+      jwk: publicJwk,
+      touch: async () => ({ ok: false, reason: "unavailable" }),
+    });
+    const result = await handleSigned(
+      await signed(DOCK_PATHS.heartbeat, DEVICE, "{}", privateKey),
+      "heartbeat",
+      store,
+      NOW,
+    );
+    expect(result.status).toBe(503);
+    expect(result.body["reason"]).toBe("unavailable");
+    expect(calls).toEqual([]);
+  });
+
   it("reconciles the signed key and rejects replay and changed keys without consulting Stop", async () => {
     const { privateKey, publicJwk } = await generateDockKey();
     const nonce = "nonce-aaaaaaaaaaaaaaaa";

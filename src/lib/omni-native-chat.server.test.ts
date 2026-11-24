@@ -3,6 +3,7 @@ import { nativeChatBodySchema } from "./omni-native-chat";
 import { runNativeChat, type NativeChatDeps } from "./omni-native-chat.server";
 
 const DEVICE = "0f0e0d0c-0b0a-4908-8706-050403020100";
+const IDENTITY = { fingerprint: "a".repeat(64), revision: 3 };
 const INPUT = nativeChatBodySchema.parse({
   protocol: "omni.native-chat/v1",
   requestId: "a1b2c3d4-e5f6-4789-8abc-123456789012",
@@ -28,7 +29,7 @@ function harness(
   const rpc: NonNullable<NativeChatDeps["rpc"]> = async (fn, args) => {
     calls.push({ fn, args });
     const data =
-      fn === "omni_native_chat_begin"
+      fn === "omni_native_bound_chat_begin"
         ? (over.begin ?? {
             ok: true,
             run_id: "d1b2c3d4-e5f6-4789-8abc-123456789012",
@@ -65,7 +66,7 @@ function harness(
 describe("native OMNI chat", () => {
   it("uses the owner project and Claude ledger, then returns only after settlement", async () => {
     const h = harness();
-    const result = await runNativeChat(DEVICE, INPUT, new AbortController().signal, {
+    const result = await runNativeChat(DEVICE, IDENTITY, INPUT, new AbortController().signal, {
       ...h.deps,
       anthropicKey: () => "test-key",
     });
@@ -79,9 +80,11 @@ describe("native OMNI chat", () => {
       streaming: "settlement-gated",
     });
     expect(h.fetchCalls()).toBe(1);
-    const begin = h.calls.find((call) => call.fn === "omni_native_chat_begin");
+    const begin = h.calls.find((call) => call.fn === "omni_native_bound_chat_begin");
     expect(begin?.args).toMatchObject({
       _device: DEVICE,
+      _fingerprint: IDENTITY.fingerprint,
+      _revision: IDENTITY.revision,
       _request_id: INPUT.requestId,
       _session_id: INPUT.sessionId,
       _project_id: INPUT.projectId,
@@ -95,7 +98,7 @@ describe("native OMNI chat", () => {
       new TextEncoder().encode(INPUT.messages[0]!.content).byteLength,
     );
     expect(h.calls.map((call) => call.fn)).toEqual([
-      "omni_native_chat_begin",
+      "omni_native_bound_chat_begin",
       "claude_reserve_native_chat",
       "omni_native_chat_check",
       "omni_native_chat_check",
@@ -112,18 +115,30 @@ describe("native OMNI chat", () => {
 
   it("does not call Anthropic when owner permission or Emergency Stop checks fail", async () => {
     const denied = harness({ begin: { ok: false, reason: "not_permitted" } });
-    const deniedResult = await runNativeChat(DEVICE, INPUT, new AbortController().signal, {
-      ...denied.deps,
-      anthropicKey: () => "test-key",
-    });
+    const deniedResult = await runNativeChat(
+      DEVICE,
+      IDENTITY,
+      INPUT,
+      new AbortController().signal,
+      {
+        ...denied.deps,
+        anthropicKey: () => "test-key",
+      },
+    );
     expect(deniedResult).toMatchObject({ ok: false, reason: "not_permitted" });
     expect(denied.fetchCalls()).toBe(0);
 
     const stopped = harness({ check: { ok: false, reason: "emergency_stop_engaged" } });
-    const stoppedResult = await runNativeChat(DEVICE, INPUT, new AbortController().signal, {
-      ...stopped.deps,
-      anthropicKey: () => "test-key",
-    });
+    const stoppedResult = await runNativeChat(
+      DEVICE,
+      IDENTITY,
+      INPUT,
+      new AbortController().signal,
+      {
+        ...stopped.deps,
+        anthropicKey: () => "test-key",
+      },
+    );
     expect(stoppedResult).toMatchObject({ ok: false, reason: "emergency_stop_engaged" });
     expect(stopped.fetchCalls()).toBe(0);
     expect(stopped.calls.find((call) => call.fn === "claude_settle_source")?.args).toMatchObject({
@@ -136,7 +151,7 @@ describe("native OMNI chat", () => {
       settlement: { ok: false, reason: "not_reserved" },
       finish: { ok: true, guard_released: false },
     });
-    const result = await runNativeChat(DEVICE, INPUT, new AbortController().signal, {
+    const result = await runNativeChat(DEVICE, IDENTITY, INPUT, new AbortController().signal, {
       ...h.deps,
       anthropicKey: () => "test-key",
     });
@@ -154,7 +169,7 @@ describe("native OMNI chat", () => {
   it("does not retry a duplicate request or exceed the per-call cap", async () => {
     const duplicate = harness({ begin: { ok: false, reason: "duplicate_request" } });
     expect(
-      await runNativeChat(DEVICE, INPUT, new AbortController().signal, {
+      await runNativeChat(DEVICE, IDENTITY, INPUT, new AbortController().signal, {
         ...duplicate.deps,
         anthropicKey: () => "test-key",
       }),
@@ -162,7 +177,7 @@ describe("native OMNI chat", () => {
     expect(duplicate.fetchCalls()).toBe(0);
 
     const overCap = harness({ reserve: { ok: true, estimate_cents: 51 } });
-    const result = await runNativeChat(DEVICE, INPUT, new AbortController().signal, {
+    const result = await runNativeChat(DEVICE, IDENTITY, INPUT, new AbortController().signal, {
       ...overCap.deps,
       anthropicKey: () => "test-key",
     });

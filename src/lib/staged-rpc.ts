@@ -77,6 +77,56 @@ type StagedFunctions = {
     Args: { _device: string; _fingerprint: string; _nonce: string; _timestamp_ms: number };
     Returns: Json;
   };
+  omni_native_bound_touch: {
+    Args: {
+      _device: string;
+      _fingerprint: string;
+      _revision: number;
+      _nonce: string;
+      _timestamp_ms: number;
+      _event: string;
+      _capabilities: string[] | null;
+      _app_version: string | null;
+    };
+    Returns: Json;
+  };
+  omni_native_bound_hold_task: {
+    Args: {
+      _device: string;
+      _fingerprint: string;
+      _revision: number;
+      _id: string;
+      _kind: string;
+      _agent: string;
+      _project: string;
+      _repository: string | null;
+      _instructions: string;
+    };
+    Returns: Json;
+  };
+  omni_native_bound_handoff_status: {
+    Args: { _device: string; _fingerprint: string; _revision: number };
+    Returns: Json;
+  };
+  omni_native_bound_engage_stop: {
+    Args: { _device: string; _fingerprint: string; _revision: number };
+    Returns: boolean;
+  };
+  omni_native_bound_read_authorize: {
+    Args: { _device: string; _fingerprint: string; _revision: number; _permission: string };
+    Returns: boolean;
+  };
+  omni_native_bound_control: {
+    Args: {
+      _device: string;
+      _fingerprint: string;
+      _revision: number;
+      _action: string;
+      _agent: string | null;
+      _job: string | null;
+    };
+    Returns: Json;
+  };
   omni_native_authorize: {
     Args: {
       _client_id: string;

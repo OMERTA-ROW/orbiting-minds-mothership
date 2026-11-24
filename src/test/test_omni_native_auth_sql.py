@@ -42,6 +42,7 @@ def migrations():
     found.append(ROOT / ".lovable/pending/0076_omni_native_cli_authorization.sql")
     found.append(ROOT / ".lovable/pending/0077_omni_native_cli_chat.sql")
     found.append(ROOT / ".lovable/pending/0078_omni_native_device_status.sql")
+    found.append(ROOT / ".lovable/pending/0079_omni_native_bound_admission.sql")
     return found
 
 
@@ -237,6 +238,130 @@ def main():
         assert owner(
             f"SELECT key_fingerprint FROM public.omni_dock_devices WHERE id='{device}';"
         ).endswith(fingerprint(JWK2))
+        def bound_touch(key, key_revision, nonce, timestamp=None):
+            current_ms = int(time.time() * 1000) if timestamp is None else timestamp
+            return (
+                f"SELECT public.omni_native_bound_touch('{device}','{fingerprint(key)}',"
+                f"{key_revision},'{nonce}',{current_ms},'heartbeat',NULL,NULL);"
+            )
+        for role in ["anon", "authenticated"]:
+            assert sql(
+                f"SELECT has_function_privilege('{role}',"
+                "'public.omni_native_bound_touch(uuid,text,integer,text,bigint,text,text[],text)','execute');"
+            ) == "f"
+            checks += 1
+        assert '"device_changed"' in service(bound_touch(JWK1, revision, "bound-old-key-abcdefghijkl"))
+        assert '"device_changed"' in service(bound_touch(JWK2, revision, "bound-old-revision-abcdef"))
+        current_revision = int(revision) + 1
+        assert '"stale_request"' in service(
+            bound_touch(JWK2, current_revision, "bound-stale-time-abcdef", int(time.time() * 1000) - 61000)
+        )
+        assert '"ok": true' in service(bound_touch(JWK2, current_revision, "bound-current-key-abcdef"))
+        assert '"replay"' in service(bound_touch(JWK2, current_revision, "bound-current-key-abcdef"))
+        service(f"DELETE FROM public.omni_dock_nonces WHERE device_id='{device}';")
+        assert '"replay"' in service(bound_touch(JWK2, current_revision, "bound-current-key-abcdef"))
+        held_id = "88888888-8888-4888-8888-888888888888"
+        def held_query(key, key_revision):
+            return (
+                f"SELECT public.omni_native_bound_hold_task('{device}','{fingerprint(key)}',"
+                f"{key_revision},'{held_id}','agent.handoff','jax','Fixture project',NULL,'Review the project');"
+            )
+        assert '"device_changed"' in service(held_query(JWK1, revision))
+        assert service(f"SELECT count(*) FROM public.omni_terminal_tasks WHERE id='{held_id}';") == "0"
+        assert '"ok": true' in service(held_query(JWK2, current_revision))
+        assert '"device_changed"' in service(
+            f"SELECT public.omni_native_bound_handoff_status('{device}','{fingerprint(JWK1)}',{revision});"
+        )
+        assert held_id in service(
+            f"SELECT public.omni_native_bound_handoff_status('{device}','{fingerprint(JWK2)}',{current_revision});"
+        )
+        service(f"UPDATE public.omni_dock_devices SET permissions=permissions || ARRAY['cloud.read','jobs.pause','stop.engage'] WHERE id='{device}';")
+        code_job = "99999999-9999-4999-8999-999999999999"
+        service(
+            f"INSERT INTO public.omni_code_jobs(id,owner_id,agent_id,kind,title) "
+            f"VALUES('{code_job}','{OWNER}','omni','code_task','Fixture task');"
+        )
+        def control_query(key, key_revision, job):
+            return (
+                f"SELECT public.omni_native_bound_control('{device}','{fingerprint(key)}',"
+                f"{key_revision},'stop_job',NULL,'{job}');"
+            )
+        assert '"device_changed"' in service(control_query(JWK1, revision, code_job))
+        assert service(f"SELECT status FROM public.omni_code_jobs WHERE id='{code_job}';") == "queued"
+        assert '"not_found"' in service(control_query(JWK2, current_revision, held_id))
+        assert service(f"SELECT state FROM public.omni_terminal_tasks WHERE id='{held_id}';") == "held"
+        assert '"ok": true' in service(control_query(JWK2, current_revision, code_job))
+        assert service(f"SELECT status FROM public.omni_code_jobs WHERE id='{code_job}';") == "stopped"
+        assert '"device_changed"' in service(
+            f"SELECT public.omni_native_bound_control('{device}','{fingerprint(JWK1)}',"
+            f"{revision},'pause_agent','omni',NULL);"
+        )
+        assert '"paused": "omni"' in service(
+            f"SELECT public.omni_native_bound_control('{device}','{fingerprint(JWK2)}',"
+            f"{current_revision},'pause_agent','omni',NULL);"
+        )
+        assert '"remote_action": "agent.stop"' in service(
+            f"SELECT public.omni_native_bound_control('{device}','{fingerprint(JWK2)}',"
+            f"{current_revision},'stop_agent','omni',NULL);"
+        )
+        def engage_stop(key, key_revision):
+            return (
+                f"SELECT public.omni_native_bound_engage_stop('{device}',"
+                f"'{fingerprint(key)}',{key_revision});"
+            )
+        assert service(engage_stop(JWK1, revision)) == "f"
+        assert service("SELECT emergency_stop FROM public.omni_terminal_controls WHERE id=1;") == "f"
+        assert service(engage_stop(JWK2, current_revision)) == "t"
+        assert service("SELECT emergency_stop FROM public.omni_terminal_controls WHERE id=1;") == "t"
+        service("UPDATE public.omni_terminal_controls SET emergency_stop=false WHERE id=1;")
+        # A transaction admitted on the old revision holds its device lock until
+        # commit; a rotation cannot pass it and mutate the device in between.
+        concurrent_env = dict(env, PGAPPNAME="native-bound-lock-fixture")
+        locked = subprocess.Popen(
+            [
+                "psql", "-X", "-v", "ON_ERROR_STOP=1", "-At", "-c",
+                "SET ROLE service_role; BEGIN; "
+                f"SELECT public.omni_native_bound_handoff_status('{device}','{fingerprint(JWK2)}',{current_revision}); "
+                "SELECT pg_sleep(2); COMMIT;",
+            ],
+            env=concurrent_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        try:
+            for _ in range(100):
+                if sql(
+                    "SELECT EXISTS(SELECT 1 FROM pg_stat_activity "
+                    "WHERE application_name='native-bound-lock-fixture' AND wait_event='PgSleep');"
+                ) == "t":
+                    break
+                time.sleep(0.01)
+            else:
+                raise AssertionError("Bound operation did not reach its locked wait")
+            blocked = subprocess.run(
+                ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-At", "-c",
+                 "SET ROLE service_role; SET lock_timeout='100ms'; "
+                 f"UPDATE public.omni_dock_devices SET revision=revision+1 WHERE id='{device}';"],
+                env=env, capture_output=True, text=True,
+            )
+            assert blocked.returncode != 0 and "lock timeout" in blocked.stderr, blocked.stderr
+            checks += 1
+        finally:
+            output, error = locked.communicate(timeout=10)
+            assert locked.returncode == 0, (output, error)
+        def read_authorize(key, key_revision):
+            return (
+                f"SELECT public.omni_native_bound_read_authorize('{device}','{fingerprint(key)}',"
+                f"{key_revision},'cloud.read');"
+            )
+        assert service(read_authorize(JWK2, current_revision)) == "t"
+        assert service(read_authorize(JWK1, revision)) == "f"
+        service("UPDATE public.omni_terminal_controls SET emergency_stop=true WHERE id=1;")
+        assert service(read_authorize(JWK2, current_revision)) == "f"
+        assert '"stop_engaged"' in service(held_query(JWK2, current_revision))
+        assert '"stop_engaged"' in service(
+            f"SELECT public.omni_native_bound_handoff_status('{device}','{fingerprint(JWK2)}',{current_revision});"
+        )
+        service("UPDATE public.omni_terminal_controls SET emergency_stop=false WHERE id=1;")
+        service(f"UPDATE public.omni_dock_devices SET permissions=ARRAY['jobs.propose','status.read'] WHERE id='{device}';")
         now_ms = int(time.time() * 1000)
         nonce = "status-nonce-abcdefghijkl"
         def status_query(key, current_nonce=nonce, timestamp=now_ms):
@@ -292,6 +417,32 @@ def main():
         assert '"ok": true' in chat_enrolled, chat_enrolled
         chat_device = json.loads(chat_enrolled)["device_id"]
         assert json.loads(chat_enrolled)["permissions"] == ["chat.send", "status.read"]
+        chat_revision = json.loads(chat_enrolled)["revision"]
+        assert '"ok": true' in service(
+            f"SELECT public.omni_native_bound_touch('{chat_device}','{fingerprint(JWK3)}',"
+            f"{chat_revision},'chat-race-nonce-abcdef',{int(time.time() * 1000)},"
+            "'native_chat_request',NULL,NULL);"
+        )
+        service(f"UPDATE public.omni_dock_devices SET revision=revision+1 WHERE id='{chat_device}';")
+        for role in ["anon", "authenticated"]:
+            assert sql(
+                f"SELECT has_function_privilege('{role}',"
+                "'public.omni_native_bound_chat_begin(uuid,text,integer,uuid,uuid,uuid,text,text,integer,integer)','execute');"
+            ) == "f"
+            checks += 1
+        assert '"device_changed"' in service(
+            f"SELECT public.omni_native_bound_chat_projects('{chat_device}','{fingerprint(JWK3)}',{chat_revision});"
+        )
+        assert '"device_changed"' in service(
+            f"SELECT public.omni_native_bound_chat_begin('{chat_device}','{fingerprint(JWK3)}',"
+            f"{chat_revision},'{request_id}','{chat_session}','{project}',"
+            "'omni','claude-sonnet-5-5',1,500);"
+        )
+        assert service(f"SELECT count(*) FROM public.omni_native_chat_runs WHERE device_id='{chat_device}';") == "0"
+        chat_revision += 1
+        assert '"name": "Native fixture project"' in service(
+            f"SELECT public.omni_native_bound_chat_projects('{chat_device}','{fingerprint(JWK3)}',{chat_revision});"
+        )
         project_list = service(f"SELECT public.omni_native_chat_projects('{chat_device}');")
         assert '"name": "Native fixture project"' in project_list, project_list
         assert '"ok": false' in service(
@@ -299,7 +450,7 @@ def main():
         )
         started_run = json.loads(
             service(
-                f"SELECT public.omni_native_chat_begin('{chat_device}','{request_id}',"
+                f"SELECT public.omni_native_bound_chat_begin('{chat_device}','{fingerprint(JWK3)}',{chat_revision},'{request_id}',"
                 f"'{chat_session}','{project}','omni','claude-sonnet-5-5',1,500);"
             )
         )

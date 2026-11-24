@@ -1,6 +1,6 @@
 # Native OMNI migration and recovery runbook
 
-**Review only.** Migrations 0075–0078 are pending; this is not permission to apply, deploy, roll
+**Review only.** Migrations 0075–0079 are pending; this is not permission to apply, deploy, roll
 back, restore, release Emergency Stop, or run a paid request. The actual serving database and its
 history have not been independently verified by this runbook.
 
@@ -17,12 +17,16 @@ history have not been independently verified by this runbook.
 3. Migration 0075 depends on the earlier Claude ledger, private agent and Fusion tables/functions.
    0076 depends on Dock devices, nonces, owner/MFA and task tables. 0077 depends on **both 0075 and
    0076**, and replaces the 0076 native authorization function as well as shared Claude reservation
-   and settlement functions. 0078 depends on 0076 and its native owner/device fields. If all are
-   approved, apply in the reviewed order 0075 → 0076 → 0077 → 0078. Validate each step and its
+   and settlement functions. 0078 depends on 0076 and its native owner/device fields. 0079 depends
+   on 0076–0078 and adds key-bound native admission and operation wrappers. If all are approved,
+   apply in the reviewed order 0075 → 0076 → 0077 → 0078 → 0079. Validate each step and its
    recorded history before proceeding; migration 0078 is not a substitute for 0077.
 4. Confirm service-only RPC grants and RLS; native owner consent must retain verified owner, aal2,
    fresh TOTP, PKCE, one-use codes and key proof. Confirm 0077's native-only chat consent, Stop,
-   owner/AI/project/session checks and shared ledger, and 0078's key-bound replay protection.
+   owner/AI/project/session checks and shared ledger, 0078's key-bound replay protection and
+   0079's service-only key/revision-bound operations. Keep native ingress disabled until both 0079
+   and its corresponding server code are installed on every replica. The new server does not
+   fall back to legacy admission for native devices; old server versions do not enforce 0079.
    Exercise only an explicitly approved isolated environment. A readiness marker or catalog entry
    alone is not evidence that these protections or live provider billing work.
 
@@ -68,5 +72,5 @@ Only after a separately approved repair: confirm actual database history, functi
 grants, RLS and deployed route versions; run the focused auth, Dock, native chat and disposable SQL
 lifecycle tests against an isolated restored copy; check refused replay, rotated/revoked key, owner
 and Stop paths, guard retention and ledger settlement. Confirm client and server protocol versions
-and account for 0078 availability. Resume traffic only on explicit owner authorization; no check
+and account for 0078 and 0079 availability. Resume traffic only on explicit owner authorization; no check
 automatically releases Stop, clears an AI block, approves a task or starts an executor.

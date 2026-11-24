@@ -13,6 +13,7 @@ import {
 } from "./omni-native-chat";
 import { requiresPersistentPause } from "./ai/gateway-errors";
 import { inferClaude } from "./ai/claude-turn.server";
+import type { NativeDeviceIdentity } from "./omni-dock.server";
 
 type NativeRpc = (
   fn: string,
@@ -90,9 +91,14 @@ function refusalStatus(reason: string) {
 
 export async function nativeProjects(
   device: string,
+  identity: NativeDeviceIdentity,
   rpc: NativeRpc = serviceRpc,
 ): Promise<Record<string, unknown>[] | null> {
-  const result = await rpcReply(rpc, "omni_native_chat_projects", { _device: device });
+  const result = await rpcReply(rpc, "omni_native_bound_chat_projects", {
+    _device: device,
+    _fingerprint: identity.fingerprint,
+    _revision: identity.revision,
+  });
   if (result?.ok !== true || !Array.isArray(result["projects"])) return null;
   const projects = nativeProjectsSchema.safeParse(result["projects"]);
   return projects.success ? projects.data : null;
@@ -109,6 +115,7 @@ export async function nativeChatBackendInstalled(rpc: NativeRpc = serviceRpc) {
 
 export async function runNativeChat(
   device: string,
+  identity: NativeDeviceIdentity,
   input: NativeChatInput,
   signal: AbortSignal,
   deps: NativeChatDeps = {},
@@ -147,8 +154,10 @@ export async function runNativeChat(
     );
 
   const inputChars = context.inputChars;
-  const begin = await rpcReply(rpc, "omni_native_chat_begin", {
+  const begin = await rpcReply(rpc, "omni_native_bound_chat_begin", {
     _device: device,
+    _fingerprint: identity.fingerprint,
+    _revision: identity.revision,
     _request_id: input.requestId,
     _session_id: input.sessionId,
     _project_id: input.projectId,
