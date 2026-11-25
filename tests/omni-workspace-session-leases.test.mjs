@@ -12,6 +12,7 @@ import {
   signWorkerRecord,
 } from "../services/omni-sandbox/worker-leases.mjs";
 import { assertWorkspaceDirectoryGone } from "../services/omni-sandbox/leased-watchdog.mjs";
+import { createLeasedSessionWorkspace } from "../services/omni-sandbox/leased-worker.mjs";
 import { renewableSessionAuthority } from "../services/omni-sandbox/worker-authority.mjs";
 
 const secret = "s".repeat(48);
@@ -63,6 +64,77 @@ function fixture() {
     },
   };
 }
+
+test("leased session commands reuse one workspace directory", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-workspace-"));
+  const reservation = new AbortController();
+  let workspacePath;
+  const session = createLeasedSessionWorkspace({
+    parent: root,
+    reservationSignal: reservation.signal,
+    runCommand: async ({ work, command, ephemeral }) => {
+      workspacePath ??= work;
+      assert.equal(work, workspacePath);
+      assert.equal(ephemeral, false);
+      if (command === "first") fs.writeFileSync(path.join(work, "kept"), "session data");
+      if (command === "second")
+        assert.equal(fs.readFileSync(path.join(work, "kept"), "utf8"), "session data");
+      return { completed: Promise.resolve({ code: 0 }), stop: async () => {} };
+    },
+  });
+  try {
+    await session.run({ command: "first" });
+    await session.run({ command: "second" });
+    assert.equal(fs.existsSync(workspacePath), true);
+  } finally {
+    await session.end();
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("leased session end wipes its workspace", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-workspace-"));
+  const reservation = new AbortController();
+  let workspacePath;
+  const session = createLeasedSessionWorkspace({
+    parent: root,
+    reservationSignal: reservation.signal,
+    runCommand: async ({ work }) => {
+      workspacePath = work;
+      return { completed: Promise.resolve({ code: 0 }), stop: async () => {} };
+    },
+  });
+  try {
+    await session.run({ command: "first" });
+    await session.end();
+    assert.equal(fs.existsSync(workspacePath), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("lost session reservation wipes its workspace and refuses later commands", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-workspace-"));
+  const reservation = new AbortController();
+  let workspacePath;
+  const session = createLeasedSessionWorkspace({
+    parent: root,
+    reservationSignal: reservation.signal,
+    runCommand: async ({ work }) => {
+      workspacePath = work;
+      return { completed: Promise.resolve({ code: 0 }), stop: async () => {} };
+    },
+  });
+  try {
+    await session.run({ command: "first" });
+    reservation.abort();
+    assert.equal(fs.existsSync(workspacePath), false);
+    await assert.rejects(session.run({ command: "second" }), /reservation/);
+  } finally {
+    await session.end();
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("session ownership persists across restart and excludes job leases", () => {
   const f = fixture();
