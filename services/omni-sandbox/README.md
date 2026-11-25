@@ -162,6 +162,16 @@ No approved command is claimed or started by the running service while that refu
 
 ## Experimental leased host lifecycle
 
+`createSessionLeases` and `renewableSessionAuthority` add an experimental
+`omni.workspace-session/v1` reservation and fail-closed renewal primitive.
+Session reservations survive coordinator restart, exclude existing job leases
+in the same SQLite registry, and require a bound, signed
+`session_cleanup`/`terminated_and_wiped` acknowledgement before reuse.
+These primitives do not create or protect a workspace, run a watchdog, or
+connect to the serving service or Mothership authority. They must not be used
+to enable sessions; persistent worker storage and independently verified
+cleanup are still missing.
+
 `leased-coordinator.mjs` composes durable exclusive leases, command-digest-bound owner approval,
 per-worker authenticated Unix sockets and 100 ms authority renewal. `leased-worker.mjs` accepts
 one assignment per systemd invocation and launches bubblewrap itself under its own non-root UID.
