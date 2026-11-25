@@ -14,6 +14,14 @@ containment. Session creation and all work are refused; signed health and stop/e
 available. Mothership also rejects historical self-test passes and keeps the workspace gate closed.
 Do not deploy or enable this reference as a working sandbox.
 
+For an owner-authorized, health-only staging installation, see
+[STAGING-HEALTH.md](STAGING-HEALTH.md). The signed
+`omni.workspace-health-evidence/v1` report describes this reference's
+`setpriv`/`unshare` launcher, observed limits and SQLite location. It always
+reports bubblewrap inactive and persistence unverified. A reboot observation
+only means a marker was seen in the same database on a different Linux boot;
+it is not a storage durability guarantee or proof of replay rejection.
+
 Ordinary signed requests claim their nonces transactionally in SQLite before handling an action.
 Fresh authenticated Stop instead attempts the safety reduction first, including a replayed Stop,
 and only then reconciles its nonce. A replay

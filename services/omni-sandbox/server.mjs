@@ -10,6 +10,7 @@ import { nonceReconciler } from "./nonce-reconciler.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createWorkspaceJournal, recoverWorkspaceJobs } from "./recovery.mjs";
+import { trackReplayEvidence } from "./health-evidence.mjs";
 
 export const CONTRACT = "omni.workspace/v1";
 export const PATH = "/api/public/omni/workspace";
@@ -195,12 +196,23 @@ export function detectNetwork(c) {
 
 /** Live probe for the self-test: uid, network and the environment the child can see. */
 function probe(c, net) {
+  if (process.getuid?.() !== 0)
+    return {
+      uid: -1,
+      networkBlocked: false,
+      envNames: [],
+      exitCode: -1,
+      limits: null,
+      namespaces: null,
+    };
   const dir = fs.mkdtempSync("/tmp/omni-probe-");
   const uid = c.uidBase;
   fs.chownSync(dir, uid, uid);
   const script =
     'id -u; timeout 2 bash -c "exec 3<>/dev/tcp/1.1.1.1/443" 2>/dev/null && echo NET_OPEN || echo NET_BLOCKED; ' +
-    'env | cut -d= -f1 | grep -v "^OMNI_CMD$" | grep -v "^PWD$" | grep -v "^SHLVL$" | grep -v "^_$" | sort | tr "\\n" ","';
+    'env | cut -d= -f1 | grep -v "^OMNI_CMD$" | grep -v "^PWD$" | grep -v "^SHLVL$" | grep -v "^_$" | sort | tr "\\n" ","; ' +
+    'printf "\\n"; ulimit -t; ulimit -v; ulimit -u; ulimit -f; ulimit -n; ' +
+    'for ns in user net pid mnt; do readlink "/proc/self/ns/$ns" || exit 1; done';
   const [cmd, ...args] = sandboxArgv(c, uid, net);
   const r = spawnSync(cmd, args, {
     env: sandboxEnv(dir, script),
@@ -210,11 +222,45 @@ function probe(c, net) {
   });
   fs.rmSync(dir, { recursive: true, force: true });
   const lines = (r.stdout ?? "").trim().split("\n");
+  const values = lines.slice(3, 8).map((value) => (/^\d+$/.test(value) ? Number(value) : null));
+  let namespaces = null;
+  const kinds = ["user", "net", "pid", "mnt"];
+  const childNamespaces = lines.slice(8, 12);
+  if (
+    r.status === 0 &&
+    childNamespaces.length === kinds.length &&
+    childNamespaces.every((value, i) => value.startsWith(`${kinds[i]}:[`) && value.endsWith("]"))
+  ) {
+    try {
+      const separate = kinds.map(
+        (kind, i) => fs.readlinkSync(`/proc/self/ns/${kind}`) !== childNamespaces[i],
+      );
+      namespaces = {
+        user: separate[0],
+        network: separate[1],
+        pid: separate[2],
+        mount: separate[3],
+      };
+    } catch (error) {
+      if (!["ENOENT", "EACCES", "EPERM"].includes(error.code)) throw error;
+    }
+  }
   return {
     uid: Number.parseInt(lines[0] ?? "-1", 10),
     networkBlocked: lines[1] === "NET_BLOCKED",
     envNames: (lines[2] ?? "").split(",").filter(Boolean),
     exitCode: r.status ?? -1,
+    limits:
+      values.length === 5 && values.every((value) => Number.isSafeInteger(value) && value > 0)
+        ? {
+            cpuSec: values[0],
+            addressSpaceKiB: values[1],
+            processes: values[2],
+            fileSizeKiB: values[3],
+            openFiles: values[4],
+          }
+        : null,
+    namespaces,
   };
 }
 
@@ -248,6 +294,7 @@ export function createSandbox(c, opts = {}) {
       seen_at INTEGER NOT NULL
     ) WITHOUT ROWID;
   `);
+  const replayHealth = trackReplayEvidence(nonceStore, path.join(stateDir, "nonces.sqlite"));
   const claimDecision = createDecisionClaims(nonceStore);
   createWorkspaceJournal(nonceStore);
   const claimCommand = createCommandClaims(nonceStore);
@@ -807,6 +854,15 @@ export function createSandbox(c, opts = {}) {
               perSessionUser: true,
               envNames: pr.envNames,
               probeExitCode: pr.exitCode,
+            },
+            evidence: {
+              contract: "omni.workspace-health-evidence/v1",
+              launcher: "setpriv-unshare",
+              bubblewrapActive: false,
+              nonRootObserved: pr.exitCode === 0 && pr.uid > 0,
+              observedLimits: pr.exitCode === 0 ? (pr.limits ?? null) : null,
+              observedNamespaces: pr.exitCode === 0 ? (pr.namespaces ?? null) : null,
+              replay: replayHealth(),
             },
             limits: c.limits,
             providers: ["openai", "anthropic"].map((id) => ({

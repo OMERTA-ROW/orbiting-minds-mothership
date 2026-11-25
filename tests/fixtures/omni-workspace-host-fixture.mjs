@@ -43,6 +43,10 @@ replaceOnce(
   `from ${JSON.stringify(pathToFileURL(path.join(serviceDir, "nonce-reconciler.mjs")).href)};`,
 );
 replaceOnce(
+  'from "./health-evidence.mjs";',
+  `from ${JSON.stringify(pathToFileURL(path.join(serviceDir, "health-evidence.mjs")).href)};`,
+);
+replaceOnce(
   'if (!["health.check", "job.stop", "agent.stop", "session.end"].includes(action)) {',
   'if (false && !["health.check", "job.stop", "agent.stop", "session.end"].includes(action)) {',
 );
