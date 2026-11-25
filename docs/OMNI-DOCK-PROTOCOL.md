@@ -1,7 +1,10 @@
 # OMNI Docking Bay — protocol `omni.dock/v1`
 
-Status (2026-11-07): Mothership side implemented and tested; **no branch has docked**. Honeycomb Terminal's dock
-screen is not built yet. Nothing in this protocol executes commands, dispatches jobs or enables autonomy.
+Status (2026-11-24): Mothership Dock endpoints are implemented; **no branch has docked**. Honeycomb Terminal's dock
+screen is not built yet. Native CLI browser authorization, chat and status reconciliation are source-only in migrations
+0076–0078, pending owner approval; none is deployed. See [OMNI-NATIVE-AUTH-CONTRACT.md](./OMNI-NATIVE-AUTH-CONTRACT.md) for the
+separate, no-pairing-code flow and native-chat contract.
+Nothing in this protocol executes commands, dispatches jobs or enables autonomy.
 
 ## Roles
 
@@ -47,6 +50,12 @@ executor, dispatcher, per-job scope, cost cap, Guardian approval and a fresh own
    code requested. Unapproved devices expire after 30 minutes. Fifty failed pair attempts in ten minutes pause
    pairing for everyone (a deliberate trade-off: an attacker can delay pairing but cannot guess codes).
 
+**Native OMNI CLI exception:** a normal CLI installation uses browser owner sign-in, PKCE, a signed device-key proof,
+and explicit owner/MFA consent instead of this manual pairing code. Its protocol, callback, permissions, and native
+chat are specified in [OMNI-NATIVE-AUTH-CONTRACT.md](./OMNI-NATIVE-AUTH-CONTRACT.md). Authentication is not usable
+until migration 0076 is owner-approved/applied and the native client implements the contract; chat additionally needs
+migration 0077. The legacy Dock pairing flow never grants native chat authority.
+
 ## Signed requests
 
 Headers on every request (including pair):
@@ -66,16 +75,21 @@ POST
 <sha256 hex of the exact request body>
 ```
 
-Bodies are limited to 8 KB. The path is part of the signature, so a request cannot be replayed on another endpoint.
-Reference client: `src/lib/omni-dock-client.ts` (copy it; it only signs).
+Bodies are limited to 8 KB, except the signed native `/chat` request, which is limited to 128 KiB. The path is part of
+the signature, so a request cannot be replayed on another endpoint. Reference client: `src/lib/omni-dock-client.ts`
+(copy it; it only signs).
 
 ## Endpoints
 
 | Path | Body | Needs | Result |
 | --- | --- | --- | --- |
 | `/heartbeat` | `{ appVersion?, capabilities? }` | any non-revoked device | status, permissions; with `status.read`: Emergency Stop, all autonomy `off`, `executor: "none"` |
+| `/native-device-status` | `{}` | paired native CLI + verified owner | verified signing key fingerprint, current revision and permissions; available while Stop is engaged; pending migration 0078 |
 | `/jobs` | `{ id (uuid), kind, agent, project, repository?, instructions, autonomous? }` | paired + `jobs.propose` | `202` held in OMNI Terminal (never dispatched); `autonomous: true` → `409 autonomy_off` with blockers, nothing stored |
 | `/stop` | `{}` | paired + `stop.engage` | engages the Emergency Stop (cannot release) |
+| `/catalog` | `{}` | paired + `cloud.read` | server-read provider/model/agent configuration and honest native capability limits; refused under Emergency Stop |
+| `/projects` | `{}` | native CLI + `chat.send` | owner project IDs and names only; AI approval and released Stop required |
+| `/chat` | `omni.native-chat/v1` | native CLI + `chat.send` | Claude text only; owner/project/Stop/ledger-gated; NDJSON frames are emitted after settlement |
 
 `kind`: code.generate, code.edit, code.test, code.debug (agent must be `jackboy`), agent.handoff (jackboy, jax,
 razul, sabrina, guardian, hercules). 20 proposals per device per 24 h. Text that looks like a key is refused.
@@ -98,7 +112,8 @@ endpoints until the owner approves publishing.
 ## Permissions
 
 `status.read`, `log.read` (reserved), `jobs.propose`, `stop.engage`, `files.transfer` (reserved for Honeycomb's own
-transfer feature; no effect in the Mothership).
+transfer feature; no effect in the Mothership), `cloud.read`, `audit.read`, and `jobs.pause`. `chat.send` is an
+implemented native CLI capability only; legacy Dock devices cannot use `/projects` or `/chat`.
 
 ## Honeycomb-side work (must be done in the Honeycomb project)
 
@@ -177,7 +192,7 @@ New per-device permissions (owner picks them when approving; all off unless chos
 | `cloud.read` | `/api/public/omni/dock/cloud` `{}` | Metadata snapshot: agents (status, Autonomous Mode end time), last 30 cloud and CODE jobs (kind, status, cost, short title), approvals waiting (kind, agent, time), spend today/total and caps, CODE always-on state, alerts, and `approveIn` (the Mothership page to approve). No commands, output, instructions or secrets. Refused (423) while Emergency Stop is engaged. |
 | `audit.read` | `/api/public/omni/dock/audit` `{}` | Last 50 audit entries: time, actor, agent, event. No details or outputs. Refused (423) under Emergency Stop. |
 | `jobs.pause` | `/api/public/omni/dock/control` | `{action:"pause_agent",agentId}`, `{action:"stop_agent",agentId}`, `{action:"stop_job",jobId}`. Reductions only: there is no resume, unpause, approve or start. Works even while Emergency Stop is engaged. Pausing an agent also ends its Autonomous Mode window and pauses its CODE jobs (database triggers). Stops are relayed to the cloud sandbox when configured and the reply says whether the sandbox confirmed. Logged in the dock log and OMNI audit as `device:<id>`. |
-| `chat.send` | none yet | Reserved. Needs a verified cloud sandbox and an owner-opened, passkey-confirmed, time-limited mobile chat window. |
+| `chat.send` | native CLI `/projects` and `/chat` only | Not available to Honeycomb/legacy Dock devices. Requires a native-only browser MFA grant, owner AI approval, released Stop, configured Anthropic key, per-agent Claude switch, fresh price confirmation and settlement within the shared $0.50/call and $5 rolling 24-hour caps. No transcript storage, model tools or task execution. |
 
 **Approvals from the iPad:** the device never approves. Honeycomb shows what is waiting and opens `approveIn`
 (`https://evoomni.tech/omni-terminal`) in Safari, where you sign in with your two-step code and confirm with your

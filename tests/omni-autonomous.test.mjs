@@ -65,6 +65,11 @@ test("disabled, expired, unbounded and shell plans never run", async () => {
     },
   );
   await assert.rejects(executor.runPlan(plan()), /disabled/);
+  const priorRelease = createExecutor(
+    { ...config, reviewedRelease: "omni-bounded-plan-2" },
+    { run: async () => calls++ },
+  );
+  await assert.rejects(priorRelease.runPlan(plan()), /disabled/);
   assert.throws(() => parsePlan({ ...plan(), expiresAt: "invalid" }));
   assert.throws(() =>
     parsePlan({ ...plan(), commands: [{ argv: ["/bin/sh", "-c", "true"], timeoutMs: 1000 }] }),
@@ -180,6 +185,87 @@ test("permission polling loss cancels active work before another command", async
   assert.equal((await executor.runPlan(value)).outcome, "cancelled");
   assert.equal(commands, 1);
 });
+test("cancellation during an in-flight permission check prevents command launch", async () => {
+  const value = plan();
+  let releasePermission;
+  let notifyPermission;
+  const checking = new Promise((resolve) => {
+    notifyPermission = resolve;
+  });
+  const pending = new Promise((resolve) => {
+    releasePermission = resolve;
+  });
+  let runs = 0;
+  const executor = createExecutor(config, {
+    workspace,
+    permission: async (_config, operation) => {
+      if (operation === "permission") {
+        notifyPermission();
+        await pending;
+      }
+      return true;
+    },
+    run: async () => {
+      runs++;
+      return complete();
+    },
+  });
+  const running = executor.runPlan(value);
+  try {
+    await checking;
+    const cancelling = executor.cancel({ jobId: value.jobId, planSha256: planHash(value) });
+    releasePermission();
+    assert.deepEqual(await cancelling, { cancelled: true });
+    assert.equal((await running).outcome, "cancelled");
+    assert.equal(runs, 0);
+  } finally {
+    releasePermission();
+    await executor.close();
+  }
+});
+test("a plan expiring during a permission check never launches a command", async () => {
+  const value = plan();
+  value.expiresAt = new Date(Date.now() + 200).toISOString();
+  let runs = 0;
+  const executor = createExecutor(config, {
+    workspace,
+    permission: async (_config, operation) => {
+      if (operation === "permission") await new Promise((resolve) => setTimeout(resolve, 300));
+      return true;
+    },
+    run: async () => {
+      runs++;
+      return complete();
+    },
+  });
+  try {
+    assert.equal((await executor.runPlan(value)).outcome, "cancelled");
+    assert.equal(runs, 0);
+  } finally {
+    await executor.close();
+  }
+});
+test("timed-out or cancelled commands never report completion or start another command", async () => {
+  for (const flag of ["timedOut", "cancelled"]) {
+    const value = plan();
+    value.commands.push({ argv: ["/usr/bin/printf", "never"], timeoutMs: 1000 });
+    let runs = 0;
+    const executor = createExecutor(config, {
+      workspace,
+      permission: async () => true,
+      run: async () => {
+        runs++;
+        return { exitCode: 0, output: "", exceeded: false, [flag]: true };
+      },
+    });
+    try {
+      assert.equal((await executor.runPlan(value)).outcome, "failed");
+      assert.equal(runs, 1);
+    } finally {
+      await executor.close();
+    }
+  }
+});
 test("another instance or a restarted instance cannot acknowledge an unknown job's cancellation", async () => {
   const value = plan();
   let notify;
@@ -211,6 +297,38 @@ test("another instance or a restarted instance cannot acknowledge an unknown job
   } finally {
     await active.close();
     await other.close();
+  }
+});
+test("cancellation does not claim success when the signed terminal outcome is completed", async () => {
+  const value = plan();
+  let releaseFinish;
+  let finishStarted;
+  const finishing = new Promise((resolve) => {
+    finishStarted = resolve;
+  });
+  const finish = new Promise((resolve) => {
+    releaseFinish = resolve;
+  });
+  const executor = createExecutor(config, {
+    workspace,
+    run: complete,
+    permission: async (_config, operation) => {
+      if (operation !== "finish") return true;
+      finishStarted();
+      await finish;
+      return "completed";
+    },
+  });
+  const running = executor.runPlan(value);
+  try {
+    await finishing;
+    const cancelling = executor.cancel({ jobId: value.jobId, planSha256: planHash(value) });
+    releaseFinish();
+    await assert.rejects(cancelling, /Cancellation was not confirmed/);
+    assert.equal((await running).outcome, "completed");
+  } finally {
+    releaseFinish();
+    await executor.close();
   }
 });
 test("completed plans report zero paid-provider spend and durable completion", async () => {
@@ -301,7 +419,7 @@ test("signed stale safety responses are denied; completion retains the approved 
 });
 
 test("permission replies stamped within the window are accepted; older ones are denied", async () => {
-  assert.equal(RELEASE, "omni-bounded-plan-2");
+  assert.equal(RELEASE, "omni-bounded-plan-3-unreviewed");
   assert.equal(PERMISSION_TIMEOUT_MS, 6000);
   assert.equal(PERMISSION_MAX_AGE_MS, 6000);
   const value = plan();

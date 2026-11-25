@@ -228,6 +228,14 @@ const DENIED = new Set([
   "emergency_stop_engaged",
   "check_unavailable",
 ]);
+const CLAUDE_RESERVATION_REFUSALS = new Set([
+  "invalid_request",
+  "emergency_stop_engaged",
+  "engine_not_enabled",
+  "price_not_confirmed",
+  "call_cap",
+  "daily_cap",
+]);
 
 export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
   const rpc = deps.rpc ?? serviceRpc;
@@ -304,6 +312,7 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
 
   // Claude: reserve the estimated cost against the per-call and daily caps before any call.
   let claudeEstimate: number | null = null;
+  let reservationUncertain = false;
   if (claude && !stopReason) {
     const r = await callRpc(rpc, "claude_reserve", {
       _run_id: runId,
@@ -312,9 +321,23 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
       _input_chars: context.inputChars,
       _max_output_tokens: CLAUDE_MAX_OUTPUT_TOKENS,
     });
-    if (!r) stopReason = "claude_not_installed";
-    else if (r.ok !== true) stopReason = r.reason || "check_unavailable";
-    else claudeEstimate = typeof r["estimate_cents"] === "number" ? r["estimate_cents"] : null;
+    if (!r) {
+      stopReason = "claude_not_installed";
+      reservationUncertain = true;
+    } else if (r.ok !== true) {
+      stopReason = r.reason || "check_unavailable";
+      reservationUncertain = r.ok !== false || !CLAUDE_RESERVATION_REFUSALS.has(stopReason);
+    } else if (
+      typeof r["estimate_cents"] === "number" &&
+      Number.isInteger(r["estimate_cents"]) &&
+      r["estimate_cents"] >= 1 &&
+      r["estimate_cents"] <= 50
+    ) {
+      claudeEstimate = r["estimate_cents"];
+    } else {
+      stopReason = "check_unavailable";
+      reservationUncertain = true;
+    }
   }
   const runInfer: ChatInference = claude ? claudeInference(claude, deps.claudeFetch) : infer;
 
@@ -430,8 +453,26 @@ export async function omniDelegatedChat(request: Request, deps: ChatDeps = {}) {
       _output_tokens: result.usage?.outputTokens ?? null,
     });
     claudeActual =
-      settled && typeof settled["actual_cents"] === "number" ? settled["actual_cents"] : null;
+      settled?.ok === true &&
+      typeof settled["actual_cents"] === "number" &&
+      Number.isInteger(settled["actual_cents"]) &&
+      settled["actual_cents"] >= 0
+        ? settled["actual_cents"]
+        : null;
   }
+
+  if (reservationUncertain || (claudeEstimate !== null && claudeActual === null))
+    return json(
+      {
+        ok: false,
+        error: "outcome_not_recorded",
+        runId,
+        aiPaused: true,
+        message:
+          "Claude accounting could not be confirmed. No reply is returned; OMNI chat stays paused for owner review. Do not retry automatically.",
+      },
+      503,
+    );
 
   const finish = await callRpc(rpc, "omni_delegation_finish_chat", {
     _run_id: runId,

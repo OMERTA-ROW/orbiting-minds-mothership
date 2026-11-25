@@ -224,6 +224,7 @@ export async function runDuoTurn(sessionId: string, deps: DuoTurnDeps): Promise<
       model: claude,
       inputChars: persona.length + message.length + FUSION_CONTEXT.length,
     });
+    if (!r.ok && r.uncertain) return { ok: false, reason: "outcome_not_recorded", turnNo, agentId };
     if (!r.ok)
       return refuseTurn(r.reason, r.reason === "call_cap" || r.reason === "daily_cap" ? 402 : 409);
     estimate = r.estimateCents;
@@ -316,9 +317,7 @@ export async function runDuoTurn(sessionId: string, deps: DuoTurnDeps): Promise<
       result.usage,
     );
     if (actual === null) {
-      if (status === "completed") status = "failed";
-      reason = "outcome_not_recorded";
-      httpStatus = 503;
+      return { ok: false, reason: "outcome_not_recorded", turnNo, agentId };
     }
   }
 

@@ -173,12 +173,15 @@ export async function handleOmniAgent(request: Request) {
     let claudeEstimate: number | null = null,
       claudeActual: number | null = null,
       claudeSettled = false,
+      claudeReservationUncertain = false,
       claudeRefused = false,
       claudeResult: ClaudeInference | undefined,
       claudeFailure: GatewayFailure | undefined;
     const failureNow = () => claudeFailure ?? call?.getFailure();
     const settleOnce = async (status: string) => {
-      if (!claude || claudeEstimate === null || claudeSettled) return true;
+      if (claudeReservationUncertain) return false;
+      if (!claude || claudeEstimate === null) return true;
+      if (claudeSettled) return claudeActual !== null;
       claudeSettled = true;
       claudeActual = await settleClaude(
         adminRpc,
@@ -290,6 +293,7 @@ export async function handleOmniAgent(request: Request) {
               inputChars: claudeInputChars,
             });
             if (!reserved.ok) {
+              claudeReservationUncertain = reserved.uncertain;
               claudeRefused = true;
               const refusal = claudeRefusal(reserved.reason);
               throw new BetaHttpError(
@@ -387,9 +391,13 @@ export async function handleOmniAgent(request: Request) {
           const failure = failureNow();
           const status = stopped ?? "failed";
           // Any reserved Claude call that didn't settle above (stopped, failed) settles here, once.
-          if (claude && !(await settleOnce(status)))
+          const accountingUncertain = claude ? !(await settleOnce(status)) : false;
+          if (accountingUncertain) {
+            text = "";
             terminalMessage ||=
               "Claude's cost couldn't be recorded; its full estimate stays counted.";
+            terminalMessage = `${terminalMessage} AI remains paused for owner review.`;
+          }
           const usage = claude
             ? claudeResult?.usage
             : call && !signal.aborted
@@ -430,7 +438,13 @@ export async function handleOmniAgent(request: Request) {
               .maybeSingle();
             if (blocked.error || !blocked.data)
               terminalMessage = `${failure.message} Access remains paused; owner review required.`;
-          } else if (!result.error && !readback.error && readback.data) {
+          } else if (
+            !result.error &&
+            !readback.error &&
+            readback.data &&
+            !claudeReservationUncertain &&
+            (!claude || claudeEstimate === null || claudeActual !== null)
+          ) {
             const cleared = await supabaseAdmin
               .from("ai_gateway_state")
               .delete()

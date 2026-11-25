@@ -19,12 +19,16 @@ export const DOCK_HEARTBEAT_INTERVAL_MS = 30_000;
 export const DOCK_PATHS = {
   pair: "/api/public/omni/dock/pair",
   heartbeat: "/api/public/omni/dock/heartbeat",
+  nativeDeviceStatus: "/api/public/omni/dock/native-device-status",
   jobs: "/api/public/omni/dock/jobs",
   stop: "/api/public/omni/dock/stop",
   jobsStatus: "/api/public/omni/dock/jobs-status",
   cloud: "/api/public/omni/dock/cloud",
   audit: "/api/public/omni/dock/audit",
   control: "/api/public/omni/dock/control",
+  catalog: "/api/public/omni/dock/catalog",
+  projects: "/api/public/omni/dock/projects",
+  chat: "/api/public/omni/dock/chat",
 } as const;
 
 /** Honeycomb Terminal origins allowed to call the dock from a browser. Native apps send no Origin. */
@@ -85,7 +89,7 @@ export const PERMISSION_INFO: Record<DockPermission, { label: string; detail: st
   "cloud.read": {
     label: "See cloud tasks",
     detail:
-      "Running OMNI cloud and CODE jobs, agents, spend, approvals waiting and alerts. No commands, output or secrets.",
+      "Metadata-only cloud/CODE jobs, agent status, spend, pending approvals and alerts, plus server-read provider/model/agent configuration. No commands, outputs or secrets; configuration does not enable native chat.",
   },
   "audit.read": {
     label: "See the audit log",
@@ -97,9 +101,9 @@ export const PERMISSION_INFO: Record<DockPermission, { label: string; detail: st
       "Pause an agent or stop a job or agent from the device. It can never resume, approve or start anything.",
   },
   "chat.send": {
-    label: "Chat with OMNI",
+    label: "Chat with OMNI, Dread or Draco",
     detail:
-      "Reserved: needs a verified cloud sandbox and a mobile chat window you open with your passkey. No effect yet.",
+      "Send text-only messages using an owner-enabled Claude model. Each call is capped at $0.50 and shares the owner's $5 rolling 24-hour limit. No tools, task execution or transcript storage on the Mothership.",
   },
 };
 export const DEFAULT_MOBILE_PERMISSIONS: DockPermission[] = [
@@ -412,6 +416,7 @@ export const REASON_MESSAGE: Record<string, string> = {
   unavailable: "Status is unavailable right now. Retry later.",
   secret_like: "That looks like a key or token. It was not saved.",
   id_conflict: "That task id was used for a different task.",
+  task_cancelled: "This task was cancelled. No new task was queued.",
   daily_limit: "This device has proposed 20 tasks today.",
   not_found: "That job or agent was not found.",
 };

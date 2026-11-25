@@ -71,6 +71,90 @@ type StagedFunctions = {
     Returns: Json;
   };
   omni_noop_enqueue: { Args: { _duration_ms: number }; Returns: string };
+  omni_native_authorization_ready: { Args: never; Returns: boolean };
+  omni_native_chat_ready: { Args: never; Returns: boolean };
+  omni_native_device_status: {
+    Args: { _device: string; _fingerprint: string; _nonce: string; _timestamp_ms: number };
+    Returns: Json;
+  };
+  omni_native_bound_touch: {
+    Args: {
+      _device: string;
+      _fingerprint: string;
+      _revision: number;
+      _nonce: string;
+      _timestamp_ms: number;
+      _event: string;
+      _capabilities: string[] | null;
+      _app_version: string | null;
+    };
+    Returns: Json;
+  };
+  omni_native_bound_hold_task: {
+    Args: {
+      _device: string;
+      _fingerprint: string;
+      _revision: number;
+      _id: string;
+      _kind: string;
+      _agent: string;
+      _project: string;
+      _repository: string | null;
+      _instructions: string;
+    };
+    Returns: Json;
+  };
+  omni_native_bound_handoff_status: {
+    Args: { _device: string; _fingerprint: string; _revision: number };
+    Returns: Json;
+  };
+  omni_native_bound_engage_stop: {
+    Args: { _device: string; _fingerprint: string; _revision: number };
+    Returns: boolean;
+  };
+  omni_native_bound_read_authorize: {
+    Args: { _device: string; _fingerprint: string; _revision: number; _permission: string };
+    Returns: boolean;
+  };
+  omni_native_bound_control: {
+    Args: {
+      _device: string;
+      _fingerprint: string;
+      _revision: number;
+      _action: string;
+      _agent: string | null;
+      _job: string | null;
+    };
+    Returns: Json;
+  };
+  omni_native_authorize: {
+    Args: {
+      _client_id: string;
+      _audience: string;
+      _port: number;
+      _code_hash: string;
+      _code_challenge: string;
+      _proof_nonce_hash: string;
+      _proof_timestamp_ms: number;
+      _public_key: Json;
+      _fingerprint: string;
+      _label: string;
+      _platform: string;
+      _permissions: string[];
+      _rotation_device: string | null;
+    };
+    Returns: Json;
+  };
+  omni_native_exchange: {
+    Args: {
+      _code_hash: string;
+      _code_challenge: string;
+      _client_id: string;
+      _audience: string;
+      _port: number;
+    };
+    Returns: Json;
+  };
 };
 
 type Pub = Database["public"];

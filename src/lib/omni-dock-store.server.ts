@@ -4,6 +4,7 @@
  * (PostgREST needs every key).
  */
 import type { DockStore, StoreReply } from "./omni-dock.server";
+import { staged } from "./staged-rpc";
 
 function asReply(data: unknown, error: unknown): StoreReply {
   if (error || !data || typeof data !== "object") return { ok: false, reason: "unavailable" };
@@ -28,18 +29,40 @@ export async function adminDockStore(): Promise<DockStore> {
     async loadDevice(id) {
       const { data, error } = await db
         .from("omni_dock_devices")
-        .select("public_key")
+        .select("*")
         .eq("id", id)
         .maybeSingle();
       return error ? null : data;
     },
     async touch(a) {
+      if (a.nativeIdentity) {
+        const { data, error } = await staged(db).rpc("omni_native_bound_touch", {
+          _device: a.device,
+          _fingerprint: a.nativeIdentity.fingerprint,
+          _revision: a.nativeIdentity.revision,
+          _nonce: a.nonce,
+          _timestamp_ms: a.nativeIdentity.timestamp,
+          _event: a.event,
+          _capabilities: a.capabilities ?? null,
+          _app_version: a.appVersion ?? null,
+        });
+        return asReply(data, error);
+      }
       const { data, error } = await db.rpc("omni_dock_touch", {
         _device: a.device,
         _nonce: a.nonce,
         _event: a.event,
         _capabilities: (a.capabilities ?? null) as unknown as string[],
         _app_version: (a.appVersion ?? null) as unknown as string,
+      });
+      return asReply(data, error);
+    },
+    async nativeDeviceStatus(device, fingerprint, nonce, timestamp) {
+      const { data, error } = await staged(db).rpc("omni_native_device_status", {
+        _device: device,
+        _fingerprint: fingerprint,
+        _nonce: nonce,
+        _timestamp_ms: timestamp,
       });
       return asReply(data, error);
     },
@@ -59,11 +82,33 @@ export async function adminDockStore(): Promise<DockStore> {
         .maybeSingle();
       return Boolean(error) || data?.emergency_stop !== false;
     },
-    async engageStop(device) {
+    async engageStop(device, identity) {
+      if (identity) {
+        const { data, error } = await staged(db).rpc("omni_native_bound_engage_stop", {
+          _device: device,
+          _fingerprint: identity.fingerprint,
+          _revision: identity.revision,
+        });
+        return !error && data === true;
+      }
       const { data, error } = await db.rpc("omni_dock_engage_stop", { _device: device });
       return !error && data === true;
     },
-    async holdTask(device, job) {
+    async holdTask(device, job, identity) {
+      if (identity) {
+        const { data, error } = await staged(db).rpc("omni_native_bound_hold_task", {
+          _device: device,
+          _fingerprint: identity.fingerprint,
+          _revision: identity.revision,
+          _id: job.id,
+          _kind: job.kind,
+          _agent: job.agent,
+          _project: job.project,
+          _repository: job.repository ?? null,
+          _instructions: job.instructions,
+        });
+        return asReply(data, error);
+      }
       const { data, error } = await db.rpc("omni_dock_hold_task", {
         _device: device,
         _id: job.id,
@@ -167,7 +212,54 @@ export async function adminDockStore(): Promise<DockStore> {
         .limit(50);
       return error ? null : (data ?? []);
     },
-    async control(device, c) {
+    async authorizeNativeRead(device, identity, permission) {
+      const { data, error } = await staged(db).rpc("omni_native_bound_read_authorize", {
+        _device: device,
+        _fingerprint: identity.fingerprint,
+        _revision: identity.revision,
+        _permission: permission,
+      });
+      return !error && data === true;
+    },
+    async nativeCatalog(permissions) {
+      try {
+        const [{ buildManifest }, chat, fusion, nativeChat] = await Promise.all([
+          import("./omni-contract"),
+          import("./omni-delegated-chat.server"),
+          import("./omni-fusion.server"),
+          import("./omni-native-chat.server"),
+        ]);
+        const [chatInstalled, fusionPlanInstalled, fusionPlannerInstalled, nativeChatInstalled] =
+          await Promise.all([
+            chat.delegatedChatInstalled(),
+            fusion.fusionPlanInstalled(),
+            fusion.fusionPlannerInstalled(),
+            nativeChat.nativeChatBackendInstalled(),
+          ]);
+        const manifest = buildManifest(null, {
+          aiConfigured: Boolean(process.env["LOVABLE_API_KEY"]),
+          chatInstalled,
+          fusionPlanInstalled,
+          fusionPlannerInstalled,
+        });
+        const { buildNativeCatalog } = await import("./omni-native-catalog");
+        return buildNativeCatalog(manifest, permissions, {
+          nativeChatInstalled,
+          anthropicConfigured: Boolean(process.env["ANTHROPIC_API_KEY"]),
+        });
+      } catch {
+        return null;
+      }
+    },
+    async nativeProjects(device, identity) {
+      const { nativeProjects } = await import("./omni-native-chat.server");
+      return nativeProjects(device, identity);
+    },
+    async nativeChat(device, identity, input, signal) {
+      const { runNativeChat } = await import("./omni-native-chat.server");
+      return runNativeChat(device, identity, input, signal);
+    },
+    async control(device, c, identity) {
       const now = new Date().toISOString();
       const actor = `device:${device.slice(0, 8)}`;
       const audit = (event: string, agentId: string | null, detail: Record<string, unknown>) =>
@@ -186,6 +278,45 @@ export async function adminDockStore(): Promise<DockStore> {
           .then(() => "confirmed by sandbox")
           .catch((e: unknown) => `not confirmed: ${e instanceof Error ? e.message : "error"}`);
       };
+      if (identity) {
+        const { data, error } = await staged(db).rpc("omni_native_bound_control", {
+          _device: device,
+          _fingerprint: identity.fingerprint,
+          _revision: identity.revision,
+          _action: c.action,
+          _agent: c.action === "stop_job" ? null : c.agentId,
+          _job: c.action === "stop_job" ? c.jobId : null,
+        });
+        const admitted = asReply(data, error);
+        if (admitted.ok !== true) return admitted;
+        if (c.action === "pause_agent")
+          return admitted["paused"] === c.agentId
+            ? { ok: true, paused: c.agentId }
+            : { ok: false, reason: "unavailable" };
+        if (
+          typeof admitted["stopped"] !== "number" ||
+          !Number.isInteger(admitted["stopped"]) ||
+          admitted["stopped"] < 0
+        )
+          return { ok: false, reason: "unavailable" };
+        let r = "queue only";
+        if (c.action === "stop_job" && admitted["remote_action"] === "job.stop") {
+          if (typeof admitted["session_id"] !== "string")
+            return { ok: false, reason: "unavailable" };
+          r = await remote("job.stop", { sessionId: admitted["session_id"], jobId: c.jobId });
+        } else if (c.action === "stop_agent" && admitted["remote_action"] === "agent.stop") {
+          r = await remote("agent.stop", { agentId: c.agentId });
+        } else if (c.action === "stop_agent" || admitted["remote_action"] !== null) {
+          return { ok: false, reason: "unavailable" };
+        }
+        await db.rpc("omni_dock_log", {
+          _device: device,
+          _event: `control_${c.action}_remote`,
+          _outcome: "ok",
+          _detail: r.slice(0, 300),
+        });
+        return { ok: true, stopped: admitted["stopped"], remote: r };
+      }
       if (c.action === "stop_job") {
         const [{ data: wj }, { data: cj }] = await Promise.all([
           db
@@ -277,7 +408,16 @@ export async function adminDockStore(): Promise<DockStore> {
       });
       return { ok: true, stopped, remote: r };
     },
-    async handoffStatus(device) {
+    async handoffStatus(device, identity) {
+      if (identity) {
+        const { data, error } = await staged(db).rpc("omni_native_bound_handoff_status", {
+          _device: device,
+          _fingerprint: identity.fingerprint,
+          _revision: identity.revision,
+        });
+        const reply = asReply(data, error);
+        return reply.ok === true && Array.isArray(reply["jobs"]) ? reply["jobs"] : null;
+      }
       const { data, error } = await db.rpc("omni_dock_handoff_status", { _device: device });
       return error || !Array.isArray(data) ? null : (data as unknown[]);
     },

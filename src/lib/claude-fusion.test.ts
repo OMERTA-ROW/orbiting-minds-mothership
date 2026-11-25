@@ -146,8 +146,9 @@ describe("Claude-bound Fusion turn", () => {
       anthropicKey: KEY,
       claudeFetch: f as unknown as typeof fetch,
     });
-    expect(out).toMatchObject({ ok: false, reason: "claude_not_installed" });
+    expect(out).toMatchObject({ ok: false, reason: "outcome_not_recorded" });
     expect(f).not.toHaveBeenCalled();
+    expect(r.calls.some((c) => c.fn === "omni_fusion_turn_finish")).toBe(false);
   });
 
   it("records the turn as not configured when the Anthropic key is missing", async () => {
@@ -233,11 +234,7 @@ describe("Claude-bound Fusion turn", () => {
       claudeFetch: claudeOk() as unknown as typeof fetch,
     });
     expect(out).toMatchObject({ ok: false, reason: "outcome_not_recorded" });
-    expect(finishOf(r.calls)).toMatchObject({
-      _status: "failed",
-      _reply: null,
-      _error_reason: "outcome_not_recorded",
-    });
+    expect(r.calls.some((c) => c.fn === "omni_fusion_turn_finish")).toBe(false);
   });
 
   it("keeps the current engine for turns without a bound Claude model (before 0075)", async () => {

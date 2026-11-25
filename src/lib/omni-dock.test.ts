@@ -28,7 +28,8 @@ function fakeStore(
       calls.push(`claim:${a.codeHash.slice(0, 6)}`);
       return { ok: true, device_id: DEVICE, branch_kind: "honeycomb_mobile" };
     },
-    loadDevice: async () => (over.jwk ? { public_key: over.jwk } : null),
+    loadDevice: async () =>
+      over.jwk ? { public_key: over.jwk, revision: 0, native_client_id: "omni-native-cli" } : null,
     touch: async (a) => {
       if (nonces.has(a.nonce)) return { ok: false, reason: "replay" };
       nonces.add(a.nonce);
@@ -36,16 +37,47 @@ function fakeStore(
       if (over.status === "revoked") return { ok: false, reason: "revoked" };
       return { ok: true, status: over.status ?? "paired", permissions: over.permissions ?? [] };
     },
+    nativeDeviceStatus: async (device, fingerprint, nonce) => {
+      if (nonces.has(nonce)) return { ok: false, reason: "replay" };
+      nonces.add(nonce);
+      return {
+        ok: true,
+        device_id: device,
+        key_fingerprint: fingerprint,
+        revision: 3,
+        permissions: ["status.read"],
+        checked_at: "2027-01-15T08:00:00+00:00",
+      };
+    },
     log: async (_d, e, o) => void calls.push(`log:${e}:${o}`),
     stopEngaged: async () => true,
     handoffStatus: async () => [],
     cloudSnapshot: async () => (calls.push("cloud"), { agents: [], cloudJobs: [], alerts: [] }),
     auditTail: async () => (calls.push("audit"), []),
+    authorizeNativeRead: async () => true,
+    nativeCatalog: async (permissions) => (
+      calls.push("catalog"),
+      { permissions: [...permissions], chatAvailable: false }
+    ),
+    nativeProjects: async (device) => (
+      calls.push(`projects:${device}`),
+      [{ id: "project-1", name: "Owner project" }]
+    ),
+    nativeChat: async (device, _identity, input) => (
+      calls.push(`chat:${device}:${input.requestId}`),
+      {
+        ok: true,
+        reply: "Settled reply",
+        requestId: input.requestId,
+        toolsAvailable: false,
+        taskExecutionAvailable: false,
+      }
+    ),
     control: async (_d, c) => (calls.push(`control:${c.action}`), { ok: true }),
     engageStop: async () => (calls.push("engage"), true),
     holdTask: async (_d, j) => (
       calls.push(`hold:${j.kind}`),
-      { ok: true, task_id: j.id, duplicate: false }
+      { ok: true, task_id: j.id, state: "held", duplicate: false }
     ),
     ...over,
   };
@@ -149,6 +181,133 @@ describe("signed pairing", () => {
 });
 
 describe("signed device requests", () => {
+  it("binds native admission to the verified key and loaded revision and stops on a rotation refusal", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const { store, calls } = fakeStore({
+      jwk: publicJwk,
+      permissions: ["stop.engage"],
+      loadDevice: async () => ({
+        public_key: publicJwk,
+        revision: 7,
+        native_client_id: "omni-native-cli",
+      }),
+      touch: async (args) => {
+        expect(args.nativeIdentity).toEqual({
+          fingerprint: await keyFingerprint(publicJwk),
+          revision: 7,
+          timestamp: NOW,
+        });
+        return { ok: false, reason: "device_changed" };
+      },
+    });
+    const result = await handleSigned(
+      await signed(DOCK_PATHS.stop, DEVICE, "{}", privateKey),
+      "stop",
+      store,
+      NOW,
+    );
+    expect(result.status).toBe(409);
+    expect(result.body["reason"]).toBe("device_changed");
+    expect(calls).not.toContain("engage");
+  });
+
+  it("keeps legacy pending-device heartbeat on the legacy admission path", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const { store } = fakeStore({
+      jwk: publicJwk,
+      loadDevice: async () => ({ public_key: publicJwk, revision: 0, native_client_id: null }),
+      touch: async (args) => {
+        expect(args.nativeIdentity).toBeUndefined();
+        return { ok: true, status: "pending", permissions: [] };
+      },
+    });
+    const result = await handleSigned(
+      await signed(DOCK_PATHS.heartbeat, DEVICE, "{}", privateKey),
+      "heartbeat",
+      store,
+      NOW,
+    );
+    expect(result.body["status"]).toBe("awaiting_approval");
+  });
+
+  it("withholds a native cloud snapshot if authorization changes after its reads", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const { store, calls } = fakeStore({
+      jwk: publicJwk,
+      permissions: ["cloud.read"],
+      stopEngaged: async () => false,
+      authorizeNativeRead: async () => false,
+    });
+    const result = await handleSigned(
+      await signed(DOCK_PATHS.cloud, DEVICE, "{}", privateKey),
+      "cloud",
+      store,
+      NOW,
+    );
+    expect(calls).toContain("cloud");
+    expect(result.status).toBe(403);
+    expect(result.body).not.toHaveProperty("agents");
+  });
+
+  it("fails closed when the native admission migration is unavailable", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const { store, calls } = fakeStore({
+      jwk: publicJwk,
+      touch: async () => ({ ok: false, reason: "unavailable" }),
+    });
+    const result = await handleSigned(
+      await signed(DOCK_PATHS.heartbeat, DEVICE, "{}", privateKey),
+      "heartbeat",
+      store,
+      NOW,
+    );
+    expect(result.status).toBe(503);
+    expect(result.body["reason"]).toBe("unavailable");
+    expect(calls).toEqual([]);
+  });
+
+  it("reconciles the signed key and rejects replay and changed keys without consulting Stop", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const nonce = "nonce-aaaaaaaaaaaaaaaa";
+    const { store } = fakeStore({ jwk: publicJwk });
+    const req = () => signed(DOCK_PATHS.nativeDeviceStatus, DEVICE, "{}", privateKey, { nonce });
+    const result = await handleSigned(await req(), "nativeDeviceStatus", store, NOW);
+    expect(result.status).toBe(200);
+    expect(result.body).toMatchObject({
+      protocol: "omni.native-device-status/v1",
+      deviceId: DEVICE,
+      keyFingerprint: await keyFingerprint(publicJwk),
+      revision: 3,
+      status: "paired",
+      permissions: ["status.read"],
+    });
+    expect((await handleSigned(await req(), "nativeDeviceStatus", store, NOW)).status).toBe(409);
+    const changed = fakeStore({
+      jwk: publicJwk,
+      nativeDeviceStatus: async () => ({ ok: false, reason: "device_changed" }),
+    });
+    expect(
+      (await handleSigned(await req(), "nativeDeviceStatus", changed.store, NOW)).body["reason"],
+    ).toBe("device_changed");
+    const invalid = fakeStore({
+      jwk: publicJwk,
+      nativeDeviceStatus: async () => ({ ok: true, device_id: DEVICE, revision: 3 }),
+    });
+    expect((await handleSigned(await req(), "nativeDeviceStatus", invalid.store, NOW)).status).toBe(
+      503,
+    );
+    const wrong = await generateDockKey();
+    expect(
+      (
+        await handleSigned(
+          await signed(DOCK_PATHS.nativeDeviceStatus, DEVICE, "{}", wrong.privateKey),
+          "nativeDeviceStatus",
+          store,
+          NOW,
+        )
+      ).status,
+    ).toBe(401);
+  });
   it("heartbeat reports Emergency Stop and every autonomy switch off; replays are refused", async () => {
     const { privateKey, publicJwk } = await generateDockKey();
     const { store } = fakeStore({ jwk: publicJwk, permissions: ["status.read"] });
@@ -267,6 +426,7 @@ describe("signed device requests", () => {
     );
     expect(held.status).toBe(202);
     expect(held.body["state"]).toBe("held");
+    expect(held.body["taskId"]).toBe(job.id);
     const auto = await handleSigned(
       await signed(
         DOCK_PATHS.jobs,
@@ -300,6 +460,40 @@ describe("signed device requests", () => {
       NOW,
     );
     expect(wrongAgent.status).toBe(400);
+  });
+
+  it("does not report a cancelled or invalid duplicate as a held task", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const job = {
+      id: "6b1f1c2a-8a43-4b1e-9d2c-3f6a7b8c9d0e",
+      kind: "code.test",
+      agent: "jackboy",
+      project: "Mothership",
+      instructions: "Add a test",
+    };
+    const send = async (result: Record<string, unknown>) => {
+      const { store } = fakeStore({
+        jwk: publicJwk,
+        permissions: ["jobs.propose"],
+        stopEngaged: async () => false,
+        holdTask: async () => ({ ok: true, ...result }),
+      });
+      return handleSigned(
+        await signed(DOCK_PATHS.jobs, DEVICE, JSON.stringify(job), privateKey),
+        "jobs",
+        store,
+        NOW,
+      );
+    };
+    const cancelled = await send({ task_id: job.id, state: "cancelled", duplicate: true });
+    expect(cancelled.status).toBe(409);
+    expect(cancelled.body["reason"]).toBe("task_cancelled");
+    expect(cancelled.body["state"]).toBeUndefined();
+    const duplicate = await send({ task_id: job.id, state: "held", duplicate: true });
+    expect(duplicate.status).toBe(202);
+    expect(duplicate.body).toMatchObject({ taskId: job.id, state: "held", duplicate: true });
+    expect((await send({ task_id: DEVICE, state: "held" })).status).toBe(503);
+    expect((await send({ task_id: job.id, state: "unknown" })).status).toBe(503);
   });
 
   it("Emergency Stop refuses proposals and the status list", async () => {
@@ -401,6 +595,100 @@ describe("signed device requests", () => {
     const stopped = await run("cloud", ["cloud.read"], true);
     expect(stopped.status).toBe(423);
     expect(stopped.calls).not.toContain("cloud");
+  });
+
+  it("native catalog is signed, permission-scoped, and unavailable under Emergency Stop", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const request = () => signed(DOCK_PATHS.catalog, DEVICE, "{}", privateKey);
+    const denied = fakeStore({ jwk: publicJwk, permissions: ["status.read"] });
+    expect((await handleSigned(await request(), "catalog", denied.store, NOW)).status).toBe(403);
+    expect(denied.calls).not.toContain("catalog");
+
+    const stopped = fakeStore({
+      jwk: publicJwk,
+      permissions: ["cloud.read"],
+      stopEngaged: async () => true,
+    });
+    expect((await handleSigned(await request(), "catalog", stopped.store, NOW)).status).toBe(423);
+    expect(stopped.calls).not.toContain("catalog");
+
+    const allowed = fakeStore({
+      jwk: publicJwk,
+      permissions: ["cloud.read", "jobs.propose"],
+      stopEngaged: async () => false,
+    });
+    const result = await handleSigned(await request(), "catalog", allowed.store, NOW);
+    expect(result.status).toBe(200);
+    expect(result.body["catalog"]).toEqual({
+      permissions: ["cloud.read", "jobs.propose"],
+      chatAvailable: false,
+    });
+    expect(allowed.calls).toContain("catalog");
+  });
+
+  it("native projects and chat require chat.send, a paired device and released Emergency Stop", async () => {
+    const { privateKey, publicJwk } = await generateDockKey();
+    const chat = {
+      protocol: "omni.native-chat/v1",
+      requestId: "a1b2c3d4-e5f6-4789-8abc-123456789012",
+      sessionId: "b1b2c3d4-e5f6-4789-8abc-123456789012",
+      projectId: "c1b2c3d4-e5f6-4789-8abc-123456789012",
+      agentId: "omni",
+      model: "claude-sonnet-5-5",
+      messages: [{ role: "user", content: "Hello" }],
+      consent: true,
+      autonomous: false,
+    };
+    const signedRequest = (kind: "projects" | "chat", body: unknown) =>
+      signed(DOCK_PATHS[kind], DEVICE, JSON.stringify(body), privateKey);
+
+    const denied = fakeStore({
+      jwk: publicJwk,
+      permissions: ["cloud.read"],
+      stopEngaged: async () => false,
+    });
+    expect(
+      (await handleSigned(await signedRequest("projects", {}), "projects", denied.store, NOW))
+        .status,
+    ).toBe(403);
+    expect(denied.calls.some((call) => call.startsWith("projects:"))).toBe(false);
+
+    const stopped = fakeStore({
+      jwk: publicJwk,
+      permissions: ["chat.send"],
+      stopEngaged: async () => true,
+    });
+    expect(
+      (await handleSigned(await signedRequest("chat", chat), "chat", stopped.store, NOW)).status,
+    ).toBe(423);
+    expect(stopped.calls.some((call) => call.startsWith("chat:"))).toBe(false);
+
+    const allowed = fakeStore({
+      jwk: publicJwk,
+      permissions: ["chat.send"],
+      stopEngaged: async () => false,
+    });
+    const projects = await handleSigned(
+      await signedRequest("projects", {}),
+      "projects",
+      allowed.store,
+      NOW,
+    );
+    expect(projects.body["projects"]).toEqual([{ id: "project-1", name: "Owner project" }]);
+    const response = await handleSigned(
+      await signedRequest("chat", chat),
+      "chat",
+      allowed.store,
+      NOW,
+    );
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      ok: true,
+      reply: "Settled reply",
+      toolsAvailable: false,
+      taskExecutionAvailable: false,
+    });
+    expect(allowed.calls).toContain(`chat:${DEVICE}:${chat.requestId}`);
   });
 
   it("control only pauses or stops, needs jobs.pause, and still works under Emergency Stop", async () => {

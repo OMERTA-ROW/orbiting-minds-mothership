@@ -33,9 +33,16 @@ import {
   type DockControl,
   type DockPublicJwk,
 } from "./omni-dock";
+import {
+  NATIVE_CHAT_MAX_BODY_BYTES,
+  nativeChatBodySchema,
+  type NativeChatInput,
+} from "./omni-native-chat";
+import { z } from "zod";
 
 type Reply = { ok?: boolean; reason?: string } & Record<string, unknown>;
 export type StoreReply = Reply;
+export type NativeDeviceIdentity = { fingerprint: string; revision: number };
 
 export interface DockStore {
   claim(a: {
@@ -47,14 +54,25 @@ export interface DockStore {
     appVersion: string;
     capabilities: string[];
   }): Promise<Reply>;
-  loadDevice(id: string): Promise<{ public_key: unknown } | null>;
+  loadDevice(id: string): Promise<{
+    public_key: unknown;
+    revision: number;
+    native_client_id?: string | null;
+  } | null>;
   touch(a: {
     device: string;
     nonce: string;
     event: string;
+    nativeIdentity?: { fingerprint: string; revision: number; timestamp: number };
     capabilities?: string[] | undefined;
     appVersion?: string | undefined;
   }): Promise<Reply>;
+  nativeDeviceStatus(
+    device: string,
+    fingerprint: string,
+    nonce: string,
+    timestamp: number,
+  ): Promise<Reply>;
   log(
     device: string | null,
     event: string,
@@ -63,16 +81,39 @@ export interface DockStore {
   ): Promise<void>;
   /** Must return true when the state cannot be read (fail closed). */
   stopEngaged(): Promise<boolean>;
-  engageStop(device: string): Promise<boolean>;
-  holdTask(device: string, job: import("zod").infer<typeof jobBodySchema>): Promise<Reply>;
+  engageStop(device: string, identity?: NativeDeviceIdentity): Promise<boolean>;
+  holdTask(
+    device: string,
+    job: import("zod").infer<typeof jobBodySchema>,
+    identity?: NativeDeviceIdentity,
+  ): Promise<Reply>;
   /** This device's own tasks with handoff status only; no instructions or output. */
-  handoffStatus(device: string): Promise<unknown[] | null>;
+  handoffStatus(device: string, identity?: NativeDeviceIdentity): Promise<unknown[] | null>;
   /** Metadata-only cloud snapshot (no inputs, outputs or secrets); null when unreadable. */
   cloudSnapshot(device: string, now: number): Promise<Record<string, unknown> | null>;
   /** Metadata-only recent audit entries; null when unreadable. */
   auditTail(device: string): Promise<unknown[] | null>;
+  authorizeNativeRead(
+    device: string,
+    identity: NativeDeviceIdentity,
+    permission: "cloud.read" | "audit.read",
+  ): Promise<boolean>;
+  /** Current, server-read native capability catalog; null when a dependency is unreadable. */
+  nativeCatalog(permissions: readonly string[]): Promise<Record<string, unknown> | null>;
+  /** Owner-scoped project names only; returns null on any authorization/read failure. */
+  nativeProjects(
+    device: string,
+    identity: NativeDeviceIdentity,
+  ): Promise<Record<string, unknown>[] | null>;
+  /** Text-only Claude turn; provider output is returned only after settlement. */
+  nativeChat(
+    device: string,
+    identity: NativeDeviceIdentity,
+    input: NativeChatInput,
+    signal: AbortSignal,
+  ): Promise<Reply>;
   /** Reductions only (pause/stop). Returns what changed, or a refusal reason. */
-  control(device: string, c: DockControl): Promise<Reply>;
+  control(device: string, c: DockControl, identity?: NativeDeviceIdentity): Promise<Reply>;
 }
 
 export type DockResult = { status: number; body: Record<string, unknown> };
@@ -99,12 +140,28 @@ export function dockPreflight(request: Request): Response {
   return new Response(null, { status: 204, headers: corsHeaders(request.headers.get("origin")) });
 }
 
-async function readBody(request: Request): Promise<string | DockResult> {
+async function readBody(
+  request: Request,
+  limit = DOCK_MAX_BODY_BYTES,
+): Promise<string | DockResult> {
   const declared = Number(request.headers.get("content-length") ?? "0");
-  if (declared > DOCK_MAX_BODY_BYTES) return fail(413, "too_large");
-  const text = await request.text();
-  if (new TextEncoder().encode(text).length > DOCK_MAX_BODY_BYTES) return fail(413, "too_large");
-  return text;
+  if (declared > limit) return fail(413, "too_large");
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = "";
+  for (;;) {
+    const part = await reader.read();
+    if (part.done) break;
+    bytes += part.value.byteLength;
+    if (bytes > limit) {
+      await reader.cancel();
+      return fail(413, "too_large");
+    }
+    text += decoder.decode(part.value, { stream: true });
+  }
+  return text + decoder.decode();
 }
 
 function signedHeaders(request: Request, now: number) {
@@ -206,24 +263,43 @@ export async function handlePair(
   };
 }
 
-type SignedKind = "heartbeat" | "jobs" | "stop" | "jobsStatus" | "cloud" | "audit" | "control";
+type SignedKind =
+  | "heartbeat"
+  | "nativeDeviceStatus"
+  | "jobs"
+  | "stop"
+  | "jobsStatus"
+  | "cloud"
+  | "audit"
+  | "control"
+  | "catalog"
+  | "projects"
+  | "chat";
 const EVENT: Record<SignedKind, string> = {
   heartbeat: "heartbeat",
+  nativeDeviceStatus: "native_device_status",
   jobs: "job_request",
   stop: "stop_request",
   jobsStatus: "jobs_status",
   cloud: "cloud_read",
   audit: "audit_read",
   control: "control_request",
+  catalog: "catalog_read",
+  projects: "native_projects_read",
+  chat: "native_chat_request",
 };
 const SCHEMA = {
   heartbeat: heartbeatBodySchema,
+  nativeDeviceStatus: cloudBodySchema,
   jobs: jobBodySchema,
   stop: stopBodySchema,
   jobsStatus: jobsStatusBodySchema,
   cloud: cloudBodySchema,
   audit: auditBodySchema,
   control: controlBodySchema,
+  catalog: cloudBodySchema,
+  projects: cloudBodySchema,
+  chat: nativeChatBodySchema,
 };
 
 export async function handleSigned(
@@ -231,8 +307,12 @@ export async function handleSigned(
   kind: SignedKind,
   store: DockStore,
   now: number,
+  signal: AbortSignal = request.signal,
 ): Promise<DockResult> {
-  const text = await readBody(request);
+  const text = await readBody(
+    request,
+    kind === "chat" ? NATIVE_CHAT_MAX_BODY_BYTES : DOCK_MAX_BODY_BYTES,
+  );
   if (typeof text !== "string") return text;
   const headers = signedHeaders(request, now);
   if ("status" in headers) return headers;
@@ -254,18 +334,89 @@ export async function handleSigned(
   }
   const body = SCHEMA[kind].safeParse(parseJson(text));
   if (!body.success) return fail(400, "invalid_body");
+  if (kind === "nativeDeviceStatus") {
+    const fingerprint = await keyFingerprint(jwk.data);
+    const result = await store.nativeDeviceStatus(
+      headers.device,
+      fingerprint,
+      headers.nonce,
+      Number(headers.timestamp),
+    );
+    if (result.ok !== true) {
+      const reason = typeof result.reason === "string" ? result.reason : "unavailable";
+      return fail(
+        reason === "replay" || reason === "device_changed"
+          ? 409
+          : reason === "stale_request"
+            ? 401
+            : reason === "unavailable"
+              ? 503
+              : 403,
+        reason,
+      );
+    }
+    const parsed = z
+      .object({
+        device_id: z.string().uuid(),
+        revision: z.number().int().nonnegative(),
+        key_fingerprint: z.string().regex(/^[0-9a-f]{64}$/),
+        permissions: z.array(z.string()),
+        checked_at: z.string().datetime({ offset: true }),
+      })
+      .safeParse(result);
+    if (
+      !parsed.success ||
+      parsed.data.device_id !== headers.device ||
+      parsed.data.key_fingerprint !== fingerprint
+    )
+      return fail(503, "unavailable");
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        protocol: "omni.native-device-status/v1",
+        deviceId: parsed.data.device_id,
+        status: "paired",
+        revision: parsed.data.revision,
+        keyFingerprint: parsed.data.key_fingerprint,
+        permissions: parsed.data.permissions,
+        checkedAt: parsed.data.checked_at,
+      },
+    };
+  }
   const hb =
     kind === "heartbeat" ? (body.data as { appVersion?: string; capabilities?: string[] }) : {};
+  const nativeIdentity =
+    device.native_client_id === "omni-native-cli"
+      ? { fingerprint: await keyFingerprint(jwk.data), revision: device.revision }
+      : undefined;
   const touched = await store.touch({
     device: headers.device,
     nonce: headers.nonce,
     event: EVENT[kind],
+    ...(nativeIdentity
+      ? {
+          nativeIdentity: {
+            ...nativeIdentity,
+            timestamp: Number(headers.timestamp),
+          },
+        }
+      : {}),
     capabilities: hb.capabilities,
     appVersion: hb.appVersion,
   });
   if (!touched.ok) {
     const reason = String(touched.reason ?? "unknown_device");
-    return fail(reason === "replay" ? 409 : 403, reason);
+    return fail(
+      reason === "replay" || reason === "device_changed"
+        ? 409
+        : reason === "unavailable"
+          ? 503
+          : reason === "stale_request"
+            ? 401
+            : 403,
+      reason,
+    );
   }
   const permissions = Array.isArray(touched["permissions"])
     ? (touched["permissions"] as string[])
@@ -295,7 +446,8 @@ export async function handleSigned(
       await store.log(headers.device, "stop_engage", "denied", "Not permitted");
       return fail(403, "not_permitted");
     }
-    if (!(await store.engageStop(headers.device))) return fail(403, "not_permitted");
+    if (!(await store.engageStop(headers.device, nativeIdentity)))
+      return fail(403, "not_permitted");
     return {
       status: 200,
       body: { ...state, emergencyStop: "engaged", message: "Emergency Stop engaged." },
@@ -305,7 +457,7 @@ export async function handleSigned(
   if (kind === "jobsStatus") {
     if (!paired || !permissions.includes("status.read")) return fail(403, "not_permitted");
     if (engaged) return fail(423, "stop_engaged");
-    const jobs = await store.handoffStatus(headers.device);
+    const jobs = await store.handoffStatus(headers.device, nativeIdentity);
     if (!jobs) return fail(503, "unavailable");
     return { status: 200, body: { ...state, executor: "none", jobs } };
   }
@@ -317,8 +469,12 @@ export async function handleSigned(
       return fail(403, "not_permitted");
     }
     const c = body.data as DockControl;
-    const r = await store.control(headers.device, c);
-    if (!r.ok) return fail(r.reason === "not_found" ? 404 : 503, String(r.reason ?? "unavailable"));
+    const r = await store.control(headers.device, c, nativeIdentity);
+    if (!r.ok)
+      return fail(
+        r.reason === "not_found" ? 404 : r.reason === "device_changed" ? 409 : 503,
+        String(r.reason ?? "unavailable"),
+      );
     return { status: 200, body: { ...state, ...r, action: c.action } };
   }
 
@@ -329,11 +485,54 @@ export async function handleSigned(
     if (kind === "cloud") {
       const snap = await store.cloudSnapshot(headers.device, now);
       if (!snap) return fail(503, "unavailable");
+      if (
+        nativeIdentity &&
+        !(await store.authorizeNativeRead(headers.device, nativeIdentity, need))
+      )
+        return fail(403, "not_permitted");
       return { status: 200, body: { ...state, ...snap } };
     }
     const entries = await store.auditTail(headers.device);
     if (!entries) return fail(503, "unavailable");
+    if (nativeIdentity && !(await store.authorizeNativeRead(headers.device, nativeIdentity, need)))
+      return fail(403, "not_permitted");
     return { status: 200, body: { ...state, entries } };
+  }
+
+  if (kind === "catalog") {
+    if (!paired || !permissions.includes("cloud.read")) return fail(403, "not_permitted");
+    if (engaged) return fail(423, "stop_engaged");
+    const catalog = await store.nativeCatalog(permissions);
+    if (!catalog) return fail(503, "unavailable");
+    if (
+      nativeIdentity &&
+      !(await store.authorizeNativeRead(headers.device, nativeIdentity, "cloud.read"))
+    )
+      return fail(403, "not_permitted");
+    return { status: 200, body: { ...state, catalog } };
+  }
+
+  if (kind === "projects") {
+    if (!nativeIdentity || !paired || !permissions.includes("chat.send"))
+      return fail(403, "not_permitted");
+    if (engaged) return fail(423, "stop_engaged");
+    const projects = await store.nativeProjects(headers.device, nativeIdentity);
+    if (!projects) return fail(503, "unavailable");
+    return { status: 200, body: { ...state, projects } };
+  }
+
+  if (kind === "chat") {
+    if (!nativeIdentity || !paired || !permissions.includes("chat.send"))
+      return fail(403, "not_permitted");
+    if (engaged) return fail(423, "stop_engaged");
+    const input = body.data as NativeChatInput;
+    const result = await store.nativeChat(headers.device, nativeIdentity, input, signal);
+    if (result.ok !== true) {
+      const status = typeof result["status"] === "number" ? result["status"] : 503;
+      const { status: _status, reason, ...detail } = result;
+      return fail(status, String(reason ?? "unavailable"), detail);
+    }
+    return { status: 200, body: { ...state, ...result } };
   }
 
   const job = body.data as import("zod").infer<typeof jobBodySchema>;
@@ -356,12 +555,23 @@ export async function handleSigned(
     await store.log(headers.device, "job_propose", "refused", "Emergency Stop engaged");
     return fail(423, "stop_engaged");
   }
-  const held = await store.holdTask(headers.device, job);
+  const held = await store.holdTask(headers.device, job, nativeIdentity);
   if (!held.ok)
     return fail(
-      held.reason === "daily_limit" ? 429 : held.reason === "id_conflict" ? 409 : 403,
+      held.reason === "daily_limit"
+        ? 429
+        : held.reason === "id_conflict" || held.reason === "device_changed"
+          ? 409
+          : held.reason === "stop_engaged"
+            ? 423
+            : held.reason === "unavailable"
+              ? 503
+              : 403,
       String(held.reason),
     );
+  if (held["task_id"] !== job.id) return fail(503, "unavailable");
+  if (held["state"] === "cancelled") return fail(409, "task_cancelled");
+  if (held["state"] !== "held") return fail(503, "unavailable");
   return {
     status: 202,
     body: {

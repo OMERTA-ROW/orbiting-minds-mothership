@@ -118,7 +118,7 @@ describe("Claude chat path", () => {
     });
   }
   it("refuses when the ledger is missing", async () => {
-    const { rpc } = fakeRpc({ claude_reserve: null });
+    const { rpc, calls } = fakeRpc({ claude_reserve: null });
     const f = okFetch();
     const res = await omniDelegatedChat(req("claude-sonnet-5-5"), {
       rpc,
@@ -127,6 +127,41 @@ describe("Claude chat path", () => {
     });
     expect((await res.json()).error ?? "").not.toBe("");
     expect(f).not.toHaveBeenCalled();
+    expect(calls).not.toContain("omni_delegation_finish_chat");
+  });
+  it("withholds the reply and keeps the guard when Claude settlement is uncertain", async () => {
+    for (const settlement of [
+      null,
+      { ok: false, actual_cents: 2 },
+      { ok: true, actual_cents: -1 },
+    ]) {
+      const { rpc, calls } = fakeRpc({ claude_settle: settlement });
+      const res = await omniDelegatedChat(req("claude-sonnet-5-5"), {
+        rpc,
+        anthropicKey: () => KEY,
+        claudeFetch: okFetch(),
+      });
+      expect(res.status).toBe(503);
+      expect(await res.json()).toMatchObject({
+        ok: false,
+        error: "outcome_not_recorded",
+        aiPaused: true,
+      });
+      expect(calls).not.toContain("omni_delegation_finish_chat");
+      expect(calls).not.toContain("omni_delegation_chat_save");
+    }
+  });
+  it("never calls Claude on a malformed successful reservation", async () => {
+    const { rpc, calls } = fakeRpc({ claude_reserve: { ok: true, estimate_cents: 51 } });
+    const f = okFetch();
+    const res = await omniDelegatedChat(req("claude-sonnet-5-5"), {
+      rpc,
+      anthropicKey: () => KEY,
+      claudeFetch: f,
+    });
+    expect(res.status).toBe(503);
+    expect(f).not.toHaveBeenCalled();
+    expect(calls).not.toContain("omni_delegation_finish_chat");
   });
   it("refuses with no key and no database call", async () => {
     const { rpc } = fakeRpc();

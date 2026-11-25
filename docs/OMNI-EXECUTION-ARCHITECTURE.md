@@ -61,6 +61,12 @@ All items below require separate, explicit owner authorization and remain
    autonomy disabled until all required controls and a separate release
    decision are satisfied.
 
+The executor source now identifies itself as `omni-bounded-plan-3-unreviewed`.
+Existing activation and Jackboy gates still expect `omni-bounded-plan-2`, so
+this revision must not be armed by reusing the prior release approval. A
+reviewed release requires coordinated upstream compatibility, independent
+review and new host evidence before those gates can be updated.
+
 The normal Vitest suite exercises portable executor and workspace
 decision/lease lifecycle tests with synthetic authority, and discovers the
 systemd lifecycle cases but skips them without the disposable Linux fixture.
