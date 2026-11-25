@@ -17,6 +17,10 @@ and `flagEnabled` controls from the Mothership, then test on the Vultr host with
 synthetic job, Stop and cleanup. Enable the flag only after those checks pass. Never
 enable it on production first.
 
+## Non-root staging test user
+
+As the host administrator, create a dedicated account with an unused UID of 1000 or higher (for example, `useradd --create-home --uid 1000 --shell /bin/bash omni-stage`, substituting an available UID). Log in directly as this user through SSH or the console; do not switch to it with `su`, so systemd creates a user session and delegated cgroups are available. No sudo grant or AppArmor changes are needed for this setup.
+
 ## Runtime prerequisites
 
 - Dedicated VM, unified writable cgroup v2, systemd 249 or newer. Linux 5.14 is the minimum
