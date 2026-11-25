@@ -3,6 +3,93 @@ import { startWorkspaceCommand } from "./supervisor.mjs";
 import { signWorkerRecord, verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerSocketServer } from "./worker-socket.mjs";
 
+export function createLeasedSessionWorkspace({
+  parent,
+  reservationSignal,
+  runCommand = startWorkspaceCommand,
+}) {
+  if (
+    typeof parent !== "string" ||
+    !fs.statSync(parent).isDirectory() ||
+    !reservationSignal ||
+    typeof reservationSignal.addEventListener !== "function" ||
+    typeof reservationSignal.aborted !== "boolean" ||
+    typeof runCommand !== "function"
+  )
+    throw new Error("A reserved session workspace requires a directory and reservation signal.");
+  if (reservationSignal.aborted) throw new Error("Session reservation is no longer active.");
+
+  const workspace = fs.mkdtempSync(`${parent}/omni-session-workspace-`);
+  let ended = false;
+  let activeJob;
+  let pendingStart;
+  let cleanup;
+  let running = false;
+  const wipe = () => fs.rmSync(workspace, { recursive: true, force: true });
+  const stopAndWipe = async (job) => {
+    try {
+      await job.stop?.();
+    } catch {}
+    try {
+      await job.completed;
+    } catch {}
+    wipe();
+  };
+  const reservationLost = () => {
+    ended = true;
+    if (activeJob) cleanup = stopAndWipe(activeJob);
+    else if (pendingStart) cleanup = pendingStart.then(stopAndWipe, wipe);
+    else {
+      try {
+        wipe();
+        cleanup = Promise.resolve();
+      } catch (error) {
+        cleanup = Promise.reject(error);
+      }
+    }
+    void cleanup.catch(() => {});
+  };
+  reservationSignal.addEventListener("abort", reservationLost, { once: true });
+
+  return {
+    async run(options) {
+      if (ended || reservationSignal.aborted)
+        throw new Error("Session reservation is no longer active.");
+      if (running) throw new Error("A session workspace command is already running.");
+      running = true;
+      try {
+        pendingStart = Promise.resolve(
+          runCommand({ ...options, work: workspace, ephemeral: false }),
+        );
+        activeJob = await pendingStart;
+        pendingStart = undefined;
+        if (ended || reservationSignal.aborted) {
+          await (cleanup ?? stopAndWipe(activeJob));
+          throw new Error("Session reservation is no longer active.");
+        }
+        return await activeJob.completed;
+      } finally {
+        activeJob = undefined;
+        pendingStart = undefined;
+        running = false;
+        if (ended) await (cleanup ?? Promise.resolve().then(wipe));
+      }
+    },
+    async end() {
+      if (!ended) {
+        ended = true;
+        reservationSignal.removeEventListener("abort", reservationLost);
+      }
+      cleanup ??= activeJob
+        ? stopAndWipe(activeJob)
+        : pendingStart
+          ? pendingStart.then(stopAndWipe, wipe)
+          : Promise.resolve().then(wipe);
+      await cleanup;
+    },
+  };
+}
+
 export async function serveLeasedWorker({ parent, workerId, secret, socketPath, coordinatorGid }) {
   const uid = process.getuid?.();
   const status = fs.readFileSync("/proc/self/status", "utf8");
