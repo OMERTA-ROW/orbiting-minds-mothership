@@ -50,12 +50,9 @@ test("leased watchdog refuses an invalid session watch signature before starting
     expiresAt: Date.now() + 1000,
   };
   let started = false;
-  const handleWatch = createLeasedWatchHandler(
-    { secret, workerId: record.workerId },
-    async () => {
-      started = true;
-    },
-  );
+  const handleWatch = createLeasedWatchHandler({ secret, workerId: record.workerId }, async () => {
+    started = true;
+  });
 
   await assert.rejects(
     handleWatch({ record, signature: "0".repeat(64) }),

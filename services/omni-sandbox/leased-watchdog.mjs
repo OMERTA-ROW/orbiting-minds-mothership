@@ -37,12 +37,7 @@ export function createLeasedWatchHandler(config, watch = watchSystemdWorker, onF
     }
     const identityKeys = ["leaseId", "workerId", "ownerId", "projectId", "sessionId"];
     if (record.contract !== SESSION_CONTRACT) identityKeys.push("jobId");
-    const bindingIdentity = Object.fromEntries(
-      identityKeys.map((key) => [
-        key,
-        record[key],
-      ]),
-    );
+    const bindingIdentity = Object.fromEntries(identityKeys.map((key) => [key, record[key]]));
     watching = {
       binding: bindingIdentity,
       promise: watch({
@@ -79,10 +74,7 @@ export async function serveLeasedWatchdog(config) {
     throw new Error("Watchdog requires a separate hardened identity and private activated socket.");
   const handleWatch = createLeasedWatchHandler(config, watchSystemdWorker, (error) => {
     // BindsTo + After on the worker stop it if the independent watchdog fails.
-    console.error(
-      "Independent watchdog failed; refusing cleanup acknowledgement:",
-      error.message,
-    );
+    console.error("Independent watchdog failed; refusing cleanup acknowledgement:", error.message);
     setImmediate(() => process.exit(1));
   });
   const server = workerSocketServer(handleWatch);
