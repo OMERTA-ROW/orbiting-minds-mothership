@@ -45,7 +45,7 @@ export function createLeasedWatchHandler(config, watch = watchSystemdWorker, onF
     );
     watching = {
       binding: bindingIdentity,
-      promise: watchSystemdWorker({
+      promise: watch({
         ...config,
         binding: bindingIdentity,
         recover: record.recover,
@@ -59,7 +59,7 @@ export function createLeasedWatchHandler(config, watch = watchSystemdWorker, onF
     } finally {
       watching = undefined;
     }
-  });
+  };
 }
 
 export async function serveLeasedWatchdog(config) {

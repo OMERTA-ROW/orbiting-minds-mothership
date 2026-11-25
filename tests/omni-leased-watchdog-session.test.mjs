@@ -63,3 +63,34 @@ test("leased watchdog refuses an invalid session watch signature before starting
   );
   assert.equal(started, false);
 });
+
+test("leased watchdog reports a watch failure and refuses its cleanup acknowledgement", async () => {
+  const record = {
+    leaseId: randomUUID(),
+    workerId: "worker-one",
+    ownerId: randomUUID(),
+    projectId: "omni",
+    sessionId: randomUUID(),
+    contract: "omni.workspace-session/v1",
+    kind: "watch",
+    recover: false,
+    expiresAt: Date.now() + 1000,
+  };
+  const failure = new Error("cleanup failed");
+  let reported;
+  const handleWatch = createLeasedWatchHandler(
+    { secret, workerId: record.workerId },
+    async () => {
+      throw failure;
+    },
+    (error) => {
+      reported = error;
+    },
+  );
+
+  await assert.rejects(
+    handleWatch({ record, signature: signWorkerRecord(secret, record) }),
+    failure,
+  );
+  assert.equal(reported, failure);
+});
