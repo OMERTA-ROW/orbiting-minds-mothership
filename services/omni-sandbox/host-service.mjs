@@ -32,6 +32,8 @@ sandbox.server.listen(config.port, "127.0.0.1", () => {
 });
 for (const signal of ["SIGINT", "SIGTERM"])
   process.once(signal, () => {
-    sandbox.close();
-    process.exit(0);
+    void sandbox.close().catch((error) => {
+      console.error("Sandbox shutdown failed:", error.message);
+      process.exitCode = 1;
+    });
   });

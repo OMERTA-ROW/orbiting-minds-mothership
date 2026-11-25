@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { delegatedCgroupRoot } from "../../services/omni-sandbox/cgroup.mjs";
 import { startWorkspaceCommand } from "../../services/omni-sandbox/supervisor.mjs";
+import { launchWorkspaceJob } from "../../services/omni-sandbox/workspace-command.mjs";
 
 const uid = process.getuid?.();
 const parent = delegatedCgroupRoot(process.env.OMNI_WORKSPACE_TEST_CGROUP);
@@ -128,5 +129,36 @@ test(
     assert.ok(Date.now() - started < 3000);
     assert.doesNotMatch(job.output(), /LATE/);
     await assert.rejects(fs.stat(path.join(parent, `job-${job.jobId}`)), { code: "ENOENT" });
+  },
+);
+
+test(
+  "service command lifecycle preserves a session workspace across jobs",
+  { timeout: 15000 },
+  async (t) => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "omni-workspace-session-"));
+    let safeToRemove = true;
+    t.after(() => (safeToRemove ? fs.rm(dir, { recursive: true, force: true }) : undefined));
+    const run = async (command) => {
+      const job = { state: "queued", events: [], outBytes: 0 };
+      const options = {
+        parent,
+        jobId: randomUUID(),
+        work: dir,
+        uid,
+        command,
+        limits: { ...limits, outputCapBytes: 4096, commandTimeoutSec: 5 },
+      };
+      safeToRemove = false;
+      const control = launchWorkspaceJob(job, options, () => {});
+      await control.finished;
+      safeToRemove = true;
+      assert.equal(job.state, "done", JSON.stringify(job.events));
+      await assert.rejects(fs.stat(path.join(parent, `job-${options.jobId}`)), { code: "ENOENT" });
+      return job;
+    };
+    await run("printf 'persisted' > /work/marker");
+    const result = await run("cat /work/marker");
+    assert.match(result.events.map((event) => event.text ?? "").join(""), /persisted/);
   },
 );

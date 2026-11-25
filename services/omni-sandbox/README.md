@@ -134,8 +134,12 @@ database write fails between those steps, startup refuses the missing unfinished
 requires manual investigation. This deliberately sacrifices automatic recovery rather than
 recording a termination before cleanup. It does not wipe or verify session storage.
 
-The existing command handler does not yet write the job journal or use cgroups for execution.
-This recovery path therefore does not make the service safe to execute commands. It does not stop
+The quarantined command path now writes its decision and job claim before launching the
+bubblewrap supervisor and records termination only after supervisor cleanup. Stop and session
+cleanup await that result, and a pending journal entry blocks another command. The serving
+service still refuses session and command admission, and its non-root host cannot allocate the
+distinct session identities expected by the historical session model. This recovery path
+therefore does not make the service safe to execute commands. It does not stop
 jobs while the supervisor is down; a separate fail-closed watchdog and renewable authority are still
 required. The recorded `terminated` state confirms cgroup emptiness, not broader containment or a
 remote Stop acknowledgement.
@@ -145,14 +149,15 @@ the mount, user, PID, network, IPC and UTS namespaces; the launcher is attached 
 job cgroup while blocked before it can enter bubblewrap. Only `/usr`, a private `/tmp`, a new
 `/proc` and `/dev`, and the session's workspace are mounted, with a cleared environment. The
 disposable `workspace-host-historical` fixture uses a temporary copy of the service with its
-quarantine removed and routes commands to this boundary. The unchanged historical assertions
+quarantine removed and exercises the same command launcher. The historical assertions
 exercise that fixture, not the quarantined production entrypoint. This is not a deployable
 supervisor: renewable authority, independent crash supervision, total disk quotas, robust
-startup/Stop race handling and serving-runtime verification are missing. Do not enable execution.
+session identity and serving-runtime verification are missing. Do not enable execution.
 
 The command decision handler has a prepared transactional claim path that validates the owner,
 project, session, job and pending command and writes the decision and job claim together. A separate
-hard refusal precedes it until the isolated supervisor exists, in addition to the outer quarantine.
+hard refusal precedes it until the full supervised session boundary is verified, in addition to the
+outer quarantine.
 No approved command is claimed or started by the running service while that refusal remains.
 
 ## Experimental leased host lifecycle

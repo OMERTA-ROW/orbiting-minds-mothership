@@ -6,7 +6,8 @@ Obtain separate owner authorization before changing the staging host. Do not
 use a production host, credentials, database or service. The bounded executor
 and its isolation test are separate and do not certify this service.
 
-The current service does not use bubblewrap for its historical launcher.
+The quarantined service has a bubblewrap command path, but refuses session
+and command admission and still uses its historical launcher for the health probe.
 Its signed evidence must report `bubblewrapActive: false` and
 `persistence: "unverified"`. The packaged non-root host intentionally does
 not run the historical root-only probe; `nonRootObserved` is false and
@@ -36,10 +37,11 @@ OMNI_WORKSPACE_ISOLATION_TEST=true \
   node --test tests/omni-workspace-linux.test.mjs
 ```
 
-Expect four passes. The deadline test invokes Stop from the test harness; it
-does not establish that the workspace service enforces timeouts. A passing
-result is not evidence that the workspace service has adopted this supervisor,
-that persistence is durable, or that deployment or execution is approved.
+For this revision expect five passes; the original `207704b` diagnostic has four.
+The deadline test invokes Stop from the test harness. The session-workspace
+test exercises the command lifecycle directly, not the serving endpoint. A
+passing result does not establish durable storage, renewable authority,
+serving-runtime containment, or approval to deploy or execute.
 
 ## Preparation
 
