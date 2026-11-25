@@ -88,7 +88,11 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
       const firstSteps = [...firstReply.steps];
       for (
         let i = 0;
-        i < 50 && !firstSteps.map((step) => step.body).join("").includes(`job-${firstJob.jobId}`);
+        i < 50 &&
+        !firstSteps
+          .map((step) => step.body)
+          .join("")
+          .includes(`job-${firstJob.jobId}`);
         i++
       ) {
         await new Promise((resolve) => setTimeout(resolve, 25));
