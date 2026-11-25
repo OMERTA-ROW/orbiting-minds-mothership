@@ -35,8 +35,11 @@ function replaceSection(start, end, replacement) {
 
 replaceOnce(
   'from "./recovery.mjs";',
-  `from ${JSON.stringify(pathToFileURL(path.join(serviceDir, "recovery.mjs")).href)};\n` +
-    `import { startWorkspaceCommand } from ${JSON.stringify(pathToFileURL(path.join(serviceDir, "supervisor.mjs")).href)};`,
+  `from ${JSON.stringify(pathToFileURL(path.join(serviceDir, "recovery.mjs")).href)};`,
+);
+replaceOnce(
+  'from "./workspace-command.mjs";',
+  `from ${JSON.stringify(pathToFileURL(path.join(serviceDir, "workspace-command.mjs")).href)};`,
 );
 replaceOnce(
   'from "./nonce-reconciler.mjs";',
@@ -55,20 +58,6 @@ replaceOnce(
     '        if (b.approve && job.pending.kind === "command")\n' +
     '          throw new Refusal("The isolated workspace command supervisor is unavailable.");\n',
   "",
-);
-replaceOnce("          run(s, job, command);", "          await run(s, job, command);");
-replaceOnce(
-  'for (const j of s.jobs.values()) if (!b.jobId || j.id === b.jobId) killJob(j, "owner");',
-  'for (const j of s.jobs.values()) if (!b.jobId || j.id === b.jobId) await killJob(j, "owner");',
-);
-replaceOnce(
-  'for (const s of sessions.values()) for (const j of s.jobs.values()) killJob(j, "owner");',
-  'for (const s of sessions.values()) for (const j of s.jobs.values()) await killJob(j, "owner");',
-);
-replaceOnce('if (s) endSession(s, "owner");', 'if (s) await endSession(s, "owner");');
-replaceOnce(
-  '        endSession(s, "timeout");',
-  '        void endSession(s, "timeout").catch((error) => console.error("Fixture cleanup failed:", error));',
 );
 if (imageFixture) {
   replaceOnce("          const uid = c.uidBase + slot;", "          const uid = process.getuid();");
@@ -102,94 +91,24 @@ function probe(c, net) {
   );
 }
 
-replaceSection(
-  "  function killJob(job, reason) {",
-  "  const reaper =",
-  `
-  async function killJob(job, reason) {
-    if (job.control && job.state === "running") {
-      job.stopReason = reason;
-      if (reason === "time limit")
-        job.events.push({ stream: "system", text: \`Time limit of \${c.limits.commandTimeoutSec}s reached; command stopped.\` });
-      await job.control.stop();
-      await job.finished;
-    } else if (job.state === "awaiting_approval" || job.state === "queued") {
-      job.pending = null;
-      job.state = "stopped";
-    }
-  }
-  async function endSession(s, reason) {
-    for (const j of s.jobs.values()) await killJob(j, reason);
-    fs.rmSync(s.dir, { recursive: true, force: true });
-    fs.rmSync(s.mirror, { recursive: true, force: true });
-    sessions.delete(s.id);
-  }
-`,
-);
-
-replaceSection(
-  "  function run(s, job, command) {",
-  "  // -------------------------------------------------------------- git",
-  `
-  async function run(s, job, command) {
-    job.state = "running";
-    let control;
-    try {
-      control = await startWorkspaceCommand({
-        parent: process.env.OMNI_WORKSPACE_DELEGATED_CGROUP,
-        jobId: job.id, work: s.work, uid: s.uid, limits: c.limits, command,
-      });
-    } catch (error) {
-      console.error("Fixture supervisor startup failed:", error.message);
-      job.state = "failed";
-      job.events.push({ stream: "system", text: \`Supervisor startup failed: \${error.message}\` });
-      job.events.push({ stream: "exit", code: -1, signal: null });
-      return;
-    }
-    job.control = control;
-    const cap = c.limits.outputCapBytes;
-    const onData = (stream) => (buffer) => {
-      const part = buffer.subarray(0, Math.max(0, cap - job.outBytes));
-      job.outBytes += part.length;
-      if (part.length) job.events.push({ stream, text: part.toString("utf8") });
-      if (job.outBytes >= cap && !job.stopReason) {
-        job.events.push({ stream: "system", text: \`Output cap of \${cap} bytes reached; command stopped.\` });
-        void killJob(job, "output cap").catch((error) => console.error("Fixture Stop failed:", error));
-      }
-    };
-    control.child.stdout.on("data", onData("stdout"));
-    control.child.stderr.on("data", onData("stderr"));
-    const timer = setTimeout(() => {
-      void killJob(job, "time limit").catch((error) => console.error("Fixture Stop failed:", error));
-    }, c.limits.commandTimeoutSec * 1000);
-    job.finished = control.completed.then(({ code, signal }) => {
-      clearTimeout(timer);
-      job.exit = job.stopReason ? -1 : (code ?? -1);
-      job.state = job.stopReason ? "stopped" : code === 0 ? "done" : "failed";
-      job.events.push({ stream: "exit", code: job.exit, signal: signal ?? null });
-    }, (error) => {
-      clearTimeout(timer);
-      job.state = "failed";
-      job.events.push({ stream: "system", text: \`Cgroup termination was not confirmed: \${error.message}\` });
-    });
-  }
-
-`,
-);
-
 const modulePath = path.join(temp, "server.mjs");
 fs.writeFileSync(modulePath, source, { mode: 0o600 });
 try {
   const { createSandbox, loadConfig } = await import(pathToFileURL(modulePath).href);
   const c = loadConfig();
+  c.cgroupParent = process.env.OMNI_WORKSPACE_DELEGATED_CGROUP;
   const sb = createSandbox(c);
   await sb.ready;
   sb.server.listen(c.port, imageFixture ? "0.0.0.0" : "127.0.0.1");
   for (const signal of ["SIGINT", "SIGTERM"])
     process.on(signal, () => {
-      sb.close();
-      fs.rmSync(temp, { recursive: true, force: true });
-      process.exit(0);
+      void sb.close().then(
+        () => fs.rmSync(temp, { recursive: true, force: true }),
+        (error) => {
+          console.error("Fixture shutdown failed:", error.message);
+          process.exitCode = 1;
+        },
+      );
     });
 } catch (error) {
   fs.rmSync(temp, { recursive: true, force: true });

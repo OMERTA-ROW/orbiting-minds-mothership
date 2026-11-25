@@ -1,7 +1,7 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const identityKeys = ["leaseId", "workerId", "ownerId", "projectId", "sessionId", "jobId"];
+const sessionKeys = ["leaseId", "workerId", "ownerId", "projectId", "sessionId"];
 
 export function signWorkerRecord(secret, record) {
   if (typeof secret !== "string" || secret.length < 32)
@@ -9,9 +9,11 @@ export function signWorkerRecord(secret, record) {
   return createHmac("sha256", secret).update(JSON.stringify(record)).digest("hex");
 }
 
-export function verifyWorkerRecord(secret, envelope, binding) {
+function verifyRecord(secret, envelope, binding, keys) {
   if (
-    !["leaseId", "ownerId", "sessionId", "jobId"].every((key) => UUID.test(binding?.[key] ?? "")) ||
+    !keys
+      .filter((key) => ["leaseId", "ownerId", "sessionId", "jobId"].includes(key))
+      .every((key) => UUID.test(binding?.[key] ?? "")) ||
     !/^[a-z0-9-]{1,32}$/.test(binding?.workerId ?? "") ||
     !/^[A-Za-z0-9_.:-]{1,80}$/.test(binding?.projectId ?? "")
   )
@@ -25,9 +27,20 @@ export function verifyWorkerRecord(secret, envelope, binding) {
   const signature = signWorkerRecord(secret, envelope.record);
   if (!timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(envelope.signature, "hex")))
     throw new Error("Invalid worker control signature.");
-  if (!identityKeys.every((key) => envelope.record?.[key] === binding[key]))
+  if (!keys.every((key) => envelope.record?.[key] === binding[key]))
     throw new Error("Worker control identity mismatch.");
   return envelope.record;
+}
+
+export function verifyWorkerRecord(secret, envelope, binding) {
+  return verifyRecord(secret, envelope, binding, [...sessionKeys, "jobId"]);
+}
+
+export function verifySessionRecord(secret, envelope, binding) {
+  const record = verifyRecord(secret, envelope, binding, sessionKeys);
+  if (record.contract !== "omni.workspace-session/v1")
+    throw new Error("Invalid session control contract.");
+  return record;
 }
 
 export function createWorkerLeases(database, workers) {
@@ -56,6 +69,35 @@ export function createWorkerLeases(database, workers) {
       ON workspace_worker_leases(session_id) WHERE state != 'released';
     CREATE UNIQUE INDEX IF NOT EXISTS workspace_job_single_use
       ON workspace_worker_leases(job_id);
+    CREATE TABLE IF NOT EXISTS workspace_session_leases (
+      lease_id TEXT PRIMARY KEY NOT NULL, worker_id TEXT NOT NULL, owner_id TEXT NOT NULL,
+      project_id TEXT NOT NULL, session_id TEXT NOT NULL UNIQUE,
+      state TEXT NOT NULL CHECK(state IN ('leased','quarantined','released'))
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS workspace_session_worker_exclusive
+      ON workspace_session_leases(worker_id) WHERE state != 'released';
+    CREATE TRIGGER IF NOT EXISTS workspace_job_session_global_conflict_insert
+      BEFORE INSERT ON workspace_worker_leases WHEN NEW.state != 'released' AND EXISTS (
+        SELECT 1 FROM workspace_session_leases WHERE state != 'released'
+      ) BEGIN SELECT RAISE(ABORT, 'Worker or session already has a session lease.'); END;
+    CREATE TRIGGER IF NOT EXISTS workspace_job_session_global_conflict_update
+      BEFORE UPDATE OF worker_id, session_id, state ON workspace_worker_leases
+      WHEN NEW.state != 'released' AND
+      (OLD.state = 'released' OR OLD.worker_id != NEW.worker_id OR OLD.session_id != NEW.session_id)
+      AND EXISTS (
+        SELECT 1 FROM workspace_session_leases WHERE state != 'released'
+      ) BEGIN SELECT RAISE(ABORT, 'Worker or session already has a session lease.'); END;
+    CREATE TRIGGER IF NOT EXISTS workspace_session_job_global_conflict_insert
+      BEFORE INSERT ON workspace_session_leases WHEN NEW.state != 'released' AND EXISTS (
+        SELECT 1 FROM workspace_worker_leases WHERE state != 'released'
+      ) BEGIN SELECT RAISE(ABORT, 'Worker or session already has a job lease.'); END;
+    CREATE TRIGGER IF NOT EXISTS workspace_session_job_global_conflict_update
+      BEFORE UPDATE OF worker_id, session_id, state ON workspace_session_leases
+      WHEN NEW.state != 'released' AND
+      (OLD.state = 'released' OR OLD.worker_id != NEW.worker_id OR OLD.session_id != NEW.session_id)
+      AND EXISTS (
+        SELECT 1 FROM workspace_worker_leases WHERE state != 'released'
+      ) BEGIN SELECT RAISE(ABORT, 'Worker or session already has a job lease.'); END;
   `);
   const expected = JSON.stringify([...workers].sort());
   database
@@ -101,9 +143,17 @@ export function createWorkerLeases(database, workers) {
             .get(sessionId)
         )
           throw new Error("Session already has an exclusive worker.");
+        if (
+          database
+            .prepare("SELECT 1 FROM workspace_session_leases WHERE state!='released' LIMIT 1")
+            .get()
+        )
+          throw new Error("An unfinished session lease requires verified session recovery.");
         const busy = new Set(
           database
-            .prepare("SELECT worker_id FROM workspace_worker_leases WHERE state!='released'")
+            .prepare(
+              "SELECT worker_id FROM workspace_worker_leases WHERE state!='released' UNION SELECT worker_id FROM workspace_session_leases WHERE state!='released'",
+            )
             .all()
             .map((row) => row.worker_id),
         );
@@ -126,6 +176,13 @@ export function createWorkerLeases(database, workers) {
         .prepare("SELECT lease_id FROM workspace_worker_leases WHERE state!='released'")
         .all()
         .map((row) => read(row.lease_id));
+    },
+    hasUnfinishedSessions() {
+      return Boolean(
+        database
+          .prepare("SELECT 1 FROM workspace_session_leases WHERE state!='released' LIMIT 1")
+          .get(),
+      );
     },
     quarantine(leaseId) {
       if (
@@ -150,6 +207,103 @@ export function createWorkerLeases(database, workers) {
           .run(binding.leaseId).changes !== 1
       )
         throw new Error("Could not durably release worker lease.");
+    },
+  };
+}
+
+export function createSessionLeases(database, workers) {
+  createWorkerLeases(database, workers);
+  const read = (leaseId) => {
+    const row = database
+      .prepare("SELECT * FROM workspace_session_leases WHERE lease_id=?")
+      .get(leaseId);
+    if (!row) throw new Error("Unknown session lease.");
+    return {
+      leaseId: row.lease_id,
+      workerId: row.worker_id,
+      ownerId: row.owner_id,
+      projectId: row.project_id,
+      sessionId: row.session_id,
+      state: row.state,
+    };
+  };
+  return {
+    claim({ ownerId, projectId, sessionId }) {
+      if (
+        ![ownerId, sessionId].every((id) => UUID.test(id ?? "")) ||
+        typeof projectId !== "string" ||
+        !/^[A-Za-z0-9_.:-]{1,80}$/.test(projectId)
+      )
+        throw new Error("Invalid session lease identity.");
+      database.exec("BEGIN IMMEDIATE");
+      try {
+        if (
+          database
+            .prepare("SELECT 1 FROM workspace_session_leases WHERE session_id=?")
+            .get(sessionId)
+        )
+          throw new Error("Session already has a durable lease.");
+        if (
+          database
+            .prepare("SELECT 1 FROM workspace_worker_leases WHERE state!='released' LIMIT 1")
+            .get()
+        )
+          throw new Error("An unfinished job lease requires verified job recovery.");
+        const busy = new Set(
+          database
+            .prepare(
+              "SELECT worker_id FROM workspace_worker_leases WHERE state!='released' UNION SELECT worker_id FROM workspace_session_leases WHERE state!='released'",
+            )
+            .all()
+            .map((row) => row.worker_id),
+        );
+        const workerId = workers.find((id) => !busy.has(id));
+        if (!workerId) throw new Error("Worker pool exhausted; request refused.");
+        const leaseId = randomUUID();
+        database
+          .prepare("INSERT INTO workspace_session_leases VALUES (?,?,?,?,?,'leased')")
+          .run(leaseId, workerId, ownerId, projectId, sessionId);
+        database.exec("COMMIT");
+        return read(leaseId);
+      } catch (error) {
+        database.exec("ROLLBACK");
+        throw error;
+      }
+    },
+    read,
+    unfinished() {
+      return database
+        .prepare("SELECT lease_id FROM workspace_session_leases WHERE state!='released'")
+        .all()
+        .map((row) => read(row.lease_id));
+    },
+    quarantine(leaseId) {
+      if (
+        database
+          .prepare(
+            "UPDATE workspace_session_leases SET state='quarantined' WHERE lease_id=? AND state!='released'",
+          )
+          .run(leaseId).changes !== 1
+      )
+        throw new Error("Could not quarantine session lease.");
+    },
+    release(envelope, secret) {
+      const binding = read(envelope?.record?.leaseId);
+      const record = verifySessionRecord(secret, envelope, binding);
+      if (
+        record.kind !== "session_cleanup" ||
+        record.outcome !== "terminated_and_wiped" ||
+        binding.state === "released"
+      )
+        throw new Error("Verified termination and workspace wipe are required.");
+      if (
+        database
+          .prepare(
+            "UPDATE workspace_session_leases SET state='released' WHERE lease_id=? AND state!='released'",
+          )
+          .run(binding.leaseId).changes !== 1
+      )
+        throw new Error("Could not durably release session lease.");
     },
   };
 }

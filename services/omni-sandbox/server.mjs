@@ -11,6 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createWorkspaceJournal, recoverWorkspaceJobs } from "./recovery.mjs";
 import { trackReplayEvidence } from "./health-evidence.mjs";
+import { launchWorkspaceJob } from "./workspace-command.mjs";
 
 export const CONTRACT = "omni.workspace/v1";
 export const PATH = "/api/public/omni/workspace";
@@ -342,24 +343,23 @@ export function createSandbox(c, opts = {}) {
     return null;
   };
 
-  function killJob(job, reason) {
-    if (job.proc && job.state === "running") {
-      try {
-        process.kill(-job.proc.pid, "SIGKILL");
-      } catch {}
-      job.state = "stopped";
-      job.events.push({ stream: "system", text: `Stopped (${reason}).` });
+  async function killJob(job, reason) {
+    if (job.control && job.state === "running") {
+      await job.control.stop(reason);
+    } else if (job.control) {
+      await job.control.finished;
     } else if (job.state === "awaiting_approval" || job.state === "queued") {
       job.pending = null;
       job.state = "stopped";
     }
   }
   function endSession(s, reason) {
-    for (const j of s.jobs.values()) killJob(j, reason);
-    spawnSync("pkill", ["-KILL", "-u", String(s.uid)]);
-    fs.rmSync(s.dir, { recursive: true, force: true });
-    fs.rmSync(s.mirror, { recursive: true, force: true });
-    sessions.delete(s.id);
+    return (s.ending ??= (async () => {
+      for (const j of s.jobs.values()) await killJob(j, reason);
+      fs.rmSync(s.dir, { recursive: true, force: true });
+      fs.rmSync(s.mirror, { recursive: true, force: true });
+      sessions.delete(s.id);
+    })());
   }
   const reaper = setInterval(() => {
     const now = Date.now();
@@ -368,13 +368,15 @@ export function createSandbox(c, opts = {}) {
         now - s.lastAt > c.limits.idleMinutes * 60_000 ||
         now - s.startedAt > c.limits.sessionMinutes * 60_000
       )
-        endSession(s, "timeout");
+        void endSession(s, "timeout").catch((error) =>
+          console.error("Session cleanup failed:", error.message),
+        );
   }, 15_000);
   reaper.unref();
 
   function getSession(id) {
     const s = sessions.get(id);
-    if (!s) throw new Refusal("Session not found or already ended.");
+    if (!s || s.ending) throw new Refusal("Session not found or already ended.");
     s.lastAt = Date.now();
     return s;
   }
@@ -396,51 +398,25 @@ export function createSandbox(c, opts = {}) {
   }
 
   function run(s, job, command) {
-    job.state = "running";
-    const [cmd, ...args] = sandboxArgv(c, s.uid, net);
-    const proc = spawn(cmd, args, {
-      cwd: s.work,
-      env: sandboxEnv(s.dir, command),
-      detached: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    job.proc = proc;
-    const cap = c.limits.outputCapBytes;
-    const onData = (stream) => (buf) => {
-      if (job.outBytes >= cap) return;
-      const text = buf.toString("utf8").slice(0, cap - job.outBytes);
-      job.outBytes += Buffer.byteLength(text);
-      job.events.push({ stream, text });
-      if (job.outBytes >= cap) {
-        job.events.push({
-          stream: "system",
-          text: `Output cap of ${cap} bytes reached; command stopped.`,
-        });
-        try {
-          process.kill(-proc.pid, "SIGKILL");
-        } catch {}
-      }
-    };
-    proc.stdout.on("data", onData("stdout"));
-    proc.stderr.on("data", onData("stderr"));
-    const timer = setTimeout(() => {
-      job.events.push({
-        stream: "system",
-        text: `Time limit of ${c.limits.commandTimeoutSec}s reached; command stopped.`,
-      });
-      try {
-        process.kill(-proc.pid, "SIGKILL");
-      } catch {}
-    }, c.limits.commandTimeoutSec * 1000);
-    proc.on("close", (code, signal) => {
-      clearTimeout(timer);
-      if (job.state === "stopped") job.exit = -1;
-      else {
-        job.exit = code ?? -1;
-        job.state = code === 0 ? "done" : "failed";
-      }
-      job.events.push({ stream: "exit", code: job.exit, signal: signal ?? null });
-    });
+    launchWorkspaceJob(
+      job,
+      {
+        parent: c.cgroupParent,
+        jobId: job.id,
+        work: s.work,
+        uid: s.uid,
+        limits: c.limits,
+        command,
+      },
+      () => {
+        const updated = nonceStore
+          .prepare(
+            "UPDATE workspace_job_journal SET state = 'terminated', updated_at = ? WHERE job_id = ? AND state = 'claimed'",
+          )
+          .run(Date.now(), job.id);
+        if (updated.changes !== 1) throw new Error("Workspace termination could not be recorded.");
+      },
+    );
   }
 
   // -------------------------------------------------------------- git
@@ -976,6 +952,14 @@ export function createSandbox(c, opts = {}) {
         // Do not consume an approval until a real supervisor can accept it.
         if (b.approve && job.pending.kind === "command")
           throw new Refusal("The isolated workspace command supervisor is unavailable.");
+        if (
+          b.approve &&
+          job.pending.kind === "command" &&
+          nonceStore
+            .prepare("SELECT 1 FROM workspace_job_journal WHERE state != 'terminated' LIMIT 1")
+            .get()
+        )
+          throw new Refusal("Another workspace command requires termination or recovery.");
         let claimed;
         try {
           claimed =
@@ -1014,16 +998,18 @@ export function createSandbox(c, opts = {}) {
       case "job.stop": {
         const s = sessions.get(b.sessionId);
         if (s)
-          for (const j of s.jobs.values()) if (!b.jobId || j.id === b.jobId) killJob(j, "owner");
+          for (const j of s.jobs.values())
+            if (!b.jobId || j.id === b.jobId) await killJob(j, "owner");
         return {};
       }
       case "agent.stop": {
-        for (const s of sessions.values()) for (const j of s.jobs.values()) killJob(j, "owner");
+        for (const s of sessions.values())
+          for (const j of s.jobs.values()) await killJob(j, "owner");
         return {};
       }
       case "session.end": {
         const s = sessions.get(b.sessionId);
-        if (s) endSession(s, "owner");
+        if (s) await endSession(s, "owner");
         return {};
       }
       default:
@@ -1143,17 +1129,24 @@ export function createSandbox(c, opts = {}) {
     network: net,
     ready,
     verifyProviders,
-    close: () => {
+    close: async () => {
       clearInterval(reaper);
-      void stopNonces.close();
-      void requestNonces.close();
-      for (const s of [...sessions.values()]) endSession(s, "shutdown");
       server.close();
+      const results = await Promise.allSettled(
+        [...sessions.values()].map((s) => endSession(s, "shutdown")),
+      );
+      const failures = results.filter((result) => result.status === "rejected");
+      if (failures.length)
+        throw new AggregateError(
+          failures.map((result) => result.reason),
+          "Workspace shutdown cleanup is unconfirmed.",
+        );
+      await Promise.all([stopNonces.close(), requestNonces.close()]);
       const closeStores = () => {
         nonceStore.close();
         recoveryLock?.close();
       };
-      if (recoveryState === "pending") void ready.then(closeStores, closeStores);
+      if (recoveryState === "pending") await ready.then(closeStores, closeStores);
       else closeStores();
     },
   };
@@ -1181,7 +1174,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   sb.server.listen(c.port, () => console.log(`listening on :${c.port}`));
   for (const sig of ["SIGTERM", "SIGINT"])
     process.on(sig, () => {
-      sb.close();
-      process.exit(0);
+      void sb.close().catch((error) => {
+        console.error("Sandbox shutdown failed:", error.message);
+        process.exitCode = 1;
+      });
     });
 }

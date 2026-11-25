@@ -6,7 +6,8 @@ Obtain separate owner authorization before changing the staging host. Do not
 use a production host, credentials, database or service. The bounded executor
 and its isolation test are separate and do not certify this service.
 
-The current service does not use bubblewrap for its historical launcher.
+The quarantined service has a bubblewrap command path, but refuses session
+and command admission and still uses its historical launcher for the health probe.
 Its signed evidence must report `bubblewrapActive: false` and
 `persistence: "unverified"`. The packaged non-root host intentionally does
 not run the historical root-only probe; `nonRootObserved` is false and
@@ -14,6 +15,33 @@ not run the historical root-only probe; `nonRootObserved` is false and
 execution is not expected. When that historical probe is available, namespace
 booleans compare the child with the service process; they do not prove
 aggregate limits, process cleanup or confinement.
+
+## Separate supervisor diagnostic
+
+`tests/omni-workspace-linux.test.mjs` directly exercises the experimental
+bubblewrap supervisor; it does not call the serving workspace endpoint or
+remove its execution quarantine. Run it only on a dedicated, idle Linux
+staging host after separate owner authorization. It needs Node 22.13 or newer,
+`bwrap`, Python 3 and an already provisioned delegated cgroup v2 with CPU,
+memory and PID controllers enabled. Use a dedicated non-root staging identity
+and an otherwise unused parent cgroup named `omni-workspace-diagnostic`;
+see `HOST-SETUP.md` for delegation and confinement prerequisites. Do not
+weaken AppArmor or host security controls to force a pass.
+
+From the exact reviewed checkout, with `DIAGNOSTIC_CGROUP` set to the absolute
+path of that dedicated parent:
+
+```bash
+OMNI_WORKSPACE_ISOLATION_TEST=true \
+  OMNI_WORKSPACE_TEST_CGROUP="$DIAGNOSTIC_CGROUP" \
+  node --test tests/omni-workspace-linux.test.mjs
+```
+
+For this revision expect five passes; the original `207704b` diagnostic has four.
+The deadline test invokes Stop from the test harness. The session-workspace
+test exercises the command lifecycle directly, not the serving endpoint. A
+passing result does not establish durable storage, renewable authority,
+serving-runtime containment, or approval to deploy or execute.
 
 ## Preparation
 
