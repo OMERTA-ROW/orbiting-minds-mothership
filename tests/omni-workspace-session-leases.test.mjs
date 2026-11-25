@@ -36,8 +36,13 @@ test("watchdog confirms the session workspace is gone only on ENOENT", () => {
 
   const unreadable = Object.assign(new Error("permission denied"), { code: "EACCES" });
   assert.throws(
-    () => assertWorkspaceDirectoryGone(absent, () => { throw unreadable; }),
-    (error) => error.message === "Could not confirm session workspace removal." && error.cause === unreadable,
+    () =>
+      assertWorkspaceDirectoryGone(absent, () => {
+        throw unreadable;
+      }),
+    (error) =>
+      error.message === "Could not confirm session workspace removal." &&
+      error.cause === unreadable,
   );
 });
 
