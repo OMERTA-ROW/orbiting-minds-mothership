@@ -15,6 +15,32 @@ execution is not expected. When that historical probe is available, namespace
 booleans compare the child with the service process; they do not prove
 aggregate limits, process cleanup or confinement.
 
+## Separate supervisor diagnostic
+
+`tests/omni-workspace-linux.test.mjs` directly exercises the experimental
+bubblewrap supervisor; it does not call the serving workspace endpoint or
+remove its execution quarantine. Run it only on a dedicated, idle Linux
+staging host after separate owner authorization. It needs Node 22.13 or newer,
+`bwrap`, Python 3 and an already provisioned delegated cgroup v2 with CPU,
+memory and PID controllers enabled. Use a dedicated non-root staging identity
+and an otherwise unused parent cgroup named `omni-workspace-diagnostic`;
+see `HOST-SETUP.md` for delegation and confinement prerequisites. Do not
+weaken AppArmor or host security controls to force a pass.
+
+From the exact reviewed checkout, with `DIAGNOSTIC_CGROUP` set to the absolute
+path of that dedicated parent:
+
+```bash
+OMNI_WORKSPACE_ISOLATION_TEST=true \
+  OMNI_WORKSPACE_TEST_CGROUP="$DIAGNOSTIC_CGROUP" \
+  node --test tests/omni-workspace-linux.test.mjs
+```
+
+Expect four passes. The deadline test invokes Stop from the test harness; it
+does not establish that the workspace service enforces timeouts. A passing
+result is not evidence that the workspace service has adopted this supervisor,
+that persistence is durable, or that deployment or execution is approved.
+
 ## Preparation
 
 Use an idle, dedicated Linux staging VM. Review `HOST-SETUP.md`, including
