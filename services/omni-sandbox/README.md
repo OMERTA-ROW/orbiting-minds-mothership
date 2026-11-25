@@ -171,6 +171,11 @@ These primitives do not create or protect a workspace, run a watchdog, or
 connect to the serving service or Mothership authority. They must not be used
 to enable sessions; persistent worker storage and independently verified
 cleanup are still missing.
+The older job coordinator refuses admission while any session lease remains
+unfinished. Its recovery first terminates outstanding legacy jobs and then
+refuses readiness until session recovery is implemented. Database triggers
+also prevent concurrent session and legacy-job claims, including from older
+processes using the same upgraded registry.
 
 `leased-coordinator.mjs` composes durable exclusive leases, command-digest-bound owner approval,
 per-worker authenticated Unix sockets and 100 ms authority renewal. `leased-worker.mjs` accepts

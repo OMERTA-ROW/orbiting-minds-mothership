@@ -48,9 +48,10 @@ test("session ownership persists across restart and excludes job leases", () => 
     try {
       const restored = createSessionLeases(other, ["one", "two"]);
       assert.equal(restored.unfinished()[0].leaseId, lease.leaseId);
-      assert.throws(() => f.jobs.claim({ ...lease, jobId: randomUUID() }), /exclusive/);
-      const job = f.jobs.claim({ ...identity(), jobId: randomUUID() });
-      assert.notEqual(job.workerId, lease.workerId);
+      assert.throws(() => f.jobs.claim({ ...lease, jobId: randomUUID() }), /session recovery/);
+      assert.throws(() => f.jobs.claim({ ...identity(), jobId: randomUUID() }), /session recovery/);
+      const second = restored.claim(identity());
+      assert.notEqual(second.workerId, lease.workerId);
       assert.throws(() => restored.claim(identity()), /exhausted/);
     } finally {
       other.close();
@@ -68,22 +69,19 @@ test("database triggers prevent cross-protocol worker or session reuse", () => {
       () =>
         f.db
           .prepare("INSERT INTO workspace_worker_leases VALUES (?,?,?,?,?,?,'leased')")
-          .run(
-            randomUUID(),
-            lease.workerId,
-            randomUUID(),
-            lease.projectId,
-            randomUUID(),
-            randomUUID(),
-          ),
+          .run(randomUUID(), "two", randomUUID(), lease.projectId, randomUUID(), randomUUID()),
       /session lease/,
+    );
+    f.sessions.release(
+      envelope(sessionRecord(lease, { kind: "session_cleanup", outcome: "terminated_and_wiped" })),
+      secret,
     );
     const job = f.jobs.claim({ ...identity(), jobId: randomUUID() });
     assert.throws(
       () =>
         f.db
           .prepare("INSERT INTO workspace_session_leases VALUES (?,?,?,?,?,'leased')")
-          .run(randomUUID(), job.workerId, randomUUID(), job.projectId, randomUUID()),
+          .run(randomUUID(), "two", randomUUID(), job.projectId, randomUUID()),
       /job lease/,
     );
   } finally {

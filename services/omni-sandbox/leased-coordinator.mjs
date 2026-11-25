@@ -77,6 +77,8 @@ export function createLeasedCoordinator({
       const job = { id: identity?.id ?? identity, identity, command, limits };
       const gate = checkSandboxJob(job, gateDeps);
       if (!gate.ok) return gate;
+      if (typeof pool.hasUnfinishedSessions !== "function" || pool.hasUnfinishedSessions())
+        throw new Error("Unfinished session leases require verified session recovery.");
       if (recovering || pool.unfinished().some((lease) => !active.has(lease.leaseId)))
         throw new Error("Unfinished leases require startup quarantine before admission.");
       const binding = pool.claim(identity);
@@ -240,6 +242,8 @@ export function createLeasedCoordinator({
     },
     async recover() {
       if (active.size || recovering) throw new Error("Recovery must be exclusive with admission.");
+      if (typeof pool.hasUnfinishedSessions !== "function")
+        throw new Error("Unfinished session leases require verified session recovery.");
       recovering = true;
       try {
         for (const binding of pool.unfinished()) {
@@ -248,6 +252,8 @@ export function createLeasedCoordinator({
           publish(worker, binding, 0, false);
           pool.release(await monitor(worker, binding, true), worker.watchdogSecret);
         }
+        if (pool.hasUnfinishedSessions())
+          throw new Error("Unfinished session leases require verified session recovery.");
       } finally {
         recovering = false;
       }

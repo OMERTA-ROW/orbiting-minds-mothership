@@ -76,27 +76,27 @@ export function createWorkerLeases(database, workers) {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS workspace_session_worker_exclusive
       ON workspace_session_leases(worker_id) WHERE state != 'released';
-    CREATE TRIGGER IF NOT EXISTS workspace_job_session_conflict_insert
+    CREATE TRIGGER IF NOT EXISTS workspace_job_session_global_conflict_insert
       BEFORE INSERT ON workspace_worker_leases WHEN NEW.state != 'released' AND EXISTS (
         SELECT 1 FROM workspace_session_leases WHERE state != 'released'
-          AND (worker_id = NEW.worker_id OR session_id = NEW.session_id)
       ) BEGIN SELECT RAISE(ABORT, 'Worker or session already has a session lease.'); END;
-    CREATE TRIGGER IF NOT EXISTS workspace_job_session_conflict_update
+    CREATE TRIGGER IF NOT EXISTS workspace_job_session_global_conflict_update
       BEFORE UPDATE OF worker_id, session_id, state ON workspace_worker_leases
-      WHEN NEW.state != 'released' AND EXISTS (
+      WHEN NEW.state != 'released' AND
+      (OLD.state = 'released' OR OLD.worker_id != NEW.worker_id OR OLD.session_id != NEW.session_id)
+      AND EXISTS (
         SELECT 1 FROM workspace_session_leases WHERE state != 'released'
-          AND (worker_id = NEW.worker_id OR session_id = NEW.session_id)
       ) BEGIN SELECT RAISE(ABORT, 'Worker or session already has a session lease.'); END;
-    CREATE TRIGGER IF NOT EXISTS workspace_session_job_conflict_insert
+    CREATE TRIGGER IF NOT EXISTS workspace_session_job_global_conflict_insert
       BEFORE INSERT ON workspace_session_leases WHEN NEW.state != 'released' AND EXISTS (
         SELECT 1 FROM workspace_worker_leases WHERE state != 'released'
-          AND (worker_id = NEW.worker_id OR session_id = NEW.session_id)
       ) BEGIN SELECT RAISE(ABORT, 'Worker or session already has a job lease.'); END;
-    CREATE TRIGGER IF NOT EXISTS workspace_session_job_conflict_update
+    CREATE TRIGGER IF NOT EXISTS workspace_session_job_global_conflict_update
       BEFORE UPDATE OF worker_id, session_id, state ON workspace_session_leases
-      WHEN NEW.state != 'released' AND EXISTS (
+      WHEN NEW.state != 'released' AND
+      (OLD.state = 'released' OR OLD.worker_id != NEW.worker_id OR OLD.session_id != NEW.session_id)
+      AND EXISTS (
         SELECT 1 FROM workspace_worker_leases WHERE state != 'released'
-          AND (worker_id = NEW.worker_id OR session_id = NEW.session_id)
       ) BEGIN SELECT RAISE(ABORT, 'Worker or session already has a job lease.'); END;
   `);
   const expected = JSON.stringify([...workers].sort());
@@ -145,12 +145,10 @@ export function createWorkerLeases(database, workers) {
           throw new Error("Session already has an exclusive worker.");
         if (
           database
-            .prepare(
-              "SELECT 1 FROM workspace_session_leases WHERE session_id=? AND state!='released'",
-            )
-            .get(sessionId)
+            .prepare("SELECT 1 FROM workspace_session_leases WHERE state!='released' LIMIT 1")
+            .get()
         )
-          throw new Error("Session already has an exclusive worker.");
+          throw new Error("An unfinished session lease requires verified session recovery.");
         const busy = new Set(
           database
             .prepare(
@@ -178,6 +176,13 @@ export function createWorkerLeases(database, workers) {
         .prepare("SELECT lease_id FROM workspace_worker_leases WHERE state!='released'")
         .all()
         .map((row) => read(row.lease_id));
+    },
+    hasUnfinishedSessions() {
+      return Boolean(
+        database
+          .prepare("SELECT 1 FROM workspace_session_leases WHERE state!='released' LIMIT 1")
+          .get(),
+      );
     },
     quarantine(leaseId) {
       if (
@@ -240,12 +245,10 @@ export function createSessionLeases(database, workers) {
           throw new Error("Session already has a durable lease.");
         if (
           database
-            .prepare(
-              "SELECT 1 FROM workspace_worker_leases WHERE session_id=? AND state!='released'",
-            )
-            .get(sessionId)
+            .prepare("SELECT 1 FROM workspace_worker_leases WHERE state!='released' LIMIT 1")
+            .get()
         )
-          throw new Error("Session already has an exclusive worker.");
+          throw new Error("An unfinished job lease requires verified job recovery.");
         const busy = new Set(
           database
             .prepare(

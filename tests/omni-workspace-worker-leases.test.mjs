@@ -6,7 +6,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { createWorkerLeases, signWorkerRecord } from "../services/omni-sandbox/worker-leases.mjs";
+import {
+  createSessionLeases,
+  createWorkerLeases,
+  signWorkerRecord,
+} from "../services/omni-sandbox/worker-leases.mjs";
 import { createLeasedCoordinator } from "../services/omni-sandbox/leased-coordinator.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
@@ -148,6 +152,7 @@ test("unverified recovery leaves a lease quarantined until cleanup is verified",
       return { record, signature: signWorkerRecord(secret, record) };
     },
   });
+
   try {
     await assert.rejects(coordinator.recover(), /wipe/);
     assert.equal(f.pool.read(lease.leaseId).state, "quarantined");
@@ -155,6 +160,47 @@ test("unverified recovery leaves a lease quarantined until cleanup is verified",
     cleaned = true;
     await coordinator.recover();
     assert.equal(f.pool.read(lease.leaseId).state, "released");
+  } finally {
+    coordinator.close();
+    f.close();
+  }
+});
+test("recovery terminates old job leases before refusing unresolved session leases", async () => {
+  const f = fixture();
+  const secret = "r".repeat(48);
+  const lease = f.pool.claim(identity());
+  f.db.exec("DROP TRIGGER workspace_session_job_global_conflict_insert");
+  const sessionId = identity();
+  f.db
+    .prepare("INSERT INTO workspace_session_leases VALUES (?,?,?,?,?,'leased')")
+    .run(
+      randomUUID(),
+      lease.workerId === "one" ? "two" : "one",
+      sessionId.ownerId,
+      sessionId.projectId,
+      sessionId.sessionId,
+    );
+  createSessionLeases(f.db, ["one", "two"]);
+  const coordinator = createLeasedCoordinator({
+    pool: f.pool,
+    databaseFile: f.file,
+    workers: [
+      {
+        workerId: lease.workerId,
+        watchdogSecret: secret,
+        authorityFile: path.join(path.dirname(f.file), "authority.json"),
+      },
+    ],
+    monitor: async (_worker, binding, recover) => {
+      assert.equal(recover, true);
+      const record = { ...binding, outcome: "terminated_and_wiped" };
+      return { record, signature: signWorkerRecord(secret, record) };
+    },
+  });
+  try {
+    await assert.rejects(coordinator.recover(), /session recovery/);
+    assert.equal(f.pool.read(lease.leaseId).state, "released");
+    assert.equal(f.pool.hasUnfinishedSessions(), true);
   } finally {
     coordinator.close();
     f.close();
