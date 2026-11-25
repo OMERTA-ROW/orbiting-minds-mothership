@@ -89,7 +89,29 @@ jobs:
           ref: 3155b88ea99ea434e9940cea5401d89ca24c9464
           path: jackboy-interop
           persist-credentials: false
+      - name: Check Omni repository access
+        id: omni-access
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          response="$(mktemp)"
+          trap 'rm -f "$response"' EXIT
+          status="$(curl --silent --show-error --output "$response" --write-out '%{http_code}' \
+            --oauth2-bearer "$GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            "$GITHUB_API_URL/repos/OMERTA-ROW/Omni")"
+          if [ "$status" = 200 ]; then
+            echo "readable=true" >> "$GITHUB_OUTPUT"
+          elif [ "$status" = 404 ] || { [ "$status" = 403 ] && grep -qi 'resource not accessible by' "$response"; }; then
+            echo "readable=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::OMERTA-ROW/Omni is not readable; skipping only the Go cross-language interoperability test."
+          else
+            echo "::error::Could not check OMERTA-ROW/Omni access (HTTP $status)."
+            exit 1
+          fi
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        if: steps.omni-access.outputs.readable == 'true'
         with:
           repository: OMERTA-ROW/Omni
           ref: 8527cd5aba2a0a575c1079b965a8c5bb22f45d6b
@@ -112,7 +134,7 @@ jobs:
         run: node --test jackboy-interop/tests/omni-session.test.mjs
         env:
           MOTHERSHIP_TEST_ROOT: ${{ github.workspace }}
-          OMNI_INBOX_DIR: ${{ github.workspace }}/omni-interop/inbox
+          OMNI_INBOX_DIR: ${{ steps.omni-access.outputs.readable == 'true' && format('{0}/omni-interop/inbox', github.workspace) || '' }}
           GOTOOLCHAIN: local
           GOFLAGS: -mod=mod
       - name: Test real Jackboy handler using isolated database and verified TLS

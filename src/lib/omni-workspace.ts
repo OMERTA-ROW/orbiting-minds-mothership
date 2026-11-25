@@ -215,6 +215,34 @@ export const sandboxHealth = z.object({
     envNames: z.array(z.string().max(40)).max(64),
     probeExitCode: z.number().int(),
   }),
+  evidence: z
+    .object({
+      contract: z.literal("omni.workspace-health-evidence/v1"),
+      launcher: z.literal("setpriv-unshare"),
+      bubblewrapActive: z.literal(false),
+      nonRootObserved: z.boolean(),
+      observedNamespaces: z
+        .object({ user: z.boolean(), network: z.boolean(), pid: z.boolean(), mount: z.boolean() })
+        .nullable(),
+      observedLimits: z
+        .object({
+          cpuSec: z.number().int().positive(),
+          addressSpaceKiB: z.number().int().positive(),
+          processes: z.number().int().positive(),
+          fileSizeKiB: z.number().int().positive(),
+          openFiles: z.number().int().positive(),
+        })
+        .nullable(),
+      replay: z.object({
+        store: z.literal("sqlite"),
+        pathSha256: z.string().regex(/^[0-9a-f]{64}$/),
+        filesystem: z.enum(["ext", "xfs", "btrfs", "tmpfs", "overlay", "unknown"]),
+        stateFile: z.enum(["same_file", "changed_or_unavailable"]),
+        rebootObservation: z.enum(["observed", "not_observed", "unavailable"]),
+        persistence: z.literal("unverified"),
+      }),
+    })
+    .optional(),
   limits: z.object({
     commandTimeoutSec: limit(100000),
     cpuSec: limit(100000),

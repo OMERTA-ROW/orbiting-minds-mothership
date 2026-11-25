@@ -119,6 +119,44 @@ describe("quarantined workspace reference", () => {
     }
   });
 
+  it("reports authenticated observations without claiming workspace containment", async () => {
+    const reply = await workspaceRequest(cfg, "health.check", {});
+    expect(reply.health?.evidence).toMatchObject({
+      contract: "omni.workspace-health-evidence/v1",
+      launcher: "setpriv-unshare",
+      bubblewrapActive: false,
+      replay: { store: "sqlite", persistence: "unverified" },
+    });
+
+    expect(reply.health?.evidence?.replay.pathSha256).toMatch(/^[a-f0-9]{64}$/);
+    if (process.getuid?.() !== 0) {
+      expect(reply.health?.evidence?.nonRootObserved).toBe(false);
+      expect(reply.health?.evidence?.observedLimits).toBeNull();
+      expect(reply.health?.evidence?.observedNamespaces).toBeNull();
+    }
+  });
+
+  it("rejects tampered containment evidence before parsing it", async () => {
+    await expect(
+      workspaceRequest(
+        cfg,
+        "health.check",
+        {},
+        {
+          fetch: async (url, init) => {
+            const response = await fetch(url, init);
+            const body = await response.json();
+            body.health.evidence.bubblewrapActive = true;
+            return new Response(JSON.stringify(body), {
+              status: response.status,
+              headers: response.headers,
+            });
+          },
+        },
+      ),
+    ).rejects.toThrow(/reply proof is invalid/i);
+  });
+
   it("rejects a wrong signature and a wrong project", async () => {
     await expect(
       workspaceRequest({ ...cfg, secret: "x".repeat(48) }, "agent.stop", {}),

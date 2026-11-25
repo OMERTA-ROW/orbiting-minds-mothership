@@ -9,7 +9,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY server.mjs cgroup.mjs recovery.mjs nonce-reconciler.mjs stop-nonce-worker.mjs ./
+COPY server.mjs cgroup.mjs recovery.mjs nonce-reconciler.mjs stop-nonce-worker.mjs health-evidence.mjs workspace-command.mjs supervisor.mjs ./
 
 # Starts as root only to drop each command to an unprivileged per-session user.
 ENV OMNI_SANDBOX_ROOT=/sandbox NODE_ENV=production

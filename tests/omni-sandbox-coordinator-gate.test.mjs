@@ -38,6 +38,7 @@ test("gate refusal returns its reason without reserving a lease", async () => {
   let claims = 0;
   const pool = {
     unfinished: () => [],
+    hasUnfinishedSessions: () => false,
     claim: () => {
       claims += 1;
       throw new Error("lease should not be claimed");
@@ -63,6 +64,7 @@ test("gate approval reaches the existing admission path", async () => {
   let claims = 0;
   const pool = {
     unfinished: () => [],
+    hasUnfinishedSessions: () => false,
     claim: () => {
       claims += 1;
       throw new Error("admission reached");
@@ -82,6 +84,7 @@ test("missing gate dependencies refuse execution", async () => {
   let claims = 0;
   const pool = {
     unfinished: () => [],
+    hasUnfinishedSessions: () => false,
     claim: () => {
       claims += 1;
       throw new Error("lease should not be claimed");
@@ -94,7 +97,38 @@ test("missing gate dependencies refuse execution", async () => {
       ok: false,
       reason: "execution_disabled",
     });
+
     assert.equal(claims, 0);
+  } finally {
+    cleanup();
+  }
+});
+
+test("unfinished session reservations prevent legacy admission and recovery", async () => {
+  let claims = 0;
+  const pool = {
+    unfinished: () => [],
+    hasUnfinishedSessions: () => true,
+    claim: () => {
+      claims++;
+    },
+  };
+  const { coordinator, cleanup } = makeCoordinator(pool, approvedDeps);
+  try {
+    await assert.rejects(coordinator.execute("job-1", "command", {}), /session recovery/);
+    await assert.rejects(coordinator.recover(), /session recovery/);
+    assert.equal(claims, 0);
+  } finally {
+    cleanup();
+  }
+});
+
+test("an unavailable session registry refuses legacy admission and recovery", async () => {
+  const pool = { unfinished: () => [], claim: () => assert.fail("must not claim") };
+  const { coordinator, cleanup } = makeCoordinator(pool, approvedDeps);
+  try {
+    await assert.rejects(coordinator.execute("job-1", "command", {}), /session recovery/);
+    await assert.rejects(coordinator.recover(), /session recovery/);
   } finally {
     cleanup();
   }
