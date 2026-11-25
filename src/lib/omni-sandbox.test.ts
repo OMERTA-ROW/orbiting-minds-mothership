@@ -4,6 +4,8 @@ import {
   evaluateSandboxHealth,
   remoteReply,
   startSessionInput,
+  workspaceGate,
+  WORKSPACE_CONTAINMENT_BLOCKER,
   type SandboxHealth,
 } from "./omni-workspace";
 import { sandboxSettings } from "./omni-sandbox-config.server";
@@ -36,6 +38,19 @@ const healthy: SandboxHealth = {
 };
 
 describe("sandbox self-test verdict", () => {
+  it("keeps workspace execution quarantined even when the preliminary report passes", () => {
+    const gate = workspaceGate({
+      linkConfigured: true,
+      sandboxEnabled: true,
+      selfTestPassedAt: Date.now(),
+      killSwitchEnabled: true,
+      emergencyStopReleased: true,
+      passkeyFresh: true,
+      now: Date.now(),
+    });
+    expect(gate.open).toBe(false);
+    expect(gate.blockers).toContain(WORKSPACE_CONTAINMENT_BLOCKER);
+  });
   it("accepts preliminary probe claims without proving containment", () =>
     expect(evaluateSandboxHealth(healthy).passed).toBe(true));
   it("fails when commands can reach the network", () =>
