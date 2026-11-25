@@ -11,6 +11,7 @@ import {
   createWorkerLeases,
   signWorkerRecord,
 } from "../services/omni-sandbox/worker-leases.mjs";
+import { assertWorkspaceDirectoryGone } from "../services/omni-sandbox/leased-watchdog.mjs";
 import { renewableSessionAuthority } from "../services/omni-sandbox/worker-authority.mjs";
 
 const secret = "s".repeat(48);
@@ -20,6 +21,24 @@ const sessionRecord = (lease, fields) => ({
   contract: "omni.workspace-session/v1",
   ...lease,
   ...fields,
+});
+
+test("watchdog confirms the session workspace is gone only on ENOENT", () => {
+  const absent = path.join(os.tmpdir(), `omni-session-gone-${randomUUID()}`);
+  assert.equal(assertWorkspaceDirectoryGone(absent), true);
+
+  const present = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-present-"));
+  try {
+    assert.throws(() => assertWorkspaceDirectoryGone(present), /remains after session ended/);
+  } finally {
+    fs.rmSync(present, { recursive: true, force: true });
+  }
+
+  const unreadable = Object.assign(new Error("permission denied"), { code: "EACCES" });
+  assert.throws(
+    () => assertWorkspaceDirectoryGone(absent, () => { throw unreadable; }),
+    (error) => error.message === "Could not confirm session workspace removal." && error.cause === unreadable,
+  );
 });
 
 function fixture() {

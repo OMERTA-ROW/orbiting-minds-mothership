@@ -1,7 +1,18 @@
 import fs from "node:fs";
+import path from "node:path";
 import { verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerSocketServer } from "./worker-socket.mjs";
 import { watchSystemdWorker } from "./systemd-worker.mjs";
+
+export function assertWorkspaceDirectoryGone(workspacePath, lstat = fs.lstatSync) {
+  try {
+    lstat(workspacePath);
+  } catch (error) {
+    if (error?.code === "ENOENT") return true;
+    throw new Error("Could not confirm session workspace removal.", { cause: error });
+  }
+  throw new Error("Session workspace directory remains after session ended.");
+}
 
 export async function serveLeasedWatchdog(config) {
   const socket = fs.lstatSync(config.socketPath);
@@ -47,6 +58,9 @@ export async function serveLeasedWatchdog(config) {
         ...config,
         binding: bindingIdentity,
         recover: record.recover,
+      }).then((result) => {
+        assertWorkspaceDirectoryGone(path.join(config.parent, bindingIdentity.jobId));
+        return result;
       }),
     };
     try {
