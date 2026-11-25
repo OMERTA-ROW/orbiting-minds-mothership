@@ -13,6 +13,7 @@ import {
 } from "../services/omni-sandbox/worker-leases.mjs";
 import { createLeasedSessionWorkspace } from "../services/omni-sandbox/leased-worker.mjs";
 import { renewableSessionAuthority } from "../services/omni-sandbox/worker-authority.mjs";
+import { watchSessionAuthority } from "../services/omni-sandbox/leased-watchdog.mjs";
 
 const secret = "s".repeat(48);
 const identity = () => ({ ownerId: randomUUID(), sessionId: randomUUID(), projectId: "omni" });
@@ -306,5 +307,86 @@ test("reusing a sequence cannot extend the monotonic session deadline", async ()
     );
   } finally {
     f.close();
+  }
+});
+
+test("missing session authority fails closed and starts cleanup", async () => {
+  const f = fixture();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-"));
+  const authorityFile = path.join(dir, "authority.json");
+  let lapse;
+  try {
+    const lease = f.sessions.claim(identity());
+    const result = await watchSessionAuthority({
+      binding: sessionRecord(lease, {}),
+      secret,
+      authorityFile,
+      onLapse: (error) => {
+        lapse = error;
+        return "cleanup";
+      },
+    });
+    assert.equal(result, "cleanup");
+    assert.match(lapse.message, /ENOENT/);
+  } finally {
+    f.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("invalid session authority fails closed and starts cleanup", async () => {
+  const f = fixture();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-"));
+  const authorityFile = path.join(dir, "authority.json");
+  let lapse;
+  try {
+    const lease = f.sessions.claim(identity());
+    fs.writeFileSync(authorityFile, "not-json");
+    const result = await watchSessionAuthority({
+      binding: sessionRecord(lease, {}),
+      secret,
+      authorityFile,
+      onLapse: (error) => {
+        lapse = error;
+        return "cleanup";
+      },
+    });
+    assert.equal(result, "cleanup");
+    assert.match(lapse.message, /JSON/);
+  } finally {
+    f.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("session authority that is not renewed starts cleanup", async () => {
+  const f = fixture();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-"));
+  const authorityFile = path.join(dir, "authority.json");
+  let lapse;
+  try {
+    const lease = f.sessions.claim(identity());
+    const binding = sessionRecord(lease, {});
+    const authority = sessionRecord(lease, {
+      kind: "session_authority",
+      active: true,
+      sequence: 1,
+      expiresAt: Date.now() + 250,
+    });
+    fs.writeFileSync(authorityFile, JSON.stringify(envelope(authority)));
+    const result = await watchSessionAuthority({
+      binding,
+      secret,
+      authorityFile,
+      onLapse: (error) => {
+        lapse = error;
+        return "cleanup";
+      },
+    });
+    assert.equal(result, "cleanup");
+    assert.match(lapse.message, /expired|renewal/);
+  } finally {
+    f.close();
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });

@@ -1,7 +1,23 @@
 import fs from "node:fs";
-import { verifyWorkerRecord } from "./worker-leases.mjs";
+import { renewableSessionAuthority } from "./worker-authority.mjs";
+import { signWorkerRecord, verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerSocketServer } from "./worker-socket.mjs";
 import { watchSystemdWorker } from "./systemd-worker.mjs";
+
+const SESSION_CONTRACT = "omni.workspace-session/v1";
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function watchSessionAuthority({ binding, secret, authorityFile, onLapse }) {
+  const check = renewableSessionAuthority(secret, binding);
+  while (true) {
+    try {
+      check(JSON.parse(fs.readFileSync(authorityFile, "utf8")));
+    } catch (error) {
+      return onLapse(error);
+    }
+    await sleep(50);
+  }
+}
 
 export async function serveLeasedWatchdog(config) {
   const socket = fs.lstatSync(config.socketPath);
@@ -30,6 +46,8 @@ export async function serveLeasedWatchdog(config) {
       record.expiresAt > Date.now() + 2000
     )
       throw new Error("Watchdog route is busy or its authenticated request is invalid.");
+    if (record.contract !== undefined && record.contract !== SESSION_CONTRACT)
+      throw new Error("Watchdog contract is not supported.");
     if (watching) {
       if (!record.recover) throw new Error("Watchdog route is exclusively assigned.");
       verifyWorkerRecord(config.secret, envelope, watching.binding);
@@ -41,13 +59,39 @@ export async function serveLeasedWatchdog(config) {
         record[key],
       ]),
     );
-    watching = {
-      binding: bindingIdentity,
-      promise: watchSystemdWorker({
+    const sessionBinding =
+      typeof record.sessionId === "string"
+        ? { ...bindingIdentity, contract: SESSION_CONTRACT }
+        : undefined;
+    const cleanupSession = async () => {
+      await watchSystemdWorker({ ...config, binding: bindingIdentity, recover: true });
+      const cleanup = {
+        ...sessionBinding,
+        kind: "session_cleanup",
+        outcome: "terminated_and_wiped",
+      };
+      return { record: cleanup, signature: signWorkerRecord(config.secret, cleanup) };
+    };
+    let watch;
+    if (sessionBinding && record.recover) {
+      watch = cleanupSession();
+    } else if (sessionBinding) {
+      watch = watchSessionAuthority({
+        binding: sessionBinding,
+        secret: config.secret,
+        authorityFile: config.sessionAuthorityFile ?? config.authorityFile,
+        onLapse: cleanupSession,
+      });
+    } else {
+      watch = watchSystemdWorker({
         ...config,
         binding: bindingIdentity,
         recover: record.recover,
-      }),
+      });
+    }
+    watching = {
+      binding: bindingIdentity,
+      promise: watch,
     };
     try {
       return await watching.promise;
