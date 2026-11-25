@@ -276,7 +276,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends bubblewrap
-      - name: Run unchanged historical tests against the disposable host fixture
+      - name: Run workspace tests against the disposable host fixture
         run: |
           set -euo pipefail
           git rev-parse HEAD

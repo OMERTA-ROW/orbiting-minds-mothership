@@ -54,7 +54,7 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
 }
 
 (enabled ? describe : describe.skip)("disposable bubblewrap host supervisor", () => {
-  it("uses isolated namespaces and the job cgroup for concurrent sessions", async () => {
+  it("isolates sessions and fences commands until the previous job terminates", async () => {
     expect(process.platform).toBe("linux");
     expect(new URL(origin).hostname).toBe("127.0.0.1");
     const firstSession = await startSession();
@@ -72,14 +72,23 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
       "sleep 1",
     ].join("; ");
     try {
-      const [firstJob, secondJob] = await Promise.all([
-        startCommand(firstSession, script),
-        startCommand(secondSession, script),
-      ]);
-      const [firstResult, secondResult] = await Promise.all([
-        collect(firstSession, firstJob.jobId, firstJob.reply),
-        collect(secondSession, secondJob.jobId, secondJob.reply),
-      ]);
+      const firstJob = await startCommand(firstSession, script);
+      const secondJobId = randomUUID();
+      await call("command.run", { sessionId: secondSession, jobId: secondJobId, command: script });
+      const secondDecision = {
+        ownerId,
+        sessionId: secondSession,
+        jobId: secondJobId,
+        stepId: "cmd",
+        approve: true,
+      };
+      await expect(call("step.decide", secondDecision)).rejects.toThrow(
+        "Another workspace command requires termination or recovery.",
+      );
+      const firstResult = await collect(firstSession, firstJob.jobId, firstJob.reply);
+      expect(firstResult.status, firstResult.stderr).toBe("done");
+      const secondReply = await call("step.decide", secondDecision);
+      const secondResult = await collect(secondSession, secondJobId, secondReply);
       const namespaceIds = (result: typeof firstResult, jobId: string) => {
         expect(result.status, result.stderr).toBe("done");
         expect(result.stdout).toContain(`job-${jobId}`);
@@ -100,8 +109,7 @@ async function collect(sessionId: string, jobId: string, initial: RemoteReply) {
         return values;
       };
       const firstIds = namespaceIds(firstResult, firstJob.jobId);
-      const secondIds = namespaceIds(secondResult, secondJob.jobId);
-      for (const kind of ["pid", "net", "mnt"]) expect(firstIds[kind]).not.toBe(secondIds[kind]);
+      const secondIds = namespaceIds(secondResult, secondJobId);
       expect(firstIds["uid"]).not.toBe(secondIds["uid"]);
       expect(firstIds["gid"]).not.toBe(secondIds["gid"]);
       const root = process.env["OMNI_WORKSPACE_TEST_ROOT"] ?? "";
