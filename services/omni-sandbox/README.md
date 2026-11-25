@@ -191,6 +191,8 @@ The worker must be bound to its independent watchdog with systemd `BindsTo` and 
 watchdog crash or cleanup failure also stops the worker but cannot fabricate a cleanup
 acknowledgement. Leases stay quarantined without verified, signed cleanup. Startup recovery
 terminates/recycles unfinished leases and never resubmits their commands.
+This job watchdog does not manage a host session workspace directory; session lease recovery
+remains unavailable and cannot use its job cleanup acknowledgement as session wipe evidence.
 
 `tests/omni-workspace-lifecycle-linux.test.mjs` exercises real non-root services on disposable
 Linux. Its unit files, Polkit rule and synthetic approval issuer are fixtures only, not

@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import { verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerSocketServer } from "./worker-socket.mjs";
 import { watchSystemdWorker } from "./systemd-worker.mjs";
@@ -58,9 +57,6 @@ export async function serveLeasedWatchdog(config) {
         ...config,
         binding: bindingIdentity,
         recover: record.recover,
-      }).then((result) => {
-        assertWorkspaceDirectoryGone(path.join(config.parent, bindingIdentity.jobId));
-        return result;
       }),
     };
     try {
