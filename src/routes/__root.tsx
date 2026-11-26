@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -22,7 +22,8 @@ import EvolutionInteriorBackground from "../components/EvolutionInteriorBackgrou
 
 const EVOLUTION_INTERIOR = new Set(["/projects", "/repositories", "/pull-requests", "/actions", "/migrations", "/deployments", "/settings"]);
 import { CommandPaletteProvider } from "@/components/CommandPalette";
-import { AccountProvider } from "@/hooks/use-account";
+import { AccountProvider, useAccount } from "@/hooks/use-account";
+import { evolutionAccessQuery } from "@/lib/evolution-query";
 import { OmniAreaHeader } from "@/components/omnibridge/OmniAreaHeader";
 
 function NotFoundComponent() {
@@ -129,39 +130,60 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+/** Owner's Evolution home ("/" once the owner check passes) is an interior page. */
+function SiteShell({
+  path,
+  calmArea,
+  omniArea,
+}: {
+  path: string;
+  calmArea: boolean;
+  omniArea: boolean;
+}) {
+  const { user, ready } = useAccount();
+  const access = useQuery({ ...evolutionAccessQuery, enabled: ready && Boolean(user) && path === "/" });
+  const ownerHome = path === "/" && Boolean(user) && access.data?.owner === true;
+  const evolutionInterior =
+    ownerHome || EVOLUTION_INTERIOR.has(path.replace(/\/+$/, "") || "/");
+  const publicLanding = path === "/" && !ownerHome;
+
+  return (
+    <div
+      className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}${publicLanding ? " evolution-dashboard" : ""}${evolutionInterior ? " evolution-interior" : ""}`}
+    >
+      {publicLanding && <EvolutionSpaceBackground />}
+      {evolutionInterior ? (
+        <EvolutionInteriorBackground />
+      ) : (
+        <>
+          <OrbitalBackground />
+          <div className="site-cosmos" aria-hidden>
+            <Starfield count={150} />
+          </div>
+        </>
+      )}
+      <SiteNav />
+      <main className="flex-1">
+        {omniArea && <OmniAreaHeader />}
+        <Outlet />
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (state) => state.location.pathname });
   const omniArea = path.startsWith("/omni") || path === "/beta-omni";
   const calmArea = omniArea || path === "/dashboard";
-  const evolutionInterior = EVOLUTION_INTERIOR.has(path.replace(/\/+$/, "") || "/");
 
   return (
     <QueryClientProvider client={queryClient}>
       <AccountProvider>
         <CommandPaletteProvider pages={navItems}>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <div
-            className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}${path === "/" ? " evolution-dashboard" : ""}${evolutionInterior ? " evolution-interior" : ""}`}
-          >
-            {path === "/" && <EvolutionSpaceBackground />}
-            {evolutionInterior ? (
-              <EvolutionInteriorBackground />
-            ) : (
-              <>
-                <OrbitalBackground />
-                <div className="site-cosmos" aria-hidden>
-                  <Starfield count={150} />
-                </div>
-              </>
-            )}
-            <SiteNav />
-            <main className="flex-1">
-              {omniArea && <OmniAreaHeader />}
-              <Outlet />
-            </main>
-            <SiteFooter />
-          </div>
+          <SiteShell path={path} calmArea={calmArea} omniArea={omniArea} />
         </CommandPaletteProvider>
       </AccountProvider>
     </QueryClientProvider>

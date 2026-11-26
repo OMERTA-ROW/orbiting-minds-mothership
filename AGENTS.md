@@ -18,7 +18,7 @@
 - Quantum/Forge creative tools use only the server-side studio access pause, why: browser-local pause flags were demo controls, not security.
 - Cosmic art uses deterministic/static motion and accessible tokenized controls; homepage overlays share one image frame, why: alignment.
 - Evolution's home space layer is decorative, route-scoped and pointer-inert; CSS disables drift for reduced motion, why: preserve controls and accessibility.
-- Evolution interior routes use CyberLink's real background, verbatim in `src/components/space`, why: owner wants the source.
+- Evolution interior routes, including the owner's home at `/`, use CyberLink's real background, verbatim in `src/components/space`; the public landing keeps its own pictures, why: owner wants the source inside and the landing preserved.
 - Pathways use internal streaming routes and request-local AI; secrets server-only, why: drafting is not execution.
 - Persist AI denial/credit blocks service-only; clear after owner confirmation, why: prevent billed retries across reloads/restarts.
 
