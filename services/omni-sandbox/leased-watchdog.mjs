@@ -60,8 +60,7 @@ export function createLeasedWatchHandler(config, watch = watchSystemdWorker, onF
         }),
       )
       .then((result) => {
-        if (watch === watchSystemdWorker || config.workspacePath !== undefined)
-          verifyWorkspaceRemoved(config.workspacePath);
+        if (record.contract === SESSION_CONTRACT) verifyWorkspaceRemoved(config.workspacePath);
         return result;
       });
     watching = {

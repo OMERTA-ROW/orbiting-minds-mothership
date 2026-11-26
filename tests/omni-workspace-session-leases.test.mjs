@@ -123,6 +123,41 @@ test("watchdog reports cleanup only after independently confirming the workspace
   }
 });
 
+test("watchdog distinguishes tmpfs job cleanup from session workspace cleanup", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-watchdog-contract-"));
+  const binding = {
+    leaseId: randomUUID(),
+    workerId: "one",
+    ownerId: randomUUID(),
+    projectId: "omni",
+    sessionId: randomUUID(),
+  };
+  const fields = { kind: "watch", recover: false, expiresAt: Date.now() + 1000 };
+  const cleanup = { outcome: "terminated_and_wiped" };
+  try {
+    const job = { ...binding, ...fields, jobId: randomUUID() };
+    const jobHandler = createLeasedWatchHandler(
+      { secret, workerId: binding.workerId, workspacePath: root },
+      async () => cleanup,
+    );
+    assert.equal(await jobHandler(envelope(job)), cleanup);
+
+    const session = { ...binding, ...fields, contract: "omni.workspace-session/v1" };
+    const sessionHandler = createLeasedWatchHandler(
+      { secret, workerId: binding.workerId, workspacePath: root },
+      async () => cleanup,
+    );
+    await assert.rejects(sessionHandler(envelope(session)), /Workspace remains/);
+    const missingPathHandler = createLeasedWatchHandler(
+      { secret, workerId: binding.workerId },
+      async () => cleanup,
+    );
+    await assert.rejects(missingPathHandler(envelope(session)), /absolute workspace path/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("workspace verification refuses cleanup success while the directory remains", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-present-"));
   try {
