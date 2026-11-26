@@ -14,7 +14,7 @@ import {
 import { createLeasedSessionWorkspace } from "../services/omni-sandbox/leased-worker.mjs";
 import { renewableSessionAuthority } from "../services/omni-sandbox/worker-authority.mjs";
 import {
-  createLeasedWatchdogHandler,
+  createLeasedWatchHandler,
   verifyWatchRequest,
   watchSessionAuthority,
 } from "../services/omni-sandbox/leased-watchdog.mjs";
@@ -363,7 +363,7 @@ test("watchdog routes job and session records by authenticated contract", async 
   const authorityFile = path.join(dir, "authority.json");
   const calls = [];
   let finishJob;
-  const handler = createLeasedWatchdogHandler(
+  const handler = createLeasedWatchHandler(
     { secret, workerId: "one", authorityFile },
     (options) => {
       calls.push(options);

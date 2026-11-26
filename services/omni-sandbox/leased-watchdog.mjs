@@ -12,7 +12,7 @@ export function verifyWatchRequest(secret, envelope, workerId, expectedBinding) 
   const session = binding?.contract === SESSION_CONTRACT;
   if (
     (binding?.contract !== undefined && !session) ||
-    (session && binding.jobId !== undefined) ||
+    (session && Object.hasOwn(binding, "jobId")) ||
     (expectedBinding && (expectedBinding.contract === SESSION_CONTRACT) !== session)
   )
     throw new Error("Watchdog contract is not supported or does not match.");
@@ -42,7 +42,11 @@ export async function watchSessionAuthority({ binding, secret, authorityFile, on
   }
 }
 
-export function createLeasedWatchdogHandler(config, watchWorker = watchSystemdWorker) {
+export function createLeasedWatchHandler(
+  config,
+  watchWorker = watchSystemdWorker,
+  onFailure = () => {},
+) {
   let watching;
   return async (envelope) => {
     const { record, session } = verifyWatchRequest(
@@ -97,12 +101,7 @@ export function createLeasedWatchdogHandler(config, watchWorker = watchSystemdWo
     try {
       return await watching.promise;
     } catch (error) {
-      // BindsTo + After on the worker stop it if the independent watchdog fails.
-      console.error(
-        "Independent watchdog failed; refusing cleanup acknowledgement:",
-        error.message,
-      );
-      setImmediate(() => process.exit(1));
+      onFailure(error);
       throw error;
     } finally {
       watching = undefined;
@@ -125,7 +124,12 @@ export async function serveLeasedWatchdog(config) {
     !/^CapEff:\s+0+$/m.test(status)
   )
     throw new Error("Watchdog requires a separate hardened identity and private activated socket.");
-  const server = workerSocketServer(createLeasedWatchdogHandler(config));
+  const handleWatch = createLeasedWatchHandler(config, watchSystemdWorker, (error) => {
+    // BindsTo + After on the worker stop it if the independent watchdog fails.
+    console.error("Independent watchdog failed; refusing cleanup acknowledgement:", error.message);
+    setImmediate(() => process.exit(1));
+  });
+  const server = workerSocketServer(handleWatch);
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen({ fd: 3 }, resolve);

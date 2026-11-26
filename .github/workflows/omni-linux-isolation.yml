@@ -524,6 +524,7 @@ jobs:
           node --test tests/omni-workspace-decision.test.mjs
           node --test tests/omni-workspace-worker-leases.test.mjs
           node --test tests/omni-workspace-session-leases.test.mjs
+          node --test tests/omni-leased-watchdog-session.test.mjs
           bun run test src/test/omni-sandbox-interop.test.ts src/test/omni-sandbox-containment.test.ts
   workspace-watchdog:
     if: github.event_name != 'workflow_dispatch' || !inputs.namespace_trace
