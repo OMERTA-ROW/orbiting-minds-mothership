@@ -324,3 +324,19 @@
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .cosmic-hero-art { transform: none; }
 }
+
+/* Evolution interior: CyberLink Social live space background sits behind content. */
+.evolution-interior {
+  background: transparent;
+  isolation: isolate;
+}
+.evolution-interior-space {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--evolution-space-black);
+}
+.evolution-interior-space > div {
+  z-index: 0;
+}

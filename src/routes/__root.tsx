@@ -18,6 +18,9 @@ import { navItems } from "../components/nav-groups";
 import { Starfield } from "../components/evo";
 import OrbitalBackground from "../components/OrbitalBackground";
 import EvolutionSpaceBackground from "../components/EvolutionSpaceBackground";
+import EvolutionInteriorBackground from "../components/EvolutionInteriorBackground";
+
+const EVOLUTION_INTERIOR = new Set(["/repositories", "/pull-requests", "/actions", "/migrations", "/deployments", "/settings"]);
 import { CommandPaletteProvider } from "@/components/CommandPalette";
 import { AccountProvider } from "@/hooks/use-account";
 import { OmniAreaHeader } from "@/components/omnibridge/OmniAreaHeader";
@@ -131,6 +134,7 @@ function RootComponent() {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const omniArea = path.startsWith("/omni") || path === "/beta-omni";
   const calmArea = omniArea || path === "/dashboard";
+  const evolutionInterior = EVOLUTION_INTERIOR.has(path.replace(/\/+$/, "") || "/");
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -138,13 +142,19 @@ function RootComponent() {
         <CommandPaletteProvider pages={navItems}>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <div
-            className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}${path === "/" ? " evolution-dashboard" : ""}`}
+            className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}${path === "/" ? " evolution-dashboard" : ""}${evolutionInterior ? " evolution-interior" : ""}`}
           >
             {path === "/" && <EvolutionSpaceBackground />}
-            <OrbitalBackground />
-            <div className="site-cosmos" aria-hidden>
-              <Starfield count={150} />
-            </div>
+            {evolutionInterior ? (
+              <EvolutionInteriorBackground />
+            ) : (
+              <>
+                <OrbitalBackground />
+                <div className="site-cosmos" aria-hidden>
+                  <Starfield count={150} />
+                </div>
+              </>
+            )}
             <SiteNav />
             <main className="flex-1">
               {omniArea && <OmniAreaHeader />}
