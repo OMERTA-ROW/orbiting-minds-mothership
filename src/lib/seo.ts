@@ -3,7 +3,7 @@ export const SITE_URL = "https://evoomni.tech";
 type SeoOptions = { indexable?: boolean; path?: string; image?: string; imageAlt?: string };
 
 export function seo(title: string, description: string, options: SeoOptions = {}) {
-  const full = `${title} · EVOLUTION Mothership`;
+  const full = `${title} · Evolution`;
   const url = options.path ? `${SITE_URL}${options.path}` : undefined;
   const image = options.image ? `${SITE_URL}${options.image}` : undefined;
   return {
@@ -13,7 +13,7 @@ export function seo(title: string, description: string, options: SeoOptions = {}
       { property: "og:title", content: full },
       { property: "og:description", content: description },
       { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "EVOLUTION Mothership" },
+      { property: "og:site_name", content: "Evolution" },
       ...(url ? [{ property: "og:url", content: url }] : []),
       ...(image
         ? [

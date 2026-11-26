@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-10-22",
-  "updated_at": "2026-11-23T20:20:00Z",
+  "updated_at": "2026-11-26T01:05:00Z",
   "project_name": "Evolution Mothership",
   "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
   "source_note_urls": [
@@ -27,6 +27,14 @@
     "Released"
   ],
   "evidence": {
+    "evolution-infrastructure-foundation": {
+      "command": "bunx vitest run; nix shell nixpkgs#postgresql_17 -c python3 src/test/test_evolution_configuration_sql.py; python3 src/test/test_completion_register.py; signed-in desktop/mobile Playwright",
+      "result": "1515 app tests passed, 23 skipped; 34 disposable SQL checks passed including concurrent stale-save refusal; 3 register checks passed. Signed-in owner without aal2: all six workspace pages refused writes with remediation, mobile navigation passed; no page errors. Hosted grants verified anon denied and direct client writes denied.",
+      "runtime": "PR44 specification reviewed at cc3f245c9e6db738a388ed281e889341fbeabd2f. Evolution owner navigation/private records/configuration revisions implemented; migrations 0075\u20130077 installed. Positive owner UI writes, Git hosting/import/clone/push, builds/cancel, staging/rollback and project migration recovery are not verified. No publication or repository migration.",
+      "passed": true,
+      "scope": "Bounded configuration/safety tests only; first end-to-end infrastructure milestone remains blocked.",
+      "details": "docs/evolution-infrastructure-implementation.md"
+    },
     "current": {
       "command": "bunx vitest run",
       "result": "Passed: 1236 tests / 84 files, 2026-10-31 18:07 UTC; focused Razul 171 tests / 12 files and 38 isolated PostgreSQL calls plus anonymous execute denial PASS. Preview source receipt run partial: 43 fetched/0 inserted/43 deduped/0 alerts; 3 success and 2 failed source checks read back. Prior Sentinel live-cycle evidence retained, not rerun.",

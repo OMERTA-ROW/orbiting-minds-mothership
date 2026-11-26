@@ -358,6 +358,50 @@ export type Database = {
         }
         Relationships: []
       }
+      evolution_project_configs: {
+        Row: {
+          branch: string
+          build_command: string
+          created_at: string
+          id: string
+          output_directory: string
+          owner_id: string
+          project_id: string
+          revision: number
+          source_url: string
+        }
+        Insert: {
+          branch?: string
+          build_command?: string
+          created_at?: string
+          id?: string
+          output_directory?: string
+          owner_id: string
+          project_id: string
+          revision: number
+          source_url?: string
+        }
+        Update: {
+          branch?: string
+          build_command?: string
+          created_at?: string
+          id?: string
+          output_directory?: string
+          owner_id?: string
+          project_id?: string
+          revision?: number
+          source_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evolution_project_configs_project_id_owner_id_fkey"
+            columns: ["project_id", "owner_id"]
+            isOneToOne: false
+            referencedRelation: "beta_projects"
+            referencedColumns: ["id", "owner_id"]
+          },
+        ]
+      }
       forge_creator_versions: {
         Row: {
           asset_id: string | null
@@ -3885,6 +3929,37 @@ export type Database = {
         Returns: string
       }
       decline_invitation: { Args: { _token_hash: string }; Returns: undefined }
+      evolution_config_save: {
+        Args: {
+          _branch: string
+          _command: string
+          _expected_revision: number
+          _output: string
+          _project: string
+          _source: string
+        }
+        Returns: {
+          branch: string
+          build_command: string
+          created_at: string
+          id: string
+          output_directory: string
+          owner_id: string
+          project_id: string
+          revision: number
+          source_url: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "evolution_project_configs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      evolution_project_create: {
+        Args: { _brief: string; _name: string }
+        Returns: string
+      }
       forge_release_transition: {
         Args: {
           _action: string

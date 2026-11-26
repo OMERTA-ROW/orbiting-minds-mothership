@@ -1,5 +1,15 @@
 # Evolution — reconciled blueprint roadmap
 
+## Evolution infrastructure foundation — PR #44, 2026-11-26
+
+- [x] Implemented private Evolution owner workspace and durable project/configuration revisions, preserving existing routes and integrations; additive migrations 0075–0077 installed. Details: `docs/evolution-infrastructure-implementation.md`.
+- [x] Verified isolated owner/MFA denials, immutable revisions, audit, concurrent stale-save refusal and hosted grants: 34 real disposable SQL checks; full app 1,515 passed / 23 skipped; signed-in owner denial paths on all six pages and mobile navigation passed. Positive owner hosted writes require two-step sign-in, not bypassed.
+- [ ] Positive owner create/configure/reload UI verification — blocked on owner completing two-step sign-in.
+- [ ] Independent Git hosting/import/clone/push — blocked on owner-reviewed durable Git host and an explicitly authorized disposable repository.
+- [ ] Real isolated build/logs/cancel and staging/rollback — blocked on sandbox isolation/cancellation verification and owner-reviewed runner/staging services. PR #28 is merged quarantine only, not an execution acceptance pass.
+- [ ] Database migration recovery and backup restore — blocked on approved project database target, backup service and disposable recovery exercise.
+- [ ] First milestone end-to-end — blocked on the services and repository authorization above; no production changes authorized.
+
 ## Demo mode removed + OMNI connection paths — 2026-11-20 (preview)
 
 - [x] Design-preview switch, Advanced demo menu, sample search results and demo providers removed; 61 former demo addresses show an honest "not connected" page with what's needed and a working alternative (`src/lib/retired-areas.ts`); browser-saved records kept and downloadable.

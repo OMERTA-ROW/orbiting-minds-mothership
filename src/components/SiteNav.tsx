@@ -13,11 +13,18 @@ import {
 import { AccountButton } from "@/components/beta/AccountButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { navGroups, navItems } from "@/components/nav-groups";
+import { useQuery } from "@tanstack/react-query";
+import { useAccount } from "@/hooks/use-account";
+import { evolutionAccessQuery } from "@/lib/evolution-query";
+import { EVOLUTION_NAV } from "@/lib/evolution";
 
 export { navItems };
 
 export function SiteNav() {
   const [open, setOpen] = useState(false);
+  const { user, ready } = useAccount();
+  const access = useQuery({ ...evolutionAccessQuery, enabled: ready && Boolean(user) });
+  const owner = access.data?.owner === true;
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: KeyboardEvent) => {
@@ -34,7 +41,7 @@ export function SiteNav() {
           <span>
             <span className="block font-display text-base text-gold-light">EVOLUTION</span>
             <span className="block pt-1 font-mono text-[7px] uppercase tracking-[0.24em] text-muted-foreground">
-              The Mothership
+              Private workspace
             </span>
           </span>
         </Link>
@@ -47,29 +54,37 @@ export function SiteNav() {
           >
             Home
           </Link>
-          {navGroups.map((g) => (
-            <DropdownMenu key={g.id}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="nav-link h-auto gap-1 px-0">
-                  {g.label}
-                  <ChevronDown size={12} aria-hidden />
+          {owner
+            ? EVOLUTION_NAV.slice(1).map((item) => (
+                <Button key={item.to} asChild variant="ghost" className="nav-link h-auto px-0">
+                  <Link to={item.to} activeProps={{ className: "is-current" }}>
+                    {item.label}
+                  </Link>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-80 border-gold/25 p-2">
-                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                  {g.blurb}
-                </DropdownMenuLabel>
-                {g.items.map((n) => (
-                  <DropdownMenuItem key={n.to} asChild>
-                    <Link to={n.to} className="flex items-center justify-between gap-3 py-2.5">
-                      <span>{n.label}</span>
-                      <StatusBadge status={n.status} tooltip={false} />
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ))}
+              ))
+            : navGroups.map((g) => (
+                <DropdownMenu key={g.id}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="nav-link h-auto gap-1 px-0">
+                      {g.label}
+                      <ChevronDown size={12} aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-80 border-gold/25 p-2">
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                      {g.blurb}
+                    </DropdownMenuLabel>
+                    {g.items.map((n) => (
+                      <DropdownMenuItem key={n.to} asChild>
+                        <Link to={n.to} className="flex items-center justify-between gap-3 py-2.5">
+                          <span>{n.label}</span>
+                          <StatusBadge status={n.status} tooltip={false} />
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ))}
         </nav>
         <div className="flex items-center gap-1 sm:gap-2">
           <PaletteTrigger />
@@ -101,28 +116,39 @@ export function SiteNav() {
             >
               Home
             </Link>
-            {navGroups.map((g) => (
-              <section key={g.id} aria-labelledby={`mnav-${g.id}`}>
-                <h2 id={`mnav-${g.id}`} className="eyebrow">
-                  {g.label}
-                </h2>
-                <ul className="mt-2">
-                  {g.items.map((n) => (
-                    <li key={n.to}>
-                      <Link
-                        to={n.to}
-                        onClick={() => setOpen(false)}
-                        className="flex min-h-11 items-center justify-between gap-3 border-b border-border py-2 text-sm text-muted-foreground hover:text-gold-light"
-                        activeProps={{ className: "text-gold-light" }}
-                      >
-                        <span>{n.label}</span>
-                        <StatusBadge status={n.status} tooltip={false} />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+            {owner
+              ? EVOLUTION_NAV.slice(1).map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className="block border-b border-border py-3 text-sm text-foreground"
+                  >
+                    {item.label}
+                  </Link>
+                ))
+              : navGroups.map((g) => (
+                  <section key={g.id} aria-labelledby={`mnav-${g.id}`}>
+                    <h2 id={`mnav-${g.id}`} className="eyebrow">
+                      {g.label}
+                    </h2>
+                    <ul className="mt-2">
+                      {g.items.map((n) => (
+                        <li key={n.to}>
+                          <Link
+                            to={n.to}
+                            onClick={() => setOpen(false)}
+                            className="flex min-h-11 items-center justify-between gap-3 border-b border-border py-2 text-sm text-muted-foreground hover:text-gold-light"
+                            activeProps={{ className: "text-gold-light" }}
+                          >
+                            <span>{n.label}</span>
+                            <StatusBadge status={n.status} tooltip={false} />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
           </div>
         </nav>
       )}

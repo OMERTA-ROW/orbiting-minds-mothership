@@ -10,12 +10,13 @@ import { NAV_STATUS, navGroups, type NavStatus } from "@/components/nav-groups";
 import { retiredAreas } from "@/lib/retired-areas";
 import { useAccount } from "@/hooks/use-account";
 import { NextSteps } from "@/components/NextSteps";
+import { EvolutionOwnerHome } from "@/components/evolution/Workspace";
 
 export const Route = createFileRoute("/")({
   head: () =>
     seo(
-      "EVOLUTION — Cosmic Mothership",
-      "All technology is converging here. Explore EVOLUTION's consent-first constellation of software, creators, AI agents and research. Bridge technology into its next evolution.",
+      "Evolution — Private development workspace",
+      "Evolution is the owner-controlled development workspace. Projects, reviewed changes and release history with preserved OMNI and Jackboy controls. Bridge technology into its next evolution.",
       {
         indexable: isIndexable("/"),
         path: "/",
@@ -28,55 +29,59 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <div className="ms-page">
-      <MothershipBackground />
-      <div className="ms-content">
-        <section className="cosmic-hero relative isolate overflow-hidden">
-          <div className="hero-vignette pointer-events-none absolute inset-0" aria-hidden />
-          <div
-            className="hero-coordinates pointer-events-none absolute left-8 top-12 hidden font-mono text-[9px] leading-loose text-muted-foreground lg:block"
-            aria-hidden
-          >
-            EVOLUTION NETWORK
-            <br />
-            MOTHERSHIP / 001
-          </div>
-          <span className="absolute right-8 top-12 hidden border border-gold/25 bg-background/60 px-3 py-1 font-mono text-[9px] uppercase tracking-widest text-gold-light md:inline-flex">
-            Private beta
-          </span>
-          <div className="hero-copy relative z-10 mx-auto max-w-4xl px-6 text-center">
-            <p className="eyebrow flex items-center justify-center gap-4">
-              <span className="h-px w-8 bg-gold/50" />
-              The future is connected
-              <span className="h-px w-8 bg-gold/50" />
-            </p>
-            <h1 className="hero-title mt-5 font-display font-medium text-gold-gradient">
-              EVOLUTION
-            </h1>
-            <p className="mt-4 text-lg font-light text-foreground md:text-2xl">
-              Bridge technology into its next evolution.
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">All technology is converging here.</p>
-            <HeroActions />
-          </div>
-          <div className="hero-bottom absolute bottom-8 left-0 z-10 w-full px-6 text-center">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-gold-light">
-              One Mothership. Infinite possibilities.
-            </p>
-            <a
-              href="#start-here"
-              aria-label="Start here"
-              className="mx-auto mt-4 inline-flex h-8 w-8 items-center justify-center text-gold"
+    <EvolutionOwnerHome>
+      <div className="ms-page">
+        <MothershipBackground />
+        <div className="ms-content">
+          <section className="cosmic-hero relative isolate overflow-hidden">
+            <div className="hero-vignette pointer-events-none absolute inset-0" aria-hidden />
+            <div
+              className="hero-coordinates pointer-events-none absolute left-8 top-12 hidden font-mono text-[9px] leading-loose text-muted-foreground lg:block"
+              aria-hidden
             >
-              <ChevronDown size={18} />
-            </a>
-          </div>
-        </section>
+              EVOLUTION NETWORK
+              <br />
+              MOTHERSHIP / 001
+            </div>
+            <span className="absolute right-8 top-12 hidden border border-gold/25 bg-background/60 px-3 py-1 font-mono text-[9px] uppercase tracking-widest text-gold-light md:inline-flex">
+              Private beta
+            </span>
+            <div className="hero-copy relative z-10 mx-auto max-w-4xl px-6 text-center">
+              <p className="eyebrow flex items-center justify-center gap-4">
+                <span className="h-px w-8 bg-gold/50" />
+                The future is connected
+                <span className="h-px w-8 bg-gold/50" />
+              </p>
+              <h1 className="hero-title mt-5 font-display font-medium text-gold-gradient">
+                EVOLUTION
+              </h1>
+              <p className="mt-4 text-lg font-light text-foreground md:text-2xl">
+                Bridge technology into its next evolution.
+              </p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                All technology is converging here.
+              </p>
+              <HeroActions />
+            </div>
+            <div className="hero-bottom absolute bottom-8 left-0 z-10 w-full px-6 text-center">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-gold-light">
+                One Mothership. Infinite possibilities.
+              </p>
+              <a
+                href="#start-here"
+                aria-label="Start here"
+                className="mx-auto mt-4 inline-flex h-8 w-8 items-center justify-center text-gold"
+              >
+                <ChevronDown size={18} />
+              </a>
+            </div>
+          </section>
 
-        <StartHere />
-        <NotConnectedYet />
+          <StartHere />
+          <NotConnectedYet />
+        </div>
       </div>
-    </div>
+    </EvolutionOwnerHome>
   );
 }
 
