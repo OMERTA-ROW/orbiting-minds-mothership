@@ -2,8 +2,23 @@ import fs from "node:fs";
 import { verifySessionRecord, verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerSocketServer } from "./worker-socket.mjs";
 import { watchSystemdWorker } from "./systemd-worker.mjs";
+import { renewableSessionAuthority } from "./worker-authority.mjs";
 
 const SESSION_CONTRACT = "omni.workspace-session/v1";
+const AUTHORITY_POLL_MS = 50;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function watchSessionAuthority(config, binding, watch) {
+  const check = renewableSessionAuthority(config.secret, binding);
+  while (true) {
+    try {
+      check(JSON.parse(fs.readFileSync(config.authorityFile, "utf8")));
+    } catch {
+      return watch({ ...config, binding, recover: true });
+    }
+    await sleep(AUTHORITY_POLL_MS);
+  }
+}
 
 function verifyWatchRecord(secret, envelope, binding) {
   const record = envelope?.record;
@@ -38,13 +53,17 @@ export function createLeasedWatchHandler(config, watch = watchSystemdWorker, onF
     const identityKeys = ["leaseId", "workerId", "ownerId", "projectId", "sessionId"];
     if (record.contract !== SESSION_CONTRACT) identityKeys.push("jobId");
     const bindingIdentity = Object.fromEntries(identityKeys.map((key) => [key, record[key]]));
+    const watchOptions = {
+      ...config,
+      binding: bindingIdentity,
+      recover: record.recover,
+    };
     watching = {
       binding: bindingIdentity,
-      promise: watch({
-        ...config,
-        binding: bindingIdentity,
-        recover: record.recover,
-      }),
+      promise:
+        record.contract === SESSION_CONTRACT && !record.recover
+          ? watchSessionAuthority(config, bindingIdentity, watch)
+          : watch(watchOptions),
     };
     try {
       return await watching.promise;
