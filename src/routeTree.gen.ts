@@ -89,6 +89,7 @@ import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedKnowledgeBriefRouteImport } from './routes/_authenticated/knowledge-brief'
 import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
 import { Route as AuthenticatedMigrationsRouteImport } from './routes/_authenticated/migrations'
+import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedPullRequestsRouteImport } from './routes/_authenticated/pull-requests'
 import { Route as AuthenticatedQuantumStudioRouteImport } from './routes/_authenticated/quantum-studio'
 import { Route as AuthenticatedRepositoriesRouteImport } from './routes/_authenticated/repositories'
@@ -539,6 +540,11 @@ const AuthenticatedMigrationsRoute = AuthenticatedMigrationsRouteImport.update({
   path: '/migrations',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPullRequestsRoute =
   AuthenticatedPullRequestsRouteImport.update({
     id: '/pull-requests',
@@ -874,6 +880,7 @@ export interface FileRoutesByFullPath {
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
   '/migrations': typeof AuthenticatedMigrationsRoute
+  '/projects': typeof AuthenticatedProjectsRoute
   '/pull-requests': typeof AuthenticatedPullRequestsRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/repositories': typeof AuthenticatedRepositoriesRoute
@@ -1002,6 +1009,7 @@ export interface FileRoutesByTo {
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
   '/migrations': typeof AuthenticatedMigrationsRoute
+  '/projects': typeof AuthenticatedProjectsRoute
   '/pull-requests': typeof AuthenticatedPullRequestsRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/repositories': typeof AuthenticatedRepositoriesRoute
@@ -1132,6 +1140,7 @@ export interface FileRoutesById {
   '/_authenticated/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/_authenticated/members': typeof AuthenticatedMembersRoute
   '/_authenticated/migrations': typeof AuthenticatedMigrationsRoute
+  '/_authenticated/projects': typeof AuthenticatedProjectsRoute
   '/_authenticated/pull-requests': typeof AuthenticatedPullRequestsRoute
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/_authenticated/repositories': typeof AuthenticatedRepositoriesRoute
@@ -1262,6 +1271,7 @@ export interface FileRouteTypes {
     | '/knowledge-brief'
     | '/members'
     | '/migrations'
+    | '/projects'
     | '/pull-requests'
     | '/quantum-studio'
     | '/repositories'
@@ -1390,6 +1400,7 @@ export interface FileRouteTypes {
     | '/knowledge-brief'
     | '/members'
     | '/migrations'
+    | '/projects'
     | '/pull-requests'
     | '/quantum-studio'
     | '/repositories'
@@ -1519,6 +1530,7 @@ export interface FileRouteTypes {
     | '/_authenticated/knowledge-brief'
     | '/_authenticated/members'
     | '/_authenticated/migrations'
+    | '/_authenticated/projects'
     | '/_authenticated/pull-requests'
     | '/_authenticated/quantum-studio'
     | '/_authenticated/repositories'
@@ -2240,6 +2252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMigrationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/projects': {
+      id: '/_authenticated/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AuthenticatedProjectsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pull-requests': {
       id: '/_authenticated/pull-requests'
       path: '/pull-requests'
@@ -2581,6 +2600,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKnowledgeBriefRoute: typeof AuthenticatedKnowledgeBriefRoute
   AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
   AuthenticatedMigrationsRoute: typeof AuthenticatedMigrationsRoute
+  AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
   AuthenticatedPullRequestsRoute: typeof AuthenticatedPullRequestsRoute
   AuthenticatedQuantumStudioRoute: typeof AuthenticatedQuantumStudioRoute
   AuthenticatedRepositoriesRoute: typeof AuthenticatedRepositoriesRoute
@@ -2596,6 +2616,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedKnowledgeBriefRoute: AuthenticatedKnowledgeBriefRoute,
   AuthenticatedMembersRoute: AuthenticatedMembersRoute,
   AuthenticatedMigrationsRoute: AuthenticatedMigrationsRoute,
+  AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
   AuthenticatedPullRequestsRoute: AuthenticatedPullRequestsRoute,
   AuthenticatedQuantumStudioRoute: AuthenticatedQuantumStudioRoute,
   AuthenticatedRepositoriesRoute: AuthenticatedRepositoriesRoute,

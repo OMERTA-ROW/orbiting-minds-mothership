@@ -11,3 +11,9 @@ export const evolutionWorkspaceQuery = queryOptions({
   queryFn: () => readEvolutionWorkspace(),
   retry: false,
 });
+import { readControlCenter } from "./evolution-control.functions";
+export const controlCenterQuery = queryOptions({
+  queryKey: ["evolution-control-center"],
+  queryFn: () => readControlCenter(),
+  retry: false,
+});

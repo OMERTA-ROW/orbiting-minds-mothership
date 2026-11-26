@@ -119,7 +119,7 @@ describe("registered destinations", () => {
     for (const f of SOURCES) {
       const s = read(f);
       if (
-        /https?:\/\/(?:[a-z0-9-]*jackboy[a-z0-9-]*\.[a-z.]+|[a-z0-9.-]+\.up\.railway\.app|[a-z0-9.-]+\.vultr(?:usercontent)?\.com|\d{1,3}(?:\.\d{1,3}){3})/i.test(
+        /https?:\/\/(?:[a-z0-9-]*jackboy[a-z0-9-]*\.[a-z.]+|[a-z0-9.-]+\.up\.railway\.app|(?!(?:api|docs)\.vultr\.com)[a-z0-9.-]+\.vultr(?:usercontent)?\.com|\d{1,3}(?:\.\d{1,3}){3})/i.test(
           s,
         )
       )

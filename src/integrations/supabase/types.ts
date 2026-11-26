@@ -358,6 +358,176 @@ export type Database = {
         }
         Relationships: []
       }
+      evolution_cloud_connections: {
+        Row: {
+          checked_at: string | null
+          created_at: string
+          detail: string | null
+          id: string
+          label: string
+          owner_id: string
+          provider: string
+          status: string
+        }
+        Insert: {
+          checked_at?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          label: string
+          owner_id?: string
+          provider: string
+          status?: string
+        }
+        Update: {
+          checked_at?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          label?: string
+          owner_id?: string
+          provider?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      evolution_directory: {
+        Row: {
+          cloud_connection_id: string | null
+          created_at: string
+          github_repo_id: number | null
+          id: string
+          lovable_project_id: string | null
+          name: string
+          notes: string
+          owner_id: string
+          updated_at: string
+          website_checked_at: string | null
+          website_status: number | null
+          website_url: string | null
+        }
+        Insert: {
+          cloud_connection_id?: string | null
+          created_at?: string
+          github_repo_id?: number | null
+          id?: string
+          lovable_project_id?: string | null
+          name: string
+          notes?: string
+          owner_id?: string
+          updated_at?: string
+          website_checked_at?: string | null
+          website_status?: number | null
+          website_url?: string | null
+        }
+        Update: {
+          cloud_connection_id?: string | null
+          created_at?: string
+          github_repo_id?: number | null
+          id?: string
+          lovable_project_id?: string | null
+          name?: string
+          notes?: string
+          owner_id?: string
+          updated_at?: string
+          website_checked_at?: string | null
+          website_status?: number | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evolution_directory_cloud_connection_id_fkey"
+            columns: ["cloud_connection_id"]
+            isOneToOne: false
+            referencedRelation: "evolution_cloud_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evolution_github_repos: {
+        Row: {
+          archived: boolean
+          default_branch: string | null
+          first_seen_at: string
+          full_name: string
+          github_repo_id: number
+          html_url: string
+          id: string
+          last_seen_at: string
+          owner_id: string
+          owner_login: string
+          private: boolean
+          pushed_at: string | null
+          size_kb: number | null
+        }
+        Insert: {
+          archived?: boolean
+          default_branch?: string | null
+          first_seen_at?: string
+          full_name: string
+          github_repo_id: number
+          html_url: string
+          id?: string
+          last_seen_at?: string
+          owner_id: string
+          owner_login: string
+          private: boolean
+          pushed_at?: string | null
+          size_kb?: number | null
+        }
+        Update: {
+          archived?: boolean
+          default_branch?: string | null
+          first_seen_at?: string
+          full_name?: string
+          github_repo_id?: number
+          html_url?: string
+          id?: string
+          last_seen_at?: string
+          owner_id?: string
+          owner_login?: string
+          private?: boolean
+          pushed_at?: string | null
+          size_kb?: number | null
+        }
+        Relationships: []
+      }
+      evolution_github_sync_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          owner_id: string
+          pages: number
+          repos_seen: number
+          sources: string[]
+          started_at: string
+          status: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          owner_id: string
+          pages?: number
+          repos_seen?: number
+          sources?: string[]
+          started_at?: string
+          status: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          owner_id?: string
+          pages?: number
+          repos_seen?: number
+          sources?: string[]
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       evolution_project_configs: {
         Row: {
           branch: string
@@ -401,6 +571,30 @@ export type Database = {
             referencedColumns: ["id", "owner_id"]
           },
         ]
+      }
+      evolution_settings: {
+        Row: {
+          clone_all_opt_in: boolean
+          github_orgs: string[]
+          id: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          clone_all_opt_in?: boolean
+          github_orgs?: string[]
+          id?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Update: {
+          clone_all_opt_in?: boolean
+          github_orgs?: string[]
+          id?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       forge_creator_versions: {
         Row: {

@@ -20,7 +20,7 @@ import OrbitalBackground from "../components/OrbitalBackground";
 import EvolutionSpaceBackground from "../components/EvolutionSpaceBackground";
 import EvolutionInteriorBackground from "../components/EvolutionInteriorBackground";
 
-const EVOLUTION_INTERIOR = new Set(["/repositories", "/pull-requests", "/actions", "/migrations", "/deployments", "/settings"]);
+const EVOLUTION_INTERIOR = new Set(["/projects", "/repositories", "/pull-requests", "/actions", "/migrations", "/deployments", "/settings"]);
 import { CommandPaletteProvider } from "@/components/CommandPalette";
 import { AccountProvider } from "@/hooks/use-account";
 import { OmniAreaHeader } from "@/components/omnibridge/OmniAreaHeader";
