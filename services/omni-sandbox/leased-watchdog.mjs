@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { renewableSessionAuthority } from "./worker-authority.mjs";
-import { signWorkerRecord, verifyWorkerRecord } from "./worker-leases.mjs";
+import { signWorkerRecord, verifySessionRecord, verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerSocketServer } from "./worker-socket.mjs";
 import { watchSystemdWorker } from "./systemd-worker.mjs";
 
@@ -19,25 +19,15 @@ export async function watchSessionAuthority({ binding, secret, authorityFile, on
   }
 }
 
-export async function serveLeasedWatchdog(config) {
-  const socket = fs.lstatSync(config.socketPath);
-  const status = fs.readFileSync("/proc/self/status", "utf8");
-  if (
-    process.getuid?.() !== config.watchdogUid ||
-    config.watchdogUid === config.workerUid ||
-    !socket.isSocket() ||
-    socket.uid !== config.watchdogUid ||
-    socket.gid !== config.coordinatorGid ||
-    (socket.mode & 0o777) !== 0o660 ||
-    !fs.fstatSync(3).isSocket() ||
-    !/^NoNewPrivs:\s+1$/m.test(status) ||
-    !/^CapEff:\s+0+$/m.test(status)
-  )
-    throw new Error("Watchdog requires a separate hardened identity and private activated socket.");
+export function createLeasedWatchdogHandler(config, watchWorker = watchSystemdWorker) {
   let watching;
-  const server = workerSocketServer(async (envelope) => {
+  return async (envelope) => {
     const binding = envelope?.record;
-    const record = verifyWorkerRecord(config.secret, envelope, binding);
+    if (binding?.contract !== undefined && binding.contract !== SESSION_CONTRACT)
+      throw new Error("Watchdog contract is not supported.");
+    const isSession = binding?.contract === SESSION_CONTRACT;
+    const verify = isSession ? verifySessionRecord : verifyWorkerRecord;
+    const record = verify(config.secret, envelope, binding);
     if (
       record.workerId !== config.workerId ||
       record.kind !== "watch" ||
@@ -46,25 +36,23 @@ export async function serveLeasedWatchdog(config) {
       record.expiresAt > Date.now() + 2000
     )
       throw new Error("Watchdog route is busy or its authenticated request is invalid.");
-    if (record.contract !== undefined && record.contract !== SESSION_CONTRACT)
-      throw new Error("Watchdog contract is not supported.");
     if (watching) {
       if (!record.recover) throw new Error("Watchdog route is exclusively assigned.");
-      verifyWorkerRecord(config.secret, envelope, watching.binding);
+      if (watching.isSession !== isSession) throw new Error("Watchdog contract mismatch.");
+      verify(config.secret, envelope, watching.binding);
       return watching.promise;
     }
     const bindingIdentity = Object.fromEntries(
-      ["leaseId", "workerId", "ownerId", "projectId", "sessionId", "jobId"].map((key) => [
-        key,
-        record[key],
-      ]),
+      (isSession
+        ? ["leaseId", "workerId", "ownerId", "projectId", "sessionId"]
+        : ["leaseId", "workerId", "ownerId", "projectId", "sessionId", "jobId"]
+      ).map((key) => [key, record[key]]),
     );
-    const sessionBinding =
-      typeof record.sessionId === "string"
-        ? { ...bindingIdentity, contract: SESSION_CONTRACT }
-        : undefined;
+    const sessionBinding = isSession
+      ? { ...bindingIdentity, contract: SESSION_CONTRACT }
+      : undefined;
     const cleanupSession = async () => {
-      await watchSystemdWorker({ ...config, binding: bindingIdentity, recover: true });
+      await watchWorker({ ...config, binding: bindingIdentity, recover: true });
       const cleanup = {
         ...sessionBinding,
         kind: "session_cleanup",
@@ -83,7 +71,7 @@ export async function serveLeasedWatchdog(config) {
         onLapse: cleanupSession,
       });
     } else {
-      watch = watchSystemdWorker({
+      watch = watchWorker({
         ...config,
         binding: bindingIdentity,
         recover: record.recover,
@@ -91,6 +79,7 @@ export async function serveLeasedWatchdog(config) {
     }
     watching = {
       binding: bindingIdentity,
+      isSession,
       promise: watch,
     };
     try {
@@ -106,7 +95,25 @@ export async function serveLeasedWatchdog(config) {
     } finally {
       watching = undefined;
     }
-  });
+  };
+}
+
+export async function serveLeasedWatchdog(config) {
+  const socket = fs.lstatSync(config.socketPath);
+  const status = fs.readFileSync("/proc/self/status", "utf8");
+  if (
+    process.getuid?.() !== config.watchdogUid ||
+    config.watchdogUid === config.workerUid ||
+    !socket.isSocket() ||
+    socket.uid !== config.watchdogUid ||
+    socket.gid !== config.coordinatorGid ||
+    (socket.mode & 0o777) !== 0o660 ||
+    !fs.fstatSync(3).isSocket() ||
+    !/^NoNewPrivs:\s+1$/m.test(status) ||
+    !/^CapEff:\s+0+$/m.test(status)
+  )
+    throw new Error("Watchdog requires a separate hardened identity and private activated socket.");
+  const server = workerSocketServer(createLeasedWatchdogHandler(config));
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen({ fd: 3 }, resolve);

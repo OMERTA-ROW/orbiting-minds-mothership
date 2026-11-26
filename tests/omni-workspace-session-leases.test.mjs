@@ -13,7 +13,10 @@ import {
 } from "../services/omni-sandbox/worker-leases.mjs";
 import { createLeasedSessionWorkspace } from "../services/omni-sandbox/leased-worker.mjs";
 import { renewableSessionAuthority } from "../services/omni-sandbox/worker-authority.mjs";
-import { watchSessionAuthority } from "../services/omni-sandbox/leased-watchdog.mjs";
+import {
+  createLeasedWatchdogHandler,
+  watchSessionAuthority,
+} from "../services/omni-sandbox/leased-watchdog.mjs";
 
 const secret = "s".repeat(48);
 const identity = () => ({ ownerId: randomUUID(), sessionId: randomUUID(), projectId: "omni" });
@@ -307,6 +310,81 @@ test("reusing a sequence cannot extend the monotonic session deadline", async ()
     );
   } finally {
     f.close();
+  }
+});
+
+test("watchdog routes job and session records by authenticated contract", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-"));
+  const authorityFile = path.join(dir, "authority.json");
+  const calls = [];
+  let finishJob;
+  const handler = createLeasedWatchdogHandler(
+    { secret, workerId: "one", authorityFile },
+    (options) => {
+      calls.push(options);
+      if (!options.recover) return new Promise((resolve) => (finishJob = resolve));
+      return Promise.resolve({ record: { outcome: "terminated_and_wiped" } });
+    },
+  );
+  const request = (lease, fields = {}) =>
+    envelope({ ...lease, kind: "watch", recover: false, expiresAt: Date.now() + 1000, ...fields });
+  try {
+    const job = { ...identity(), leaseId: randomUUID(), workerId: "one", jobId: randomUUID() };
+    const pending = handler(request(job));
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].recover, false);
+    assert.deepEqual(calls[0].binding, job);
+    await assert.rejects(
+      handler(request(sessionRecord(job, {}), { recover: true })),
+      /contract mismatch/,
+    );
+    finishJob({ record: { outcome: "terminated_and_wiped" } });
+    await pending;
+
+    const lease = { ...identity(), leaseId: randomUUID(), workerId: "one" };
+    const binding = sessionRecord(lease, {});
+    fs.writeFileSync(
+      authorityFile,
+      JSON.stringify(
+        envelope({
+          ...binding,
+          kind: "session_authority",
+          active: true,
+          sequence: 1,
+          expiresAt: Date.now() + 1000,
+        }),
+      ),
+    );
+    const session = handler(request(binding));
+    assert.equal(calls.length, 1);
+    await assert.rejects(handler(request(job, { recover: true })), /contract mismatch/);
+    await assert.rejects(
+      handler(request({ ...binding, ownerId: randomUUID() }, { recover: true })),
+      /mismatch/,
+    );
+    await assert.rejects(
+      handler({ ...request(binding), signature: "0".repeat(64) }),
+      /signature/,
+    );
+    const recovery = handler(request(binding, { recover: true }));
+    fs.unlinkSync(authorityFile);
+    const cleanup = await session;
+    assert.deepEqual(await recovery, cleanup);
+    assert.equal(calls.length, 2);
+    assert.equal(calls[1].recover, true);
+    assert.deepEqual(calls[1].binding, lease);
+    assert.deepEqual(cleanup.record, {
+      ...binding,
+      kind: "session_cleanup",
+      outcome: "terminated_and_wiped",
+    });
+    assert.equal(cleanup.signature, signWorkerRecord(secret, cleanup.record));
+    const directRecovery = await handler(request(binding, { recover: true }));
+    assert.deepEqual(directRecovery, cleanup);
+    assert.equal(calls.length, 3);
+    await assert.rejects(handler(request({ ...job, contract: "unknown" })), /not supported/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
