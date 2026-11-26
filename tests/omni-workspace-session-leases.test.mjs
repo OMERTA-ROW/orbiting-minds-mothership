@@ -194,7 +194,10 @@ test("watchdog refuses session cleanup when the workspace remains", async () => 
 test("workspace verification refuses cleanup success when the directory is unreadable", () => {
   const unreadable = Object.assign(new Error("permission denied"), { code: "EACCES" });
   assert.throws(
-    () => verifyWorkspaceRemoved("/workspace", () => { throw unreadable; }),
+    () =>
+      verifyWorkspaceRemoved("/workspace", () => {
+        throw unreadable;
+      }),
     /could not be independently confirmed/,
   );
 });
