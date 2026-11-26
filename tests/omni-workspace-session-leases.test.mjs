@@ -135,7 +135,10 @@ test("workspace verification refuses cleanup success while the directory remains
 test("workspace verification refuses cleanup success when the directory is unreadable", () => {
   const unreadable = Object.assign(new Error("permission denied"), { code: "EACCES" });
   assert.throws(
-    () => verifyWorkspaceRemoved("/workspace", () => { throw unreadable; }),
+    () =>
+      verifyWorkspaceRemoved("/workspace", () => {
+        throw unreadable;
+      }),
     /could not be independently confirmed/,
   );
 });
