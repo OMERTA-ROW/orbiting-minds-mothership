@@ -1,9 +1,22 @@
 import fs from "node:fs";
+import path from "node:path";
 import { verifySessionRecord, verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerSocketServer } from "./worker-socket.mjs";
 import { watchSystemdWorker } from "./systemd-worker.mjs";
 
 const SESSION_CONTRACT = "omni.workspace-session/v1";
+
+export function verifyWorkspaceRemoved(workspacePath, inspect = fs.lstatSync) {
+  if (typeof workspacePath !== "string" || !path.isAbsolute(workspacePath))
+    throw new Error("An absolute workspace path is required for cleanup verification.");
+  try {
+    inspect(workspacePath);
+  } catch (error) {
+    if (error?.code === "ENOENT") return true;
+    throw new Error("Workspace removal could not be independently confirmed.", { cause: error });
+  }
+  throw new Error("Workspace remains after worker cleanup.");
+}
 
 function verifyWatchRecord(secret, envelope, binding) {
   const record = envelope?.record;
@@ -38,13 +51,21 @@ export function createLeasedWatchHandler(config, watch = watchSystemdWorker, onF
     const identityKeys = ["leaseId", "workerId", "ownerId", "projectId", "sessionId"];
     if (record.contract !== SESSION_CONTRACT) identityKeys.push("jobId");
     const bindingIdentity = Object.fromEntries(identityKeys.map((key) => [key, record[key]]));
+    const promise = Promise.resolve()
+      .then(() =>
+        watch({
+          ...config,
+          binding: bindingIdentity,
+          recover: record.recover,
+        }),
+      )
+      .then((result) => {
+        if (record.contract === SESSION_CONTRACT) verifyWorkspaceRemoved(config.workspacePath);
+        return result;
+      });
     watching = {
       binding: bindingIdentity,
-      promise: watch({
-        ...config,
-        binding: bindingIdentity,
-        recover: record.recover,
-      }),
+      promise,
     };
     try {
       return await watching.promise;

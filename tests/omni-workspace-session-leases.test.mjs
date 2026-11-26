@@ -12,6 +12,10 @@ import {
   signWorkerRecord,
 } from "../services/omni-sandbox/worker-leases.mjs";
 import { createLeasedSessionWorkspace } from "../services/omni-sandbox/leased-worker.mjs";
+import {
+  createLeasedWatchHandler,
+  verifyWorkspaceRemoved,
+} from "../services/omni-sandbox/leased-watchdog.mjs";
 import { renewableSessionAuthority } from "../services/omni-sandbox/worker-authority.mjs";
 
 const secret = "s".repeat(48);
@@ -87,6 +91,115 @@ test("leased session end wipes its workspace", async () => {
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("watchdog reports cleanup only after independently confirming the workspace is absent", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-"));
+  const workspacePath = path.join(root, "removed-workspace");
+  const binding = {
+    leaseId: randomUUID(),
+    workerId: "one",
+    ownerId: randomUUID(),
+    projectId: "omni",
+    sessionId: randomUUID(),
+  };
+  const record = {
+    ...binding,
+    contract: "omni.workspace-session/v1",
+    kind: "watch",
+    recover: false,
+    expiresAt: Date.now() + 1000,
+  };
+  const cleanup = { outcome: "terminated_and_wiped" };
+  const handleWatch = createLeasedWatchHandler(
+    { secret, workerId: binding.workerId, workspacePath },
+    async () => cleanup,
+  );
+  try {
+    assert.equal(await handleWatch(envelope(record)), cleanup);
+    assert.equal(verifyWorkspaceRemoved(workspacePath), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("watchdog distinguishes tmpfs job cleanup from session workspace cleanup", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-watchdog-contract-"));
+  const binding = {
+    leaseId: randomUUID(),
+    workerId: "one",
+    ownerId: randomUUID(),
+    projectId: "omni",
+    sessionId: randomUUID(),
+  };
+  const fields = { kind: "watch", recover: false, expiresAt: Date.now() + 1000 };
+  const cleanup = { outcome: "terminated_and_wiped" };
+  try {
+    const job = { ...binding, ...fields, jobId: randomUUID() };
+    const jobHandler = createLeasedWatchHandler(
+      { secret, workerId: binding.workerId, workspacePath: root },
+      async () => cleanup,
+    );
+    assert.equal(await jobHandler(envelope(job)), cleanup);
+
+    const session = { ...binding, ...fields, contract: "omni.workspace-session/v1" };
+    const sessionHandler = createLeasedWatchHandler(
+      { secret, workerId: binding.workerId, workspacePath: root },
+      async () => cleanup,
+    );
+    await assert.rejects(sessionHandler(envelope(session)), /Workspace remains/);
+    const missingPathHandler = createLeasedWatchHandler(
+      { secret, workerId: binding.workerId },
+      async () => cleanup,
+    );
+    await assert.rejects(missingPathHandler(envelope(session)), /absolute workspace path/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("workspace verification refuses cleanup success while the directory remains", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-present-"));
+  try {
+    assert.throws(() => verifyWorkspaceRemoved(root), /Workspace remains/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("watchdog refuses session cleanup when the workspace remains", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-present-"));
+  const record = {
+    leaseId: randomUUID(),
+    workerId: "one",
+    ownerId: randomUUID(),
+    projectId: "omni",
+    sessionId: randomUUID(),
+    contract: "omni.workspace-session/v1",
+    kind: "watch",
+    recover: false,
+    expiresAt: Date.now() + 1000,
+  };
+  const handleWatch = createLeasedWatchHandler(
+    { secret, workerId: record.workerId, workspacePath: root },
+    async () => ({ outcome: "terminated_and_wiped" }),
+  );
+  try {
+    await assert.rejects(handleWatch(envelope(record)), /Workspace remains/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("workspace verification refuses cleanup success when the directory is unreadable", () => {
+  const unreadable = Object.assign(new Error("permission denied"), { code: "EACCES" });
+  assert.throws(
+    () =>
+      verifyWorkspaceRemoved("/workspace", () => {
+        throw unreadable;
+      }),
+    /could not be independently confirmed/,
+  );
 });
 
 test("lost session reservation wipes its workspace and refuses later commands", async () => {
