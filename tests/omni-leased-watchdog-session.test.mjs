@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { createLeasedWatchHandler } from "../services/omni-sandbox/leased-watchdog.mjs";
 import { signWorkerRecord } from "../services/omni-sandbox/worker-leases.mjs";
@@ -24,17 +27,22 @@ test("leased watchdog routes an authenticated session watch and returns its clea
   const envelope = { record, signature: signWorkerRecord(secret, record) };
   const cleanup = { outcome: "terminated_and_wiped" };
   let received;
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-watchdog-session-"));
   const handleWatch = createLeasedWatchHandler(
-    { secret, workerId: binding.workerId },
+    { secret, workerId: binding.workerId, workspacePath: path.join(root, "removed") },
     async (options) => {
       received = options;
       return cleanup;
     },
   );
 
-  assert.equal(await handleWatch(envelope), cleanup);
-  assert.deepEqual(received.binding, binding);
-  assert.equal(received.recover, false);
+  try {
+    assert.equal(await handleWatch(envelope), cleanup);
+    assert.deepEqual(received.binding, binding);
+    assert.equal(received.recover, false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("leased watchdog refuses an invalid session watch signature before starting cleanup", async () => {
