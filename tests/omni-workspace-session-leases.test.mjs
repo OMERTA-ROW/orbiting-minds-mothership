@@ -132,6 +132,30 @@ test("workspace verification refuses cleanup success while the directory remains
   }
 });
 
+test("watchdog refuses session cleanup when the workspace remains", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-present-"));
+  const record = {
+    leaseId: randomUUID(),
+    workerId: "one",
+    ownerId: randomUUID(),
+    projectId: "omni",
+    sessionId: randomUUID(),
+    contract: "omni.workspace-session/v1",
+    kind: "watch",
+    recover: false,
+    expiresAt: Date.now() + 1000,
+  };
+  const handleWatch = createLeasedWatchHandler(
+    { secret, workerId: record.workerId, workspacePath: root },
+    async () => ({ outcome: "terminated_and_wiped" }),
+  );
+  try {
+    await assert.rejects(handleWatch(envelope(record)), /Workspace remains/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("workspace verification refuses cleanup success when the directory is unreadable", () => {
   const unreadable = Object.assign(new Error("permission denied"), { code: "EACCES" });
   assert.throws(
