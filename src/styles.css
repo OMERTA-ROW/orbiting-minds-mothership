@@ -43,6 +43,8 @@
 :root {
   --radius: 0.375rem;
   --obsidian: oklch(0.105 0.003 85);
+  --evolution-space-black: oklch(0.035 0.002 260);
+  --evolution-space-shade: radial-gradient(ellipse at 50% 45%, transparent 25%, oklch(0.035 0.002 260 / 75%) 100%);
   --background: oklch(0.105 0.003 85);
   --foreground: oklch(0.95 0.012 85);
   --card: oklch(0.16 0.004 85);
@@ -208,6 +210,20 @@
 .site-cosmos .starfield { height: 1500px; opacity: 0.65; }
 .site-cosmos::after { content: ""; position: absolute; inset: 0; background: var(--star-veil); }
 .site-shell { position: relative; isolation: isolate; }
+.evolution-space { position: fixed; inset: 0; z-index: -3; overflow: hidden; pointer-events: none; background: var(--evolution-space-black); }
+.evolution-space * { pointer-events: none; }
+.evolution-space-depth { position: absolute; inset: -3%; width: 106%; height: 106%; max-width: none; object-fit: cover; opacity: 0.16; filter: saturate(0.35); animation: evolutionSpaceDrift 110s ease-in-out infinite alternate; }
+.evolution-space-stars { position: absolute; inset: -2%; width: 104%; height: 104%; color: var(--ivory); fill: currentColor; animation: evolutionStarDrift 150s ease-in-out infinite alternate; }
+.evolution-space-shade { position: absolute; inset: 0; background: var(--evolution-space-shade); }
+.evolution-dashboard > .orbital-background { background: transparent; }
+.evolution-dashboard .orbital-nebula { opacity: 0.15; }
+.evolution-dashboard > .site-cosmos { opacity: 0.35; }
+.evolution-dashboard .ms-bg { background: transparent; }
+.evolution-dashboard .ms-camera { mask-image: radial-gradient(ellipse at 50% 60%, var(--foreground) 20%, transparent 76%); }
+@keyframes evolutionSpaceDrift { from { transform: translate(-0.5%, 0) scale(1); } to { transform: translate(0.5%, 0.6%) scale(1.025); } }
+@keyframes evolutionStarDrift { from { transform: translate(0, 0); } to { transform: translate(0.7%, 0.5%); } }
+@media (max-width: 767px) { .evolution-space-depth { opacity: 0.12; animation: none; } .evolution-space-stars { animation-duration: 180s; } }
+@media (prefers-reduced-motion: reduce) { .evolution-space-depth, .evolution-space-stars { animation: none; transform: none; } }
 .site-navigation { background: color-mix(in oklab, var(--background) 90%, transparent); backdrop-filter: blur(12px); }
 .brand-mark { width: 38px; height: 38px; color: var(--gold-light); }
 .nav-link { position: relative; padding: 28px 0; font-size: 12px; color: var(--muted-foreground); transition: color 180ms; }

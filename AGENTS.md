@@ -17,6 +17,7 @@
 - Private OMNI text agent requires verified email/member/AI approval, owned context and saved-text consent; conditional claims, durable provider guard and request-bound stop/revocation polling forbid replay/tools/daemon; the only pause is the server account pause. Readiness proves no inference or native access.
 - Quantum/Forge creative tools use only the server-side studio access pause, why: browser-local pause flags were demo controls, not security.
 - Cosmic art uses deterministic/static motion and accessible tokenized controls; homepage overlays share one image frame, why: alignment.
+- Evolution's home space layer is decorative, route-scoped and pointer-inert; CSS disables drift for reduced motion, why: preserve controls and accessibility.
 - Pathways use internal streaming routes and request-local AI; secrets server-only, why: drafting is not execution.
 - Persist AI denial/credit blocks service-only; clear after owner confirmation, why: prevent billed retries across reloads/restarts.
 

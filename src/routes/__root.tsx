@@ -17,6 +17,7 @@ import { SiteNav, SiteFooter } from "../components/SiteNav";
 import { navItems } from "../components/nav-groups";
 import { Starfield } from "../components/evo";
 import OrbitalBackground from "../components/OrbitalBackground";
+import EvolutionSpaceBackground from "../components/EvolutionSpaceBackground";
 import { CommandPaletteProvider } from "@/components/CommandPalette";
 import { AccountProvider } from "@/hooks/use-account";
 import { OmniAreaHeader } from "@/components/omnibridge/OmniAreaHeader";
@@ -137,8 +138,9 @@ function RootComponent() {
         <CommandPaletteProvider pages={navItems}>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <div
-            className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}`}
+            className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}${path === "/" ? " evolution-dashboard" : ""}`}
           >
+            {path === "/" && <EvolutionSpaceBackground />}
             <OrbitalBackground />
             <div className="site-cosmos" aria-hidden>
               <Starfield count={150} />
