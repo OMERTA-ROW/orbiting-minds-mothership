@@ -15,6 +15,7 @@ import { createLeasedSessionWorkspace } from "../services/omni-sandbox/leased-wo
 import { renewableSessionAuthority } from "../services/omni-sandbox/worker-authority.mjs";
 import {
   createLeasedWatchdogHandler,
+  verifyWatchRequest,
   watchSessionAuthority,
 } from "../services/omni-sandbox/leased-watchdog.mjs";
 
@@ -25,6 +26,50 @@ const sessionRecord = (lease, fields) => ({
   contract: "omni.workspace-session/v1",
   ...lease,
   ...fields,
+});
+
+test("watchdog authenticates job and session protocols without confusing their identities", () => {
+  const binding = { ...identity(), leaseId: randomUUID(), workerId: "one" };
+  const job = {
+    ...binding,
+    jobId: randomUUID(),
+    kind: "watch",
+    recover: false,
+    expiresAt: Date.now() + 1000,
+  };
+  const session = sessionRecord(binding, {
+    kind: "watch",
+    recover: false,
+    expiresAt: Date.now() + 1000,
+  });
+  assert.deepEqual(verifyWatchRequest(secret, envelope(job), "one"), { record: job, session: false });
+  assert.deepEqual(verifyWatchRequest(secret, envelope(session), "one"), {
+    record: session,
+    session: true,
+  });
+  assert.deepEqual(
+    verifyWatchRequest(secret, envelope({ ...session, recover: true }), "one", session),
+    { record: { ...session, recover: true }, session: true },
+  );
+  assert.throws(() => verifyWatchRequest(secret, envelope(session), "one", job), /contract/);
+  assert.throws(() => verifyWatchRequest(secret, envelope(job), "one", session), /contract/);
+  assert.throws(
+    () => verifyWatchRequest(secret, envelope({ ...session, jobId: job.jobId }), "one"),
+    /contract/,
+  );
+  assert.throws(
+    () =>
+      verifyWatchRequest(secret, envelope({ ...session, sessionId: randomUUID() }), "one", session),
+    /identity mismatch/,
+  );
+  assert.throws(
+    () => verifyWatchRequest(secret, { record: session, signature: envelope(job).signature }, "one"),
+    /signature/,
+  );
+  assert.throws(
+    () => verifyWatchRequest(secret, envelope({ ...job, expiresAt: null }), "one"),
+    /invalid/,
+  );
 });
 
 function fixture() {
@@ -336,7 +381,7 @@ test("watchdog routes job and session records by authenticated contract", async 
     assert.deepEqual(calls[0].binding, job);
     await assert.rejects(
       handler(request(sessionRecord(job, {}), { recover: true })),
-      /contract mismatch/,
+      /contract/,
     );
     finishJob({ record: { outcome: "terminated_and_wiped" } });
     await pending;
@@ -357,7 +402,7 @@ test("watchdog routes job and session records by authenticated contract", async 
     );
     const session = handler(request(binding));
     assert.equal(calls.length, 1);
-    await assert.rejects(handler(request(job, { recover: true })), /contract mismatch/);
+    await assert.rejects(handler(request(job, { recover: true })), /contract/);
     await assert.rejects(
       handler(request({ ...binding, ownerId: randomUUID() }, { recover: true })),
       /mismatch/,
