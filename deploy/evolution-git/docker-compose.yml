@@ -1,0 +1,33 @@
+# Evolution native Git (Forgejo) — deploy on the owner's EXISTING Vultr host only.
+# Git storage and untrusted execution are deliberately separate: no runner here.
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:11
+    restart: unless-stopped
+    environment:
+      USER_UID: "1000"
+      USER_GID: "1000"
+      FORGEJO__server__ROOT_URL: "https://${GIT_DOMAIN}/"
+      FORGEJO__server__SSH_DOMAIN: "${GIT_DOMAIN}"
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__repository__DEFAULT_PRIVATE: "private"
+      FORGEJO__repository__FORCE_PRIVATE: "true"
+      FORGEJO__actions__ENABLED: "false"
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__database__DB_TYPE: "sqlite3"
+    volumes:
+      - forgejo-data:/data
+    networks: [git]
+    expose: ["3000"]
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["443:443", "80:80"]
+    command: caddy reverse-proxy --from ${GIT_DOMAIN} --to forgejo:3000
+    volumes: [caddy-data:/data]
+    networks: [git]
+volumes:
+  forgejo-data:
+  caddy-data:
+networks:
+  git: {}
