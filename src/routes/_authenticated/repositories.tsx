@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { EvolutionWorkspace } from "@/components/evolution/Workspace";
 import { evolutionWorkspaceQuery } from "@/lib/evolution-query";
 import { seo } from "@/lib/seo";
+import { ForgejoRepos } from "@/components/evolution/ForgejoRepos";
 
 export const Route = createFileRoute("/_authenticated/repositories")({
   head: () =>
@@ -14,5 +15,10 @@ export const Route = createFileRoute("/_authenticated/repositories")({
   component: Page,
 });
 function Page() {
-  return <EvolutionWorkspace view="repositories" />;
+  return (
+    <>
+      <ForgejoRepos />
+      <EvolutionWorkspace view="repositories" />
+    </>
+  );
 }

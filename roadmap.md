@@ -597,3 +597,8 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 - [x] Claude for owner terminal agent and Fusion sessions — code, tests and proposed migration 0075 (`.lovable/pending/`); fails closed until installed.
 - [ ] Owner: approve installing 0075, then turn Claude on for OMNI (terminal agent) and Dread/Draco (Fusion); publish after review.
 - [ ] ElevenLabs voices (Jax) — later, hook only.
+
+## Phase 2A Evolution Git (read-only)
+- [x] Forgejo read-only list on /repositories
+- [ ] Owner: private gateway + FORGEJO_BASE_URL / FORGEJO_API_TOKEN
+- [ ] 2B+: see docs/OMNI-BLOCK-OWNED-INFRASTRUCTURE-ROADMAP.md
