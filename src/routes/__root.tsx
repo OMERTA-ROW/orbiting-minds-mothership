@@ -20,7 +20,6 @@ import OrbitalBackground from "../components/OrbitalBackground";
 import EvolutionSpaceBackground from "../components/EvolutionSpaceBackground";
 import EvolutionInteriorBackground from "../components/EvolutionInteriorBackground";
 
-const EVOLUTION_INTERIOR = new Set(["/projects", "/neuro", "/repositories", "/pull-requests", "/actions", "/migrations", "/deployments", "/settings"]);
 import { CommandPaletteProvider } from "@/components/CommandPalette";
 import { AccountProvider, useAccount } from "@/hooks/use-account";
 import { evolutionAccessQuery } from "@/lib/evolution-query";
@@ -141,10 +140,14 @@ function SiteShell({
   omniArea: boolean;
 }) {
   const { user, ready } = useAccount();
-  const access = useQuery({ ...evolutionAccessQuery, enabled: ready && Boolean(user) && path === "/" });
+  const access = useQuery({
+    ...evolutionAccessQuery,
+    enabled: ready && Boolean(user) && path === "/",
+  });
   const ownerHome = path === "/" && Boolean(user) && access.data?.owner === true;
-  const evolutionInterior =
-    ownerHome || EVOLUTION_INTERIOR.has(path.replace(/\/+$/, "") || "/");
+  // One persistent scene across every workspace, account, guide and retired-area route.
+  // Public landing retains its existing presentation; route changes never mount extra canvases.
+  const evolutionInterior = ownerHome || (path.replace(/\/+$/, "") || "/") !== "/";
   const publicLanding = path === "/" && !ownerHome;
 
   return (

@@ -46,6 +46,7 @@ export function ControlCenter() {
   const cache = useQueryClient();
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState("");
+  const inFlight = useRef(false);
   const [editing, setEditing] = useState<Partial<Entry> | null>(null);
   const importFn = useServerFn(importGithubRepos);
   const saveFn = useServerFn(saveDirectoryEntry);
@@ -58,6 +59,8 @@ export function ControlCenter() {
   const data = query.data;
 
   async function act(key: string, work: () => Promise<string>) {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(key);
     setNotice("");
     try {
@@ -67,8 +70,12 @@ export function ControlCenter() {
         e instanceof Error ? e.message : "That did not work. Nothing was recorded as successful.",
       );
     } finally {
-      await cache.invalidateQueries({ queryKey: controlCenterQuery.queryKey });
-      setBusy("");
+      try {
+        await cache.invalidateQueries({ queryKey: controlCenterQuery.queryKey });
+      } finally {
+        inFlight.current = false;
+        setBusy("");
+      }
     }
   }
   const runImport = () =>
@@ -83,8 +90,13 @@ export function ControlCenter() {
     if (auto.current || !data.ok || !data.setup.github) return;
     auto.current = true;
     const key = "evolution-auto-import";
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // Without durable browser deduplication, leave automatic import off; manual import works.
+      return;
+    }
     const last = data.runs.find((r) => r.status === "succeeded");
     if (!last || Date.now() - new Date(last.started_at).getTime() > 86_400_000) void runImport();
   }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -110,27 +122,30 @@ export function ControlCenter() {
   return (
     <Shell checkedAt={data.checkedAt}>
       <div className="flex flex-wrap gap-2">
-        {data.setup.github ? (
-          <Button
-            variant="outline"
-            disabled
-            title="GitHub is connected for this project through the owner's workspace connection."
-          >
-            <Github size={15} /> GitHub connected
-          </Button>
-        ) : (
-          <Button asChild variant="outline">
-            <a href="https://lovable.dev/settings/connectors" target="_blank" rel="noreferrer">
-              <Github size={15} /> Connect GitHub
-            </a>
-          </Button>
-        )}
+        <Button asChild variant="outline">
+          <a href="https://lovable.dev/settings/connectors" target="_blank" rel="noreferrer">
+            <Github size={15} /> {data.setup.github ? "Review GitHub connection" : "Connect GitHub"}
+          </a>
+        </Button>
         <Button disabled={!data.setup.github || !!busy} onClick={() => void runImport()}>
           <RefreshCw size={15} className={busy === "import" ? "animate-spin" : ""} />{" "}
           {busy === "import" ? "Importing…" : "Import all authorized repositories"}
         </Button>
-        <Button variant="outline" disabled={!!busy} onClick={() => void query.refetch()}>
-          <RefreshCw size={15} /> Sync
+        <Button
+          variant="outline"
+          disabled={!!busy}
+          onClick={() =>
+            void act("refresh", async () => {
+              const result = await query.refetch();
+              if (result.error || !result.data?.ok)
+                throw new Error(
+                  "Project records could not be refreshed. Check owner access, then retry.",
+                );
+              return "Saved project records refreshed. Repository contents were not cloned or changed.";
+            })
+          }
+        >
+          <RefreshCw size={15} /> Refresh records
         </Button>
         <Button variant="outline" disabled title={CLONE_BLOCKER}>
           <LockKeyhole size={15} /> Clone all

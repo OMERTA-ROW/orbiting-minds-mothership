@@ -15,3 +15,4 @@
 - Neuro uses owner/aal2-only metadata RPCs with row-locked immutable revisions, separate owner scope review and digest checks before approval/rollback; never imports agent memory or changes grants, why: registry approval is not integration authority.
 - Failed-plan cancellation is confirmed only when signed disarm reports no armed, running or pending work; discovery reports supported authority separately from live readiness, why: configuration and acknowledgements cannot prove termination or coding integration.
 - Demand-driven browser observation is serial and stops when execution is idle; armed/running/cancellation observations and server lease/Stop checks keep their cadence, why: reducing display reads must not change authority or task liveness.
+- Project/cloud actions acknowledge only a returned affected row and provider checks require documented account evidence, why: HTTP success and zero-row mutations are not persistence or connection proof.

@@ -330,6 +330,10 @@
   background: transparent;
   isolation: isolate;
 }
+.omni-area.evolution-interior,
+.omni-area.evolution-interior:has(.omni-orb-dashboard) {
+  background: transparent;
+}
 .evolution-interior-space {
   position: fixed;
   inset: 0;
@@ -339,4 +343,12 @@
 }
 .evolution-interior-space > div {
   z-index: 0;
+}
+.evolution-interior-space * { pointer-events: none; }
+.evolution-interior .page-orbit { display: none; }
+.evolution-interior-space::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, var(--evolution-space-black) 28%, transparent);
 }

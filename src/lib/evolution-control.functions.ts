@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { cloudAccountEvidence, confirmedWrite } from "./persistence-evidence";
 import {
   CLOUD_PROVIDERS,
   checkableWebsite,
@@ -25,9 +26,6 @@ async function owner(context: Ctx) {
   const { requireRazulOwner } = await import("./razul-owner.server");
   await requireRazulOwner(context.supabase, context.userId, context.claims);
 }
-const fail = (what: string, error: { message?: string } | null) => {
-  if (error) throw new Error(`${what} was not saved. ${error.message ?? "Retry."}`);
-};
 
 export const readControlCenter = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -45,7 +43,12 @@ export const readControlCenter = createServerFn({ method: "POST" })
     }
     const db = context.supabase;
     const [dir, repos, runs, cloud, settings] = await Promise.all([
-      db.from("evolution_directory").select("*").eq("owner_id", context.userId).order("name"),
+      db
+        .from("evolution_directory")
+        .select("*")
+        .eq("owner_id", context.userId)
+        .order("name")
+        .limit(1000),
       db
         .from("evolution_github_repos")
         .select("*")
@@ -62,7 +65,8 @@ export const readControlCenter = createServerFn({ method: "POST" })
         .from("evolution_cloud_connections")
         .select("*")
         .eq("owner_id", context.userId)
-        .order("created_at"),
+        .order("created_at")
+        .limit(1000),
       db.from("evolution_settings").select("*").eq("owner_id", context.userId).maybeSingle(),
     ]);
     const err = dir.error ?? repos.error ?? runs.error ?? cloud.error ?? settings.error;
@@ -119,7 +123,10 @@ export const importGithubRepos = createServerFn({ method: "POST" })
       supabaseAdmin
         .from("evolution_github_sync_runs")
         .update({ ...patch, finished_at: new Date().toISOString() })
-        .eq("id", run.data.id);
+        .eq("id", run.data.id)
+        .eq("owner_id", context.userId)
+        .select("id")
+        .single();
     try {
       const result = await discoverRepos(
         async (path) => {
@@ -156,18 +163,21 @@ export const importGithubRepos = createServerFn({ method: "POST" })
         if (up.error) throw new Error("Repository metadata could not be stored.");
       }
       const status = result.errors.length && !rows.length ? "failed" : "succeeded";
-      await finish({
+      const finished = await finish({
         status,
         pages: result.pages,
         repos_seen: rows.length,
         sources: result.sources,
         error: result.errors.join("; ").slice(0, 500) || null,
       });
+      confirmedWrite("Import outcome", finished);
       return { status, repos: rows.length, pages: result.pages, errors: result.errors };
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "GitHub import failed.";
-      await finish({ status: "failed", error: message.slice(0, 500) });
-      throw new Error(`GitHub import failed: ${message}`);
+    } catch {
+      // Metadata may have been saved even when finalization failed. Never silently replay.
+      await finish({ status: "failed", error: "Import interrupted or final outcome unconfirmed." });
+      throw new Error(
+        "GitHub import was not confirmed complete. Refresh saved records before retrying; some metadata may already be stored.",
+      );
     }
   });
 
@@ -190,10 +200,14 @@ export const saveDirectoryEntry = createServerFn({ method: "POST" })
           .update(row)
           .eq("id", data.id)
           .eq("owner_id", context.userId)
+          .select("id")
+          .single()
       : await context.supabase
           .from("evolution_directory")
-          .insert({ ...row, owner_id: context.userId });
-    fail("Project", res.error);
+          .insert({ ...row, owner_id: context.userId })
+          .select("id")
+          .single();
+    confirmedWrite("Project", res);
     return { saved: true };
   });
 
@@ -202,15 +216,15 @@ export const deleteDirectoryEntry = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => idInput.parse(i))
   .handler(async ({ context, data }) => {
     await owner(context);
-    fail(
+    confirmedWrite(
       "Removal",
-      (
-        await context.supabase
-          .from("evolution_directory")
-          .delete()
-          .eq("id", data.id)
-          .eq("owner_id", context.userId)
-      ).error,
+      await context.supabase
+        .from("evolution_directory")
+        .delete()
+        .eq("id", data.id)
+        .eq("owner_id", context.userId)
+        .select("id")
+        .single(),
     );
     return { removed: true };
   });
@@ -241,11 +255,14 @@ export const checkWebsite = createServerFn({ method: "POST" })
       status = 0;
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
+    const saved = await supabaseAdmin
       .from("evolution_directory")
       .update({ website_status: status, website_checked_at: new Date().toISOString() })
       .eq("id", data.id)
-      .eq("owner_id", context.userId);
+      .eq("owner_id", context.userId)
+      .select("id")
+      .single();
+    confirmedWrite("Website check", saved);
     return { status };
   });
 
@@ -254,15 +271,19 @@ export const saveControlSettings = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => settingsInput.parse(i))
   .handler(async ({ context, data }) => {
     await owner(context);
-    const res = await context.supabase.from("evolution_settings").upsert(
-      {
-        owner_id: context.userId,
-        clone_all_opt_in: data.cloneAllOptIn,
-        github_orgs: data.githubOrgs,
-      },
-      { onConflict: "owner_id" },
-    );
-    fail("Settings", res.error);
+    const res = await context.supabase
+      .from("evolution_settings")
+      .upsert(
+        {
+          owner_id: context.userId,
+          clone_all_opt_in: data.cloneAllOptIn,
+          github_orgs: data.githubOrgs,
+        },
+        { onConflict: "owner_id" },
+      )
+      .select("owner_id")
+      .single();
+    confirmedWrite("Settings", res);
     return { saved: true };
   });
 
@@ -271,13 +292,13 @@ export const addCloudConnection = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => cloudInput.parse(i))
   .handler(async ({ context, data }) => {
     await owner(context);
-    fail(
+    confirmedWrite(
       "Cloud connection",
-      (
-        await context.supabase
-          .from("evolution_cloud_connections")
-          .insert({ owner_id: context.userId, provider: data.provider, label: data.label })
-      ).error,
+      await context.supabase
+        .from("evolution_cloud_connections")
+        .insert({ owner_id: context.userId, provider: data.provider, label: data.label })
+        .select("id")
+        .single(),
     );
     return { saved: true };
   });
@@ -287,15 +308,15 @@ export const removeCloudConnection = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => idInput.parse(i))
   .handler(async ({ context, data }) => {
     await owner(context);
-    fail(
+    confirmedWrite(
       "Removal",
-      (
-        await context.supabase
-          .from("evolution_cloud_connections")
-          .delete()
-          .eq("id", data.id)
-          .eq("owner_id", context.userId)
-      ).error,
+      await context.supabase
+        .from("evolution_cloud_connections")
+        .delete()
+        .eq("id", data.id)
+        .eq("owner_id", context.userId)
+        .select("id")
+        .single(),
     );
     return { removed: true };
   });
@@ -334,22 +355,25 @@ export const checkCloudConnection = createServerFn({ method: "POST" })
                 body: JSON.stringify({ query: "query { me { id } }" }),
                 signal: AbortSignal.timeout(10000),
               });
-        const body = (await res.json().catch(() => null)) as { errors?: unknown[] } | null;
-        const ok = res.ok && !(body && Array.isArray(body.errors) && body.errors.length);
+        const body: unknown = await res.json().catch(() => null);
+        const ok = res.ok && cloudAccountEvidence(provider, body);
         status = ok ? "verified" : "failed";
         detail = ok
           ? "Account reachable with read-only check."
-          : `${CLOUD_PROVIDERS[provider].name} refused the credential (HTTP ${res.status}).`;
+          : `${CLOUD_PROVIDERS[provider].name} did not provide valid account evidence (HTTP ${res.status}). Check the credential and provider access, then retry.`;
       } catch {
         status = "failed";
         detail = `${CLOUD_PROVIDERS[provider].name} could not be reached. Retry later.`;
       }
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
+    const saved = await supabaseAdmin
       .from("evolution_cloud_connections")
       .update({ status, detail, checked_at: new Date().toISOString() })
       .eq("id", data.id)
-      .eq("owner_id", context.userId);
+      .eq("owner_id", context.userId)
+      .select("id")
+      .single();
+    confirmedWrite("Cloud account check", saved);
     return { status, detail };
   });

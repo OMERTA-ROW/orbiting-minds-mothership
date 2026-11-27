@@ -20,7 +20,7 @@ export type CloudProvider = keyof typeof CLOUD_PROVIDERS;
 
 /** Clone execution stays locked until a verified executor and durable storage exist. */
 export const CLONE_BLOCKER =
-  "Locked pending sandbox: no verified executor or durable isolated storage is connected (Mothership PR #28 must be finished, merged and reviewed). Nothing is cloned and no repository code runs.";
+  "Locked: no verified coding executor or durable isolated clone storage is connected. PR #28 supplies quarantine only, not coding acceptance. Review the executor isolation, storage and cancellation evidence before cloning. Nothing is cloned and no repository code runs.";
 
 export interface GithubRepo {
   id: number;

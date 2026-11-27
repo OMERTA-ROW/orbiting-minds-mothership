@@ -1,3 +1,11 @@
+# Staged interface production-readiness overhaul (2026-11-27)
+
+- [ ] Inventory every route and source control, panels, agent declarations and integration boundaries; classify source evidence separately from live acceptance.
+- [ ] Share the actual live CyberLink scene on all non-landing routes; preserve public landing, reduced motion, active work and safety controls.
+- [ ] Repair project/cloud/import actions that acknowledge success without confirmed persistence; validate provider response evidence and bounded reads.
+- [ ] Run focused/full regressions and desktop/mobile checks; document changed files, commit, rollback and exact external/owner blockers. Keep unpublished; no production migrations.
+- [ ] Live developer interoperability and entire-interface positive acceptance — blocked on owner MFA/passkeys, reviewed isolated executor, scoped remote result/cancellation contracts and separately approved disposable acceptance targets.
+
 # Phase 2 resource optimization / Phase 3 OMNI compatibility (2026-11-27)
 
 - [x] Measure project costs, database load, schedules and browser polling; preserve safety renewals and live CyberLink scene. Evidence: `docs/PHASE-2-RESOURCE-REVIEW-2026-11-27.md`.
