@@ -1,3 +1,13 @@
+# Phase 2 resource optimization / Phase 3 OMNI compatibility (2026-11-27)
+
+- [x] Measure project costs, database load, schedules and browser polling; preserve safety renewals and live CyberLink scene. Evidence: `docs/PHASE-2-RESOURCE-REVIEW-2026-11-27.md`.
+- [x] Remove idle execution reads and overlapping safety/output polls; 1,553 app tests pass / 23 skip; 38 service tests pass / 3 skip; signed-in desktop/mobile private gates and live scene checked. Active safety cadence unchanged.
+- [ ] Verified Jackboy artifact reuse — blocked: signed handoff exposes status only, no scoped digest/provenance result retrieval contract.
+- [ ] Browser-closed business completion — blocked: 33 knowledge and 101 Razul scheduled failures; real autonomous executor/positive owner flow unverified. Schedules remain unchanged.
+- [ ] Verify automatic wake before hibernation; blocked until this backend supplies a supported automatic-wake contract and safe acceptance environment. Do not manually pause the shared backend.
+- [x] Report scoped conditional estimates, tests, implementation commit `c938b82` and rollback to `0662828`; keep unpublished.
+- [ ] Phase 3 compatibility audit — blocked on Phase 2 acceptance above; no changes to OMNI or Jackboy projects.
+
 # OMNI / Jackboy Mothership completion audit (2026-11-27)
 
 - [x] Inventory active contracts and read-only OMNI/Jackboy source snapshots; current stored activation/permit history distinguished from live connection evidence.
