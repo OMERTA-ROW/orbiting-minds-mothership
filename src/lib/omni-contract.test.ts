@@ -171,6 +171,32 @@ describe("OMNI frontend contract", () => {
   it("advertises no links on a non-https origin", () => {
     expect(buildManifest(null).links).toEqual({});
   });
+  it("configured chat and a fresh capped permit cannot imply CODE or integration readiness", () => {
+    const now = Date.parse("2026-11-27T03:00:00Z");
+    const manifest = buildManifest("https://evoomni.tech", {
+      aiConfigured: true,
+      chatInstalled: true,
+      fusionPlanInstalled: true,
+      fusionPlannerInstalled: true,
+      now,
+      spend: {
+        status: "read",
+        latest: {
+          perCallUsd: 0.5,
+          perTaskUsd: 1,
+          dailyUsd: 5,
+          recordedAt: new Date(now).toISOString(),
+        },
+      },
+    });
+    expect(manifest.spendingCap.verified).toBe(true);
+    expect(manifest.execution.integrationReady).toBe(false);
+    expect(manifest.execution.code.available).toBe(false);
+    expect(manifest.execution.workspace.available).toBe(false);
+    expect(manifest.execution.jackboy.dispatchAuthority).toBe("quarantine-only");
+    expect(manifest.execution.jackboy.remoteCancellationVerified).toBe(false);
+    expect(manifest.autonomous).toBe(false);
+  });
   it("chat and decisions are refused with 403 even for valid keys", async () => {
     await ready;
     for (const [path, cap, method] of [

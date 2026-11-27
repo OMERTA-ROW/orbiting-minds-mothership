@@ -1,3 +1,11 @@
+# OMNI / Jackboy Mothership completion audit (2026-11-27)
+
+- [x] Inventory active contracts and read-only OMNI/Jackboy source snapshots; current stored activation/permit history distinguished from live connection evidence.
+- [x] Fixed failed-plan cancellation confirmation and future-dated spend evidence; additive discovery explicitly refuses CODE/integration readiness; execution quarantine preserved.
+- [x] Full app 1,545 passed / 23 skipped; real Jackboy local interoperability 21 passed on Node 26; services 66 passed / 11 skipped; 758 disposable SQL checks + 9 races; Go race/vet pass; owner/MFA denial desktop/mobile and unsigned API checks pass. No live coding or paid call.
+- [x] Changed files, feature inventory, tests, owner actions and missing setting names recorded in `docs/OMNI-JACKBOY-INTEGRATION-AUDIT-2026-11-27.md`.
+- [ ] Live developer execution acceptance — blocked pending owner MFA/passkey, reviewed executor isolation, selected disposable repository and matching remote services; no deployment, production migration or autonomy activation authorized.
+
 # Neuro Intelligence — private registry (2026-11-26)
 
 - [x] Owner-only persisted component registry and distinct ecosystem pathways implemented at `/neuro`; live space and independent permissions preserved (0079–0080 installed).

@@ -86,6 +86,12 @@ describe("CODE spending cap evidence", () => {
     expect(view(permit({ recordedAt: "not-a-date" })).state).toBe("stale");
   });
 
+  it("a future-dated signed record never verifies or advertises the $5 cap", () => {
+    const future = view(permit({ recordedAt: new Date(NOW + 1).toISOString() }));
+    expect(future.verified).toBe(false);
+    expect(manifestSpendingCapUsd(future)).toBeUndefined();
+  });
+
   it("no permit ever, an unreadable store, or no read stays unverified", () => {
     expect(view(null).state).toBe("no_evidence");
     expect(spendingCapView({ status: "unreadable" }, NOW).state).toBe("unknown");

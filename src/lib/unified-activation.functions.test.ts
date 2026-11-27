@@ -79,8 +79,11 @@ async function invoke(data: unknown, fresh = true) {
     decided_at: new Date().toISOString(),
     approval_expires_at: i === 6 ? new Date(Date.now() + mocks.approvalMs).toISOString() : null,
   }));
-  return mocks.handlers[2]!({
-    data: mocks.validators[2]!(data),
+  const handler = mocks.handlers[2];
+  const validator = mocks.validators[2];
+  if (!handler || !validator) throw new Error("Plan handler is not registered");
+  return handler({
+    data: validator(data),
     context: {
       userId: projectId,
       claims: {
@@ -137,6 +140,7 @@ beforeEach(() => {
       executionReady: true,
       allowed: true,
       cancellationPending: false,
+      running: 0,
       armed: operation !== "disarm",
     };
   });
@@ -191,8 +195,12 @@ it("a Stop after permit acquisition refuses the initial lease and dispatch", asy
 });
 it("an active plan observes local Stop without waiting for the 20-second permit renewal", async () => {
   vi.useFakeTimers();
-  let started!: () => void;
-  let complete!: (result: unknown) => void;
+  let started: () => void = () => {
+    throw new Error("Dispatch is not registered");
+  };
+  let complete: (result: unknown) => void = () => {
+    throw new Error("Completion is not registered");
+  };
   const dispatched = new Promise<void>((resolve) => {
     started = resolve;
   });
@@ -258,6 +266,41 @@ it("permit denial disarms and confirms cancellation without dispatch or replay",
   expect(mocks.calls).toContain("disarm");
   expect(mocks.signed).not.toHaveBeenCalled();
 });
+it.each([
+  { armed: true, running: 0, cancellationPending: false },
+  { armed: false, running: 1, cancellationPending: false },
+  { armed: false, running: 0, cancellationPending: true },
+])(
+  "does not confirm failed-plan cancellation while disarm remains unresolved: %j",
+  async (stopped) => {
+    const original = mocks.state.getMockImplementation();
+    if (!original) throw new Error("State fixture is not registered");
+    mocks.state.mockImplementation(async (operation = "safety", ...args) => ({
+      ...(await original(operation, ...args)),
+      ...(operation === "disarm" ? stopped : {}),
+    }));
+    mocks.signed.mockRejectedValueOnce(new Error("Lost executor response"));
+    await expect(invoke(plan())).rejects.toThrow("cancellation are unverified");
+    expect(mocks.signed).toHaveBeenCalledTimes(1);
+  },
+);
+it("keeps cancellation unverified when disarm transport fails, without replay", async () => {
+  const original = mocks.state.getMockImplementation();
+  if (!original) throw new Error("State fixture is not registered");
+  mocks.state.mockImplementation(async (operation = "safety", ...args) => {
+    if (operation === "disarm") throw new Error("Disarm unavailable");
+    return original(operation, ...args);
+  });
+  mocks.signed.mockRejectedValueOnce(new Error("Lost executor response"));
+  await expect(invoke(plan())).rejects.toThrow("cancellation are unverified");
+  expect(mocks.signed).toHaveBeenCalledTimes(1);
+});
+it("confirms failed-plan cancellation only after a clean signed disarm, without replay", async () => {
+  mocks.signed.mockRejectedValueOnce(new Error("Lost executor response"));
+  await expect(invoke(plan())).rejects.toThrow("cancellation confirmed; no automatic retry");
+  expect(mocks.signed).toHaveBeenCalledTimes(1);
+  expect(mocks.calls).toContain("disarm");
+});
 it("a plan cannot outlive the current Step 7 approval window", async () => {
   mocks.approvalMs = 10_000;
   await expect(invoke(plan())).rejects.toThrow("Bounded plan");
@@ -265,7 +308,9 @@ it("a plan cannot outlive the current Step 7 approval window", async () => {
   expect(mocks.signed).not.toHaveBeenCalled();
 });
 it("owner disarm records local revocation before remote reduction and service-only confirmation", async () => {
-  await mocks.handlers[1]!({
+  const handler = mocks.handlers[1];
+  if (!handler) throw new Error("Control handler is not registered");
+  await handler({
     data: { operation: "disarm", confirm: true },
     context: {
       userId: projectId,
@@ -287,8 +332,11 @@ async function verify() {
     decided_at: new Date().toISOString(),
     approval_expires_at: i === 6 ? new Date(Date.now() + 3_600_000).toISOString() : null,
   }));
-  return mocks.handlers[1]!({
-    data: mocks.validators[1]!({ operation: "verify", confirm: true }),
+  const handler = mocks.handlers[1];
+  const validator = mocks.validators[1];
+  if (!handler || !validator) throw new Error("Control handler is not registered");
+  return handler({
+    data: validator({ operation: "verify", confirm: true }),
     context: {
       userId: projectId,
       claims: { amr: [{ method: "totp", timestamp: Math.floor(Date.now() / 1000) }] },

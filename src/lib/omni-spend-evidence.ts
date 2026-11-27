@@ -86,7 +86,9 @@ export function spendingCapView(read: SpendEvidenceRead, now: number): SpendingC
         "Jackboy has never issued a signed permit to this Mothership, so its enforced cap is unproven.",
     };
   const recorded = Date.parse(p.recordedAt);
-  const ageMs = Number.isFinite(recorded) ? Math.max(0, now - recorded) : Number.POSITIVE_INFINITY;
+  // Clock-skewed/future records are not evidence of a permit already issued.
+  const ageMs =
+    Number.isFinite(recorded) && recorded <= now ? now - recorded : Number.POSITIVE_INFINITY;
   const withinCaps =
     within(p.perCallUsd, INTENDED_SPEND_LIMITS.perCallUsd) &&
     within(p.perTaskUsd, INTENDED_SPEND_LIMITS.perTaskUsd) &&

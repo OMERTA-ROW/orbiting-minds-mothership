@@ -238,7 +238,7 @@ export const runAuthorizedPlan = createServerFn({ method: "POST" })
     } catch {
       try {
         const stopped = await readExecutionState("disarm");
-        if (stopped.armed || stopped.cancellationPending)
+        if (stopped.armed || stopped.running || stopped.cancellationPending)
           throw new Error("Cancellation remains pending");
         await holder.release();
       } catch {

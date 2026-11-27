@@ -200,7 +200,7 @@ export function buildManifest(origin: string | null, live: ManifestLive = NOT_LI
         name: CHAT_AGENT.name,
         kind: "omni" as const,
         enrolled: chatEnrolled,
-        voice: CHAT_AGENTS[0]!.voice,
+        voice: CHAT_AGENTS.find((agent) => agent.id === CHAT_AGENT.id)?.voice,
         description: chatEnrolled
           ? "Mothership's private text agent. Chat needs an owner delegation with chat:write; it has no tools and runs nothing."
           : !live.chatInstalled
@@ -235,6 +235,28 @@ export function buildManifest(origin: string | null, live: ManifestLive = NOT_LI
       ? [{ id: CHAT_PROVIDER.id, label: CHAT_PROVIDER.label, models: [OMNI_MODEL] }]
       : ([] as { id: string; label: string; models: string[] }[]),
     autonomous: false as const,
+    /** Source-supported contracts, not a health claim or permission to execute. */
+    execution: {
+      integrationReady: false as const,
+      state: "blocked" as const,
+      code: { available: false as const, reason: "No verified CODE worker is connected." },
+      workspace: {
+        contract: "omni.workspace/v1",
+        available: false as const,
+        reason: "Workspace containment and durable replay protection require live acceptance.",
+      },
+      jackboy: {
+        linkContract: "omni.link/v2",
+        linkAuthority: "restricted-protocol-self-test" as const,
+        handoffContract: "jackboy.omni-handoff/v1",
+        handoffAuthority: "owner-approved-metadata" as const,
+        dispatchContract: "jackboy.dispatch/v2",
+        dispatchAuthority: "quarantine-only" as const,
+        remoteCancellationVerified: false as const,
+      },
+      reason:
+        "Provider configuration, agent discovery and signed spending limits do not verify coding, isolation, progress or cancellation.",
+    },
     ...(spendingCapUsd !== undefined ? { spendingCapUsd } : {}),
     /** Evidence behind (or missing for) spendingCapUsd, with freshness. */
     spendingCap,
