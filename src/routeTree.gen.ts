@@ -89,6 +89,7 @@ import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedKnowledgeBriefRouteImport } from './routes/_authenticated/knowledge-brief'
 import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
 import { Route as AuthenticatedMigrationsRouteImport } from './routes/_authenticated/migrations'
+import { Route as AuthenticatedNeuroRouteImport } from './routes/_authenticated/neuro'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedPullRequestsRouteImport } from './routes/_authenticated/pull-requests'
 import { Route as AuthenticatedQuantumStudioRouteImport } from './routes/_authenticated/quantum-studio'
@@ -540,6 +541,11 @@ const AuthenticatedMigrationsRoute = AuthenticatedMigrationsRouteImport.update({
   path: '/migrations',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNeuroRoute = AuthenticatedNeuroRouteImport.update({
+  id: '/neuro',
+  path: '/neuro',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -880,6 +886,7 @@ export interface FileRoutesByFullPath {
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
   '/migrations': typeof AuthenticatedMigrationsRoute
+  '/neuro': typeof AuthenticatedNeuroRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/pull-requests': typeof AuthenticatedPullRequestsRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
@@ -1009,6 +1016,7 @@ export interface FileRoutesByTo {
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
   '/migrations': typeof AuthenticatedMigrationsRoute
+  '/neuro': typeof AuthenticatedNeuroRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/pull-requests': typeof AuthenticatedPullRequestsRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
@@ -1140,6 +1148,7 @@ export interface FileRoutesById {
   '/_authenticated/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/_authenticated/members': typeof AuthenticatedMembersRoute
   '/_authenticated/migrations': typeof AuthenticatedMigrationsRoute
+  '/_authenticated/neuro': typeof AuthenticatedNeuroRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
   '/_authenticated/pull-requests': typeof AuthenticatedPullRequestsRoute
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
@@ -1271,6 +1280,7 @@ export interface FileRouteTypes {
     | '/knowledge-brief'
     | '/members'
     | '/migrations'
+    | '/neuro'
     | '/projects'
     | '/pull-requests'
     | '/quantum-studio'
@@ -1400,6 +1410,7 @@ export interface FileRouteTypes {
     | '/knowledge-brief'
     | '/members'
     | '/migrations'
+    | '/neuro'
     | '/projects'
     | '/pull-requests'
     | '/quantum-studio'
@@ -1530,6 +1541,7 @@ export interface FileRouteTypes {
     | '/_authenticated/knowledge-brief'
     | '/_authenticated/members'
     | '/_authenticated/migrations'
+    | '/_authenticated/neuro'
     | '/_authenticated/projects'
     | '/_authenticated/pull-requests'
     | '/_authenticated/quantum-studio'
@@ -2252,6 +2264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMigrationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/neuro': {
+      id: '/_authenticated/neuro'
+      path: '/neuro'
+      fullPath: '/neuro'
+      preLoaderRoute: typeof AuthenticatedNeuroRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/projects': {
       id: '/_authenticated/projects'
       path: '/projects'
@@ -2600,6 +2619,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKnowledgeBriefRoute: typeof AuthenticatedKnowledgeBriefRoute
   AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
   AuthenticatedMigrationsRoute: typeof AuthenticatedMigrationsRoute
+  AuthenticatedNeuroRoute: typeof AuthenticatedNeuroRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
   AuthenticatedPullRequestsRoute: typeof AuthenticatedPullRequestsRoute
   AuthenticatedQuantumStudioRoute: typeof AuthenticatedQuantumStudioRoute
@@ -2616,6 +2636,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedKnowledgeBriefRoute: AuthenticatedKnowledgeBriefRoute,
   AuthenticatedMembersRoute: AuthenticatedMembersRoute,
   AuthenticatedMigrationsRoute: AuthenticatedMigrationsRoute,
+  AuthenticatedNeuroRoute: AuthenticatedNeuroRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
   AuthenticatedPullRequestsRoute: AuthenticatedPullRequestsRoute,
   AuthenticatedQuantumStudioRoute: AuthenticatedQuantumStudioRoute,

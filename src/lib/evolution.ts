@@ -40,6 +40,7 @@ export const evolutionConfigInput = z
 export const EVOLUTION_NAV = [
   { label: "Home", to: "/" },
   { label: "My Projects", to: "/projects" },
+  { label: "Neuro", to: "/neuro" },
   { label: "Repositories", to: "/repositories" },
   { label: "Pull Requests", to: "/pull-requests" },
   { label: "Actions", to: "/actions" },

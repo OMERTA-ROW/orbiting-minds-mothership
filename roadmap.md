@@ -1,3 +1,12 @@
+# Neuro Intelligence — private registry (2026-11-26)
+
+- [x] Owner-only persisted component registry and distinct ecosystem pathways implemented at `/neuro`; live space and independent permissions preserved (0079–0080 installed).
+- [x] Immutable profile proposals, integrity check, scoped owner review, approval and metadata rollback implemented; autonomy constrained off; 61 disposable SQL checks passed including real concurrent stale-approval refusal.
+- [x] 57 focused app tests and changed-file lint passed; signed-in desktop/mobile owner/MFA denial, retry, security link, live scene, reduced-motion and signed-out redirect passed without page errors; preview build OK. Details: `docs/NEURO-INTELLIGENCE.md`.
+- [ ] Positive owner UI register → propose → review → approve → reload → rollback — blocked: current owner session lacks aal2; no bypass or test records in working pages.
+- [ ] Foundation reconciliation — blocked: GitHub PR #1 returned 403 (organization OAuth restrictions).
+- [ ] Live agent/data integrations — blocked: no Neuro adapter or scoped grants reviewed; no new connections authorized by registry entries.
+
 # Evolution — reconciled blueprint roadmap
 
 ## Evolution infrastructure foundation — PR #44, 2026-11-26

@@ -1193,6 +1193,121 @@ export type Database = {
         }
         Relationships: []
       }
+      neuro_components: {
+        Row: {
+          active_revision: number
+          autonomy_enabled: boolean
+          created_at: string
+          id: string
+          integration_status: string
+          name: string
+          owner_id: string
+          pathway_key: string
+        }
+        Insert: {
+          active_revision?: number
+          autonomy_enabled?: boolean
+          created_at?: string
+          id?: string
+          integration_status?: string
+          name: string
+          owner_id: string
+          pathway_key: string
+        }
+        Update: {
+          active_revision?: number
+          autonomy_enabled?: boolean
+          created_at?: string
+          id?: string
+          integration_status?: string
+          name?: string
+          owner_id?: string
+          pathway_key?: string
+        }
+        Relationships: []
+      }
+      neuro_reviews: {
+        Row: {
+          action: string
+          component_id: string
+          created_at: string
+          id: string
+          note: string
+          owner_id: string
+          previous_revision: number
+          revision: number
+        }
+        Insert: {
+          action: string
+          component_id: string
+          created_at?: string
+          id?: string
+          note: string
+          owner_id: string
+          previous_revision: number
+          revision: number
+        }
+        Update: {
+          action?: string
+          component_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          owner_id?: string
+          previous_revision?: number
+          revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "neuro_reviews_owner_id_component_id_fkey"
+            columns: ["owner_id", "component_id"]
+            isOneToOne: false
+            referencedRelation: "neuro_components"
+            referencedColumns: ["owner_id", "id"]
+          },
+        ]
+      }
+      neuro_revisions: {
+        Row: {
+          base_revision: number
+          component_id: string
+          created_at: string
+          digest: string
+          id: string
+          owner_id: string
+          profile: Json
+          revision: number
+        }
+        Insert: {
+          base_revision: number
+          component_id: string
+          created_at?: string
+          digest: string
+          id?: string
+          owner_id: string
+          profile: Json
+          revision: number
+        }
+        Update: {
+          base_revision?: number
+          component_id?: string
+          created_at?: string
+          digest?: string
+          id?: string
+          owner_id?: string
+          profile?: Json
+          revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "neuro_revisions_owner_id_component_id_fkey"
+            columns: ["owner_id", "component_id"]
+            isOneToOne: false
+            referencedRelation: "neuro_components"
+            referencedColumns: ["owner_id", "id"]
+          },
+        ]
+      }
       omni_agent_jobs: {
         Row: {
           agent_id: string
@@ -4365,6 +4480,22 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      neuro_change: {
+        Args: {
+          p_action: string
+          p_component: string
+          p_expected: number
+          p_note: string
+          p_profile: Json
+          p_target: number
+        }
+        Returns: number
+      }
+      neuro_register: {
+        Args: { p_key: string; p_name: string }
+        Returns: string
+      }
+      neuro_register_ecosystem: { Args: never; Returns: number }
       omni_api_key_create: {
         Args: {
           _days: number
