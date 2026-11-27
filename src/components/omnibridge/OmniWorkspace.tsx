@@ -162,16 +162,23 @@ export function OmniWorkspace() {
   useEffect(() => {
     if (!sessionId || !gateOpen) return;
     let alive = true;
+    let pending = false;
     const t = setInterval(async () => {
-      const r = await fns.poll({ data: { sessionId } }).catch(() => null);
-      if (!alive) return;
-      if (!r || !r.ok) {
-        setError(r && !r.ok ? r.message : "Lost contact with OMNI.");
-        setSessionId(null);
-        void refresh();
-        return;
+      if (pending) return;
+      pending = true;
+      try {
+        const r = await fns.poll({ data: { sessionId } }).catch(() => null);
+        if (!alive) return;
+        if (!r || !r.ok) {
+          setError(r && !r.ok ? r.message : "Lost contact with OMNI.");
+          setSessionId(null);
+          void refresh();
+          return;
+        }
+        setSteps(r.steps);
+      } finally {
+        pending = false;
       }
-      setSteps(r.steps);
     }, 1000);
     return () => {
       alive = false;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   getUnifiedExecutionState,
@@ -7,6 +7,8 @@ import {
 } from "@/lib/unified-activation.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useDemandPolling } from "@/hooks/use-demand-polling";
+import { executionPollDelay } from "@/lib/demand-polling";
 
 type Status = Awaited<ReturnType<typeof getUnifiedExecutionState>>;
 
@@ -44,31 +46,21 @@ export function UnifiedExecutionStatus({
   const [busy, setBusy] = useState(false);
   const [planText, setPlanText] = useState("");
   const [outcome, setOutcome] = useState("");
-  useEffect(() => {
-    let alive = true;
-    let pending = false;
-    const refresh = async () => {
-      if (pending) return;
-      pending = true;
+  const refreshStatus = useDemandPolling(
+    async () => {
       try {
         const value = await read();
-        if (alive) setStatus(value);
+        setStatus(value);
+        setError("");
+        return executionPollDelay(value.state);
       } catch {
-        if (alive) {
-          setStatus(null);
-          setError("Fresh safety information is unavailable; execution is blocked.");
-        }
-      } finally {
-        pending = false;
+        setStatus(null);
+        setError("Fresh safety information is unavailable; execution is blocked.");
+        return false;
       }
-    };
-    void refresh();
-    const timer = setInterval(() => void refresh(), 5000);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
-  }, [read]);
+    },
+    { allowHidden: true },
+  ); // Armed/running/cancelling work retains its existing observation cadence.
   async function act(operation: "verify" | "arm" | "disarm" | "reconcile") {
     if (
       !window.confirm(
@@ -101,7 +93,7 @@ export function UnifiedExecutionStatus({
         setOutcome(
           "Reconciled: the earlier activation was rolled back and closed. Nothing was granted.",
         );
-      setStatus(await read());
+      await refreshStatus();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Execution control failed");
       setStatus(null);
@@ -134,7 +126,7 @@ export function UnifiedExecutionStatus({
       setOutcome(
         `Job ${result.jobId}: ${result.outcome}. Paid-provider cost: $${result.providerCostUsd}. Infrastructure cost is not measured.`,
       );
-      setStatus(await read());
+      await refreshStatus();
     } catch (failure) {
       setError(
         failure instanceof Error
@@ -184,6 +176,9 @@ export function UnifiedExecutionStatus({
           : ""}
       </p>
       <div className="flex flex-wrap gap-2">
+        <Button disabled={busy} variant="outline" onClick={() => void refreshStatus()}>
+          Refresh execution state
+        </Button>
         <Button disabled={busy} variant="outline" onClick={() => void act("verify")}>
           Verify executor
         </Button>

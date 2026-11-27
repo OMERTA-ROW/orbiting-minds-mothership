@@ -61,6 +61,7 @@ import {
 } from "@/lib/activation-flow";
 import { OwnerCodeForm } from "@/components/account/OwnerCodeForm";
 import { ApprovalBuildBanner } from "@/components/omnibridge/ApprovalBuildBanner";
+import { useDemandPolling } from "@/hooks/use-demand-polling";
 
 type Listed = Awaited<ReturnType<typeof listActivationApprovals>>;
 type Loaded = Extract<Listed, { rows: unknown }>;
@@ -225,25 +226,19 @@ export function ActivationApprovals({ timeouts }: { timeouts?: Partial<FlowTimeo
   const linkInEffect = Boolean(
     data?.activations?.some((a) => a.kind === "live_link" && a.effective),
   );
-  useEffect(() => {
-    if (!linkInEffect) return;
-    let cancelled = false;
-    const tick = async () => {
-      if (cancelled || inFlight.current || document.visibilityState !== "visible") return;
+  useDemandPolling(
+    async () => {
+      if (inFlight.current) return 20_000;
       try {
         await withTimeout(refreshSafety(), limits.decide);
-        if (!cancelled && !inFlight.current) await refresh();
+        if (!inFlight.current) await refresh();
       } catch {
         /* the stored state stays as recorded (unknown/stale counts as stopped) */
       }
-    };
-    void tick();
-    const id = window.setInterval(() => void tick(), 20_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, [linkInEffect, refreshSafety, refresh, limits.decide]);
+      return 20_000;
+    },
+    { enabled: linkInEffect },
+  );
 
   const mfaFresh = useMemo(() => {
     if (!data || data.mfaAgeSeconds === null) return false;
