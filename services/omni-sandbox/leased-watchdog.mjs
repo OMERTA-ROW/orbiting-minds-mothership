@@ -1,50 +1,102 @@
 import fs from "node:fs";
-import { verifySessionRecord, verifyWorkerRecord } from "./worker-leases.mjs";
+import { renewableSessionAuthority } from "./worker-authority.mjs";
+import { signWorkerRecord, verifySessionRecord, verifyWorkerRecord } from "./worker-leases.mjs";
 import { workerSocketServer } from "./worker-socket.mjs";
 import { watchSystemdWorker } from "./systemd-worker.mjs";
 
 const SESSION_CONTRACT = "omni.workspace-session/v1";
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function verifyWatchRecord(secret, envelope, binding) {
-  const record = envelope?.record;
-  const isSession = record?.contract === SESSION_CONTRACT;
-  if (binding && isSession === Object.hasOwn(binding, "jobId"))
-    throw new Error("Worker control identity mismatch.");
-  if (isSession) {
-    if (Object.hasOwn(record, "jobId")) throw new Error("Invalid session control contract.");
-    return verifySessionRecord(secret, envelope, binding ?? record);
-  }
-  return verifyWorkerRecord(secret, envelope, binding ?? record);
+export function verifyWatchRequest(secret, envelope, workerId, expectedBinding) {
+  const binding = envelope?.record;
+  const session = binding?.contract === SESSION_CONTRACT;
+  if (
+    (binding?.contract !== undefined && !session) ||
+    (session && Object.hasOwn(binding, "jobId")) ||
+    (expectedBinding && (expectedBinding.contract === SESSION_CONTRACT) !== session)
+  )
+    throw new Error("Watchdog contract is not supported or does not match.");
+  const verify = session ? verifySessionRecord : verifyWorkerRecord;
+  const record = verify(secret, envelope, expectedBinding ?? binding);
+  if (
+    record.workerId !== workerId ||
+    record.kind !== "watch" ||
+    typeof record.recover !== "boolean" ||
+    record.expiresAt <= Date.now() ||
+    record.expiresAt > Date.now() + 2000 ||
+    !Number.isSafeInteger(record.expiresAt)
+  )
+    throw new Error("Watchdog route is busy or its authenticated request is invalid.");
+  return { record, session };
 }
 
-export function createLeasedWatchHandler(config, watch = watchSystemdWorker, onFailure = () => {}) {
+export async function watchSessionAuthority({ binding, secret, authorityFile, onLapse }) {
+  const check = renewableSessionAuthority(secret, binding);
+  while (true) {
+    try {
+      check(JSON.parse(fs.readFileSync(authorityFile, "utf8")));
+    } catch (error) {
+      return onLapse(error);
+    }
+    await sleep(50);
+  }
+}
+
+export function createLeasedWatchHandler(
+  config,
+  watchWorker = watchSystemdWorker,
+  onFailure = () => {},
+) {
   let watching;
   return async (envelope) => {
-    const binding = envelope?.record;
-    const record = verifyWatchRecord(config.secret, envelope, binding);
-    if (
-      record.workerId !== config.workerId ||
-      record.kind !== "watch" ||
-      typeof record.recover !== "boolean" ||
-      record.expiresAt <= Date.now() ||
-      record.expiresAt > Date.now() + 2000
-    )
-      throw new Error("Watchdog route is busy or its authenticated request is invalid.");
+    const { record, session } = verifyWatchRequest(
+      config.secret,
+      envelope,
+      config.workerId,
+      watching?.binding,
+    );
     if (watching) {
       if (!record.recover) throw new Error("Watchdog route is exclusively assigned.");
-      verifyWatchRecord(config.secret, envelope, watching.binding);
       return watching.promise;
     }
-    const identityKeys = ["leaseId", "workerId", "ownerId", "projectId", "sessionId"];
-    if (record.contract !== SESSION_CONTRACT) identityKeys.push("jobId");
-    const bindingIdentity = Object.fromEntries(identityKeys.map((key) => [key, record[key]]));
-    watching = {
-      binding: bindingIdentity,
-      promise: watch({
+    const bindingIdentity = Object.fromEntries(
+      (session
+        ? ["leaseId", "workerId", "ownerId", "projectId", "sessionId"]
+        : ["leaseId", "workerId", "ownerId", "projectId", "sessionId", "jobId"]
+      ).map((key) => [key, record[key]]),
+    );
+    const sessionBinding = session
+      ? { ...bindingIdentity, contract: SESSION_CONTRACT }
+      : undefined;
+    const cleanupSession = async () => {
+      await watchWorker({ ...config, binding: bindingIdentity, recover: true });
+      const cleanup = {
+        ...sessionBinding,
+        kind: "session_cleanup",
+        outcome: "terminated_and_wiped",
+      };
+      return { record: cleanup, signature: signWorkerRecord(config.secret, cleanup) };
+    };
+    let watch;
+    if (sessionBinding && record.recover) {
+      watch = cleanupSession();
+    } else if (sessionBinding) {
+      watch = watchSessionAuthority({
+        binding: sessionBinding,
+        secret: config.secret,
+        authorityFile: config.sessionAuthorityFile ?? config.authorityFile,
+        onLapse: cleanupSession,
+      });
+    } else {
+      watch = watchWorker({
         ...config,
         binding: bindingIdentity,
         recover: record.recover,
-      }),
+      });
+    }
+    watching = {
+      binding: sessionBinding ?? bindingIdentity,
+      promise: watch,
     };
     try {
       return await watching.promise;

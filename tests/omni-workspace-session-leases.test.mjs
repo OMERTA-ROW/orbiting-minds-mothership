@@ -13,6 +13,11 @@ import {
 } from "../services/omni-sandbox/worker-leases.mjs";
 import { createLeasedSessionWorkspace } from "../services/omni-sandbox/leased-worker.mjs";
 import { renewableSessionAuthority } from "../services/omni-sandbox/worker-authority.mjs";
+import {
+  createLeasedWatchHandler,
+  verifyWatchRequest,
+  watchSessionAuthority,
+} from "../services/omni-sandbox/leased-watchdog.mjs";
 
 const secret = "s".repeat(48);
 const identity = () => ({ ownerId: randomUUID(), sessionId: randomUUID(), projectId: "omni" });
@@ -21,6 +26,50 @@ const sessionRecord = (lease, fields) => ({
   contract: "omni.workspace-session/v1",
   ...lease,
   ...fields,
+});
+
+test("watchdog authenticates job and session protocols without confusing their identities", () => {
+  const binding = { ...identity(), leaseId: randomUUID(), workerId: "one" };
+  const job = {
+    ...binding,
+    jobId: randomUUID(),
+    kind: "watch",
+    recover: false,
+    expiresAt: Date.now() + 1000,
+  };
+  const session = sessionRecord(binding, {
+    kind: "watch",
+    recover: false,
+    expiresAt: Date.now() + 1000,
+  });
+  assert.deepEqual(verifyWatchRequest(secret, envelope(job), "one"), { record: job, session: false });
+  assert.deepEqual(verifyWatchRequest(secret, envelope(session), "one"), {
+    record: session,
+    session: true,
+  });
+  assert.deepEqual(
+    verifyWatchRequest(secret, envelope({ ...session, recover: true }), "one", session),
+    { record: { ...session, recover: true }, session: true },
+  );
+  assert.throws(() => verifyWatchRequest(secret, envelope(session), "one", job), /contract/);
+  assert.throws(() => verifyWatchRequest(secret, envelope(job), "one", session), /contract/);
+  assert.throws(
+    () => verifyWatchRequest(secret, envelope({ ...session, jobId: job.jobId }), "one"),
+    /contract/,
+  );
+  assert.throws(
+    () =>
+      verifyWatchRequest(secret, envelope({ ...session, sessionId: randomUUID() }), "one", session),
+    /identity mismatch/,
+  );
+  assert.throws(
+    () => verifyWatchRequest(secret, { record: session, signature: envelope(job).signature }, "one"),
+    /signature/,
+  );
+  assert.throws(
+    () => verifyWatchRequest(secret, envelope({ ...job, expiresAt: null }), "one"),
+    /invalid/,
+  );
 });
 
 function fixture() {
@@ -306,5 +355,161 @@ test("reusing a sequence cannot extend the monotonic session deadline", async ()
     );
   } finally {
     f.close();
+  }
+});
+
+test("watchdog routes job and session records by authenticated contract", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-"));
+  const authorityFile = path.join(dir, "authority.json");
+  const calls = [];
+  let finishJob;
+  const handler = createLeasedWatchHandler(
+    { secret, workerId: "one", authorityFile },
+    (options) => {
+      calls.push(options);
+      if (!options.recover) return new Promise((resolve) => (finishJob = resolve));
+      return Promise.resolve({ record: { outcome: "terminated_and_wiped" } });
+    },
+  );
+  const request = (lease, fields = {}) =>
+    envelope({ ...lease, kind: "watch", recover: false, expiresAt: Date.now() + 1000, ...fields });
+  try {
+    const job = { ...identity(), leaseId: randomUUID(), workerId: "one", jobId: randomUUID() };
+    const pending = handler(request(job));
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].recover, false);
+    assert.deepEqual(calls[0].binding, job);
+    await assert.rejects(
+      handler(request(sessionRecord(job, {}), { recover: true })),
+      /contract/,
+    );
+    finishJob({ record: { outcome: "terminated_and_wiped" } });
+    await pending;
+
+    const lease = { ...identity(), leaseId: randomUUID(), workerId: "one" };
+    const binding = sessionRecord(lease, {});
+    fs.writeFileSync(
+      authorityFile,
+      JSON.stringify(
+        envelope({
+          ...binding,
+          kind: "session_authority",
+          active: true,
+          sequence: 1,
+          expiresAt: Date.now() + 1000,
+        }),
+      ),
+    );
+    const session = handler(request(binding));
+    assert.equal(calls.length, 1);
+    await assert.rejects(handler(request(job, { recover: true })), /contract/);
+    await assert.rejects(
+      handler(request({ ...binding, ownerId: randomUUID() }, { recover: true })),
+      /mismatch/,
+    );
+    await assert.rejects(
+      handler({ ...request(binding), signature: "0".repeat(64) }),
+      /signature/,
+    );
+    const recovery = handler(request(binding, { recover: true }));
+    fs.unlinkSync(authorityFile);
+    const cleanup = await session;
+    assert.deepEqual(await recovery, cleanup);
+    assert.equal(calls.length, 2);
+    assert.equal(calls[1].recover, true);
+    assert.deepEqual(calls[1].binding, lease);
+    assert.deepEqual(cleanup.record, {
+      ...binding,
+      kind: "session_cleanup",
+      outcome: "terminated_and_wiped",
+    });
+    assert.equal(cleanup.signature, signWorkerRecord(secret, cleanup.record));
+    const directRecovery = await handler(request(binding, { recover: true }));
+    assert.deepEqual(directRecovery, cleanup);
+    assert.equal(calls.length, 3);
+    await assert.rejects(handler(request({ ...job, contract: "unknown" })), /not supported/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("missing session authority fails closed and starts cleanup", async () => {
+  const f = fixture();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-"));
+  const authorityFile = path.join(dir, "authority.json");
+  let lapse;
+  try {
+    const lease = f.sessions.claim(identity());
+    const result = await watchSessionAuthority({
+      binding: sessionRecord(lease, {}),
+      secret,
+      authorityFile,
+      onLapse: (error) => {
+        lapse = error;
+        return "cleanup";
+      },
+    });
+    assert.equal(result, "cleanup");
+    assert.match(lapse.message, /ENOENT/);
+  } finally {
+    f.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("invalid session authority fails closed and starts cleanup", async () => {
+  const f = fixture();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-"));
+  const authorityFile = path.join(dir, "authority.json");
+  let lapse;
+  try {
+    const lease = f.sessions.claim(identity());
+    fs.writeFileSync(authorityFile, "not-json");
+    const result = await watchSessionAuthority({
+      binding: sessionRecord(lease, {}),
+      secret,
+      authorityFile,
+      onLapse: (error) => {
+        lapse = error;
+        return "cleanup";
+      },
+    });
+    assert.equal(result, "cleanup");
+    assert.match(lapse.message, /JSON/);
+  } finally {
+    f.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("session authority that is not renewed starts cleanup", async () => {
+  const f = fixture();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-session-watchdog-"));
+  const authorityFile = path.join(dir, "authority.json");
+  let lapse;
+  try {
+    const lease = f.sessions.claim(identity());
+    const binding = sessionRecord(lease, {});
+    const authority = sessionRecord(lease, {
+      kind: "session_authority",
+      active: true,
+      sequence: 1,
+      expiresAt: Date.now() + 250,
+    });
+    fs.writeFileSync(authorityFile, JSON.stringify(envelope(authority)));
+    const result = await watchSessionAuthority({
+      binding,
+      secret,
+      authorityFile,
+      onLapse: (error) => {
+        lapse = error;
+        return "cleanup";
+      },
+    });
+    assert.equal(result, "cleanup");
+    assert.match(lapse.message, /expired|renewal/);
+  } finally {
+    f.close();
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });

@@ -18,23 +18,29 @@ test("leased watchdog routes an authenticated session watch and returns its clea
     ...binding,
     contract: "omni.workspace-session/v1",
     kind: "watch",
-    recover: false,
+    recover: true,
     expiresAt: Date.now() + 1000,
   };
   const envelope = { record, signature: signWorkerRecord(secret, record) };
-  const cleanup = { outcome: "terminated_and_wiped" };
   let received;
   const handleWatch = createLeasedWatchHandler(
     { secret, workerId: binding.workerId },
     async (options) => {
       received = options;
-      return cleanup;
+      return { record: { outcome: "terminated_and_wiped" } };
     },
   );
 
-  assert.equal(await handleWatch(envelope), cleanup);
+  const cleanup = await handleWatch(envelope);
+  assert.deepEqual(cleanup.record, {
+    ...binding,
+    contract: "omni.workspace-session/v1",
+    kind: "session_cleanup",
+    outcome: "terminated_and_wiped",
+  });
+  assert.equal(cleanup.signature, signWorkerRecord(secret, cleanup.record));
   assert.deepEqual(received.binding, binding);
-  assert.equal(received.recover, false);
+  assert.equal(received.recover, true);
 });
 
 test("leased watchdog refuses an invalid session watch signature before starting cleanup", async () => {
@@ -70,7 +76,7 @@ test("leased watchdog reports a watch failure and refuses its cleanup acknowledg
     sessionId: randomUUID(),
     contract: "omni.workspace-session/v1",
     kind: "watch",
-    recover: false,
+    recover: true,
     expiresAt: Date.now() + 1000,
   };
   const failure = new Error("cleanup failed");
