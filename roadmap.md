@@ -1,9 +1,9 @@
 # Staged interface production-readiness overhaul (2026-11-27)
 
-- [ ] Inventory every route and source control, panels, agent declarations and integration boundaries; classify source evidence separately from live acceptance.
-- [ ] Share the actual live CyberLink scene on all non-landing routes; preserve public landing, reduced motion, active work and safety controls.
-- [ ] Repair project/cloud/import actions that acknowledge success without confirmed persistence; validate provider response evidence and bounded reads.
-- [ ] Run focused/full regressions and desktop/mobile checks; document changed files, commit, rollback and exact external/owner blockers. Keep unpublished; no production migrations.
+- [x] Inventory 129 route declarations (91 content, 37 endpoints, one protected layout), 859 source controls, 180 panels and agent/provider boundaries; static bindings never imply live acceptance. Reproducible inventories in `docs/INTERFACE-*`.
+- [x] Share actual CyberLink scene on all non-landing routes; public landing preserved, single canvas survives navigation, reduced motion and desktop/mobile checks pass. Active work/safety cadence unchanged.
+- [x] Repair project/cloud/import acknowledgements without confirmed affected rows; require real provider account evidence; bound reads and serialize UI actions. 12 new tests pass.
+- [x] 1,565 app tests pass / 23 skipped; 141 focused tests; 85 pages + 14 unsigned API probes; compiler OK. Implementation `ab89b80`; report/rollback/owner blockers: `docs/INTERFACE-READINESS-2026-11-27.md`. Unpublished, no production migrations.
 - [ ] Live developer interoperability and entire-interface positive acceptance — blocked on owner MFA/passkeys, reviewed isolated executor, scoped remote result/cancellation contracts and separately approved disposable acceptance targets.
 
 # Phase 2 resource optimization / Phase 3 OMNI compatibility (2026-11-27)
