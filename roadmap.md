@@ -1,5 +1,11 @@
 # Staged interface production-readiness overhaul (2026-11-27)
 
+## Phase 2C integrity and recovery readiness (2026-11-28, preview only)
+- [x] Manual owner/MFA read-only Forgejo↔OMERTA-ROW audit with source mapping, heads, branches/tags, export and truthful discrepancies.
+- [x] Consolidated host diagnostics and separately approval-gated encrypted snapshot backup / isolated restore tooling; unsafe legacy backup entrypoint disabled in source only, no host execution/configuration changes.
+- [x] 69 app + 11 Python tests pass; actual upstream inventory probe HTTP 200; preview owner MFA refusal/live scene checked; local encrypted snapshot/SQLite/ref readback passes but Git fsck unavailable. Evidence/rollback/single owner action: `docs/PHASE-2C-INTEGRITY-RECOVERY-2026-11-28.md`.
+- [ ] Actual 38 source/head/ref comparisons, hourly timer/per-repo sync receipts, real consistent/off-host backup and isolated application recovery — blocked on owner MFA evidence review and existing authorized host operator. Phase 3 remains gated.
+
 ## Phase 2B Forgejo gateway authentication (2026-11-28, preview only)
 - [x] Wire Bearer gateway key, Cloudflare Access headers and fixed HTTPS/GET allowlist; retain owner/MFA.
 - [x] 45 focused tests pass, changed-file lint/diff and preview build OK; real desktop/mobile verify MFA refusal and unchanged live space.

@@ -17,3 +17,4 @@
 - Demand-driven browser observation is serial and stops when execution is idle; armed/running/cancellation observations and server lease/Stop checks keep their cadence, why: reducing display reads must not change authority or task liveness.
 - Project/cloud actions acknowledge only a returned affected row and provider checks require documented account evidence, why: HTTP success and zero-row mutations are not persistence or connection proof.
 - Evolution Git (Forgejo) is a read-only provider via `forgejo*.ts`: owner/aal2, GET-only to the exact approved gateway origin, server-side Bearer key plus Cloudflare Access service-token headers, no redirect following; agents get no access until a reviewed scoped route exists, why: listing is not sync or write authority and credentials must not leave the approved gateway.
+- Manual Forgejo audits bound metadata reads; refs never prove timer/restore health, why: Phase 3 needs independent evidence.

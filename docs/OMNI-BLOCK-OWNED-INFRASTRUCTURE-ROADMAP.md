@@ -1,5 +1,11 @@
 # OMNI Block — owned-infrastructure roadmap (Phase 2B read adapter implemented; live acceptance pending)
 
+## Phase 2C (2026-11-28, preview implemented; integrity/recovery acceptance pending)
+- Owner reports all 38 private repos displayed after Phase 2B. Read-only manual audit now compares original-source mapping, default branch/head and accessible branches/tags to OMERTA-ROW via existing authenticated gateways, with bounded metadata, no redirects/writes, downloadable per-repo evidence and explicit unavailable results.
+- 69 focused app tests and 11 Python verification tests pass. Actual GitHub inventory probe returns HTTP 200; restored preview owner session still lacks MFA, so actual all-38 comparison remains pending. Local encrypted snapshot/SQLite/ref readback works; sandbox Git fsck and real host recovery remain unverified.
+- Consolidated unprivileged host diagnostic and separate approval-gated snapshot backup / isolated restore scripts are in `deploy/evolution-git/verification/`; actual unit identity, recent per-repo sync receipts, consistent/off-host backup and 38-repo application restore proof remain pending. No host script or configuration changed.
+- Phase 3 remains gated. Full results, discrepancies limitations, reproduction, single owner evidence-review action and rollback: `docs/PHASE-2C-INTEGRITY-RECOVERY-2026-11-28.md`.
+
 ## Phase 2B gateway authentication (2026-11-28, preview only)
 - All four setting names are confirmed configured: `FORGEJO_BASE_URL`, `FORGEJO_API_TOKEN`, `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`. Values were not inspected or exposed.
 - Adapter uses only `https://git-api.evoomni.tech/api/v1/user/repos?page=N&limit=50` GET, `Authorization: Bearer` gateway key, `CF-Access-Client-Id`, `CF-Access-Client-Secret`, `User-Agent: Evolution-OMNI-Gateway/1.0` and `Accept: application/json`. Redirects are not followed; each read has a 15-second timeout.

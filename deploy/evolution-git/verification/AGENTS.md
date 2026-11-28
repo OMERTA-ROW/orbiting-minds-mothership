@@ -1,0 +1,3 @@
+- Host diagnostic scripts must be unprivileged and read-only with allowlisted output; never expose unit commands, environment, configs or raw logs, because host evidence is not authority to change services.
+- Backup/restore scripts require explicit owner approval, operate only on owner-prepared snapshots or script-created disposable copies, and never accept a production restore destination, because recovery tests must not risk the running Git service.
+- Local recovery tests distinguish encrypted snapshot/SQLite/ref readback from Git fsck and application recovery; unavailable checks fail closed rather than inventing readiness.

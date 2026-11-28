@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { readForgejoRepos } from "@/lib/forgejo.functions";
 import { FORGEJO_READ_SCOPES } from "@/lib/forgejo";
 import { Button } from "@/components/ui/button";
+import { useRef, useState } from "react";
+import { readForgejoIntegrity } from "@/lib/forgejo-audit.functions";
 
 const when = (v: string | null) => (v ? new Date(v).toLocaleString() : "Not reported");
 
@@ -10,6 +12,28 @@ export function ForgejoRepos() {
   const read = useServerFn(readForgejoRepos);
   const q = useQuery({ queryKey: ["forgejo-repos"], queryFn: () => read(), retry: false });
   const r = q.data;
+  const auditRead = useServerFn(readForgejoIntegrity);
+  const [auditResult, setAuditResult] = useState<Awaited<ReturnType<typeof auditRead>> | null>(
+    null,
+  );
+  const [auditing, setAuditing] = useState(false);
+  const [auditError, setAuditError] = useState(false);
+  const auditPending = useRef(false);
+  async function runAudit() {
+    if (auditPending.current) return;
+    auditPending.current = true;
+    setAuditing(true);
+    setAuditError(false);
+    setAuditResult(null);
+    try {
+      setAuditResult(await auditRead());
+    } catch {
+      setAuditError(true);
+    } finally {
+      auditPending.current = false;
+      setAuditing(false);
+    }
+  }
   return (
     <section className="mx-auto my-8 max-w-5xl rounded-xl border border-border bg-card/80 p-5 text-card-foreground backdrop-blur">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -89,6 +113,104 @@ export function ForgejoRepos() {
       <p className="mt-4 text-xs text-muted-foreground">
         Agent read access: {FORGEJO_READ_SCOPES.map((s) => `${s.agent} not granted`).join(" · ")}.
       </p>
+      <div className="mt-5 border-t border-border pt-4">
+        <Button
+          variant="outline"
+          disabled={auditing || r?.state !== "connected"}
+          onClick={runAudit}
+        >
+          {auditing ? "Comparing repositories…" : "Audit upstream integrity"}
+        </Button>
+        {auditError && (
+          <p className="mt-2 text-destructive">Audit could not finish. No sync was triggered.</p>
+        )}
+        {auditResult?.state === "denied" && (
+          <p className="mt-2">Owner two-step sign-in is required.</p>
+        )}
+        {auditResult?.state === "audited" && (
+          <div className="mt-3 space-y-3 text-sm">
+            <p>
+              {auditResult.audit.forgejoCount} Forgejo repositories ·{" "}
+              {auditResult.audit.upstreamCount} visible upstream repositories ·{" "}
+              {when(auditResult.audit.checkedAt)}
+            </p>
+            <p>
+              {auditResult.audit.complete
+                ? "Repository refs match at this check."
+                : "Integrity not fully verified."}{" "}
+              Hourly timer: host evidence required. Recovery: isolated restore evidence required.
+              Phase 3 remains gated.
+            </p>
+            {auditResult.audit.errors.map((e) => (
+              <p key={e} className="text-destructive">
+                {e}
+              </p>
+            ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr>
+                    <th>Forgejo / upstream</th>
+                    <th>Result</th>
+                    <th>Default heads / findings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditResult.audit.rows.map((row) => (
+                    <tr key={row.forgejo} className="border-t border-border">
+                      <td className="py-2 pr-3">
+                        {row.forgejo}
+                        <br />
+                        {row.upstream ?? "No unique mapping"}
+                      </td>
+                      <td className="pr-3">{row.status}</td>
+                      <td className="break-all">
+                        {row.local?.head ?? "Unverified"}
+                        <br />
+                        {row.remote?.head ?? "Unverified"}
+                        <br />
+                        {row.discrepancies.join(" · ")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <details>
+              <summary>
+                Upstream repositories without a mapped mirror (
+                {auditResult.audit.upstreamWithoutMirror.length})
+              </summary>
+              <p>
+                These are outside the matched set; this does not prove they were selected for
+                mirroring.
+              </p>
+              <ul>
+                {auditResult.audit.upstreamWithoutMirror.map((n) => (
+                  <li key={n}>{n}</li>
+                ))}
+              </ul>
+            </details>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const blob = new Blob([JSON.stringify(auditResult.audit, null, 2)], {
+                  type: "application/json",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "evolution-integrity-audit.json";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Download audit evidence
+            </Button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

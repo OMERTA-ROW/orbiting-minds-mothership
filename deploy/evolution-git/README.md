@@ -2,6 +2,8 @@
 
 Status: NOT DEPLOYED. Nothing here is live until the owner runs these steps and the review passes.
 
+**Historical scaffold, not current operating instructions:** the owner now reports Forgejo running privately on Omni-Staging with 38 repositories. Do not execute the deployment/admin/write-token/sync instructions below in Phase 2C. Use `verification/RUNBOOK.md` for read-only diagnosis and separately approved backup/isolated recovery. The legacy `backup.sh` is disabled because its dump/retention was unverified and destructive; no host timer or script was changed.
+
 1. Check free capacity on the existing server first (`df -h`, `free -m`, `docker ps`): needs ~1 GB RAM, 10 GB disk. Stop if staging/production would be squeezed.
 2. Point a DNS name (e.g. `git.evoomni.tech`) at the server; TLS is automatic via Caddy.
 3. `GIT_DOMAIN=git.evoomni.tech docker compose up -d` (if ports 80/443 are taken, put Forgejo behind the existing proxy instead of Caddy).
