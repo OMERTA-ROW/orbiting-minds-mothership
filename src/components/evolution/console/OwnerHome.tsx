@@ -41,9 +41,9 @@ const services = [
     icon: Bot,
   },
   {
-    title: "Network & Security",
+    title: "Account Security",
     description:
-      "Manage account protection and review owner-only access. Network inventory remains unconnected.",
+      "Manage sign-in protection and owner-only access. Network inventory remains unconnected.",
     to: "/account-security",
     icon: ShieldCheck,
   },
@@ -90,12 +90,14 @@ export function OwnerHome() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild variant="cosmic">
-              <Link to="/repositories">
+              <Link to="/repositories" search={(previous) => ({ ...previous, repoPage: 1 })}>
                 Open Developer Center <ArrowRight />
               </Link>
             </Button>
             <Button asChild variant="signal">
-              <Link to="/projects">Manage projects</Link>
+              <Link to="/projects" search={(previous) => ({ ...previous, repoPage: 1 })}>
+                Manage projects
+              </Link>
             </Button>
           </div>
         </section>
@@ -110,6 +112,7 @@ export function OwnerHome() {
               <Link
                 key={service.to + service.title}
                 to={service.to}
+                search={(previous) => ({ ...previous, repoPage: 1 })}
                 className="group flex min-h-48 flex-col rounded-2xl border border-gold/20 bg-console-panel/90 p-5 shadow-console backdrop-blur-md transition-colors hover:border-gold/45 hover:bg-console-raised/95"
               >
                 <span className="grid h-11 w-11 place-items-center rounded-xl border border-gold/30 bg-console-raised text-gold-light shadow-console-nav">
@@ -237,7 +240,7 @@ export function OwnerHome() {
               </EmptyState>
             )}
             <Button asChild variant="ghost" size="sm" className="mt-4 px-0 text-gold-light">
-              <Link to="/settings">
+              <Link to="/settings" search={(previous) => ({ ...previous, repoPage: 1 })}>
                 Open configuration history <ArrowRight size={13} />
               </Link>
             </Button>
@@ -249,22 +252,22 @@ export function OwnerHome() {
           >
             <div className="grid gap-2">
               <Button asChild variant="signal" className="justify-start">
-                <Link to="/repositories">
+                <Link to="/repositories" search={(previous) => ({ ...previous, repoPage: 1 })}>
                   <FolderGit2 size={15} /> View private repositories
                 </Link>
               </Button>
               <Button asChild variant="signal" className="justify-start">
-                <Link to="/projects">
+                <Link to="/projects" search={(previous) => ({ ...previous, repoPage: 1 })}>
                   <Globe2 size={15} /> Link or check a website
                 </Link>
               </Button>
               <Button asChild variant="signal" className="justify-start">
-                <Link to="/cloud-services">
+                <Link to="/cloud-services" search={(previous) => ({ ...previous, repoPage: 1 })}>
                   <Cloud size={15} /> Review cloud connections
                 </Link>
               </Button>
               <Button asChild variant="signal" className="justify-start">
-                <Link to="/omni-terminal">
+                <Link to="/omni-terminal" search={(previous) => ({ ...previous, repoPage: 1 })}>
                   <Bot size={15} /> Open OMNI controls
                 </Link>
               </Button>

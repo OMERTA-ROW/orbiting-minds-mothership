@@ -51,19 +51,19 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { navGroups } from "@/components/nav-groups";
 
-export type ConsoleArea = "home" | "developer" | "cloud";
+export type ConsoleArea = "home" | "developer" | "development" | "cloud" | "agents";
 const homeNavigation = [
   { label: "Home", to: "/", icon: Home },
-  { label: "OMNI Block Developer Center", to: "/repositories", icon: Code2 },
+  { label: "Developer Center", to: "/repositories", icon: Code2 },
+  { label: "Development Workspace", to: "/projects", icon: FolderGit2 },
   { label: "Cloud Services", to: "/cloud-services", icon: Cloud },
-  { label: "Network & Security", to: "/account-security", icon: ShieldCheck },
-  { label: "Website Center", to: "/projects", icon: Globe2 },
-  { label: "AI Agents", to: "/omni-terminal", icon: Bot },
-  { label: "Projects", to: "/projects", icon: FolderGit2 },
+  { label: "AI & Agent Workspace", to: "/omni-terminal", icon: Bot },
+  { label: "Account Security", to: "/account-security", icon: ShieldCheck },
+  { label: "Project Websites", to: "/projects", icon: Globe2 },
   { label: "Neuro Intelligence", to: "/neuro", icon: Sparkles },
-  { label: "Database migrations", to: "/migrations", icon: Layers3 },
-  { label: "Billing & Subscriptions", to: "/treasury", icon: CircleDollarSign },
-  { label: "Settings", to: "/settings", icon: Settings },
+  { label: "Database Migrations", to: "/migrations", icon: Layers3 },
+  { label: "Treasury · Internal Ledger", to: "/treasury", icon: CircleDollarSign },
+  { label: "Project Configuration", to: "/settings", icon: Settings },
 ] as const;
 
 const developerNavigation = [
@@ -80,29 +80,78 @@ const developerNavigation = [
   { label: "Code Search", to: "/code-search", icon: Braces },
   { label: "Projects", to: "/projects", icon: FolderGit2 },
   { label: "Wiki", to: "/wiki", icon: BookOpen },
-  { label: "Security", to: "/account-security", icon: ShieldCheck },
-  { label: "Settings", to: "/settings", icon: Cog },
+  { label: "Account Security", to: "/account-security", icon: ShieldCheck },
+  { label: "Project Configuration", to: "/settings", icon: Cog },
+] as const;
+
+const developmentNavigation = [
+  { label: "Project Directory", to: "/projects", icon: FolderGit2 },
+  { label: "Project Configuration", to: "/settings", icon: Cog },
+  { label: "Database Migrations", to: "/migrations", icon: Layers3 },
+  { label: "Deployment Status", to: "/deployments", icon: Rocket },
+  { label: "OMNI Terminal", to: "/omni-terminal", icon: Terminal },
+  { label: "Jackboy Activation & Approvals", to: "/activation-approvals", icon: ShieldCheck },
+  { label: "Repository Actions", to: "/actions", icon: Play },
+] as const;
+
+const agentNavigation = [
+  { label: "OMNI Terminal", to: "/omni-terminal", icon: Terminal },
+  { label: "OMNI Chat", to: "/beta-omni", icon: Bot },
+  { label: "OMNI Dock", to: "/omni-dock", icon: Boxes },
+  { label: "Neuro Intelligence", to: "/neuro", icon: Sparkles },
+  { label: "Observatory & History", to: "/omni-razul", icon: Activity },
+  { label: "API Keys & Connections", to: "/omni-api-keys", icon: KeyRound },
+  { label: "Activation & Approvals", to: "/activation-approvals", icon: ShieldCheck },
 ] as const;
 
 const cloudNavigation = [
-  { label: "Instances", to: "/cloud-services", icon: Server },
-  { label: "Storage", disabled: "No storage inventory is connected.", icon: HardDrive },
-  { label: "Networking", disabled: "No network inventory is connected.", icon: Network },
-  { label: "Backups", disabled: "Recovery evidence is not verified.", icon: HardDrive },
+  { label: "Instances & Connections", to: "/cloud-services", icon: Server },
+  {
+    label: "Storage",
+    setup:
+      "No storage inventory is connected. Open provider setup for the current connection state.",
+    icon: HardDrive,
+  },
+  {
+    label: "Networking",
+    setup:
+      "No network inventory is connected. Open provider setup for the current connection state.",
+    icon: Network,
+  },
+  {
+    label: "Backups",
+    setup: "Recovery evidence is not verified. Open infrastructure setup and recovery status.",
+    icon: HardDrive,
+  },
   { label: "Deployments", to: "/deployments", icon: Rocket },
-  { label: "Images", disabled: "No machine-image inventory is connected.", icon: Image },
-  { label: "SSH Keys", disabled: "No SSH key manager is connected.", icon: KeyRound },
-  { label: "Automation", disabled: "Cloud automation remains off.", icon: Sparkles },
-  { label: "Billing", to: "/treasury", icon: CircleDollarSign },
-  { label: "Settings", to: "/settings", icon: Cog },
+  {
+    label: "Images",
+    setup:
+      "No machine-image inventory is connected. Open provider setup for the current connection state.",
+    icon: Image,
+  },
+  {
+    label: "SSH Keys",
+    setup:
+      "No SSH key manager is connected. Open provider setup; never paste private keys into project records.",
+    icon: KeyRound,
+  },
+  {
+    label: "Automation",
+    setup: "Cloud automation remains off. Review existing activation controls before any setup.",
+    icon: Sparkles,
+  },
+  { label: "Treasury · Internal Ledger", to: "/treasury", icon: CircleDollarSign },
+  { label: "Project Configuration", to: "/settings", icon: Cog },
 ] as const;
 
 const services = [
   { label: "Evolution Home", to: "/", icon: Home },
   { label: "Developer Center", to: "/repositories", icon: Code2 },
+  { label: "Development Workspace", to: "/projects", icon: FolderGit2 },
   { label: "Cloud Services", to: "/cloud-services", icon: Cloud },
-  { label: "OMNI Terminal", to: "/omni-terminal", icon: Terminal },
-  { label: "My Projects", to: "/projects", icon: FolderGit2 },
+  { label: "AI & Agent Workspace", to: "/omni-terminal", icon: Terminal },
+  { label: "Treasury", to: "/treasury", icon: CircleDollarSign },
 ] as const;
 
 function Navigation({
@@ -116,9 +165,13 @@ function Navigation({
   const entries =
     area === "developer"
       ? developerNavigation
-      : area === "cloud"
-        ? cloudNavigation
-        : homeNavigation;
+      : area === "development"
+        ? developmentNavigation
+        : area === "cloud"
+          ? cloudNavigation
+          : area === "agents"
+            ? agentNavigation
+            : homeNavigation;
   return (
     <nav
       aria-label={area === "home" ? "Evolution workspace" : `${area} workspace`}
@@ -135,29 +188,33 @@ function Navigation({
       )}
       <p className="mb-2 px-3 font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
         {area === "developer"
-          ? "Development workspace"
-          : area === "cloud"
-            ? "Infrastructure workspace"
-            : "Owner workspace"}
+          ? "Repository workspace"
+          : area === "development"
+            ? "Development workspace"
+            : area === "cloud"
+              ? "Infrastructure workspace"
+              : area === "agents"
+                ? "AI & agent workspace"
+                : "Owner workspace"}
       </p>
       <ul className="space-y-1">
         {entries.map((item) => {
           const Icon = item.icon;
-          if ("disabled" in item) {
+          if ("setup" in item) {
             return (
               <li key={item.label}>
-                <Button
-                  variant="ghost"
-                  type="button"
-                  disabled
-                  title={item.disabled}
-                  aria-label={`${item.label}: ${item.disabled}`}
-                  className="flex min-h-10 w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 text-left text-xs text-muted-foreground opacity-55"
+                <Link
+                  to="/cloud-services"
+                  hash="infrastructure-setup"
+                  onClick={onNavigate}
+                  title={item.setup}
+                  aria-label={`${item.label}: ${item.setup}`}
+                  className="flex min-h-10 items-center gap-3 rounded-lg px-3 text-xs text-muted-foreground transition-colors hover:bg-console-raised hover:text-gold-light"
                 >
                   <Icon size={16} aria-hidden />
                   <span>{item.label}</span>
-                  <span className="ml-auto text-[9px]">Off</span>
-                </Button>
+                  <span className="ml-auto text-[9px]">Setup</span>
+                </Link>
               </li>
             );
           }
@@ -181,38 +238,46 @@ function Navigation({
           );
         })}
       </ul>
-      <div className="mt-6 border-t border-gold/15 pt-4">
-        {navGroups.map((group) => (
-          <details
-            key={group.id}
-            className="mb-1"
-            open={group.items.some((item) => item.to === path) || undefined}
-          >
-            <summary className="cursor-pointer rounded-lg px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:bg-console-raised hover:text-gold-light">
-              {group.label}
-            </summary>
-            <ul className="mt-1 space-y-1 border-l border-gold/15 pl-2">
-              {group.items.map((item) => (
-                <li key={item.to}>
-                  <Link
-                    to={item.to}
-                    search={(previous) => ({ ...previous, repoPage: 1 })}
-                    onClick={onNavigate}
-                    aria-current={path === item.to ? "page" : undefined}
-                    title={item.note}
-                    className={cn(
-                      "flex min-h-10 items-center rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-console-raised hover:text-foreground",
-                      path === item.to && "bg-console-active text-gold-light",
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </details>
-        ))}
-      </div>
+      <details
+        className="mt-6 border-t border-gold/15 pt-4"
+        open={navGroups.some((group) => group.items.some((item) => item.to === path)) || undefined}
+      >
+        <summary className="cursor-pointer rounded-lg px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:bg-console-raised hover:text-gold-light">
+          All workspace tools
+        </summary>
+        <div className="mt-2">
+          {navGroups.map((group) => (
+            <details
+              key={group.id}
+              className="mb-1"
+              open={group.items.some((item) => item.to === path) || undefined}
+            >
+              <summary className="cursor-pointer rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-console-raised hover:text-gold-light">
+                {group.label}
+              </summary>
+              <ul className="mt-1 space-y-1 border-l border-gold/15 pl-2">
+                {group.items.map((item) => (
+                  <li key={item.to}>
+                    <Link
+                      to={item.to}
+                      search={(previous) => ({ ...previous, repoPage: 1 })}
+                      onClick={onNavigate}
+                      aria-current={path === item.to ? "page" : undefined}
+                      title={item.note}
+                      className={cn(
+                        "flex min-h-10 items-center rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-console-raised hover:text-foreground",
+                        path === item.to && "bg-console-active text-gold-light",
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ))}
+        </div>
+      </details>
     </nav>
   );
 }
@@ -271,12 +336,16 @@ function SidebarContent({
   );
 }
 
+const areaService: Record<ConsoleArea, string> = {
+  home: "/",
+  developer: "/repositories",
+  development: "/projects",
+  cloud: "/cloud-services",
+  agents: "/omni-terminal",
+};
+
 function ServiceSwitcher({ area }: { area: ConsoleArea }) {
-  const current = services.find(
-    (service) =>
-      service.to ===
-      (area === "developer" ? "/repositories" : area === "cloud" ? "/cloud-services" : "/"),
-  );
+  const current = services.find((service) => service.to === areaService[area]);
   const CurrentIcon = current?.icon ?? Activity;
   return (
     <DropdownMenu>
@@ -299,7 +368,11 @@ function ServiceSwitcher({ area }: { area: ConsoleArea }) {
           const Icon = service.icon;
           return (
             <DropdownMenuItem key={service.to} asChild>
-              <Link to={service.to} className="gap-3 py-2.5">
+              <Link
+                to={service.to}
+                search={(previous) => ({ ...previous, repoPage: 1 })}
+                className="gap-3 py-2.5"
+              >
                 <Icon size={15} className="text-gold-light" aria-hidden /> {service.label}
               </Link>
             </DropdownMenuItem>

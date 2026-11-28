@@ -101,13 +101,13 @@ export const navGroups = [
   {
     id: "mothership",
     label: "Mothership",
-    blurb: "Owner-only financial status. No funding or transfers are connected.",
+    blurb: "Owner-only internal allocations and reported usage. No bank funds are held or moved.",
     items: [
       {
         to: "/treasury",
         label: "Treasury",
         status: "owner",
-        note: "Read-only OMNI workspace metering; no balances or money movement.",
+        note: "Internal allocation ledger and OMNI workspace metering; no real-money transfers.",
       },
     ],
   },
@@ -120,7 +120,7 @@ export const navGroups = [
         to: "/activation-approvals",
         label: "Activation approvals",
         status: "owner",
-        note: "Records your decisions. Never switches anything on.",
+        note: "Owner decisions, evidence and separately confirmed activation controls; execution needs verified services.",
       },
     ],
   },

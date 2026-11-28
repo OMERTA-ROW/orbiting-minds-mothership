@@ -155,11 +155,8 @@ function SiteShell({ path, omniArea }: { path: string; omniArea: boolean }) {
   const consoleArea = ownerHome || sharedConsole;
   const developerArea = [
     "/repositories",
-    "/projects",
     "/pull-requests",
     "/actions",
-    "/neuro",
-    "/migrations",
     "/releases",
     "/tags",
     "/issues",
@@ -170,7 +167,20 @@ function SiteShell({ path, omniArea }: { path: string; omniArea: boolean }) {
     "/code-search",
     "/wiki",
   ].includes(path);
-  const cloudArea = path === "/cloud-services" || path === "/deployments";
+  const developmentArea = ["/projects", "/migrations", "/deployments", "/settings"].includes(path);
+  const cloudArea = path === "/cloud-services";
+  const agentArea =
+    ["/neuro", "/omni-dock", "/omni-razul", "/omni-api-keys", "/beta-omni"].includes(path) ||
+    path === "/omni-terminal";
+  const consoleAreaName = developerArea
+    ? "developer"
+    : developmentArea
+      ? "development"
+      : cloudArea
+        ? "cloud"
+        : agentArea
+          ? "agents"
+          : "home";
   const content = (
     <>
       {omniArea && <OmniAreaHeader />}
@@ -196,7 +206,7 @@ function SiteShell({ path, omniArea }: { path: string; omniArea: boolean }) {
       {!consoleArea && <SiteNav />}
       <main className="flex-1">
         {sharedConsole ? (
-          <OwnerConsoleShell area={developerArea ? "developer" : cloudArea ? "cloud" : "home"}>
+          <OwnerConsoleShell area={consoleAreaName}>
             <div className="evolution-workspace-content">{content}</div>
           </OwnerConsoleShell>
         ) : (

@@ -266,7 +266,10 @@ export function CloudServices() {
                     <Plus /> Add connection
                   </Button>
                 </form>
-                <div className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                <div
+                  id="infrastructure-setup"
+                  className="mt-4 grid scroll-mt-24 gap-2 text-xs text-muted-foreground sm:grid-cols-2"
+                >
                   {(Object.keys(CLOUD_PROVIDERS) as CloudProvider[]).map((item) => (
                     <p key={item} className="rounded-lg border border-gold/10 p-3">
                       {CLOUD_PROVIDERS[item].name}:{" "}

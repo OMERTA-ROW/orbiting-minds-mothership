@@ -1,5 +1,17 @@
 # Staged interface production-readiness overhaul (2026-11-27)
 
+## Complete Evolution platform revamp (2026-11-28, preview only)
+
+- [x] Inventory and consolidate workspace navigation, duplicate approvals/reports and misleading or inert controls without removing working features or records.
+- [x] Preserve distinct Owner, Developer, Infrastructure, Development, Treasury, AI/Agent, OMNI Dock and API-key destinations on their existing backend contracts, with explicit setup blockers for missing providers.
+- [x] Implement an owner/MFA-gated internal Treasury ledger with recipient verification, amount confirmation, limits, durable audit and no real-money transfer claims; hold external financial providers for a separate owner choice.
+- [x] Apply compact true-black/metallic-gold workspace presentation, bounded scrolling records, contextual setup links and responsive/reduced-motion behavior while preserving the live CyberLink scene.
+- [x] Run focused security/backend tests, full regression tests and authenticated desktop/mobile acceptance checks; document verified, partial and blocked capabilities and owner actions.
+- [ ] Owner with a fresh verified session accepts the positive Treasury UI flow and real repository data; the available test session correctly received owner-access denials.
+- [ ] Later reviewed phases only: unverified infrastructure inventories, repository writes, execution and deployment contracts remain blocked. Real-money providers remain excluded.
+
+Evidence: `docs/EVOLUTION-PLATFORM-REVAMP-2026-11-28.md`; full suite 1,681 passed / 23 environment-specific skipped; 14 rolled-back real database checks; preview build OK. No publication or external/provider writes.
+
 ## Expanded OMNI Block Forgejo gateway (2026-11-28, preview only)
 
 - [x] Activate owner-confirmed GET inventory, branches, commits, pulls, issues, releases and tags; obsolete feature setting no longer blocks the approved endpoints.

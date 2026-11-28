@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-10-22",
-  "updated_at": "2026-11-28T03:54:00Z",
+  "updated_at": "2026-11-28T10:30:00Z",
   "project_name": "Evolution Mothership",
   "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
   "source_note_urls": [
@@ -320,6 +320,14 @@
       "passed": true,
       "scope": "Presentation and denied-state acceptance only; no live gateway, cloud, backend, permission or execution change.",
       "details": "docs/EVOLUTION-CONSOLE-REDESIGN-2026-11-28.md"
+    },
+    "evolution-platform-revamp": {
+      "command": "bunx vitest run src/lib/evolution-treasury.test.ts src/lib/evolution-treasury.functions.test.ts src/test/app-routing.test.tsx; bunx vitest run; changed-file eslint; disposable PostgreSQL transactions; signed-in Playwright",
+      "result": "66 focused tests passed; full suite 1,681 passed and 23 environment-specific skips across 134 passed and 3 skipped files. 14 disposable real database checks passed for balanced posting, limits, exact amount/recipient checks, replay, direct-write denial, Emergency Stop and stale MFA; all test transactions rolled back.",
+      "runtime": "Desktop/mobile navigation, repository-selection preservation, setup links and protected Treasury states checked without page errors or overflow. Available session was not the configured owner, so positive owner UI posting and live protected records were not claimed.",
+      "passed": true,
+      "scope": "Workspace consolidation and internal-unit ledger only; no real-money provider, external write, autonomous activation, publication or deployment.",
+      "details": "docs/EVOLUTION-PLATFORM-REVAMP-2026-11-28.md"
     }
   },
   "steps": [
@@ -337,10 +345,7 @@
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [],
-          "changed_files": [
-            "roadmap.md",
-            ".lovable/evolution-reconciliation-2026-10-22.md"
-          ],
+          "changed_files": ["roadmap.md", ".lovable/evolution-reconciliation-2026-10-22.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Current/source prior reconciliation read; all three source parts retained and source URLs mapped.",
@@ -359,10 +364,7 @@
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Existing family rows mapped in blueprint_crosswalk; original intent/source archives retained.",
@@ -381,10 +383,7 @@
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
           "dependencies": [],
-          "changed_files": [
-            "completion-register.json",
-            "src/test/test_completion_register.py"
-          ],
+          "changed_files": ["completion-register.json", "src/test/test_completion_register.py"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "This canonical JSON register with 15 ordered steps, item-level fields and release separation.",
@@ -404,9 +403,7 @@
       "title": "Finish account and project foundations",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "01"
-      ],
+      "dependencies": ["01"],
       "done_when": "Saved records survive a new session and cross-user access is denied; every named lifecycle flow verified.",
       "items": [
         {
@@ -414,9 +411,7 @@
           "requirement": "Verify sign-up, login, logout, session renewal and recovery, including mobile.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "01"
-          ],
+          "dependencies": ["01"],
           "changed_files": [
             "src/hooks/use-account.tsx",
             "src/routes/auth.tsx",
@@ -442,9 +437,7 @@
           "requirement": "Persist real owner-scoped projects, agent/operator profiles, settings, consent and audit events.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "01"
-          ],
+          "dependencies": ["01"],
           "changed_files": [
             "src/lib/beta.functions.ts",
             "src/routes/_authenticated/beta.tsx",
@@ -467,9 +460,7 @@
           "requirement": "Test that two users cannot read or change each other's private records, including direct API requests; restrict privileged server operations.",
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "01"
-          ],
+          "dependencies": ["01"],
           "changed_files": [
             "src/test/test_beta_isolation.py",
             "src/lib/beta-auth.server.ts",
@@ -492,9 +483,7 @@
           "requirement": "Implement the owner-approved Evolution Home, OMNI Block Developer Center and Cloud Services visual workspaces in preview, preserving real owner-scoped data, existing routes and every security boundary.",
           "status": "Implemented awaiting test",
           "owner": "Lovable implementation; owner supplies fresh two-step verification for positive data acceptance",
-          "dependencies": [
-            "02.02"
-          ],
+          "dependencies": ["02.02"],
           "changed_files": [
             "src/components/evolution/console/OwnerConsoleShell.tsx",
             "src/components/evolution/console/OwnerHome.tsx",
@@ -520,6 +509,37 @@
           "missing_input": "Fresh owner aal2 session for positive protected-data display acceptance.",
           "release_status": "Preview only; not published or deployed",
           "release_receipt": null
+        },
+        {
+          "id": "02.05",
+          "requirement": "Consolidate the accountable owner workspace and add the owner-selected internal-unit Treasury ledger without real-money transfers or weakening existing controls.",
+          "status": "Implemented awaiting test",
+          "owner": "Lovable implementation; owner supplies fresh owner/AAL2 acceptance for the positive Treasury UI flow",
+          "dependencies": ["02.02", "02.03", "02.04"],
+          "changed_files": [
+            "drizzle/migrations/0081_evolution_internal_treasury_ledger.sql",
+            "drizzle/migrations/0082_evolution_treasury_destination_index.sql",
+            "src/lib/evolution-treasury.ts",
+            "src/lib/evolution-treasury.functions.ts",
+            "src/components/evolution/TreasuryLedger.tsx",
+            "src/components/evolution/console/OwnerConsoleShell.tsx",
+            "src/components/evolution/ControlCenter.tsx",
+            "src/routes/treasury.tsx",
+            "src/routes/__root.tsx",
+            "docs/EVOLUTION-PLATFORM-REVAMP-2026-11-28.md",
+            "roadmap.md"
+          ],
+          "commit": null,
+          "commit_note": "Preview application change with additive shared-backend ledger migrations 0081-0082; no publication, external write or production deployment.",
+          "verified_scope": "Owner/MFA/Stop-gated internal accounts, verified recipients, exact amount confirmation, bounded balanced postings, cancellation, audit and idempotent replay; consolidated navigation/cloud manager; no bank/provider integration.",
+          "test_command": "bunx vitest run; focused 66-test suite; changed-file eslint; disposable PostgreSQL transaction checks; signed-in desktop/mobile Playwright",
+          "test_result": "1,681 passed / 23 environment-specific skipped full suite; 66 focused passed; 14 rolled-back database checks passed; preview build OK; changed-file lint clean.",
+          "evidence_ref": "evolution-platform-revamp",
+          "runtime_evidence": "Desktop/mobile navigation and protected Treasury states passed. Real database tests covered limits, balanced posting, replay, Stop and stale MFA with rollback. Available browser session was not the configured owner, so no positive owner UI posting or live protected record was claimed.",
+          "next_action": "Owner reviews the zero-balance account/recipient/prepare/confirm/reload Treasury flow with fresh AAL2 and accepts the consolidated navigation; later infrastructure and repository-write phases remain separately gated.",
+          "missing_input": "Fresh configured-owner AAL2 browser session for positive Treasury UI acceptance.",
+          "release_status": "Preview application only; additive shared-backend migrations installed, not published or externally deployed",
+          "release_receipt": null
         }
       ]
     },
@@ -528,9 +548,7 @@
       "title": "Make Guardian approvals and job controls work",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "02"
-      ],
+      "dependencies": ["02"],
       "done_when": "Unauthorized actions fail, enabled approved actions have traceable receipts, stopped jobs issue no new actions.",
       "items": [
         {
@@ -538,9 +556,7 @@
           "requirement": "Enforce scoped actions, server-side checks, audit history, cancellation, resource limits and emergency stop. Ghost security is owner-visible quiet defense, never stealth/retaliation/invulnerability. Extend independent default-deny owner/project authorization, scoped expiring/revocable capabilities, auth/tool/file/injection evidence, redacted restricted tamper evidence, bounded supported job containment and reviewed owner recovery; AI/advisory detection must never grant permission or weaken policy.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02"
-          ],
+          "dependencies": ["02"],
           "changed_files": [
             "src/lib/omni-social.functions.ts",
             "src/lib/knowledge-job.server.ts",
@@ -581,9 +597,7 @@
           "requirement": "Test denied actions, expired/revoked access, failed jobs, retries and idempotency. Acceptance separates authorized baseline, cross-user denial, forged/expired/revoked capabilities, prompt-based secret/privilege attempts, rate bounds, cancellation descendants and owner recovery from classifier false positives/negatives.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02"
-          ],
+          "dependencies": ["02"],
           "changed_files": [
             "src/test/knowledge.test.ts",
             "src/test/test_knowledge_isolation.py",
@@ -624,9 +638,7 @@
           "requirement": "Protect secrets and uploads; test log masking, including unusual values and chunk boundaries where relevant.",
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02"
-          ],
+          "dependencies": ["02"],
           "changed_files": [
             "cli/internal/companion/redact.go",
             "cli/internal/companion/project.go",
@@ -669,10 +681,7 @@
       "title": "Verify OMNI and Command Nexus",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "02",
-        "03"
-      ],
+      "dependencies": ["02", "03"],
       "done_when": "Signed-in user completes a real request in correct project with no fabricated agent activity.",
       "items": [
         {
@@ -680,10 +689,7 @@
           "requirement": "Complete one real authorized model connection with honest model attribution, usage limits and error handling.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03"
-          ],
+          "dependencies": ["02", "03"],
           "changed_files": [
             "src/lib/ai/omni-responses.server.ts",
             "src/routes/_authenticated/beta-omni.tsx",
@@ -721,10 +727,7 @@
           "requirement": "Route a request to an explicitly selected project; retain permitted context and show real task state.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03"
-          ],
+          "dependencies": ["02", "03"],
           "changed_files": [
             "src/routes/_authenticated/beta-omni.tsx",
             ".lovable/omni-activation-verification.md",
@@ -756,13 +759,8 @@
           "requirement": "Implement capability discovery for OmniBridge, Parallel Worlds and role-specific agents; show unavailable providers honestly.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03"
-          ],
-          "changed_files": [
-            "src/lib/omni-platforms.ts"
-          ],
+          "dependencies": ["02", "03"],
+          "changed_files": ["src/lib/omni-platforms.ts"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Existing typed capability graph and role/provider references with disabled/unavailable labels.",
@@ -785,10 +783,7 @@
           "requirement": "OMNI multi-agent registry and collaboration conventions: independent specialist agents across opted-in projects with categorized roles (AngelTech constructive research/creation/quality, DemonTech authorized defensive security/risk testing, Guardian permissions/audit, OMNI core coordination), capability declarations, task/result reporting, agent-to-agent coordination and owner pause control. Autonomous discovery, drafting, code generation and isolated testing allowed only through declared capabilities plus a connected runner; irreversible, high-impact, private-data and production actions always need owner approval.",
           "status": "Deferred",
           "owner": "Lovable implementation; owner supplies backend activation and runner",
-          "dependencies": [
-            "02",
-            "07"
-          ],
+          "dependencies": ["02", "07"],
           "changed_files": [
             "src/routes/omni-agents.tsx",
             "src/components/SiteNav.tsx",
@@ -821,11 +816,7 @@
           "requirement": "Model-agnostic multi-agent gateway: extensible provider adapter registry for authorized model APIs and local models, declaration-based capability discovery, per-project agent passports (identity, specialty, permissions, project scope, endpoint, health), enrollment and routing; project-assigned agents inspect own project within approved scopes and send structured gap reports to Jackboy, who dispatches coding/tests through OMNI and reports outcomes; JAX as separately enrolled autonomous agent with approved broker workflow, no Honeycomb Vault secrets, no external data submission without consent. Show real vs simulated integrations, credential prerequisites and end-to-end acceptance test; never claim unconnected models.",
           "status": "Deferred",
           "owner": "Lovable implementation; owner supplies provider credentials, backend activation and runner",
-          "dependencies": [
-            "02",
-            "04.04",
-            "07"
-          ],
+          "dependencies": ["02", "04.04", "07"],
           "changed_files": [
             "src/routes/omni-models.tsx",
             "src/components/SiteNav.tsx",
@@ -860,10 +851,7 @@
       "title": "Finish daily knowledge collection and Knowledge Fusion",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "02",
-        "03"
-      ],
+      "dependencies": ["02", "03"],
       "done_when": "Real scheduled invocation stores retrievable findings and visible failures with browser closed.",
       "items": [
         {
@@ -871,10 +859,7 @@
           "requirement": "Inspect the collector and scheduler already attempted before creating another job.",
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03"
-          ],
+          "dependencies": ["02", "03"],
           "changed_files": [
             "src/routes/api/public/jobs/knowledge-collect.ts",
             "src/lib/knowledge-runtime.server.ts"
@@ -896,10 +881,7 @@
           "requirement": "Collect supported public AlphaSignal and authoritative technology sources; record source URLs, publication/collection times, provenance and duplicate detection.",
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03"
-          ],
+          "dependencies": ["02", "03"],
           "changed_files": [
             "src/lib/knowledge.ts",
             "src/lib/knowledge-job.server.ts",
@@ -922,10 +904,7 @@
           "requirement": "Persist a sourced brief with adopt/test/watch/pivot recommendations; distinguish source claims from inference.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03"
-          ],
+          "dependencies": ["02", "03"],
           "changed_files": [
             "src/routes/_authenticated/knowledge-brief.tsx",
             "src/lib/knowledge-job.server.ts"
@@ -947,10 +926,7 @@
           "requirement": "Verify schedule, run history, bounded retries, failure reporting and a run while the owner's browser is closed. Keep research content untrusted.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03"
-          ],
+          "dependencies": ["02", "03"],
           "changed_files": [
             "src/lib/knowledge-runtime.server.ts",
             "src/test/knowledge.test.ts",
@@ -973,14 +949,8 @@
           "requirement": "Self-learning / improved learning core for Omni, merged with Knowledge Fusion, project memory and the feedback loop — honestly defined as consented persistent memory + retrieval + evaluated workflow improvement, not automatic foundation-model retraining or unchecked self-modification. Learn approved user/project preferences, accepted corrections, successful/failed task patterns and verified test outcomes with provenance, confidence, timestamps/version and expiry; distinguish user facts from inference; retrieved instructions/content remain untrusted. Per-user/project isolation, opt-in retention, view/edit/delete/reset/export memory, revocation and secrets exclusion. No cross-customer private memory sharing or training on customer data by default.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "05.03"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["02", "05.03"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no learning store, evaluation pipeline or model training active.",
@@ -998,14 +968,8 @@
           "requirement": "Evaluated improvement pipeline: suggest and version improvements to prompts/routing/tool selection against fixed evaluation tasks, compare baseline vs candidate for quality/cost/latency and regressions, stage/rollback and require policy-authorized promotion. Never modify Guardian permissions, risk caps or release policy through learning; high-stakes/trading strategy adaptations remain separately gated and tested (13.10/13.11). Agent agreement is not evidence and self-evaluation is not independent verification. Model fine-tuning, if ever selected, is a separate explicitly consented project requiring data rights/privacy/cost decisions and evals.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "05.05",
-            "03"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["05.05", "03"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no learning store, evaluation pipeline or model training active.",
@@ -1023,13 +987,8 @@
           "requirement": "First learning milestone: an approved correction is saved, correctly retrieved only in the authorized context next session, measurably changes task behavior, and deletion/revocation stops retrieval — with recorded actual evidence.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "05.05"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["05.05"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no learning store, evaluation pipeline or model training active.",
@@ -1047,10 +1006,7 @@
           "requirement": "Razul Central Intelligence (RA'SUL alias, The Eternal Archivist): central speaking intelligence, All-Seeing Eye and historical records for OMNI/Evolution across enrolled owned projects, never game-exclusive. Permissioned sourced events/research, search, provenance/timestamps/evidence classes, corrections/retention, resident/watch-agent directory and scoped retrieval/handoffs to Jackboy/OMNI/Guardian/Sabrina/JAX/Hercules. Approved public sources only respecting legal/site policies, rate limits, minimization and opt-in; no secrets/private communications, unauthorized scans or entire-internet claims. Guardian and owner approval for high-impact changes/transfers; no publishing or paid services.",
           "status": "In progress",
           "owner": "Lovable implementation; scheduled public-source observatory is live on the backend; private-event persistence and authenticated retrieval API still need owner account activation",
-          "dependencies": [
-            "02",
-            "04"
-          ],
+          "dependencies": ["02", "04"],
           "changed_files": [
             "src/routes/omni-razul.tsx",
             "src/components/SiteNav.tsx",
@@ -1106,11 +1062,7 @@
           "runtime_evidence": "Prior feedback routed to Jackboy/OMNI and health stored with forged/revoked denial; zero current hosted Sentinels/passports, no connected runner/Guardian.",
           "next_action": "Activate verified owner/MFA, explicitly enroll one project with scoped identity and authenticated resident read interface, then Guardian+isolated-runner pilot.",
           "release_status": "Not released; no project agent activated or public publishing.",
-          "dependencies": [
-            "05.08",
-            "02",
-            "03"
-          ],
+          "dependencies": ["05.08", "02", "03"],
           "changed_files": [
             "drizzle/migrations/0026_razul_sentinel_network.sql",
             "drizzle/migrations/0027_razul_sentinel_source_registration.sql",
@@ -1125,15 +1077,7 @@
             "recorded_at": "2026-10-31",
             "status": "Deferred",
             "scope": "Future staged implementation only; extends existing Passport/Sentinel/memory/front-door/Jackboy work, not a new duplicate network or activation.",
-            "related_items": [
-              "05.08",
-              "05.10",
-              "07.06",
-              "04.02",
-              "03.01",
-              "03.02",
-              "06.02"
-            ],
+            "related_items": ["05.08", "05.10", "07.06", "04.02", "03.01", "03.02", "06.02"],
             "resident_role": "Every explicitly owner-enrolled project gets a resident Operations Agent separate from creative/specialized agents, with Project Knowledge Passport, scoped telemetry/health, redacted logs, change history, authorized app integrations, incident triage, scheduled checks, approved routine maintenance and structured issue reports.",
             "project_requirements": {
               "Itanimulli: The Rise of Kings": "Game Ops Agent covers game service/server monitoring, cloud storage/database sync health, world-event operations, player-data integrity, backup/restore verification, safe migrations and rollbacks; never autonomous destructive player-world changes.",
@@ -1151,13 +1095,7 @@
             "pilot": {
               "status": "Deferred",
               "project": null,
-              "flow": [
-                "Ops Agent",
-                "Ra'sul",
-                "Jackboy",
-                "OMNI isolated test",
-                "Guardian approval"
-              ],
+              "flow": ["Ops Agent", "Ra'sul", "Jackboy", "OMNI isolated test", "Guardian approval"],
               "pre_execution_gate": "Guardian must authorize the exact isolated test scope before OMNI runs it; the post-test verdict is not permission to execute retroactively.",
               "acceptance": "One harmless real diagnostic/fixture issue, versioned attributed Passport/event persistence, authenticated Jackboy readback, bounded proposal, actual isolated test commands/logs/exit/results and rollback evidence, real authenticated evidence-bound Guardian verdict and a correlated chain. Owner approval still required for merge/deploy/high-impact/external or player-world changes.",
               "denial_recovery_checks": [
@@ -1191,12 +1129,7 @@
           "runtime_evidence": "Existing preview feed run saved 5 source receipts (3 success/2 failed), 43 duplicates/no new rows; signed-out owner controls hidden, MFA gate preserved. Zero real owner accounts; no fake session.",
           "next_action": "Verified OMNI owner/MFA sign-in and readback, scoped enrolled agents with live Guardian/isolated runner; public research receipts do not prove project health or worker execution.",
           "release_status": "Not released; no publishing, paid calls or external project deployment.",
-          "dependencies": [
-            "05.08",
-            "05.09",
-            "02",
-            "03"
-          ],
+          "dependencies": ["05.08", "05.09", "02", "03"],
           "changed_files": [
             "src/lib/rasul-chat.ts",
             "src/lib/rasul-chat.test.ts",
@@ -1227,9 +1160,7 @@
             "release_status": "Owner-authorized migration 0029 and one existing preview feed check only; no app publication/deployment, scheduler/provider/external-project change or paid inference"
           },
           "notes": "One consolidated thread, session-only (no persistence; questions tool unavailable so shape/storage chosen per owner 'one thread' request and stated). Research/status use authenticated Ask Razul when signed in; signed-out gets honest blocked fallback. Dispatches always pending-approval; execution blocked until Guardian+runner. Browser verified signed-out flow.",
-          "retired_files": [
-            "src/components/omnibridge/OmniBridge.tsx"
-          ],
+          "retired_files": ["src/components/omnibridge/OmniBridge.tsx"],
           "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         }
       ]
@@ -1239,12 +1170,7 @@
       "title": "Complete the developer connector and improvement pilot",
       "status": "Blocked",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "02",
-        "03",
-        "04",
-        "05"
-      ],
+      "dependencies": ["02", "03", "04", "05"],
       "done_when": "Real scoped proposal has measured result and reviewable diff/PR in correct repository.",
       "items": [
         {
@@ -1252,16 +1178,8 @@
           "requirement": "Resolve the actual Evolution repository and one owner-authorized test repository using existing scoped permissions.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "05"
-          ],
-          "changed_files": [
-            "cli/SIGNING.md",
-            "src/components/beta/PlatformReadiness.tsx"
-          ],
+          "dependencies": ["02", "03", "04", "05"],
+          "changed_files": ["cli/SIGNING.md", "src/components/beta/PlatformReadiness.tsx"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Only internal storage remotes visible; Git sync UI not readable by agent. No configured per-user GitHub client/API connection confirmed.",
@@ -1279,16 +1197,8 @@
           "requirement": "Verify repository discovery/read, Evolution DNA metadata, cited improvement proposal, isolated change, real tests and reviewable draft PR.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "05"
-          ],
-          "changed_files": [
-            "src/lib/omni-operations.ts",
-            "cli/internal/companion/project.go"
-          ],
+          "dependencies": ["02", "03", "04", "05"],
+          "changed_files": ["src/lib/omni-operations.ts", "cli/internal/companion/project.go"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Local CLI targeting and inert developer proposals exist, no real repository read/change/PR.",
@@ -1306,12 +1216,7 @@
           "requirement": "Connect Global Brain, Invention Engine, Time Machine simulations and Pulse to this single reproducible workflow.",
           "status": "Demo only",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "05"
-          ],
+          "dependencies": ["02", "03", "04", "05"],
           "changed_files": [
             "src/data/evolution.ts",
             "src/routes/pathway.tsx",
@@ -1334,15 +1239,8 @@
           "requirement": "Record rollback and release approval; preserve branch protections.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "05"
-          ],
-          "changed_files": [
-            "cli/ci/release-signing.yml.example"
-          ],
+          "dependencies": ["02", "03", "04", "05"],
+          "changed_files": ["cli/ci/release-signing.yml.example"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Draft/manual review references only; no owner review branch exists.",
@@ -1360,15 +1258,8 @@
           "requirement": "Automatic code enhancement within the shared Creator Enhancement layer (10.14), merged with this improvement pilot rather than duplicated: for an owner-authorized supported repository/project, analyze code, identify concrete defects/maintainability/security/performance opportunities, generate scoped improvements on a separate branch/workspace, run actual appropriate tests/static checks and benchmark any performance claims, and return a reviewable diff with evidence. Preserve intended behavior and public interfaces unless the owner asks otherwise; originals/version history/rollback retained; no promise that every code change is an improvement. Routine analysis/repair may run automatically under project-defined permissions, compute/spend limits and bounded retries, with an independent review/test role where supported. Failed checks halt advancement and are surfaced honestly; no auto-merge, public release, production change or new provider access is inferred from upload.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "06.01",
-            "06.02",
-            "10.14"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["06.01", "06.02", "10.14"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no repository connected, no automatic code modification performed.",
@@ -1386,9 +1277,7 @@
           "requirement": "OMNI project workspace/folders in the offline Go companion: default local workspace at an 'Omni Projects' folder on the owner's real Desktop (OneDrive-redirected Desktop detected, custom --dir supported), actual location shown during setup, choice persisted in per-user config; per-project directories with fixed templates (game: Code, Game Assets, Audio, Builds, Exports; video: Footage, Music, Edits, Finished Videos); reuse of .evolution/project.json tracking; current project and exact saved output location shown; Open project folder via the platform file manager where a supported opener exists; workspace changes explicitly offer --move (collision-refusing, same-filesystem) or --keep; path traversal, symlink escapes, collisions and silent overwrites refused; browser/cloud UI honestly states it cannot create local folders.",
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "06.03"
-          ],
+          "dependencies": ["06.03"],
           "changed_files": [
             "cli/internal/companion/workspace.go",
             "cli/internal/companion/workspace_test.go",
@@ -1422,10 +1311,7 @@
       "title": "Finish the terminal and sandbox workflow",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "03",
-        "04"
-      ],
+      "dependencies": ["03", "04"],
       "done_when": "Supported project completes real build/test request with correct exits and protected logs; isolation separately verified.",
       "items": [
         {
@@ -1433,10 +1319,7 @@
           "requirement": "Inspect existing Go CLI and retain completed commands, project targeting and logs.",
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "03",
-            "04"
-          ],
+          "dependencies": ["03", "04"],
           "changed_files": [
             "cli/internal/companion/commands.go",
             "cli/internal/companion/cli_project.go"
@@ -1458,10 +1341,7 @@
           "requirement": "Complete the evolution command and omni alias path from selected project to supported execution environment, task result, diff and logs.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "03",
-            "04"
-          ],
+          "dependencies": ["03", "04"],
           "changed_files": [
             "cli/internal/companion/project.go",
             "cli/internal/companion/commands.go"
@@ -1483,10 +1363,7 @@
           "requirement": "Verify actual isolation, filesystem/network/resource limits and cancellation; a shell alone is not a sandbox.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "03",
-            "04"
-          ],
+          "dependencies": ["03", "04"],
           "changed_files": [
             "cli/SECURITY.md",
             "cli/internal/companion/project.go",
@@ -1524,10 +1401,7 @@
           "requirement": "Test manifest text/JSON failure-status parity, missing/tampered artifacts, credential masking and source builds.",
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "03",
-            "04"
-          ],
+          "dependencies": ["03", "04"],
           "changed_files": [
             "cli/internal/companion/manifest_test.go",
             "cli/internal/companion/release_regression_test.go",
@@ -1550,12 +1424,7 @@
           "requirement": "Extend authorized terminal/device storage maintenance and defensive scanner support: inventory project terminal surfaces; default read-only local reports/dry-run, exact device/project/path/category review, byte/file estimates/exclusions, explicit operation confirmation, stale-target/symlink/traversal/unsafe permission denial; recoverable trash/recovery only where supported. Installed supported scanner fixed no-remediation argv with engine/version/time/exit evidence; no clean claims, installation, upload or policy changes. Actual device endpoints require server auth, owner/device/project isolation, expiring scoped capabilities/revocation, rate limits, Guardian audit/emergency stop. Mobile/external targets explicit; no automatic coverage. Test on disposable fixtures only.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies reviewed device/native runtime authorization",
-          "dependencies": [
-            "03",
-            "06",
-            "07.03",
-            "08"
-          ],
+          "dependencies": ["03", "06", "07.03", "08"],
           "changed_files": [
             "cli/internal/companion/storage.go",
             "cli/internal/companion/storage_platform_linux.go",
@@ -1591,10 +1460,7 @@
           "requirement": "OMNI coding gateway for Jackboy integration: private authenticated job API with least-privilege service identity and scoped project access; receive Jackboy-approved code-generation tasks, generate patch proposals, execute tests in isolated sandbox, return logs/diffs/pass-fail evidence and submit reviewable changes; project enrollment plus AngelTech quality and DemonTech defensive-security advisory feedback channels. Never run scraped untrusted code without isolation, never auto-merge/deploy, never expose terminal publicly, no external writes without owner approval.",
           "status": "Deferred",
           "owner": "Lovable implementation; owner supplies backend activation, service identity and sandbox runner",
-          "dependencies": [
-            "02",
-            "04"
-          ],
+          "dependencies": ["02", "04"],
           "changed_files": [
             "src/routes/omni-gateway.tsx",
             "src/components/SiteNav.tsx",
@@ -1629,9 +1495,7 @@
           "requirement": "Cross-system CODE Emergency Stop enforcement: Jackboy's signed safety state (Kill Switch / CODE Emergency Stop) halts OMNI autonomy and CODE, fails closed on stale or unknown state, keeps the manual terminal usable, and Step 10 authorizes autonomy without claiming it runs.",
           "status": "Implemented awaiting test",
           "owner": "Lovable implementation (Mothership); Jackboy project change and shared secret by owner",
-          "dependencies": [
-            "07.06"
-          ],
+          "dependencies": ["07.06"],
           "changed_files": [
             "drizzle/migrations/0053_jackboy_safety_state.sql",
             "drizzle/migrations/0054_jackboy_safety_halt_agent_jobs.sql",
@@ -1662,9 +1526,7 @@
           "requirement": "Unified OMNI–Jackboy activation: Step 9 activates and verifies the signed live link, Step 10 activates autonomy authorization; Jackboy's omni.permit/v1 permits and session-signed safety snapshots make the CODE Emergency Stop a hard override (no new jobs, running jobs halt at the next renewal, stale/unknown fails closed); manual terminal blocked only by a verified Kill Switch. Approving Step 9/10 runs the activation in the same owner click.",
           "status": "In progress",
           "owner": "Lovable implementation (Mothership); Jackboy permit database install/publish and passkey authorization by owner",
-          "dependencies": [
-            "07.07"
-          ],
+          "dependencies": ["07.07"],
           "changed_files": [
             "drizzle/migrations/0055_omni_activation_permits.sql",
             "src/lib/activation-activate.server.ts",
@@ -1700,10 +1562,7 @@
       "title": "Prepare trustworthy releases and device support",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "06",
-        "07"
-      ],
+      "dependencies": ["06", "07"],
       "done_when": "Each offered platform has native-tested artifacts/signatures and an honest support matrix.",
       "items": [
         {
@@ -1711,10 +1570,7 @@
           "requirement": "Finish release manifests, checksums, provenance, signature verification and CI for declared platform/architecture targets.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "06",
-            "07"
-          ],
+          "dependencies": ["06", "07"],
           "changed_files": [
             "cli/internal/companion/manifest.go",
             "cli/internal/companion/verify.go",
@@ -1737,13 +1593,8 @@
           "requirement": "Identify secure signing prerequisites; verify signatures rather than merely detecting a signature file.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "06",
-            "07"
-          ],
-          "changed_files": [
-            "cli/SIGNING.md"
-          ],
+          "dependencies": ["06", "07"],
+          "changed_files": ["cli/SIGNING.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Apple/Windows/Azure inputs absent; signer/account/native hosts unverified. Status accurately UNSIGNED/not verified.",
@@ -1761,14 +1612,8 @@
           "requirement": "Test installation, update, rollback and uninstall in supported native environments before offering executable install instructions.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "06",
-            "07"
-          ],
-          "changed_files": [
-            "cli/internal/companion/install.go",
-            "cli/SECURITY.md"
-          ],
+          "dependencies": ["06", "07"],
+          "changed_files": ["cli/internal/companion/install.go", "cli/SECURITY.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Source install/uninstall safety unit tests only; six cross-compiles not six native test hosts.",
@@ -1786,10 +1631,7 @@
           "requirement": "Stage Evolution Care, Pilot voice, My Devices/Fleet, health reports and opt-in updates through supported enrolled-device adapters.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "06",
-            "07"
-          ],
+          "dependencies": ["06", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
@@ -1817,11 +1659,7 @@
       "title": "Connect communications and social automation",
       "status": "Blocked",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "02",
-        "03",
-        "04"
-      ],
+      "dependencies": ["02", "03", "04"],
       "done_when": "Each enabled connector has authorized successful test and failure/revoke evidence.",
       "items": [
         {
@@ -1829,15 +1667,8 @@
           "requirement": "Implement one permitted email provider first: read/triage/draft, account separation and reviewed sending.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
-          "changed_files": [
-            "src/lib/omni-platforms.ts",
-            "src/components/beta/OmniOperations.tsx"
-          ],
+          "dependencies": ["02", "03", "04"],
+          "changed_files": ["src/lib/omni-platforms.ts", "src/components/beta/OmniOperations.tsx"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Read/draft-first inert contracts only; Gmail/Outlook per-user clients unconfigured.",
@@ -1855,11 +1686,7 @@
           "requirement": "Implement one permitted social provider end to end: account authorization, preview, queue, scheduling/timezone, real post receipt, retry and revoke.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
+          "dependencies": ["02", "03", "04"],
           "changed_files": [
             "src/lib/omni-social.functions.ts",
             "src/components/beta/SocialAutopilot.tsx"
@@ -1881,14 +1708,8 @@
           "requirement": "Expand provider by provider; distinguish unavailable per-user OAuth from a functioning integration.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
-          "changed_files": [
-            "src/lib/omni-platforms.ts"
-          ],
+          "dependencies": ["02", "03", "04"],
+          "changed_files": ["src/lib/omni-platforms.ts"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Unavailable statuses retained; no blanket provider activation.",
@@ -1906,14 +1727,8 @@
           "requirement": "Autopublish only under explicit revocable account/content rules with limits and audit.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
-          "changed_files": [
-            "src/lib/omni-social.functions.ts"
-          ],
+          "dependencies": ["02", "03", "04"],
+          "changed_files": ["src/lib/omni-social.functions.ts"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Reviewed preparation rules/revoke exist; no autonomous external actions.",
@@ -1931,14 +1746,8 @@
           "requirement": "Provider capability matrix across social, podcast and other publishing platforms via supported official adapters: per-provider account authorization, prerequisites/API access, supported media, limits, receipt/status semantics and manual handoff where no supported route exists. Broad coverage goal, never a claim that all platforms are supported.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "09.01",
-            "09.02"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["09.01", "09.02"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no adapter, account or platform connected.",
@@ -1956,15 +1765,8 @@
           "requirement": "Autonomous publishing pipeline for multiple posts across arbitrarily many owner-authorized connected accounts (no artificial fixed account-count cap, while honoring actual provider account/app quotas, rate limits, OAuth eligibility, hosting/storage/compute capacity and disclosed plan economics): approved source artifact to platform-specific formatting/metadata/captions/accessibility and content/platform variants, including picture/image posts (single images and multi-image/carousel only where the platform supports it) with platform-specific dimensions/formats, captions, alt text, preview and authorized asset selection. Durable queue with per-account timezone/schedule and multiple queued posts per account; owner-selectable dispatch mode — sequential account-by-account OR parallel fan-out to all selected authorized accounts from one action/schedule (parallel means concurrent dispatch within provider rate limits and configured worker/resource limits, never guaranteed exact same-second publication). Policy-authorized publishing, real external receipts tracked independently per account, deduplication/idempotency, retry of failed targets only, pause/cancel/revoke controls and clear progress/status. Explicit selected destination per post; one expired/failed connection must not block unrelated authorized accounts. Queued or submitted is never labeled published.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "09.02",
-            "09.05",
-            "11.01"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["09.02", "09.05", "11.01"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; existing private draft/review/stop intentions unchanged, no external publish.",
@@ -1982,14 +1784,8 @@
           "requirement": "Revocable autonomous publishing rules: owner configures revocable rules per account/content/channel covering schedule, rate and allowed actions, applied to autonomous content and actions alongside provider policies; anything outside rules requests human review. Audit all actions, safeguard and isolate account credentials/ownership, isolate users/projects, prevent duplicate posts, respect provider policies and consent, no fake engagement or spam.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "09.04",
-            "09.06"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["09.04", "09.06"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; reviewed preparation rules/revoke remain local, no autonomous external actions.",
@@ -2007,14 +1803,8 @@
           "requirement": "Podcast hosting/RSS delivery and directory submission: distinguish hosting delivery, directory submission and directory acceptance from confirmed downstream availability on each listening platform.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "11.01",
-            "11.02"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["11.01", "11.02"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; manual RSS/WAV ZIP QA path unchanged, no hosting or submission.",
@@ -2034,11 +1824,7 @@
       "title": "Finish one real creative production pipeline",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "02",
-        "03",
-        "04"
-      ],
+      "dependencies": ["02", "03", "04"],
       "done_when": "Each enabled studio produces usable provenance-labeled artifact with repeatable QA.",
       "items": [
         {
@@ -2046,11 +1832,7 @@
           "requirement": "Start with authorized media input, secure storage, a supported processing adapter, non-destructive edit, preview, quality checks and export.",
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
+          "dependencies": ["02", "03", "04"],
           "changed_files": [
             "src/lib/quantum.functions.ts",
             "src/lib/quantum-audio.ts",
@@ -2073,15 +1855,8 @@
           "requirement": "Verify processing prerequisites such as FFmpeg rather than presenting a simulated edit as completed work.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
-          "changed_files": [
-            "src/lib/quantum-audio.ts",
-            "src/lib/forge.functions.ts"
-          ],
+          "dependencies": ["02", "03", "04"],
+          "changed_files": ["src/lib/quantum-audio.ts", "src/lib/forge.functions.ts"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Actual browser-compatible bounded PCM is tested; FFmpeg runtime adapter absent. Installed sandbox binary is not app processing.",
@@ -2099,15 +1874,8 @@
           "requirement": "Extend Quantum Studio/OmniForge to Radio/Music, Film/Video, Cartoon, Podcast, Books, Web and Game workflows, with a separate acceptance test and actual output for each enabled studio.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
-          "changed_files": [
-            "src/lib/forge.ts",
-            "src/lib/forge-web.ts"
-          ],
+          "dependencies": ["02", "03", "04"],
+          "changed_files": ["src/lib/forge.ts", "src/lib/forge-web.ts"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Radio PCM and inert one-page Web HTML outputs verified; Film/Cartoon/Podcast/Books/Game remain plans or metadata-only.",
@@ -2119,9 +1887,7 @@
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
           "release_receipt": null,
-          "retired_files": [
-            "src/components/entertainment/EntertainmentGalaxy.tsx"
-          ],
+          "retired_files": ["src/components/entertainment/EntertainmentGalaxy.tsx"],
           "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
@@ -2129,15 +1895,8 @@
           "requirement": "Add Genesis Mode: editable universe bible, canon/version control, asset rights and branching into approved media outputs.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
-          "changed_files": [
-            "src/lib/forge-universe.ts",
-            "src/lib/forge-distro.functions.ts"
-          ],
+          "dependencies": ["02", "03", "04"],
+          "changed_files": ["src/lib/forge-universe.ts", "src/lib/forge-distro.functions.ts"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Private immutable canon/bible drafts/digests/branches/manual exports verified; rights are declarations, media adapters absent.",
@@ -2153,12 +1912,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies adapter/account approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
@@ -2177,12 +1931,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies adapter/account approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
@@ -2201,12 +1950,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies adapter/account approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
@@ -2225,12 +1969,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies engine/adapter approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
@@ -2249,12 +1988,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies engine/adapter approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
@@ -2273,12 +2007,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies engine/adapter approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
@@ -2297,12 +2026,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies engine/adapter approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no implementation started.",
@@ -2321,12 +2045,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies game license/hosting approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no server installation, provisioning or configuration generation started.",
@@ -2345,12 +2064,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies game license/hosting approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no server installation, provisioning or configuration generation started.",
@@ -2371,14 +2085,8 @@
           "requirement": "Creator Enhancement shared layer across Omni/OmniBridge: automatic media/project enhancement, not merely workflow coordination. On authorized upload, detect supported input and offer account/project opt-in automatic enhancement within declared budget/resource limits — photos (exposure/color/noise/sharpness, optional upscale), audio (noise reduction, loudness/clarity, avoid clipping), movies/YouTube series (dialogue cleanup, levels, supported stabilization/color/captions, consistent series presets); games require an actual editable project or supported asset/build adapter — profile first and propose measured performance/asset improvements, never arbitrary binary modification or guaranteed quality/FPS. Preserve originals, create versioned derivatives, before/after preview, undo/revert, provenance and changed-settings logs. Conservative presets preserve identity, voice and creative intent; generative alterations separately selectable. Expensive/destructive/unsupported operations must not trigger blindly — show estimates and honor owner policy. Actual processing adapters, quality checks/regression tests and useful output are required before any verified label. Auto-enhancement does not auto-authorize publishing or ad spend. No promise that every upload or game can be enhanced.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "10.01",
-            "10.04"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["10.01", "10.04"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no processing adapter, enhancement or provider connected.",
@@ -2396,13 +2104,8 @@
           "requirement": "First Creator Enhancement milestone: one real supported photo or audio input produces a preserved original plus an enhanced derivative, before/after comparison and rollback, with recorded test evidence; video and game adapters follow with separate acceptance evidence.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "10.14"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["10.14"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no processing adapter, enhancement or provider connected.",
@@ -2422,10 +2125,7 @@
       "title": "Finish distribution",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "09",
-        "10"
-      ],
+      "dependencies": ["09", "10"],
       "done_when": "Claimed deliveries have real external IDs/URLs; submission differs from publication.",
       "items": [
         {
@@ -2433,10 +2133,7 @@
           "requirement": "Attach the reviewed publish/schedule/save-draft decision to a verified exported artifact.",
           "status": "Verified working",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "09",
-            "10"
-          ],
+          "dependencies": ["09", "10"],
           "changed_files": [
             "src/lib/forge-post-edit.ts",
             "src/components/entertainment/PostEditPrompt.tsx"
@@ -2458,13 +2155,8 @@
           "requirement": "Prove one supported publishing route with correct account, metadata, rights, queue and provider receipt.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "09",
-            "10"
-          ],
-          "changed_files": [
-            "src/lib/forge-distro.functions.ts"
-          ],
+          "dependencies": ["09", "10"],
+          "changed_files": ["src/lib/forge-distro.functions.ts"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Manual RSS/WAV ZIP and owned-site declaration only; no external ID/URL receipt.",
@@ -2482,13 +2174,8 @@
           "requirement": "Keep Filmhub/Vydia/VEVO and other partner routes as validated packages/manual handoffs unless approved API access is actually established.",
           "status": "Demo only",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "09",
-            "10"
-          ],
-          "changed_files": [
-            "src/lib/omni-platforms.ts"
-          ],
+          "dependencies": ["09", "10"],
+          "changed_files": ["src/lib/omni-platforms.ts"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Truthful incomplete eligibility/manual handoffs; no partner acceptance/QC/delivery verification.",
@@ -2506,14 +2193,8 @@
           "requirement": "Marketing strategy engine: goals/audience/brand settings, sourced market and competitor research, campaign and content strategy, repurposing, SEO, organic social, consent-based email campaigns, A/B tests, attributable conversion/ROI reporting with honest uncertainty and sample sizes, bounded optimization.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "09.05",
-            "09.06"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["09.05", "09.06"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; saved 2026-10-21 research/plan reused, no campaign executed.",
@@ -2531,13 +2212,8 @@
           "requirement": "Paid campaign adapters with separate owner-enabled budgets, spending caps and stop controls; no actual spending authorized by this capture.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "11.04"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["11.04"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no ad account connected and no spend.",
@@ -2555,15 +2231,8 @@
           "requirement": "Dry-run and failure/revocation test gate: every publishing or marketing automation proves dry-run, failure handling, revocation and duplicate-prevention tests before a real owner-authorized pilot.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "09.06",
-            "09.07",
-            "11.04"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["09.06", "09.07", "11.04"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no pilot authorized.",
@@ -2583,11 +2252,7 @@
       "title": "Finish the nonmonetary Racing Arena",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "02",
-        "03",
-        "04"
-      ],
+      "dependencies": ["02", "03", "04"],
       "done_when": "Reproducible race and spectator/replay work; declared persistence/isolation not merely local trust.",
       "items": [
         {
@@ -2595,11 +2260,7 @@
           "requirement": "Implement reproducible simulated races, transparent rules, isolated runs and anti-cheating checks.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
+          "dependencies": ["02", "03", "04"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
@@ -2612,9 +2273,7 @@
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
           "release_receipt": null,
-          "retired_files": [
-            "src/lib/arena.ts"
-          ],
+          "retired_files": ["src/lib/arena.ts"],
           "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
@@ -2622,15 +2281,8 @@
           "requirement": "Persist results, leaderboards, replays and spectator/performance views.",
           "status": "Demo only",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
-          "changed_files": [
-            "src/routes/arena.tsx",
-            "src/test/test_arena_workflow.py"
-          ],
+          "dependencies": ["02", "03", "04"],
+          "changed_files": ["src/routes/arena.tsx", "src/test/test_arena_workflow.py"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Browser-local points/history/standings/mean times/replay work; not server-backed leaderboard or multiuser spectators.",
@@ -2648,11 +2300,7 @@
           "requirement": "Use points with no monetary value, prizes or redemption.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04"
-          ],
+          "dependencies": ["02", "03", "04"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
@@ -2665,10 +2313,7 @@
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
           "release_receipt": null,
-          "retired_files": [
-            "src/lib/arena.ts",
-            "src/test/arena.test.ts"
-          ],
+          "retired_files": ["src/lib/arena.ts", "src/test/arena.test.ts"],
           "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         }
       ]
@@ -2678,15 +2323,7 @@
       "title": "Complete collaboration and the remaining invention roadmap",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "02",
-        "03",
-        "04",
-        "05",
-        "06",
-        "07",
-        "08"
-      ],
+      "dependencies": ["02", "03", "04", "05", "06", "07", "08"],
       "done_when": "Each beta-enabled collaboration flow passes tests; longer-term ideas retain prerequisites.",
       "items": [
         {
@@ -2694,15 +2331,7 @@
           "requirement": "Stage Agent Embassy/passports, Code Genesis/Open Call, challenges, Knowledge Exchange, Commons, Code Exchange, Code Vault, Agent Lounge, debriefs and Incident Archives.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08"
-          ],
+          "dependencies": ["02", "03", "04", "05", "06", "07", "08"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
@@ -2728,15 +2357,7 @@
           "requirement": "Verify identities, permissions, contribution licensing/provenance, evidence labels, moderation and approval/release history.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08"
-          ],
+          "dependencies": ["02", "03", "04", "05", "06", "07", "08"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
@@ -2749,10 +2370,7 @@
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
           "release_receipt": null,
-          "retired_files": [
-            "src/lib/trusted-release.ts",
-            "src/lib/incident-screening.ts"
-          ],
+          "retired_files": ["src/lib/trusted-release.ts", "src/lib/incident-screening.ts"],
           "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
@@ -2760,15 +2378,7 @@
           "requirement": "Track Contribution Economy, paid bounties and monetization separately; no live charges or payouts without configured accounts and explicit commercial decisions.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08"
-          ],
+          "dependencies": ["02", "03", "04", "05", "06", "07", "08"],
           "changed_files": [
             "src/lib/cli-reference.ts",
             "src/routes/marketplace.tsx",
@@ -2791,18 +2401,8 @@
           "requirement": "Keep Robotics/Mobility, Planetary Network and physical-system work as documented research/simulations until supported partnerships, hardware and qualified validation exist.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08"
-          ],
-          "changed_files": [
-            "src/routes/partnerships.tsx"
-          ],
+          "dependencies": ["02", "03", "04", "05", "06", "07", "08"],
+          "changed_files": ["src/routes/partnerships.tsx"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Bounded synthetic scenarios/research only; no hardware, institution/partner enrollment or physical safety proof.",
@@ -2814,20 +2414,13 @@
           "missing_input": "Qualified independent domain/safety validation, partner/operator consent and signed hardware adapters.",
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
           "release_receipt": null,
-          "retired_files": [
-            "src/lib/robotics.ts"
-          ],
+          "retired_files": ["src/lib/robotics.ts"],
           "retired_note": "Retired 2026-11-20 by the owner's no-demo directive (commit 83e8aae): the files in retired_files were removed and remain in git history; the address shows an honest not-connected page."
         },
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies platform/account approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
@@ -2846,12 +2439,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies platform/account approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
@@ -2870,12 +2458,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies platform/account approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
@@ -2894,12 +2477,7 @@
         {
           "status": "Deferred",
           "owner": "Lovable implementation when unblocked; founder supplies platform/account approvals",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "07"],
           "changed_files": [],
           "commit": null,
           "commit_note": "Backlog capture only; no MCP server, OAuth activation or platform submission started.",
@@ -2920,14 +2498,8 @@
           "requirement": "Financial trading module coordinated by Omni through an internal specialist agent (no new agent name): read-only research and simulation first — account/portfolio monitoring, strategy research and advanced configurable strategy skills, backtesting and paper trading with point-in-time data and provenance, out-of-sample/walk-forward validation, transaction fees/slippage/liquidity modeling, drawdown/exposure and benchmark comparisons; avoid look-ahead and survivorship bias and label all hypothetical results. Asset classes/brokers/exchanges are not yet selected — do not assume stocks/crypto/options or connect accounts.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "02",
-            "03"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["02", "03"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no broker/exchange/data provider connected, no orders or funds moved.",
@@ -2945,14 +2517,8 @@
           "requirement": "Trading risk and control architecture: per-user/account isolation, order/position reconciliation, stale data detection, duplicate prevention, bounded retries that cannot duplicate orders, limits for size/exposure/leverage/daily loss and spend, monitoring, emergency stop, audit and disconnect/revoke. No leverage or derivatives enabled by default. Strategy changes are versioned, paper-tested and approved under explicit account policy before any live promotion. Autonomous actions only within separately authorized revocable rules; no withdrawal permission ever.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "13.09",
-            "03"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["13.09", "03"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no broker/exchange/data provider connected, no orders or funds moved.",
@@ -2970,14 +2536,8 @@
           "requirement": "Optional autonomous order execution and 'auto-enhance trading': evidence-based strategy evaluation and proposed improvements — never guaranteed profit or automatic unchecked live strategy changes. Live trading stays disabled pending explicit owner-selected broker/account, secure scoped credentials, supported API and compliance review, and configured risk policy. Account-owner authorization and applicable platform/regulatory requirements must be validated before any public trading service claim.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "13.09",
-            "13.10"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["13.09", "13.10"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no broker/exchange/data provider connected, no orders or funds moved.",
@@ -2995,14 +2555,8 @@
           "requirement": "First trading milestone: a reproducible paper-trading workflow with recorded hypothetical orders, reconciliation and tested emergency-stop/risk-limit behavior, with recorded evidence; hypothetical results labeled, no live orders.",
           "status": "Deferred",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "13.09",
-            "13.10"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["13.09", "13.10"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Backlog capture only; no broker/exchange/data provider connected, no orders or funds moved.",
@@ -3020,13 +2574,7 @@
           "requirement": "Omni Legal: legal drafting/organization, exhibits, federal/state/local court selection, current official statutes/rules/court research with source/jurisdiction/effective/retrieval dates and proposals distinguished; procedural checklists, reviewed PDF/exhibit e-filing preparation/export. Software legal-requirements review links sourced applicability questions to generated code/tests without automatic compliance claims. Submitted requires authentic provider receipt; accepted/rejected require court evidence. Future transmission requires explicit user confirmation and supported authenticated court integration; unsupported courts preparation/export only. Scoped private case access, protected audit/redaction and no secrets/case contents in terminal logs. Synthetic first acceptance only; no court submission/payment/service/signature/real case records or deployment. Additive automatic official blank-PDF intake after Legal activation and state/county/court/filing-type selection: jurisdiction-specific verified official source catalog with source URL, version/retrieval date and availability, affidavits only where verified, no universal catalog claim. Unsupported catalog unavailable with manual PDF or official-site handoff. Keep public blank retrieval distinct from private upload/completed affidavit generation; no private court records, invented forms, legal determinations or fabricated signatures/notarization. Catalog integrations pending unless actually verified; existing work and pending owner approvals preserved. Additive Legal Forms desktop-style WEB library named exactly Legal Forms, organized state > county > court > case/filing type for official blanks/affidavits and procedural references including relevant federal rules/forms. Ask and confirm document jurisdiction on upload; never infer governing court from GPS/IP/residence/upload origin. Optional consent-based location may suggest state/county only; actual case may be elsewhere. Preserve official source/version/check date and unsupported/stale labels. Private completed uploads stay user/case scoped, never automatically shared as blanks. Physical Desktop folder/sync requires installed supported companion plus explicit filesystem authorization; web folders do not prove device creation or complete coverage. Clarification only, prior pending scope and approvals intact; no filing/publication.",
           "status": "In progress",
           "owner": "Lovable implementation; owner/legal reviewer selects practice area/court and future scoped integration",
-          "dependencies": [
-            "02",
-            "03",
-            "04",
-            "06",
-            "07"
-          ],
+          "dependencies": ["02", "03", "04", "06", "07"],
           "changed_files": [
             "src/routes/omni-legal.tsx",
             "src/components/SiteNav.tsx",
@@ -3190,10 +2738,7 @@
             "12",
             "13"
           ],
-          "changed_files": [
-            "src/routes/dashboard.tsx",
-            "src/data/evolution.ts"
-          ],
+          "changed_files": ["src/routes/dashboard.tsx", "src/data/evolution.ts"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Dashboard metrics remain samples; private actual record metadata is separate.",
@@ -3250,9 +2795,7 @@
       "title": "Review, release and close the loop",
       "status": "In progress",
       "owner": "Lovable implementation / founder acceptance",
-      "dependencies": [
-        "14"
-      ],
+      "dependencies": ["14"],
       "done_when": "Authorized released scope verified with receipt; remaining work explicit.",
       "items": [
         {
@@ -3260,9 +2803,7 @@
           "requirement": "Produce a reviewable release summary: changes, tests, limitations, artifacts, rollback and outstanding blockers.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "14"
-          ],
+          "dependencies": ["14"],
           "changed_files": [
             "completion-register.json",
             ".lovable/evolution-reconciliation-2026-10-22.md",
@@ -3285,12 +2826,8 @@
           "requirement": "Obtain the concrete production-release decision after the result is ready for review; preserve existing hosting until then.",
           "status": "Blocked",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "14"
-          ],
-          "changed_files": [
-            "roadmap.md"
-          ],
+          "dependencies": ["14"],
+          "changed_files": ["roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "Existing prototype hosting untouched; no public release permission inferred from this handoff.",
@@ -3308,12 +2845,8 @@
           "requirement": "After authorized release, verify the deployed version and user journey, monitor health and record the release receipt.",
           "status": "Not started",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "14"
-          ],
-          "changed_files": [
-            "completion-register.json"
-          ],
+          "dependencies": ["14"],
+          "changed_files": ["completion-register.json"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "No new deploy/install/publish or release receipt.",
@@ -3331,13 +2864,8 @@
           "requirement": "Update this register with evidence; keep future roadmap separate from the beta completion claim.",
           "status": "In progress",
           "owner": "Lovable implementation; founder supplies named approvals/accounts where required",
-          "dependencies": [
-            "14"
-          ],
-          "changed_files": [
-            "completion-register.json",
-            "roadmap.md"
-          ],
+          "dependencies": ["14"],
+          "changed_files": ["completion-register.json", "roadmap.md"],
           "commit": null,
           "commit_note": "Lovable-managed work; no external owner commit/branch/PR verified. File references can include retained prior work.",
           "verified_scope": "This register adopts the ordered process; every future family mapped without complete-product claims.",
@@ -3356,206 +2884,134 @@
   "blueprint_crosswalk": [
     {
       "family": "Home / Mothership / Universe / Platform / search / SEO",
-      "steps": [
-        "01",
-        "14"
-      ],
+      "steps": ["01", "14"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Founder Dashboard / analytics / alerts",
-      "steps": [
-        "14"
-      ],
+      "steps": ["14"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Private beta accounts / projects / operator declarations / consent / audit",
-      "steps": [
-        "02",
-        "03"
-      ],
+      "steps": ["02", "03"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "OMNI / Oracle / Guardian roles / AI pathways / Nexus / OmniBridge / Parallel Worlds",
-      "steps": [
-        "03",
-        "04"
-      ],
+      "steps": ["03", "04"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Daily AlphaSignal / authoritative feeds / brief / Knowledge Fusion",
-      "steps": [
-        "05"
-      ],
+      "steps": ["05"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Developer / GitHub / DNA / Global Brain / Invention Engine / Time Machine / Pulse",
-      "steps": [
-        "06",
-        "13"
-      ],
+      "steps": ["06", "13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Evolution CLI / omni fallback / local discovery / offline estimator / sandbox logs",
-      "steps": [
-        "07",
-        "08",
-        "14"
-      ],
+      "steps": ["07", "08", "14"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Signing / Release Galaxy / native provenance / installer / updates",
-      "steps": [
-        "08"
-      ],
+      "steps": ["08"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Guardian Ghost / Iron / Global Eye / immune system / stop / health reports",
-      "steps": [
-        "03",
-        "08",
-        "13"
-      ],
+      "steps": ["03", "08", "13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "CARE / Pilot / Voice / My Devices / Fleet",
-      "steps": [
-        "08"
-      ],
+      "steps": ["08"],
       "source": "All three retained blueprint parts and roadmap.md family disposition",
       "maintenance_crosswalk": "07.05: bounded local metadata/plan and unavailable device/scanner gates; existing browser CARE/Guardian demos remain separate."
     },
     {
       "family": "Gmail / Outlook communications / social autopilot / Adaptive Engine",
-      "steps": [
-        "06",
-        "09"
-      ],
+      "steps": ["06", "09"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Quantum / Forge Radio / Music / Film / Video / Cartoon / Podcast / Books / Web / Game / Genesis canon",
-      "steps": [
-        "10"
-      ],
+      "steps": ["10"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Distro / reviewed post-edit decisions / RSS / YouTube / Filmhub / VEVO / Vydia",
-      "steps": [
-        "09",
-        "11"
-      ],
+      "steps": ["09", "11"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Racing Arena spectator / points / local performance / anti-cheat",
-      "steps": [
-        "12"
-      ],
+      "steps": ["12"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Genesis / Challenges / Embassy / Open Call / Passport / SDK / Digital Twin / Compute Grid",
-      "steps": [
-        "13"
-      ],
+      "steps": ["13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Discovery Radar / Code Exchange / licensing / translation / reviewer attribution",
-      "steps": [
-        "13"
-      ],
+      "steps": ["13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition",
       "legal_crosswalk": "13.13 Omni Legal added 2026-10-25: synthetic procedural preparation and sourced software requirement/code/test review; private cases and court transmission remain blocked. Legal work complements existing Rights, never replaces its records or grants."
     },
     {
       "family": "Commons / Knowledge Exchange / Pulse / capsules / homecoming",
-      "steps": [
-        "06",
-        "13"
-      ],
+      "steps": ["06", "13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Code Vault / Welcome Lounge / Trust / Safety Lock / Replay / Ledger / impact",
-      "steps": [
-        "03",
-        "08",
-        "13"
-      ],
+      "steps": ["03", "08", "13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Debrief / Incident Archives / Accountability / root cause / moderation",
-      "steps": [
-        "13"
-      ],
+      "steps": ["13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Contribution Economy / proposed USD bounties / optional subscriptions / payouts",
-      "steps": [
-        "13"
-      ],
+      "steps": ["13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Robotics / Mobility / ROS2 / aerospace / Planetary Network / partnerships / clusters",
-      "steps": [
-        "13"
-      ],
+      "steps": ["13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Compatibility-first / privacy / costs / exportability / recovery / QA",
-      "steps": [
-        "02",
-        "03",
-        "07",
-        "10",
-        "14"
-      ],
+      "steps": ["02", "03", "07", "10", "14"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Public release / hosting preservation / rollback / receipt",
-      "steps": [
-        "15"
-      ],
+      "steps": ["15"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Cyberace optional unconfirmed / CyberLink excluded",
-      "steps": [
-        "01",
-        "06",
-        "13"
-      ],
+      "steps": ["01", "06", "13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Real-money betting separate research, never activation",
-      "steps": [
-        "12",
-        "13"
-      ],
+      "steps": ["12", "13"],
       "source": "All three retained blueprint parts and roadmap.md family disposition"
     },
     {
       "family": "Omni MCP server and connector distribution to other agent platforms",
-      "steps": [
-        "13"
-      ],
+      "steps": ["13"],
       "note": "Captured 2026-10-24 as deferred later-phase work after core verification; public endpoint deployment, directory submission and external distribution remain separate reviewable actions."
     }
   ],

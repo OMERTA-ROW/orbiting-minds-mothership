@@ -1,0 +1,2 @@
+CREATE INDEX evolution_treasury_journals_destination_idx
+  ON public.evolution_treasury_journals (destination_account_id, created_at DESC);

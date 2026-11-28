@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -14,20 +15,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  CLONE_BLOCKER,
-  CLOUD_PROVIDERS,
-  suggestRepo,
-  type CloudProvider,
-} from "@/lib/evolution-control";
+import { CLONE_BLOCKER, suggestRepo } from "@/lib/evolution-control";
 import { controlCenterQuery } from "@/lib/evolution-query";
 import {
-  addCloudConnection,
-  checkCloudConnection,
   checkWebsite,
   deleteDirectoryEntry,
   importGithubRepos,
-  removeCloudConnection,
   saveControlSettings,
   saveDirectoryEntry,
 } from "@/lib/evolution-control.functions";
@@ -53,9 +46,6 @@ export function ControlCenter() {
   const delFn = useServerFn(deleteDirectoryEntry);
   const webFn = useServerFn(checkWebsite);
   const setFn = useServerFn(saveControlSettings);
-  const addCloudFn = useServerFn(addCloudConnection);
-  const checkCloudFn = useServerFn(checkCloudConnection);
-  const rmCloudFn = useServerFn(removeCloudConnection);
   const data = query.data;
 
   async function act(key: string, work: () => Promise<string>) {
@@ -153,11 +143,10 @@ export function ControlCenter() {
         <Button variant="outline" onClick={() => setEditing({ name: "" })}>
           <Plus size={15} /> Add project
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => document.getElementById("cloud")?.scrollIntoView({ behavior: "smooth" })}
-        >
-          <Cloud size={15} /> Connect cloud server
+        <Button asChild variant="outline">
+          <Link to="/cloud-services" hash="add-cloud-connection">
+            <Cloud size={15} /> Connect cloud server
+          </Link>
         </Button>
       </div>
       {notice && (
@@ -433,23 +422,7 @@ export function ControlCenter() {
         </ul>
       )}
 
-      <CloudSection
-        data={data}
-        busy={!!busy}
-        onAdd={(provider, label) =>
-          act(
-            "cloud",
-            async () => (
-              await addCloudFn({ data: { provider, label } }),
-              "Cloud connection added. Check it to verify."
-            ),
-          )
-        }
-        onCheck={(id) => act("cloud", async () => (await checkCloudFn({ data: { id } })).detail)}
-        onRemove={(id) =>
-          act("cloud", async () => (await rmCloudFn({ data: { id } }), "Cloud connection removed."))
-        }
-      />
+      <CloudAssociations data={data} />
     </Shell>
   );
 }
@@ -623,113 +596,21 @@ function EntryForm({
   );
 }
 
-function CloudSection({
-  data,
-  busy,
-  onAdd,
-  onCheck,
-  onRemove,
-}: {
-  data: Data;
-  busy: boolean;
-  onAdd: (p: CloudProvider, l: string) => void;
-  onCheck: (id: string) => void;
-  onRemove: (id: string) => void;
-}) {
-  const [provider, setProvider] = useState<CloudProvider>("railway");
-  const [label, setLabel] = useState("");
+function CloudAssociations({ data }: { data: Data }) {
+  const linked = data.directory.filter((entry) => entry.cloud_connection_id).length;
   return (
-    <section id="cloud" className="mt-10">
+    <section id="cloud" className="mt-10 border-t border-border pt-6">
       <h2 className="flex items-center gap-2 text-xl">
-        <Cloud size={20} className="text-primary" /> Cloud servers
+        <Cloud size={20} className="text-primary" /> Project cloud associations
       </h2>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Credentials stay server-side as project secrets. "Check" makes one read-only account call;
-        nothing is created or deployed.
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+        {linked} of {data.directory.length} project records have a saved cloud association. Add,
+        check and remove provider connections in Cloud Services; project associations remain
+        editable here.
       </p>
-      <ul className="mt-3 space-y-1 text-sm">
-        {(Object.keys(CLOUD_PROVIDERS) as CloudProvider[]).map((p) => (
-          <li key={p}>
-            {CLOUD_PROVIDERS[p].name}:{" "}
-            {data.setup.credentials[p] ? (
-              "credential saved on server"
-            ) : (
-              <>
-                missing — create a token (
-                <a
-                  className="underline"
-                  href={CLOUD_PROVIDERS[p].docs}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  how
-                </a>
-                ) and add it as <code>{CLOUD_PROVIDERS[p].secret}</code> in Project Settings →
-                Secrets
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-      <form
-        className="mt-3 flex flex-wrap items-end gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (label.trim()) {
-            onAdd(provider, label);
-            setLabel("");
-          }
-        }}
-      >
-        <select
-          className={field}
-          value={provider}
-          onChange={(e) => setProvider(e.target.value as CloudProvider)}
-          aria-label="Provider"
-        >
-          {(Object.keys(CLOUD_PROVIDERS) as CloudProvider[]).map((p) => (
-            <option key={p} value={p}>
-              {CLOUD_PROVIDERS[p].name}
-            </option>
-          ))}
-        </select>
-        <Input
-          className="h-9 w-56"
-          placeholder="Label, e.g. Jackboy runner"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          aria-label="Label"
-        />
-        <Button size="sm" type="submit" disabled={busy}>
-          <Plus size={14} /> Add
-        </Button>
-      </form>
-      <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-background/60">
-        {data.cloud.length === 0 && (
-          <li className="px-4 py-2 text-sm text-muted-foreground">No cloud servers added.</li>
-        )}
-        {data.cloud.map((c) => (
-          <li
-            key={c.id}
-            className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm"
-          >
-            <span>
-              {c.label} · {CLOUD_PROVIDERS[c.provider as CloudProvider]?.name} ·{" "}
-              <strong>{c.status.replace("_", " ")}</strong>{" "}
-              {c.checked_at && `at ${when(c.checked_at)}`}
-              {c.detail && <span className="block text-xs text-muted-foreground">{c.detail}</span>}
-            </span>
-            <span className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={busy} onClick={() => onCheck(c.id)}>
-                Check
-              </Button>
-              <Button size="sm" variant="ghost" disabled={busy} onClick={() => onRemove(c.id)}>
-                Remove
-              </Button>
-            </span>
-          </li>
-        ))}
-      </ul>
+      <Button asChild variant="outline" className="mt-4">
+        <Link to="/cloud-services">Manage cloud connections</Link>
+      </Button>
     </section>
   );
 }

@@ -596,6 +596,177 @@ export type Database = {
         }
         Relationships: []
       }
+      evolution_treasury_accounts: {
+        Row: {
+          created_at: string
+          daily_limit_units: number
+          id: string
+          name: string
+          owner_id: string
+          per_transfer_limit_units: number
+          request_id: string
+          status: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          daily_limit_units: number
+          id?: string
+          name: string
+          owner_id: string
+          per_transfer_limit_units: number
+          request_id: string
+          status?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          daily_limit_units?: number
+          id?: string
+          name?: string
+          owner_id?: string
+          per_transfer_limit_units?: number
+          request_id?: string
+          status?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
+      evolution_treasury_audit: {
+        Row: {
+          account_id: string | null
+          action: string
+          created_at: string
+          detail: Json
+          id: number
+          journal_id: string | null
+          owner_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          action: string
+          created_at?: string
+          detail?: Json
+          id?: never
+          journal_id?: string | null
+          owner_id: string
+        }
+        Update: {
+          account_id?: string | null
+          action?: string
+          created_at?: string
+          detail?: Json
+          id?: never
+          journal_id?: string | null
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      evolution_treasury_entries: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          entry_role: string
+          id: number
+          journal_id: string
+          owner_id: string
+          signed_units: number
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          entry_role: string
+          id?: never
+          journal_id: string
+          owner_id: string
+          signed_units: number
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          entry_role?: string
+          id?: never
+          journal_id?: string
+          owner_id?: string
+          signed_units?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evolution_treasury_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "evolution_treasury_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evolution_treasury_entries_journal_id_fkey"
+            columns: ["journal_id"]
+            isOneToOne: false
+            referencedRelation: "evolution_treasury_journals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evolution_treasury_journals: {
+        Row: {
+          amount_units: number
+          created_at: string
+          destination_account_id: string | null
+          expires_at: string
+          id: string
+          kind: string
+          note: string
+          owner_id: string
+          posted_at: string | null
+          request_id: string
+          source_account_id: string | null
+          status: string
+        }
+        Insert: {
+          amount_units: number
+          created_at?: string
+          destination_account_id?: string | null
+          expires_at?: string
+          id?: string
+          kind: string
+          note?: string
+          owner_id: string
+          posted_at?: string | null
+          request_id: string
+          source_account_id?: string | null
+          status?: string
+        }
+        Update: {
+          amount_units?: number
+          created_at?: string
+          destination_account_id?: string | null
+          expires_at?: string
+          id?: string
+          kind?: string
+          note?: string
+          owner_id?: string
+          posted_at?: string | null
+          request_id?: string
+          source_account_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evolution_treasury_journals_destination_account_id_fkey"
+            columns: ["destination_account_id"]
+            isOneToOne: false
+            referencedRelation: "evolution_treasury_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evolution_treasury_journals_source_account_id_fkey"
+            columns: ["source_account_id"]
+            isOneToOne: false
+            referencedRelation: "evolution_treasury_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forge_creator_versions: {
         Row: {
           asset_id: string | null
@@ -4268,6 +4439,47 @@ export type Database = {
       evolution_project_create: {
         Args: { _brief: string; _name: string }
         Returns: string
+      }
+      evolution_treasury_cancel_journal: {
+        Args: { _journal_id: string }
+        Returns: Json
+      }
+      evolution_treasury_create_account: {
+        Args: {
+          _daily_limit: number
+          _name: string
+          _per_transfer_limit: number
+          _request_id: string
+        }
+        Returns: Json
+      }
+      evolution_treasury_post_journal: {
+        Args: { _amount_confirmation: number; _journal_id: string }
+        Returns: Json
+      }
+      evolution_treasury_prepare_journal: {
+        Args: {
+          _amount: number
+          _destination: string
+          _kind: string
+          _note: string
+          _request_id: string
+          _source: string
+        }
+        Returns: Json
+      }
+      evolution_treasury_read_snapshot: { Args: never; Returns: Json }
+      evolution_treasury_set_limits: {
+        Args: {
+          _account_id: string
+          _daily_limit: number
+          _per_transfer_limit: number
+        }
+        Returns: Json
+      }
+      evolution_treasury_verify_recipient: {
+        Args: { _account_id: string; _expected_name: string }
+        Returns: Json
       }
       forge_release_transition: {
         Args: {
