@@ -1,5 +1,13 @@
 # Staged interface production-readiness overhaul (2026-11-27)
 
+## Expanded OMNI Block Forgejo gateway (2026-11-28, preview only)
+
+- [x] Activate owner-confirmed GET inventory, branches, commits, pulls, issues, releases and tags; obsolete feature setting no longer blocks the approved endpoints.
+- [x] Shared URL-bound repository/provider selection, automatic section reads, bounded pagination and scrollable results, loading/empty/error/refresh states; preserve integrity audit and all security gates.
+- [x] 1,670 regression tests passed / 23 skips; build/lint clean; 12 desktop routes and mobile navigation checked. Evidence: `docs/EXPANDED-FORGEJO-GATEWAY-2026-11-28.md`.
+- [ ] Independent real gateway endpoint/readback acceptance — blocked: available test session lacks confirmed owner/MFA; no active preview viewer. Owner reports 10 host gateway tests passed; no bypass or mock data.
+- [ ] Actions/environments/packages/code-search/wiki, writes and Phase 3 recovery remain blocked on separate reviewed endpoints/services/grants and real integrity/recovery evidence.
+
 ## Developer feature navigation follow-up (preview only)
 
 - [x] Audit configured providers and expose bounded Forgejo/GitHub repository feature reads with owner/MFA and inventory checks.

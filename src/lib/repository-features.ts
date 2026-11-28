@@ -7,6 +7,7 @@ export const repositoryFeatures = [
   "commits",
   "actions",
   "releases",
+  "tags",
   "environments",
   "packages",
   "code-search",
@@ -35,12 +36,15 @@ export const featureLabels: Record<RepositoryFeature, string> = {
   commits: "Commits",
   actions: "Actions",
   releases: "Releases",
+  tags: "Tags",
   environments: "Environments",
   packages: "Packages",
   "code-search": "Code Search",
   wiki: "Wiki",
 };
 export const featureBlockers: Partial<Record<RepositoryFeature, string>> = {
+  actions:
+    "Forgejo Actions runs need a reviewed GET /api/v1/repos/omniblock/{repo}/actions/runs gateway route and a configured Actions service. The expanded gateway does not authorize it. GitHub Actions reads remain available through the GitHub provider.",
   environments:
     "No reviewed environment inventory endpoint is available through the read-only Forgejo gateway. Deployment controls remain in Cloud Services.",
   packages:
@@ -49,27 +53,27 @@ export const featureBlockers: Partial<Record<RepositoryFeature, string>> = {
     "Repository contents are not indexed and a gateway code-search endpoint has not been verified. No content is uploaded to an external index.",
   wiki: "A scoped wiki read endpoint has not been verified for this gateway. Repository access does not grant a separate wiki clone or write operation.",
 };
-/**
- * The Omni-Staging gateway is intentionally restricted to GET /api/v1/user/repos.
- * Feature reads stay refused (no request sent) until the owner deploys these exact
- * GET routes on the gateway and lists the enabled features in the server setting
- * FORGEJO_GATEWAY_READ_ROUTES (comma separated, e.g. "branches,commits").
- */
+/** Owner-confirmed expanded gateway GET routes. No runtime setting grants extra routes. */
 export const FORGEJO_GATEWAY_ROUTE_ALLOWLIST: Partial<Record<RepositoryFeature, string>> = {
-  "pull-requests": "GET /api/v1/repos/{owner}/{repo}/pulls",
-  issues: "GET /api/v1/repos/{owner}/{repo}/issues",
-  branches: "GET /api/v1/repos/{owner}/{repo}/branches",
-  commits: "GET /api/v1/repos/{owner}/{repo}/commits",
-  actions: "GET /api/v1/repos/{owner}/{repo}/actions/runs",
-  releases: "GET /api/v1/repos/{owner}/{repo}/releases",
+  "pull-requests": "GET /api/v1/repos/omniblock/{repo}/pulls",
+  issues: "GET /api/v1/repos/omniblock/{repo}/issues",
+  branches: "GET /api/v1/repos/omniblock/{repo}/branches",
+  commits: "GET /api/v1/repos/omniblock/{repo}/commits",
+  releases: "GET /api/v1/repos/omniblock/{repo}/releases",
+  tags: "GET /api/v1/repos/omniblock/{repo}/tags",
 };
-export function forgejoEnabledRoutes(raw: string | undefined): Set<RepositoryFeature> {
-  const out = new Set<RepositoryFeature>();
-  for (const part of (raw ?? "").split(",")) {
-    const f = part.trim() as RepositoryFeature;
-    if (f && f in FORGEJO_GATEWAY_ROUTE_ALLOWLIST) out.add(f);
-  }
-  return out;
+export function forgejoEnabledRoutes(..._unused: [string?]): Set<RepositoryFeature> {
+  return new Set(Object.keys(FORGEJO_GATEWAY_ROUTE_ALLOWLIST) as RepositoryFeature[]);
+}
+/** Selection is URL-bound and shared between Developer Center sections. */
+export function repositorySelectionSearch(search: Record<string, unknown>) {
+  const repo = featureInput.shape.repo.safeParse(search["repoName"]);
+  const page = featureInput.shape.page.safeParse(Number(search["repoPage"]));
+  return {
+    repoProvider: search["repoProvider"] === "github" ? ("github" as const) : ("forgejo" as const),
+    repoName: repo.success ? repo.data : "",
+    repoPage: page.success ? page.data : 1,
+  };
 }
 /** Canonical short name shared by Forgejo mirrors (e.g. omniblock/x) and GitHub upstream (OMERTA-ROW/x). */
 export function repoShortName(fullName: string): string {
@@ -90,18 +94,20 @@ export function featurePath(input: z.infer<typeof featureInput>): string | null 
       commits: "commits",
       actions: "actions/runs",
       releases: "releases",
+      tags: "tags",
       environments: "environments",
     };
     const suffix = endpoint[data.feature];
     return suffix ? `/repos/${data.repo}/${suffix}?page=${data.page}&per_page=50` : null;
   }
+  if (!data.repo.startsWith("omniblock/")) return null;
   const suffix: Partial<Record<RepositoryFeature, string>> = {
     "pull-requests": "pulls",
     issues: "issues",
     branches: "branches",
     commits: "commits",
-    actions: "actions/runs",
     releases: "releases",
+    tags: "tags",
   };
   const endpoint = suffix[data.feature];
   return endpoint ? `/api/v1/repos/${data.repo}/${endpoint}?page=${data.page}&limit=50` : null;
@@ -126,6 +132,14 @@ export function featureRows(feature: RepositoryFeature, body: unknown): FeatureR
   const rows = z.array(record).max(50).parse(payload);
   return rows.map((r, i) => {
     const commit = r["commit"] && typeof r["commit"] === "object" ? record.parse(r["commit"]) : {};
+    const nestedAuthor =
+      commit["author"] && typeof commit["author"] === "object"
+        ? record.parse(commit["author"])
+        : {};
+    const nestedCommitter =
+      commit["committer"] && typeof commit["committer"] === "object"
+        ? record.parse(commit["committer"])
+        : {};
     return {
       id:
         text(r, "sha") ||
@@ -157,6 +171,8 @@ export function featureRows(feature: RepositoryFeature, body: unknown): FeatureR
         text(r, "updated_at") ||
         text(r, "created_at") ||
         text(commit, "timestamp") ||
+        text(nestedCommitter, "date") ||
+        text(nestedAuthor, "date") ||
         "Not reported",
     };
   });

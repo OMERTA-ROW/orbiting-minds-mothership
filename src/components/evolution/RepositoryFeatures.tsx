@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -16,15 +16,31 @@ import { featureLabels, featureBlockers, type RepositoryFeature } from "@/lib/re
 
 export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) {
   const { ready, user } = useAccount();
-  const [provider, setProvider] = useState<"forgejo" | "github">("forgejo");
+  const {
+    repoProvider: provider,
+    repoName: repo,
+    repoPage: page,
+  } = getRouteApi("__root__").useSearch();
+  const navigate = useNavigate({ from: "/" });
+  const select = (name: string, nextProvider = provider, nextPage = 1) =>
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        repoName: name,
+        repoProvider: nextProvider,
+        repoPage: nextPage,
+      }),
+    });
   const [search, setSearch] = useState("");
   const blocker =
-    provider === "github" && (feature === "environments" || feature === "code-search")
+    provider === "github" &&
+    (feature === "environments" || feature === "code-search" || feature === "actions")
       ? undefined
       : featureBlockers[feature];
+  const readInventory = useServerFn(readFeatureInventory);
   const inventory = useQuery({
-    queryKey: ["repository-feature-inventory", provider],
-    queryFn: () => readFeatureInventory({ data: { provider } }),
+    queryKey: ["repository-feature-inventory", user?.id, provider],
+    queryFn: () => readInventory({ data: { provider } }),
     enabled: ready && Boolean(user),
     refetchOnWindowFocus: false,
     retry: false,
@@ -38,32 +54,38 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
     retry: false,
   });
   const read = useServerFn(readRepositoryFeatures);
-  const [repo, setRepo] = useState("");
   const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<Awaited<ReturnType<typeof readRepositoryFeatures>> | null>(
-    null,
-  );
-  async function load(next = 1) {
-    if (!repo || busy) return;
-    setBusy(true);
-    setResult(null);
-    try {
-      setResult(await read({ data: { repo, feature, page: next, provider, search } }));
-      setPage(next);
-    } catch {
-      setResult({
-        state: "blocked",
-        message:
-          "Read could not be confirmed. Check owner sign-in and gateway availability, then retry.",
-        rows: [],
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
+  const [submittedSearch, setSubmittedSearch] = useState("");
   const repos = inventory.data?.state === "connected" ? inventory.data.repos : [];
+  const authorized = repos.some((r) => r.name === repo);
+  const records = useQuery({
+    queryKey: [
+      "repository-feature-records",
+      user?.id,
+      provider,
+      repo,
+      feature,
+      page,
+      submittedSearch,
+    ],
+    queryFn: () => read({ data: { repo, feature, page, provider, search: submittedSearch } }),
+    enabled:
+      ready &&
+      Boolean(user) &&
+      authorized &&
+      !blocker &&
+      (feature !== "code-search" || Boolean(submittedSearch)),
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
+  });
+  const busy = records.isFetching;
+  const result = authorized ? records.data : undefined;
+  function load(next = page) {
+    if (next !== page) select(repo, provider, next);
+    else if (feature === "code-search" && search !== submittedSearch) setSubmittedSearch(search);
+    else void records.refetch();
+  }
   const rows =
     result?.rows.filter((r) =>
       `${r.name} ${r.id} ${r.status}`.toLowerCase().includes(query.toLowerCase()),
@@ -101,12 +123,9 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
             aria-label="Provider"
             className="exchange-select mt-2 block"
             value={provider}
-            disabled={busy}
             onChange={(e) => {
-              setProvider(e.target.value === "github" ? "github" : "forgejo");
-              setRepo("");
-              setResult(null);
-              setPage(1);
+              select("", e.target.value === "github" ? "github" : "forgejo");
+              setSubmittedSearch("");
             }}
           >
             <option value="forgejo">Evolution Git · Forgejo</option>
@@ -116,24 +135,24 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
         <RepositoryPicker
           repos={repos}
           value={repo}
-          disabled={busy}
           onChange={(next) => {
-            setRepo(next);
-            setResult(null);
-            setPage(1);
+            select(next);
+            setQuery("");
           }}
         />
         <Button
           disabled={
-            !repo || busy || Boolean(blocker) || (feature === "code-search" && !search.trim())
+            !authorized || busy || Boolean(blocker) || (feature === "code-search" && !search.trim())
           }
           onClick={() => void load()}
         >
           <RefreshCw size={15} />
-          {busy ? "Reading…" : "Read records"}
+          {busy ? "Reading…" : "Refresh records"}
         </Button>
         <Button asChild variant="outline">
-          <Link to="/repositories">Repository inventory & integrity audit</Link>
+          <Link to="/repositories" search={(previous) => previous}>
+            Repository inventory & integrity audit
+          </Link>
         </Button>
       </div>
       {feature === "code-search" && provider === "github" && (
@@ -145,7 +164,6 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
             value={search}
             onChange={(e) => {
               setSearch(e.target.value.replace(/[^A-Za-z0-9_.\- ]/g, ""));
-              setResult(null);
             }}
             className="mt-2 max-w-lg"
           />
@@ -168,10 +186,18 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
         )}
         {access.data && (
           <span role="status">
-            Session: {access.data.assurance === "aal2" ? "two-step verified" : `assurance ${access.data.assurance ?? "unknown"} (sign out and back in with your code if you just verified)`}{" "}
-            · owner {access.data.owner === true ? "confirmed" : access.data.owner === false ? "not confirmed" : "unverified"}
+            Session:{" "}
+            {access.data.assurance === "aal2"
+              ? "two-step verified"
+              : `assurance ${access.data.assurance ?? "unknown"} (sign out and back in with your code if you just verified)`}{" "}
+            · owner{" "}
+            {access.data.owner === true
+              ? "confirmed"
+              : access.data.owner === false
+                ? "not confirmed"
+                : "unverified"}
             {provider === "forgejo" &&
-              ` · gateway feature routes enabled: ${access.data.forgejoRoutes.length ? access.data.forgejoRoutes.join(", ") : "none (list only)"}`}
+              ` · gateway GET routes configured: ${access.data.forgejoRoutes.length ? access.data.forgejoRoutes.join(", ") : "none"}`}
           </span>
         )}
       </div>
@@ -188,12 +214,28 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
           {blocker}
         </p>
       )}
+      {repo && inventory.data?.state === "connected" && !authorized && (
+        <p role="alert" className="text-sm text-muted-foreground">
+          Selected repository is not in the current authorized provider inventory. Select an
+          authorized repository.
+        </p>
+      )}
+      {busy && (
+        <p role="status" className="text-sm text-muted-foreground">
+          Reading {featureLabels[feature]} for {repo}…
+        </p>
+      )}
+      {records.isError && (
+        <p role="alert" className="text-sm">
+          Read could not be confirmed. Check owner sign-in and gateway availability, then refresh.
+        </p>
+      )}
       {result?.state === "blocked" && (
         <p role="alert" className="rounded-lg border border-border bg-card p-4 text-sm">
           {result.message}
         </p>
       )}
-      {result?.state === "read" && (
+      {result?.state === "read" && !busy && (
         <>
           <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <span>
@@ -208,7 +250,7 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
             />
           </div>
           <div className="max-h-[60vh] overflow-auto rounded-lg border border-border bg-card">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="sticky top-0 z-10 border-b border-border bg-card">
                   <th className="px-3 py-2">Name / title</th>
@@ -264,8 +306,8 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
         <p className="mt-2 text-muted-foreground">
           {access.data?.writes ??
             "Writes are not available: the gateway is GET-only and no repository mutation contract or per-repository grant exists."}{" "}
-          Enabling them needs a reviewed mutation route on the gateway, a per-repository grant, fresh
-          two-step sign-in, protected-branch review, Emergency Stop checks, spending caps and
+          Enabling them needs a reviewed mutation route on the gateway, a per-repository grant,
+          fresh two-step sign-in, protected-branch review, Emergency Stop checks, spending caps and
           durable audit. Nothing here changes a gate.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">

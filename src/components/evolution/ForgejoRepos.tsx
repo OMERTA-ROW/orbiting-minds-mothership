@@ -23,7 +23,12 @@ import { consoleDate, filterForgejoRepos } from "./console/console-utils";
 
 export function ForgejoRepos() {
   const read = useServerFn(readForgejoRepos);
-  const q = useQuery({ queryKey: ["forgejo-repos"], queryFn: () => read(), retry: false });
+  const q = useQuery({
+    queryKey: ["forgejo-repos"],
+    queryFn: () => read(),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
   const r = q.data;
   const auditRead = useServerFn(readForgejoIntegrity);
   const [auditResult, setAuditResult] = useState<Awaited<ReturnType<typeof auditRead>> | null>(
@@ -92,7 +97,11 @@ export function ForgejoRepos() {
             size="sm"
             className={tab.to === "/repositories" ? "text-gold-light" : "text-muted-foreground"}
           >
-            <Link to={tab.to} aria-current={tab.to === "/repositories" ? "page" : undefined}>
+            <Link
+              to={tab.to}
+              search={(previous) => previous}
+              aria-current={tab.to === "/repositories" ? "page" : undefined}
+            >
               {tab.label}
             </Link>
           </Button>
@@ -208,7 +217,18 @@ export function ForgejoRepos() {
                       className="border-t border-gold/10 transition-colors hover:bg-console-raised/45"
                     >
                       <td className="max-w-72 break-words px-4 py-3 font-medium text-foreground">
-                        {repo.name}
+                        <Link
+                          to="/branches"
+                          search={(previous) => ({
+                            ...previous,
+                            repoName: repo.name,
+                            repoProvider: "forgejo",
+                            repoPage: 1,
+                          })}
+                          className="text-primary hover:underline"
+                        >
+                          {repo.name}
+                        </Link>
                         {repo.empty ? " (empty)" : ""}
                       </td>
                       <td className="px-3 py-3 text-muted-foreground">
@@ -251,10 +271,18 @@ export function ForgejoRepos() {
             <StateLine label="Agent grants" value="Not granted" />
             <StateLine label="Execution" value="Not connected" />
           </ConsolePanel>
-          <ConsolePanel title="Recent Pull Requests" description="No review provider is connected.">
-            <EmptyState>Not connected. No pull request records are available.</EmptyState>
+          <ConsolePanel
+            title="Pull Requests"
+            description="Repository-scoped read-only gateway records."
+          >
+            <p className="text-xs text-muted-foreground">
+              Select a repository to read its pull requests. No cross-repository activity is
+              inferred.
+            </p>
             <Button asChild variant="ghost" size="sm" className="mt-3 px-0 text-gold-light">
-              <Link to="/pull-requests">Open pull request status</Link>
+              <Link to="/pull-requests" search={(previous) => previous}>
+                Open pull request status
+              </Link>
             </Button>
           </ConsolePanel>
           <ConsolePanel title="Recent Activity" description="Latest repository update timestamps.">

@@ -27,14 +27,16 @@ export async function readRepositoryFeature(
   if (!path)
     return {
       state: "blocked" as const,
-      message: featureBlockers[data.feature] ?? "No reviewed endpoint.",
+      message:
+        featureBlockers[data.feature] ??
+        "No approved GET endpoint for this repository namespace. Forgejo feature reads require an authorized omniblock repository.",
       rows: [],
     };
   const github = data.provider === "github";
   if (!github && !forgejoEnabledRoutes(env.forgejoRoutes).has(data.feature))
     return {
       state: "blocked" as const,
-      message: `Gateway route not deployed: the Omni-Staging gateway currently allows only GET /api/v1/user/repos. Owner step: add ${FORGEJO_GATEWAY_ROUTE_ALLOWLIST[data.feature] ?? "this route"} to the gateway allowlist, then add "${data.feature}" to FORGEJO_GATEWAY_READ_ROUTES. No request was sent. Use the GitHub · OMERTA-ROW provider for upstream reads meanwhile.`,
+      message: `Gateway route not approved: ${FORGEJO_GATEWAY_ROUTE_ALLOWLIST[data.feature] ?? "no reviewed GET route exists for this feature"}. No request was sent.`,
       rows: [],
     };
   const origin = github ? "https://connector-gateway.lovable.dev/github" : forgejoOrigin(env.base);
@@ -96,7 +98,9 @@ export async function readRepositoryFeature(
       state: "read" as const,
       checkedAt: new Date().toISOString(),
       rows,
-      hasNext: rows.length === 50,
+      hasNext: res.headers.has("Link")
+        ? /rel="?next"?/.test(res.headers.get("Link") ?? "")
+        : rows.length === 50,
     };
   } catch {
     return {

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ForgejoRepo } from "@/lib/forgejo";
 
@@ -39,20 +40,21 @@ export function RepositoryPicker({
       >
         {shown.map((r) => (
           <li key={r.id}>
-            <button
+            <Button
+              variant="ghost"
               type="button"
               role="option"
               aria-selected={r.name === value}
               disabled={disabled}
               onClick={() => onChange(r.name)}
-              className={`flex w-full justify-between gap-2 px-3 py-1.5 text-left hover:bg-accent ${r.name === value ? "bg-accent text-primary" : ""}`}
+              className={`flex h-auto w-full justify-between gap-2 px-3 py-1.5 text-left hover:bg-accent ${r.name === value ? "bg-accent text-primary" : ""}`}
             >
               <span className="truncate font-mono text-xs">{r.name}</span>
               <span className="shrink-0 text-xs text-muted-foreground">
                 {r.private ? "private" : "public"}
                 {r.empty ? " · empty" : ""}
               </span>
-            </button>
+            </Button>
           </li>
         ))}
         {repos.length > 0 && !shown.length && (

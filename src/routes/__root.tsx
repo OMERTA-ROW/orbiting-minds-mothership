@@ -1,3 +1,4 @@
+import { repositorySelectionSearch } from "@/lib/repository-features";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import {
   Outlet,
@@ -8,6 +9,7 @@ import {
   HeadContent,
   Scripts,
   type ErrorComponentProps,
+  type SearchSchemaInput,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -87,6 +89,13 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  validateSearch: (
+    search: {
+      repoName?: string;
+      repoProvider?: "forgejo" | "github";
+      repoPage?: number;
+    } & SearchSchemaInput,
+  ) => repositorySelectionSearch(search),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -152,6 +161,7 @@ function SiteShell({ path, omniArea }: { path: string; omniArea: boolean }) {
     "/neuro",
     "/migrations",
     "/releases",
+    "/tags",
     "/issues",
     "/branches",
     "/commits",

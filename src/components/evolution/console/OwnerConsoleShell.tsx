@@ -74,6 +74,7 @@ const developerNavigation = [
   { label: "Commits", to: "/commits", icon: GitCommitHorizontal },
   { label: "Actions", to: "/actions", icon: Play },
   { label: "Releases", to: "/releases", icon: Tags },
+  { label: "Tags", to: "/tags", icon: Tags },
   { label: "Environments", to: "/environments", icon: Layers3 },
   { label: "Packages", to: "/packages", icon: Package },
   { label: "Code Search", to: "/code-search", icon: Braces },
@@ -165,6 +166,7 @@ function Navigation({
             <li key={`${item.label}:${item.to}`}>
               <Link
                 to={item.to}
+                search={(previous) => ({ ...previous, repoPage: 1 })}
                 onClick={onNavigate}
                 aria-current={active ? "page" : undefined}
                 className={cn(
@@ -194,6 +196,7 @@ function Navigation({
                 <li key={item.to}>
                   <Link
                     to={item.to}
+                    search={(previous) => ({ ...previous, repoPage: 1 })}
                     onClick={onNavigate}
                     aria-current={path === item.to ? "page" : undefined}
                     title={item.note}

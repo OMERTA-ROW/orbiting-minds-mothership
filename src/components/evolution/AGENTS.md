@@ -1,0 +1,1 @@
+- Developer Center uses validated repository/provider/page URL state and owner-scoped query keys; server reads recheck inventory, why: section navigation must retain selection without showing stale cross-repository records or inferring grants.

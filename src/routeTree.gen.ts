@@ -102,6 +102,7 @@ import { Route as AuthenticatedPullRequestsRouteImport } from './routes/_authent
 import { Route as AuthenticatedQuantumStudioRouteImport } from './routes/_authenticated/quantum-studio'
 import { Route as AuthenticatedRepositoriesRouteImport } from './routes/_authenticated/repositories'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedTagsRouteImport } from './routes/_authenticated/tags'
 import { Route as AuthenticatedWikiRouteImport } from './routes/_authenticated/wiki'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 import { Route as ApiOmniRouteImport } from './routes/api/omni'
@@ -619,6 +620,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTagsRoute = AuthenticatedTagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedWikiRoute = AuthenticatedWikiRouteImport.update({
   id: '/wiki',
   path: '/wiki',
@@ -949,6 +955,7 @@ export interface FileRoutesByFullPath {
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/repositories': typeof AuthenticatedRepositoriesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/tags': typeof AuthenticatedTagsRoute
   '/wiki': typeof AuthenticatedWikiRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRouteWithChildren
@@ -1087,6 +1094,7 @@ export interface FileRoutesByTo {
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/repositories': typeof AuthenticatedRepositoriesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/tags': typeof AuthenticatedTagsRoute
   '/wiki': typeof AuthenticatedWikiRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRouteWithChildren
@@ -1227,6 +1235,7 @@ export interface FileRoutesById {
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/_authenticated/repositories': typeof AuthenticatedRepositoriesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/tags': typeof AuthenticatedTagsRoute
   '/_authenticated/wiki': typeof AuthenticatedWikiRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRouteWithChildren
@@ -1367,6 +1376,7 @@ export interface FileRouteTypes {
     | '/quantum-studio'
     | '/repositories'
     | '/settings'
+    | '/tags'
     | '/wiki'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -1505,6 +1515,7 @@ export interface FileRouteTypes {
     | '/quantum-studio'
     | '/repositories'
     | '/settings'
+    | '/tags'
     | '/wiki'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -1644,6 +1655,7 @@ export interface FileRouteTypes {
     | '/_authenticated/quantum-studio'
     | '/_authenticated/repositories'
     | '/_authenticated/settings'
+    | '/_authenticated/tags'
     | '/_authenticated/wiki'
     | '/api/evolution-pathway'
     | '/api/omni'
@@ -2453,6 +2465,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tags': {
+      id: '/_authenticated/tags'
+      path: '/tags'
+      fullPath: '/tags'
+      preLoaderRoute: typeof AuthenticatedTagsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/wiki': {
       id: '/_authenticated/wiki'
       path: '/wiki'
@@ -2786,6 +2805,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedQuantumStudioRoute: typeof AuthenticatedQuantumStudioRoute
   AuthenticatedRepositoriesRoute: typeof AuthenticatedRepositoriesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedTagsRoute: typeof AuthenticatedTagsRoute
   AuthenticatedWikiRoute: typeof AuthenticatedWikiRoute
 }
 
@@ -2811,6 +2831,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedQuantumStudioRoute: AuthenticatedQuantumStudioRoute,
   AuthenticatedRepositoriesRoute: AuthenticatedRepositoriesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedTagsRoute: AuthenticatedTagsRoute,
   AuthenticatedWikiRoute: AuthenticatedWikiRoute,
 }
 

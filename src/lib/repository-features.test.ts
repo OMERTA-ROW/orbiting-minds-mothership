@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { featureInput, featurePath, featureRows } from "./repository-features";
+import {
+  featureInput,
+  featurePath,
+  featureRows,
+  forgejoEnabledRoutes,
+  repositorySelectionSearch,
+} from "./repository-features";
 import { readRepositoryFeature } from "./repository-features.server";
 const env = {
   base: "https://git-api.evoomni.tech",
@@ -13,19 +19,19 @@ describe("Repository feature reads — synthetic transport fixtures", () => {
     "../repo",
     "owner/..",
     "https://evil.test/repo",
-    "owner/repo?next=x",
-    "owner/repo/extra",
+    "omniblock/repo?next=x",
+    "omniblock/repo/extra",
   ])("rejects unsafe repository %s", (repo) => {
     expect(featureInput.safeParse({ repo, feature: "issues", page: 1 }).success).toBe(false);
   });
   it.each([0, 21, 1.5])("rejects page %s", (page) =>
-    expect(featureInput.safeParse({ repo: "owner/repo", feature: "branches", page }).success).toBe(
-      false,
-    ),
+    expect(
+      featureInput.safeParse({ repo: "omniblock/repo", feature: "branches", page }).success,
+    ).toBe(false),
   );
   it("constructs only the requested GET path", () =>
-    expect(featurePath({ repo: "owner/repo", feature: "commits", page: 2 })).toBe(
-      "/api/v1/repos/owner/repo/commits?page=2&limit=50",
+    expect(featurePath({ repo: "omniblock/repo", feature: "commits", page: 2 })).toBe(
+      "/api/v1/repos/omniblock/repo/commits?page=2&limit=50",
     ));
   it("reads action runs without inventing records", () =>
     expect(
@@ -39,7 +45,7 @@ describe("Repository feature reads — synthetic transport fixtures", () => {
     expect(() => featureRows("issues", { issues: [] })).toThrow());
   it("preserves exact origin, GET, headers and redirect refusal", async () => {
     const fetcher = (async (url: string, init?: RequestInit) => {
-      expect(url).toBe(env.base + "/api/v1/repos/owner/repo/branches?page=1&limit=50");
+      expect(url).toBe(env.base + "/api/v1/repos/omniblock/repo/branches?page=1&limit=50");
       expect(init?.method).toBe("GET");
       expect(init?.body).toBeUndefined();
       expect(init?.redirect).toBe("manual");
@@ -52,7 +58,7 @@ describe("Repository feature reads — synthetic transport fixtures", () => {
       return new Response('[{"name":"main","protected":true}]');
     }) as typeof fetch;
     const r = await readRepositoryFeature(
-      { repo: "owner/repo", feature: "branches", page: 1 },
+      { repo: "omniblock/repo", feature: "branches", page: 1 },
       env,
       fetcher,
     );
@@ -68,7 +74,8 @@ describe("Repository feature reads — synthetic transport fixtures", () => {
         return new Response("[]");
       }) as typeof fetch;
       expect(
-        (await readRepositoryFeature({ repo: "owner/repo", feature, page: 1 }, env, fetcher)).state,
+        (await readRepositoryFeature({ repo: "omniblock/repo", feature, page: 1 }, env, fetcher))
+          .state,
       ).toBe("blocked");
       expect(calls).toBe(0);
     },
@@ -77,7 +84,7 @@ describe("Repository feature reads — synthetic transport fixtures", () => {
     "never treats HTTP %s as successful or exposes response text",
     async (status) => {
       const r = await readRepositoryFeature(
-        { repo: "owner/repo", feature: "issues", page: 1 },
+        { repo: "omniblock/repo", feature: "issues", page: 1 },
         env,
         (async () => new Response("secret-provider-text", { status })) as typeof fetch,
       );
@@ -88,7 +95,7 @@ describe("Repository feature reads — synthetic transport fixtures", () => {
   it("does not send credentials to other origins", async () => {
     let calls = 0;
     const r = await readRepositoryFeature(
-      { repo: "owner/repo", feature: "issues", page: 1 },
+      { repo: "omniblock/repo", feature: "issues", page: 1 },
       { ...env, base: "https://evil.test" },
       (async () => {
         calls++;
@@ -100,7 +107,7 @@ describe("Repository feature reads — synthetic transport fixtures", () => {
   });
   it("redacts network exceptions", async () => {
     const r = await readRepositoryFeature(
-      { repo: "owner/repo", feature: "issues", page: 1 },
+      { repo: "omniblock/repo", feature: "issues", page: 1 },
       env,
       (async () => {
         throw new Error("private-key");
@@ -113,23 +120,64 @@ describe("Repository feature reads — synthetic transport fixtures", () => {
     expect(
       (
         await readRepositoryFeature(
-          { repo: "owner/repo", feature: "issues", page: 1 },
+          { repo: "omniblock/repo", feature: "issues", page: 1 },
           env,
           (async () => new Response("x".repeat(2000001))) as typeof fetch,
         )
       ).state,
     ).toBe("blocked");
   });
-  it("refuses Forgejo feature reads, sending nothing, until the gateway route is enabled", async () => {
-    const fetcher = (async () => {
-      throw new Error("must not fetch");
-    }) as unknown as typeof fetch;
+  it.each(["branches", "commits", "pull-requests", "issues", "releases", "tags"] as const)(
+    "activates owner-confirmed %s without the obsolete setting",
+    async (feature) => {
+      const r = await readRepositoryFeature(
+        { repo: "omniblock/jackboy-dev-control", feature, page: 1 },
+        { ...env, forgejoRoutes: undefined },
+        (async () => new Response("[]")) as typeof fetch,
+      );
+      expect(r.state).toBe("read");
+    },
+  );
+  it("never enables Actions from a server-setting declaration", () => {
+    expect(forgejoEnabledRoutes("actions").has("actions")).toBe(false);
+  });
+  it("refuses other Forgejo namespaces", async () => {
+    let calls = 0;
     const r = await readRepositoryFeature(
-      { repo: "omniblock/jackboy-dev-control", feature: "branches", page: 1 },
-      { ...env, forgejoRoutes: "commits" },
-      fetcher,
+      { repo: "other/repo", feature: "branches", page: 1 },
+      env,
+      (async () => {
+        calls++;
+        return new Response("[]");
+      }) as typeof fetch,
     );
     expect(r.state).toBe("blocked");
-    expect(r.message).toContain("GET /api/v1/repos/{owner}/{repo}/branches");
+    expect(calls).toBe(0);
+  });
+  it("uses only the approved tags path", () => {
+    expect(featurePath({ repo: "omniblock/repo", feature: "tags", page: 2 })).toBe(
+      "/api/v1/repos/omniblock/repo/tags?page=2&limit=50",
+    );
+  });
+  it("respects pagination evidence", async () => {
+    const result = await readRepositoryFeature(
+      { repo: "omniblock/repo", feature: "tags", page: 1 },
+      env,
+      (async () =>
+        new Response("[]", { headers: { Link: '</ignored>; rel="next"' } })) as typeof fetch,
+    );
+    expect(result.state === "read" && result.hasNext).toBe(true);
+  });
+  it("validates shared selection and resets unsafe values", () => {
+    expect(
+      repositorySelectionSearch({
+        repoName: "omniblock/repo",
+        repoProvider: "github",
+        repoPage: 2,
+      }),
+    ).toEqual({ repoName: "omniblock/repo", repoProvider: "github", repoPage: 2 });
+    expect(
+      repositorySelectionSearch({ repoName: "../repo", repoProvider: "other", repoPage: 21 }),
+    ).toEqual({ repoName: "", repoProvider: "forgejo", repoPage: 1 });
   });
 });
