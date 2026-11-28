@@ -112,14 +112,14 @@
   --orb-highlight: oklch(0.95 0.03 260 / 16%);
   --orb-terminator: oklch(0.05 0.02 275 / 92%);
   --orb-starfield: radial-gradient(1px 1px at 12% 18%, oklch(0.9 0.02 260 / 55%), transparent 60%), radial-gradient(1px 1px at 78% 12%, oklch(0.9 0.02 260 / 45%), transparent 60%), radial-gradient(1.5px 1.5px at 64% 72%, oklch(0.85 0.05 280 / 40%), transparent 60%), radial-gradient(1px 1px at 28% 82%, oklch(0.9 0.02 260 / 40%), transparent 60%), radial-gradient(1px 1px at 90% 48%, oklch(0.9 0.02 260 / 35%), transparent 60%), radial-gradient(ellipse at 50% 0%, oklch(0.25 0.08 280 / 35%), transparent 60%);
-  --console-panel: oklch(0.13 0.025 260);
-  --console-raised: oklch(0.18 0.03 260);
-  --console-deep: oklch(0.07 0.02 260);
-  --console-sidebar: oklch(0.085 0.022 260);
-  --console-header: oklch(0.075 0.022 260);
-  --console-hero: oklch(0.1 0.035 260);
+  --console-panel: oklch(0.13 0 0);
+  --console-raised: oklch(0.19 0 0);
+  --console-deep: oklch(0 0 0);
+  --console-sidebar: oklch(0 0 0);
+  --console-header: oklch(0 0 0);
+  --console-hero: oklch(0.07 0 0);
   --console-active: oklch(0.76 0.135 86 / 10%);
-  --console-shadow: 0 18px 60px -32px oklch(0.02 0.015 260 / 90%), inset 0 1px 0 oklch(0.89 0.12 92 / 4%);
+  --console-shadow: 0 18px 60px -32px oklch(0 0 0 / 90%), inset 0 1px 0 oklch(0.89 0.12 92 / 4%);
   --console-shadow-nav: 0 0 22px -12px oklch(0.76 0.135 86 / 65%);
 }
 
@@ -373,10 +373,77 @@
 
 /* Owner-approved console: readable deep-space panels above the one shared live scene. */
 .owner-console { font-family: var(--font-sans); }
-.owner-console h1:not(.font-display), .owner-console h2:not(.font-display), .owner-console h3:not(.font-display) { font-family: var(--font-sans); letter-spacing: -0.015em; }
+.owner-console h1:not(.font-display), .owner-console h2:not(.font-display), .owner-console h3:not(.font-display) { font-family: var(--font-sans); letter-spacing: 0; }
 .owner-console .eyebrow { font-size: 0.64rem; }
 .owner-console button, .owner-console a { overflow-wrap: anywhere; }
 .owner-console-embedded .glass { background: color-mix(in oklab, var(--console-panel) 88%, transparent); }
+/* Shared private application theme. Body scope also themes portaled menus/dialogs;
+   the public landing keeps its original tokens, navigation and presentation. */
+body:has(.evolution-console-theme), .evolution-console-theme {
+  --background: var(--console-deep);
+  --foreground: oklch(0.98 0 0);
+  --card: var(--console-panel);
+  --card-foreground: var(--foreground);
+  --popover: var(--console-raised);
+  --popover-foreground: var(--foreground);
+  --gold: oklch(0.76 0.135 86);
+  --gold-light: oklch(0.89 0.12 92);
+  --primary: var(--gold);
+  --primary-foreground: var(--console-deep);
+  --secondary: var(--console-raised);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--console-raised);
+  --muted-foreground: oklch(0.74 0 0);
+  --accent: var(--console-active);
+  --accent-foreground: var(--gold-light);
+  --border: color-mix(in oklab, var(--gold) 22%, transparent);
+  --input: color-mix(in oklab, var(--gold) 35%, transparent);
+  --ring: var(--gold-light);
+  --gradient-glass: linear-gradient(var(--console-panel), var(--console-panel));
+  --shadow-panel: var(--console-shadow);
+  --orb-space: var(--console-deep);
+  --orb-blue: var(--gold-light);
+  --orb-violet: var(--gold);
+  --orb-glow-blue: color-mix(in oklab, var(--gold-light) 25%, transparent);
+  --orb-glow-violet: color-mix(in oklab, var(--gold) 22%, transparent);
+  --orb-glow-dim: color-mix(in oklab, var(--gold) 15%, transparent);
+  --orb-rim: color-mix(in oklab, var(--gold-light) 35%, transparent);
+}
+body:has(.evolution-console-theme) { background-color: var(--console-deep); background-image: none; }
+.evolution-console-theme .eyebrow { letter-spacing: 0; }
+.evolution-console-theme .cosmic-page-header { max-width: none; padding: 0 0 2rem; overflow: visible; }
+.evolution-console-theme .cosmic-page-header h1 { font-size: 2rem; line-height: 1.25; margin-top: 0.75rem; }
+.evolution-console-theme .cosmic-page-header h1 + div { margin-top: 1rem; font-size: 0.875rem; }
+.evolution-console-theme .cosmic-section { max-width: none; padding: 0 0 2rem; }
+.evolution-console-theme .cosmic-section > .grid { gap: 1.25rem; }
+.evolution-console-theme .glass {
+  background: color-mix(in oklab, var(--console-panel) 94%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: var(--console-shadow);
+}
+.evolution-console-theme .cosmic-section > .grid > .glass,
+.evolution-console-theme .cosmic-section > .grid > div > .glass,
+.evolution-console-theme .cosmic-section > .glass[role="tabpanel"],
+.evolution-console-theme .cosmic-section > .space-y-4 > .glass,
+.evolution-console-theme .cosmic-section > ol .glass {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--console-panel) 94%, transparent);
+  box-shadow: var(--console-shadow);
+}
+.evolution-console-theme .omni-area-header { margin: 0 0 1.5rem; max-width: none; padding: 0 0 1.25rem; }
+.evolution-console-theme .omni-area-header h1 { color: var(--gold-light); }
+.evolution-workspace-content { min-width: 0; }
+.evolution-workspace-content > .mx-auto { max-width: none; padding-inline: 0; }
+.evolution-console-theme .omni-support { border-radius: 0.5rem; background: var(--console-panel); border: 1px solid var(--border); padding: 1rem; }
+.evolution-console-theme :where(input, textarea, select, pre) { max-width: 100%; }
+.evolution-console-theme :where(h1, h2, h3, p, label) { overflow-wrap: anywhere; }
+@media (max-width: 639px) {
+  .evolution-console-theme .cosmic-page-header h1 { font-size: 1.75rem; }
+  .evolution-console-theme .cosmic-section > .grid > .glass { padding: 1rem; }
+  .evolution-console-theme .cosmic-section > .glass[role="tabpanel"] :is(td, th) { padding: 12px; }
+}
 @media (max-width: 639px) {
   .owner-console .site-navigation { display: none; }
   .owner-console table { font-size: 0.7rem; }

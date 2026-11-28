@@ -24,6 +24,7 @@ import { CommandPaletteProvider } from "@/components/CommandPalette";
 import { AccountProvider, useAccount } from "@/hooks/use-account";
 import { evolutionAccessQuery } from "@/lib/evolution-query";
 import { OmniAreaHeader } from "@/components/omnibridge/OmniAreaHeader";
+import { OwnerConsoleShell } from "@/components/evolution/console/OwnerConsoleShell";
 
 function NotFoundComponent() {
   return (
@@ -130,15 +131,7 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 /** Owner's Evolution home ("/" once the owner check passes) is an interior page. */
-function SiteShell({
-  path,
-  calmArea,
-  omniArea,
-}: {
-  path: string;
-  calmArea: boolean;
-  omniArea: boolean;
-}) {
+function SiteShell({ path, omniArea }: { path: string; omniArea: boolean }) {
   const { user, ready } = useAccount();
   const access = useQuery({
     ...evolutionAccessQuery,
@@ -149,11 +142,28 @@ function SiteShell({
   // Public landing retains its existing presentation; route changes never mount extra canvases.
   const evolutionInterior = ownerHome || (path.replace(/\/+$/, "") || "/") !== "/";
   const publicLanding = path === "/" && !ownerHome;
-  const consoleArea = ownerHome || path === "/repositories" || path === "/cloud-services";
+  const sharedConsole = evolutionInterior && ready && Boolean(user);
+  const consoleArea = ownerHome || sharedConsole;
+  const developerArea = [
+    "/repositories",
+    "/projects",
+    "/pull-requests",
+    "/actions",
+    "/neuro",
+    "/migrations",
+    "/releases",
+  ].includes(path);
+  const cloudArea = path === "/cloud-services" || path === "/deployments";
+  const content = (
+    <>
+      {omniArea && <OmniAreaHeader />}
+      <Outlet />
+    </>
+  );
 
   return (
     <div
-      className={`site-shell flex min-h-screen flex-col${calmArea ? " omni-theme omni-area" : ""}${publicLanding ? " evolution-dashboard" : ""}${evolutionInterior ? " evolution-interior" : ""}`}
+      className={`site-shell flex min-h-screen flex-col${omniArea ? " omni-area" : ""}${publicLanding ? " evolution-dashboard" : ""}${evolutionInterior ? " evolution-interior" : ""}${consoleArea ? " evolution-console-theme" : ""}`}
     >
       {publicLanding && <EvolutionSpaceBackground />}
       {evolutionInterior ? (
@@ -168,8 +178,13 @@ function SiteShell({
       )}
       {!consoleArea && <SiteNav />}
       <main className="flex-1">
-        {omniArea && <OmniAreaHeader />}
-        <Outlet />
+        {sharedConsole ? (
+          <OwnerConsoleShell area={developerArea ? "developer" : cloudArea ? "cloud" : "home"}>
+            <div className="evolution-workspace-content">{content}</div>
+          </OwnerConsoleShell>
+        ) : (
+          content
+        )}
       </main>
       {!consoleArea && <SiteFooter />}
     </div>
@@ -180,14 +195,13 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (state) => state.location.pathname });
   const omniArea = path.startsWith("/omni") || path === "/beta-omni";
-  const calmArea = omniArea || path === "/dashboard";
 
   return (
     <QueryClientProvider client={queryClient}>
       <AccountProvider>
         <CommandPaletteProvider pages={navItems}>
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <SiteShell path={path} calmArea={calmArea} omniArea={omniArea} />
+          <SiteShell path={path} omniArea={omniArea} />
         </CommandPaletteProvider>
       </AccountProvider>
     </QueryClientProvider>

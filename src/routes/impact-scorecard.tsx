@@ -4,6 +4,6 @@ import { seo } from "@/lib/seo";
 
 // Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
 export const Route = createFileRoute("/impact-scorecard")({
-  head: () => seo("Not connected", "This feature isn't connected to a real service yet."),
+  head: () => seo("Impact Scorecard \u2014 Not connected", "Impact Scorecard is not connected to a real service. Evolution preserves prior browser records and provides an existing alternative."),
   component: RetiredAreaPage,
 });

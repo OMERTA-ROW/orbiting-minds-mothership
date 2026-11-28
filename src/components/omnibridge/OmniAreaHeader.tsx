@@ -52,7 +52,7 @@ export function OmniAreaHeader() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className="omni-theme max-h-[65svh] w-64 overflow-y-auto bg-popover text-popover-foreground"
+            className="max-h-[65svh] w-64 overflow-y-auto bg-popover text-popover-foreground"
           >
             {tools.map((tool) => (
               <DropdownMenuItem asChild key={tool.to}>

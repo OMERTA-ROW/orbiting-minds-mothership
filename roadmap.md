@@ -1,5 +1,11 @@
 # Staged interface production-readiness overhaul (2026-11-27)
 
+## Application-wide Evolution redesign (2026-11-28, preview only)
+
+- [x] Extend the existing console shell and navigation to every signed-in non-landing page, with true-black/metallic-gold surfaces and unchanged live CyberLink scene.
+- [x] Preserve every route, account/API-key/project/Forgejo/Jackboy/sandbox control, all data and security; public-facing presentation unchanged.
+- [x] Desktop/mobile navigation and regression checks pass; preview build OK. Coverage, retained visuals and rollback: `docs/EVOLUTION-APPLICATION-REDESIGN-2026-11-28.md`; preview only.
+
 ## Owner-approved Evolution console redesign (2026-11-28, preview only)
 
 - [x] Build responsive owner Home, Developer Center and Cloud Services workspaces with black/deep-space panels, restrained gold navigation and the existing live CyberLink scene.

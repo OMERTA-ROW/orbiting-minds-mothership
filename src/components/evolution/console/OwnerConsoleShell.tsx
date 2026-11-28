@@ -36,7 +36,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { AccountButton } from "@/components/beta/AccountButton";
 import { useCommandPalette } from "@/components/CommandPalette";
 import {
@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { navGroups } from "@/components/nav-groups";
 
 export type ConsoleArea = "home" | "developer" | "cloud";
 const homeNavigation = [
@@ -59,6 +60,8 @@ const homeNavigation = [
   { label: "Website Center", to: "/projects", icon: Globe2 },
   { label: "AI Agents", to: "/omni-terminal", icon: Bot },
   { label: "Projects", to: "/projects", icon: FolderGit2 },
+  { label: "Neuro Intelligence", to: "/neuro", icon: Sparkles },
+  { label: "Database migrations", to: "/migrations", icon: Layers3 },
   { label: "Billing & Subscriptions", to: "/treasury", icon: CircleDollarSign },
   { label: "Settings", to: "/settings", icon: Settings },
 ] as const;
@@ -142,7 +145,8 @@ function Navigation({
           if ("disabled" in item) {
             return (
               <li key={item.label}>
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   disabled
                   title={item.disabled}
@@ -152,7 +156,7 @@ function Navigation({
                   <Icon size={16} aria-hidden />
                   <span>{item.label}</span>
                   <span className="ml-auto text-[9px]">Off</span>
-                </button>
+                </Button>
               </li>
             );
           }
@@ -175,6 +179,37 @@ function Navigation({
           );
         })}
       </ul>
+      <div className="mt-6 border-t border-gold/15 pt-4">
+        {navGroups.map((group) => (
+          <details
+            key={group.id}
+            className="mb-1"
+            open={group.items.some((item) => item.to === path) || undefined}
+          >
+            <summary className="cursor-pointer rounded-lg px-3 py-2.5 text-xs text-muted-foreground transition-colors hover:bg-console-raised hover:text-gold-light">
+              {group.label}
+            </summary>
+            <ul className="mt-1 space-y-1 border-l border-gold/15 pl-2">
+              {group.items.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    onClick={onNavigate}
+                    aria-current={path === item.to ? "page" : undefined}
+                    title={item.note}
+                    className={cn(
+                      "flex min-h-10 items-center rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-console-raised hover:text-foreground",
+                      path === item.to && "bg-console-active text-gold-light",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ))}
+      </div>
     </nav>
   );
 }
@@ -303,7 +338,19 @@ function Notifications() {
   );
 }
 
+const ConsoleContext = createContext(false);
+
 export function OwnerConsoleShell({ area, children }: { area: ConsoleArea; children: ReactNode }) {
+  const nested = useContext(ConsoleContext);
+  if (nested) return <>{children}</>;
+  return (
+    <ConsoleContext.Provider value={true}>
+      <ConsoleFrame area={area}>{children}</ConsoleFrame>
+    </ConsoleContext.Provider>
+  );
+}
+
+function ConsoleFrame({ area, children }: { area: ConsoleArea; children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const openPalette = useCommandPalette();
   useEffect(() => {
@@ -316,7 +363,7 @@ export function OwnerConsoleShell({ area, children }: { area: ConsoleArea; child
   }, [mobileOpen]);
 
   return (
-    <div className="owner-console min-h-screen text-foreground">
+    <div className="owner-console evolution-console-theme min-h-screen text-foreground">
       <a
         href="#owner-console-content"
         className="sr-only z-[70] bg-console-panel px-4 py-3 text-gold-light focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
@@ -328,8 +375,9 @@ export function OwnerConsoleShell({ area, children }: { area: ConsoleArea; child
       </aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            className="absolute inset-0 bg-console-deep/80"
+          <Button
+            variant="ghost"
+            className="absolute inset-0 h-full w-full rounded-none bg-console-deep/80 hover:bg-console-deep/80"
             aria-label="Close navigation"
             onClick={() => setMobileOpen(false)}
           />
@@ -359,18 +407,19 @@ export function OwnerConsoleShell({ area, children }: { area: ConsoleArea; child
           >
             <Menu size={18} />
           </Button>
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={() => openPalette?.()}
             aria-keyshortcuts="Control+k Meta+k"
-            className="flex h-10 min-w-0 flex-1 items-center gap-3 rounded-xl border border-gold/15 bg-console-panel/75 px-3 text-left text-xs text-muted-foreground transition-colors hover:border-gold/35 sm:max-w-xl sm:px-4"
+            className="flex h-10 min-w-0 flex-1 justify-start gap-3 rounded-lg border border-gold/15 bg-console-panel/75 px-3 text-left text-xs text-muted-foreground transition-colors hover:border-gold/35 sm:max-w-xl sm:px-4"
           >
             <Search size={16} className="shrink-0 text-gold-light" aria-hidden />
             <span className="truncate">Search workspaces and controls</span>
             <kbd className="ml-auto hidden rounded border border-gold/20 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground sm:inline">
               ⌘ K
             </kbd>
-          </button>
+          </Button>
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ServiceSwitcher area={area} />
             <Notifications />
