@@ -69,6 +69,13 @@ describe("App routing", () => {
     const matches = router.matchRoutes(path);
     expect(matches.at(-1)?.routeId).toBe(path);
   });
+  it("matches the protected Cloud Services workspace", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes("/cloud-services").at(-1)?.routeId).toBe(
+      "/_authenticated/cloud-services",
+    );
+  });
+
   it("opens a contribution detail independently of the feed", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     expect(router.matchRoutes("/code-exchange/sandbox-transfer").at(-1)?.routeId).toBe(

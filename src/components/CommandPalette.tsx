@@ -15,6 +15,12 @@ import type { navItems } from "@/components/nav-groups";
 
 const PaletteContext = createContext<(() => void) | null>(null);
 
+// Shared interactive trigger for the owner console; provider remains mounted at the root.
+// eslint-disable-next-line react-refresh/only-export-components
+export function useCommandPalette() {
+  return useContext(PaletteContext);
+}
+
 /** Ctrl/⌘ K, without Alt and not a held-down repeat. */
 export function shouldOpenPalette(event: {
   key: string;

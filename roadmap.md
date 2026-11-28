@@ -1,12 +1,22 @@
 # Staged interface production-readiness overhaul (2026-11-27)
 
+## Owner-approved Evolution console redesign (2026-11-28, preview only)
+
+- [x] Build responsive owner Home, Developer Center and Cloud Services workspaces with black/deep-space panels, restrained gold navigation and the existing live CyberLink scene.
+- [x] Reuse real owner/MFA repository, project, cloud, audit and account controls; unsupported metrics/actions say Not connected or Not verified and remain disabled.
+- [x] Preserve public landing, existing routes, Forgejo GET-only gateway, all safety controls and Phase 2C evidence; no backend, permissions, writes, agent activation, deployment or publishing.
+- [x] 88 focused and 1,617 full app tests pass / 23 environment-specific skips; build OK, changed-file lint 0 errors, desktop/mobile/reduced-motion/public browser checks pass. Evidence and rollback: `docs/EVOLUTION-CONSOLE-REDESIGN-2026-11-28.md`.
+- [ ] Positive display of 38 real repositories and saved cloud records in the redesigned workspaces — blocked on fresh owner two-step assurance; current session correctly refused protected reads and no mock rows were used.
+
 ## Phase 2C integrity and recovery readiness (2026-11-28, preview only)
+
 - [x] Manual owner/MFA read-only Forgejo↔OMERTA-ROW audit with source mapping, heads, branches/tags, export and truthful discrepancies.
 - [x] Consolidated host diagnostics and separately approval-gated encrypted snapshot backup / isolated restore tooling; unsafe legacy backup entrypoint disabled in source only, no host execution/configuration changes.
 - [x] 69 app + 11 Python tests pass; actual upstream inventory probe HTTP 200; preview owner MFA refusal/live scene checked; local encrypted snapshot/SQLite/ref readback passes but Git fsck unavailable. Evidence/rollback/single owner action: `docs/PHASE-2C-INTEGRITY-RECOVERY-2026-11-28.md`.
 - [ ] Actual 38 source/head/ref comparisons, hourly timer/per-repo sync receipts, real consistent/off-host backup and isolated application recovery — blocked on owner MFA evidence review and existing authorized host operator. Phase 3 remains gated.
 
 ## Phase 2B Forgejo gateway authentication (2026-11-28, preview only)
+
 - [x] Wire Bearer gateway key, Cloudflare Access headers and fixed HTTPS/GET allowlist; retain owner/MFA.
 - [x] 45 focused tests pass, changed-file lint/diff and preview build OK; real desktop/mobile verify MFA refusal and unchanged live space.
 - [ ] Actual 38 private rows through owner UI — blocked: restored owner session lacks required two-step verification. External HTTP 200/38 is owner-reported only; no auth bypass.
@@ -590,6 +600,7 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
       Blockers: M2–M6 need the deployed Railway sandbox (cloud shell priority stays first); M5 also needs the Jackboy handoff settings; autonomy stays off.
 
 ## Go-live audit (2026-11-21) — see docs/OMNI-GO-LIVE-AUDIT-2026-11-21.md
+
 - [ ] Owner live checks: tasks:read, fusion:plan plan, one held task + cancel (owner two-step sign-in)
 - [ ] One paid chat reply via chat:write (owner approval)
 - [ ] Jackboy Step 8 self-test + Steps 9–10 refresh (owner MFA)
@@ -603,6 +614,7 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 - [ ] Workspace/CODE/automations/retry — locked pending PR #28 sandbox
 
 ## Claude engine (2026-11-23)
+
 - [x] Engine registry, server-only Anthropic call, cost ledger 0074 with reserve/settle and caps, owner Claude tab, tests.
 - [ ] Owner: confirm Claude prices in the Claude tab, turn on per agent, set an Anthropic console spending limit.
 - [ ] Jackboy signed PR report endpoint — blocked on Jackboy's report format.
@@ -611,6 +623,7 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 - [ ] ElevenLabs voices (Jax) — later, hook only.
 
 ## Phase 2A Evolution Git (read-only)
+
 - [x] Forgejo read-only list on /repositories
 - [x] Owner configured private gateway plus FORGEJO_BASE_URL / FORGEJO_API_TOKEN and Cloudflare Access settings; Phase 2B adapter added above.
 - [ ] 2B+: see docs/OMNI-BLOCK-OWNED-INFRASTRUCTURE-ROADMAP.md

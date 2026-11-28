@@ -38,6 +38,15 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-console-panel: var(--console-panel);
+  --color-console-raised: var(--console-raised);
+  --color-console-deep: var(--console-deep);
+  --color-console-sidebar: var(--console-sidebar);
+  --color-console-header: var(--console-header);
+  --color-console-hero: var(--console-hero);
+  --color-console-active: var(--console-active);
+  --shadow-console: var(--console-shadow);
+  --shadow-console-nav: var(--console-shadow-nav);
 }
 
 :root {
@@ -103,6 +112,15 @@
   --orb-highlight: oklch(0.95 0.03 260 / 16%);
   --orb-terminator: oklch(0.05 0.02 275 / 92%);
   --orb-starfield: radial-gradient(1px 1px at 12% 18%, oklch(0.9 0.02 260 / 55%), transparent 60%), radial-gradient(1px 1px at 78% 12%, oklch(0.9 0.02 260 / 45%), transparent 60%), radial-gradient(1.5px 1.5px at 64% 72%, oklch(0.85 0.05 280 / 40%), transparent 60%), radial-gradient(1px 1px at 28% 82%, oklch(0.9 0.02 260 / 40%), transparent 60%), radial-gradient(1px 1px at 90% 48%, oklch(0.9 0.02 260 / 35%), transparent 60%), radial-gradient(ellipse at 50% 0%, oklch(0.25 0.08 280 / 35%), transparent 60%);
+  --console-panel: oklch(0.13 0.025 260);
+  --console-raised: oklch(0.18 0.03 260);
+  --console-deep: oklch(0.07 0.02 260);
+  --console-sidebar: oklch(0.085 0.022 260);
+  --console-header: oklch(0.075 0.022 260);
+  --console-hero: oklch(0.1 0.035 260);
+  --console-active: oklch(0.76 0.135 86 / 10%);
+  --console-shadow: 0 18px 60px -32px oklch(0.02 0.015 260 / 90%), inset 0 1px 0 oklch(0.89 0.12 92 / 4%);
+  --console-shadow-nav: 0 0 22px -12px oklch(0.76 0.135 86 / 65%);
 }
 
 .omni-theme {
@@ -351,4 +369,18 @@
   position: absolute;
   inset: 0;
   background: color-mix(in oklab, var(--evolution-space-black) 28%, transparent);
+}
+
+/* Owner-approved console: readable deep-space panels above the one shared live scene. */
+.owner-console { font-family: var(--font-sans); }
+.owner-console h1:not(.font-display), .owner-console h2:not(.font-display), .owner-console h3:not(.font-display) { font-family: var(--font-sans); letter-spacing: -0.015em; }
+.owner-console .eyebrow { font-size: 0.64rem; }
+.owner-console button, .owner-console a { overflow-wrap: anywhere; }
+.owner-console-embedded .glass { background: color-mix(in oklab, var(--console-panel) 88%, transparent); }
+@media (max-width: 639px) {
+  .owner-console .site-navigation { display: none; }
+  .owner-console table { font-size: 0.7rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .owner-console *, .owner-console *::before, .owner-console *::after { scroll-behavior: auto !important; }
 }

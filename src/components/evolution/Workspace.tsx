@@ -24,6 +24,7 @@ import {
 } from "@/lib/evolution";
 import { evolutionAccessQuery, evolutionWorkspaceQuery } from "@/lib/evolution-query";
 import { createEvolutionProject, saveEvolutionConfig } from "@/lib/evolution.functions";
+import { OwnerHome } from "@/components/evolution/console/OwnerHome";
 
 export type WorkspaceView =
   "home" | "repositories" | "pull-requests" | "actions" | "migrations" | "deployments" | "settings";
@@ -40,20 +41,28 @@ const views = {
 export function EvolutionOwnerHome({ children }: { children: React.ReactNode }) {
   const { user, ready } = useAccount();
   const access = useQuery({ ...evolutionAccessQuery, enabled: ready && Boolean(user) });
-  return access.data?.owner ? <Workspace view="home" /> : children;
+  return access.data?.owner ? <OwnerHome /> : children;
 }
 
-export function EvolutionWorkspace({ view }: { view: WorkspaceView }) {
+export function EvolutionWorkspace({
+  view,
+  embedded = false,
+}: {
+  view: WorkspaceView;
+  embedded?: boolean;
+}) {
   const { data } = useSuspenseQuery(evolutionWorkspaceQuery);
-  return <Workspace view={view} initial={data} />;
+  return <Workspace view={view} initial={data} embedded={embedded} />;
 }
 
 function Workspace({
   view,
   initial,
+  embedded = false,
 }: {
   view: WorkspaceView;
   initial?: Awaited<ReturnType<typeof import("@/lib/evolution.functions").readEvolutionWorkspace>>;
+  embedded?: boolean;
 }) {
   const query = useQuery({
     ...evolutionWorkspaceQuery,
@@ -95,24 +104,38 @@ function Workspace({
   }
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-10 sm:px-8">
-      <header className="flex flex-wrap items-center justify-between gap-5 border-b border-border pb-7">
-        <div>
-          <p className="eyebrow">Private owner workspace</p>
-          <h1 className="mt-3 flex items-center gap-3 text-3xl">
-            <Icon className="text-primary" size={26} />
-            {views[view].title}
-          </h1>
-        </div>
+    <section
+      className={embedded ? "owner-console-embedded py-4" : "mx-auto max-w-6xl px-4 py-10 sm:px-8"}
+    >
+      {!embedded && (
+        <header className="flex flex-wrap items-center justify-between gap-5 border-b border-border pb-7">
+          <div>
+            <p className="eyebrow">Private owner workspace</p>
+            <h1 className="mt-3 flex items-center gap-3 text-3xl">
+              <Icon className="text-primary" size={26} />
+              {views[view].title}
+            </h1>
+          </div>
+          <Button
+            variant="outline"
+            disabled={query.isFetching || busy}
+            onClick={() => void query.refetch()}
+          >
+            <RefreshCw size={15} />
+            Refresh records
+          </Button>
+        </header>
+      )}
+      {embedded && (
         <Button
           variant="outline"
+          size="sm"
           disabled={query.isFetching || busy}
           onClick={() => void query.refetch()}
         >
-          <RefreshCw size={15} />
-          Refresh records
+          <RefreshCw size={15} /> Refresh project records
         </Button>
-      </header>
+      )}
       <p className="my-4 text-xs text-muted-foreground">
         {data ? (
           <>

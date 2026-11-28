@@ -149,6 +149,7 @@ function SiteShell({
   // Public landing retains its existing presentation; route changes never mount extra canvases.
   const evolutionInterior = ownerHome || (path.replace(/\/+$/, "") || "/") !== "/";
   const publicLanding = path === "/" && !ownerHome;
+  const consoleArea = ownerHome || path === "/repositories" || path === "/cloud-services";
 
   return (
     <div
@@ -165,12 +166,12 @@ function SiteShell({
           </div>
         </>
       )}
-      <SiteNav />
+      {!consoleArea && <SiteNav />}
       <main className="flex-1">
         {omniArea && <OmniAreaHeader />}
         <Outlet />
       </main>
-      <SiteFooter />
+      {!consoleArea && <SiteFooter />}
     </div>
   );
 }

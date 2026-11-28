@@ -190,5 +190,8 @@ export const navGroups = [
 /** Flat list (Home and groups) for the command palette and tests. */
 export const navItems = [
   { to: "/", label: "Home" },
+  { to: "/repositories", label: "OMNI Block Developer Center" },
+  { to: "/cloud-services", label: "Cloud Services" },
+  { to: "/projects", label: "Project Control Center" },
   ...navGroups.flatMap((g) => g.items.map(({ to, label }) => ({ to, label }))),
 ] as const;

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-10-22",
-  "updated_at": "2026-11-26T01:05:00Z",
+  "updated_at": "2026-11-28T03:54:00Z",
   "project_name": "Evolution Mothership",
   "canonical_plan_url": "https://app.notion.com/p/401c1161030681e68d29f9a4bf7c5dd6",
   "source_note_urls": [
@@ -312,6 +312,14 @@
       "command": "python3 src/test/test_claude_terminal_fusion_sql.py (PostgreSQL 17) + bunx vitest run src/test/claude-terminal-agent.test.ts src/lib/claude-fusion.test.ts",
       "result": "2026-11-23 preview: 226 isolated SQL checks for pending 0075 on 0019+0020-0074 (service-only reserve/settle, cap core callable by no API role; every refusal: Stop engaged/missing, run not running, wrong model, member not owner, AI approval/pause, switch off or other model, stale price, 50-cent call cap, 500-cent rolling daily cap shared by chat/agent/Fusion, already reserved; Fusion engines bound at approval with switch/price checks, switch-off mid-session refuses; settle once with wrong-source refusal; metadata-only ledger; 4 real concurrent-session races: Stop vs reserve both orders, cancel vs reserve, session stop vs reserve). 19 app tests with fake Anthropic (owner-only, key required, no call on refusal or missing install, one call + one settle, reply withheld if cost unrecorded, Stop mid-reply aborts and charges the estimate, no retries, default engine unchanged). 0075 not installed; no paid call; not published.",
       "passed": true
+    },
+    "owner-console-redesign": {
+      "command": "bunx vitest run src/components/evolution/console/console-utils.test.ts src/test/app-routing.test.tsx src/lib/forgejo.test.ts src/lib/forgejo.functions.test.ts src/lib/evolution.functions.test.ts; bunx vitest run; changed-file eslint; harness build; signed-in Playwright",
+      "result": "88 focused tests passed; full suite 1,617 passed and 23 environment-specific skips across 128 passed and 3 skipped files. Changed-file lint 0 errors (one retained fast-refresh warning), diff check and harness build OK.",
+      "runtime": "Signed-in owner Home, Developer Center and Cloud Services checked at 1440x1000; mobile navigation at 390x844; no horizontal overflow or page errors. Search, notifications, configuration disclosure and public landing checked. Existing live scene is pointer-inert and reduced-motion policy preserved. Current owner session lacks fresh aal2, so 38 real rows and cloud records were not positively displayed; denials remained truthful.",
+      "passed": true,
+      "scope": "Presentation and denied-state acceptance only; no live gateway, cloud, backend, permission or execution change.",
+      "details": "docs/EVOLUTION-CONSOLE-REDESIGN-2026-11-28.md"
     }
   },
   "steps": [
@@ -477,6 +485,40 @@
           "next_action": "Retest every new data family independently; no blanket claim for demo modules.",
           "missing_input": null,
           "release_status": "Not released by this work; existing visual prototype hosting unchanged",
+          "release_receipt": null
+        },
+        {
+          "id": "02.04",
+          "requirement": "Implement the owner-approved Evolution Home, OMNI Block Developer Center and Cloud Services visual workspaces in preview, preserving real owner-scoped data, existing routes and every security boundary.",
+          "status": "Implemented awaiting test",
+          "owner": "Lovable implementation; owner supplies fresh two-step verification for positive data acceptance",
+          "dependencies": [
+            "02.02"
+          ],
+          "changed_files": [
+            "src/components/evolution/console/OwnerConsoleShell.tsx",
+            "src/components/evolution/console/OwnerHome.tsx",
+            "src/components/evolution/console/CloudServices.tsx",
+            "src/components/evolution/console/ConsolePrimitives.tsx",
+            "src/components/evolution/console/console-utils.ts",
+            "src/components/evolution/ForgejoRepos.tsx",
+            "src/routes/_authenticated/repositories.tsx",
+            "src/routes/_authenticated/cloud-services.tsx",
+            "src/routes/__root.tsx",
+            "src/styles.css",
+            "docs/EVOLUTION-CONSOLE-REDESIGN-2026-11-28.md",
+            "roadmap.md"
+          ],
+          "commit": null,
+          "commit_note": "Preview-only interface change; exact commit recorded in git history after review. No external branch, PR or publication.",
+          "verified_scope": "New responsive black/deep-space/gold owner presentation, real-data bindings, repository search, preserved project configuration and integrity audit, real cloud connection controls and explicit unavailable states. Public landing, backend and safety controls unchanged.",
+          "test_command": "bunx vitest run; focused 88-test suite; changed-file eslint; harness build; signed-in desktop/mobile/reduced-motion Playwright",
+          "test_result": "1,617 passed / 23 skipped full suite; 88 focused passed; build OK; lint 0 errors; no browser page errors or horizontal overflow.",
+          "evidence_ref": "owner-console-redesign",
+          "runtime_evidence": "Signed-in owner and signed-out public pages visually checked. Search, notifications, mobile navigation and configuration disclosure worked. Fresh-aal2-protected repository/cloud reads correctly refused; no fabricated records.",
+          "next_action": "Owner completes the existing fresh authenticator step and reviews the 38 actual repositories, saved cloud records and manual integrity audit in the preview. Publishing remains a separate decision.",
+          "missing_input": "Fresh owner aal2 session for positive protected-data display acceptance.",
+          "release_status": "Preview only; not published or deployed",
           "release_receipt": null
         }
       ]

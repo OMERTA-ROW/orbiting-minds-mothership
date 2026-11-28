@@ -85,6 +85,7 @@ import { Route as AuthenticatedAccountSecurityRouteImport } from './routes/_auth
 import { Route as AuthenticatedActionsRouteImport } from './routes/_authenticated/actions'
 import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
 import { Route as AuthenticatedBetaOmniRouteImport } from './routes/_authenticated/beta-omni'
+import { Route as AuthenticatedCloudServicesRouteImport } from './routes/_authenticated/cloud-services'
 import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenticated/deployments'
 import { Route as AuthenticatedKnowledgeBriefRouteImport } from './routes/_authenticated/knowledge-brief'
 import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
@@ -519,6 +520,12 @@ const AuthenticatedBetaOmniRoute = AuthenticatedBetaOmniRouteImport.update({
   path: '/beta-omni',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCloudServicesRoute =
+  AuthenticatedCloudServicesRouteImport.update({
+    id: '/cloud-services',
+    path: '/cloud-services',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDeploymentsRoute =
   AuthenticatedDeploymentsRouteImport.update({
     id: '/deployments',
@@ -882,6 +889,7 @@ export interface FileRoutesByFullPath {
   '/actions': typeof AuthenticatedActionsRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/cloud-services': typeof AuthenticatedCloudServicesRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
@@ -1012,6 +1020,7 @@ export interface FileRoutesByTo {
   '/actions': typeof AuthenticatedActionsRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/cloud-services': typeof AuthenticatedCloudServicesRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
@@ -1144,6 +1153,7 @@ export interface FileRoutesById {
   '/_authenticated/actions': typeof AuthenticatedActionsRoute
   '/_authenticated/beta': typeof AuthenticatedBetaRoute
   '/_authenticated/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/_authenticated/cloud-services': typeof AuthenticatedCloudServicesRoute
   '/_authenticated/deployments': typeof AuthenticatedDeploymentsRoute
   '/_authenticated/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/_authenticated/members': typeof AuthenticatedMembersRoute
@@ -1276,6 +1286,7 @@ export interface FileRouteTypes {
     | '/actions'
     | '/beta'
     | '/beta-omni'
+    | '/cloud-services'
     | '/deployments'
     | '/knowledge-brief'
     | '/members'
@@ -1406,6 +1417,7 @@ export interface FileRouteTypes {
     | '/actions'
     | '/beta'
     | '/beta-omni'
+    | '/cloud-services'
     | '/deployments'
     | '/knowledge-brief'
     | '/members'
@@ -1537,6 +1549,7 @@ export interface FileRouteTypes {
     | '/_authenticated/actions'
     | '/_authenticated/beta'
     | '/_authenticated/beta-omni'
+    | '/_authenticated/cloud-services'
     | '/_authenticated/deployments'
     | '/_authenticated/knowledge-brief'
     | '/_authenticated/members'
@@ -2236,6 +2249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBetaOmniRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cloud-services': {
+      id: '/_authenticated/cloud-services'
+      path: '/cloud-services'
+      fullPath: '/cloud-services'
+      preLoaderRoute: typeof AuthenticatedCloudServicesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/deployments': {
       id: '/_authenticated/deployments'
       path: '/deployments'
@@ -2615,6 +2635,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedActionsRoute: typeof AuthenticatedActionsRoute
   AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
   AuthenticatedBetaOmniRoute: typeof AuthenticatedBetaOmniRoute
+  AuthenticatedCloudServicesRoute: typeof AuthenticatedCloudServicesRoute
   AuthenticatedDeploymentsRoute: typeof AuthenticatedDeploymentsRoute
   AuthenticatedKnowledgeBriefRoute: typeof AuthenticatedKnowledgeBriefRoute
   AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
@@ -2632,6 +2653,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActionsRoute: AuthenticatedActionsRoute,
   AuthenticatedBetaRoute: AuthenticatedBetaRoute,
   AuthenticatedBetaOmniRoute: AuthenticatedBetaOmniRoute,
+  AuthenticatedCloudServicesRoute: AuthenticatedCloudServicesRoute,
   AuthenticatedDeploymentsRoute: AuthenticatedDeploymentsRoute,
   AuthenticatedKnowledgeBriefRoute: AuthenticatedKnowledgeBriefRoute,
   AuthenticatedMembersRoute: AuthenticatedMembersRoute,
