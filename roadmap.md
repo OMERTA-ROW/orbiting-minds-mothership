@@ -1,5 +1,11 @@
 # Staged interface production-readiness overhaul (2026-11-27)
 
+## Phase 2B Forgejo gateway authentication (2026-11-28, preview only)
+- [x] Wire Bearer gateway key, Cloudflare Access headers and fixed HTTPS/GET allowlist; retain owner/MFA.
+- [x] 45 focused tests pass, changed-file lint/diff and preview build OK; real desktop/mobile verify MFA refusal and unchanged live space.
+- [ ] Actual 38 private rows through owner UI — blocked: restored owner session lacks required two-step verification. External HTTP 200/38 is owner-reported only; no auth bypass.
+- [x] Record evidence, changed files and rollback in `docs/PHASE-2B-FORGEJO-REVIEW-2026-11-28.md`; no writes, autonomy, purchases or publication.
+
 - [x] Inventory 129 route declarations (91 content, 37 endpoints, one protected layout), 859 source controls, 180 panels and agent/provider boundaries; static bindings never imply live acceptance. Reproducible inventories in `docs/INTERFACE-*`.
 - [x] Share actual CyberLink scene on all non-landing routes; public landing preserved, single canvas survives navigation, reduced motion and desktop/mobile checks pass. Active work/safety cadence unchanged.
 - [x] Repair project/cloud/import acknowledgements without confirmed affected rows; require real provider account evidence; bound reads and serialize UI actions. 12 new tests pass.
@@ -600,5 +606,5 @@ Audit: no dedicated legacy-modernization feature exists. Reusable pieces: refere
 
 ## Phase 2A Evolution Git (read-only)
 - [x] Forgejo read-only list on /repositories
-- [ ] Owner: private gateway + FORGEJO_BASE_URL / FORGEJO_API_TOKEN
+- [x] Owner configured private gateway plus FORGEJO_BASE_URL / FORGEJO_API_TOKEN and Cloudflare Access settings; Phase 2B adapter added above.
 - [ ] 2B+: see docs/OMNI-BLOCK-OWNED-INFRASTRUCTURE-ROADMAP.md

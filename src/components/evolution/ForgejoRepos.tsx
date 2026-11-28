@@ -35,8 +35,8 @@ export function ForgejoRepos() {
         )}
         {r?.state === "invalid_origin" && (
           <p>
-            Not connected. FORGEJO_BASE_URL must be the private HTTPS gateway address, not localhost
-            or a private IP.
+            Not connected. FORGEJO_BASE_URL must be exactly https://git-api.evoomni.tech with no
+            extra path, port, query or credentials.
           </p>
         )}
         {r?.state === "unreachable" && (

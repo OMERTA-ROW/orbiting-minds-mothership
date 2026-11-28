@@ -1,18 +1,27 @@
-# OMNI Block — owned-infrastructure roadmap (Phase 2A delivered, rest planned)
+# OMNI Block — owned-infrastructure roadmap (Phase 2B read adapter implemented; live acceptance pending)
+
+## Phase 2B gateway authentication (2026-11-28, preview only)
+- All four setting names are confirmed configured: `FORGEJO_BASE_URL`, `FORGEJO_API_TOKEN`, `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`. Values were not inspected or exposed.
+- Adapter uses only `https://git-api.evoomni.tech/api/v1/user/repos?page=N&limit=50` GET, `Authorization: Bearer` gateway key, `CF-Access-Client-Id`, `CF-Access-Client-Secret`, `User-Agent: Evolution-OMNI-Gateway/1.0` and `Accept: application/json`. Redirects are not followed; each read has a 15-second timeout.
+- Existing owner/verified-email/MFA authorization and private no-store responses remain. No repository writes, autonomous execution or agent grants.
+- Owner reports external HTTP 200 with 38 private repositories. This is owner-provided gateway evidence, not yet a Mothership live-list acceptance pass: the available restored owner session is refused by the existing two-step check before gateway access.
+- 45 focused tests passed (23 adapter/server-boundary tests plus owner and site-link regressions); synthetic tests are not live connection evidence. Preview build OK; changed TypeScript lint and diff checks clean. Desktop/mobile show the truthful MFA refusal, one live space canvas and no mobile horizontal overflow.
+- Remaining owner step: complete two-step sign-in in preview, open `/repositories`, click Refresh and confirm 38 private rows. No missing credentials were found. Hash comparison, hourly timer verification, backup restore and agent read grants remain separate future acceptance work.
+- Full evidence and rollback: `docs/PHASE-2B-FORGEJO-REVIEW-2026-11-28.md`.
 
 ## Phase 2A (implemented in preview, read-only)
 - `src/lib/forgejo.ts`, `src/lib/forgejo.functions.ts`, `src/components/evolution/ForgejoRepos.tsx` on `/repositories`.
 - Owner + two-step check (`requireRazulOwner`), `Cache-Control: private, no-store`, GET-only paginated `/api/v1/user/repos`, dedupe by repository id, `redirect: "manual"`.
 - Shows name, privacy, default branch, mirror sync time (or "Sync not reported"), last update; honest states: not configured (names missing settings), invalid address, refused token, unreachable.
 - Tests: `src/lib/forgejo.test.ts` (missing settings, localhost/http refused, pagination/dedupe/GET only, refused token never succeeds).
-- Not verified live: settings `FORGEJO_BASE_URL`, `FORGEJO_API_TOKEN` are not saved; Forgejo listens on Omni-Staging `localhost:3000`, which the app server cannot reach.
+- Historical Phase 2A blocker: gateway settings were absent and Forgejo listened only on Omni-Staging localhost. Phase 2B now uses the configured private gateway; positive owner UI acceptance remains pending MFA.
 - The hourly timer's 38 syncs are host-side; Forgejo's API does not expose them unless repos are mirrors. Independent GitHub↔Forgejo hash comparison is deferred.
 
 ## Secure network requirement (owner action)
 1. Keep Forgejo bound to `127.0.0.1:3000`; no public port.
 2. Run an outbound-only gateway on Omni-Staging (e.g. Cloudflare Tunnel, free) to a dedicated hostname, e.g. `git-api.evoomni.tech`, exposing only `/api/v1/*` GET.
-3. Protect it with an access policy (service token header) plus a Forgejo token for a dedicated `mothership-reader` user, scopes `read:repository` + `read:user` only.
-4. Save `FORGEJO_BASE_URL` (https gateway) and `FORGEJO_API_TOKEN` in Project Settings → Secrets. If an access service token is used, a follow-up adds its header names.
+3. Protect it with Cloudflare Access service-token authentication and a separate Bearer gateway key. Keep the upstream Forgejo credential on the gateway, scoped to a dedicated read-only account; the Mothership key is the gateway key, not a direct Forgejo token.
+4. The four settings listed above are configured. Keep `FORGEJO_BASE_URL` exactly `https://git-api.evoomni.tech`; enforce GET-only routes at the gateway as well as the adapter. Do not expose Forgejo port 3000 publicly.
 
 ## Agent read scopes (prepared, not granted)
 OMNI, Jackboy and Razul get `evolution-git:read` only after a reviewed server route reuses the existing OMNI API key / delegation checks. No agent can write.

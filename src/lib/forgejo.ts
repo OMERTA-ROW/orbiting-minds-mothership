@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-/** Read-only Evolution Git (Forgejo) provider. Phase 2A: listing only, never writes. */
+/** Read-only Evolution Git gateway: listing only, never writes. */
+export const FORGEJO_GATEWAY_ORIGIN = "https://git-api.evoomni.tech";
 export const FORGEJO_PAGE_LIMIT = 50;
 export const FORGEJO_MAX_PAGES = 20;
 
@@ -11,7 +12,7 @@ export const FORGEJO_READ_SCOPES = [
   { agent: "Razul", scope: "evolution-git:read", granted: false },
 ] as const;
 
-/** Accept only an HTTPS gateway origin; loopback/private hosts are unreachable from the app server. */
+/** Credentials may be sent only to the owner's exact approved gateway origin. */
 export function forgejoOrigin(raw: string | undefined): string | null {
   if (!raw) return null;
   let url: URL;
@@ -22,18 +23,8 @@ export function forgejoOrigin(raw: string | undefined): string | null {
   }
   if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash)
     return null;
-  const h = url.hostname;
-  if (
-    h === "localhost" ||
-    h.endsWith(".localhost") ||
-    /^127\./.test(h) ||
-    /^10\./.test(h) ||
-    /^192\.168\./.test(h) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
-    h === "[::1]"
-  )
-    return null;
-  return url.origin + url.pathname.replace(/\/+$/, "");
+  if (url.origin !== FORGEJO_GATEWAY_ORIGIN || url.pathname !== "/") return null;
+  return FORGEJO_GATEWAY_ORIGIN;
 }
 
 const repoSchema = z.object({
@@ -83,13 +74,20 @@ export type ForgejoResult =
 
 /** Paginated read-only listing; dedupes by immutable repository id. */
 export async function listForgejoRepos(
-  env: { base?: string | undefined; token?: string | undefined },
+  env: {
+    base?: string | undefined;
+    token?: string | undefined;
+    accessClientId?: string | undefined;
+    accessClientSecret?: string | undefined;
+  },
   fetcher: typeof fetch = fetch,
   now = () => new Date().toISOString(),
 ): Promise<ForgejoResult> {
   const missing = [
     ...(env.base ? [] : ["FORGEJO_BASE_URL"]),
     ...(env.token ? [] : ["FORGEJO_API_TOKEN"]),
+    ...(env.accessClientId ? [] : ["CF_ACCESS_CLIENT_ID"]),
+    ...(env.accessClientSecret ? [] : ["CF_ACCESS_CLIENT_SECRET"]),
   ];
   if (missing.length) return { state: "not_configured", missing };
   const origin = forgejoOrigin(env.base);
@@ -102,13 +100,24 @@ export async function listForgejoRepos(
       res = await fetcher(`${origin}/api/v1/user/repos?page=${page}&limit=${FORGEJO_PAGE_LIMIT}`, {
         method: "GET",
         redirect: "manual",
-        headers: { Authorization: `token ${env.token}`, Accept: "application/json" },
+        signal: AbortSignal.timeout(15_000),
+        headers: {
+          Authorization: `Bearer ${env.token}`,
+          "CF-Access-Client-Id": env.accessClientId ?? "",
+          "CF-Access-Client-Secret": env.accessClientSecret ?? "",
+          "User-Agent": "Evolution-OMNI-Gateway/1.0",
+          Accept: "application/json",
+        },
       });
     } catch {
       return { state: "unreachable", message: "The Evolution Git gateway did not answer." };
     }
     if (res.status === 401 || res.status === 403)
-      return { state: "unreachable", message: "The gateway refused the read-only token." };
+      return {
+        state: "unreachable",
+        message:
+          "The gateway refused authentication. Check the Cloudflare Access service-token policy and gateway Bearer key in Project Settings → Secrets.",
+      };
     if (!res.ok)
       return { state: "unreachable", message: `The gateway answered HTTP ${res.status}.` };
     let repos: ForgejoRepo[];

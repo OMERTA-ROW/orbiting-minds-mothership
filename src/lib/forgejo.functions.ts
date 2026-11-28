@@ -16,5 +16,7 @@ export const readForgejoRepos = createServerFn({ method: "POST" })
     return listForgejoRepos({
       base: process.env["FORGEJO_BASE_URL"],
       token: process.env["FORGEJO_API_TOKEN"],
+      accessClientId: process.env["CF_ACCESS_CLIENT_ID"],
+      accessClientSecret: process.env["CF_ACCESS_CLIENT_SECRET"],
     });
   });
