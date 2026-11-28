@@ -1,9 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RepositoryFeatures } from "@/components/evolution/RepositoryFeatures";
 import { RetiredAreaPage } from "@/components/RetiredArea";
 import { seo } from "@/lib/seo";
 
-// Former demo area (removed 2026-11-20). Shows an honest "not connected" page.
+// Real provider reads; earlier browser-saved records remain downloadable.
 export const Route = createFileRoute("/releases")({
-  head: () => seo("Releases \u2014 Not connected", "Releases is not connected to a real service. Evolution preserves prior browser records and provides an existing alternative."),
-  component: RetiredAreaPage,
+  head: () =>
+    seo(
+      "Repository Releases",
+      "Evolution private repository release reads with owner verification and preserved earlier browser records.",
+    ),
+  component: () => (
+    <>
+      <RepositoryFeatures feature="releases" />
+      <details className="mx-4 mt-6 border-t border-border pt-4">
+        <summary className="cursor-pointer text-sm text-primary">
+          Earlier browser records and release preparation status
+        </summary>
+        <RetiredAreaPage />
+      </details>
+    </>
+  ),
 });

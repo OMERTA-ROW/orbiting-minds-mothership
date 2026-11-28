@@ -1,5 +1,12 @@
 # Staged interface production-readiness overhaul (2026-11-27)
 
+## Developer feature navigation follow-up (preview only)
+
+- [x] Audit configured providers and expose bounded Forgejo/GitHub repository feature reads with owner/MFA and inventory checks.
+- [x] Connect every developer destination; precise unsupported/write-contract blockers without widening gateway authority.
+- [x] 39 new boundary tests; 1,656 full tests pass / 23 environment skips; preview build/lint and 13-page desktop/mobile navigation checks pass. Evidence: `docs/REPOSITORY-FEATURES-2026-11-28.md`.
+- [ ] Positive owner feature readback and repository mutations — blocked on fresh MFA for live reads and a separately reviewed mutation/grant/audit contract; gateway stays GET-only.
+
 ## Application-wide Evolution redesign (2026-11-28, preview only)
 
 - [x] Extend the existing console shell and navigation to every signed-in non-landing page, with true-black/metallic-gold surfaces and unchanged live CyberLink scene.

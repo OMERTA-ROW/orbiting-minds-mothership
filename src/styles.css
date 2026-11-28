@@ -112,7 +112,7 @@
   --orb-highlight: oklch(0.95 0.03 260 / 16%);
   --orb-terminator: oklch(0.05 0.02 275 / 92%);
   --orb-starfield: radial-gradient(1px 1px at 12% 18%, oklch(0.9 0.02 260 / 55%), transparent 60%), radial-gradient(1px 1px at 78% 12%, oklch(0.9 0.02 260 / 45%), transparent 60%), radial-gradient(1.5px 1.5px at 64% 72%, oklch(0.85 0.05 280 / 40%), transparent 60%), radial-gradient(1px 1px at 28% 82%, oklch(0.9 0.02 260 / 40%), transparent 60%), radial-gradient(1px 1px at 90% 48%, oklch(0.9 0.02 260 / 35%), transparent 60%), radial-gradient(ellipse at 50% 0%, oklch(0.25 0.08 280 / 35%), transparent 60%);
-  --console-panel: oklch(0.13 0 0);
+  --console-panel: oklch(0 0 0);
   --console-raised: oklch(0.19 0 0);
   --console-deep: oklch(0 0 0);
   --console-sidebar: oklch(0 0 0);

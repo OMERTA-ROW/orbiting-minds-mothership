@@ -85,17 +85,24 @@ import { Route as AuthenticatedAccountSecurityRouteImport } from './routes/_auth
 import { Route as AuthenticatedActionsRouteImport } from './routes/_authenticated/actions'
 import { Route as AuthenticatedBetaRouteImport } from './routes/_authenticated/beta'
 import { Route as AuthenticatedBetaOmniRouteImport } from './routes/_authenticated/beta-omni'
+import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedCloudServicesRouteImport } from './routes/_authenticated/cloud-services'
+import { Route as AuthenticatedCodeSearchRouteImport } from './routes/_authenticated/code-search'
+import { Route as AuthenticatedCommitsRouteImport } from './routes/_authenticated/commits'
 import { Route as AuthenticatedDeploymentsRouteImport } from './routes/_authenticated/deployments'
+import { Route as AuthenticatedEnvironmentsRouteImport } from './routes/_authenticated/environments'
+import { Route as AuthenticatedIssuesRouteImport } from './routes/_authenticated/issues'
 import { Route as AuthenticatedKnowledgeBriefRouteImport } from './routes/_authenticated/knowledge-brief'
 import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
 import { Route as AuthenticatedMigrationsRouteImport } from './routes/_authenticated/migrations'
 import { Route as AuthenticatedNeuroRouteImport } from './routes/_authenticated/neuro'
+import { Route as AuthenticatedPackagesRouteImport } from './routes/_authenticated/packages'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedPullRequestsRouteImport } from './routes/_authenticated/pull-requests'
 import { Route as AuthenticatedQuantumStudioRouteImport } from './routes/_authenticated/quantum-studio'
 import { Route as AuthenticatedRepositoriesRouteImport } from './routes/_authenticated/repositories'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedWikiRouteImport } from './routes/_authenticated/wiki'
 import { Route as ApiEvolutionPathwayRouteImport } from './routes/api/evolution-pathway'
 import { Route as ApiOmniRouteImport } from './routes/api/omni'
 import { Route as ApiOmniAgentRouteImport } from './routes/api/omni-agent'
@@ -520,18 +527,44 @@ const AuthenticatedBetaOmniRoute = AuthenticatedBetaOmniRouteImport.update({
   path: '/beta-omni',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBranchesRoute = AuthenticatedBranchesRouteImport.update({
+  id: '/branches',
+  path: '/branches',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCloudServicesRoute =
   AuthenticatedCloudServicesRouteImport.update({
     id: '/cloud-services',
     path: '/cloud-services',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCodeSearchRoute = AuthenticatedCodeSearchRouteImport.update({
+  id: '/code-search',
+  path: '/code-search',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCommitsRoute = AuthenticatedCommitsRouteImport.update({
+  id: '/commits',
+  path: '/commits',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDeploymentsRoute =
   AuthenticatedDeploymentsRouteImport.update({
     id: '/deployments',
     path: '/deployments',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedEnvironmentsRoute =
+  AuthenticatedEnvironmentsRouteImport.update({
+    id: '/environments',
+    path: '/environments',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedIssuesRoute = AuthenticatedIssuesRouteImport.update({
+  id: '/issues',
+  path: '/issues',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedKnowledgeBriefRoute =
   AuthenticatedKnowledgeBriefRouteImport.update({
     id: '/knowledge-brief',
@@ -551,6 +584,11 @@ const AuthenticatedMigrationsRoute = AuthenticatedMigrationsRouteImport.update({
 const AuthenticatedNeuroRoute = AuthenticatedNeuroRouteImport.update({
   id: '/neuro',
   path: '/neuro',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPackagesRoute = AuthenticatedPackagesRouteImport.update({
+  id: '/packages',
+  path: '/packages',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
@@ -579,6 +617,11 @@ const AuthenticatedRepositoriesRoute =
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWikiRoute = AuthenticatedWikiRouteImport.update({
+  id: '/wiki',
+  path: '/wiki',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiEvolutionPathwayRoute = ApiEvolutionPathwayRouteImport.update({
@@ -889,17 +932,24 @@ export interface FileRoutesByFullPath {
   '/actions': typeof AuthenticatedActionsRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/branches': typeof AuthenticatedBranchesRoute
   '/cloud-services': typeof AuthenticatedCloudServicesRoute
+  '/code-search': typeof AuthenticatedCodeSearchRoute
+  '/commits': typeof AuthenticatedCommitsRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
+  '/environments': typeof AuthenticatedEnvironmentsRoute
+  '/issues': typeof AuthenticatedIssuesRoute
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
   '/migrations': typeof AuthenticatedMigrationsRoute
   '/neuro': typeof AuthenticatedNeuroRoute
+  '/packages': typeof AuthenticatedPackagesRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/pull-requests': typeof AuthenticatedPullRequestsRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/repositories': typeof AuthenticatedRepositoriesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/wiki': typeof AuthenticatedWikiRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRouteWithChildren
   '/api/omni-agent': typeof ApiOmniAgentRoute
@@ -1020,17 +1070,24 @@ export interface FileRoutesByTo {
   '/actions': typeof AuthenticatedActionsRoute
   '/beta': typeof AuthenticatedBetaRoute
   '/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/branches': typeof AuthenticatedBranchesRoute
   '/cloud-services': typeof AuthenticatedCloudServicesRoute
+  '/code-search': typeof AuthenticatedCodeSearchRoute
+  '/commits': typeof AuthenticatedCommitsRoute
   '/deployments': typeof AuthenticatedDeploymentsRoute
+  '/environments': typeof AuthenticatedEnvironmentsRoute
+  '/issues': typeof AuthenticatedIssuesRoute
   '/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/members': typeof AuthenticatedMembersRoute
   '/migrations': typeof AuthenticatedMigrationsRoute
   '/neuro': typeof AuthenticatedNeuroRoute
+  '/packages': typeof AuthenticatedPackagesRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/pull-requests': typeof AuthenticatedPullRequestsRoute
   '/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/repositories': typeof AuthenticatedRepositoriesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/wiki': typeof AuthenticatedWikiRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRouteWithChildren
   '/api/omni-agent': typeof ApiOmniAgentRoute
@@ -1153,17 +1210,24 @@ export interface FileRoutesById {
   '/_authenticated/actions': typeof AuthenticatedActionsRoute
   '/_authenticated/beta': typeof AuthenticatedBetaRoute
   '/_authenticated/beta-omni': typeof AuthenticatedBetaOmniRoute
+  '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/cloud-services': typeof AuthenticatedCloudServicesRoute
+  '/_authenticated/code-search': typeof AuthenticatedCodeSearchRoute
+  '/_authenticated/commits': typeof AuthenticatedCommitsRoute
   '/_authenticated/deployments': typeof AuthenticatedDeploymentsRoute
+  '/_authenticated/environments': typeof AuthenticatedEnvironmentsRoute
+  '/_authenticated/issues': typeof AuthenticatedIssuesRoute
   '/_authenticated/knowledge-brief': typeof AuthenticatedKnowledgeBriefRoute
   '/_authenticated/members': typeof AuthenticatedMembersRoute
   '/_authenticated/migrations': typeof AuthenticatedMigrationsRoute
   '/_authenticated/neuro': typeof AuthenticatedNeuroRoute
+  '/_authenticated/packages': typeof AuthenticatedPackagesRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
   '/_authenticated/pull-requests': typeof AuthenticatedPullRequestsRoute
   '/_authenticated/quantum-studio': typeof AuthenticatedQuantumStudioRoute
   '/_authenticated/repositories': typeof AuthenticatedRepositoriesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/wiki': typeof AuthenticatedWikiRoute
   '/api/evolution-pathway': typeof ApiEvolutionPathwayRoute
   '/api/omni': typeof ApiOmniRouteWithChildren
   '/api/omni-agent': typeof ApiOmniAgentRoute
@@ -1286,17 +1350,24 @@ export interface FileRouteTypes {
     | '/actions'
     | '/beta'
     | '/beta-omni'
+    | '/branches'
     | '/cloud-services'
+    | '/code-search'
+    | '/commits'
     | '/deployments'
+    | '/environments'
+    | '/issues'
     | '/knowledge-brief'
     | '/members'
     | '/migrations'
     | '/neuro'
+    | '/packages'
     | '/projects'
     | '/pull-requests'
     | '/quantum-studio'
     | '/repositories'
     | '/settings'
+    | '/wiki'
     | '/api/evolution-pathway'
     | '/api/omni'
     | '/api/omni-agent'
@@ -1417,17 +1488,24 @@ export interface FileRouteTypes {
     | '/actions'
     | '/beta'
     | '/beta-omni'
+    | '/branches'
     | '/cloud-services'
+    | '/code-search'
+    | '/commits'
     | '/deployments'
+    | '/environments'
+    | '/issues'
     | '/knowledge-brief'
     | '/members'
     | '/migrations'
     | '/neuro'
+    | '/packages'
     | '/projects'
     | '/pull-requests'
     | '/quantum-studio'
     | '/repositories'
     | '/settings'
+    | '/wiki'
     | '/api/evolution-pathway'
     | '/api/omni'
     | '/api/omni-agent'
@@ -1549,17 +1627,24 @@ export interface FileRouteTypes {
     | '/_authenticated/actions'
     | '/_authenticated/beta'
     | '/_authenticated/beta-omni'
+    | '/_authenticated/branches'
     | '/_authenticated/cloud-services'
+    | '/_authenticated/code-search'
+    | '/_authenticated/commits'
     | '/_authenticated/deployments'
+    | '/_authenticated/environments'
+    | '/_authenticated/issues'
     | '/_authenticated/knowledge-brief'
     | '/_authenticated/members'
     | '/_authenticated/migrations'
     | '/_authenticated/neuro'
+    | '/_authenticated/packages'
     | '/_authenticated/projects'
     | '/_authenticated/pull-requests'
     | '/_authenticated/quantum-studio'
     | '/_authenticated/repositories'
     | '/_authenticated/settings'
+    | '/_authenticated/wiki'
     | '/api/evolution-pathway'
     | '/api/omni'
     | '/api/omni-agent'
@@ -2249,6 +2334,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBetaOmniRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/branches': {
+      id: '/_authenticated/branches'
+      path: '/branches'
+      fullPath: '/branches'
+      preLoaderRoute: typeof AuthenticatedBranchesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/cloud-services': {
       id: '/_authenticated/cloud-services'
       path: '/cloud-services'
@@ -2256,11 +2348,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCloudServicesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/code-search': {
+      id: '/_authenticated/code-search'
+      path: '/code-search'
+      fullPath: '/code-search'
+      preLoaderRoute: typeof AuthenticatedCodeSearchRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/commits': {
+      id: '/_authenticated/commits'
+      path: '/commits'
+      fullPath: '/commits'
+      preLoaderRoute: typeof AuthenticatedCommitsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/deployments': {
       id: '/_authenticated/deployments'
       path: '/deployments'
       fullPath: '/deployments'
       preLoaderRoute: typeof AuthenticatedDeploymentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/environments': {
+      id: '/_authenticated/environments'
+      path: '/environments'
+      fullPath: '/environments'
+      preLoaderRoute: typeof AuthenticatedEnvironmentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/issues': {
+      id: '/_authenticated/issues'
+      path: '/issues'
+      fullPath: '/issues'
+      preLoaderRoute: typeof AuthenticatedIssuesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/knowledge-brief': {
@@ -2289,6 +2409,13 @@ declare module '@tanstack/react-router' {
       path: '/neuro'
       fullPath: '/neuro'
       preLoaderRoute: typeof AuthenticatedNeuroRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/packages': {
+      id: '/_authenticated/packages'
+      path: '/packages'
+      fullPath: '/packages'
+      preLoaderRoute: typeof AuthenticatedPackagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/projects': {
@@ -2324,6 +2451,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/wiki': {
+      id: '/_authenticated/wiki'
+      path: '/wiki'
+      fullPath: '/wiki'
+      preLoaderRoute: typeof AuthenticatedWikiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/evolution-pathway': {
@@ -2635,17 +2769,24 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedActionsRoute: typeof AuthenticatedActionsRoute
   AuthenticatedBetaRoute: typeof AuthenticatedBetaRoute
   AuthenticatedBetaOmniRoute: typeof AuthenticatedBetaOmniRoute
+  AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCloudServicesRoute: typeof AuthenticatedCloudServicesRoute
+  AuthenticatedCodeSearchRoute: typeof AuthenticatedCodeSearchRoute
+  AuthenticatedCommitsRoute: typeof AuthenticatedCommitsRoute
   AuthenticatedDeploymentsRoute: typeof AuthenticatedDeploymentsRoute
+  AuthenticatedEnvironmentsRoute: typeof AuthenticatedEnvironmentsRoute
+  AuthenticatedIssuesRoute: typeof AuthenticatedIssuesRoute
   AuthenticatedKnowledgeBriefRoute: typeof AuthenticatedKnowledgeBriefRoute
   AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
   AuthenticatedMigrationsRoute: typeof AuthenticatedMigrationsRoute
   AuthenticatedNeuroRoute: typeof AuthenticatedNeuroRoute
+  AuthenticatedPackagesRoute: typeof AuthenticatedPackagesRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
   AuthenticatedPullRequestsRoute: typeof AuthenticatedPullRequestsRoute
   AuthenticatedQuantumStudioRoute: typeof AuthenticatedQuantumStudioRoute
   AuthenticatedRepositoriesRoute: typeof AuthenticatedRepositoriesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedWikiRoute: typeof AuthenticatedWikiRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -2653,17 +2794,24 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActionsRoute: AuthenticatedActionsRoute,
   AuthenticatedBetaRoute: AuthenticatedBetaRoute,
   AuthenticatedBetaOmniRoute: AuthenticatedBetaOmniRoute,
+  AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCloudServicesRoute: AuthenticatedCloudServicesRoute,
+  AuthenticatedCodeSearchRoute: AuthenticatedCodeSearchRoute,
+  AuthenticatedCommitsRoute: AuthenticatedCommitsRoute,
   AuthenticatedDeploymentsRoute: AuthenticatedDeploymentsRoute,
+  AuthenticatedEnvironmentsRoute: AuthenticatedEnvironmentsRoute,
+  AuthenticatedIssuesRoute: AuthenticatedIssuesRoute,
   AuthenticatedKnowledgeBriefRoute: AuthenticatedKnowledgeBriefRoute,
   AuthenticatedMembersRoute: AuthenticatedMembersRoute,
   AuthenticatedMigrationsRoute: AuthenticatedMigrationsRoute,
   AuthenticatedNeuroRoute: AuthenticatedNeuroRoute,
+  AuthenticatedPackagesRoute: AuthenticatedPackagesRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
   AuthenticatedPullRequestsRoute: AuthenticatedPullRequestsRoute,
   AuthenticatedQuantumStudioRoute: AuthenticatedQuantumStudioRoute,
   AuthenticatedRepositoriesRoute: AuthenticatedRepositoriesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedWikiRoute: AuthenticatedWikiRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

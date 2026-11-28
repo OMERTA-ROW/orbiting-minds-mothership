@@ -152,6 +152,13 @@ function SiteShell({ path, omniArea }: { path: string; omniArea: boolean }) {
     "/neuro",
     "/migrations",
     "/releases",
+    "/issues",
+    "/branches",
+    "/commits",
+    "/environments",
+    "/packages",
+    "/code-search",
+    "/wiki",
   ].includes(path);
   const cloudArea = path === "/cloud-services" || path === "/deployments";
   const content = (
