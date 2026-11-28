@@ -6,6 +6,7 @@ const env = {
   token: "fixture-token",
   accessId: "fixture-id",
   accessSecret: "fixture-secret",
+  forgejoRoutes: "pull-requests,issues,branches,commits,actions,releases",
 };
 describe("Repository feature reads — synthetic transport fixtures", () => {
   it.each([
@@ -118,5 +119,17 @@ describe("Repository feature reads — synthetic transport fixtures", () => {
         )
       ).state,
     ).toBe("blocked");
+  });
+  it("refuses Forgejo feature reads, sending nothing, until the gateway route is enabled", async () => {
+    const fetcher = (async () => {
+      throw new Error("must not fetch");
+    }) as unknown as typeof fetch;
+    const r = await readRepositoryFeature(
+      { repo: "omniblock/jackboy-dev-control", feature: "branches", page: 1 },
+      { ...env, forgejoRoutes: "commits" },
+      fetcher,
+    );
+    expect(r.state).toBe("blocked");
+    expect(r.message).toContain("GET /api/v1/repos/{owner}/{repo}/branches");
   });
 });

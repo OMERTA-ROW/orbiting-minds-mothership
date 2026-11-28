@@ -180,9 +180,9 @@ export function ForgejoRepos() {
             <EmptyState>No repositories match “{search}”.</EmptyState>
           )}
           {filtered.length > 0 && (
-            <div className="overflow-x-auto rounded-xl border border-gold/15">
+            <div className="max-h-[60vh] overflow-auto rounded-xl border border-gold/15">
               <table className="w-full min-w-[790px] text-left text-xs">
-                <thead className="bg-console-raised/80 text-muted-foreground">
+                <thead className="sticky top-0 z-10 bg-console-raised text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-4 py-3 font-medium">
                       Name
@@ -324,9 +324,9 @@ export function ForgejoRepos() {
                 {error}
               </p>
             ))}
-            <div className="overflow-x-auto rounded-xl border border-gold/15">
+            <div className="max-h-[60vh] overflow-auto rounded-xl border border-gold/15">
               <table className="w-full min-w-[700px] text-left text-xs">
-                <thead className="bg-console-raised/80">
+                <thead className="sticky top-0 z-10 bg-console-raised">
                   <tr>
                     <th className="px-3 py-3">Forgejo / upstream</th>
                     <th className="px-3 py-3">Result</th>

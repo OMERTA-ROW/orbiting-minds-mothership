@@ -1,5 +1,12 @@
 import { forgejoOrigin, parseForgejoRepos, type ForgejoResult } from "./forgejo";
-import { featureInput, featurePath, featureRows, featureBlockers } from "./repository-features";
+import {
+  featureInput,
+  featurePath,
+  featureRows,
+  featureBlockers,
+  forgejoEnabledRoutes,
+  FORGEJO_GATEWAY_ROUTE_ALLOWLIST,
+} from "./repository-features";
 import type { z } from "zod";
 
 export async function readRepositoryFeature(
@@ -11,6 +18,7 @@ export async function readRepositoryFeature(
     accessSecret?: string | undefined;
     lovableKey?: string | undefined;
     githubKey?: string | undefined;
+    forgejoRoutes?: string | undefined;
   },
   fetcher: typeof fetch = fetch,
 ) {
@@ -23,6 +31,12 @@ export async function readRepositoryFeature(
       rows: [],
     };
   const github = data.provider === "github";
+  if (!github && !forgejoEnabledRoutes(env.forgejoRoutes).has(data.feature))
+    return {
+      state: "blocked" as const,
+      message: `Gateway route not deployed: the Omni-Staging gateway currently allows only GET /api/v1/user/repos. Owner step: add ${FORGEJO_GATEWAY_ROUTE_ALLOWLIST[data.feature] ?? "this route"} to the gateway allowlist, then add "${data.feature}" to FORGEJO_GATEWAY_READ_ROUTES. No request was sent. Use the GitHub · OMERTA-ROW provider for upstream reads meanwhile.`,
+      rows: [],
+    };
   const origin = github ? "https://connector-gateway.lovable.dev/github" : forgejoOrigin(env.base);
   if (
     !origin ||
@@ -58,7 +72,7 @@ export async function readRepositoryFeature(
     if (res.status !== 200)
       return {
         state: "blocked" as const,
-        message: `Gateway HTTP ${res.status}. ${res.status === 401 || res.status === 403 ? "Check existing service authentication and endpoint read scope; repository listing does not prove this endpoint is permitted." : res.status === 404 ? "The repository endpoint is unavailable or hidden by provider policy." : "No successful read was recorded; redirects are refused."}`,
+        message: `Gateway HTTP ${res.status}. ${res.status === 401 || res.status === 403 ? "Check existing service authentication and endpoint read scope; repository listing does not prove this endpoint is permitted." : res.status === 404 ? "The gateway or provider does not expose this route for this repository (check the gateway allowlist and canonical repository name)." : "No successful read was recorded; redirects are refused."}`,
         rows: [],
       };
     const reader = res.body?.getReader();

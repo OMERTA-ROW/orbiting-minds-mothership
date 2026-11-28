@@ -57,6 +57,7 @@ export const readRepositoryFeatures = createServerFn({ method: "POST" })
       accessSecret: process.env["CF_ACCESS_CLIENT_SECRET"],
       lovableKey: process.env["LOVABLE_API_KEY"],
       githubKey: process.env["GITHUB_API_KEY"],
+      forgejoRoutes: process.env["FORGEJO_GATEWAY_READ_ROUTES"],
     };
     const { readRepositoryFeature, githubFeatureInventory } =
       await import("./repository-features.server");
@@ -77,4 +78,21 @@ export const readRepositoryFeatures = createServerFn({ method: "POST" })
         rows: [],
       };
     return readRepositoryFeature(data, env);
+  });
+
+/** Explains why reads/writes are or are not available for this session; returns no secrets. */
+export const readAccessDiagnosis = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    setResponseHeader("Cache-Control", "private, no-store");
+    const assurance = typeof context.claims["aal"] === "string" ? context.claims["aal"] : null;
+    const role = await context.supabase.rpc("is_razul_owner");
+    const { forgejoEnabledRoutes } = await import("./repository-features");
+    return {
+      assurance,
+      owner: role.error ? null : role.data === true,
+      forgejoRoutes: [...forgejoEnabledRoutes(process.env["FORGEJO_GATEWAY_READ_ROUTES"])],
+      writes:
+        "Not available: the gateway is GET-only and no reviewed repository mutation contract or per-repository write grant exists. Two-step sign-in alone never grants writes.",
+    };
   });

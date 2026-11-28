@@ -6,7 +6,12 @@ import { RefreshCw, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAccount } from "@/hooks/use-account";
-import { readRepositoryFeatures, readFeatureInventory } from "@/lib/repository-features.functions";
+import {
+  readRepositoryFeatures,
+  readFeatureInventory,
+  readAccessDiagnosis,
+} from "@/lib/repository-features.functions";
+import { RepositoryPicker } from "./RepositoryPicker";
 import { featureLabels, featureBlockers, type RepositoryFeature } from "@/lib/repository-features";
 
 export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) {
@@ -20,6 +25,14 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
   const inventory = useQuery({
     queryKey: ["repository-feature-inventory", provider],
     queryFn: () => readFeatureInventory({ data: { provider } }),
+    enabled: ready && Boolean(user),
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const diagnose = useServerFn(readAccessDiagnosis);
+  const access = useQuery({
+    queryKey: ["repository-access-diagnosis"],
+    queryFn: () => diagnose(),
     enabled: ready && Boolean(user),
     refetchOnWindowFocus: false,
     retry: false,
@@ -56,11 +69,11 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
       `${r.name} ${r.id} ${r.status}`.toLowerCase().includes(query.toLowerCase()),
     ) ?? [];
   return (
-    <section className="min-w-0 space-y-6">
-      <header className="border-b border-border pb-5">
+    <section className="min-w-0 space-y-4">
+      <header className="border-b border-border pb-3">
         <p className="eyebrow">OMNI Block · Evolution Git</p>
-        <h1 className="mt-3 text-3xl font-semibold">{featureLabels[feature]}</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
+        <h1 className="mt-1 text-2xl font-semibold">{featureLabels[feature]}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Private Forgejo mirrors · GitHub remains upstream · repository writes are not authorized
           by this GET-only gateway.
         </p>
@@ -100,27 +113,16 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
             <option value="github">GitHub · OMERTA-ROW</option>
           </select>
         </label>
-        <label className="w-full min-w-0 text-sm sm:w-auto sm:flex-1">
-          Repository
-          <select
-            aria-label="Repository"
-            className="exchange-select mt-2 w-full"
-            value={repo}
-            disabled={busy || !repos.length}
-            onChange={(e) => {
-              setRepo(e.target.value);
-              setResult(null);
-              setPage(1);
-            }}
-          >
-            <option value="">Select an authorized repository</option>
-            {repos.map((r) => (
-              <option key={r.id} value={r.name}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <RepositoryPicker
+          repos={repos}
+          value={repo}
+          disabled={busy}
+          onChange={(next) => {
+            setRepo(next);
+            setResult(null);
+            setPage(1);
+          }}
+        />
         <Button
           disabled={
             !repo || busy || Boolean(blocker) || (feature === "code-search" && !search.trim())
@@ -149,13 +151,30 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
           />
         </label>
       )}
-      <Button
-        variant="outline"
-        disabled={inventory.isFetching || busy || !user}
-        onClick={() => void inventory.refetch()}
-      >
-        Refresh authorized inventory
-      </Button>
+      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={inventory.isFetching || busy || !user}
+          onClick={() => void inventory.refetch()}
+        >
+          {inventory.isFetching ? "Refreshing…" : "Refresh authorized inventory"}
+        </Button>
+        {inventory.data?.state === "connected" && (
+          <span>
+            {inventory.data.repos.length} authorized repositories · checked{" "}
+            {inventory.data.checkedAt}
+          </span>
+        )}
+        {access.data && (
+          <span role="status">
+            Session: {access.data.assurance === "aal2" ? "two-step verified" : `assurance ${access.data.assurance ?? "unknown"} (sign out and back in with your code if you just verified)`}{" "}
+            · owner {access.data.owner === true ? "confirmed" : access.data.owner === false ? "not confirmed" : "unverified"}
+            {provider === "forgejo" &&
+              ` · gateway feature routes enabled: ${access.data.forgejoRoutes.length ? access.data.forgejoRoutes.join(", ") : "none (list only)"}`}
+          </span>
+        )}
+      </div>
       {inventory.data?.state === "connected" && inventory.data.truncated && (
         <p className="text-sm text-warning">
           Inventory reached its bounded page limit; not every repository is listed.
@@ -188,14 +207,14 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
               className="max-w-xs"
             />
           </div>
-          <div className="overflow-x-auto rounded-lg border border-border bg-card">
+          <div className="max-h-[60vh] overflow-auto rounded-lg border border-border bg-card">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="p-3">Name / title</th>
-                  <th className="p-3">Identifier</th>
-                  <th className="p-3">State</th>
-                  <th className="p-3">Updated</th>
+                <tr className="sticky top-0 z-10 border-b border-border bg-card">
+                  <th className="px-3 py-2">Name / title</th>
+                  <th className="px-3 py-2">Identifier</th>
+                  <th className="px-3 py-2">State</th>
+                  <th className="px-3 py-2">Updated</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,8 +224,8 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
                     <td className="max-w-48 break-all p-3 font-mono text-xs text-primary">
                       {r.id}
                     </td>
-                    <td className="p-3">{r.status}</td>
-                    <td className="p-3">{r.updated}</td>
+                    <td className="px-3 py-2">{r.status}</td>
+                    <td className="px-3 py-2">{r.updated}</td>
                   </tr>
                 ))}
               </tbody>
@@ -237,35 +256,30 @@ export function RepositoryFeatures({ feature }: { feature: RepositoryFeature }) 
           </div>
         </>
       )}
-      <div className="border-t border-border pt-5">
-        <h2 className="text-lg">Owner write workflow</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Blocked: the approved gateway permits GET only. A separately reviewed mutation contract,
-          per-repository grant, fresh MFA, protected-branch review, Emergency Stop checks and
-          durable audit are required before writes can be enabled; execution also requires existing
-          permits and verified isolation. No gateway policy or approval is changed here.
+      <details className="rounded-lg border border-border bg-card p-3 text-sm">
+        <summary className="cursor-pointer font-medium">
+          <LockKeyhole size={14} className="mr-2 inline" />
+          Owner write workflow — not available (why and what is needed)
+        </summary>
+        <p className="mt-2 text-muted-foreground">
+          {access.data?.writes ??
+            "Writes are not available: the gateway is GET-only and no repository mutation contract or per-repository grant exists."}{" "}
+          Enabling them needs a reviewed mutation route on the gateway, a per-repository grant, fresh
+          two-step sign-in, protected-branch review, Emergency Stop checks, spending caps and
+          durable audit. Nothing here changes a gate.
         </p>
-        <Button
-          disabled
-          variant="outline"
-          className="mt-3"
-          title="No reviewed repository mutation contract or grant"
-        >
-          <LockKeyhole size={15} />
-          Write unavailable
-        </Button>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Button asChild variant="ghost">
-            <Link to="/activation-approvals">Existing approval controls</Link>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link to="/activation-approvals">Approval controls</Link>
           </Button>
-          <Button asChild variant="ghost">
-            <Link to="/account-security">Account Security</Link>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/account-security">Two-step sign-in</Link>
           </Button>
-          <Button asChild variant="ghost">
+          <Button asChild size="sm" variant="outline">
             <Link to="/projects">Project controls</Link>
           </Button>
         </div>
-      </div>
+      </details>
     </section>
   );
 }

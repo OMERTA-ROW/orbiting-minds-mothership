@@ -49,6 +49,32 @@ export const featureBlockers: Partial<Record<RepositoryFeature, string>> = {
     "Repository contents are not indexed and a gateway code-search endpoint has not been verified. No content is uploaded to an external index.",
   wiki: "A scoped wiki read endpoint has not been verified for this gateway. Repository access does not grant a separate wiki clone or write operation.",
 };
+/**
+ * The Omni-Staging gateway is intentionally restricted to GET /api/v1/user/repos.
+ * Feature reads stay refused (no request sent) until the owner deploys these exact
+ * GET routes on the gateway and lists the enabled features in the server setting
+ * FORGEJO_GATEWAY_READ_ROUTES (comma separated, e.g. "branches,commits").
+ */
+export const FORGEJO_GATEWAY_ROUTE_ALLOWLIST: Partial<Record<RepositoryFeature, string>> = {
+  "pull-requests": "GET /api/v1/repos/{owner}/{repo}/pulls",
+  issues: "GET /api/v1/repos/{owner}/{repo}/issues",
+  branches: "GET /api/v1/repos/{owner}/{repo}/branches",
+  commits: "GET /api/v1/repos/{owner}/{repo}/commits",
+  actions: "GET /api/v1/repos/{owner}/{repo}/actions/runs",
+  releases: "GET /api/v1/repos/{owner}/{repo}/releases",
+};
+export function forgejoEnabledRoutes(raw: string | undefined): Set<RepositoryFeature> {
+  const out = new Set<RepositoryFeature>();
+  for (const part of (raw ?? "").split(",")) {
+    const f = part.trim() as RepositoryFeature;
+    if (f && f in FORGEJO_GATEWAY_ROUTE_ALLOWLIST) out.add(f);
+  }
+  return out;
+}
+/** Canonical short name shared by Forgejo mirrors (e.g. omniblock/x) and GitHub upstream (OMERTA-ROW/x). */
+export function repoShortName(fullName: string): string {
+  return (fullName.split("/")[1] ?? fullName).toLowerCase();
+}
 export function featurePath(input: z.infer<typeof featureInput>): string | null {
   const data = featureInput.parse(input);
   if (data.provider === "github") {
